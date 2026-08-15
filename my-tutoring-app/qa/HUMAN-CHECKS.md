@@ -56,6 +56,42 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > 78 and is already one stale. Which is the third demonstration in two days of why this file
 > should rank rather than count.)*
 
+### #100 — **`story-talk` (DI port 15): the tutor now READS THE ANSWER ALOUD, on purpose, into an open mic. Does the judge ever credit its own voice to the child?** · OPEN
+
+**Filed under the standing rule, not by habit — this is a NEW STIMULUS MECHANISM.** Every judged
+port so far referred to a stimulus the child could see; story-talk is the first whose stimulus is a
+**multi-sentence read-aloud that contains the target word**, because the task is recalling a detail
+from a story ("Who hid the acorn?" — the answer is in the story or the question is unanswerable).
+No new response class (`short_spoken_word`, benched five ports over) and no new answer material.
+
+⭐ **What makes it a real question and not a formality: the port DELETED the click era's mic gate,
+and that gate existed for exactly this.** `StoryTalk.tsx` used to run its microphone only while the
+tutor was fully silent (`!isAIResponding && !isAudioPlaying`), with a docblock calling itself *"a
+deliberate, narrow exception"* to the standing open-mic rule — because a separate Azure capture
+could hear the TUTOR say the answer word through the speakers and credit it to the child. The port
+removes the reason rather than the rule: the judge IS the tutor, judging its own session's audio
+in-band, so it cannot mistake its read-aloud for the learner. **That reasoning is sound and it is
+un-driven.** A machine drive cannot touch it — `--di` sends the student's turn as TEXT, so the
+tutor's audio never competes with a learner utterance at all.
+
+**What to check (~4 min, one session):**
+1. `npm run dev` → a story-talk lesson at K. Tap the mic once, then **say nothing at all** through
+   a whole story. The tutor must read, ask, and then WAIT — it must not affirm, and the answer word
+   it just spoke must not come back as a verdict.
+2. Answer **wrong on purpose** with another thing from the same story (the signature error). It must
+   refuse with `"My turn: <answer>. Your turn. <question>"` and hand it back.
+3. Answer **right**, and confirm the story text + answer emoji appear only THEN (reveal-on-affirm).
+4. On a `feeling_check` story, answer with a **synonym** ("unhappy" for sad). The contract accepts
+   fair variants and echoes the canonical word — confirm it affirms rather than correcting.
+5. Tap 🔁 mid-story: the whole story re-reads and the question comes again, with no extra emphasis
+   on the answer word.
+
+**Machine evidence already in hand** (so this row is only the acoustic half): judge 15/15 wrong
+refused + 15/15 right affirmed ×3 runs on `who_what_where`, both inference modes driven, signature
+drive 5/5 (another *feeling* refused every time), cap drill clean, live probe 15/15 challenges kept.
+**Source report:** `qa/tutor-reports/story-talk-live-di-{plain,signature}-2026-08-14.md` ·
+**queue:** `qa/di/BACKLOG.md` item 16.
+
 > ### `/pm` 2026-08-14 refresh — **NO new rows filed, and that is the point**
 >
 > **One current-era row remains open: #90.** Two 08-14 slices landed (port 13

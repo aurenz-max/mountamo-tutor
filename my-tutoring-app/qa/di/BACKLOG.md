@@ -64,8 +64,135 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
-### 16. 🔝 **TOP PRIORITY (user ruling 2026-08-09) — PORT THE DI MODALITY ONTO THE LITERACY PRIMITIVES. Pilot `phonics-blender` ✅ SHIPPED · port 2 `sound-swap` ✅ SHIPPED · port 3 `word-flip` ✅ SHIPPED · port 4 `cvc-speller` ✅ SHIPPED 2026-08-10 (the gesture anchor now has a production caller) · ✅ THE LOOP IS NOW A GENERALIZED CAPABILITY (2026-08-10, user-directed): `judgedScriptContract` + `useJudgedScriptRunner` extracted from the eight consumers — NO retrofit — and proven cross-subject same day on `counting-board` (math, #86) and `push-pull-arena` (science, #87); port 5 `picture-vocabulary` ✅ SHIPPED **AND USER-DRIVEN SAME DAY 2026-08-11 (#91 STRUCK — the SPOKEN judge refused deliberate errors, first user evidence of the lane's core debt; "an incredibly strong modality from a learning standpoint")** · port 6 `phoneme-explorer` ✅ SHIPPED 2026-08-11 **AND USER-DRIVEN 2026-08-12 (#92 STRUCK — "several sessions in a row… some incorrect, some correct… this passes human check"; the spoken judge is now user-confirmed on TWO runner surfaces) · ✅ `/add-di-loop` SHIPPED 2026-08-12 (user call, the moment its gate cleared): the thin skill wrapper at `.claude/skills/add-di-loop/SKILL.md` — carries the DECISIONS (answer-material fork, script questions, leak gates, close discipline) and points at the runner/contract for the mechanics; L5 ladder re-pointed in CLAUDE.md + PRIMITIVE_LIFECYCLE.md (DI = the strong form, `/add-voice-control` = interim)** · port 7 `letter-sound-link` ✅ SHIPPED 2026-08-11 (the parked portfolio call ANSWERED: 2 directions verbal, `hear-see` taps because `letter_name` is BLOCKED; new continuant content gate; mic row #93) · port 11 `letter-spotter` ✅ SHIPPED 2026-08-13 (**called by a live drive, not the sweep** — the click-era session spoke one item 2-4×, coalesced a hint and a reveal into one turn, ran 16s behind the screen and volunteered a shape riddle per item; **REVISED TWICE BY DRIVE THE SAME DAY — `name-it` is now SPOKEN and `letter_name` is UNBLOCKED (accepted-build-ahead); the tiles are deleted; the `[LSP_TAP]`-read-aloud defect fixed at the TRANSPORT via the bracket hold, which covers all six gesture-bearing packs; the port-8 repetition rule promoted from this file into `/add-di-loop`**; `find-it` re-shaped from select-all-then-Check to one target/one commit; the live probe caught `targetWord` arriving as 400 chars of model deliberation that EVERY semantic gate passed → shape gates both sides; mic row #97) · port 10 `decodable-reader` ✅ SHIPPED 2026-08-12 (**P3 COMPLETE** — its reads split with no new seam; FIRST pack to fork its answer material INSIDE one run: read the line → say a one-word answer → tap a proposition; per-word tap-to-hear deleted as an answer-leak channel; mic row #96) · port 14 `interactive-book` ✅ SHIPPED 2026-08-14 (**Phase 1 of the interim-rung retirement, 1 of 3 — the last `useSpokenWordCapture` in literacy is GONE**; `read-focus-word` spoken oral cloze / `find-feature` taps a POSITION; headless drives green: 15/15 refusals + 15/15 affirms, gesture holds silent 5/5, cap→moveOn verbatim; ⭐ the probe's finding was SUPPLY — 5/6 draws shipped the fallback book until the reject path learned to say why) · the MIC SITTING IS CLOSED (user ruling 2026-08-14 — a port ships on machine gates + live probe + `--di` drive) · next = Phase-1 port `story-talk` (expect a per-mode split: naming goes verbal, `feeling_check`/`why_because` inference keeps the 4-picture answer space), then `word-workout` last (`real_vs_nonsense` stays a TAP — "yes" collides with the affirm sentinel).**
+### 16. 🔝 **TOP PRIORITY (user ruling 2026-08-09) — PORT THE DI MODALITY ONTO THE LITERACY PRIMITIVES. Pilot `phonics-blender` ✅ SHIPPED · port 2 `sound-swap` ✅ SHIPPED · port 3 `word-flip` ✅ SHIPPED · port 4 `cvc-speller` ✅ SHIPPED 2026-08-10 (the gesture anchor now has a production caller) · ✅ THE LOOP IS NOW A GENERALIZED CAPABILITY (2026-08-10, user-directed): `judgedScriptContract` + `useJudgedScriptRunner` extracted from the eight consumers — NO retrofit — and proven cross-subject same day on `counting-board` (math, #86) and `push-pull-arena` (science, #87); port 5 `picture-vocabulary` ✅ SHIPPED **AND USER-DRIVEN SAME DAY 2026-08-11 (#91 STRUCK — the SPOKEN judge refused deliberate errors, first user evidence of the lane's core debt; "an incredibly strong modality from a learning standpoint")** · port 6 `phoneme-explorer` ✅ SHIPPED 2026-08-11 **AND USER-DRIVEN 2026-08-12 (#92 STRUCK — "several sessions in a row… some incorrect, some correct… this passes human check"; the spoken judge is now user-confirmed on TWO runner surfaces) · ✅ `/add-di-loop` SHIPPED 2026-08-12 (user call, the moment its gate cleared): the thin skill wrapper at `.claude/skills/add-di-loop/SKILL.md` — carries the DECISIONS (answer-material fork, script questions, leak gates, close discipline) and points at the runner/contract for the mechanics; L5 ladder re-pointed in CLAUDE.md + PRIMITIVE_LIFECYCLE.md (DI = the strong form, `/add-voice-control` = interim)** · port 7 `letter-sound-link` ✅ SHIPPED 2026-08-11 (the parked portfolio call ANSWERED: 2 directions verbal, `hear-see` taps because `letter_name` is BLOCKED; new continuant content gate; mic row #93) · port 11 `letter-spotter` ✅ SHIPPED 2026-08-13 (**called by a live drive, not the sweep** — the click-era session spoke one item 2-4×, coalesced a hint and a reveal into one turn, ran 16s behind the screen and volunteered a shape riddle per item; **REVISED TWICE BY DRIVE THE SAME DAY — `name-it` is now SPOKEN and `letter_name` is UNBLOCKED (accepted-build-ahead); the tiles are deleted; the `[LSP_TAP]`-read-aloud defect fixed at the TRANSPORT via the bracket hold, which covers all six gesture-bearing packs; the port-8 repetition rule promoted from this file into `/add-di-loop`**; `find-it` re-shaped from select-all-then-Check to one target/one commit; the live probe caught `targetWord` arriving as 400 chars of model deliberation that EVERY semantic gate passed → shape gates both sides; mic row #97) · port 10 `decodable-reader` ✅ SHIPPED 2026-08-12 (**P3 COMPLETE** — its reads split with no new seam; FIRST pack to fork its answer material INSIDE one run: read the line → say a one-word answer → tap a proposition; per-word tap-to-hear deleted as an answer-leak channel; mic row #96) · port 14 `interactive-book` ✅ SHIPPED 2026-08-14 (**Phase 1 of the interim-rung retirement, 1 of 3 — the last `useSpokenWordCapture` in literacy is GONE**; `read-focus-word` spoken oral cloze / `find-feature` taps a POSITION; headless drives green: 15/15 refusals + 15/15 affirms, gesture holds silent 5/5, cap→moveOn verbatim; ⭐ the probe's finding was SUPPLY — 5/6 draws shipped the fallback book until the reject path learned to say why) · the MIC SITTING IS CLOSED (user ruling 2026-08-14 — a port ships on machine gates + live probe + `--di` drive) · port 15 `story-talk` ✅ SHIPPED 2026-08-14 (**Phase 1, 2 of 3 — and the per-mode split this item predicted DID NOT EXIST**: every mode's answer is ONE WORD, so all three went verbal and the 4-picture menu is deleted; the prediction was made from the mode NAMES and the answer material was one file away. It also deleted the family's LAST tutor-busy mic gate, and its drive found a HARNESS defect — the leak oracle had no concept of a stimulus that legitimately contains the answer, now `leakExemptSpan`; mic row #100, filed for the new stimulus mechanism) · **next = Phase-1's last port `word-workout` (`real_vs_nonsense` was expected to stay a TAP because "yes" collides with the affirm sentinel — ⚠️ RE-CHECK THAT AGAINST THE GENERATOR BEFORE SCOPING, exactly as story-talk's prediction failed: `yes_no` is now an accepted-build-ahead class whose notes say the child's "yes" is NOT a sentinel hazard, because the verdict scan reads the TUTOR's output only).**
 
+> ### ✅ 2026-08-14 — PORT 15 `story-talk` SHIPPED (Phase 1, 2 of 3). The fork has NO SPLIT, and that is the finding.
+>
+> **THE QUEUE PREDICTED A SPLIT AND THE GENERATOR REFUTED IT.** This item said to *"expect a
+> per-mode split: naming goes verbal, `feeling_check`/`why_because` inference keeps the
+> 4-picture answer space"*. Reading `gemini-story-talk.ts` ends the fork before the class table
+> is consulted: **every mode's `answer` field is ONE WORD** — a picturable noun
+> (`who_what_where`), one common feeling word (`feeling_check`), the cause as a picturable noun
+> (`why_because`). A single word is sayable, so all three are **VOICE / `short_spoken_word`**
+> (benched, sixth port) and **the four-picture menu is DELETED**. Nothing here is
+> proposition-shaped, so `closed_set_choice` — the class that keeps a menu when free production
+> would be open-set — never applies. The table picture settles it: a teacher reading a story to
+> one five-year-old and asking *"Who hid the acorn?"* has no cards on the table.
+> ⭐ **The general lesson: the prediction was made from the mode NAMES ("inference sounds like it
+> needs an answer space"), and the answer material was one file away.** Step 1 is a question
+> about the generator's fields, not about how hard the skill sounds. Pinned both directions in
+> the suite so the prediction cannot be cited to re-add tiles.
+>
+> **⭐ IT ALSO DELETED THE FAMILY'S LAST TUTOR-BUSY MIC GATE — a standing-doctrine violation that
+> was CORRECT for the architecture it sat in.** `StoryTalk.tsx` ran its mic only while the tutor
+> was silent (`!isAIResponding && !isAudioPlaying`), self-documented as *"a deliberate, narrow
+> exception"*: a separate Azure capture could hear the TUTOR read the answer word out of the
+> story and credit it to the child. The judged loop removes the REASON rather than the rule —
+> the judge is the tutor, judging its own session audio in-band. **The doctrine now has no
+> tutor-busy exception anywhere in the family.** Its acoustic half is the one thing a machine
+> cannot drive, so it is the whole of mic row **#100** (and the only row this port files).
+>
+> **THE LEAK RULE IS MODE-SHAPED, and writing it flat would have broken the primitive.** For
+> `who_what_where`/`why_because` **the answer word is inside the stimulus by construction** — the
+> generator requires it in the story, and recalling it from a read-aloud is the task. A contract
+> saying "never say the answer" contradicts "read this story exactly", and a model resolving that
+> contradiction EDITS THE STORY. So the contract states the narrow thing (never single it out,
+> say it alone, point at the part holding it, or answer for them) and `feeling_check` — where the
+> feeling is absent from the story — keeps the flat rule.
+>
+> **⭐ THE BUILD GATE THIS PRIMITIVE EXISTS TO NEED: the dialogue sentinel.** story-talk is the
+> only judged surface whose read-aloud is CHARACTER DIALOGUE, which makes it the one most likely
+> to hand the engine a phantom verdict — a story sentence opening *"Yes, I found it!"* is
+> ordinary children's writing, read verbatim, and the sentence-scoped scan classifies an
+> affirmation nobody made. `opensWithSentinel` now runs over every generated string that reaches
+> a spoken line, on BOTH sides of the wire (the generator imports the gates from the script —
+> decodable-reader precedent). Revert-bitten. Dialogue also arrives in DOUBLE QUOTES, which would
+> close the `Say exactly: "…"` span; dropping every story with speech in it would drop most of
+> them, so `speechSafe` folds `"` → `'` — a punctuation fold with no spoken realization, one
+> normalized string for both cue and stage, and everything that WOULD change the performance
+> (underscores, bracket tags) still drops.
+>
+> **⭐ WRITING THE SPOKEN ASK AUDITED THE CONTENT, and found a pedagogy defect that predates the
+> port: `feeling_check` never checked that the feeling was ABSENT from the story.** The generator
+> enforced the positive (`who_what_where`/`why_because` answers must appear) and nothing enforced
+> the inverse, so a story literally saying *"Tomas felt sad"* shipped as emotion INFERENCE while
+> the child only had to repeat what they heard. Gated both sides now. The port did not create
+> this; asking the tutor to promise *"the story will not say how they felt"* is what exposed it.
+>
+> **Files:** `literacy/storyTalkScript.ts` (NEW — pack, build gates, harness answers,
+> `storyTalkPackBase`) · `literacy/StoryTalk.tsx` (whole-file rewrite) ·
+> `service/literacy/gemini-story-talk.ts` (imports the gates; feeling_check inverse gate; prompt
+> rewritten for a spoken answer + single-quote dialogue + the sentinel ban) ·
+> `catalog/literacy.ts` (DI frame, `audioInput`, contextKeys `['challengeType','stimulus']`) ·
+> `service/qa/di/diDrivePlan.ts` (adapter + the `leakExemptSpan` contract below) ·
+> `backend/tests/tutor_live/run_tutor_live.py` (the harness half of it) ·
+> `__tests__/StoryTalk.di-script.test.ts` (NEW, 35 tests incl. the real-session-shape pack).
+> **Deleted:** the 4-emoji option grid and its shuffle, `storyTalkVoiceReady` + `useVoiceChoice`,
+> the tutor-busy mic gate, `MAX_WRONG_TAPS` and the 3-taps reveal ladder, the Next/Finish button,
+> the start-screen fork, the shake animation, the feedback card that printed the answer, and all
+> seven improvised sends (`[ACTIVITY_START]`, `[NEXT_ITEM]`, `[READ_AGAIN]`, `[ANSWER_CORRECT]`,
+> `[ANSWER_INCORRECT]`, `[ANSWER_REVEALED]`, `[ALL_COMPLETE]`). No contract file exists for
+> story-talk, so no `--check` gate ran. **βs RAISED ×3** (2.0→2.5, 3.0→3.5, 4.0→4.5): a 1-of-4
+> tap became unaided production, which is the structural case the family's β rule names —
+> letter-spotter `name_it`'s conversion, same step.
+>
+> **⭐ THE DRIVE FOUND A HARNESS DEFECT, NOT A PACK DEFECT — and the fix is a generalization.**
+> The first plain drive returned **5 CONFIRMED HIGH `di-answer-leak-in-ask`, 3/3 runs**: the ask
+> contains the answer. It does, by design — and the oracle had no concept of a stimulus that
+> legitimately holds the answer, because for fourteen ports *"the ask must not contain the
+> answer"* and *"the tutor must not give it away"* were the same rule. Here they come apart. Added
+> **`leakExemptSpan`** to `DiHarnessAnswers`: a span the scan subtracts before looking. **That
+> keeps the oracle STRONGER than emptying `leakTokens` would** — the greeting, how-to-play,
+> question and hand-over stay governed, and `feeling_check` declares no span at all, so it kept
+> the flat rule and stayed armed (and found nothing). ⚠️ **The cap drill then caught the SECOND
+> half I had missed: the move-on cue CARRIES the next item's ask**, stimulus and all, so it
+> inherits the NEXT item's exempt span — wiring only the plain `ask` beat left a real HIGH
+> standing. Fixed, re-driven clean. *A tripwire that fires on a new-but-correct shape is the
+> instrument asking a question, not a verdict — but scope it, never silence it.*
+>
+> **Gates:** `typecheck:lumina` **0** · full `tsc` **803 = exact baseline, 0 in touched files** ·
+> census greps **0 + 0** · own suite **35/35** (sentinel gate revert-bitten: removing
+> `opensWithSentinel(story)` fails exactly one test) · harness units **7/7** · full vitest
+> **3237 passed / 4 skipped / 0 failed** (222 files; the 1 error is the known
+> solar-system-explorer confetti teardown, already filed) · **live 3-probe pipeline run, deleted
+> after** — one per mode — **15/15 challenges kept, ZERO build-gate drops**, `checkPackGates`
+> clean on live content. Drawn values:
+> > `who_what_where(stone, flower, carrot, star, acorn)` · `feeling_check(excited, tired, scared,
+> > sad, surprised)` · `why_because(honey, acorn, water, branch, sun)`. Story lengths 133–199
+> > chars. **The title leak-gate fired in production:** `why_because` item 1's title named its own
+> > answer ("honey") and `displayTitle` was suppressed — the story kept, the caption dropped.
+> · **Headless judged drives** (`qa/tutor-reports/story-talk-live-di-{plain,signature}-2026-08-14.md`):
+> `who_what_where` ×3 runs **15/15 wrong refused, 15/15 right affirmed, ZERO findings** ·
+> `feeling_check` ×3 and `why_because` ×3 both judged clean · **signature drive 5/5 — a different
+> FEELING, said confidently, refused every time**, which is the exact discrimination
+> `wrongClauseFor` claims · **cap drill clean: 3/3 byte-identical corrections**, verdicts flow,
+> move-on fires and names the answer.
+>
+> **The 18d fix is AUTHORED IN, not inherited.** The catalog ladder offers no quoted line (every
+> level commands the scripted correction) and the judging contract says the same line goes on
+> every wrong answer *"because a line that is neither an affirmation nor that correction reaches
+> the activity as no verdict at all"*. The cap drill confirms it held: the model repeated the
+> correction verbatim 3/3 instead of reaching for a hint. **Residual WARNs are inherited by
+> construction, not new:** `di-correction-verbatim-repeat` ×2 and
+> `di-capped-item-asks-then-withdraws` are **18c(c)** and **18c(b)** — and note the irony worth
+> keeping, that 18c(c) now flags the exact behaviour 18d's fix REQUIRES; the real fix is the
+> runner knowing the final attempt, not per-port wording. One `di-verdict-embellished` WARN in
+> 1/3 feeling_check runs = **19h-i-c** (affirm-tail praise).
+>
+> **⭐ A CHEAP CORROBORATION FOR ITEM 20, found by accident.** One `why_because` run logged
+> `di-off-script-ask` — *"only 7% of the scripted ask survived"*, transcript `"Listen. Deer"* —
+> but that beat carried **785KB of audio against ~107KB for a genuinely short line** and the item
+> still judged correctly both ways. She spoke the whole story; the TRANSCRIPT dropped it. **Audio
+> byte volume vs transcript length is a free discriminator between "the tutor went off script"
+> and "the transcript lied about it"**, and item 20 exists because our evidence is built from the
+> transcript. Worth wiring into the report as a real check.
+>
+> **RESIDUAL (filed, not fixed):** the exempt-span subtraction is an exact normalized substring
+> match, so a tutor who PARAPHRASES the story falls back to scanning the whole line and can
+> false-positive. That is the correct failure direction for a leak oracle and it never goes
+> quiet, but it means a paraphrase shows up as a leak rather than as a paraphrase —
+> `di-off-script-ask` is the check that should own that case.
+>
 > ### ✅ 2026-08-14 — PORT 14 `interactive-book` SHIPPED (Phase 1 of the interim-rung retirement: the last push-to-talk in literacy is gone)
 >
 > **THE FORK (the table picture; no new response classes):** `read-focus-word` → VOICE
