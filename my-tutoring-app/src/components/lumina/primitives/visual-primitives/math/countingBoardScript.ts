@@ -47,7 +47,11 @@
  * opens a sentence with either.
  */
 
-import type { JudgedScriptItem, ResponseClassId } from '../../../hooks/judgedScriptContract';
+import type {
+  JudgedCueSurface,
+  JudgedScriptItem,
+  ResponseClassId,
+} from '../../../hooks/judgedScriptContract';
 
 export type CountingItemKind =
   | 'count_all'
@@ -102,6 +106,35 @@ export const countWalk = (n: number): string => {
 
 const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
+/**
+ * The object word in the SINGULAR, for the one line that counts one at a time
+ * ("Touch each bear one time as you count").
+ *
+ * The board's vocabulary is plural everywhere else, and this line read "Touch
+ * each butterflies one time" to a five-year-old until the first `--di` plan
+ * printed it (19h-i-b, port 1). The generator's object list is closed and
+ * short, so the map is exact rather than a stemmer; anything outside it falls
+ * back to the plural, which is the wording that shipped.
+ */
+const SINGULAR: Record<string, string> = {
+  bears: 'bear',
+  apples: 'apple',
+  stars: 'star',
+  blocks: 'block',
+  fish: 'fish',
+  butterflies: 'butterfly',
+  objects: 'object',
+};
+
+export const objectSingularFor = (objectWord: string): string =>
+  SINGULAR[objectWord] ?? objectWord;
+
+/** "five bears" / "one bear" — the noun as the VERDICT lines say it. A board
+ *  of one is reachable on every counted mode, and "Yes, one bears." is the
+ *  same defect as the how-to-play's, one turn later. */
+export const countedNoun = (n: number, objectWord: string): string =>
+  `${numberWordFor(n)} ${n === 1 ? objectSingularFor(objectWord) : objectWord}`;
+
 // ── How-to-play — spoken on the opener AND whenever the ACTION changes ──────
 // (cvc-speller rule: a blended session interleaves counting, quick-look and
 // hand-matching, so "what to do" is not a static protocol a reader can look
@@ -114,12 +147,15 @@ export const howToPlayFor = (item: CountingItem): string => {
       return 'Look fast — then say how many you saw! ';
     case 'subitize_perceptual':
       return `Look at the ${item.objectWord} — then tap the hand that shows that many fingers. `;
+    case 'count_all':
+    case 'group_count':
+      return `Touch each ${objectSingularFor(item.objectWord)} one time as you count. Then say how many! `;
     case 'count_on':
       return 'Some are already counted for you. Keep counting from there, then say how many altogether. ';
     case 'compare':
       return 'Look at both groups and find the one with more. ';
     default:
-      return `Touch each ${item.objectWord} one time as you count. Then say how many! `;
+      return `Touch each ${objectSingularFor(item.objectWord)} one time as you count. Then say how many! `;
   }
 };
 
@@ -153,17 +189,40 @@ const correctionFor = (item: CountingItem): string => {
     case 'subitize':
       return `My turn: it was ${word}. Watch for the flash. Your turn is next time — keep those eyes quick!`;
     case 'count_on':
-      return `My turn: start at ${numberWordFor(item.startFrom ?? 0)} and count on — ${cap(word)} ${item.objectWord} altogether. Your turn. How many ${item.objectWord} altogether?`;
+      return `My turn: start at ${numberWordFor(item.startFrom ?? 0)} and count on — ${cap(countedNoun(item.target, item.objectWord))} altogether. Your turn. How many ${item.objectWord} altogether?`;
     case 'compare':
       return `My turn: the bigger group has ${word}. Your turn. How many in the group with more?`;
     default:
       return item.target <= 10
-        ? `My turn: watch me count. ${countWalk(item.target)}. ${cap(word)} ${item.objectWord}. Your turn. How many ${item.objectWord}?`
-        : `My turn: there are ${word} ${item.objectWord} — count each one just once and say the last number. Your turn. How many ${item.objectWord}?`;
+        ? `My turn: watch me count. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))}. Your turn. How many ${item.objectWord}?`
+        : `My turn: there are ${countedNoun(item.target, item.objectWord)} — count each one just once and say the last number. Your turn. How many ${item.objectWord}?`;
   }
 };
 
 // ── Judging contracts ───────────────────────────────────────────────────────
+
+/**
+ * THE TWO-BRANCH LAW (consumed from word-workout, port 16 — not re-derived).
+ *
+ * A judged turn has exactly two outcomes and both are quoted below. Anything
+ * else the tutor says in reply to an attempt opens with neither sentinel, so
+ * the reducer records NO VERDICT and the correction counter freezes — the run
+ * stalls with the child still waiting.
+ *
+ * counting-board's cap drill (2026-08-15, the 19h-i-b port drive) is the
+ * second production sighting and it named a NEW source: the model escalated
+ * through the CATALOG's `scaffoldingLevels` on corrections 2 and 3, speaking
+ * "Touch each one just one time as you count." and "Point at the first one.
+ * Count with your finger. Then tell me how many." — both catalog lines
+ * verbatim, both sentinel-less, both `di-no-verdict`. The scaffolding CONTENT
+ * is good pedagogy; a third reply channel is what breaks. So the law is stated
+ * here BEFORE the branches, and the catalog now routes that same content
+ * through the correction, which already opens "My turn:".
+ */
+const TWO_BRANCH_LAW =
+  `Your whole reply to their attempt is ONE of the quoted lines below and nothing else — not the first time, not any time: `
+  + `no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. `
+  + `A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. `;
 
 const judgingContract = (item: CountingItem): string => {
   const word = numberWordFor(item.target);
@@ -176,8 +235,9 @@ const judgingContract = (item: CountingItem): string => {
     `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. `
     + `The correct answer is "${word}". Counting aloud that ENDS on "${word}" counts as that answer — the last number said tells the total. `
     + `A final number other than "${word}" is wrong. ${wrongAnswers}`
-    + `If the answer is right, say exactly: "Yes, ${word} ${item.objectWord}." `
-    + `If it is wrong, say exactly: "${correctionFor(item)}"`
+    + TWO_BRANCH_LAW
+    + `If the answer is right, say exactly: "Yes, ${countedNoun(item.target, item.objectWord)}." `
+    + `If it is wrong, say exactly: "${correctionFor(item)}" — the same line on every wrong answer for this item, never swapped for a different wording.`
   );
 };
 
@@ -245,3 +305,253 @@ export const moveOnCue = (
 
 export const completeCue = (): string =>
   `[COUNT_COMPLETE] Say exactly: "What great counting today! Your eyes and your ears did hard work. See you next time!" Then stop — the activity is over.`;
+
+// ── Items — ONE builder for the component and the DI harness ────────────────
+
+/** The generator fields an item is built from. Structural subset of
+ *  `CountingBoardChallenge` so the script module owes the component no import. */
+export interface CountingChallengeLike {
+  id: string;
+  type: CountingItemKind;
+  targetAnswer: number;
+  count: number;
+  startFrom?: number | null;
+  groupSize?: number | null;
+}
+
+/** Task identity for the how-to-play re-speak policy. Counting, quick-look,
+ *  counting-on, comparing and hand-matching are five different things to DO,
+ *  so a session that interleaves them re-speaks the protocol on each change. */
+export const ACTION_FOR_KIND: Record<CountingItemKind, string> = {
+  count_all: 'count',
+  group_count: 'count',
+  compare: 'compare',
+  count_on: 'count-on',
+  subitize: 'look',
+  subitize_perceptual: 'hands',
+};
+
+/** The plural object word as SPOKEN. `custom` has no sayable name, so it
+ *  becomes "objects" — the one place the board's emoji vocabulary meets the
+ *  tutor's mouth, and both sides of the wire must agree on it. */
+export const objectWordFor = (objectType: string): string =>
+  objectType === 'custom' ? 'objects' : objectType;
+
+/**
+ * One challenge → one judged item, or null when the item cannot be ASKED.
+ *
+ * The family's build gates exist because an unaskable item is worse than a
+ * missing one: it is spoken to a five-year-old anyway. Two ways a counting
+ * challenge arrives unaskable, both reachable from the live generator:
+ *
+ *  - `target < 1` — the ask would end on "zero", and "zero"/"none" as a SPOKEN
+ *    answer is unbenched (di-shapes rung 2 residual; this module's own
+ *    `numberWordFor` docblock says so). The generator floors counts, but the
+ *    floor runs on `count`, and `compare` sets `targetAnswer` separately.
+ *  - `count_on` without a usable `startFrom` — the ask reads the value aloud
+ *    ("This group already has {startFrom}"), so a missing one says "already has
+ *    zero" and one at or above the total asks the child to count on from the
+ *    answer. Nothing validates `startFrom` on the generator side (it is prompt-
+ *    instructed only), and the component's `?? 0` fallback made the broken
+ *    value speakable rather than droppable.
+ *
+ * A dropped item is never backfilled — a high drop rate is a generator finding,
+ * which is exactly what `droppedChallenges` reports on a `--di` drive.
+ */
+export const itemFromChallenge = (
+  ch: CountingChallengeLike,
+  opts: { objectWord: string },
+): CountingItem | null => {
+  const target = ch.targetAnswer;
+  if (!Number.isFinite(target) || target < 1) return null;
+
+  const startFrom = ch.startFrom ?? undefined;
+  if (ch.type === 'count_on' && (startFrom === undefined || startFrom < 1 || startFrom >= target)) {
+    return null;
+  }
+
+  return {
+    id: ch.id,
+    kind: ch.type,
+    answerKind: ch.type === 'subitize_perceptual' ? 'gesture' : 'voice',
+    responseClass: responseClassFor({ kind: ch.type, target }),
+    action: ACTION_FOR_KIND[ch.type],
+    objectWord: opts.objectWord,
+    count: ch.count,
+    target,
+    startFrom,
+    groupSize: ch.groupSize ?? undefined,
+  };
+};
+
+export const itemsFromChallenges = (
+  challenges: CountingChallengeLike[],
+  opts: { objectWord: string },
+): CountingItem[] =>
+  challenges
+    .map((ch) => itemFromChallenge(ch, opts))
+    .filter((item): item is CountingItem => item !== null);
+
+// ── The context channel — STIMULUS-SIDE ONLY ────────────────────────────────
+
+/**
+ * What is on the board right now, ANSWER-FREE BY CONSTRUCTION (di-math-facts
+ * rule; ten-frame's `stimulusFor` is the precedent).
+ *
+ * This replaced a `targetCount` key that pushed `item.target` — the graded
+ * spoken answer — into the state block on every item. It was redundant (the
+ * per-turn judging contract inside the cue already names the answer, scoped to
+ * the turn that needs it) and it was the exact text 19h-i-a caught the model
+ * NARRATING to a child, target answer first. On `subitize_perceptual` it also
+ * contradicted the item's own contract, which forbids the tutor any number word
+ * at all, in the same assembled prompt.
+ *
+ * So nothing here names a quantity the child is about to say. `count_on`'s
+ * `startFrom` and `group_count`'s `groupSize` are the two numbers that survive,
+ * and both are legitimately public: the ask speaks the first aloud, and the
+ * second describes the board's structure, never its total.
+ */
+export const stimulusFor = (item: CountingItem): string => {
+  switch (item.kind) {
+    case 'subitize':
+      return `a quick flash of ${item.objectWord} on the board`;
+    case 'subitize_perceptual':
+      return `a small group of ${item.objectWord}, and finger-count hands to match`;
+    case 'count_on':
+      return `${numberWordFor(item.startFrom ?? 0)} ${item.objectWord} already counted, and more to count on from`;
+    case 'group_count':
+      return item.groupSize
+        ? `equal groups of ${numberWordFor(item.groupSize)} ${item.objectWord}`
+        : `equal groups of ${item.objectWord}`;
+    case 'compare':
+      return `two groups of ${item.objectWord} side by side, one bigger than the other`;
+    default:
+      return `a group of ${item.objectWord} to touch and count`;
+  }
+};
+
+// ── The cue surface — one source for the component and the DI harness ───────
+
+/**
+ * Everything counting-board ever sends the tutor. `CountingBoard.tsx` spreads
+ * this and adds what only a mounted component can own (status lines, and the
+ * `diagnosisObservation` that reads the live board); the drive-plan endpoint
+ * builds the identical cues for the headless judged-loop harness.
+ *
+ * The split exists so the harness cannot drift from production — a Python
+ * journey mirroring these cues by hand would be a second source of truth for
+ * the wording the pedagogy lives in.
+ */
+export const countingBoardPackBase = (
+  items: CountingItem[],
+): JudgedCueSurface<CountingItem> => ({
+  primitiveType: 'counting-board',
+  activityLine: 'live direct instruction counting practice',
+  items,
+  itemCue,
+  moveOnCue,
+  completeCue,
+  contextFor: (item) => ({
+    challengeType: item.kind,
+    objectType: item.objectWord,
+    stimulus: stimulusFor(item),
+  }),
+});
+
+// ── Harness answer material — what a right and a wrong child sound like ─────
+
+/** Numbers the ask STATES aloud, so hearing one back is not a leak. Only
+ *  `count_on` speaks one ("This group already has five"), and its answer is
+ *  strictly greater by construction — so the exemption can never empty the
+ *  leak scan on this pack. */
+const publicValuesFor = (item: CountingItem): number[] =>
+  item.kind === 'count_on' ? [item.startFrom ?? 0] : [];
+
+export interface CountingHarnessAnswers {
+  /** What a correct child says (or taps). */
+  correct: string;
+  /** Unambiguously wrong — the baseline refusal test. */
+  plainWrong: string;
+  /**
+   * The FLUENT miss this item's judging contract explicitly refuses. Testing it
+   * tests the discrimination clause rather than mere arithmetic: a judge that
+   * only catches "four for five" can still affirm a confident counted walk that
+   * ends one past the answer.
+   */
+  signatureWrong?: { text: string; why: string };
+  /** Gesture items commit a FINGER COUNT, not a word — code computes the match. */
+  placed?: { correct: number; wrong: number };
+  /** Answer tokens that must NOT appear in the spoken ask. */
+  leakTokens: string[];
+}
+
+/**
+ * The answers a headless student says on a judged drive. This lives beside the
+ * contract it mirrors on purpose: `judgingContract` above CLAIMS the judge
+ * refuses these, and this is the claim made testable. Change one, change both.
+ *
+ * THE WALK IS THE INTERESTING ONE HERE. This pack's contract says a count said
+ * aloud that ENDS on the target counts as that answer (cardinality: the last
+ * number said tells the total), so the signature wrong for every counted mode
+ * is a walk that ends one PAST it — fluent, confident, and containing the right
+ * number word without landing on it. A judge that string-matches the target
+ * inside the utterance affirms it; the clause says it must not.
+ */
+export const countingBoardHarnessAnswers = (item: CountingItem): CountingHarnessAnswers => {
+  const answerWord = numberWordFor(item.target);
+  const wrongValue = item.target > 1 ? item.target - 1 : item.target + 1;
+  const leakTokens = publicValuesFor(item).includes(item.target) ? [] : [answerWord];
+
+  const base: CountingHarnessAnswers = {
+    correct: answerWord,
+    plainWrong: numberWordFor(wrongValue),
+    leakTokens,
+  };
+
+  switch (item.kind) {
+    case 'subitize_perceptual': {
+      // Three hands are offered ({1,2,3}, shuffled); the count is clamped to
+      // that range, so a wrong hand always exists inside the offered set.
+      const wrongHand = item.target === 1 ? 2 : item.target - 1;
+      return {
+        ...base,
+        correct: `tapped the hand showing ${item.target} fingers`,
+        plainWrong: `tapped the hand showing ${wrongHand} fingers`,
+        placed: { correct: item.target, wrong: wrongHand },
+        // The leak oracle stays scoped to the ANSWER word, matching the family.
+        // This item's contract is broader — no number word or digit at any
+        // point — but that is a different finding than "the ask gave the answer
+        // away", and folding it in here would mislabel it as an answer leak.
+        // The broader clause rides `di-off-script-ask` and the transcript.
+        leakTokens,
+      };
+    }
+    case 'count_on':
+      return {
+        ...base,
+        signatureWrong: {
+          text: numberWordFor(item.startFrom ?? 0),
+          why: 'the starting number said back — the contract names it as NOT the answer',
+        },
+      };
+    case 'compare': {
+      const smaller = Math.max(1, item.count - item.target);
+      return {
+        ...base,
+        plainWrong: numberWordFor(item.count),
+        signatureWrong: {
+          text: numberWordFor(smaller),
+          why: "the SMALLER group's count — fluent, confident, and the contract's named miss",
+        },
+      };
+    }
+    default:
+      return {
+        ...base,
+        signatureWrong: {
+          text: countWalk(item.target + 1),
+          why: 'a counted walk that ends one PAST the target — it contains the answer word but does not land on it',
+        },
+      };
+  }
+};

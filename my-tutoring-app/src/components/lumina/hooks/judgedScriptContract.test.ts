@@ -259,6 +259,29 @@ describe('findRepeatedConsecutiveAsks', () => {
     expect(findRepeatedConsecutiveAsks(invariantPack('Your turn. Read it.'))).toEqual([]);
   });
 
+  it('measures the ASK only — the verdict lines a cue carries are a LATER turn', () => {
+    // Every shipped pack scripts its affirm/correction inside itemCue, so the
+    // joined spans run ~20 words past the ask. Measuring the join made the
+    // 12-word limit behave like a 4-word one for real packs — counting-board's
+    // 8-word count_all ask measured 28 (19h-i-b, port 1).
+    const withVerdicts = (spoken: string) => makePack(
+      {
+        itemCue: () => `[TEST_ITEM] Say exactly: "${spoken}" `
+          + `If the answer is right, say exactly: "Yes, five bears." `
+          + `If it is wrong, say exactly: "My turn: watch me count. One, two, three, four, five. Five bears. Your turn. How many bears?"`,
+      },
+      [
+        { id: 'a', action: 'ask', answerKind: 'voice', responseClass: 'short_spoken_word', word: 'cat' },
+        { id: 'b', action: 'ask', answerKind: 'voice', responseClass: 'short_spoken_word', word: 'dog' },
+      ],
+    );
+    expect(findRepeatedConsecutiveAsks(withVerdicts('Count the bears. Your turn. How many bears?'))).toEqual([]);
+    // The long ask is still caught, verdict lines or not.
+    expect(findRepeatedConsecutiveAsks(withVerdicts(
+      'Look at the big letter. Your turn. Tap the little letter that is the same letter.',
+    ))).toHaveLength(1);
+  });
+
   it('never compares across a change of action, or an item with itself', () => {
     const pack = invariantPack('Words rhyme when they end the same way. Listen and tell me.');
     expect(findRepeatedConsecutiveAsks({

@@ -393,10 +393,32 @@ export const generateCountingBoard = async (ctx: GenerationContext): Promise<Cou
   const randomArrangement = arrangements[Math.floor(Math.random() * arrangements.length)];
   const objectTypes = ['bears', 'apples', 'stars', 'blocks', 'fish', 'butterflies'];
   const randomObject = objectTypes[Math.floor(Math.random() * objectTypes.length)];
-  // Randomize count-on parameters: startFrom 3-7, total 2-5 more than startFrom
-  const countOnStart = 3 + Math.floor(Math.random() * 5);       // 3-7
-  const countOnExtra = 2 + Math.floor(Math.random() * 4);       // 2-5
-  const countOnTotal = countOnStart + countOnExtra;              // 5-12
+  // Count-on parameters, ONE PAIR PER CHALLENGE.
+  //
+  // This used to pin a single `startFrom`/`count` for the whole session, which
+  // made every count_on challenge THE SAME PROBLEM — against the standing "N
+  // challenges = N problems" ruling, and against this prompt's own line four
+  // paragraphs down ("Each challenge gets its OWN count and arrangement"). The
+  // DI port is what made it visible: the scripted ask speaks `startFrom` aloud
+  // ("This group already has five. Count on. Your turn. How many bears
+  // altogether?"), so one pinned pair meant the child heard a byte-identical
+  // 13-word ask on every item of the run — the recitation defect
+  // `findRepeatedConsecutiveAsks` exists to catch, third sighting.
+  //
+  // Distinct starts are drawn without replacement so consecutive items differ
+  // in the number the tutor SAYS, not only in the total.
+  const countOnStarts = [3, 4, 5, 6, 7]
+    .map((n) => ({ n, k: Math.random() }))
+    .sort((a, b) => a.k - b.k)
+    .map(({ n }) => n);
+  const countOnPairs = Array.from({ length: targetCount }, (_, i) => {
+    const startFrom = countOnStarts[i % countOnStarts.length];
+    const extra = 2 + Math.floor(Math.random() * 4);            // 2-5
+    return { startFrom, total: startFrom + extra, extra };
+  });
+  const countOnLines = countOnPairs
+    .map((p, i) => `  - Challenge ${i + 1}: startFrom=${p.startFrom}, count=${p.total} (counts on ${p.extra} more)`)
+    .join('\n');
 
   const intentLine = config?.intent ? `\n- Lesson intent: "${config.intent}"` : '';
 
@@ -432,7 +454,8 @@ GUIDELINES FOR GRADE LEVELS:
 ` : ''}
 
 COUNT-ON PARAMETERS (if generating count_on challenges):
-- For this session use startFrom=${countOnStart} and count=${countOnTotal} (so the student counts on ${countOnExtra} more).
+- Use a DIFFERENT startFrom for each challenge, exactly as listed — the tutor says the starting number out loud, so a repeated pair asks the child the same question twice:
+${countOnLines}
 
 GROUP-COUNT GUIDELINES (if generating group_count challenges):
 - Set arrangement to 'groups' and provide groupSize (2, 3, 4, or 5)
@@ -513,10 +536,26 @@ Return the complete counting board configuration.
 
   // ── Per-challenge validation ──
 
+  // count_on is the one mode whose parameters CODE owns end to end, because
+  // the tutor speaks `startFrom` aloud and the script module DROPS an item
+  // whose startFrom is missing or at/above the total (an unaskable item is
+  // never backfilled, so a non-compliant draw silently shortens the run).
+  // Assigning the pairs here rather than trusting the prompt is the standing
+  // "code builds the structure, the LLM fills the window" rule; the prompt
+  // above still states them so the model's counts and narration agree.
+  let countOnIndex = 0;
+
   for (const challenge of data.challenges) {
     // Validate arrangement
     if (!validArrangements.includes(challenge.arrangement)) {
       challenge.arrangement = 'scattered';
+    }
+
+    if (challenge.type === 'count_on') {
+      const pair = countOnPairs[countOnIndex % countOnPairs.length];
+      countOnIndex += 1;
+      challenge.startFrom = pair.startFrom;
+      challenge.count = pair.total;
     }
 
     // group_count: force 2-3 groups of 2-5 objects for reasonable layout

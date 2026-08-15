@@ -70,14 +70,12 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
-  completeCue,
+  countingBoardPackBase,
   handVerdictCue,
-  itemCue,
-  moveOnCue,
+  itemsFromChallenges,
   numberWordFor,
-  responseClassFor,
+  objectWordFor,
   type CountingItem,
-  type CountingItemKind,
 } from './countingBoardScript';
 import HandIcon from './HandIcon';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -323,15 +321,6 @@ interface CountingBoardProps {
   className?: string;
 }
 
-const ACTION_FOR_KIND: Record<CountingItemKind, string> = {
-  count_all: 'count',
-  group_count: 'count',
-  compare: 'compare',
-  count_on: 'count-on',
-  subitize: 'look',
-  subitize_perceptual: 'hands',
-};
-
 // ============================================================================
 // Component
 // ============================================================================
@@ -360,7 +349,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   } = showOptions;
 
   const emoji = OBJECT_EMOJI[objects.type] || OBJECT_EMOJI.custom;
-  const objectWord = objects.type === 'custom' ? 'objects' : objects.type;
+  const objectWord = objectWordFor(objects.type);
   const isPreReader = gradeBand === 'K';
 
   // ── Stage-payload state (the runner owns progression; this is the board) ──
@@ -397,34 +386,24 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   });
 
   // ── The pack: generator challenges → judged items + hand-authored script ──
-  const items = useMemo<CountingItem[]>(() =>
-    challenges.map((ch) => ({
-      id: ch.id,
-      kind: ch.type,
-      answerKind: ch.type === 'subitize_perceptual' ? 'gesture' : 'voice',
-      responseClass: responseClassFor({ kind: ch.type, target: ch.targetAnswer }),
-      action: ACTION_FOR_KIND[ch.type],
-      objectWord,
-      count: ch.count,
-      target: ch.targetAnswer,
-      startFrom: ch.startFrom ?? undefined,
-      groupSize: ch.groupSize ?? undefined,
-    })),
+  // Built through the SCRIPT MODULE's gate, not inline: the DI drive plan
+  // rebuilds the same items from the same payload, so an item the harness can
+  // ask is an item the child gets and vice versa.
+  const items = useMemo<CountingItem[]>(
+    () => itemsFromChallenges(challenges, { objectWord }),
     [challenges, objectWord],
   );
 
+  /** Item id → the challenge it was built from. The runner's index counts
+   *  ITEMS and the gate can drop a challenge, so every challenge lookup on this
+   *  surface goes through the id — never `challenges[currentIndex]`. */
+  const challengeById = useMemo(
+    () => new Map(challenges.map((ch) => [ch.id, ch])),
+    [challenges],
+  );
+
   const pack = useMemo<JudgedScriptPack<CountingItem>>(() => ({
-    primitiveType: 'counting-board',
-    activityLine: 'live direct instruction counting practice',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    contextFor: (item) => ({
-      challengeType: item.kind,
-      objectType: item.objectWord,
-      targetCount: String(item.target),
-    }),
+    ...countingBoardPackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
       ready: (item) => item.kind === 'subitize_perceptual'
@@ -485,10 +464,12 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // ── Metrics ───────────────────────────────────────────────────────────────
   // The K subitize flash - WHAT is shown; the runner decides WHEN.
   // Called from `onPresentStimulus` once the tutor has finished her line for
-  // this item. Takes the item and its index rather than reading `currentItem`,
-  // so it holds no runner identity and cannot go stale.
-  const presentFlash = useCallback((_item: CountingItem, index: number) => {
-    const challenge = challenges[index];
+  // this item. Takes the item rather than reading `currentItem`, so it holds no
+  // runner identity and cannot go stale — and looks the challenge up BY ID,
+  // because the pack's build gate can drop a challenge and the runner's index
+  // then counts items, not challenges.
+  const presentFlash = useCallback((item: CountingItem) => {
+    const challenge = challengeById.get(item.id);
     if (!challenge) return;
     if (flashTimeoutRef.current) {
       clearTimeout(flashTimeoutRef.current);
@@ -502,7 +483,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       setSubitizeAnswerReady(true);
       flashTimeoutRef.current = null;
     }, duration);
-  }, [challenges]);
+  }, [challengeById]);
 
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const byId = new Map(challenges.map((ch) => [ch.id, ch]));
@@ -575,7 +556,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   });
 
   const currentItem = runner.currentItem;
-  const currentChallenge = challenges[runner.currentIndex] ?? null;
+  const currentChallenge = (currentItem ? challengeById.get(currentItem.id) : null) ?? null;
 
   // ── Per-challenge layout ──────────────────────────────────────────────────
   const challengeCount = currentChallenge?.count ?? 5;
@@ -976,7 +957,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                     className="text-xs"
                     // Direct, not gated: the CHILD asked for this one, so it is
                     // not waiting on anybody's voice.
-                    onClick={() => presentFlash(currentItem, runner.currentIndex)}
+                    onClick={() => presentFlash(currentItem)}
                   >
                     Show again
                   </LuminaButton>

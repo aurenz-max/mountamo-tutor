@@ -2116,12 +2116,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     ],
     audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'LIVE-JUDGED counting practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD (or taps a hand on pre-numeric items), you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Objects on the board: {{objectType}}. The correct count for the current board: {{targetCount}}.',
-      contextKeys: ['challengeType', 'objectType', 'targetCount'],
+      // ANSWER-FREE STATE BLOCK (di-math-facts rule, ten-frame/number-bond
+      // precedent). This clause used to read "The correct count for the current
+      // board: {{targetCount}}" — the graded spoken answer, standing in the
+      // state block for the whole item. The per-turn judging contract inside
+      // each cue already names the answer where it is needed, and this copy was
+      // the exact text the model was caught NARRATING to a child (19h-i-a). It
+      // also contradicted the PRE-NUMERIC directive below, which forbids the
+      // tutor any number word, in the same assembled prompt.
+      taskDescription: 'LIVE-JUDGED counting practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD (or taps a hand on pre-numeric items), you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Objects on the board: {{objectType}}. What is on the board right now: {{stimulus}}. Every cue you receive carries the answer for that turn — nothing outside the cue does, and you never state the count on your own.',
+      contextKeys: ['challengeType', 'objectType', 'stimulus'],
+      // ON A JUDGED LOOP THE CORRECTION *IS* THE SCAFFOLD — there is no third
+      // reply channel. These three rungs used to be bare lines ("Touch each one
+      // just one time as you count."), and the 2026-08-15 cap drill caught the
+      // model speaking level 2 and level 3 VERBATIM on corrections 2 and 3.
+      // Neither opens with a sentinel, so the loop recorded no verdict twice
+      // and the counter froze with the child still waiting (`di-no-verdict`
+      // ×2). Same content, routed through the branch that carries a sentinel.
       scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
-        level2: 'Remind the child of the method in one short sentence — "Touch each one just one time as you count" — without saying any number.',
-        level3: 'Invite one try together: "Point at the first one. Count with your finger. Then tell me how many." Still never say the count.',
+        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the count and re-asks — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a reminder of the method or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
       },
       commonStruggles: [
         { pattern: 'Double-counts or skips objects while tapping', response: 'The scripted correction re-models the count AFTER the attempt is judged. Never interrupt a child mid-count.' },

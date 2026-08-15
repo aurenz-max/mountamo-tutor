@@ -55,6 +55,15 @@ import {
   type TenFrameItem,
 } from '@/components/lumina/primitives/visual-primitives/math/tenFrameScript';
 import {
+  countingBoardHarnessAnswers,
+  countingBoardPackBase,
+  handVerdictCue as countingHandVerdictCue,
+  itemsFromChallenges as countingBoardItems,
+  objectWordFor,
+  type CountingChallengeLike,
+  type CountingItem,
+} from '@/components/lumina/primitives/visual-primitives/math/countingBoardScript';
+import {
   bondVerdictCueForPlaced,
   buildBondItems,
   numberBondHarnessAnswers,
@@ -298,6 +307,36 @@ const wordWorkoutAdapter: DiPortAdapter<WordWorkoutItem> = {
 };
 
 /**
+ * counting-board (fourth math port, first of the 19h-i-b adapter sweep). Its
+ * gesture commit carries a FINGER COUNT — the child taps one of three hand
+ * images — so it uses the `placed` shape, but the number means "fingers shown",
+ * not "how many were placed on the board".
+ *
+ * The drive worth having here is `--di-wrong signature` on the counted modes:
+ * this pack's contract accepts a count said ALOUD that ends on the target
+ * ("the last number said tells the total"), so the signature wrong is a fluent
+ * walk that ends one PAST it. That utterance contains the answer word without
+ * landing on it, and it is the only wrong answer on this port a string-matching
+ * judge affirms.
+ */
+const countingBoardAdapter: DiPortAdapter<CountingItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as CountingChallengeLike[];
+    const objects = (data.objects ?? {}) as { type?: string };
+    const objectWord = objectWordFor(objects.type ?? 'custom');
+    const items = countingBoardItems(challenges, { objectWord });
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: countingBoardPackBase(items),
+    };
+  },
+  answersFor: countingBoardHarnessAnswers,
+  gestureVerdictCue: (item, gesture) =>
+    countingHandVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -306,6 +345,7 @@ const wordWorkoutAdapter: DiPortAdapter<WordWorkoutItem> = {
  */
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'counting-board': countingBoardAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

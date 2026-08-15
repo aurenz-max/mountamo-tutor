@@ -598,10 +598,20 @@ export function findRepeatedConsecutiveAsks<Item extends JudgedScriptItem>(
     } catch {
       continue; // a throwing cue builder is validateJudgedScriptPack's finding
     }
-    const prevSpoken = spokenSpansOf(prevCue).join('\n');
-    const spoken = spokenSpansOf(cue).join('\n');
-    if (prevSpoken.length === 0 || prevSpoken !== spoken) continue;
-    const words = spoken.split(/\s+/).filter(Boolean).length;
+    const prevSpans = spokenSpansOf(prevCue);
+    const spans = spokenSpansOf(cue);
+    // IDENTICAL means the whole turn is identical — the ask AND the verdict
+    // lines it carries, since a differing correction is a differing item.
+    if (spans.length === 0 || prevSpans.join('\n') !== spans.join('\n')) continue;
+    // LENGTH is measured on the ASK ALONE (span 0). The limit is about what a
+    // child has to listen THROUGH to reach the question, and the affirm and
+    // correction spans are conditional lines spoken on a LATER turn — never on
+    // this one. Joining them inflated every real pack by ~20 words, because
+    // the calibration fixtures in this file's own suite are single-span cues
+    // while every shipped pack scripts its verdicts inside itemCue. Found by
+    // counting-board's adapter sweep (19h-i-b), where an 8-word count_all ask
+    // measured 28 and failed a gate calibrated at 12.
+    const words = spans[0].split(/\s+/).filter(Boolean).length;
     if (words > REPEATED_ASK_WORD_LIMIT) {
       issues.push(
         `items "${prev.id}" → "${item.id}" (action "${item.action ?? ''}"): consecutive asks recite a byte-identical ${words}-word line — give the invariant mode a short repeat ask`,
