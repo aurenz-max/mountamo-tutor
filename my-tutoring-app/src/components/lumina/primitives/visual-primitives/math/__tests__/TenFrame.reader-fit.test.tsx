@@ -25,6 +25,12 @@
  * The runner is mocked at the seam — it has its own suite
  * (`hooks/useJudgedScriptRunner.test.tsx`) and the pack has its own
  * (`TenFrame.di-script.test.ts`). What is under test here is the STAGE.
+ *
+ * ⚠️ 19c MOVED A SEAM. The stimulus TIMING rules (falling edge on her voice,
+ * `cuedItemId`, the silence fallback, the prep beat) and the stillness WINDOW
+ * are the runner's now, and are pinned against the real hook in its own suite.
+ * This file drives `onPresentStimulus`/`armStillness` and pins what the STAGE
+ * does with them.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -44,12 +50,18 @@ const runnerState = vi.hoisted(() => ({
    *  the PREVIOUS item while the next one is already rendered — see the drive-5
    *  regression below. */
   cuedItemId: null as string | null,
+  /** 18b: is the affirmed item's reveal still on screen? */
+  revealHeld: false,
+  /** The runner owns the stillness window now (19c); the mock keeps one timer
+   *  so the STAGE's arming and cancelling are still exercised here. */
+  stillness: null as ReturnType<typeof setTimeout> | null,
   gestureCues: [] as string[],
   options: null as null | {
     pack: { items: TenFrameItem[] };
     onItemOpened?: (item: TenFrameItem, index: number) => void;
     onAffirmed?: (item: TenFrameItem) => void;
     onCorrectionRetry?: (item: TenFrameItem, used: number) => void;
+    onPresentStimulus?: (item: TenFrameItem, index: number) => void;
   },
 }));
 
@@ -73,11 +85,22 @@ vi.mock('../../../../hooks/useJudgedScriptRunner', () => ({
       micState: 'armed',
       tutorSpeaking: runnerState.tutorSpeaking,
       cuedItemId: runnerState.cuedItemId ?? item?.id ?? null,
+      revealHeld: runnerState.revealHeld,
+      armStillness: (commit: () => void, ms?: number) => {
+        if (runnerState.stillness) clearTimeout(runnerState.stillness);
+        runnerState.stillness = setTimeout(commit, ms ?? 3000);
+      },
+      clearStillness: () => {
+        if (runnerState.stillness) clearTimeout(runnerState.stillness);
+        runnerState.stillness = null;
+      },
       cancelListening: undefined,
       start: vi.fn(),
       hearStimulus: vi.fn(),
       stimulusTapped: false,
       submitGestureAttempt: (cue: string) => {
+        if (runnerState.stillness) clearTimeout(runnerState.stillness);
+        runnerState.stillness = null;
         runnerState.gestureCues.push(cue);
         runnerState.awaiting = true;
       },
@@ -142,9 +165,21 @@ const counters = () => document.querySelectorAll('svg circle');
  *  the test so timers stay deterministic. */
 const openItem = (index = 0) => {
   runnerState.index = index;
+  if (runnerState.stillness) clearTimeout(runnerState.stillness);
+  runnerState.stillness = null;
   const item = runnerState.options!.pack.items[index];
   act(() => runnerState.options!.onItemOpened?.(item, index));
   return item;
+};
+
+/** THE SEAM 19c MOVED. The runner decides WHEN a stimulus may be presented —
+ *  falling edge on her voice, `cuedItemId`, the silence fallback and the prep
+ *  beat all live in `useJudgedScriptRunner` and are driven against the real
+ *  hook in `hooks/useJudgedScriptRunner.test.tsx`. What is still this file's
+ *  job is WHAT the stage does when it is told to present. */
+const presentStimulus = (index = runnerState.index) => {
+  const item = runnerState.options!.pack.items[index];
+  act(() => runnerState.options!.onPresentStimulus?.(item, index));
 };
 
 beforeEach(() => {
@@ -156,6 +191,9 @@ beforeEach(() => {
   runnerState.solved = new Set();
   runnerState.tutorSpeaking = false;
   runnerState.cuedItemId = null;
+  runnerState.revealHeld = false;
+  if (runnerState.stillness) clearTimeout(runnerState.stillness);
+  runnerState.stillness = null;
   runnerState.gestureCues = [];
   runnerState.options = null;
 });
@@ -303,88 +341,47 @@ describe('TenFrame stage · build keeps its hands and loses its button', () => {
 });
 
 describe('TenFrame stage · subitize is flash-then-hide (contract R4)', () => {
-  /** Render with a handle that drives the tutor's voice, the way the runner
-   *  passes `ctx.isAudioPlaying` through. The flash gate is a falling edge on
-   *  this, so a test that never speaks never flashes — deliberately. */
-  const renderSubitize = (fixture = data('K', [challenge('s1', 'subitize', 4, { flashDuration: 1500 })])) => {
-    const utils = render(<TenFrame data={fixture} />);
-    return {
-      ...utils,
-      fixture,
-      setTutorSpeaking: (speaking: boolean) => {
-        runnerState.tutorSpeaking = speaking;
-        act(() => { utils.rerender(<TenFrame data={fixture} />); });
-      },
-    };
-  };
+  /**
+   * ⚠️ THE GATE MOVED (19c). Until 2026-08-15 this block also owned the
+   * TIMING rules — falling edge on her voice, `cuedItemId`, the 12s silence
+   * fallback, the prep beat, and the re-render-churn invariant. All five are
+   * `useJudgedScriptRunner`'s now and are driven against the REAL hook in
+   * `hooks/useJudgedScriptRunner.test.tsx` ("the stimulus clock"), because
+   * asserting them here would only assert this file's mock.
+   *
+   * What is still the STAGE's job, and stays here: nothing appears until the
+   * runner says present, the counters then show for `flashDuration` and hide
+   * before the answer is asked for, a hidden frame cannot be tapped, and the
+   * correction path re-hides them.
+   */
+  const renderSubitize = (fixture = data('K', [challenge('s1', 'subitize', 4, { flashDuration: 1500 })])) =>
+    ({ ...render(<TenFrame data={fixture} />), fixture });
 
-  /** She speaks her line, then stops — the normal path into a flash. */
-  const tutorSays = (view: ReturnType<typeof renderSubitize>, ms = 4000) => {
-    view.setTutorSpeaking(true);
-    act(() => { vi.advanceTimersByTime(ms); });
-    view.setTutorSpeaking(false);
-  };
-
-  it('waits for the TUTOR to finish before flashing — she instructs, then the frame flashes', () => {
-    // DRIVE 3 (2026-08-13, user): "the ten frame needs to flash after her first
-    // intro, right now it flashes then she instructs, this would be confusing
-    // for the child." It was: the flash ran on a beat measured from item-open
-    // while her opening line took ~4s, so the counters came and went while she
-    // was still saying "watch the frame", and the ask landed on a frame the
-    // child never saw. THE TUTOR OWNS THE CLOCK applies to the stimulus too.
-    vi.useFakeTimers();
-    const view = renderSubitize();
-    openItem();
-
-    // Her whole utterance: the frame stays dark, however long she takes.
-    view.setTutorSpeaking(true);
-    act(() => { vi.advanceTimersByTime(6000); });
-    expect(counters()).toHaveLength(0);
-
-    // She stops. A breath, then the counters.
-    view.setTutorSpeaking(false);
-    act(() => { vi.advanceTimersByTime(699); });
-    expect(counters()).toHaveLength(0);
-    act(() => { vi.advanceTimersByTime(1); });
-    expect(counters()).toHaveLength(4);
-  });
-
-  it('does not mistake the silence BEFORE she starts for the silence after', () => {
-    // "Not speaking" is also true in the gap between the cue being queued and
-    // her audio arriving, so the gate is a falling edge, not a level.
+  it('shows nothing until the runner presents the stimulus', () => {
     vi.useFakeTimers();
     renderSubitize();
     openItem();
 
-    act(() => { vi.advanceTimersByTime(3000); });
+    // However long the item has been on screen: the frame is dark until the
+    // tutor has had her say. That decision is not made here.
+    act(() => { vi.advanceTimersByTime(30_000); });
     expect(counters()).toHaveLength(0);
-  });
 
-  it('flashes anyway if her audio never arrives at all', () => {
-    // A child cannot answer a question about a frame that never flashed.
-    vi.useFakeTimers();
-    renderSubitize();
-    openItem();
-
-    // Two beats: the fallback fires and React flushes, and only then does the
-    // prep timer get armed.
-    act(() => { vi.advanceTimersByTime(12_000); });
-    expect(counters()).toHaveLength(0);
-    act(() => { vi.advanceTimersByTime(700); });
+    presentStimulus();
     expect(counters()).toHaveLength(4);
   });
 
   it('hides the counters before the answer is asked for, and a hidden frame cannot be tapped', () => {
     vi.useFakeTimers();
-    const view = renderSubitize();
+    renderSubitize();
     openItem();
 
-    expect(counters()).toHaveLength(0);
-    tutorSays(view);
-    act(() => { vi.advanceTimersByTime(700); });
+    presentStimulus();
     expect(counters()).toHaveLength(4);
 
-    act(() => { vi.advanceTimersByTime(1500); });
+    act(() => { vi.advanceTimersByTime(1499); });
+    expect(counters()).toHaveLength(4);
+    act(() => { vi.advanceTimersByTime(1); });
     expect(counters()).toHaveLength(0);
 
     // Hidden counters cannot be manipulated — subitizing is never tap-counting.
@@ -392,124 +389,82 @@ describe('TenFrame stage · subitize is flash-then-hide (contract R4)', () => {
     expect(counters()).toHaveLength(0);
     expect(runnerState.gestureCues).toHaveLength(0);
 
-    // The stimulus can be re-shown; it is never withdrawn.
-    expect(screen.getByRole('button', { name: /show again/i })).toBeTruthy();
-  });
-
-  it('re-flashes after her CORRECTION finishes, on the same gate as the first ask', () => {
-    // This is what retired the hand-tuned "wait 3s for the correction to
-    // finish" window: there is no window, there is her voice.
-    vi.useFakeTimers();
-    const view = renderSubitize();
-    const item = openItem();
-
-    tutorSays(view);
-    act(() => { vi.advanceTimersByTime(700 + 1500); });
-    expect(counters()).toHaveLength(0);
-
-    act(() => runnerState.options!.onCorrectionRetry?.(item, 1));
-
-    // Her correction is long. Nothing flashes underneath it.
-    view.setTutorSpeaking(true);
-    act(() => { vi.advanceTimersByTime(8000); });
-    expect(counters()).toHaveLength(0);
-
-    view.setTutorSpeaking(false);
-    act(() => { vi.advanceTimersByTime(700); });
+    // The stimulus can be re-shown; it is never withdrawn. This one is the
+    // CHILD's request, so it is deliberately un-gated.
+    const showAgain = screen.getByRole('button', { name: /show again/i });
+    act(() => { fireEvent.click(showAgain); });
     expect(counters()).toHaveLength(4);
   });
 
-  it('does not flash on the tail of the PREVIOUS item’s affirmation', () => {
-    // REGRESSION (drive 5, 2026-08-14, user): "when i get it wrong, the very
-    // next one flashes way too fast before she finishes her statement."
-    //
-    // The falling edge was right and its SUBJECT was wrong. On an affirm the
-    // runner queues the next item's cue and opens the item in the same
-    // dispatch, but a queued cue waits for the floor — so item 2 is on screen
-    // for the entire tail of item 1's affirmation. The latch filled on that
-    // tail, her affirm drained, and the flash fired in the silence BEFORE the
-    // ask for item 2 had even been sent. `cuedItemId` is what makes "she
-    // stopped" mean "she stopped saying THIS item's line".
+  it('re-hides the counters on a correction, so the re-flash is a real stimulus again', () => {
     vi.useFakeTimers();
-    const fixture = data('K', [
-      challenge('s1', 'subitize', 4, { flashDuration: 1500 }),
-      challenge('s2', 'subitize', 3, { flashDuration: 1500 }),
-    ]);
-    const view = renderSubitize(fixture);
-    openItem(0);
+    renderSubitize();
+    const item = openItem();
 
-    // Item 1 runs normally.
-    tutorSays(view);
-    act(() => { vi.advanceTimersByTime(700 + 1500); });
+    presentStimulus();
+    act(() => { vi.advanceTimersByTime(1500); });
     expect(counters()).toHaveLength(0);
+    presentStimulus();
+    expect(counters()).toHaveLength(4);
 
-    // She AFFIRMS item 1 and the runner opens item 2 underneath her voice. Her
-    // cue for item 2 is queued, not sent — `cuedItemId` still names item 1.
-    runnerState.cuedItemId = 's1';
-    view.setTutorSpeaking(true);
-    openItem(1);
-
-    // Her affirmation ends. Nothing may flash: this silence is the gap before
-    // the ask, not after it. (Pre-fix, the counters appeared right here.)
-    view.setTutorSpeaking(false);
-    act(() => { vi.advanceTimersByTime(3000); });
+    // The runner re-arms its gate on this path; the stage's job is to clear the
+    // board so what she re-asks about is shown afresh.
+    act(() => runnerState.options!.onCorrectionRetry?.(item, 1));
     expect(counters()).toHaveLength(0);
-
-    // The queued cue goes out and she asks about item 2. NOW the gate arms.
-    runnerState.cuedItemId = 's2';
-    tutorSays(view);
-    act(() => { vi.advanceTimersByTime(700) });
-    expect(counters()).toHaveLength(3);
-  });
-
-  it('flashes even while the component re-renders continuously (mic-level churn)', () => {
-    // REGRESSION (drive 2, 2026-08-13): the frame NEVER flashed — the screen sat
-    // on "Get ready to look…" forever while the tutor asked "How many counters
-    // did you see?" against an empty frame. The prep timer lives in an effect
-    // that depends on the flash callback; that callback closed over `runner`,
-    // which is a fresh object every render, and back then `ctx.micLevel` updated
-    // once per audio frame. So the effect tore down and re-armed its timer many
-    // times a second and the timer could never reach its deadline.
-    // 19b took the level off the context value, so the mic no longer SUPPLIES
-    // that churn — but the frame's own re-render does, and the invariant this
-    // pins is the one that matters: a stimulus timer must survive its component
-    // re-rendering. Hence: re-render throughout the wait.
-    vi.useFakeTimers();
-    const fixture = data('K', [challenge('s1', 'subitize', 4, { flashDuration: 1500 })]);
-    const { rerender } = render(<TenFrame data={fixture} className="churn-0" />);
-    openItem();
-
-    runnerState.tutorSpeaking = true;
-    act(() => { rerender(<TenFrame data={fixture} className="churn-speaking" />); });
-    act(() => { vi.advanceTimersByTime(2000); });
-    runnerState.tutorSpeaking = false;
-    act(() => { rerender(<TenFrame data={fixture} className="churn-quiet" />); });
-
-    for (let i = 1; i <= 10; i++) {
-      act(() => { vi.advanceTimersByTime(100); });
-      rerender(<TenFrame data={fixture} className={`churn-${i}`} />);
-    }
-
+    presentStimulus();
     expect(counters()).toHaveLength(4);
   });
 
   it('restores the counters when the TUTOR affirms — not when a button is clicked', () => {
     vi.useFakeTimers();
-    const view = renderSubitize();
+    renderSubitize();
     const item = openItem();
 
-    tutorSays(view);
-    act(() => { vi.advanceTimersByTime(700 + 1500); });
+    presentStimulus();
+    act(() => { vi.advanceTimersByTime(1500); });
     expect(counters()).toHaveLength(0);
 
     // Exactly what the runner does on an affirm: close the item in the solved
-    // ledger, then call back. The reveal is keyed to that ledger, not to the
-    // stage word, for the same reason the tap gate is.
+    // ledger, hold the reveal, then call back. 18b: the reveal is keyed to
+    // `revealHeld`, NOT to `currentSolved` — the runner opens the next item in
+    // the same dispatch, so by render time the current item is the next one.
     runnerState.stage = 'affirmed';
     runnerState.solved = new Set(['s1']);
+    runnerState.revealHeld = true;
     act(() => runnerState.options!.onAffirmed?.(item));
     expect(counters()).toHaveLength(4);
     expect(screen.getByText(/4 — four counters!/)).toBeTruthy();
+  });
+
+  /**
+   * REGRESSION (18b) — the reveal used to paint on the LAST item and nowhere
+   * else, in four ports, for a month: the port set the reward in `onAffirmed`
+   * and cleared it in `onItemOpened`, and the runner fires both in ONE dispatch
+   * on the advance path. Rendering on `currentSolved` had the same hole from the
+   * other side. Re-pointing this gate at `currentSolved` fails here.
+   */
+  it('paints the reveal while the NEXT item is already on screen', () => {
+    vi.useFakeTimers();
+    renderSubitize(data('K', [
+      challenge('s1', 'subitize', 4, { flashDuration: 1500 }),
+      challenge('s2', 'subitize', 3, { flashDuration: 1500 }),
+    ]));
+    const item = openItem(0);
+
+    runnerState.solved = new Set(['s1']);
+    runnerState.revealHeld = true;
+    act(() => runnerState.options!.onAffirmed?.(item));
+
+    // The advance: item 2 is on screen and is NOT solved, exactly as the runner
+    // leaves things while she is still saying "Yes! Four counters."
+    openItem(1);
+    expect(screen.getByText(/4 — four counters!/)).toBeTruthy();
+
+    // Her cue for item 2 reaches the floor: the reveal is over.
+    runnerState.revealHeld = false;
+    act(() => { runnerState.index = 1; });
+    presentStimulus(1);
+    expect(screen.queryByText(/4 — four counters!/)).toBeNull();
   });
 });
 

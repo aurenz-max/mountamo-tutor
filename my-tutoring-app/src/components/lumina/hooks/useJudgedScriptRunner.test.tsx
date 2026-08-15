@@ -56,6 +56,7 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
 const loopStub = vi.hoisted(() => {
   const stub = {
     onEmission: null as ((emission: LoopEmission) => void) | null,
+    onCue: null as ((event: { phase: string; text: string }) => void) | null,
     enabled: false,
     queueCue: vi.fn(),
     sendCueNow: vi.fn(),
@@ -68,11 +69,27 @@ const loopStub = vi.hoisted(() => {
     voiceTurns: {},
     config: {},
   };
+  // The engine reports 'queued' when a cue joins the queue and 'sent' only when
+  // it reaches the floor, and the GAP between the two is what every stimulus
+  // test below is about. `sendCueNow` reaches the floor immediately; a queued
+  // cue's 'sent' is fired by hand, because in production it lands whenever the
+  // tutor stops talking.
+  stub.sendCueNow.mockImplementation((text: string) => {
+    stub.onCue?.({ phase: 'sent', text });
+  });
+  stub.queueCue.mockImplementation((text: string) => {
+    stub.onCue?.({ phase: 'queued', text });
+  });
   return stub;
 });
 vi.mock('./useJudgedSpeechLoop', () => ({
-  useJudgedSpeechLoop: (options: { enabled: boolean; onEmission?: (e: LoopEmission) => void }) => {
+  useJudgedSpeechLoop: (options: {
+    enabled: boolean;
+    onEmission?: (e: LoopEmission) => void;
+    onCue?: (e: { phase: string; text: string }) => void;
+  }) => {
     loopStub.onEmission = options.onEmission ?? null;
+    loopStub.onCue = options.onCue ?? null;
     loopStub.enabled = options.enabled;
     return loopStub;
   },
@@ -124,7 +141,7 @@ const voiceAttempt: LoopAttempt = {
 };
 
 let run: JudgedScriptRun<TestItem>;
-const Probe: React.FC<{ options: JudgedScriptRunnerOptions<TestItem> }> = ({ options }) => {
+const Probe: React.FC<{ options: JudgedScriptRunnerOptions<TestItem>; nonce?: number }> = ({ options }) => {
   run = useJudgedScriptRunner(options);
   return null;
 };
@@ -132,6 +149,18 @@ const Probe: React.FC<{ options: JudgedScriptRunnerOptions<TestItem> }> = ({ opt
 const emit = (emission: LoopEmission) => act(() => { loopStub.onEmission?.(emission); });
 const verdict = (judgment: 'affirmed' | 'corrected' | 'off-script' | 'no-verdict') =>
   emit({ kind: 'verdict', judgment, attempt: voiceAttempt, misses: 0 });
+
+/** A queued cue reaches the floor. */
+const cueSent = (text = '[cue]') => act(() => { loopStub.onCue?.({ phase: 'sent', text }); });
+
+/** The provider does not re-render on an audio flip by itself (19b took the
+ *  per-frame value out of the context), so the harness re-renders explicitly. */
+let refresh: () => void = () => {};
+const setTutorSpeaking = (playing: boolean) => {
+  ctxState.isAudioPlaying = playing;
+  refresh();
+};
+const advance = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
 
 const mount = (
   items: TestItem[],
@@ -146,7 +175,9 @@ const mount = (
     onFinished,
     ...optionOverrides,
   };
-  render(<Probe options={options} />);
+  const view = render(<Probe options={options} nonce={0} />);
+  let nonce = 0;
+  refresh = () => { act(() => { view.rerender(<Probe options={options} nonce={++nonce} />); }); };
   return { onFinished };
 };
 
@@ -156,7 +187,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   ctxState.isConnected = true;
   ctxState.isListening = true;
+  ctxState.isAudioPlaying = false;
   ctxState.sessionMode = 'idle';
+  refresh = () => {};
 });
 afterEach(cleanup);
 
@@ -384,6 +417,307 @@ describe('diagnosis (Tier-A evidence)', () => {
       challengeSummary: 'Say cat.',
       judgeFeedback: 'My turn: not cap — cat.',
     });
+  });
+});
+
+/**
+ * THE STIMULUS CLOCK (19c) — absorbed from ten-frame, where it was ~40 hand-
+ * written lines and two documented footguns, and where `counting-board` had
+ * never picked up the fix at all.
+ *
+ * Every case here was a drive, not a design review: the tutor talking over her
+ * own flash (drive 3), the flash firing on the tail of the PREVIOUS item's
+ * affirmation (drive 5, user: *"the very next one flashes way too fast"*), and
+ * the silent-session case where a child would otherwise be asked about a frame
+ * that never flashed.
+ */
+describe('the stimulus clock', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const stimulusMount = (
+    items: TestItem[],
+    overrides: Partial<JudgedScriptRunnerOptions<TestItem>> = {},
+  ) => {
+    const onPresentStimulus = vi.fn();
+    mount(items, {}, { onPresentStimulus, ...overrides });
+    return { onPresentStimulus };
+  };
+
+  it('waits for her to have spoken for THIS item and stopped, then a breath', async () => {
+    const { onPresentStimulus } = stimulusMount([voiceItem('i1', 'cat')]);
+    await startRun();
+
+    // Her line has been sent but she has not started speaking: silence here is
+    // "not yet", not "finished". A level-triggered gate fires on this state.
+    expect(onPresentStimulus).not.toHaveBeenCalled();
+    advance(5000);
+    expect(onPresentStimulus).not.toHaveBeenCalled();
+
+    setTutorSpeaking(true);
+    advance(5000);
+    expect(onPresentStimulus).not.toHaveBeenCalled();   // never over her voice
+
+    setTutorSpeaking(false);
+    advance(699);
+    expect(onPresentStimulus).not.toHaveBeenCalled();   // the breath
+    advance(1);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+    expect(onPresentStimulus).toHaveBeenCalledWith(expect.objectContaining({ id: 'i1' }), 0);
+
+    // Once per arm: a later silence is not a second stimulus.
+    setTutorSpeaking(true);
+    setTutorSpeaking(false);
+    advance(5000);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * REGRESSION — the falling edge alone fires on the WRONG utterance.
+   *
+   * On an affirm the runner queues the next item's cue and opens the item in
+   * the same dispatch, but a queued cue waits for the floor. So item 2 is on
+   * screen for the whole tail of item 1's affirmation, and a bare "she spoke,
+   * then stopped" latch fills on that tail and fires the stimulus in the gap
+   * BEFORE item 2's ask is ever spoken. Removing the `cuedItemId` clause in
+   * effect (1) fails exactly this test.
+   */
+  it('does not fire on the tail of the previous item’s affirmation', async () => {
+    const { onPresentStimulus } = stimulusMount([voiceItem('i1', 'cat'), voiceItem('i2', 'dog')]);
+    await startRun();
+    cueSent('[ITEM] cat');
+    setTutorSpeaking(true);
+    setTutorSpeaking(false);
+    advance(700);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+
+    // Item 2 opens while she is still affirming item 1 — its cue is QUEUED.
+    setTutorSpeaking(true);
+    verdict('affirmed');
+    expect(run.currentIndex).toBe(1);
+
+    // Her affirmation drains. The screen is on item 2; her line was not.
+    setTutorSpeaking(false);
+    advance(5000);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+
+    // NOW item 2's cue reaches the floor and she asks it.
+    cueSent('[ITEM] dog');
+    setTutorSpeaking(true);
+    setTutorSpeaking(false);
+    advance(700);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(2);
+    expect(onPresentStimulus).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'i2' }), 1);
+  });
+
+  it('presents anyway if her audio never arrives — a child cannot answer about a frame that never flashed', async () => {
+    const { onPresentStimulus } = stimulusMount([voiceItem('i1', 'cat')]);
+    await startRun();
+    advance(11_999);
+    expect(onPresentStimulus).not.toHaveBeenCalled();
+    advance(1);                    // the safety net trips…
+    expect(onPresentStimulus).not.toHaveBeenCalled();
+    advance(700);                  // …and the breath still happens
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-arms on a correction retry, so the re-flash waits for her CORRECTION', async () => {
+    const { onPresentStimulus } = stimulusMount([voiceItem('i1', 'cat')]);
+    await startRun();
+    cueSent('[ITEM] cat');
+    setTutorSpeaking(true);
+    setTutorSpeaking(false);
+    advance(700);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+
+    // No new cue is SENT on a correction — `cuedItemId` still names this item,
+    // which is what lets the gate catch her correction line.
+    verdict('corrected');
+    setTutorSpeaking(true);
+    advance(5000);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+    setTutorSpeaking(false);
+    advance(700);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips items the pack says own no stimulus', async () => {
+    const { onPresentStimulus } = stimulusMount(
+      [voiceItem('i1', 'cat'), voiceItem('i2', 'dog')],
+      { stimulus: { when: (item) => item.id === 'i2' } },
+    );
+    await startRun();
+    cueSent();
+    setTutorSpeaking(true);
+    setTutorSpeaking(false);
+    advance(5000);
+    expect(onPresentStimulus).not.toHaveBeenCalled();
+
+    setTutorSpeaking(true);
+    verdict('affirmed');
+    cueSent();
+    setTutorSpeaking(false);
+    advance(700);
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+    expect(onPresentStimulus).toHaveBeenCalledWith(expect.objectContaining({ id: 'i2' }), 1);
+  });
+
+  /**
+   * REGRESSION, INHERITED FROM ten-frame drive 2 (2026-08-13) — the frame NEVER
+   * flashed. The screen sat on "Get ready to look…" forever while the tutor
+   * asked "How many counters did you see?" against an empty frame.
+   *
+   * The prep timer lived in an effect that depended on the flash callback, that
+   * callback closed over `runner` (a fresh object every render), and back then
+   * `ctx.micLevel` updated once per audio frame — so the effect tore down and
+   * re-armed its timer many times a second and it could never reach its
+   * deadline. 19b removed that particular amplifier; the invariant is what
+   * matters and it moved here with the timer: A STIMULUS TIMER MUST SURVIVE ITS
+   * CONSUMER RE-RENDERING. Every dep in the three gate effects is a primitive
+   * for this reason. Test under re-render, never at rest.
+   */
+  it('fires while the consumer re-renders continuously', async () => {
+    const { onPresentStimulus } = stimulusMount([voiceItem('i1', 'cat')]);
+    await startRun();
+    cueSent();
+    setTutorSpeaking(true);
+    advance(2000);
+    setTutorSpeaking(false);
+
+    for (let i = 0; i < 10; i++) {
+      advance(100);
+      refresh();
+    }
+    expect(onPresentStimulus).toHaveBeenCalledTimes(1);
+  });
+
+  it('never fires after the run has finished', async () => {
+    const { onPresentStimulus } = stimulusMount([voiceItem('i1', 'cat')]);
+    await startRun();
+    cueSent();
+    setTutorSpeaking(true);
+    verdict('affirmed');           // last item → finish()
+    setTutorSpeaking(false);
+    advance(20_000);
+    expect(onPresentStimulus).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * THE STILLNESS CLOSE (19c) — a hands turn's analogue of the mic's silence
+ * bracket. Four ports wrote their own, with nine hand-tuned constants between
+ * them; what none of them could get wrong once is the CANCEL list, which is the
+ * reason the window belongs to the runner.
+ */
+describe('the stillness close', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('commits when the board stops changing, and every touch resets the window', async () => {
+    const commit = vi.fn();
+    mount([gestureItem('g1', 'cat')]);
+    await startRun();
+
+    act(() => run.armStillness(commit, 3000));
+    advance(2999);
+    expect(commit).not.toHaveBeenCalled();
+    act(() => run.armStillness(commit, 3000));   // the child touched it again
+    advance(2999);
+    expect(commit).not.toHaveBeenCalled();
+    advance(1);
+    expect(commit).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the runner default when a call names no window', async () => {
+    const commit = vi.fn();
+    mount([gestureItem('g1', 'cat')], {}, { stillnessMs: 1500 });
+    await startRun();
+    act(() => run.armStillness(commit));
+    advance(1499);
+    expect(commit).not.toHaveBeenCalled();
+    advance(1);
+    expect(commit).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * REGRESSION — the previous item's board must never commit into this item's
+   * turn. This is the cancel every port had to remember by hand, at five sites.
+   */
+  it('is cancelled by the item advance, the correction retry and the commit', async () => {
+    const commit = vi.fn();
+    mount([gestureItem('g1', 'cat'), gestureItem('g2', 'dog'), gestureItem('g3', 'pig')]);
+    await startRun();
+
+    act(() => run.armStillness(commit, 3000));
+    verdict('affirmed');                 // item advance
+    advance(5000);
+    expect(commit).not.toHaveBeenCalled();
+
+    act(() => run.armStillness(commit, 3000));
+    verdict('corrected');                // correction retry
+    advance(5000);
+    expect(commit).not.toHaveBeenCalled();
+
+    act(() => run.armStillness(commit, 3000));
+    act(() => run.submitGestureAttempt('[VERDICT] built'));   // the commit itself
+    advance(5000);
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it('clearStillness cancels it — starting over is thinking, not an answer', async () => {
+    const commit = vi.fn();
+    mount([gestureItem('g1', 'cat')]);
+    await startRun();
+    act(() => run.armStillness(commit, 3000));
+    act(() => run.clearStillness());
+    advance(5000);
+    expect(commit).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * THE REVEAL HOLD (18b, ruled 2026-08-15) — the reveal opens on the affirmation
+ * and closes when her cue for the NEXT item is SENT.
+ *
+ * The bug it replaces was invisible and family-wide: ports set a reward in
+ * `onAffirmed` and cleared it in `onItemOpened`, and the runner fires both IN
+ * ONE DISPATCH on the advance path — so the reveal painted on the last item and
+ * nowhere else, in all four math ports, for a month.
+ */
+describe('the reveal hold', () => {
+  it('holds through her affirmation, then closes on the next item’s cue', async () => {
+    mount([voiceItem('i1', 'cat'), voiceItem('i2', 'dog')]);
+    await startRun();
+    expect(run.revealHeld).toBe(false);
+
+    verdict('affirmed');
+    // The screen is ALREADY on item 2 and item 2 is not solved — which is why a
+    // `currentSolved` gate showed nothing here.
+    expect(run.currentIndex).toBe(1);
+    expect(run.currentSolved).toBe(false);
+    expect(run.revealHeld).toBe(true);
+
+    cueSent('[ITEM] dog');
+    expect(run.revealHeld).toBe(false);
+  });
+
+  it('holds into the summary on the last item, where the complete cue names the same item', async () => {
+    mount([voiceItem('i1', 'cat')]);
+    await startRun();
+    verdict('affirmed');
+    expect(run.revealHeld).toBe(true);
+    cueSent('[COMPLETE]');
+    expect(run.revealHeld).toBe(true);
+  });
+
+  it('a capped item reveals nothing', async () => {
+    mount([voiceItem('i1', 'cat'), voiceItem('i2', 'dog')]);
+    await startRun();
+    verdict('corrected');
+    verdict('corrected');
+    verdict('corrected');   // capped → move on
+    expect(run.currentIndex).toBe(1);
+    expect(run.revealHeld).toBe(false);
   });
 });
 

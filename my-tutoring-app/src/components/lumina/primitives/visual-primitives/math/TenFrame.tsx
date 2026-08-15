@@ -33,7 +33,11 @@
  * HOW A HANDS-ONLY TURN CLOSES. A voice turn closes on SILENCE (the mic's
  * amplitude bracket). A hands turn closes on STILLNESS: when the frame stops
  * changing for `PLACEMENT_SETTLE_MS` the placement is described to the tutor
- * and judged. K make-ten additionally commits the moment the frame is full,
+ * and judged. The WINDOW is the runner's (`armStillness`, 19c) — as is the
+ * stimulus gate that decides when the subitize flash may run
+ * (`onPresentStimulus`). This port wrote both first and gave them up; the ~40
+ * lines and two footguns that used to live here are now inherited by every
+ * judged port instead of retyped by each one. K make-ten additionally commits the moment the frame is full,
  * which is R6's literal rule — but stillness is what makes the item JUDGEABLE,
  * because stopping early is now a wrong answer the tutor corrects. Neither
  * commit is correctness-gated: a wrong placement commits exactly as readily as
@@ -177,24 +181,16 @@ const FRAME_COLS = 5;
 const FRAME_ROWS = 2;
 const FRAME_PADDING = 8;
 
-/** Stillness that closes a hands-only turn — the gesture analogue of the mic's
- *  silence bracket. Deliberately generous: a five-year-old placing counters
- *  pauses to think, and a premature commit spends one of the two corrections. */
+/** How long a hands turn may stay still before it commits. The window itself
+ *  is the runner's (`armStillness`, 19c); this is the one number that is a
+ *  property of THIS board — ten counters placed one at a time. */
 const PLACEMENT_SETTLE_MS = 3000;
 
-/** Subitize flash lifecycle. The flash is STIMULUS PRESENTATION, not a
- *  progression clock — when it ends nothing advances; the tutor is still
- *  waiting for the child's answer. */
+/** How long the counters stay visible once the flash runs. The flash is
+ *  STIMULUS PRESENTATION, not a progression clock — when it ends nothing
+ *  advances; the tutor is still waiting for the child's answer. WHEN it starts
+ *  is the runner's `onPresentStimulus` gate, never a beat from item-open. */
 const SUBITIZE_FLASH_MS = 1500;   // default; per-challenge `flashDuration` wins (R7 tier lever)
-/** A short "get ready" beat AFTER the tutor stops talking — a breath between
- *  "How many counters did you see?" and the counters appearing, not a race
- *  against her sentence. See the flash gate below for why that distinction is
- *  the whole design. */
-const SUBITIZE_PREP_MS = 700;
-/** If the tutor's audio never arrives at all, the stimulus still has to happen
- *  — a child cannot answer a question about a frame that never flashed. Long
- *  enough that it never pre-empts a real utterance. */
-const TUTOR_SILENCE_FALLBACK_MS = 12_000;
 
 // ============================================================================
 // Props
@@ -238,17 +234,13 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   const [countersVisible, setCountersVisible] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
   const [flashAnswerReady, setFlashAnswerReady] = useState(false);
-  /** Has the tutor spoken for THIS item yet? The flash waits on her, so it has
-   *  to know the difference between "she has not started" and "she has
-   *  finished" — both look like silence. Reset on every item and on every
-   *  correction retry. */
-  const [tutorHasSpoken, setTutorHasSpoken] = useState(false);
-  /** The number JUST affirmed — post-answer only (answer-leak rule), cleared
-   *  the moment the next item opens. */
+  /** The number JUST affirmed — post-answer only (answer-leak rule). It is NOT
+   *  cleared when the next item opens: that clear and the `onAffirmed` that set
+   *  it landed in one React batch, so the reveal painted on the last item and
+   *  nowhere else (18b). `runner.revealHeld` is the gate now. */
   const [reward, setReward] = useState<string | null>(null);
 
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** What the frame held when it last stopped changing. */
   const pendingPlacementRef = useRef(0);
   const placementChangesRef = useRef(0);
@@ -266,13 +258,6 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-
-  const clearSettle = useCallback(() => {
-    if (settleTimerRef.current) {
-      clearTimeout(settleTimerRef.current);
-      settleTimerRef.current = null;
-    }
-  }, []);
 
   // ── The pack: generated challenges → judged items + hand-authored script ──
   // Unaskable items are DROPPED here (zero answers, out-of-bench counts,
@@ -325,15 +310,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
   // ── Per-item frame reset — every item owns its starting state (R6) ────────
   const resetFrameFor = useCallback((item: TenFrameItem) => {
-    clearSettle();
     if (flashTimeoutRef.current) {
       clearTimeout(flashTimeoutRef.current);
       flashTimeoutRef.current = null;
     }
-    setReward(null);
     setIsFlashing(false);
     setFlashAnswerReady(false);
-    setTutorHasSpoken(false);
 
     // A completed frame never carries into the next challenge: build and add
     // start empty, make-ten seeds its shown group, subtract seeds its start.
@@ -343,7 +325,30 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     // Subitize hides its counters until the flash runs; every other mode shows
     // whatever is on the frame.
     setCountersVisible(item.kind !== 'subitize');
-  }, [clearSettle]);
+  }, []);
+
+  // ── The subitize flash — WHAT is shown; the runner decides WHEN ───────────
+  // Called from `onPresentStimulus` once the tutor has finished her line for
+  // this item (19c). Takes the item as an argument rather than reading
+  // `currentItem`, so it holds no runner identity and cannot go stale.
+  const presentFlash = useCallback((item: TenFrameItem) => {
+    if (item.kind !== 'subitize') return;
+    if (flashTimeoutRef.current) {
+      clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    }
+    setFilledCells(new Set(Array.from({ length: Math.min(item.answer, totalCells) }, (_, i) => i)));
+    setFlashAnswerReady(false);
+    setCountersVisible(true);
+    setIsFlashing(true);
+    const duration = challengeById.get(item.id)?.flashDuration || SUBITIZE_FLASH_MS;
+    flashTimeoutRef.current = setTimeout(() => {
+      setCountersVisible(false);
+      setIsFlashing(false);
+      setFlashAnswerReady(true);
+      flashTimeoutRef.current = null;
+    }, duration);
+  }, [challengeById, totalCells]);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
@@ -390,6 +395,13 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     exhibitId,
     onFinished: handleFinished,
     onItemOpened: resetFrameFor,
+    // THE TUTOR OWNS THE STIMULUS CLOCK. The runner fires this once she has
+    // spoken for THIS item and stopped — on the first ask, on every subsequent
+    // challenge, and on a correction's re-flash. There is no window here to
+    // tune and no wall-clock beat to race her sentence; see the option's
+    // docblock for the two drives that wrote it.
+    onPresentStimulus: presentFlash,
+    stimulus: { when: (item) => item.kind === 'subitize' },
     onAffirmed: (item) => {
       // The first moment a number may appear on screen — and, for subitize, the
       // moment R4's "a correct response restores the counters" now hangs off
@@ -409,19 +421,15 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     },
     onCorrectionRetry: (item) => {
       // The tutor's correction re-modeled and re-asked in-band; restore the
-      // working surface for another go.
-      clearSettle();
+      // working surface for another go. The settle window and the flash gate
+      // are both re-armed by the runner on this path.
       if (item.kind === 'subitize') {
-        // Re-arm the flash. Clearing `tutorHasSpoken` is what makes the
-        // re-flash wait for her CORRECTION to finish — the same gate as the
-        // first ask, so there is no hand-tuned window to get wrong.
         if (flashTimeoutRef.current) {
           clearTimeout(flashTimeoutRef.current);
           flashTimeoutRef.current = null;
         }
         setIsFlashing(false);
         setFlashAnswerReady(false);
-        setTutorHasSpoken(false);
         setCountersVisible(false);
         return;
       }
@@ -452,12 +460,14 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     runner.submitGestureAttempt(frameVerdictCue(item, enacted));
   }, [runner]);
 
-  /** A hands turn closes on stillness. Any further tap resets the window. */
+  /** A hands turn closes on stillness. Any further tap resets the window, and
+   *  the runner cancels it at item open, at a correction, and at the commit. */
   const armSettle = useCallback((onFrame: number) => {
     pendingPlacementRef.current = onFrame;
-    clearSettle();
-    settleTimerRef.current = setTimeout(() => { commitPlacement(); }, PLACEMENT_SETTLE_MS);
-  }, [clearSettle, commitPlacement]);
+    runner.armStillness(commitPlacement, PLACEMENT_SETTLE_MS);
+    // `armStillness` is identity-stable (refs inside); `runner` is not, but this
+    // is an event-handler callback, never an effect dep.
+  }, [runner, commitPlacement]);
 
   // ── Frame taps ────────────────────────────────────────────────────────────
   const handleCellClick = useCallback((cellIndex: number) => {
@@ -485,7 +495,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       placementChangesRef.current += 1;
       if (placed.size >= totalCells) fullFrameEverRef.current = true;
       if (placed.size >= (item.commitAt ?? item.capacity)) {
-        clearSettle();
+        runner.clearStillness();
         pendingPlacementRef.current = placed.size;
         commitPlacement();
       } else {
@@ -508,92 +518,20 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     else pendingPlacementRef.current = placed.size;
   }, [
     runner, evaluation.hasSubmitted, filledCells, totalCells,
-    armSettle, clearSettle, commitPlacement,
+    armSettle, commitPlacement,
   ]);
-
-  // ── Subitize flash-then-hide ──────────────────────────────────────────────
-  // ⚠️ DEPENDS ON `currentItem`, NEVER ON `runner`. The runner returns a fresh
-  // object every render, so a callback that closes over `runner` changes
-  // identity continuously — and the effect below, which depends on this
-  // callback, would then tear down and re-arm its prep timer faster than the
-  // timer could ever fire. That is the standing Lumina context-churn footgun:
-  // a timer effect keyed on churning identity never fires. It used to be at
-  // its worst with the MIC OPEN, because `ctx.micLevel` was a context field
-  // that ticked once per audio frame; 19b removed that amplifier, and the rule
-  // stands without it. `currentItem` is a stable object out of the `items` memo.
-  const startFlash = useCallback(() => {
-    const item = currentItem;
-    if (!item || item.kind !== 'subitize') return;
-    if (flashTimeoutRef.current) {
-      clearTimeout(flashTimeoutRef.current);
-      flashTimeoutRef.current = null;
-    }
-    setFilledCells(new Set(Array.from({ length: Math.min(item.answer, totalCells) }, (_, i) => i)));
-    setFlashAnswerReady(false);
-    setCountersVisible(true);
-    setIsFlashing(true);
-    const duration = currentChallenge?.flashDuration || SUBITIZE_FLASH_MS;
-    flashTimeoutRef.current = setTimeout(() => {
-      setCountersVisible(false);
-      setIsFlashing(false);
-      setFlashAnswerReady(true);
-      flashTimeoutRef.current = null;
-    }, duration);
-  }, [currentItem, totalCells, currentChallenge?.flashDuration]);
 
   const isSubitize = currentItem?.kind === 'subitize';
 
-  // ── THE FLASH GATE: THE TUTOR'S VOICE OWNS THE STIMULUS ───────────────────
-  // She says "Watch the frame — the counters show for just a moment… How many
-  // counters did you see?" and THEN the counters appear. Keying the flash to a
-  // beat measured from item-open raced her instead: the flash landed mid-
-  // sentence, so the child heard "watch the frame" after the counters had
-  // already come and gone, and the ask arrived about a frame they never saw
-  // (drive 3, 2026-08-13 — "this would be confusing for the child").
-  //
-  // "Not speaking" is ambiguous on its own — it is also true in the gap before
-  // her audio starts — so the gate is a FALLING EDGE: she must have spoken for
-  // this item, and then stopped. Same gate on the first ask, on every
-  // subsequent challenge, and on a correction's re-flash; `tutorHasSpoken` is
-  // cleared in all three places. This is what retired the hand-tuned
-  // "wait 3s for the correction to finish" window — there is no window now.
-  //
-  // ⚠️ A FALLING EDGE ALONE WAS NOT ENOUGH, and drive 5 (2026-08-14, user)
-  // heard why: *"when i get it wrong, the very next one flashes way too fast
-  // before she finishes her statement."* On an affirm the runner QUEUES the
-  // next item's cue and opens the item in the same dispatch, and a queued cue
-  // waits for the floor — so the new item is on screen for the whole tail of
-  // the PREVIOUS item's affirmation. `tutorHasSpoken` latched on that tail,
-  // her affirm drained, and the flash fired in the silence before this item's
-  // ask was ever sent. `runner.cuedItemId` is the runner's answer: the id of
-  // the item her live line is ACTUALLY about. Requiring it to match closes the
-  // hole without a single tuned millisecond, and a correction still works
-  // untouched (no new cue is sent, so the id keeps naming this item).
-  const tutorSpeaking = runner.tutorSpeaking;
-  const askIsForThisItem = currentItem != null && runner.cuedItemId === currentItem.id;
-  const flashPending = runner.running && isSubitize && !isFlashing && !flashAnswerReady;
+  // WHEN the flash runs is the runner's `onPresentStimulus` gate (19c): she has
+  // to have spoken for THIS item and stopped. The ~40 lines that used to live
+  // here — a `tutorHasSpoken` latch, a fallback timer, a prep-beat effect and
+  // the two footguns they carried — are the runner's now, so the next port with
+  // a timed stimulus inherits the drives instead of repeating them.
 
-  useEffect(() => {
-    if (flashPending && askIsForThisItem && tutorSpeaking) setTutorHasSpoken(true);
-  }, [flashPending, askIsForThisItem, tutorSpeaking]);
-
-  // Safety net: if her audio never arrives, the stimulus still has to happen.
-  useEffect(() => {
-    if (!flashPending || tutorHasSpoken) return;
-    const timer = setTimeout(() => setTutorHasSpoken(true), TUTOR_SILENCE_FALLBACK_MS);
-    return () => clearTimeout(timer);
-  }, [flashPending, tutorHasSpoken]);
-
-  useEffect(() => {
-    if (!flashPending || !tutorHasSpoken || tutorSpeaking) return;
-    const timer = setTimeout(() => startFlash(), SUBITIZE_PREP_MS);
-    return () => clearTimeout(timer);
-  }, [flashPending, tutorHasSpoken, tutorSpeaking, startFlash]);
-
-  // Cancel timers on unmount.
+  // Cancel the flash on unmount (the stillness window is the runner's).
   useEffect(() => () => {
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
   }, []);
 
   // ── Rendering helpers ─────────────────────────────────────────────────────
@@ -831,8 +769,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
                     onClick={() => {
                       // Counted via hearStimulus → summary.hearTaps (the
                       // contract's successor to the old reflash penalty).
+                      // Direct, not gated: the CHILD asked for this one, so it
+                      // is not waiting on anybody's voice.
                       runner.hearStimulus();
-                      startFlash();
+                      if (currentItem) presentFlash(currentItem);
                     }}
                   >
                     Show again
@@ -841,8 +781,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               </div>
             )}
 
-            {/* The reward — the first moment a number may appear on screen. */}
-            {reward && currentSolved && (
+            {/* The reward — the first moment a number may appear on screen, and
+                it HOLDS for the length of her affirmation (18b). Gated on
+                `revealHeld`, never on `currentSolved`: the runner opens the next
+                item in the same dispatch, so by the time this renders the
+                current item is the NEXT one and is not solved. */}
+            {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
                   {reward}

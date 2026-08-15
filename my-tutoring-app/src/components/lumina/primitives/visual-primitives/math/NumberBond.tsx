@@ -152,9 +152,13 @@ const PART_LEFT_CX = BOND_WIDTH / 2 - 100;
 const PART_RIGHT_CX = BOND_WIDTH / 2 + 100;
 const PART_CY = 200;
 
-/** Stillness that closes a hands-only turn — the gesture analogue of the mic's
- *  silence bracket. Generous: a five-year-old pauses to think, and a premature
- *  commit spends one of the two corrections. */
+/**
+ * HOW LONG EACH SHAPE MAY STAY STILL BEFORE IT COMMITS. The window itself is
+ * the runner's (`armStillness`, 19c) — these are the per-shape numbers, which
+ * genuinely differ: a two-part split is not a four-equation grid.
+ * Every one of them is STRUCTURAL, never correctness-gated.
+ */
+/** A two-part split, placed one counter at a time. */
 const SPLIT_SETTLE_MS = 3000;
 /** A FULL split (left + right = whole) is a terminal shape; it still waits a
  *  beat rather than committing on the tap — structural, never correctness-
@@ -430,10 +434,11 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
   const [familyInputs, setFamilyInputs] = useState<string[]>(['', '', '', '']);
   const [equationSlots, setEquationSlots] = useState<string[]>([]);
   const [availableTiles, setAvailableTiles] = useState<string[]>([]);
-  /** Post-answer only (answer-leak rule), cleared when the next item opens. */
+  /** Post-answer only (answer-leak rule). NOT cleared when the next item opens:
+   *  that clear and the `onAffirmed` that set it landed in one React batch, so
+   *  the reveal painted on the last item and nowhere else (18b).
+   *  `runner.revealHeld` is the gate now. */
   const [reward, setReward] = useState<string | null>(null);
-
-  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** What the workspace held when it last stopped changing. */
   const pendingSplitRef = useRef({ left: 0, right: 0 });
   const pendingFamilyRef = useRef<string[]>(['', '', '', '']);
@@ -452,13 +457,6 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-
-  const clearSettle = useCallback(() => {
-    if (settleTimerRef.current) {
-      clearTimeout(settleTimerRef.current);
-      settleTimerRef.current = null;
-    }
-  }, []);
 
   // ── The pack: generated challenges → judged items + hand-authored script ──
   // Unaskable items are DROPPED (invalid parts, out-of-range wholes, symbolic
@@ -516,8 +514,6 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
 
   // ── Per-item reset — every item owns its starting state ───────────────────
   const resetStageFor = useCallback((item: NumberBondItem, index: number) => {
-    clearSettle();
-    setReward(null);
     setLeftCount(0);
     setRightCount(0);
     pendingSplitRef.current = { left: 0, right: 0 };
@@ -538,7 +534,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     } else {
       setAvailableTiles([]);
     }
-  }, [clearSettle]);
+  }, []);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
@@ -592,8 +588,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     },
     onCorrectionRetry: (item) => {
       // The tutor's correction re-modeled and re-asked in-band; restore the
-      // working surface for another go.
-      clearSettle();
+      // working surface for another go. The settle window is re-armed by the
+      // runner on this path.
       if (item.kind === 'decompose') {
         setLeftCount(0);
         setRightCount(0);
@@ -646,39 +642,31 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     runner.submitGestureAttempt(bondEquationVerdictCue(item, pendingTilesRef.current));
   }, [runner]);
 
-  /** A hands turn closes on stillness; further touches reset the window. */
+  /** A hands turn closes on stillness; further touches reset the window, and
+   *  the runner cancels it at item open, at a correction, and at the commit. */
   const armSplitSettle = useCallback((left: number, right: number) => {
     const item = runner.currentItem;
     pendingSplitRef.current = { left, right };
-    clearSettle();
     const wait = item && left + right === item.whole ? SPLIT_FULL_SETTLE_MS : SPLIT_SETTLE_MS;
-    settleTimerRef.current = setTimeout(() => { commitSplit(); }, wait);
-  }, [runner, clearSettle, commitSplit]);
+    runner.armStillness(commitSplit, wait);
+  }, [runner, commitSplit]);
 
   const armFamilySettle = useCallback((inputs: string[]) => {
     const item = runner.currentItem;
     pendingFamilyRef.current = inputs;
-    clearSettle();
     const complete = !!item
       && inputs.every((s) => s.trim().length > 0
         && parseBondEquation(s, item.whole, item.knownPart, item.otherPart) !== null);
-    settleTimerRef.current = setTimeout(
-      () => { commitFamily(); },
-      complete ? FAMILY_COMPLETE_SETTLE_MS : FAMILY_SETTLE_MS,
-    );
-  }, [runner, clearSettle, commitFamily]);
+    runner.armStillness(commitFamily, complete ? FAMILY_COMPLETE_SETTLE_MS : FAMILY_SETTLE_MS);
+  }, [runner, commitFamily]);
 
   const armEquationSettle = useCallback((tiles: string[]) => {
     const item = runner.currentItem;
     pendingTilesRef.current = tiles;
-    clearSettle();
     const complete = !!item
       && parseBondEquation(tiles.join(''), item.whole, item.knownPart, item.otherPart) !== null;
-    settleTimerRef.current = setTimeout(
-      () => { commitEquation(); },
-      complete ? EQUATION_COMPLETE_SETTLE_MS : EQUATION_SETTLE_MS,
-    );
-  }, [runner, clearSettle, commitEquation]);
+    runner.armStillness(commitEquation, complete ? EQUATION_COMPLETE_SETTLE_MS : EQUATION_SETTLE_MS);
+  }, [runner, commitEquation]);
 
   // ── Decompose interactions ────────────────────────────────────────────────
   // NEVER gate interaction on the stage word — `canAttempt` reads the solved
@@ -704,8 +692,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     pendingSplitRef.current = { left: 0, right: 0 };
     // Starting over is thinking, not an answer — nothing to commit, so the
     // window is cleared rather than re-armed (mirrors item-open state).
-    clearSettle();
-  }, [runner, clearSettle]);
+    runner.clearStillness();
+  }, [runner]);
 
   // ── Fact-family / equation-tray interactions ──────────────────────────────
   const editFamilyInput = useCallback((index: number, value: string) => {
@@ -734,11 +722,6 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     setAvailableTiles((prev) => [...prev, tile]);
     armEquationSettle(next);
   }, [runner, equationSlots, armEquationSettle]);
-
-  // Cancel the settle timer on unmount.
-  React.useEffect(() => () => {
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-  }, []);
 
   // ── Live equation bar (render lever, unchanged semantics) ─────────────────
   const liveEquation = useMemo(() => {
@@ -991,7 +974,10 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
             )}
 
             {/* The reward — the first moment an answer may appear. */}
-            {reward && currentSolved && (
+            {/* Gated on `revealHeld`, never on `currentSolved`: the runner opens
+                the next item in the same dispatch, so by the time this renders
+                the current item is the NEXT one and is not solved (18b). */}
+            {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block font-mono">
                   {reward}

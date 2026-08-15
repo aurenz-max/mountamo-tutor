@@ -62,6 +62,31 @@ import type { DiagnosisEvidence } from '../evaluation/diagnosis/types';
 const DEFAULT_MAX_CORRECTIONS = 2;
 const DEFAULT_PASS_THRESHOLD = 60;
 
+/**
+ * THE TWO CLOCKS A JUDGED PORT USED TO BUILD FOR ITSELF (19c, 2026-08-15).
+ *
+ * Both were discovered by drives, both were re-authored per component, and both
+ * came with a documented footgun that only bites the SECOND person to write
+ * them. `ten-frame` carried ~40 lines of the first; `number-bond` and
+ * `addition-subtraction-scene` between them carried NINE hand-tuned constants
+ * of the second. They live here now so a port declares a policy instead of
+ * re-deriving one.
+ *
+ * The defaults below are the values three drives converged on. A pack overrides
+ * them per call (`armStillness`) or per run (`stimulus`) — the point is that the
+ * number is a stated policy in one place, not a magic literal in fifteen.
+ */
+/** A breath between the tutor finishing her ask and the stimulus appearing. */
+const DEFAULT_STIMULUS_PREP_MS = 700;
+/** If her audio never arrives at all, the stimulus still has to happen — a
+ *  child cannot answer about a frame that never flashed. Long enough that it
+ *  never pre-empts a real utterance. */
+const DEFAULT_STIMULUS_FALLBACK_MS = 12_000;
+/** Stillness that closes a hands-only turn — the gesture analogue of the mic's
+ *  silence bracket. Deliberately generous: a five-year-old pauses to think, and
+ *  a premature commit spends one of the two corrections. */
+const DEFAULT_STILLNESS_MS = 3000;
+
 /** The family audio mode now lives in the contract (so pure di-script tests
  *  can pin the catalog side without importing React); re-exported here because
  *  the runner is where existing consumers found it. */
@@ -127,6 +152,45 @@ export interface JudgedScriptRunnerOptions<Item extends JudgedScriptItem> {
   /** A correction within the cap: the tutor re-modeled in-band; restore the
    *  stage for another go (cvc clears only the wrong slots here). */
   onCorrectionRetry?: (item: Item, used: number) => void;
+  /**
+   * PRESENT THE STIMULUS NOW — the tutor has finished her line for this item.
+   *
+   * Fires at most once per arm, and the runner arms exactly where a stimulus is
+   * owed: the run opener, every subsequent item, and every correction retry
+   * (a re-flash waits for her CORRECTION to finish, on the same gate as the
+   * first ask). Flash, reveal, animation — anything the ask REFERS TO belongs
+   * here, and nothing else does: this is presentation, never progression.
+   *
+   * ⚠️ WHY THIS IS NOT A DELAY MEASURED FROM ITEM-OPEN. The tutor's line takes
+   * as long as it takes, so a wall-clock beat lands in the middle of her
+   * sentence — ten-frame's flash fired while she was still saying "watch the
+   * frame", and the child heard the instruction after the counters had come and
+   * gone (drive 3, 2026-08-13). `counting-board` still had the raw 800ms
+   * version of that bug when this option was written.
+   *
+   * ⚠️ AND WHY A "SHE STOPPED SPEAKING" LATCH IS NOT ENOUGH EITHER. On an
+   * affirm the runner queues the next item's cue and opens the item in the SAME
+   * dispatch, but a queued cue waits for the floor — so the new item is on
+   * screen for the whole tail of the PREVIOUS item's affirmation. A bare
+   * falling edge fills on that tail and fires the stimulus before this item's
+   * ask is ever spoken (drive 5, 2026-08-14, user: *"when i get it wrong, the
+   * very next one flashes way too fast"*). The gate below therefore requires
+   * `cuedItemId` to name THIS item as well — the tutor's live line has to be
+   * about the thing we are about to show.
+   */
+  onPresentStimulus?: (item: Item, index: number) => void;
+  /** Policy for `onPresentStimulus`. Omit for the defaults three drives agreed
+   *  on; `when` narrows it to the modes that own a stimulus. */
+  stimulus?: {
+    /** Which items own a timed stimulus. Omitted = all of them. */
+    when?: (item: Item) => boolean;
+    /** Quiet beat after her line, before the stimulus. Default 700ms. */
+    prepMs?: number;
+    /** Fire anyway if her audio never arrives. Default 12s. */
+    fallbackMs?: number;
+  };
+  /** Default window for `armStillness` when a call does not name one. */
+  stillnessMs?: number;
   /** Escape hatch: every emission, after the runner has acted on it. */
   onEmission?: (emission: LoopEmission, item: Item | null) => void;
 }
@@ -201,6 +265,44 @@ export interface JudgedScriptRun<Item extends JudgedScriptItem> {
    * her correction line.
    */
   cuedItemId: string | null;
+  /**
+   * Should the affirmed item's reveal still be on screen? (18b, ruled
+   * 2026-08-15: the reveal holds until her next cue is SENT.)
+   *
+   * It opens on the affirmation and closes the moment the tutor's cue for the
+   * NEXT item actually goes out — so the answer is visible for exactly as long
+   * as she is saying it, with no tuned constant anywhere. On the LAST item the
+   * complete cue names the same item, so the reveal holds into the summary,
+   * which is the one case that worked before this existed.
+   *
+   * ⚠️ THE BUG THIS REPLACES WAS INVISIBLE AND FAMILY-WIDE. Ports set a reward
+   * in `onAffirmed` and cleared it in `onItemOpened`, and the runner fires both
+   * IN ONE DISPATCH on the advance path — so the reveal painted on the last
+   * item and nowhere else, in all four math ports, for a month. Render on this
+   * flag and do NOT clear the payload in `onItemOpened`: the hold is the gate,
+   * and the next affirmation overwrites the text.
+   */
+  revealHeld: boolean;
+  /**
+   * A HANDS TURN CLOSES ON STILLNESS — arm the window, and `commit` runs when
+   * the child stops changing the board. Any further call resets it.
+   *
+   * The runner clears the window wherever an armed one would be wrong: item
+   * open, correction retry, gesture commit, run end, unmount. That list is the
+   * reason this is not a `setTimeout` in the component — every port that wrote
+   * its own had to keep the same five sites in step by hand, and a missed one
+   * commits the previous item's board into this item's turn.
+   *
+   * `ms` is per call because the window is a property of the SHAPE being built,
+   * not of the primitive: a five-tap equation tray waits longer than a two-part
+   * split, and a terminal shape (`N op N = N`, a full frame) shortens it. It is
+   * never correctness-gated — `4 + 2 = 9` commits exactly as readily as
+   * `4 + 2 = 6`, or the close is a Check button wearing a costume.
+   */
+  armStillness: (commit: () => void, ms?: number) => void;
+  /** Cancel an armed stillness window. Starting over is thinking, not an
+   *  answer — there is nothing to commit. */
+  clearStillness: () => void;
   /** Present only when cancelling is allowed (idle standalone, not running). */
   cancelListening?: () => void;
   /** ONE start gesture: connect (standalone), open the mic, send the opening
@@ -261,6 +363,16 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   /** See `cuedItemId` on the returned interface — the item the tutor's live
    *  line is about, which is NOT always the item on screen. */
   const [cuedItemId, setCuedItemId] = useState<string | null>(null);
+  /** The affirmed item whose reveal is still on screen (18b). Deliberately NOT
+   *  cleared when the next item opens — that is the bug. */
+  const [revealedItemId, setRevealedItemId] = useState<string | null>(null);
+  /** The stimulus clock's live arm. `seq` re-triggers the gate when the SAME
+   *  item re-arms on a correction retry. */
+  const [stimulusArm, setStimulusArm] = useState<{ seq: number; itemId: string } | null>(null);
+  /** Has the tutor spoken for the armed item YET? The stimulus waits on her, so
+   *  it must tell "she has not started" from "she has finished" — both of which
+   *  look exactly like silence. */
+  const [tutorHasSpoken, setTutorHasSpoken] = useState(false);
 
   const idxRef = useRef(0);
   idxRef.current = currentIndex;
@@ -284,6 +396,12 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   // Visual-only timer: clears the tap-to-hear highlight. It advances nothing —
   // progression here has exactly one cause: a tutor verdict.
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** The stillness window and what it will commit. Refs, not state: the window
+   *  is re-armed on every touch and must never re-render the board it is
+   *  measuring. */
+  const stillnessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stillnessCommitRef = useRef<(() => void) | null>(null);
+  const stimulusSeqRef = useRef(0);
 
   const lines = useMemo(() => {
     const supplied = packRef.current.statusLines ?? {};
@@ -324,6 +442,45 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   const maxCorrectionsRef = useRef(maxCorrections);
   maxCorrectionsRef.current = maxCorrections;
 
+  // ── The stillness close (19c) ─────────────────────────────────────────────
+  // Stable identities (refs inside, no deps), so a component may hold these in
+  // a dep array without re-arming its own callbacks every render — the runner
+  // object itself is fresh per render and never safe there.
+  const clearStillness = useCallback(() => {
+    if (stillnessTimerRef.current) {
+      clearTimeout(stillnessTimerRef.current);
+      stillnessTimerRef.current = null;
+    }
+    stillnessCommitRef.current = null;
+  }, []);
+
+  const armStillness = useCallback((commit: () => void, ms?: number) => {
+    clearStillness();
+    stillnessCommitRef.current = commit;
+    const wait = ms ?? optionsRef.current.stillnessMs ?? DEFAULT_STILLNESS_MS;
+    stillnessTimerRef.current = setTimeout(() => {
+      stillnessTimerRef.current = null;
+      const run = stillnessCommitRef.current;
+      stillnessCommitRef.current = null;
+      run?.();
+    }, wait);
+  }, [clearStillness]);
+
+  // ── The stimulus clock (19c) ──────────────────────────────────────────────
+  /** Arm the gate for `item`, or disarm if this item owns no stimulus. Called
+   *  from the three places a stimulus is owed: run start, item open, and a
+   *  correction retry. */
+  const armStimulus = useCallback((item: Item | null) => {
+    const { onPresentStimulus, stimulus } = optionsRef.current;
+    if (!item || !onPresentStimulus || (stimulus?.when && !stimulus.when(item))) {
+      setStimulusArm(null);
+      return;
+    }
+    stimulusSeqRef.current += 1;
+    setStimulusArm({ seq: stimulusSeqRef.current, itemId: item.id });
+    setTutorHasSpoken(false);
+  }, []);
+
   // ── Ledger ────────────────────────────────────────────────────────────────
   const closeItem = useCallback((item: Item, solved: boolean) => {
     const corrections = correctionsRef.current.get(item.id) ?? 0;
@@ -342,6 +499,10 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   const finish = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
+    // Neither clock outlives the run: a stimulus fired after the summary is a
+    // flash nobody asked about, and a settle would commit into a closed loop.
+    clearStillness();
+    setStimulusArm(null);
     const outcomes = outcomesRef.current;
     const solvedCount = outcomes.filter((o) => o.solved).length;
     const attemptsCount = outcomes.reduce((s, o) => s + 1 + o.corrections, 0);
@@ -386,7 +547,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     setStage('done');
     setStatusLine(lines.done);
     optionsRef.current.onFinished(runSummary);
-  }, [lines]);
+  }, [clearStillness, lines]);
 
   // ── Progression ───────────────────────────────────────────────────────────
   const loopRef = useRef<JudgedSpeechLoop | null>(null);
@@ -403,9 +564,12 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     setStimulusTapped(false);
     awaitingGestureRef.current = false;
     challengeStartRef.current = performance.now();
+    // The previous item's board must never commit into this one's turn.
+    clearStillness();
+    armStimulus(next);
     optionsRef.current.onItemOpened?.(next, nextIndex);
     return true;
-  }, [itemOf]);
+  }, [armStimulus, clearStillness, itemOf]);
 
   const applyVerdict = useCallback((judgment: 'affirmed' | 'corrected') => {
     const item = currentItem();
@@ -420,6 +584,13 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       if (used <= maxCorrectionsRef.current) {
         // The tutor's correction line already re-modeled and re-asked in-band.
         awaitingGestureRef.current = false;
+        // Re-arming the stimulus is what makes a re-flash wait for her
+        // CORRECTION to finish — the same gate as the first ask, so there is no
+        // hand-tuned "wait for the correction" window to get wrong. No new cue
+        // is sent on this path, so `cuedItemId` still names this item and the
+        // gate correctly catches her correction line.
+        clearStillness();
+        armStimulus(item);
         optionsRef.current.onCorrectionRetry?.(item, used);
         setStage('asking');
         setStatusLine(lines.retry(item));
@@ -438,11 +609,14 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       return;
     }
 
-    // Affirmed — this is the first moment the answer may appear on screen.
+    // Affirmed — this is the first moment the answer may appear on screen, and
+    // `revealedItemId` is what keeps it there for the length of her
+    // affirmation instead of one un-painted React batch (18b).
     SoundManager.playCorrect();
     closeItem(item, true);
     awaitingGestureRef.current = false;
     optionsRef.current.onAffirmed?.(item);
+    setRevealedItemId(item.id);
     setStage('affirmed');
 
     const nextIndex = idxRef.current + 1;
@@ -456,7 +630,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
       loop.queueCue(packRef.current.completeCue());
       finish();
     }
-  }, [closeItem, cueOptsFor, currentItem, finish, itemOf, lines, openNext]);
+  }, [armStimulus, clearStillness, closeItem, cueOptsFor, currentItem, finish, itemOf, lines, openNext]);
 
   const handleEmission = useCallback((emission: LoopEmission) => {
     const item = currentItem();
@@ -558,7 +732,12 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   // `sendCueNow` reports 'sent' too, so the run opener lands here as well.
   const handleCue = useCallback((event: CueLogEvent) => {
     if (event.phase !== 'sent') return;
-    setCuedItemId(currentItem()?.id ?? null);
+    const id = currentItem()?.id ?? null;
+    setCuedItemId(id);
+    // 18b: her line has moved on, so the previous item's reveal is over. The
+    // LAST item's complete cue names the same id, so that reveal holds into the
+    // summary — which is the one case that painted before this existed.
+    setRevealedItemId((held) => (held != null && held !== id ? null : held));
   }, [currentItem]);
 
   const loop = useJudgedSpeechLoop({
@@ -580,6 +759,51 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx.isConnected, currentIndex]);
 
+  // ── THE STIMULUS GATE: THE TUTOR'S VOICE OWNS THE STIMULUS ────────────────
+  // She says "Watch the frame — the counters show for just a moment… How many
+  // counters did you see?" and THEN the counters appear. Three effects, and
+  // each one exists because a drive heard what happens without it — see
+  // `onPresentStimulus` above for the two failure modes.
+  //
+  // ⚠️ EVERY DEP HERE IS A PRIMITIVE, ON PURPOSE. A timer effect keyed on an
+  // identity that churns tears down and re-arms faster than the timer can ever
+  // fire — the standing Lumina context-churn footgun, and the reason the
+  // callback is read through `optionsRef` rather than taken as a dep.
+  const stimulusPrepMs = options.stimulus?.prepMs ?? DEFAULT_STIMULUS_PREP_MS;
+  const stimulusFallbackMs = options.stimulus?.fallbackMs ?? DEFAULT_STIMULUS_FALLBACK_MS;
+  const armedItemId = stimulusArm?.itemId ?? null;
+  const armedSeq = stimulusArm?.seq ?? 0;
+  const tutorSpeaking = ctx.isAudioPlaying;
+
+  // (1) The rising edge — her line for THIS item has started. `cuedItemId` is
+  //     what makes it THIS item's line and not the tail of the last affirm.
+  useEffect(() => {
+    if (armedItemId == null || tutorHasSpoken) return;
+    if (cuedItemId !== armedItemId || !tutorSpeaking) return;
+    setTutorHasSpoken(true);
+  }, [armedItemId, armedSeq, tutorHasSpoken, cuedItemId, tutorSpeaking]);
+
+  // (2) The safety net — if her audio never arrives, the stimulus still has to
+  //     happen. A child cannot answer about a frame that never flashed.
+  useEffect(() => {
+    if (armedItemId == null || tutorHasSpoken) return;
+    const timer = setTimeout(() => setTutorHasSpoken(true), stimulusFallbackMs);
+    return () => clearTimeout(timer);
+  }, [armedItemId, armedSeq, tutorHasSpoken, stimulusFallbackMs]);
+
+  // (3) The falling edge — she spoke for this item, and stopped. A breath, then
+  //     present it. Firing DISARMS, which is what makes it once-per-arm.
+  useEffect(() => {
+    if (armedItemId == null || !tutorHasSpoken || tutorSpeaking) return;
+    const timer = setTimeout(() => {
+      const index = packRef.current.items.findIndex((i) => i.id === armedItemId);
+      const item = index < 0 ? null : (packRef.current.items[index] as Item);
+      setStimulusArm(null);
+      if (item) optionsRef.current.onPresentStimulus?.(item, index);
+    }, stimulusPrepMs);
+    return () => clearTimeout(timer);
+  }, [armedItemId, armedSeq, tutorHasSpoken, tutorSpeaking, stimulusPrepMs]);
+
   // ── Gesture commit ────────────────────────────────────────────────────────
   /** Stable identity — safe in effect/callback dep arrays (the returned runner
    *  object itself is fresh per render; see the timer-effect footgun note). */
@@ -589,10 +813,13 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     const loop = loopRef.current;
     if (!loop || awaitingGestureRef.current) return;
     awaitingGestureRef.current = true;
+    // The board is in the tutor's hands now; a window still counting down would
+    // commit it a second time the moment the child fidgets.
+    clearStillness();
     setStage('judging');
     setStatusLine(lines.judging);
     loop.submitGestureAttempt(cue);
-  }, [lines]);
+  }, [clearStillness, lines]);
 
   // ── Tap-to-hear — never withdrawn by band or tier ─────────────────────────
   const hearStimulus = useCallback(() => {
@@ -629,6 +856,9 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     // A re-run must not inherit the last run's cued item — a stimulus gate
     // comparing ids would open before the new opener is spoken.
     setCuedItemId(null);
+    setRevealedItemId(null);
+    clearStillness();
+    armStimulus(first);
     optionsRef.current.onItemOpened?.(first, 0);
     activeLoop.reset();
     setRunning(true);
@@ -639,7 +869,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     // line, never a second catalog directive on the same turn (SWAP-1).
     activeLoop.sendCueNow(packRef.current.itemCue(first, { opening: true, howToPlay: true }));
     activeLoop.arm();
-  }, [itemOf, lines]);
+  }, [armStimulus, clearStillness, itemOf, lines]);
 
   const startRunRef = useRef(startRun);
   startRunRef.current = startRun;
@@ -690,6 +920,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   // Unmount: never leave Live holding the mic, never leave a timer running.
   useEffect(() => () => {
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (stillnessTimerRef.current) clearTimeout(stillnessTimerRef.current);
     if (weConnectedRef.current) {
       ctx.stopListening();
       ctx.disconnect();
@@ -732,8 +963,11 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     // and only `running` answers that. Standalone is unaffected: `isListening`
     // there only goes true inside `start()`, so the two agree.
     micState: preparing ? 'opening' : running && ctx.isListening ? 'armed' : 'idle',
-    tutorSpeaking: ctx.isAudioPlaying,
+    tutorSpeaking,
     cuedItemId,
+    revealHeld: revealedItemId != null,
+    armStillness,
+    clearStillness,
     cancelListening: running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening,
     start,
     hearStimulus,

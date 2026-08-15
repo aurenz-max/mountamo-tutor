@@ -45,11 +45,13 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
 // visibility, tap-counting), not the judged loop, and the real voice hook
 // would touch audio APIs jsdom does not have once a run starts.
 vi.mock('../../../../hooks/useJudgedSpeechLoop', () => ({
-  useJudgedSpeechLoop: () => ({
+  useJudgedSpeechLoop: (options: { onCue?: (e: { phase: string; text: string }) => void }) => ({
     voiceTurns: {},
     queueCue: vi.fn(),
     submitGestureAttempt: vi.fn(),
-    sendCueNow: vi.fn(),
+    // A cue that reaches the floor is what tells the runner WHICH item the
+    // tutor's live line is about; the stimulus gate will not open without it.
+    sendCueNow: vi.fn((text: string) => options.onCue?.({ phase: 'sent', text })),
     clearQueuedCue: vi.fn(),
     arm: vi.fn(),
     disarm: vi.fn(),
@@ -126,6 +128,7 @@ beforeEach(() => {
   cleanup();
   // The start button only renders while the mic is idle.
   ctxState.isListening = false;
+  ctxState.isAudioPlaying = false;
   // jsdom has no mediaDevices; the mic renders null without this stub.
   Object.defineProperty(navigator, 'mediaDevices', {
     value: { getUserMedia: vi.fn() },
@@ -135,18 +138,36 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('CountingBoard reader-fit item 13 (DI surface)', () => {
-  it('K subitize: objects flash then hide; they are never tap-countable', async () => {
-    render(<CountingBoard data={data('K', [
-      challenge('s1', 'subitize', 4),
-      challenge('s2', 'subitize', 3),
-    ])} />);
+  /**
+   * ⭐ 19c CHANGED THIS TEST, AND THE CHANGE IS THE POINT. Until 2026-08-15 this
+   * port started its flash on an 800ms beat measured from item-open — exactly
+   * the defect ten-frame drive 3 heard ("it flashes then she instructs, this
+   * would be confusing for the child"), still live here because that fix had
+   * been written into ONE component instead of into the runner. Absorbing the
+   * gate fixed it for free, and this suite drives the REAL runner, so it can
+   * assert it: the board stays dark under her voice, however long she takes.
+   */
+  it('K subitize: waits for the tutor, then flashes and hides; never tap-countable', async () => {
+    const fixture = data('K', [challenge('s1', 'subitize', 4), challenge('s2', 'subitize', 3)]);
+    const { rerender } = render(<CountingBoard data={fixture} />);
+    const repaint = async () => {
+      await act(async () => { rerender(<CountingBoard data={fixture} />); });
+    };
 
     // Pre-run: nothing flashes yet and the objects stay hidden.
     expect(allObjects()).toHaveLength(0);
 
     await startRun();
 
-    // Prep beat elapses → the objects flash into view — but NOT as tappables.
+    // Her line is out and she is SPEAKING it. The board must stay dark.
+    ctxState.isAudioPlaying = true;
+    await repaint();
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 1200)); });
+    expect(allObjects()).toHaveLength(0);
+
+    // She stops. A breath, then the objects flash in — but NOT as tappables.
+    ctxState.isAudioPlaying = false;
+    await repaint();
     await waitFor(() => expect(allObjects()).toHaveLength(4), { timeout: 2500 });
     expect(tappableObjects()).toHaveLength(0);
     expect(countBadges()).toHaveLength(0);

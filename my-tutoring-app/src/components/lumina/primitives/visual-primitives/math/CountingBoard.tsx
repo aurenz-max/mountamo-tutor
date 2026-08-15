@@ -161,8 +161,12 @@ const OBJECT_PADDING = 24;
 // not tap-counting a static scene (reader-fit item 13). The flash is stimulus
 // presentation, NOT an advance clock: when it ends, nothing progresses — the
 // tutor is still waiting for the child's answer.
+// WHEN the flash starts is the runner's `onPresentStimulus` gate (19c): the
+// tutor has to have spoken for THIS item and stopped. This port used to start
+// it on an 800ms beat measured from item-open, which is exactly the defect
+// ten-frame drive 3 heard - the counters came and went while she was still
+// saying "watch the board". The prep beat is the runner's default now.
 const SUBITIZE_FLASH_MS = 1500;   // default; overridable per-challenge via flashDuration
-const SUBITIZE_PREP_MS = 800;     // brief "get ready" beat before the flash begins
 
 // ============================================================================
 // Position Generators
@@ -453,7 +457,6 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
   // ── Per-item board reset ──────────────────────────────────────────────────
   const resetBoardFor = useCallback((item: CountingItem) => {
-    setReward(null);
     setAlreadyCountedNote(false);
     setHandChoice(null);
     handChoiceRef.current = null;
@@ -480,6 +483,27 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   }, []);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
+  // The K subitize flash - WHAT is shown; the runner decides WHEN.
+  // Called from `onPresentStimulus` once the tutor has finished her line for
+  // this item. Takes the item and its index rather than reading `currentItem`,
+  // so it holds no runner identity and cannot go stale.
+  const presentFlash = useCallback((_item: CountingItem, index: number) => {
+    const challenge = challenges[index];
+    if (!challenge) return;
+    if (flashTimeoutRef.current) {
+      clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    }
+    setSubitizeAnswerReady(false);
+    setIsSubitizeFlashing(true);
+    const duration = challenge.flashDuration || SUBITIZE_FLASH_MS;
+    flashTimeoutRef.current = setTimeout(() => {
+      setIsSubitizeFlashing(false);
+      setSubitizeAnswerReady(true);
+      flashTimeoutRef.current = null;
+    }, duration);
+  }, [challenges]);
+
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const byId = new Map(challenges.map((ch) => [ch.id, ch]));
     const subitizeOutcomes = summary.outcomes.filter((o) => byId.get(o.id)?.type === 'subitize');
@@ -521,7 +545,14 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     exhibitId,
     onFinished: handleFinished,
     onItemOpened: resetBoardFor,
+    // THE TUTOR OWNS THE STIMULUS CLOCK (19c). Before this the flash fired on a
+    // wall-clock beat from item-open and raced her sentence - ten-frame's drive-3
+    // defect, still live on this port because that fix had been written into one
+    // component instead of into the runner.
+    onPresentStimulus: presentFlash,
+    stimulus: { when: (item) => gradeBand === 'K' && item.kind === 'subitize' },
     onAffirmed: (item) => {
+      // `revealHeld` keeps this on screen for the length of her affirmation (18b).
       setReward(item.kind === 'subitize_perceptual' ? 'match' : String(item.target));
     },
     onCorrectionRetry: (item) => {
@@ -531,7 +562,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         setHandChoice(null);
         handChoiceRef.current = null;
       } else if (item.kind === 'subitize') {
-        // Re-arm the flash: the auto-start effect refires once flags clear.
+        // Re-arm the flash - the runner re-arms its gate on this path, so the
+        // re-flash waits for her CORRECTION to finish, on the same gate as the
+        // first ask.
         if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
         setIsSubitizeFlashing(false);
         setSubitizeAnswerReady(false);
@@ -586,33 +619,6 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     }
     return base;
   }, [currentItem?.kind, currentChallenge?.id, runner.currentIndex]);
-
-  // ── K subitize flash-then-hide ────────────────────────────────────────────
-  const startSubitizeFlash = useCallback(() => {
-    if (!currentChallenge) return;
-    if (flashTimeoutRef.current) {
-      clearTimeout(flashTimeoutRef.current);
-      flashTimeoutRef.current = null;
-    }
-    setSubitizeAnswerReady(false);
-    setIsSubitizeFlashing(true);
-    const duration = currentChallenge.flashDuration || SUBITIZE_FLASH_MS;
-    flashTimeoutRef.current = setTimeout(() => {
-      setIsSubitizeFlashing(false);
-      setSubitizeAnswerReady(true);
-      flashTimeoutRef.current = null;
-    }, duration);
-  }, [currentChallenge]);
-
-  // Auto-start the flash when a K subitize item is live. Fires once per item:
-  // after the flash completes `subitizeAnswerReady` holds, and both flags are
-  // cleared on item open and on a correction retry (which re-flashes).
-  useEffect(() => {
-    if (runner.running && isKSubitize && !isSubitizeFlashing && !subitizeAnswerReady) {
-      const timer = setTimeout(() => startSubitizeFlash(), SUBITIZE_PREP_MS);
-      return () => clearTimeout(timer);
-    }
-  }, [runner.running, isKSubitize, isSubitizeFlashing, subitizeAnswerReady, startSubitizeFlash]);
 
   // Cancel timers on unmount.
   useEffect(() => () => {
@@ -964,8 +970,14 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                     👀 {isSubitizeFlashing ? 'Look quick!' : 'Get ready to look…'}
                   </span>
                 )}
-                {subitizeAnswerReady && runner.running && (
-                  <LuminaButton tone="subtle" className="text-xs" onClick={startSubitizeFlash}>
+                {subitizeAnswerReady && runner.running && currentItem && (
+                  <LuminaButton
+                    tone="subtle"
+                    className="text-xs"
+                    // Direct, not gated: the CHILD asked for this one, so it is
+                    // not waiting on anybody's voice.
+                    onClick={() => presentFlash(currentItem, runner.currentIndex)}
+                  >
                     Show again
                   </LuminaButton>
                 )}
@@ -981,7 +993,10 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
             )}
 
             {/* The reward — the first moment the count may appear on screen. */}
-            {reward && runner.stage === 'affirmed' && (
+            {/* Gated on `revealHeld`, never on the stage word or `currentSolved`:
+                the runner opens the next item in the same dispatch, so by the
+                time this renders the current item is the NEXT one (18b). */}
+            {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 {reward === 'match' ? (
                   <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">

@@ -21,9 +21,11 @@
  *     count is spoken rather than typed.
  *  5. (R8) The ten frame mirrors the scene, never the stored result.
  *
- *  Plus the two clock rules this port inherited from the ten-frame drives: the
- *  change group arrives on the TUTOR'S VOICE, and it must survive continuous
- *  re-render (the mic re-renders this component many times a second).
+ *  Plus WHICH items hold their change group back for the tutor's voice. The
+ *  two clock rules themselves (falling edge, `cuedItemId`, silence fallback,
+ *  survive-re-render) moved into the runner in 19c and are driven against the
+ *  REAL hook in `hooks/useJudgedScriptRunner.test.tsx`; re-asserting them here
+ *  would only assert this file's mock.
  *
  * The runner is mocked at the seam — it has its own suite, and the pack has its
  * own (`AdditionSubtractionScene.di-script.test.ts`). What is under test here is
@@ -44,12 +46,18 @@ const runnerState = vi.hoisted(() => ({
   /** The item the tutor's live line is about. `null` = "whatever is on screen",
    *  which is what every test that does not exercise the queue wants. */
   cuedItemId: null as string | null,
+  /** 18b: is the affirmed item's reveal still on screen? */
+  revealHeld: false,
+  /** The runner owns the stillness window now (19c); the mock keeps one timer
+   *  so the STAGE's arming and cancelling are still exercised here. */
+  stillness: null as ReturnType<typeof setTimeout> | null,
   gestureCues: [] as string[],
   options: null as null | {
     pack: { items: AddSubSceneItem[] };
     onItemOpened?: (item: AddSubSceneItem, index: number) => void;
     onAffirmed?: (item: AddSubSceneItem) => void;
     onCorrectionRetry?: (item: AddSubSceneItem, used: number) => void;
+    onPresentStimulus?: (item: AddSubSceneItem, index: number) => void;
   },
 }));
 
@@ -73,11 +81,22 @@ vi.mock('../../../../hooks/useJudgedScriptRunner', () => ({
       micState: 'armed',
       tutorSpeaking: runnerState.tutorSpeaking,
       cuedItemId: runnerState.cuedItemId ?? item?.id ?? null,
+      revealHeld: runnerState.revealHeld,
+      armStillness: (commit: () => void, ms?: number) => {
+        if (runnerState.stillness) clearTimeout(runnerState.stillness);
+        runnerState.stillness = setTimeout(commit, ms ?? 3000);
+      },
+      clearStillness: () => {
+        if (runnerState.stillness) clearTimeout(runnerState.stillness);
+        runnerState.stillness = null;
+      },
       cancelListening: undefined,
       start: vi.fn(),
       hearStimulus: vi.fn(),
       stimulusTapped: false,
       submitGestureAttempt: (cue: string) => {
+        if (runnerState.stillness) clearTimeout(runnerState.stillness);
+        runnerState.stillness = null;
         runnerState.gestureCues.push(cue);
         runnerState.awaiting = true;
       },
@@ -153,9 +172,21 @@ const objectPositions = () =>
  *  the test so timers stay deterministic. */
 const openItem = (index = 0) => {
   runnerState.index = index;
+  if (runnerState.stillness) clearTimeout(runnerState.stillness);
+  runnerState.stillness = null;
   const item = runnerState.options!.pack.items[index];
   act(() => runnerState.options!.onItemOpened?.(item, index));
   return item;
+};
+
+/** THE SEAM 19c MOVED. The runner decides WHEN a stimulus may be presented —
+ *  falling edge on her voice, `cuedItemId`, the silence fallback and the prep
+ *  beat all live in `useJudgedScriptRunner` and are driven against the REAL
+ *  hook in `hooks/useJudgedScriptRunner.test.tsx`. What is still this file's
+ *  job is WHAT the stage does when it is told to present. */
+const presentStimulus = (index = runnerState.index) => {
+  const item = runnerState.options!.pack.items[index];
+  act(() => runnerState.options!.onPresentStimulus?.(item, index));
 };
 
 /**
@@ -177,16 +208,6 @@ const mount = (fixture: AdditionSubtractionSceneData) => {
   return { ...view, repaint };
 };
 
-/** Drive one full utterance for the item on screen. Returns after the falling
- *  edge, before the prep beat elapses. */
-const tutorSays = (repaint: () => void) => {
-  runnerState.tutorSpeaking = true;
-  repaint();
-  act(() => { vi.advanceTimersByTime(1500); });
-  runnerState.tutorSpeaking = false;
-  repaint();
-};
-
 beforeEach(() => {
   cleanup();
   runnerState.index = 0;
@@ -196,6 +217,9 @@ beforeEach(() => {
   runnerState.solved = new Set();
   runnerState.tutorSpeaking = false;
   runnerState.cuedItemId = null;
+  runnerState.revealHeld = false;
+  if (runnerState.stillness) clearTimeout(runnerState.stillness);
+  runnerState.stillness = null;
   runnerState.gestureCues = [];
   runnerState.options = null;
 });
@@ -411,98 +435,52 @@ describe('act-out at Grade 1 enacts, then speaks', () => {
 // ── The tutor owns the STIMULUS clock (ten-frame drives 3 and 5) ───────────
 
 describe('the change group arrives on the tutor’s voice', () => {
+  /**
+   * ⚠️ THE GATE MOVED (19c). This block used to own the TIMING rules too —
+   * falling edge on her voice, `cuedItemId`, the 12s silence fallback and the
+   * re-render-churn invariant. All of them are `useJudgedScriptRunner`'s now and
+   * are driven against the REAL hook in `hooks/useJudgedScriptRunner.test.tsx`
+   * ("the stimulus clock"); asserting them here would only assert this file's
+   * mock. What stays: WHICH items hold their change group back, and what the
+   * scene does when the runner says present.
+   */
   const joinStory = (ids = ['c1']) => data('1', ids.map((id) => ch({
     id, startCount: 2, changeCount: 1, resultCount: 3,
   })), { groupedReveal: true });
 
-  it('shows only the start group until she has told the story and stopped', () => {
+  it('shows only the start group until the runner presents the join', () => {
     vi.useFakeTimers();
-    const { repaint } = mount(joinStory());
+    mount(joinStory());
     openItem();
 
-    // Before she speaks: the join has not happened yet.
+    // However long the item has been on screen, the ducks do not arrive on a
+    // clock — the decision is not made here.
+    act(() => { vi.advanceTimersByTime(30_000); });
     expect(sceneObjects()).toHaveLength(2);
 
-    runnerState.tutorSpeaking = true;
-    repaint();
-    act(() => { vi.advanceTimersByTime(4000); });
-    // Mid-sentence. The ducks must NOT arrive underneath her voice.
-    expect(sceneObjects()).toHaveLength(2);
-
-    runnerState.tutorSpeaking = false;
-    repaint();
-    act(() => { vi.advanceTimersByTime(600); });
+    presentStimulus();
     expect(sceneObjects()).toHaveLength(3);
   });
 
-  it('does not reveal on the tail of the PREVIOUS item’s affirmation', () => {
-    // REGRESSION (ten-frame drive 5, 2026-08-14, user): "when i get it wrong,
-    // the very next one flashes way too fast before she finishes her
-    // statement." On an affirm the runner queues the next item's cue and opens
-    // the item in the same dispatch, but a queued cue waits for the floor — so
-    // item 2 is on screen for the whole tail of item 1's affirmation. A falling
-    // edge alone latches on that tail; `cuedItemId` is what makes "she stopped"
-    // mean "she stopped saying THIS item's line".
+  /**
+   * The `when` predicate is the port's half of the gate, and it is the half a
+   * second copy gets wrong: a reveal that waits for a voice which will never
+   * mention it is a scene that never completes.
+   */
+  it('holds nothing back where there is nothing to withhold', () => {
     vi.useFakeTimers();
-    const { repaint } = mount(joinStory(['c1', 'c2']));
-    openItem(0);
-    tutorSays(repaint);
-    act(() => { vi.advanceTimersByTime(600); });
-    expect(sceneObjects()).toHaveLength(3);
-
-    // She affirms item 1; the runner opens item 2 underneath her voice.
-    runnerState.cuedItemId = 'c1';
-    runnerState.tutorSpeaking = true;
-    repaint();
-    openItem(1);
-
-    // Her affirmation ends. This silence is the gap BEFORE the next ask.
-    runnerState.tutorSpeaking = false;
-    repaint();
-    act(() => { vi.advanceTimersByTime(3000); });
-    expect(sceneObjects()).toHaveLength(2);
-
-    // The queued cue goes out and she tells THIS story. Now the join lands.
-    runnerState.cuedItemId = 'c2';
-    tutorSays(repaint);
-    act(() => { vi.advanceTimersByTime(600); });
+    // groupedReveal withdrawn (hard tier) means "everything at once" by design.
+    mount(data('1', [ch({ startCount: 2, changeCount: 1, resultCount: 3 })], { groupedReveal: false }));
+    openItem();
     expect(sceneObjects()).toHaveLength(3);
   });
 
-  it('reveals even while the component re-renders continuously (mic-level churn)', () => {
-    // REGRESSION CLASS (ten-frame drive 2): a timer effect that depends on
-    // `runner` never fires, because the runner is a fresh object every render
-    // (and, until 19b took the level off the context value, `micLevel` ticked
-    // once per audio frame on top of that). It is invisible at rest — which is
-    // how 42 tests passed over a stimulus that could never happen — so this one
-    // re-renders throughout the wait.
+  it('holds nothing back on an ENACTED scene, which the child builds herself', () => {
     vi.useFakeTimers();
-    const fixture = joinStory();
-    const { rerender } = render(<AdditionSubtractionScene data={fixture} className="churn-0" />);
-    openItem();
-
-    runnerState.tutorSpeaking = true;
-    act(() => { rerender(<AdditionSubtractionScene data={fixture} className="churn-speaking" />); });
-    act(() => { vi.advanceTimersByTime(2000); });
-    runnerState.tutorSpeaking = false;
-    act(() => { rerender(<AdditionSubtractionScene data={fixture} className="churn-quiet" />); });
-
-    for (let i = 1; i <= 10; i++) {
-      act(() => { vi.advanceTimersByTime(100); });
-      rerender(<AdditionSubtractionScene data={fixture} className={`churn-${i}`} />);
-    }
-    expect(sceneObjects()).toHaveLength(3);
-  });
-
-  it('falls back if her audio never arrives at all', () => {
-    vi.useFakeTimers();
-    const { repaint } = mount(joinStory());
-    openItem();
-
-    act(() => { vi.advanceTimersByTime(12_000); });
-    repaint();
-    act(() => { vi.advanceTimersByTime(600); });
-    expect(sceneObjects()).toHaveLength(3);
+    mount(data('K', [ch({ startCount: 2, changeCount: 1, resultCount: 3 })], { groupedReveal: true }));
+    const item = openItem();
+    expect(item.answerKind).toBe('gesture');
+    expect(sceneObjects()).toHaveLength(2);   // seeded start group, hers to add to
   });
 });
 
@@ -511,7 +489,7 @@ describe('the change group arrives on the tutor’s voice', () => {
 describe('the ten frame aid', () => {
   it('mirrors what is visible, so it cannot fill to the total early', () => {
     vi.useFakeTimers();
-    const { repaint } = mount(data('1', [ch({ startCount: 2, changeCount: 1, resultCount: 3 })], {
+    mount(data('1', [ch({ startCount: 2, changeCount: 1, resultCount: 3 })], {
       showTenFrame: true, groupedReveal: true,
     }));
     openItem();
@@ -519,8 +497,7 @@ describe('the ten frame aid', () => {
     const filled = () => document.querySelectorAll('.bg-amber-400\\/60').length;
     expect(filled()).toBe(2);
 
-    tutorSays(repaint);
-    act(() => { vi.advanceTimersByTime(600); });
+    presentStimulus();
     expect(filled()).toBe(3);
   });
 
@@ -616,7 +593,17 @@ describe('answer leak', () => {
 
     act(() => runnerState.options!.onAffirmed?.(item));
     runnerState.solved = new Set([item.id]);
+    runnerState.revealHeld = true;
     repaint();
     expect(screen.getByText('5 - 2 = 3')).toBeTruthy();
+
+    // 18b: it HOLDS while the next item is already on screen and unsolved —
+    // that is the whole advance path, and where a `currentSolved` gate showed
+    // nothing at all. It ends when her cue for the next item is sent.
+    openItem(0);
+    expect(screen.getByText('5 - 2 = 3')).toBeTruthy();
+    runnerState.revealHeld = false;
+    repaint();
+    expect(screen.queryByText('5 - 2 = 3')).toBeNull();
   });
 });

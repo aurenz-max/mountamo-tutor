@@ -46,9 +46,11 @@
  * THE TUTOR OWNS THE STIMULUS CLOCK, NOT JUST THE ADVANCE. `groupedReveal` —
  * the change group arriving separately so the JOIN is visible — is a stimulus
  * the ask refers to, so it waits for her to have told the story and stopped
- * (ten-frame drives 3 and 5). The gate is a falling edge AND `cuedItemId`:
- * "not speaking" is also true before her audio starts, and on an advance the
- * new item is on screen for the whole tail of the previous item's affirmation.
+ * (ten-frame drives 3 and 5). The GATE is the runner's (`onPresentStimulus`,
+ * 19c); this file declares WHICH items hold their change group back
+ * (`waitsForReveal`) and what arriving looks like. Both clocks this port used to
+ * build for itself — that gate and the stillness window — are runner options
+ * now, so the drives behind them reach the next port without being retyped.
  *
  * ANSWER-LEAK RULE — INCLUDING IN PIXELS. The story prints but never states the
  * value the child must produce (build gate, both sides of the wire). The
@@ -204,14 +206,12 @@ const EQUATION_SETTLE_MS = 4500;
  *  on its way to becoming "3 + 2 = 10". Structural, never correctness-gated. */
 const EQUATION_COMPLETE_SETTLE_MS = 1200;
 
-/** A breath AFTER the tutor stops talking, before the change group arrives —
- *  so the join lands just after "…and one more duck joins them", not on top of
- *  it. See the reveal gate for why that distinction is the whole design. */
+/** A breath AFTER the tutor stops talking, before the change group arrives — so
+ *  the join lands just after "…and one more duck joins them", not on top of it.
+ *  Shorter than the family default (700ms): a join is a soft arrival, not a
+ *  flash the child has to catch. The GATE it hangs off is the runner's
+ *  (`onPresentStimulus`, 19c) — this is only how long the breath lasts. */
 const REVEAL_PREP_MS = 600;
-/** If her audio never arrives at all, the stimulus still has to happen — a child
- *  cannot answer about a join they were never shown. Long enough that it never
- *  pre-empts a real utterance. */
-const TUTOR_SILENCE_FALLBACK_MS = 12_000;
 
 // ============================================================================
 // Helpers
@@ -308,15 +308,11 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   const [equationTiles, setEquationTiles] = useState<string[]>([]);
   /** Has the change group arrived? Gated on the tutor's voice, never a clock. */
   const [changeRevealed, setChangeRevealed] = useState(false);
-  /** Has the tutor spoken for THIS item yet? The reveal waits on her, so it has
-   *  to tell "she has not started" from "she has finished" — both look like
-   *  silence. Reset on every item and on every correction retry. */
-  const [tutorHasSpoken, setTutorHasSpoken] = useState(false);
-  /** The number sentence JUST affirmed — post-answer only (answer-leak rule),
-   *  cleared the moment the next item opens. */
+  /** The number sentence JUST affirmed — post-answer only (answer-leak rule).
+   *  NOT cleared when the next item opens: that clear and the `onAffirmed` that
+   *  set it landed in one React batch, so the reveal painted on the last item
+   *  and nowhere else (18b). `runner.revealHeld` is the gate now. */
   const [reward, setReward] = useState<string | null>(null);
-
-  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** What the scene / tray held when it last stopped changing. */
   const pendingSceneRef = useRef(0);
   const pendingTilesRef = useRef<string[]>([]);
@@ -334,12 +330,19 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const clearSettle = useCallback(() => {
-    if (settleTimerRef.current) {
-      clearTimeout(settleTimerRef.current);
-      settleTimerRef.current = null;
-    }
-  }, []);
+  /** Does this item hold its change group back until the tutor has told the
+   *  story? The ONE definition, read by both the per-item reset and the
+   *  runner's stimulus gate — two copies of a predicate this shape is how a
+   *  reveal ends up waiting for a voice that will never mention it.
+   *
+   *  Everywhere else there is nothing to withhold: enacted scenes are built by
+   *  the child, and a withdrawn `groupedReveal` (hard tier) means "everything at
+   *  once" by design. */
+  const waitsForReveal = useCallback((item: AddSubSceneItem) =>
+    item.kind === 'act-out'
+    && item.answerKind === 'voice'
+    && item.operation === 'addition'
+    && groupedReveal, [groupedReveal]);
 
   // ── The pack: generated challenges → judged items + hand-authored script ──
   // Unaskable items are DROPPED here (zero spoken answers, inconsistent
@@ -404,22 +407,13 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
   // ── Per-item scene reset — every item owns its starting state ─────────────
   const resetSceneFor = useCallback((item: AddSubSceneItem) => {
-    clearSettle();
-    setReward(null);
     setTappedObjects([]);
     setEquationTiles([]);
     pendingTilesRef.current = [];
-    setTutorHasSpoken(false);
 
     // The change group is a stimulus on count-the-scene items, so it waits for
-    // her voice. Everywhere else there is nothing to withhold: enacted scenes
-    // are built by the child, and a withdrawn `groupedReveal` (hard tier) means
-    // "everything at once" by design.
-    const waitsForReveal = item.kind === 'act-out'
-      && item.answerKind === 'voice'
-      && item.operation === 'addition'
-      && groupedReveal;
-    setChangeRevealed(!waitsForReveal);
+    // her voice — the runner's gate fires `onPresentStimulus` when she is done.
+    setChangeRevealed(!waitsForReveal(item));
 
     // Seeding, per contract R3:
     //  • create-story: addition starts EMPTY (build up to the total);
@@ -437,7 +431,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
         : item.startCount;
     setSceneSlots(Array.from({ length: seeded }, (_, i) => i));
     pendingSceneRef.current = seeded;
-  }, [clearSettle, groupedReveal]);
+  }, [waitsForReveal]);
 
   // ── Metrics ───────────────────────────────────────────────────────────────
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
@@ -478,18 +472,21 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     exhibitId,
     onFinished: handleFinished,
     onItemOpened: resetSceneFor,
+    // THE TUTOR OWNS THE STIMULUS CLOCK — the change group arrives just after
+    // "…and one more duck joins them", never on a beat measured from item-open.
+    // The gate (and the two drives that shaped it) is the runner's; 19c.
+    onPresentStimulus: () => setChangeRevealed(true),
+    stimulus: { when: waitsForReveal, prepMs: REVEAL_PREP_MS },
     onAffirmed: (item) => {
-      // The first moment a number may appear on screen.
+      // The first moment a number may appear on screen; `revealHeld` keeps it
+      // there for the length of her affirmation (18b).
       setChangeRevealed(true);
       setReward(item.equation);
     },
     onCorrectionRetry: (item) => {
       // The tutor's correction re-modeled and re-asked in-band; restore the
-      // working surface for another go. Clearing `tutorHasSpoken` is what makes
-      // a re-reveal wait for her CORRECTION to finish — the same gate as the
-      // first ask, so there is no hand-tuned window to get wrong.
-      clearSettle();
-      setTutorHasSpoken(false);
+      // working surface for another go. The settle window and the reveal gate
+      // are both re-armed by the runner on this path.
       if (item.kind === 'build-equation') {
         // The tray clears: the tiles are indistinguishable from each other, so
         // there is no "wrong slot" to clear the way cvc-speller does.
@@ -595,21 +592,20 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     runner.submitGestureAttempt(equationVerdictCue(item, pendingTilesRef.current));
   }, [runner]);
 
-  /** A hands turn closes on stillness. Any further touch resets the window. */
+  /** A hands turn closes on stillness. Any further touch resets the window, and
+   *  the runner cancels it at item open, at a correction, and at the commit. */
   const armSceneSettle = useCallback((count: number) => {
     pendingSceneRef.current = count;
-    clearSettle();
-    settleTimerRef.current = setTimeout(() => { commitScene(); }, SCENE_SETTLE_MS);
-  }, [clearSettle, commitScene]);
+    runner.armStillness(commitScene, SCENE_SETTLE_MS);
+  }, [runner, commitScene]);
 
   const armEquationSettle = useCallback((tiles: string[]) => {
     pendingTilesRef.current = tiles;
-    clearSettle();
     // A finished SHAPE shortens the window; it never commits on the keystroke,
     // because "3 + 2 = 1" is a complete sentence on its way to "3 + 2 = 10".
     const wait = parseEquationTiles(tiles) ? EQUATION_COMPLETE_SETTLE_MS : EQUATION_SETTLE_MS;
-    settleTimerRef.current = setTimeout(() => { commitEquation(); }, wait);
-  }, [clearSettle, commitEquation]);
+    runner.armStillness(commitEquation, wait);
+  }, [runner, commitEquation]);
 
   // ── Scene taps ────────────────────────────────────────────────────────────
   // NEVER gate interaction on the stage word — the runner sets 'affirmed' and
@@ -685,45 +681,10 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     armEquationSettle(next);
   }, [runner, equationTiles, armEquationSettle]);
 
-  // ── THE REVEAL GATE: THE TUTOR'S VOICE OWNS THE STIMULUS ──────────────────
-  // She tells the story — "Two ducks are swimming in the pond. One more duck
-  // joins them." — and THEN the extra duck arrives. Keying the reveal to a beat
-  // measured from item-open races her instead, so the join happens while she is
-  // still setting the scene and the ask lands on a picture the child was never
-  // told to watch (ten-frame drive 3).
-  //
-  // "Not speaking" is ambiguous on its own — it is also true in the gap before
-  // her audio starts — so the gate is a FALLING EDGE. And a falling edge alone
-  // is not enough either: on an advance the runner queues the next item's cue
-  // and opens the item in the same dispatch, so the new item is on screen for
-  // the whole tail of the PREVIOUS item's affirmation, and a latch would fill on
-  // that tail (ten-frame drive 5). `runner.cuedItemId` is the runner's answer —
-  // the id of the item her live line is ACTUALLY about.
-  const tutorSpeaking = runner.tutorSpeaking;
-  const askIsForThisItem = currentItem != null && runner.cuedItemId === currentItem.id;
-  const revealPending = runner.running && !changeRevealed;
-
-  useEffect(() => {
-    if (revealPending && askIsForThisItem && tutorSpeaking) setTutorHasSpoken(true);
-  }, [revealPending, askIsForThisItem, tutorSpeaking]);
-
-  // Safety net: if her audio never arrives, the stimulus still has to happen.
-  useEffect(() => {
-    if (!revealPending || tutorHasSpoken) return;
-    const timer = setTimeout(() => setTutorHasSpoken(true), TUTOR_SILENCE_FALLBACK_MS);
-    return () => clearTimeout(timer);
-  }, [revealPending, tutorHasSpoken]);
-
-  useEffect(() => {
-    if (!revealPending || !tutorHasSpoken || tutorSpeaking) return;
-    const timer = setTimeout(() => setChangeRevealed(true), REVEAL_PREP_MS);
-    return () => clearTimeout(timer);
-  }, [revealPending, tutorHasSpoken, tutorSpeaking]);
-
-  // Cancel timers on unmount.
-  useEffect(() => () => {
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-  }, []);
+  // WHEN the change group arrives is the runner's `onPresentStimulus` gate
+  // (19c): the tutor has to have told the story for THIS item and stopped. The
+  // latch, the fallback timer, the prep-beat effect and the two footguns they
+  // carried used to be copied here from ten-frame; they are the runner's now.
 
   // ── Equation tray palette (R6 AXIS-1 lever, unchanged) ────────────────────
   const equationTilePalette = useMemo(() => {
@@ -993,7 +954,10 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
             )}
 
             {/* The reward — the first moment a number sentence may appear. */}
-            {reward && currentSolved && (
+            {/* Gated on `revealHeld`, never on `currentSolved`: the runner opens
+                the next item in the same dispatch, so by the time this renders
+                the current item is the NEXT one and is not solved (18b). */}
+            {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block font-mono">
                   {reward}
