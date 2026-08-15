@@ -87,15 +87,11 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
-  completeCue,
+  additionSubtractionScenePackBase,
   equationVerdictCue,
-  itemCue,
-  itemFromChallenge,
-  moveOnCue,
+  itemsFromChallenges,
   parseEquationTiles,
-  pronounceCue,
   sceneVerdictCue,
-  stimulusFor,
   type AddSubBand,
   type AddSubSceneItem,
 } from './additionSubtractionSceneScript';
@@ -349,10 +345,8 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   // arithmetic, a story that opens with a verdict sentinel or states the value
   // the child must produce). Nothing is backfilled: a placeholder in a judged
   // loop becomes a spoken ask the tutor has to judge.
-  const items = useMemo<AddSubSceneItem[]>(() =>
-    challenges
-      .map((ch) => itemFromChallenge(ch, { band: gradeBand }))
-      .filter((item): item is AddSubSceneItem => item !== null),
+  const items = useMemo<AddSubSceneItem[]>(
+    () => itemsFromChallenges(challenges, { band: gradeBand }),
     [challenges, gradeBand],
   );
 
@@ -362,17 +356,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   );
 
   const pack = useMemo<JudgedScriptPack<AddSubSceneItem>>(() => ({
-    primitiveType: 'addition-subtraction-scene',
-    activityLine: 'live direct instruction addition and subtraction story scenes',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    pronounceCue,
-    contextFor: (item) => ({
-      challengeType: item.kind,
-      stimulus: stimulusFor(item),
-    }),
+    ...additionSubtractionScenePackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
       ready: (item) => item.answerKind === 'gesture'

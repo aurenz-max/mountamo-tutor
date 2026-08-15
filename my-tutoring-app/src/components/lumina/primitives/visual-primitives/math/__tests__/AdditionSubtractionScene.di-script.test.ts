@@ -33,6 +33,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   actionFor,
+  addSubHarnessAnswers,
+  additionSubtractionScenePackBase,
   answerKindFor,
   completeCue,
   equationFaultOf,
@@ -63,6 +65,8 @@ import {
 } from '../../../../hooks/judgedScriptContract.testkit';
 import { MATH_CATALOG } from '../../../../service/manifest/catalog/math';
 import { fallbackFor } from '../../../../service/math/gemini-addition-subtraction-scene';
+import { DI_PORTS } from '../../../../service/qa/di/diDrivePlan';
+import { numberWordFor } from '../countingBoardScript';
 
 // ── Fixtures — one item per mode × band, session-shaped ─────────────────────
 
@@ -182,16 +186,14 @@ const ITEMS: AddSubSceneItem[] = [
 ];
 
 /** The pack exactly as the component assembles it (minus component closures). */
-const packOf = (items: AddSubSceneItem[]): JudgedScriptPack<AddSubSceneItem> => ({
-  primitiveType: 'addition-subtraction-scene',
-  activityLine: 'live direct instruction addition and subtraction story scenes',
-  items,
-  itemCue,
-  moveOnCue,
-  completeCue,
-  pronounceCue,
-  contextFor: (item) => ({ challengeType: item.kind, stimulus: stimulusFor(item) }),
-});
+/**
+ * THE PACK UNDER TEST IS THE EXPORTED SURFACE, not a retyped copy of it (19h-i-b
+ * port 2). This was a hand-rolled literal, i.e. a second source of truth for the
+ * cues and context keys the pedagogy lives in — it could have gone green while
+ * the component and the DI harness sent something else.
+ */
+const packOf = (items: AddSubSceneItem[]): JudgedScriptPack<AddSubSceneItem> =>
+  additionSubtractionScenePackBase(items) as JudgedScriptPack<AddSubSceneItem>;
 
 const pack = packOf(ITEMS);
 
@@ -601,5 +603,139 @@ describe('catalog entry', () => {
       solve_story: 3.5,
       create_story: 4.5,
     });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// 19h-i-b — the DI adapter wire (port 2)
+// ══════════════════════════════════════════════════════════════════════════
+
+describe('harness answers mirror the judging contract', () => {
+  it('VOICE: the signature wrong is an operand THE STORY SAID ALOUD', () => {
+    // `discriminationFor`'s echo clause is the claim; this is the claim made
+    // testable. A judge that only checks arithmetic affirms it.
+    for (const item of ITEMS.filter((i) => i.answerKind === 'voice')) {
+      const answers = addSubHarnessAnswers(item);
+      const sig = answers.signatureWrong!;
+      expect(answers.correct).toBe(numberWordFor(item.answer));
+      const echoed = publicValuesFor(item).find((v) => v !== item.answer);
+      if (echoed !== undefined) {
+        expect(sig.text).toBe(numberWordFor(echoed));
+        // …and the contract has to actually make that claim.
+        expect(itemCue(item, {})).toContain(`"${numberWordFor(echoed)}"`);
+        // The clause agrees in number with how many operands the story states.
+        expect(itemCue(item, {})).toMatch(/(is|are) NOT the answer/);
+      }
+    }
+  });
+
+  it('BUILD-EQUATION: the wrong sentence is arithmetically VALID, direction reversed', () => {
+    // The one fault of the three that is a misconception about the STORY
+    // rather than a slip — and the only one a judge that never read the story
+    // cannot catch. `equationFaultOf` must classify it `operator`.
+    const eq = ITEMS.find((i) => i.kind === 'build-equation')!;
+    const answers = addSubHarnessAnswers(eq);
+    const wrongTiles = answers.tapped!.wrong.split(' ');
+    expect(equationFaultOf(eq, answers.tapped!.correct.split(' '))).toBe('match');
+    expect(equationFaultOf(eq, wrongTiles)).toBe('operator');
+    // Arithmetically valid on its own terms — that is what makes it sharp.
+    const parsed = parseEquationTiles(wrongTiles)!;
+    expect(parsed).not.toBeNull();
+    expect(parsed.op === '+' ? parsed.left + parsed.right : parsed.left - parsed.right)
+      .toBe(parsed.result);
+  });
+
+  it('SCENE gestures commit a COUNT, and the wrong count is reachable', () => {
+    for (const item of ITEMS.filter((i) => i.answerKind === 'gesture' && i.kind !== 'build-equation')) {
+      const placed = addSubHarnessAnswers(item).placed!;
+      expect(placed.correct).toBe(item.answer);
+      expect(placed.wrong).not.toBe(placed.correct);
+      expect(placed.wrong).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('the STORY is exempt from the leak scan, but nothing else is', () => {
+    // A story legitimately states its public operands; the greeting,
+    // how-to-play, question and hand-over stay governed (story-talk's
+    // mechanism, second use).
+    const solve = ITEMS.find((i) => i.kind === 'solve-story')!;
+    const answers = addSubHarnessAnswers(solve);
+    expect(answers.leakExemptSpan).toBe(solve.situation);
+    expect(answers.leakTokens).toEqual([numberWordFor(solve.answer)]);
+    // The ask outside the story never names the answer.
+    const ask = spokenLine(itemCue(solve, {}));
+    const outsideStory = ask.replace(solve.situation, ' ');
+    expect(outsideStory.toLowerCase()).not.toContain(numberWordFor(solve.answer));
+  });
+});
+
+describe('the registered DI adapter', () => {
+  const adapter = DI_PORTS['addition-subtraction-scene'];
+
+  it('is registered, so `--di` can drive this port', () => {
+    expect(adapter).toBeDefined();
+  });
+
+  it('rebuilds the SAME items the component builds, through the same drop gates', () => {
+    const data = {
+      gradeBand: '1',
+      challenges: [
+        {
+          id: 'ok', type: 'solve-story', operation: 'addition',
+          startCount: 3, changeCount: 2, resultCount: 5, unknownPosition: 'result',
+          storyText: 'Three ducks were in the pond. Two more swam over.',
+          scene: 'pond', objectType: 'ducks', equation: '3 + 2 = 5',
+        },
+        {
+          // Inconsistent arithmetic — dropped, never repaired into an ask.
+          id: 'bad', type: 'solve-story', operation: 'addition',
+          startCount: 3, changeCount: 2, resultCount: 9, unknownPosition: 'result',
+          storyText: 'Three ducks were in the pond. Two more swam over.',
+          scene: 'pond', objectType: 'ducks', equation: '3 + 2 = 9',
+        },
+      ],
+    } as unknown as Record<string, unknown>;
+    const built = adapter.build(data);
+    expect(built.items.map((i) => i.id)).toEqual(['ok']);
+    expect(built.dropped).toBe(1);
+    expect(built.surface.primitiveType).toBe('addition-subtraction-scene');
+    expect(built.surface.itemCue(built.items[0], { opening: false, howToPlay: false }))
+      .toBe(itemCue(built.items[0] as AddSubSceneItem, { opening: false, howToPlay: false }));
+  });
+
+  it('routes BOTH gesture commit shapes — a count and a tile list — off one wire', () => {
+    const scene = ITEMS.find((i) => i.answerKind === 'gesture' && i.kind !== 'build-equation')!;
+    const eq = ITEMS.find((i) => i.kind === 'build-equation')!;
+    expect(adapter.gestureVerdictCue!(scene, scene.answer)).toContain('MATCHES');
+    expect(adapter.gestureVerdictCue!(scene, scene.answer + 1)).toContain('does NOT match');
+    const eqAnswers = addSubHarnessAnswers(eq);
+    expect(adapter.gestureVerdictCue!(eq, eqAnswers.tapped!.correct)).toContain('MATCHES');
+    expect(adapter.gestureVerdictCue!(eq, eqAnswers.tapped!.wrong)).toContain('does NOT match');
+  });
+});
+
+describe('the two-branch law (cap-drill finding, 2026-08-15 — 19h-i-f, 2nd port)', () => {
+  it('every voice contract states the law BEFORE its branches', () => {
+    for (const item of ITEMS.filter((i) => i.answerKind === 'voice')) {
+      const cue = itemCue(item, {});
+      expect(cue).toContain('Your whole reply to their attempt is ONE of the quoted lines below');
+      expect(cue).toContain('no scaffolding line');
+      expect(cue.indexOf('Your whole reply')).toBeLessThan(cue.indexOf('If the answer is right'));
+    }
+  });
+
+  it('THE CATALOG SCAFFOLD RUNGS CARRY A SENTINEL — a bare rung stalls the loop', () => {
+    // The cap drill caught the model speaking level 2 and level 3 verbatim on
+    // corrections 2 and 3 ("…think about what happened in the story", "Take
+    // your time. Look at the picture. Then tell me."), neither opening with a
+    // sentinel, so the loop recorded di-no-verdict twice and the counter froze.
+    const levels = Object.values(CATALOG_ENTRY.tutoring!.scaffoldingLevels ?? {}) as string[];
+    expect(levels).toHaveLength(3);
+    for (const level of levels) {
+      expect(level).toMatch(/scripted correction|say nothing further/i);
+    }
+    const prose = JSON.stringify(CATALOG_ENTRY.tutoring);
+    expect(prose).not.toContain('Take your time. Look at the picture.');
+    expect(prose).not.toContain('Think about what happened in the story"');
   });
 });

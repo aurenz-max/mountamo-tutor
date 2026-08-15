@@ -113,7 +113,11 @@
  * `checkPackGates` in this pack's test file over every cue it can emit.
  */
 
-import type { JudgedScriptItem, ResponseClassId } from '../../../hooks/judgedScriptContract';
+import type {
+  JudgedCueSurface,
+  JudgedScriptItem,
+  ResponseClassId,
+} from '../../../hooks/judgedScriptContract';
 import { opensWithSentinel } from '../../../hooks/judgedScriptContract';
 import { countWalk, numberWordFor } from './countingBoardScript';
 
@@ -561,13 +565,36 @@ const affirmTailFor = (item: AddSubSceneItem): string => {
  * and names the exact failure at the end. `findPerformedStageDirections` keeps
  * this structural.
  */
+/**
+ * THE TWO-BRANCH LAW (consumed from word-workout via counting-board — not
+ * re-derived; 19h-i-b port 2).
+ *
+ * A judged turn has exactly two outcomes and both are quoted below. Anything
+ * else the tutor says in reply to an attempt opens with neither sentinel, so
+ * the reducer records NO VERDICT and the correction counter freezes — the run
+ * stalls with the child still waiting.
+ *
+ * This port's cap drill (2026-08-15) is the THIRD production sighting and the
+ * second with the same source: on corrections 2 and 3 the model spoke the
+ * CATALOG's `scaffoldingLevels` — "…think about what happened in the story"
+ * and "Take your time. Look at the picture. Then tell me." — both catalog
+ * lines, both sentinel-less, both `di-no-verdict`. The scaffolding CONTENT is
+ * good pedagogy; a third reply channel is what breaks. The catalog now routes
+ * that same content through the correction, which already opens "My turn:".
+ */
+const TWO_BRANCH_LAW =
+  `Your whole reply to their attempt is ONE of the quoted lines below and nothing else — not the first time, not any time: `
+  + `no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. `
+  + `A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. `;
+
 const judgingContract = (item: AddSubSceneItem): string =>
   `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. `
   + `Never say the answer during their turn and never count aloud with them. `
   + `The correct answer is "${numberWordFor(item.answer)}". `
   + discriminationFor(item)
+  + TWO_BRANCH_LAW
   + `If the answer is right, say exactly: "Yes, ${affirmTailFor(item)}." `
-  + `If it is wrong, say exactly: "${correctionFor(item)}"`;
+  + `If it is wrong, say exactly: "${correctionFor(item)}" — the same line on every wrong answer for this item, never swapped for a different wording.`;
 
 /** The gesture contract is a SILENCE contract (cvc-speller's pattern): there is
  *  nothing to judge until the commit is described, and the quantity is banned
@@ -680,3 +707,153 @@ export const pronounceCue = (item: AddSubSceneItem): string =>
  */
 export const stimulusFor = (item: AddSubSceneItem): string =>
   `${item.operation === 'addition' ? 'a joining' : 'a taking-away'} story about ${item.objectType} in the ${item.scene}`;
+
+// ── Items — ONE builder for the component and the DI harness ────────────────
+
+export const itemsFromChallenges = (
+  challenges: AddSubChallengeLike[],
+  ctx: { band: AddSubBand },
+): AddSubSceneItem[] =>
+  challenges
+    .map((ch) => itemFromChallenge(ch, ctx))
+    .filter((item): item is AddSubSceneItem => item !== null);
+
+// ── The cue surface — one source for the component and the DI harness ───────
+
+/**
+ * Everything addition-subtraction-scene ever sends the tutor.
+ * `AdditionSubtractionScene.tsx` spreads this and adds what only a mounted
+ * component can own (status lines, and the `diagnosisObservation` that reads
+ * the live scene); the drive-plan endpoint builds the identical cues for the
+ * headless judged-loop harness.
+ *
+ * The split exists so the harness cannot drift from production — a Python
+ * journey mirroring these cues by hand is a second source of truth for the
+ * wording the pedagogy lives in.
+ */
+export const additionSubtractionScenePackBase = (
+  items: AddSubSceneItem[],
+): JudgedCueSurface<AddSubSceneItem> => ({
+  primitiveType: 'addition-subtraction-scene',
+  activityLine: 'live direct instruction addition and subtraction story scenes',
+  items,
+  itemCue,
+  moveOnCue,
+  completeCue,
+  pronounceCue,
+  contextFor: (item) => ({
+    challengeType: item.kind,
+    stimulus: stimulusFor(item),
+  }),
+});
+
+// ── Harness answer material — what a right and a wrong child sound like ─────
+
+export interface AddSubHarnessAnswers {
+  /** What a correct child says (or builds). */
+  correct: string;
+  /** Unambiguously wrong — the baseline refusal test. */
+  plainWrong: string;
+  /**
+   * The FLUENT miss this item's judging contract explicitly refuses. Testing it
+   * tests `discriminationFor` rather than mere arithmetic: a judge that only
+   * catches "four for five" can still affirm an operand the story said aloud.
+   */
+  signatureWrong?: { text: string; why: string };
+  /** Scene items commit a COUNT of objects — code computes the match. */
+  placed?: { correct: number; wrong: number };
+  /** build-equation commits TILES; the wire carries them space-joined. */
+  tapped?: { correct: string; wrong: string };
+  /** Answer tokens that must NOT appear in the spoken ask. */
+  leakTokens: string[];
+  /**
+   * The STORY is read aloud inside the ask, and a story legitimately states its
+   * public operands. Those are not the answer, so they are not leak tokens —
+   * but on a `solve-story` with an unknown START, the story states the RESULT,
+   * and the result is what `affirmTailFor` echoes. Subtracting the story keeps
+   * the greeting, how-to-play, question and hand-over governed while letting
+   * the stimulus say what a story has to say (story-talk's mechanism, 2nd use).
+   */
+  leakExemptSpan?: string;
+}
+
+/** The tiles a correct number sentence is made of, as the tray emits them. */
+const correctTiles = (item: AddSubSceneItem): string[] => [
+  String(item.startCount),
+  item.operation === 'addition' ? '+' : '-',
+  String(item.changeCount),
+  '=',
+  String(item.resultCount),
+];
+
+/**
+ * The sharpest wrong sentence there is: the SAME three numbers, arithmetically
+ * valid, with the story's direction reversed. `equationFaultOf` classifies it
+ * `operator` — the one fault of the three that is a misconception about the
+ * STORY rather than a slip, and the only one whose correction names the
+ * direction. An arithmetic-slip wrong would be caught by a judge that never
+ * read the story at all.
+ */
+const reversedTiles = (item: AddSubSceneItem): string[] =>
+  item.operation === 'addition'
+    ? [String(item.resultCount), '-', String(item.changeCount), '=', String(item.startCount)]
+    : [String(item.resultCount), '+', String(item.changeCount), '=', String(item.startCount)];
+
+/**
+ * The answers a headless student gives on a judged drive. This lives beside the
+ * contract it mirrors on purpose: `discriminationFor` above CLAIMS the judge
+ * refuses these, and this is the claim made testable. Change one, change both.
+ */
+export const addSubHarnessAnswers = (item: AddSubSceneItem): AddSubHarnessAnswers => {
+  const answerWord = numberWordFor(item.answer);
+  const wrongValue = item.answer > SPOKEN_ANSWER_MIN ? item.answer - 1 : item.answer + 1;
+  const publicValues = publicValuesFor(item);
+  const leakTokens = publicValues.includes(item.answer) ? [] : [answerWord];
+  // The story is spoken inside the ask and may state its own operands.
+  const leakExemptSpan = item.situation || undefined;
+
+  const base: AddSubHarnessAnswers = {
+    correct: answerWord,
+    plainWrong: numberWordFor(wrongValue),
+    leakTokens,
+    leakExemptSpan,
+  };
+
+  if (item.answerKind === 'voice') {
+    // The echo clause is the discrimination this pack claims: an operand the
+    // story said out loud, handed back fluently, is not the answer.
+    const echoed = publicValues.find((value) => value !== item.answer);
+    return {
+      ...base,
+      signatureWrong: echoed === undefined
+        ? {
+            text: countWalk(item.answer + 1),
+            why: 'a counted walk that ends one PAST the answer — it contains the answer word without landing on it',
+          }
+        : {
+            text: numberWordFor(echoed),
+            why: 'an operand the story states out loud, said back — the contract names it as NOT the answer',
+          },
+    };
+  }
+
+  if (item.kind === 'build-equation') {
+    return {
+      ...base,
+      correct: correctTiles(item).join(' '),
+      plainWrong: reversedTiles(item).join(' '),
+      tapped: {
+        correct: correctTiles(item).join(' '),
+        wrong: reversedTiles(item).join(' '),
+      },
+    };
+  }
+
+  // act-out @ K and create-story: the commit is a COUNT of objects on the scene.
+  return {
+    ...base,
+    correct: `${item.answer} ${item.objectType} in the picture`,
+    plainWrong: `${Math.max(0, item.answer - 1)} ${item.objectType} in the picture`,
+    placed: { correct: item.answer, wrong: Math.max(0, item.answer - 1) },
+  };
+};

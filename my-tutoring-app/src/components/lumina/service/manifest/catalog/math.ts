@@ -2990,9 +2990,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       taskDescription: 'LIVE-JUDGED addition and subtraction story practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the scene, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
       contextKeys: ['challengeType', 'stimulus'],
       scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
-        level2: 'Remind the child of the method in one short sentence — "Think about what happened in the story" — without saying any number.',
-        level3: 'Invite one try together: "Take your time. Look at the picture. Then tell me." Still never say the answer.',
+      // ON A JUDGED LOOP THE CORRECTION *IS* THE SCAFFOLD — there is no third
+      // reply channel. The 2026-08-15 cap drill caught the model speaking level
+      // 2 and level 3 VERBATIM on corrections 2 and 3 ("…think about what
+      // happened in the story", "Take your time. Look at the picture. Then tell
+      // me."). Neither opens with a sentinel, so the loop recorded no verdict
+      // twice and the counter froze (`di-no-verdict` x2, 19h-i-f, 2nd port).
+      // Same content, routed through the branch that carries a sentinel.
+        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the story and re-asks — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a reminder of the method or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next story to you.',
       },
       commonStruggles: [
         { pattern: 'Long silence', response: 'Silence is the child thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },

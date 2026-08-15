@@ -55,6 +55,16 @@ import {
   type TenFrameItem,
 } from '@/components/lumina/primitives/visual-primitives/math/tenFrameScript';
 import {
+  addSubHarnessAnswers,
+  additionSubtractionScenePackBase,
+  equationVerdictCue,
+  itemsFromChallenges as addSubItems,
+  sceneVerdictCue,
+  type AddSubBand,
+  type AddSubChallengeLike,
+  type AddSubSceneItem,
+} from '@/components/lumina/primitives/visual-primitives/math/additionSubtractionSceneScript';
+import {
   countingBoardHarnessAnswers,
   countingBoardPackBase,
   handVerdictCue as countingHandVerdictCue,
@@ -337,6 +347,38 @@ const countingBoardAdapter: DiPortAdapter<CountingItem> = {
 };
 
 /**
+ * addition-subtraction-scene (fifth math port, 19h-i-b port 2). FIRST adapter
+ * whose port has TWO gesture commit shapes at once: `act-out`/`create-story`
+ * commit a COUNT of objects on the scene, `build-equation` commits TILES. The
+ * wire carries either as `number | string`, so the tile list rides space-joined
+ * and is split back here — the same "encoding internal to the script module"
+ * arrangement number-bond uses for its packed pair.
+ *
+ * Its signature wrong is the sharpest in the family so far, because the pack
+ * has two different ones: a voice item echoes an operand THE STORY SAID ALOUD
+ * (the `discriminationFor` echo clause), and `build-equation` builds the same
+ * three numbers into an arithmetically VALID sentence with the story's
+ * direction reversed — a miss a judge that never read the story cannot catch.
+ */
+const additionSubtractionSceneAdapter: DiPortAdapter<AddSubSceneItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as AddSubChallengeLike[];
+    const band: AddSubBand = data.gradeBand === '1' ? '1' : 'K';
+    const items = addSubItems(challenges, { band });
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: additionSubtractionScenePackBase(items),
+    };
+  },
+  answersFor: addSubHarnessAnswers,
+  gestureVerdictCue: (item, gesture) =>
+    item.kind === 'build-equation'
+      ? equationVerdictCue(item, String(gesture).trim().split(/\s+/).filter(Boolean))
+      : sceneVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -346,6 +388,8 @@ const countingBoardAdapter: DiPortAdapter<CountingItem> = {
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'counting-board': countingBoardAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'addition-subtraction-scene':
+    additionSubtractionSceneAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
