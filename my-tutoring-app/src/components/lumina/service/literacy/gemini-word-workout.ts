@@ -12,35 +12,45 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildScopePromptSection, type PedagogicalScope } from "../scopeContext";
+import {
+  challengeAskable,
+  MAX_SENTENCE_WORDS,
+  MIN_SENTENCE_WORDS,
+} from "../../primitives/visual-primitives/literacy/wordWorkoutScript";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
+//
+// DI MODALITY (2026-08-14): every mode below is answered OUT LOUD except
+// picture-match, so the docs say so — they are manifest/eval-mode steering, and
+// click-era prose ("picks the matching picture from 3 options") routes the
+// primitive as a tap activity forever.
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'real-vs-nonsense': {
     promptDoc:
-      `"real-vs-nonsense": Student sees two CVC words side by side — one real, one nonsense. `
-      + `Must identify which is the real word. Tests word recognition and decoding accuracy.`,
-    schemaDescription: "'real-vs-nonsense' (identify the real word)",
+      `"real-vs-nonsense": Student sees two CVC words side by side — one real, one nonsense — decodes BOTH `
+      + `and SAYS the real one out loud to the tutor. Tests word recognition and decoding accuracy.`,
+    schemaDescription: "'real-vs-nonsense' (say which word is real)",
   },
   'picture-match': {
     promptDoc:
-      `"picture-match": Student sees a decoded CVC word and picks the matching picture from 3 options. `
-      + `Tests word-meaning connection after decoding.`,
+      `"picture-match": Student decodes a printed CVC word silently and taps the picture it means. `
+      + `Tests word-meaning connection after decoding — the tutor never says the word.`,
     schemaDescription: "'picture-match' (match word to picture)",
   },
   'word-chains': {
     promptDoc:
-      `"word-chains": Student reads a chain of 4-6 CVC words where one letter changes each step (cat→hat→hot→hop). `
-      + `Tests fluent single-letter substitution reading.`,
+      `"word-chains": Student READS ALOUD each word of a chain where one letter changes per step `
+      + `(cat→hat→hot→hop); every word is judged. Tests fluent single-letter substitution reading.`,
     schemaDescription: "'word-chains' (read chain with one-letter changes)",
   },
   'sentence-reading': {
     promptDoc:
-      `"sentence-reading": Student reads a decodable sentence made from CVC + sight words, `
-      + `then answers a simple comprehension question. Tests word-in-context fluency.`,
-    schemaDescription: "'sentence-reading' (read decodable sentence)",
+      `"sentence-reading": Student READS ALOUD a decodable sentence made from CVC + sight words, `
+      + `then SAYS the answer to a comprehension question. Tests word-in-context fluency.`,
+    schemaDescription: "'sentence-reading' (read decodable sentence aloud)",
   },
 };
 
@@ -292,7 +302,12 @@ const sentenceReadingSchema: Schema = {
         type: Type.OBJECT,
         properties: {
           id: { type: Type.STRING },
-          sentence: { type: Type.STRING, description: "Decodable sentence" },
+          sentence: {
+            type: Type.STRING,
+            description:
+              `Decodable sentence of ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words — the child reads it `
+              + `aloud as ONE judged utterance, so a longer sentence is rejected`,
+          },
           cvcWords: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
@@ -361,9 +376,12 @@ function getModePrompt(
 Each challenge MUST have: id, realWord (a real CVC word), nonsenseWord (phonetically plausible nonsense CVC word).
 RULES:
 - Nonsense words MUST be pronounceable CVC patterns (e.g., "zot", "kib", "rup")
-- Nonsense words must NOT be real words
+- The nonsense word must NOT BE A REAL ENGLISH WORD. Say it to yourself and check: "pan", "fan", "cot" and "bat" are REAL, so they are never the nonsense word. This is the commonest failure — the ask is "which one is a real word?", so a pair of two real words has two right answers and is thrown away.
+- Every word must be appropriate for a five-year-old
 - Both words should use mastered vowels: ${vowelStr}
-- Pairs should share the same vowel for discrimination practice`
+- Pairs should share the same vowel for discrimination practice
+- The two words MUST be the same length and MUST START WITH DIFFERENT CONSONANTS ("cat"/"zat", never "cat"/"cak"). The child says the real word ALOUD and a tutor judges it from audio; a pair that differs only in its last sound cannot be told apart by ear.
+- NEVER use the word "yes" as a word`
       );
 
     case "picture-match":
@@ -374,7 +392,8 @@ Each challenge MUST have: id, targetWord (real CVC word), targetImage (single em
 RULES:
 - Use a single emoji as the image (e.g., "\u2600\uFE0F" for sun, "\uD83D\uDC31" for cat)
 - Distractors must also be CVC words using mastered vowels: ${vowelStr}
-- Distractors should be plausible but clearly different pictures`
+- Distractors should be plausible but clearly different pictures
+- The child decodes the printed word SILENTLY and taps a picture; the tutor never says the word, so the pictures must be distinguishable by MEANING, not by sound. NEVER use the word "yes"`
       );
 
     case "word-chains":
@@ -386,21 +405,24 @@ RULES:
 - Each step changes EXACTLY one letter: cat\u2192hat (pos 0), cat\u2192cot (pos 1), cat\u2192can (pos 2)
 - All words must be real CVC words using mastered vowels: ${vowelStr}
 - changedPositions[i] = character index that changed between chain[i] and chain[i+1]
-- Example: chain=["cat","hat","hot","hop"], changedPositions=[0,1,2]`
+- Example: chain=["cat","hat","hot","hop"], changedPositions=[0,1,2]
+- Every word is READ ALOUD by the child and judged one at a time, so every word must be a real word a five-year-old can say. NEVER use the word "yes"`
       );
 
     case "sentence-reading":
       return (
         base +
         `MODE: Sentence Reading
-Each challenge MUST have: id, sentence (4-8 words), cvcWords, sightWords, comprehensionQuestion, comprehensionAnswer (one word).
+Each challenge MUST have: id, sentence (${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words), cvcWords, sightWords, comprehensionQuestion, comprehensionAnswer (one word).
 RULES:
 - ONLY use CVC words + approved sight words: ${APPROVED_SIGHT_WORDS}
 - CVC words should use mastered vowels: ${vowelStr}
+- The sentence is READ ALOUD by the child and judged as one utterance, so it MUST be ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words. A longer sentence is rejected, not trimmed.
 - Each sentence MUST contain at least 3 different CVC words
-- comprehensionAnswer MUST be one of the cvcWords
-- Comprehension questions should be simple who/what/where questions
-- Answers should be a single word from the sentence`
+- comprehensionAnswer MUST be one of the cvcWords AND MUST appear in the sentence
+- The comprehensionQuestion MUST NOT contain the answer word — the child says the answer aloud, so a question carrying it can be answered without reading
+- Comprehension questions should be simple who/what/where questions, and must only mention things the sentence ACTUALLY says. For "The cat sat on the mat", ask "What sat on the mat?" — never "What sat on the rug?", because the child is looking at the sentence and there is no rug in it
+- NEVER use the word "yes" as a word, and never begin a sentence with "Yes"`
       );
   }
 }
@@ -515,95 +537,63 @@ function validateWordChain(
 // Within-mode support tier — scaffold withdrawal (axis 1)
 // ----------------------------------------------------------------------------
 // The tier NEVER changes which content is drawn. No tier text reaches the LLM
-// prompt (that would steer word/sentence selection); every field below is
-// stamped in CODE post-parse from `ctx.supportTier`, which resolveGenerationContext
-// already normalized to 'easy' | 'medium' | 'hard'. All it does is withdraw HELP:
+// prompt (that would steer word/sentence selection); the field below is stamped
+// in CODE post-parse from `ctx.supportTier`, which resolveGenerationContext
+// already normalized to 'easy' | 'medium' | 'hard'.
 //
-//   #1 chainCueLevel            (word-chains)       full → highlight-only → none
-//   #2 showInstruction          (all modes)         the mode-instruction line
-//   #2 allowSentenceModelRead   (sentence-reading)  the whole-sentence model read
-//   #3 allowPronounce           (real-vs-nonsense)  the per-card speaker buttons
-//   #4 comprehensionChoiceCount (sentence-reading)  2 → 3 → 4 options
+// ONE LEVER SURVIVES THE DI PORT (2026-08-14), and it now drives TWO channels:
+//
+//   #1 chainCueLevel (word-chains)  full → highlight-only → none
+//        on screen: the amber changed-letter highlight + the "b → c" delta chip
+//        in the ask:  whether the chain CORRECTION names what changed at all
+//                     (wordWorkoutScript.correctionFor) — at 'none', noticing
+//                     the change is the task, so the tutor must not hand back
+//                     the scaffold the tier removed.
+//
+// The other three levers died with the affordances they withdrew, because the
+// judged loop deleted those affordances outright:
+//   #2 showInstruction          — the tutor SPEAKS the ask now; the fade is
+//                                 structural (how-to-play on the opening and on
+//                                 an action change, short repeat asks after).
+//   #2 allowSentenceModelRead   — reading the line to the child is the answer.
+//   #3 allowPronounce           — hearing "cat" beside "zat" decides that item
+//                                 with zero decoding: a scaffold that fails the
+//                                 costume test is not a tier lever.
+//   #4 comprehensionChoiceCount — the answer menu is gone; the child says it.
 //
 // INVARIANTS
 //  - The stimulus is never withdrawn: chain words, the target word, the picture
-//    options and the sentence all render at every tier, and PER-WORD tap-to-hear
-//    survives every tier (it is the MEASURED support — wordsReadIndependent).
-//  - The comprehension answer sits at index 0 pre-shuffle, so trimming the
-//    distractor slice can never drop it (and the post-filter already guarantees
-//    the answer is one of cvcWords).
+//    options and the sentence all render at every tier.
 //  - Chain data is untouched: chain[] / changedPositions[] still come straight
-//    out of validateWordChain, so the 1-letter-change validation is unaffected —
-//    hard only stops DRAWING the change, it does not change the chain.
-//  - Every field is OPTIONAL. Absent ⇒ byte-identical legacy full-help render;
-//    the component reads them with `!== false` / `?? legacy`.
+//    out of validateWordChain — hard only stops DRAWING the change.
+//  - The field is OPTIONAL. Absent ⇒ full-cue render, as before.
 //  - Fallback challenges are deliberately left UNSTAMPED (full help): a
 //    generation failure must not ALSO strip the student's scaffolding.
 // ============================================================================
 
 type ChainCueLevel = 'full' | 'highlight-only' | 'none';
 
-interface SupportScaffold {
-  showInstruction: boolean;
-  chainCueLevel: ChainCueLevel;
-  allowPronounce: boolean;
-  allowSentenceModelRead: boolean;
-  comprehensionChoiceCount: number;
-}
-
-const SUPPORT_SCAFFOLDS: Record<SupportTier, SupportScaffold> = {
-  easy: {
-    showInstruction: true,
-    chainCueLevel: 'full',
-    allowPronounce: true,
-    allowSentenceModelRead: true,
-    comprehensionChoiceCount: 2,
-  },
-  medium: {
-    showInstruction: true,
-    chainCueLevel: 'highlight-only',
-    allowPronounce: true,
-    allowSentenceModelRead: true,
-    comprehensionChoiceCount: 3,
-  },
-  hard: {
-    showInstruction: false,
-    chainCueLevel: 'none',
-    allowPronounce: false,
-    allowSentenceModelRead: false,
-    comprehensionChoiceCount: 4,
-  },
+const CHAIN_CUE_LEVELS: Record<SupportTier, ChainCueLevel> = {
+  easy: 'full',
+  medium: 'highlight-only',
+  hard: 'none',
 };
 
 /**
- * Stamp only the scaffold fields THIS mode actually renders, so an absent field
- * always means "this mode has no such lever", never "the tier forgot to set it".
- * Pure display/instruction data — no content field is read or rewritten here.
+ * Stamp the one lever the mode that owns it actually renders, so an absent
+ * field always means "this mode has no such lever", never "the tier forgot to
+ * set it". Pure display data — no content field is read or rewritten here.
  */
 function applySupportTier(
   mode: WordWorkoutMode,
   challenges: WordWorkoutChallenge[],
   tier: SupportTier | undefined,
 ): WordWorkoutChallenge[] {
-  if (!tier) return challenges;
-  const sc = SUPPORT_SCAFFOLDS[tier];
-  return challenges.map((ch): WordWorkoutChallenge => {
-    switch (mode) {
-      case 'word-chains':
-        return { ...ch, showInstruction: sc.showInstruction, chainCueLevel: sc.chainCueLevel };
-      case 'real-vs-nonsense':
-        return { ...ch, showInstruction: sc.showInstruction, allowPronounce: sc.allowPronounce };
-      case 'picture-match':
-        return { ...ch, showInstruction: sc.showInstruction };
-      case 'sentence-reading':
-        return {
-          ...ch,
-          showInstruction: sc.showInstruction,
-          allowSentenceModelRead: sc.allowSentenceModelRead,
-          comprehensionChoiceCount: sc.comprehensionChoiceCount,
-        };
-    }
-  });
+  if (!tier || mode !== 'word-chains') return challenges;
+  return challenges.map((ch): WordWorkoutChallenge => ({
+    ...ch,
+    chainCueLevel: CHAIN_CUE_LEVELS[tier],
+  }));
 }
 
 // ============================================================================
@@ -682,6 +672,23 @@ async function generateModeChallenges(
       }
     }
 
+    // ── THE JUDGED-LOOP GATE, both sides of the wire ────────────────────────
+    // The SAME `itemsFromChallenge` the component runs, imported rather than
+    // re-implemented: hand-synced copies drift, and letter-spotter's two sides
+    // disagreed live about what a sayable sentence was. KEEP-OR-DROP, never
+    // backfill — a placeholder in a judged loop becomes a spoken ask the tutor
+    // has to stand behind. It refuses, among other things, an ear-inseparable
+    // real/nonsense pair, a sentence outside the benched 3-8 word read window,
+    // a comprehension question carrying its own answer, and any word that would
+    // open a spoken sentence with a verdict sentinel ("yes" is CVC-shaped).
+    {
+      const before = challenges.length;
+      challenges = challenges.filter((ch) => challengeAskable(ch));
+      if (challenges.length < before) {
+        console.warn(`[word-workout] ${mode}: dropped ${before - challenges.length}/${before} challenge(s) the judged loop cannot ask`);
+      }
+    }
+
     if (challenges.length === 0) return fallbackFor(mode, count, scopedVowels);
 
     // Support tier LAST — after every content filter, so scaffold withdrawal can
@@ -700,6 +707,21 @@ async function generateModeChallenges(
 //   - No config.mode and no targetEvalMode → multi-mode: 4 parallel calls
 //   - With config.mode or targetEvalMode → single/filtered-mode generation
 // ============================================================================
+
+/**
+ * ELICITATIONS, not challenges (DI port, 2026-08-14). One chain is now a judged
+ * read PER WORD and one sentence is a read PLUS a spoken comprehension answer,
+ * so the click era's default of five chains is ~25 spoken turns. These caps keep
+ * a single-mode judged session at roughly 6-12 elicitations: mastery length
+ * (never one instance shown three ways), not a marathon for a five-year-old.
+ * The multi-mode path already sends 1 chain / 1 sentence.
+ */
+const MAX_CHALLENGES_PER_MODE: Record<WordWorkoutMode, number> = {
+  'real-vs-nonsense': 6,
+  'picture-match': 6,
+  'word-chains': 2,
+  'sentence-reading': 3,
+};
 
 type WordWorkoutConfig = Partial<{
   mode: WordWorkoutMode;
@@ -749,7 +771,10 @@ export const generateWordWorkout = async (
   // ── Single mode (explicit request OR eval mode targeting single mode) ──
   if (explicitMode || (evalModes && evalModes.length === 1)) {
     const targetMode = explicitMode || evalModes![0];
-    const count = config?.challengeCount || 5;
+    const count = Math.min(
+      config?.challengeCount || 5,
+      MAX_CHALLENGES_PER_MODE[targetMode],
+    );
     const challenges = await generateModeChallenges(
       targetMode,
       topic,

@@ -2058,125 +2058,213 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'word-workout',
     description:
-      'CVC word application activity with four modes: Real vs. Nonsense (discriminate real from made-up words), '
-      + 'Picture Match (connect decoded words to meaning), Word Chains (build automaticity with one-letter-change sequences), '
-      + 'and Sentence Reading (apply decoding in connected text). Capstone assessment for CVC mastery. ESSENTIAL for K-2 literacy.',
+      'Live Direct Instruction CVC word reading with a spoken tutor. The tutor asks, waits, judges the child\'s '
+      + 'answer from the audio in-band, and its own affirmation moves the lesson on. THE PRINT IS DECODED COLD AND '
+      + 'MOST ANSWERS ARE SPOKEN: the child READS two printed words and SAYS the real one (Real or Silly?), reads '
+      + 'each word of a one-letter-change chain OUT LOUD (Word Chain), and READS a decodable sentence ALOUD before '
+      + 'SAYING the answer to a question about it (Read It). Picture Match is the one hands mode — the word is '
+      + 'printed, the child decodes it silently and taps the picture it means, which is what shows they know what '
+      + 'the word MEANS rather than only how it sounds. Nothing on screen marks the answer before the tutor '
+      + 'affirms, there is nothing to click to advance, and the tutor never reads the print for the child. '
+      + 'Requires a microphone. Capstone practice for CVC decoding, blending automaticity and word-in-context '
+      + 'fluency. ESSENTIAL for K-2 literacy.',
     constraints:
-      'Requires mode selection. Real/Nonsense needs phonetically plausible nonsense words. '
-      + 'Word Chains must follow one-letter-change rule. Sentences use only mastered CVC words + approved sight words. '
-      + 'BAND FLOOR: sentence_reading (connected-text decoding + comprehension) is Grade 1+ — do NOT route it '
-      + 'at Kindergarten/pre-reader (reading a whole sentence is beyond a CVC-word decoder; route K to '
-      + 'real_vs_nonsense / picture_match / word_chains). The other three modes are pre-reader-capable: at Grade K '
-      + 'the component hides its chrome + on-screen instruction text and the tutor voices the play action.',
+      'Requires the live tutor and a microphone. THIS PRIMITIVE ASSUMES THE CHILD CAN DECODE CVC PRINT: the tutor '
+      + 'never says a printed word before the child reads it, so a pre-reader who cannot yet sound out a CVC word '
+      + 'has nothing to work from — route those objectives to letter-sound-link / phonics-blender instead. '
+      + 'BAND FLOOR: sentence_reading (connected-text decoding + comprehension) is Grade 1+. '
+      + 'Real/Nonsense needs phonetically plausible nonsense words that START WITH A DIFFERENT CONSONANT from '
+      + 'their real partner (the child says one aloud and the tutor judges it by ear, so a pair differing only in '
+      + 'its last sound cannot be scored). Word Chains must follow the one-letter-change rule. Sentences use only '
+      + 'mastered CVC words + approved sight words and must fit the benched 3-8 word read-aloud window; the '
+      + 'comprehension answer must be a word IN the sentence and must NOT appear in the question.',
+    // ── DI MODALITY (2026-08-14) — SIXTEENTH literacy port, the last of Phase 1.
+    // The tutor owns the clock: it asks once, waits, judges the spoken answer
+    // from the audio in-band, and its own line is the advance. No advance timer,
+    // no Next button, no push-to-talk mic.
+    // ONE CHALLENGE IS NOT ONE ITEM: a chain is a judged read per WORD and a
+    // sentence is a read PLUS a spoken question (decodable-reader's split,
+    // second use). The click era judged NEITHER — handleChainAdvance recorded
+    // correct/100 for every chain whatever the child said, and the sentence was
+    // "read" by pressing a button called "I Read It!", which is the costume
+    // test's own example.
+    // THE FORK KEPT ONE TAP AND EARNED IT: picture-match's answer is WHICH
+    // PICTURE, and naming it aloud would only echo the printed word — decoding
+    // evidence, not meaning evidence (picture-vocabulary's receptive_match).
+    // Everything else went verbal, including real-vs-nonsense, which the queue
+    // predicted would stay a tap over a sentinel collision on "yes"; the
+    // challenge never carried a yes/no question at all, it carries realWord and
+    // nonsenseWord, so the natural answer is the word.
+    // IT ALSO DELETED THREE AUDIO SCAFFOLDS that handed over the print (the
+    // per-card speakers, the whole-sentence model read, and the per-word
+    // tap-to-hear inside the sentence). Hearing "cat" beside "zat" decides that
+    // item with zero decoding: a scaffold that fails the costume test is not a
+    // tier lever. chainCueLevel survives as the one lever, and now governs the
+    // spoken correction as well as the amber highlight.
+    // Cue lines and the per-item judging contracts live in wordWorkoutScript.ts
+    // (hand-authored, DISTAR); this block is the session-level frame. SENTINEL
+    // DISCIPLINE (standing gate 2) re-checked on every line below: no sentence
+    // begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'real_vs_nonsense',
         label: 'Real vs Nonsense (Tier 1)',
-        beta: 1.5,
+        // β RAISED 1.5 → 2.5 on the DI port: a 1-of-2 tap with a 50% guess floor
+        // became unaided spoken production of the decoded word, which is the
+        // structural case the family's β rule names (letter-spotter name_it and
+        // story-talk, same conversion, same step).
+        beta: 2.5,
         scaffoldingMode: 1,
         challengeTypes: ['real-vs-nonsense'],
-        description: 'Is this a real word? Recognition-level decoding.',
+        description: 'Read both printed words and SAY the real one aloud. The guess floor is gone with the tap; β raised for unaided production.',
       },
       {
         evalMode: 'picture_match',
         label: 'Picture Match (Tier 2)',
+        // β UNCHANGED: still a tap of the same size. What changed is a SCAFFOLD
+        // (the speaker button that read the word aloud), not the structure of
+        // the answer — the β rule moves on structure only.
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['picture-match'],
-        description: 'Match decoded word to picture — word-meaning connection.',
+        description: 'Decode the printed word silently, then tap the picture it means — word-meaning connection. The tutor never says the word.',
       },
       {
         evalMode: 'word_chains',
         label: 'Word Chains (Tier 3)',
-        beta: 3.5,
+        // β RAISED 3.5 → 4.0: the click era advanced on a "Next Word" button and
+        // scored every chain 100 regardless of what was said, so the reading was
+        // never measured at all. Every word is now a judged oral read.
+        beta: 4.0,
         scaffoldingMode: 3,
         challengeTypes: ['word-chains'],
-        description: 'Read chain of words with one-letter changes.',
+        description: 'READ ALOUD every word of a one-letter-change chain; each word is judged on its own. β raised because the reading was previously unmeasured.',
       },
       {
         evalMode: 'sentence_reading',
         label: 'Sentence Reading (Tier 4)',
-        beta: 5.0,
+        // β RAISED 5.0 → 5.5: an unjudged "I Read It!" button plus a 1-of-N
+        // comprehension tap became a judged whole-sentence read PLUS unaided
+        // spoken production of the answer.
+        beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['sentence-reading'],
-        description: 'Read word in decodable sentence context.',
+        description: 'READ the decodable sentence ALOUD (judged word by word), then SAY the answer to a question about it. β raised for judged reading and unaided production.',
       },
     ],
     tutoring: {
       taskDescription:
-        'CVC word application activity. Mode: {{mode}}. '
-        + 'Challenge {{currentChallenge}}/{{totalChallenges}}. '
-        + 'Mastered vowels: {{masteredVowels}}. Phase: {{currentPhase}}. Attempts: {{attempts}}.',
-      contextKeys: [
-        'mode', 'currentChallenge', 'totalChallenges', 'masteredVowels',
-        'currentPhase', 'attempts', 'supportTier',
-      ],
+        'Live-judged Direct Instruction CVC reading for a young child. Right now the turn is "{{challengeType}}" '
+        + 'and what the child is working from is {{stimulus}}. You speak the exact scripted lines from each '
+        + 'bracketed application message, and you judge each attempt from the audio you heard using only the '
+        + 'allowed reply branches. Decoding the print is the whole skill being practiced, so the child reads it — '
+        + 'you never read it for them.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // Correction territory, not answer territory, and every level is a
+      // BEHAVIOUR rather than a line you may say. A ladder that quotes speakable
+      // hints is a no-verdict stall: on a repeated wrong answer the model
+      // reaches for the sanctioned-sounding alternative and says something that
+      // opens with neither sentinel, so the loop records no verdict at all and
+      // the correction counter freezes (number-bond's cap drill, 2026-08-14;
+      // queue item 18d).
       scaffoldingLevels: {
-        level1:
-          'REAL/NONSENSE: "Sound out both words. Which one is a word you know?" '
-          + 'PICTURE MATCH: "Read the word, then look at each picture." '
-          + 'WORD CHAINS: "Read each word. What letter changed?" '
-          + 'SENTENCES: "Try reading the sentence. Tap any word you need help with."',
-        level2:
-          'REAL/NONSENSE: "One of these makes sense and one is a silly made-up word. Sound them out." '
-          + 'PICTURE MATCH: "What sounds do you hear in the word? Which picture matches those sounds?" '
-          + 'WORD CHAINS: "The word changed from [old] to [new]. What\'s different?" '
-          + 'SENTENCES: "Start with the first word. Sound it out. Then the next one."',
-        level3:
-          'REAL/NONSENSE: "The real word is one you\'ve seen before or that means something. The nonsense word is just sounds." '
-          + 'PICTURE MATCH: "The word says [word]. Can you find the picture of a [word]?" '
-          + 'WORD CHAINS: "In [old word], we changed the [position] letter from [old] to [new] to make [new word]." '
-          + 'SENTENCES: "Let me read it first, then you try."',
+        level1: 'Use the scripted correction line for this item, then hand it back and wait.',
+        level2: 'Use that same scripted correction line again, unchanged, and give them longer in silence.',
+        level3: 'Use that same scripted correction line again — the wording is fixed, the patience is what changes.',
       },
+      // Observable behaviours only, headed by each turn kind's signature error:
+      // the wrong answer that arrives fluent, confident, and most likely to be
+      // affirmed by mistake.
       commonStruggles: [
-        { pattern: 'Cannot distinguish real from nonsense', response: 'Sound out each word slowly. Does it mean something? Is it a thing you know?' },
-        { pattern: 'Picking picture by phonetic similarity, not meaning', response: 'Read the word one more time. What does it mean? Now find that picture.' },
-        { pattern: 'Getting stuck in word chains', response: 'Just one letter changed! Look at the word above \u2014 what\'s different?' },
-        { pattern: 'Cannot read sentences fluently', response: 'Read one word at a time. Don\'t rush. Tap any word you need help with.' },
+        {
+          pattern: 'Says the made-up word confidently — picked by the first letter or by the shape of the word instead of reading it',
+          response: 'Treat it as not yet answered: run the scripted correction for this pair, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Says the word BEFORE it in the chain — reading the row from memory, and it sounds fluent',
+          response: 'A remembered word is not a read word. Run the scripted correction, then ask once more and wait.',
+        },
+        {
+          pattern: 'Swaps a small word while reading a sentence — "a" for "the", "then" for "and"',
+          response: 'It sounds fluent and it is still wrong. Use the contrast branch, naming just the words that came out wrong.',
+        },
+        {
+          pattern: 'Answers a comprehension question with a word lifted out of the sentence that does not answer it',
+          response: 'It sounds right because it came from the sentence, and that is exactly the miss to catch. Run the scripted correction, then wait.',
+        },
+        {
+          pattern: 'Sounds a word out slowly and effortfully but lands on it',
+          response: 'That counts as read: give the scripted affirmation for this item, unchanged and on its own. Accuracy is what is measured here, never speed.',
+        },
+        {
+          pattern: 'Answers inside a phrase — "cat is real", "on the mat" — instead of one bare word',
+          response: 'That is a correct answer. Affirm it and echo the word itself.',
+        },
+        {
+          pattern: 'Goes quiet in front of a word, or taps to hear the question again',
+          response: 'Silence is a five-year-old decoding, and their think time is unbounded — wait. If they tap, the application sends the repeat; never volunteer to read the print.',
+        },
       ],
       aiDirectives: [
         {
-          title: 'PRONUNCIATION COMMANDS',
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
           instruction:
-            'When you receive [PRONOUNCE], say ONLY the requested word. No extra commentary. '
-            + 'When you receive [READ_SENTENCE], read the sentence fluently and naturally. No extra commentary. '
-            + 'When you receive [CHAIN_WORD], say the word and optionally add a brief note about what changed '
-            + '(e.g., "mat \u2014 we changed the first letter!").',
+            'Messages tagged [WW_ITEM], [WW_TAP], [WW_MOVE], [WW_HEAR] or [WW_COMPLETE] contain the only lesson '
+            + 'words you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket '
+            + 'label is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" and '
+            + 'corrections begin with "My turn" — never begin any other sentence with those words. Judge honestly '
+            + 'from the audio and do not praise to be kind. YOUR WHOLE REPLY TO AN ATTEMPT IS ONE OF THE '
+            + 'QUOTED LINES THAT MESSAGE GIVES YOU AND NOTHING ELSE — never praise, never a hint, never your own '
+            + 'encouragement, however kind it would be; a reply that is neither line reaches the activity as no '
+            + 'verdict at all and the lesson stalls there. The application decides what comes next; never '
+            + 'introduce an item yourself, never announce progress, and never read back or narrate a state block '
+            + 'you were given — if the screen changed, say only the quoted line about it.',
         },
         {
-          title: 'PRE-READER HOW TO PLAY (Kindergarten)',
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
           instruction:
-            'For a KINDERGARTEN / pre-reader student the on-screen instruction text is HIDDEN \u2014 you are the '
-            + 'ONLY channel for what to do. On [ACTIVITY_START] (and whenever the mode switches), warmly voice '
-            + 'the play action for the current mode in ONE short child-friendly sentence, then stop: '
-            + 'REAL vs NONSENSE \u2014 "You\u2019ll hear two words. Tap the one that is a REAL word!"; '
-            + 'PICTURE MATCH \u2014 "Listen to the word, then tap the picture that matches it!"; '
-            + 'WORD CHAINS \u2014 "Read each word out loud. Watch one letter change to make a new word!"; '
-            + 'SENTENCE READING \u2014 "Read the little sentence. Tap any word to hear it!". '
-            + 'This voicing IS your greeting and OVERRIDES any one-sentence / keep-it-brief cap. '
-            + 'NEVER say which choice is correct and NEVER read a nonsense/target answer that gives it away \u2014 '
-            + 'name the task, not the answer.',
+            'The first [WW_ITEM] carries the greeting, how this kind of turn works, and the first ask inside one '
+            + 'quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity in '
+            + 'your own words, and do not add a warm-up question — the quoted line is the whole opening.',
         },
         {
-          title: 'SUPPORT TIER \u2014 REVEAL POLICY',
+          title: 'WHAT COUNTS AS AN ANSWER (it differs by turn)',
           instruction:
-            'The student is at support tier {{supportTier}} (easy = maximum on-screen scaffolding, hard = minimum). '
-            + 'You are a SECOND scaffold channel, so keep your reveal level in sync with what is actually on screen. '
-            + 'easy: the mode instruction line, the amber changed-letter highlight WITH its before/after chip, the '
-            + 'per-word speaker buttons and a whole-sentence model read are all visible, and comprehension offers only '
-            + 'two choices \u2014 you MAY name which letter changed and where, and the level-3 SENTENCES move '
-            + '("Let me read it first, then you try") is allowed HERE. '
-            + 'medium: the changed letter is still highlighted but the before/after chip is gone and there are three '
-            + 'comprehension choices \u2014 nudge execution only; confirm a sound if asked, do not pre-solve the change. '
-            + 'hard: there is NO instruction line, NO changed-letter highlight, NO word speaker buttons and NO '
-            + 'whole-sentence model read \u2014 noticing what changed IS the task. Do NOT name the changed letter or its '
-            + 'position, do NOT read a target word or the whole sentence aloud, and do NOT offer to read it first '
-            + '(that level-3 SENTENCES move is scoped to easy/medium ONLY). Ask what the student notices instead. '
-            + 'AT EVERY TIER: a per-word [PRONOUNCE] request is still answered with that one word (tap-to-hear is the '
-            + 'measured support and is never withdrawn), and you never say which choice is correct. '
-            + 'KINDERGARTEN OVERRIDES THE TIER: for a pre-reader, keep voicing the play action and keep answering '
-            + '[PRONOUNCE] / [CHAIN_WORD] / [READ_SENTENCE] normally \u2014 the band support wins over any withdrawal. '
-            + 'When supportTier is absent, behave exactly as before \u2014 full scaffolding is on screen.',
+            'The [WW_ITEM] message names what is correct for THIS turn, and {{challengeType}} tells you which kind '
+            + 'of turn it is. On "real_word", "chain_word", "read_sentence" and "answer_question" the child answers '
+            + 'OUT LOUD and you judge what you heard: a word said inside a little phrase is a full answer, a '
+            + 'different word that truly names the same thing is a full answer, and slow effortful sounding-out '
+            + 'that lands on the right word is correct. On "picture_tap" the child answers by TOUCHING a picture '
+            + 'and says nothing at all — stay silent, judge nothing you hear, and wait to be told what they '
+            + 'tapped. Never invite a tap on a spoken turn, and never ask a child to say anything on a tap turn.',
+        },
+        {
+          title: 'THE PRINT IS THEIRS TO READ',
+          instruction:
+            'Every word, chain and sentence in this activity is printed in front of the child, and decoding it IS '
+            + 'the skill. You never read it first, never sound it out, never give the first sound, and never say '
+            + 'part of a word to get them started — not when they are stuck, and not if they ask. Being stuck is '
+            + 'answered by the scripted correction, which models the word properly and then hands it back. On a '
+            + 'comprehension question the answer is one of the words printed in the sentence and finding it there '
+            + 'is the task: never say it, never say which part of the sentence holds it, and never read the '
+            + 'sentence out for them.',
+        },
+        {
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not start '
+            + 'sounding anything out. A long pause is a five-year-old decoding, and that work IS the activity. '
+            + 'Think time is unbounded and the application, not the clock, decides when to move on.',
+        },
+        {
+          title: 'HEAR IT AGAIN ON DEMAND',
+          instruction:
+            'When you receive [WW_HEAR], the child tapped to hear the question again. Say ONLY the quoted line, '
+            + 'warmly, then go back to waiting. On a reading turn that line is the instruction alone — the printed '
+            + 'words stay unspoken, which is the whole mode — and on a comprehension turn it is the question '
+            + 'again. Add nothing, judge nothing you just heard, and never let the repeat carry more help than the '
+            + 'first ask did. This channel is answered at every grade and every support tier.',
         },
       ],
     },

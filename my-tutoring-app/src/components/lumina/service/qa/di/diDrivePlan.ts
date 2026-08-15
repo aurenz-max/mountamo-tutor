@@ -78,6 +78,15 @@ import {
   type StoryTalkChallengeLike,
   type StoryTalkItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/storyTalkScript';
+import {
+  itemsFromChallenge as wordWorkoutItemsFromChallenge,
+  itemsFromChallenges as wordWorkoutItems,
+  pictureVerdictCue,
+  wordWorkoutHarnessAnswers,
+  wordWorkoutPackBase,
+  type WordWorkoutChallengeLike,
+  type WordWorkoutItem,
+} from '@/components/lumina/primitives/visual-primitives/literacy/wordWorkoutScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -266,6 +275,29 @@ const storyTalkAdapter: DiPortAdapter<StoryTalkItem> = {
 };
 
 /**
+ * word-workout (sixteenth literacy port). MIXED, and the first adapter where a
+ * challenge is not an item: a chain expands to a judged read per word and a
+ * sentence to a read plus a spoken question, so `dropped` counts CHALLENGES
+ * that produced nothing rather than the items/challenges difference.
+ *
+ * Its gesture commit carries the TAPPED WORD (interactive-book's shape), and
+ * its most interesting drive is `real_word`, whose signature wrong is the
+ * PSEUDOWORD — the one answer material in the family that is not a word at all.
+ */
+const wordWorkoutAdapter: DiPortAdapter<WordWorkoutItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as WordWorkoutChallengeLike[];
+    const items = wordWorkoutItems(challenges);
+    const dropped = challenges.filter(
+      (ch) => wordWorkoutItemsFromChallenge(ch).length === 0,
+    ).length;
+    return { items, dropped, surface: wordWorkoutPackBase(items) };
+  },
+  answersFor: wordWorkoutHarnessAnswers,
+  gestureVerdictCue: (item, gesture) => pictureVerdictCue(item, String(gesture)),
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -277,6 +309,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'word-workout': wordWorkoutAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

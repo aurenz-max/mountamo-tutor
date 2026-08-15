@@ -1,84 +1,127 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * WordWorkout — DI modality (SIXTEENTH literacy port, 2026-08-14; the last of
+ * Phase 1). The Live tutor owns the clock: it asks ONCE, waits, judges the
+ * child's answer from the audio in-band, corrects contrastively, and its OWN
+ * affirmation is the advance. There is no advance timer, no Next button, no
+ * push-to-talk mic, and nothing on screen tells the child which answer is right
+ * before the tutor affirms.
+ *
+ * WHAT WENT, AND WHY:
+ *  - **The whole tap surface on three of four modes.** Real-vs-nonsense was a
+ *    1-of-2 tap with a 50% guess floor; the child now READS both printed words
+ *    and SAYS the real one. Word chains advanced on a "Next Word" button and
+ *    recorded `correct: true, score: 100` for every chain no matter what came
+ *    out of the child's mouth — every word is now a judged read. The sentence
+ *    was "read" by pressing a button called "I Read It!", which is the costume
+ *    test's own example; it is now read aloud and judged word by word, and its
+ *    comprehension answer is SAID instead of picked from a 2-4 word menu.
+ *  - **Three audio channels that handed over the print** (the per-card speaker
+ *    buttons, the whole-sentence model read, the per-word tap-to-hear inside
+ *    the sentence). Hearing "cat" beside "zat" decides that item with zero
+ *    decoding. Tap-to-hear survives as the QUESTION side only.
+ *  - **The interim voice-answer rung** on word chains — the last live consumer
+ *    of that generation of hooks in the repo. A separate Azure capture judged
+ *    the child while the tutor talked past it; the judge is the tutor now.
+ *  - **Eight improvised tutor sends** (activity start, pronounce-this-word,
+ *    speak-the-chain-word, read-the-sentence, the two answer verdicts, next
+ *    challenge, session complete) and the tier reveal-policy block that steered
+ *    them. The cues carry the entire spoken surface.
+ *
+ * WHAT STAYED: the print. The two words, the chain with its changed-letter
+ * highlight, the sentence with its phonics tint — all of it is the stimulus AND
+ * the target, which is why the leak rule here bites on the tutor's mouth rather
+ * than on the screen (`coldReadGuard`, per item). The one printed thing that is
+ * not the task is the comprehension answer, and it stays unmarked until the
+ * affirm.
+ *
+ * PICTURE-MATCH IS THE ONE HANDS MODE and it is honest page-work: the word is
+ * printed, so naming its picture aloud would just echo the print (decoding
+ * evidence, not meaning evidence). Pointing at the referent is the meaning
+ * evidence — picture-vocabulary's `receptive_match` precedent.
+ *
+ * Cue lines, judging contracts and build gates live in `wordWorkoutScript.ts`
+ * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  LuminaBadge,
   LuminaCard,
+  LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
-  LuminaCardContent,
-  LuminaBadge,
-  LuminaButton,
-  LuminaActionButton,
-  LuminaProgress,
-  LuminaFeedbackCard,
-  LuminaMicListener,
-  LuminaReadAloud,
-  answerStateClasses,
+  LuminaChallengeCounter,
+  answerStateClass,
 } from '../../../ui';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { WordWorkoutMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useVoiceAnswer, type SpokenJudgeResult } from '../../../hooks/useVoiceAnswer';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { isPreReaderGrade } from '../../../utils/kindergartenMode';
+import {
+  chainWordOf,
+  itemsFromChallenges,
+  pictureVerdictCue,
+  wordWorkoutPackBase,
+  type ChainCueLevel,
+  type WordWorkoutItem,
+  type WordWorkoutItemKind,
+  type WordWorkoutMode,
+  type WordWorkoutPictureOption,
+} from './wordWorkoutScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
-export type WordWorkoutMode =
-  | 'real-vs-nonsense'
-  | 'picture-match'
-  | 'word-chains'
-  | 'sentence-reading';
+export type { WordWorkoutMode };
 
 export interface WordWorkoutChallenge {
   id: string;
   /** Per-challenge mode (for multi-mode sessions). Falls back to top-level mode. */
   mode?: WordWorkoutMode;
-  // Real vs. Nonsense
+  // Real vs. Nonsense — the child SAYS the real one.
   realWord?: string;
   nonsenseWord?: string;
-  // Picture Match
+  // Picture Match — the child reads the word and TAPS its picture.
   targetWord?: string;
   targetImage?: string;
   distractorImages?: Array<{ word: string; image: string }>;
-  // Word Chains
+  // Word Chains — one judged read per word.
   chain?: string[];
   changedPositions?: number[];
-  // Sentence Reading
+  // Sentence Reading — one judged read, then one spoken comprehension answer.
   sentence?: string;
   cvcWords?: string[];
   sightWords?: string[];
   comprehensionQuestion?: string;
   comprehensionAnswer?: string;
 
-  // ── Within-mode support tier scaffolds (stamped by the generator from
-  //    ctx.supportTier). Display/instruction ONLY — they never change the words,
-  //    the chain, the sentence, or which option is correct. All optional; absent
-  //    ⇒ legacy full-help render (every field is read with `!== false` / `?? …`).
-  //    The pre-reader band composes with and WINS over these: an audio channel a
-  //    Kindergartner depends on is restored at PRE regardless of tier. ──
-  /** #2 instruction — show the mode-instruction line. Default: shown. */
-  showInstruction?: boolean;
-  /** #1 perception (word-chains) — how much of the letter change is drawn:
-   *  'full' = amber highlight + the "b → c" delta chip, 'highlight-only' = amber
-   *  only, 'none' = neither (finding what changed IS the skill). Default: 'full'. */
-  chainCueLevel?: 'full' | 'highlight-only' | 'none';
-  /** #3 audio (real-vs-nonsense) — per-card speaker buttons. Default: shown. */
-  allowPronounce?: boolean;
-  /** #2 audio (sentence-reading) — the whole-sentence model read. Per-WORD
-   *  tap-to-hear is never withdrawn (it is the measured support). Default: shown. */
-  allowSentenceModelRead?: boolean;
-  /** #4 answer-form (sentence-reading) — comprehension option count. The answer
-   *  is always retained (it is index 0 pre-shuffle). Default: 4. */
-  comprehensionChoiceCount?: number;
+  /**
+   * The surviving support-tier lever (stamped by the generator from
+   * `ctx.supportTier`): how much of the letter change is drawn — 'full' = amber
+   * highlight + the "b → c" delta chip, 'highlight-only' = amber only, 'none' =
+   * neither, because finding what changed IS the task at that tier. It also
+   * governs the SPOKEN channel: at 'none' the chain correction re-models the
+   * word without naming what changed, so the tutor cannot hand back the
+   * scaffold the tier removed. Default 'full'.
+   *
+   * The other three click-era tier fields (`showInstruction`, `allowPronounce`,
+   * `allowSentenceModelRead`, `comprehensionChoiceCount`) died with the
+   * affordances they withdrew — see the file docblock.
+   */
+  chainCueLevel?: ChainCueLevel;
 }
 
 export interface WordWorkoutData {
@@ -86,17 +129,12 @@ export interface WordWorkoutData {
   /** Default/primary mode. Per-challenge mode overrides this. */
   mode: WordWorkoutMode;
   masteredVowels: string[];
-  /**
-   * Canonical grade key stamped by the generator ('K' | '1' | '2'…). At 'K' the
-   * component band-gates its adult chrome and load-bearing text out of the
-   * pre-reader's field (the tutor voices instructions; SFX/ring carry feedback).
-   * Reader grades leave the full UI unchanged.
-   */
+  /** Canonical grade key from the generator ('K' | '1' | '2'…), threaded to the
+   *  tutor session. The DI stage carries no band-gated chrome: the tutor voices
+   *  every instruction at every grade, so there is no reader-only text to hide. */
   gradeLevel?: string;
-  /**
-   * Within-mode support tier from the manifest (config.difficulty). Threaded to
-   * the live tutor so its reveal latitude matches the on-screen scaffolding.
-   */
+  /** Within-mode support tier from the manifest. Data only now — the render
+   *  lever it drives is stamped per challenge as `chainCueLevel`. */
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: WordWorkoutChallenge[];
 
@@ -111,10 +149,6 @@ export interface WordWorkoutData {
   ) => void;
 }
 
-// ============================================================================
-// Props
-// ============================================================================
-
 interface WordWorkoutProps {
   data: WordWorkoutData;
   className?: string;
@@ -124,76 +158,18 @@ interface WordWorkoutProps {
 // Constants
 // ============================================================================
 
-const MODE_CONFIG: Record<
-  WordWorkoutMode,
-  { label: string; icon: string; instruction: string }
+type WordWorkoutAccent = NonNullable<PhaseResult['accentColor']>;
+
+const KIND_META: Record<
+  WordWorkoutItemKind,
+  { label: string; icon: string; accent: WordWorkoutAccent }
 > = {
-  'real-vs-nonsense': {
-    label: 'Real vs. Nonsense',
-    icon: '🔤',
-    instruction: 'Which is a real word?',
-  },
-  'picture-match': {
-    label: 'Picture Match',
-    icon: '🖼️',
-    instruction: 'Which picture matches this word?',
-  },
-  'word-chains': {
-    label: 'Word Chains',
-    icon: '🔗',
-    instruction: 'Read each word as it changes',
-  },
-  'sentence-reading': {
-    label: 'Sentence Reading',
-    icon: '📖',
-    instruction: 'Read this sentence',
-  },
+  real_word: { label: 'Real or Silly?', icon: '🔤', accent: 'blue' },
+  picture_tap: { label: 'Picture Match', icon: '🖼️', accent: 'purple' },
+  chain_word: { label: 'Word Chain', icon: '🔗', accent: 'emerald' },
+  read_sentence: { label: 'Read It', icon: '📖', accent: 'amber' },
+  answer_question: { label: 'What Happened?', icon: '💭', accent: 'pink' },
 };
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'real-vs-nonsense': { label: 'Real vs. Nonsense', icon: '🔤', accentColor: 'blue' },
-  'picture-match': { label: 'Picture Match', icon: '🖼️', accentColor: 'purple' },
-  'word-chains': { label: 'Word Chains', icon: '🔗', accentColor: 'emerald' },
-  'sentence-reading': { label: 'Sentence Reading', icon: '📖', accentColor: 'amber' },
-};
-
-/**
- * Tutor reveal policy keyed to the within-mode support tier. The tutor is a
- * SECOND scaffold channel, so its latitude must match what is on screen — at
- * `hard` the amber changed-letter cue, the delta chip, the instruction line, the
- * word speakers and the whole-sentence model read are all withdrawn, so a tutor
- * that still narrates "we changed the first letter" would hand back exactly the
- * scaffold the tier removed. This also scopes the catalog's level3 SENTENCES copy
- * ("Let me read it first, then you try") to easy/medium, where it is truthful.
- * Per-word [PRONOUNCE] stays answerable at EVERY tier (measured support), and no
- * tier ever lets the tutor say which choice is correct.
- */
-function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    return '[SUPPORT_TIER easy] Full scaffolding is on screen: the instruction line, the changed '
-      + 'letter highlighted with its before/after chip, the word speaker buttons, a whole-sentence '
-      + 'model read, and only two comprehension choices. You MAY name which letter changed and where, '
-      + 'and you MAY read a sentence first and then have the student try. Never say which choice is correct.';
-  }
-  if (tier === 'medium') {
-    return '[SUPPORT_TIER medium] Partial scaffolding: the changed letter is still highlighted but the '
-      + 'before/after chip is gone, and there are three comprehension choices. Nudge execution only — '
-      + 'confirm a sound if asked, do not pre-solve the change, and never say which choice is correct.';
-  }
-  return '[SUPPORT_TIER hard] Minimal scaffolding: NO instruction line, NO changed-letter highlight, '
-    + 'NO word speaker buttons and NO whole-sentence model read are shown. Noticing what changed IS the '
-    + 'task, so do NOT name the changed letter or its position, do NOT read a target word or the whole '
-    + 'sentence aloud, and never say which choice is correct. Ask what the student notices and let them '
-    + 'decode. A per-word [PRONOUNCE] request is still answered — say only that one word.';
-}
-
-/** Attempt-based scoring: first try = 100, 2nd = 80, 3+ = 60 */
-function attemptScore(attempts: number): number {
-  if (attempts <= 1) return 100;
-  if (attempts === 2) return 80;
-  return 60;
-}
 
 // ============================================================================
 // Component
@@ -202,10 +178,6 @@ function attemptScore(attempts: number): number {
 const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   const {
     title,
-    mode: defaultMode,
-    masteredVowels = [],
-    gradeLevel: dataGradeLevel,
-    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -215,1088 +187,402 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ── Pre-reader band-gate ──────────────────────────────────────────
-  // At Kindergarten a non-reader can't decode chrome or on-screen instruction
-  // sentences. Hide the adult chrome (title/badges/vowel-label/counter/progress)
-  // and the text instruction/feedback from the child's field — the tutor voices
-  // the play action (catalog PRE-READER HOW TO PLAY directive) and SFX + the
-  // answer ring carry right/wrong. Reader grades render the full UI unchanged.
-  const isPreReader = isPreReaderGrade(dataGradeLevel);
+  const gradeLevel = data.gradeLevel || 'K-2';
 
-  // ── Challenge progression ─────────────────────────────────────────
-  const {
-    currentIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
-
-  const currentChallenge = challenges[currentIndex];
-  const currentMode: WordWorkoutMode = currentChallenge?.mode || defaultMode;
-
-  // ── Support-tier scaffolds, composed with the band gate ───────────
-  // Every read is `!== false` / `?? legacy`, so a payload WITHOUT these fields
-  // renders exactly as it did before support tiers existed. Band wins over tier:
-  // the on-demand audio channels a pre-reader depends on (hearing a word, hearing
-  // the sentence) are restored at PRE no matter what the tier asked for.
-  const showModeInstruction = !isPreReader && currentChallenge?.showInstruction !== false;
-  const chainCueLevel = currentChallenge?.chainCueLevel ?? 'full';
-  const showChangedLetter = chainCueLevel !== 'none';
-  const showChangeDelta = chainCueLevel === 'full';
-  const allowPronounce = isPreReader || currentChallenge?.allowPronounce !== false;
-  const allowSentenceModelRead =
-    isPreReader || currentChallenge?.allowSentenceModelRead !== false;
-  const comprehensionChoiceCount = Math.max(
-    2,
-    currentChallenge?.comprehensionChoiceCount ?? 4,
-  );
-
-  // ── Phase results for PhaseSummaryPanel ───────────────────────────
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.mode || defaultMode,
-    phaseConfig: PHASE_TYPE_CONFIG,
-    getScore: (rs) =>
-      rs.length > 0
-        ? Math.round(rs.reduce((s, r) => s + (r.score ?? 100), 0) / rs.length)
-        : 0,
-  });
-
-  // ── UI state ──────────────────────────────────────────────────────
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [isShaking, setIsShaking] = useState(false);
-  const [isCelebrating, setIsCelebrating] = useState(false);
-  const [showNext, setShowNext] = useState(false);
-
-  // Word Chains state
-  const [chainPosition, setChainPosition] = useState(0);
-  const [chainStartTime, setChainStartTime] = useState<number | null>(null);
-
-  // ── Spoken word-chains reading (voice ANSWER shape) ───────────────
-  // Word Chains is oral-reading production: the student says each displayed
-  // CVC word to advance. Voice is additive — the tap "Next Word" button stays
-  // as the fallback. gradeLevel matches the tutor config below.
-  const gradeLevel = 'K-2';
-  const [voiceOn, setVoiceOn] = useState(true);
-  const [spokenChainWords, setSpokenChainWords] = useState<Set<string>>(new Set());
-  // Read fresh inside handleChainAdvance (shared with the tap path) to suppress
-  // the per-word tutor cue only in voice mode — the student must decode the
-  // shown word independently, and a tutor voicing it collides with the open mic.
-  const voiceOnRef = useRef(voiceOn);
-  voiceOnRef.current = voiceOn;
-
-  // Sentence Reading state
-  const [tappedWords, setTappedWords] = useState<Set<string>>(new Set());
-  const [showComprehension, setShowComprehension] = useState(false);
-  const [comprehensionSelected, setComprehensionSelected] = useState<string | null>(null);
-
-  // Tracking
-  const [chainWPMs, setChainWPMs] = useState<number[]>([]);
-  const [wordsReadTotal, setWordsReadTotal] = useState(0);
-  const [wordsReadIndependent, setWordsReadIndependent] = useState(0);
-
-  // ── Stable instance ID ────────────────────────────────────────────
-  const stableInstanceIdRef = useRef(
-    instanceId || `word-workout-${Date.now()}`
-  );
+  const stableInstanceIdRef = useRef(instanceId || `word-workout-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Evaluation ────────────────────────────────────────────────────
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<WordWorkoutMetrics>({
-      primitiveType: 'word-workout',
-      instanceId: resolvedInstanceId,
-      skillId,
-      subskillId,
-      objectiveId,
-      exhibitId,
-      onSubmit: onEvaluationSubmit as
-        | ((result: PrimitiveEvaluationResult) => void)
-        | undefined,
-    });
-
-  // ── AI Tutoring ───────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(
-    () => ({
-      mode: currentMode,
-      masteredVowels: masteredVowels.join(', '),
-      currentChallenge: currentIndex + 1,
-      totalChallenges: challenges.length,
-      currentPhase: currentMode,
-      attempts: currentAttempts,
-      // Mirrors the on-screen scaffolding so the tutor's reveal latitude tracks it.
-      supportTier: supportTier ?? null,
-    }),
-    [currentMode, masteredVowels, currentIndex, challenges.length, currentAttempts, supportTier]
+  /** Build gates drop what cannot be asked, and one challenge can become
+   *  several items — a chain is one judged read per word, a sentence is a read
+   *  plus a question. */
+  const items = useMemo<WordWorkoutItem[]>(
+    () => itemsFromChallenges(challenges),
+    [challenges],
   );
 
-  const { sendText, isConnected } = useLuminaAI({
+  const [tapped, setTapped] = useState<string | null>(null);
+  const tappedRef = useRef<string | null>(null);
+
+  // ── Evaluation ─────────────────────────────────────────────────────────────
+  const evaluation = usePrimitiveEvaluation<WordWorkoutMetrics>({
     primitiveType: 'word-workout',
     instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    // Real grade so the tutor knows a Kindergartner is a pre-reader and fires the
-    // catalog PRE-READER HOW TO PLAY directive (voices the play action). Falls
-    // back to the K-2 band when the generator didn't stamp a grade.
-    gradeLevel: dataGradeLevel || 'K-2',
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-
-    const modeCount = new Set(challenges.map((ch) => ch.mode || defaultMode)).size;
-    const isMultiMode = modeCount > 1;
-
-    // At PRE the on-screen instruction text is hidden — the tutor is the ONLY
-    // channel for what-to-do, so ORIENT by voicing the play action for THIS mode
-    // (answer-free). This mirrors the catalog PRE-READER HOW TO PLAY directive,
-    // which is the durable carrier that survives the lesson one-sentence cap.
-    const PLAY_ACTION: Record<WordWorkoutMode, string> = {
-      'real-vs-nonsense': 'they will hear two words and tap the one that is a REAL word',
-      'picture-match': 'they will hear a word and tap the PICTURE that matches it',
-      'word-chains': 'they will read a row of words out loud, one at a time, as each one changes by a letter',
-      'sentence-reading': 'they will read a little sentence and tap any word to hear it',
-    };
-
-    const policy = tutorRevealPolicy(supportTier);
-    sendText(
-      (isPreReader
-        ? `[ACTIVITY_START] Word game for a Kindergartner who CANNOT read yet — you are the only voice for the instructions. `
-          + `Warmly, in ONE short sentence, tell them ${PLAY_ACTION[currentMode]}. `
-          + `Do NOT read any answer aloud. This is your greeting — it overrides any one-sentence cap.`
-        : `[ACTIVITY_START] CVC Word Workout${isMultiMode ? ' — multi-mode session with ' + modeCount + ' activity types' : ' — ' + MODE_CONFIG[currentMode].label + ' mode'}. `
-          + `${challenges.length} challenges. Mastered vowels: ${masteredVowels.join(', ') || 'all'}. `
-          + `Introduce warmly for a young reader. 2-3 sentences.`)
-      + (policy ? ` ${policy}` : ''),
-      { silent: true }
-    );
-  }, [isConnected, currentChallenge, currentMode, defaultMode, challenges, masteredVowels, isPreReader, supportTier, sendText]);
-
-  // ── Derived values (stable per challenge) ─────────────────────────
-  const shuffledPair = useMemo(() => {
-    if (
-      currentMode !== 'real-vs-nonsense' ||
-      !currentChallenge?.realWord ||
-      !currentChallenge?.nonsenseWord
-    )
-      return [];
-    const seed = currentChallenge.id
-      .split('')
-      .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    return seed % 2 === 0
-      ? [currentChallenge.realWord, currentChallenge.nonsenseWord]
-      : [currentChallenge.nonsenseWord, currentChallenge.realWord];
-  }, [currentMode, currentChallenge]);
-
-  const pictureOptions = useMemo(() => {
-    if (currentMode !== 'picture-match' || !currentChallenge?.targetWord) return [];
-    const opts = [
-      {
-        word: currentChallenge.targetWord,
-        image: currentChallenge.targetImage || '',
-      },
-      ...(currentChallenge.distractorImages || []),
-    ];
-    const shuffled = [...opts];
-    const seed = currentChallenge.id
-      .split('')
-      .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = (seed + i) % (i + 1);
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }, [currentMode, currentChallenge]);
-
-  // ── Helpers ───────────────────────────────────────────────────────
-  const resetChallengeState = useCallback(() => {
-    setSelectedAnswer(null);
-    setFeedback('');
-    setFeedbackType('');
-    setIsShaking(false);
-    setIsCelebrating(false);
-    setShowNext(false);
-    setChainPosition(0);
-    setChainStartTime(null);
-    setTappedWords(new Set());
-    setShowComprehension(false);
-    setComprehensionSelected(null);
-  }, []);
-
-  const handlePronounce = useCallback(
-    (word: string) => {
-      sendText(`[PRONOUNCE] "${word}"`, { silent: true });
-    },
-    [sendText]
-  );
-
-  // ── Final evaluation ──────────────────────────────────────────────
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-
-    const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const accuracy =
-      total > 0 ? Math.round((correctCount / total) * 100) : 0;
-    const totalAttempts = challengeResults.reduce(
-      (sum, r) => sum + r.attempts,
-      0
-    );
-
-    // Per-mode accuracy
-    const modeResults = (m: WordWorkoutMode) =>
-      challengeResults.filter(
-        (r, i) => (challenges[i]?.mode || defaultMode) === m
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const outcomeOf = (item: WordWorkoutItem) =>
+      summary.outcomes.find((o) => o.id === item.id);
+    const kindItems = (kind: WordWorkoutItemKind) => items.filter((i) => i.kind === kind);
+    const accuracyOf = (kind: WordWorkoutItemKind) => {
+      const group = kindItems(kind);
+      if (group.length === 0) return 0;
+      return Math.round(
+        (group.filter((i) => outcomeOf(i)?.solved).length / group.length) * 100,
       );
-    const modeAccuracy = (m: WordWorkoutMode) => {
-      const rs = modeResults(m);
-      return rs.length > 0
-        ? Math.round(rs.filter((r) => r.correct).length / rs.length * 100)
-        : 0;
     };
 
-    const avgWPM =
-      chainWPMs.length > 0
-        ? Math.round(
-            chainWPMs.reduce((s, v) => s + v, 0) / chainWPMs.length
-          )
-        : 0;
+    // Oral-reading fluency, measured SILENTLY from the runner's per-item
+    // seconds — there is no visible timer anywhere (standing doctrine).
+    const chainItems = kindItems('chain_word');
+    const chainSeconds = chainItems.reduce((sum, i) => sum + (outcomeOf(i)?.seconds ?? 0), 0);
+    const wordChainFluency = chainSeconds > 0
+      ? Math.round((chainItems.length / chainSeconds) * 60)
+      : 0;
 
-    const comprResults = challengeResults.filter(
-      (r) => r.comprehensionCorrect !== undefined
+    // Every word here is read INDEPENDENTLY — the click era's "tap any word to
+    // hear it" channel is gone, so there is no assisted read to subtract.
+    const readItems = [...chainItems, ...kindItems('read_sentence')];
+    const wordsTotal = readItems.reduce(
+      (sum, i) => sum + (i.kind === 'chain_word' ? 1 : (i.sentence ?? '').split(/\s+/).length),
+      0,
     );
-    const comprCorrect =
-      comprResults.length > 0
-        ? comprResults.every((r) => r.comprehensionCorrect)
-        : false;
+    const wordsReadIndependently = readItems
+      .filter((i) => outcomeOf(i)?.solved && (outcomeOf(i)?.corrections ?? 0) === 0)
+      .reduce(
+        (sum, i) => sum + (i.kind === 'chain_word' ? 1 : (i.sentence ?? '').split(/\s+/).length),
+        0,
+      );
+
+    const comprehension = kindItems('answer_question');
 
     const metrics: WordWorkoutMetrics = {
       type: 'word-workout',
-      mode: defaultMode,
-      challengesCorrect: correctCount,
-      challengesTotal: total,
-      realVsNonsenseAccuracy: modeAccuracy('real-vs-nonsense'),
-      pictureMatchAccuracy: modeAccuracy('picture-match'),
-      wordChainFluency: avgWPM,
-      sentenceComprehensionCorrect: comprCorrect,
-      wordsReadIndependently: wordsReadIndependent,
-      wordsTotal: wordsReadTotal,
-      attemptsCount: totalAttempts,
+      mode: data.mode,
+      challengesCorrect: summary.solvedCount,
+      challengesTotal: items.length,
+      realVsNonsenseAccuracy: accuracyOf('real_word'),
+      pictureMatchAccuracy: accuracyOf('picture_tap'),
+      wordChainFluency,
+      sentenceComprehensionCorrect:
+        comprehension.length > 0 && comprehension.every((i) => outcomeOf(i)?.solved),
+      wordsReadIndependently,
+      wordsTotal,
+      attemptsCount: summary.attemptsCount,
     };
 
-    submitEvaluation(accuracy >= 60, accuracy, metrics, {
-      challengeResults,
-      spokenWords: Array.from(spokenChainWords),
-    });
-
-    // Build phase score string for AI
-    const phaseScoreStr = Object.entries(PHASE_TYPE_CONFIG)
-      .map(([m, cfg]) => {
-        const rs = modeResults(m as WordWorkoutMode);
-        return rs.length > 0 ? `${cfg.label}: ${modeAccuracy(m as WordWorkoutMode)}%` : null;
-      })
-      .filter(Boolean)
-      .join(', ');
-
-    sendText(
-      `[SESSION_COMPLETE] Completed all ${total} challenges. ${phaseScoreStr}. `
-      + `Overall: ${accuracy}%. Celebrate and give phase-specific feedback.`,
-      { silent: true }
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      undefined,
+      summary.diagnosisEvidence,
     );
-  }, [
-    hasSubmittedEvaluation,
-    challenges,
-    challengeResults,
-    defaultMode,
-    chainWPMs,
-    wordsReadIndependent,
-    wordsReadTotal,
-    spokenChainWords,
-    submitEvaluation,
-    sendText,
-  ]);
+  }, [items, data.mode, evaluation]);
 
-  // ── Real vs. Nonsense ─────────────────────────────────────────────
-  const handleRealNonsenseSelect = useCallback(
-    (word: string) => {
-      if (hasSubmittedEvaluation || showNext || !currentChallenge) return;
-      setSelectedAnswer(word);
-      incrementAttempts();
-
-      const isCorrect = word === currentChallenge.realWord;
-
-      if (isCorrect) {
-        SoundManager.playCorrect();
-        setFeedback("Correct! That's a real word!");
-        setFeedbackType('success');
-        setIsCelebrating(true);
-        setShowNext(true);
-        setTimeout(() => setIsCelebrating(false), 1500);
-
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-          score: attemptScore(currentAttempts + 1),
-        });
-        sendText(
-          `[ANSWER_CORRECT] Correctly identified "${currentChallenge.realWord}" as real `
-          + `(vs "${currentChallenge.nonsenseWord}"). Congratulate briefly.`,
-          { silent: true }
-        );
-      } else {
-        SoundManager.playIncorrect();
-        setFeedback('Try again! Sound out both words.');
-        setFeedbackType('error');
-        setIsShaking(true);
-        setTimeout(() => {
-          setIsShaking(false);
-          setSelectedAnswer(null);
-        }, 800);
-        sendText(
-          `[ANSWER_INCORRECT] Picked "${word}" but real word is "${currentChallenge.realWord}". `
-          + `Attempt ${currentAttempts + 1}. Hint: "Try sounding both out."`,
-          { silent: true }
-        );
+  // ── The pack — wording lives in wordWorkoutScript.ts ───────────────────────
+  const pack = useMemo<JudgedScriptPack<WordWorkoutItem>>(() => ({
+    ...wordWorkoutPackBase(items),
+    statusLines: {
+      idle: 'Tap the microphone to start your word workout.',
+      ready: (item) => (item.answerKind === 'gesture'
+        ? 'Read the word, then tap its picture.'
+        : 'Read it out loud when you are ready.'),
+      retry: (item) => (item.answerKind === 'gesture'
+        ? 'Look again — then tap a picture.'
+        : 'Have another go — read it out loud.'),
+      noVerdict: () => 'One more time — say it out loud.',
+      done: 'Great word work today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      switch (item.kind) {
+        case 'picture_tap':
+          return {
+            challenge: `Read "${item.targetWord}" and tap its picture.`,
+            expected: `The picture of "${item.targetWord}".`,
+            observed: tappedRef.current
+              ? `Tapped the picture of "${tappedRef.current}".`
+              : 'Tapped a picture that did not match.',
+          };
+        case 'real_word':
+          return {
+            challenge: `Read "${item.pair?.[0]}" and "${item.pair?.[1]}" and say which is a real word.`,
+            expected: `"${item.realWord}" said out loud.`,
+            observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+          };
+        case 'chain_word':
+          return {
+            challenge: `Read the chain word "${chainWordOf(item)}" aloud.`,
+            expected: `"${chainWordOf(item)}" read aloud.`,
+            observed: lastHeard ? `Read "${lastHeard}".` : 'The tutor judged the reading wrong from the audio.',
+          };
+        case 'read_sentence':
+          return {
+            challenge: `Read the sentence aloud: ${item.sentence}`,
+            expected: `"${item.sentence}" read aloud, every word in order.`,
+            observed: lastHeard ? `Read "${lastHeard}".` : 'The tutor judged the reading wrong from the audio.',
+          };
+        case 'answer_question':
+          return {
+            challenge: `Read "${item.sentence}" and answer: ${item.question}`,
+            expected: `"${item.answerWord}" said out loud.`,
+            observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+          };
       }
     },
-    [
-      hasSubmittedEvaluation,
-      showNext,
-      currentChallenge,
-      currentAttempts,
-      incrementAttempts,
-      recordResult,
-      sendText,
-    ]
-  );
+  }), [items]);
 
-  // ── Picture Match ─────────────────────────────────────────────────
-  const handlePictureSelect = useCallback(
-    (word: string) => {
-      if (hasSubmittedEvaluation || showNext || !currentChallenge) return;
-      setSelectedAnswer(word);
-      incrementAttempts();
-
-      const isCorrect = word === currentChallenge.targetWord;
-
-      if (isCorrect) {
-        SoundManager.playCorrect();
-        setFeedback('Correct! Great match!');
-        setFeedbackType('success');
-        setIsCelebrating(true);
-        setShowNext(true);
-        setTimeout(() => setIsCelebrating(false), 1500);
-
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-          score: attemptScore(currentAttempts + 1),
-        });
-        sendText(
-          `[ANSWER_CORRECT] Matched "${currentChallenge.targetWord}" correctly. Congratulate briefly.`,
-          { silent: true }
-        );
-      } else {
-        SoundManager.playIncorrect();
-        setFeedback('Not quite! Read the word again carefully.');
-        setFeedbackType('error');
-        setIsShaking(true);
-        setTimeout(() => {
-          setIsShaking(false);
-          setSelectedAnswer(null);
-        }, 800);
-        sendText(
-          `[ANSWER_INCORRECT] Picked "${word}" but word is "${currentChallenge.targetWord}". `
-          + `Attempt ${currentAttempts + 1}. Hint: "Read the word again carefully."`,
-          { silent: true }
-        );
-      }
-    },
-    [
-      hasSubmittedEvaluation,
-      showNext,
-      currentChallenge,
-      currentAttempts,
-      incrementAttempts,
-      recordResult,
-      sendText,
-    ]
-  );
-
-  // ── Word Chains ───────────────────────────────────────────────────
-  const handleChainAdvance = useCallback(() => {
-    if (!currentChallenge?.chain) return;
-    const chain = currentChallenge.chain;
-    // Support tier: at chainCueLevel 'none' the on-screen change cue is withdrawn,
-    // so the tutor must not narrate the word / what changed either — that would
-    // hand back exactly the scaffold the tier removed. Band wins: at PRE the tutor
-    // is the pre-reader's only channel, so the cue is restored there regardless.
-    const chainCueMuted = !isPreReader && currentChallenge.chainCueLevel === 'none';
-
-    if (chainStartTime === null) {
-      setChainStartTime(Date.now());
-      // Voice mode: stay SILENT so the student decodes the shown word without
-      // the tutor reading it for them (and without tutor audio colliding with
-      // the open mic). Tap mode keeps its spoken cue.
-      if (!voiceOnRef.current && !chainCueMuted) {
-        sendText(
-          `[CHAIN_WORD] "${chain[0]}". Say the word.`,
-          { silent: true }
-        );
-      }
-      return;
-    }
-
-    const nextPos = chainPosition + 1;
-    if (nextPos < chain.length) {
-      setChainPosition(nextPos);
-      const prevWord = chain[chainPosition];
-      const nextWord = chain[nextPos];
-      const changedIdx = currentChallenge.changedPositions?.[chainPosition];
-      const posLabel =
-        changedIdx === 0 ? 'first' : changedIdx === 2 ? 'last' : 'middle';
-      if (!voiceOnRef.current && !chainCueMuted) {
-        sendText(
-          `[CHAIN_WORD] "${nextWord}" — changed the ${posLabel} letter from "${prevWord}". Say it.`,
-          { silent: true }
-        );
-      }
-    } else {
-      const elapsed = Math.max((Date.now() - chainStartTime) / 1000, 0.5);
-      const wpm = Math.round((chain.length / elapsed) * 60);
-      setChainWPMs((prev) => [...prev, wpm]);
-      setShowNext(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: 1,
-        score: 100,
-        wpm,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Read the word chain (${chain.length} words) at ~${wpm} WPM. Celebrate briefly.`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, chainPosition, chainStartTime, isPreReader, recordResult, sendText]);
-
-  // The word currently lit in the chain — the target for a spoken answer.
-  // Empty (mic dormant) until the student taps "Start Reading" and until the
-  // chain resolves, so the `active` gate below starts false (avoids the
-  // "mic never opens on the first item" footgun).
-  const currentChainWord =
-    currentMode === 'word-chains' &&
-    currentChallenge?.chain &&
-    chainStartTime !== null &&
-    !showNext
-      ? currentChallenge.chain[chainPosition] ?? ''
-      : '';
-
-  const spokenChainActive = voiceOn && currentChainWord.length > 0;
-
-  // Asymmetric law: a spoken MATCH advances the chain (and credits the word);
-  // a miss/unclear scores nothing and the open mic just keeps listening. No
-  // tutor chatter on a miss — the shown word is the support net.
-  const handleSpokenChainResult = useCallback(
-    (result: SpokenJudgeResult) => {
-      if (result.outcome !== 'match') return;
-      const chain = currentChallenge?.chain;
-      if (!chain || chainStartTime === null || showNext) return;
-      const word = chain[chainPosition];
-      setSpokenChainWords((prev) => new Set(prev).add(word));
-      // Light per-word acknowledgement; the final word completes the chain,
-      // which carries its own celebration in handleChainAdvance.
-      if (chainPosition >= chain.length - 1) SoundManager.playCorrect();
-      else SoundManager.select();
-      handleChainAdvance();
-    },
-    [currentChallenge, chainPosition, chainStartTime, showNext, handleChainAdvance]
-  );
-
-  const spokenChain = useVoiceAnswer({
-    targetWord: currentChainWord,
+  const runner = useJudgedScriptRunner<WordWorkoutItem>({
+    pack,
+    instanceId: resolvedInstanceId,
     gradeLevel,
-    active: spokenChainActive,
-    onResult: handleSpokenChainResult,
-    onNoSpeech: () => {},
+    exhibitId,
+    // CONNECTED TEXT raises the silence close: a child reading a whole line
+    // pauses BETWEEN WORDS, and at the 500ms default three of ten probe reads
+    // split into two voice turns (di-sentence-reading bench sitting, finding 2
+    // — that pack's ship-blocking fix). A mid-line pause is part of one
+    // response, not the end of it. 600ms is that pack's resolved value, taken
+    // rather than re-tuned. Applied to the whole run: the option is read once
+    // at mount, and a session that mixes single words with a sentence must not
+    // close the sentence read early. (In a lesson the provider owns the one
+    // bracket and its policy default is longer still.)
+    silenceCloseMs: 600,
+    onFinished: handleFinished,
+    onItemOpened: () => {
+      setTapped(null);
+      tappedRef.current = null;
+    },
+    onCorrectionRetry: () => {
+      // The tutor's correction re-modeled in-band; free the pictures again.
+      setTapped(null);
+      tappedRef.current = null;
+    },
   });
 
-  // ── Sentence Reading ──────────────────────────────────────────────
-  const handleWordTap = useCallback(
-    (word: string) => {
-      const clean = word.replace(/[.,!?'"]/g, '');
-      setTappedWords((prev) => new Set(Array.from(prev).concat(clean)));
-      sendText(`[PRONOUNCE] "${clean}"`, { silent: true });
-    },
-    [sendText]
-  );
+  const currentItem = runner.currentItem;
+  /** Affirmed: the first moment an answer may be marked on screen. */
+  const revealed = runner.currentSolved;
+  const meta = KIND_META[currentItem?.kind ?? 'real_word'];
 
-  const handleModelRead = useCallback(() => {
-    if (!currentChallenge?.sentence) return;
-    sendText(`[READ_SENTENCE] "${currentChallenge.sentence}"`, {
-      silent: true,
-    });
-  }, [currentChallenge, sendText]);
+  // ── The tap — picture-match only; the tap IS the commit ───────────────────
+  const handlePictureTap = useCallback((option: WordWorkoutPictureOption) => {
+    const item = runner.currentItem;
+    if (!runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!item || item.answerKind !== 'gesture') return;
+    // Synchronous ref: `canAttempt` closes the pending window through batched
+    // state, this stops a second tap inside the same tick.
+    if (runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    setTapped(option.word);
+    tappedRef.current = option.word;
+    runner.submitGestureAttempt(pictureVerdictCue(item, option.word));
+  }, [runner, evaluation.hasSubmitted]);
 
-  const handleSentenceDone = useCallback(() => {
-    if (!currentChallenge?.sentence) return;
-    const allWords = currentChallenge.sentence
-      .split(/\s+/)
-      .map((w) => w.replace(/[.,!?'"]/g, ''));
-    const independent = allWords.filter((w) => !tappedWords.has(w)).length;
-    setWordsReadTotal((prev) => prev + allWords.length);
-    setWordsReadIndependent((prev) => prev + independent);
-
-    if (currentChallenge.comprehensionQuestion) {
-      setShowComprehension(true);
-    } else {
-      setShowNext(true);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: 1,
-        score: 100,
-        wordsIndependent: independent,
-        wordsTotal: allWords.length,
-      });
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const celebrationMessage = useMemo(() => {
+    switch (judgedAnswerMix(items)) {
+      case 'gesture':
+        return 'You read every word and found every picture!';
+      case 'mixed':
+        return 'You read out loud and found the pictures too!';
+      default:
+        return 'You read every word out loud, all by yourself!';
     }
-  }, [currentChallenge, tappedWords, recordResult]);
+  }, [items]);
 
-  const handleComprehensionSelect = useCallback(
-    (choice: string) => {
-      if (!currentChallenge?.comprehensionAnswer || showNext) return;
-      setComprehensionSelected(choice);
-      incrementAttempts();
-
-      const isCorrect =
-        choice.toLowerCase().trim() ===
-        currentChallenge.comprehensionAnswer.toLowerCase().trim();
-
-      if (isCorrect) {
-        setFeedback('Great reading comprehension!');
-        setFeedbackType('success');
-        setShowNext(true);
-        setIsCelebrating(true);
-        setTimeout(() => setIsCelebrating(false), 1500);
-
-        const allWords = (currentChallenge.sentence || '')
-          .split(/\s+/)
-          .map((w) => w.replace(/[.,!?'"]/g, ''));
-        const independent = allWords.filter((w) => !tappedWords.has(w)).length;
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-          score: attemptScore(currentAttempts + 1),
-          comprehensionCorrect: true,
-          wordsIndependent: independent,
-          wordsTotal: allWords.length,
-        });
-        sendText(
-          `[ANSWER_CORRECT] Comprehension correct. Congratulate briefly.`,
-          { silent: true }
-        );
-      } else {
-        setFeedback('Read the sentence again and think about what it says.');
-        setFeedbackType('error');
-        setIsShaking(true);
-        setTimeout(() => {
-          setIsShaking(false);
-          setComprehensionSelected(null);
-        }, 800);
-        sendText(
-          `[ANSWER_INCORRECT] Chose "${choice}" but answer is "${currentChallenge.comprehensionAnswer}". Give a hint.`,
-          { silent: true }
-        );
-      }
-    },
-    [
-      currentChallenge,
-      showNext,
-      currentAttempts,
-      tappedWords,
-      incrementAttempts,
-      recordResult,
-      sendText,
-    ]
-  );
-
-  // ── Navigation ────────────────────────────────────────────────────
-  const handleNextChallenge = useCallback(() => {
-    resetChallengeState();
-    if (!advanceProgress()) {
-      submitFinalEvaluation();
-      return;
-    }
-
-    const nextChallenge = challenges[currentIndex + 1];
-    const nextMode = nextChallenge?.mode || defaultMode;
-    const isModeSwitch = nextMode !== currentMode;
-
-    sendText(
-      isModeSwitch
-        ? `[NEXT_CHALLENGE] Switching to ${MODE_CONFIG[nextMode].label} mode! Challenge ${currentIndex + 2} of ${challenges.length}. Introduce the new activity mode briefly.`
-        : `[NEXT_CHALLENGE] Challenge ${currentIndex + 2} of ${challenges.length}. Introduce briefly.`,
-      { silent: true }
-    );
-  }, [
-    resetChallengeState,
-    advanceProgress,
-    submitFinalEvaluation,
-    challenges,
-    currentIndex,
-    currentMode,
-    defaultMode,
-    sendText,
-  ]);
-
-  // ── Auto-submit when all challenges complete ────────────────────
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      submitFinalEvaluation();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, submitFinalEvaluation]);
-
-  // ── Overall score (local fallback before submission resolves) ───
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    return Math.round(
-      challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / challenges.length,
-    );
-  }, [allChallengesComplete, challenges, challengeResults]);
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+      label: KIND_META[item.kind].label,
+      icon: KIND_META[item.kind].icon,
+      accentColor: KIND_META[item.kind].accent,
+    }));
+  }, [evaluation.hasSubmitted, runner.summary, items]);
 
   // ============================================================================
-  // Render helpers
+  // Stage
   // ============================================================================
 
-  const renderRealVsNonsense = () => {
-    if (!currentChallenge) return null;
-    return (
-      <div className="space-y-4">
-        {showModeInstruction && (
-          <p className="text-slate-300 text-center text-lg font-medium">
-            {MODE_CONFIG['real-vs-nonsense'].instruction}
-          </p>
-        )}
-        <div className="grid grid-cols-2 gap-4">
-          {shuffledPair.map((word) => {
-            const isSelected = selectedAnswer === word;
-            const isCorrectWord = word === currentChallenge.realWord;
-            const showResult = showNext;
-            const choiceState = showResult
-              ? isCorrectWord
-                ? 'correct'
-                : 'dimmed'
-              : isSelected
-                ? 'selected'
-                : 'idle';
-
-            return (
-              <div
-                key={word}
-                role="button"
-                tabIndex={0}
-                onClick={() => !showNext && handleRealNonsenseSelect(word)}
-                onKeyDown={(e) =>
-                  e.key === 'Enter' &&
-                  !showNext &&
-                  handleRealNonsenseSelect(word)
-                }
-                className={`
-                  relative px-6 py-8 rounded-2xl border-2 text-center
-                  transition-all duration-200 select-none
-                  ${answerStateClasses[choiceState]}
-                  ${!showResult && choiceState === 'idle' ? 'hover:scale-[1.02] cursor-pointer' : ''}
-                  ${showResult && isCorrectWord ? 'scale-105' : ''}
-                  ${isShaking && isSelected ? 'animate-pulse' : ''}
-                  ${isCelebrating && isSelected && isCorrectWord ? 'animate-bounce' : ''}
-                `}
-              >
-                <span className="text-3xl font-bold text-slate-100 tracking-wide">
-                  {word}
-                </span>
-                {/* Support tier #3: hard withdraws the speaker so the student
-                    decodes silently. At PRE the band restores it — hearing the
-                    two words IS how a pre-reader plays this mode. */}
-                {allowPronounce && (
-                  <LuminaReadAloud
-                    iconOnly
-                    size="sm"
-                    aria-label={`Hear ${word}`}
-                    className="absolute top-2 right-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePronounce(word);
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const renderPictureMatch = () => {
-    if (!currentChallenge) return null;
-    return (
-      <div className="space-y-4">
-        <div className="text-center">
-          {showModeInstruction && (
-            <p className="text-slate-400 text-sm mb-2">
-              {MODE_CONFIG['picture-match'].instruction}
-            </p>
-          )}
-          <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/20">
-            <span className="text-3xl font-bold text-slate-100">
-              {currentChallenge.targetWord}
-            </span>
-            <LuminaReadAloud
-              iconOnly
-              size="sm"
-              aria-label="Hear the word"
-              onClick={() =>
-                handlePronounce(currentChallenge.targetWord || '')
-              }
-            />
+  /** Two printed words. NOT buttons — the answer is spoken, and a tappable card
+   *  is the costume this port deleted. The real one is marked only on the
+   *  affirm. */
+  const renderRealWord = (item: WordWorkoutItem) => (
+    <div className="grid grid-cols-2 gap-4">
+      {(item.pair ?? []).map((word) => {
+        const isReal = word === item.realWord;
+        const state = revealed ? (isReal ? 'correct' : 'dimmed') : 'idle';
+        return (
+          <div
+            key={word}
+            className={`
+              px-6 py-8 rounded-2xl border-2 text-center select-none transition-all duration-200
+              ${answerStateClass(state)}
+              ${revealed && isReal ? 'scale-105' : ''}
+            `}
+          >
+            <span className="text-3xl font-bold text-slate-100 tracking-wide">{word}</span>
           </div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {pictureOptions.map((opt) => {
-            const isSelected = selectedAnswer === opt.word;
-            const isCorrect = opt.word === currentChallenge.targetWord;
-            const showResult = showNext;
-            const choiceState = showResult
-              ? isCorrect
-                ? 'correct'
-                : isSelected
-                  ? 'incorrect'
-                  : 'dimmed'
-              : isSelected
-                ? 'selected'
-                : 'idle';
+        );
+      })}
+    </div>
+  );
 
-            return (
-              <div
-                key={opt.word}
-                role="button"
-                tabIndex={0}
-                onClick={() => !showNext && handlePictureSelect(opt.word)}
-                onKeyDown={(e) =>
-                  e.key === 'Enter' &&
-                  !showNext &&
-                  handlePictureSelect(opt.word)
-                }
-                className={`
-                  flex flex-col items-center gap-2 p-4 rounded-2xl border-2
-                  transition-all duration-200 select-none
-                  ${answerStateClasses[choiceState]}
-                  ${!showResult && choiceState === 'idle' ? 'hover:scale-[1.02] cursor-pointer' : ''}
-                  ${showResult && isCorrect ? 'scale-105' : ''}
-                  ${isCelebrating && isSelected && isCorrect ? 'animate-bounce' : ''}
-                `}
-              >
-                <span className="text-4xl">{opt.image}</span>
-              </div>
-            );
-          })}
+  const renderPictureTap = (item: WordWorkoutItem) => (
+    <div className="space-y-4">
+      <div className="text-center">
+        <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/20">
+          <span className="text-3xl font-bold text-slate-100">{item.targetWord}</span>
         </div>
       </div>
-    );
-  };
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {(item.options ?? []).map((option) => {
+          const isTarget = option.word === item.targetWord;
+          const state = revealed && isTarget
+            ? 'correct'
+            : tapped === option.word && !isTarget
+              ? 'incorrect'
+              : 'idle';
+          return (
+            <button
+              key={`${item.id}-${option.word}`}
+              onClick={() => handlePictureTap(option)}
+              disabled={!runner.canAttempt}
+              className={`
+                flex flex-col items-center gap-2 p-4 rounded-2xl border-2
+                transition-all duration-200 select-none cursor-pointer
+                ${answerStateClass(state)}
+                ${revealed && isTarget ? 'ring-2 ring-emerald-400/40 scale-105' : ''}
+              `}
+            >
+              <span className="text-4xl">{option.emoji}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
-  const renderWordChains = () => {
-    if (!currentChallenge?.chain) return null;
-    const chain = currentChallenge.chain;
-    const isStarted = chainStartTime !== null;
-    const isChainComplete = showNext;
+  const renderChain = (item: WordWorkoutItem) => {
+    const chain = item.chain ?? [];
+    const position = item.chainIndex ?? 0;
+    const showChangedLetter = item.chainCueLevel !== 'none';
+    const showChangeDelta = item.chainCueLevel === 'full';
 
     return (
-      <div className="space-y-4">
-        {showModeInstruction && (
-          <p className="text-slate-300 text-center text-lg font-medium">
-            {MODE_CONFIG['word-chains'].instruction}
-          </p>
-        )}
-        <div className="space-y-2">
-          {chain.map((word, idx) => {
-            const isActive =
-              isStarted && idx === chainPosition && !isChainComplete;
-            const isRead = isStarted && idx < chainPosition;
-            const changedIdx =
-              idx > 0
-                ? currentChallenge.changedPositions?.[idx - 1]
-                : undefined;
-            const prevWord = idx > 0 ? chain[idx - 1] : null;
-
-            return (
-              <div
-                key={`${word}-${idx}`}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-xl border
-                  transition-all duration-300
-                  ${
-                    isActive
-                      ? 'bg-blue-500/20 border-blue-400/50 scale-[1.02]'
-                      : isRead || isChainComplete
-                        ? 'bg-emerald-500/10 border-emerald-500/30'
-                        : 'bg-white/5 border-white/10 opacity-50'
-                  }
-                `}
-              >
-                <span
-                  className={`text-xs font-mono w-6 ${
-                    isRead || isActive || isChainComplete
-                      ? 'text-slate-300'
-                      : 'text-slate-600'
-                  }`}
-                >
-                  {idx + 1}.
-                </span>
-                <span className="text-2xl font-bold tracking-wider">
-                  {word.split('').map((letter, li) => (
-                    <span
-                      key={li}
-                      className={
-                        /* Support tier #1: at chainCueLevel 'none' the amber
-                           changed-letter highlight is withdrawn — the word still
-                           renders, but WHICH letter changed is now the task. */
-                        showChangedLetter &&
-                        changedIdx !== undefined &&
-                        li === changedIdx &&
-                        (isActive || isRead || isChainComplete)
-                          ? 'text-amber-300'
+      <div className="space-y-2">
+        {chain.map((word, idx) => {
+          const isActive = idx === position;
+          const isRead = idx < position || (isActive && revealed);
+          const changedIdx = idx > 0 ? findChangedIndex(chain[idx - 1], word) : undefined;
+          const previousWord = idx > 0 ? chain[idx - 1] : null;
+          return (
+            <div
+              key={`${word}-${idx}`}
+              className={`
+                flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300
+                ${isActive && !isRead
+                  ? 'bg-blue-500/20 border-blue-400/50 scale-[1.02]'
+                  : isRead
+                    ? 'bg-emerald-500/10 border-emerald-500/30'
+                    : 'bg-white/5 border-white/10 opacity-50'}
+              `}
+            >
+              <span className={`text-xs font-mono w-6 ${idx <= position ? 'text-slate-300' : 'text-slate-600'}`}>
+                {idx + 1}.
+              </span>
+              <span className="text-2xl font-bold tracking-wider">
+                {word.split('').map((letter, li) => (
+                  <span
+                    key={li}
+                    className={
+                      showChangedLetter && changedIdx !== undefined && li === changedIdx && idx <= position
+                        ? 'text-amber-300'
+                        : isRead
+                          ? 'text-emerald-300'
                           : isActive
                             ? 'text-blue-200'
-                            : isRead || isChainComplete
-                              ? 'text-emerald-300'
-                              : 'text-slate-600'
-                      }
-                    >
-                      {letter}
-                    </span>
-                  ))}
-                </span>
-                {/* Support tier #1: the explicit "b → c" delta chip is the
-                    strongest cue — only 'full' keeps it. */}
-                {showChangeDelta &&
-                  prevWord &&
-                  changedIdx !== undefined &&
-                  (isActive || isRead || isChainComplete) && (
-                    <span className="text-xs text-slate-500 ml-auto">
-                      {prevWord[changedIdx]} {'→'} {word[changedIdx]}
-                    </span>
-                  )}
-                {isActive && (
-                  <span className="ml-auto text-blue-400 animate-pulse">
-                    {'◀'}
+                            : 'text-slate-600'
+                    }
+                  >
+                    {letter}
                   </span>
-                )}
-                {isRead && (
-                  <span className="ml-auto text-emerald-400">{'✓'}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {!isChainComplete && (
-          <div className="flex flex-col items-center gap-2">
-            {/* Voice is the primary path once reading has started; the mic
-                stays open and re-arms on each word. The button below is the
-                unchanged tap fallback. */}
-            {isStarted && voiceOn && spokenChain.isSupported && (
-              <LuminaMicListener
-                state={spokenChain.state}
-                level={spokenChain.level}
-                isSupported={spokenChain.isSupported}
-                dormant={spokenChain.dormant}
-                onStart={spokenChain.startManual}
-                onCancel={spokenChain.cancel}
-                accent="blue"
-                idleLabel="Read it!"
-                listeningLabel="Say the word!"
-              />
-            )}
-            <LuminaButton
-              tone={!isStarted ? 'primary' : 'ghost'}
-              onClick={handleChainAdvance}
-              className={isStarted ? 'px-6 py-2 text-sm' : 'px-8 py-3 text-lg'}
-            >
-              {!isStarted
-                ? 'Start Reading'
-                : chainPosition < chain.length - 1
-                  ? 'Next Word'
-                  : 'Finish Chain'}
-            </LuminaButton>
-          </div>
-        )}
+                ))}
+              </span>
+              {showChangeDelta && previousWord && changedIdx !== undefined && idx <= position && (
+                <span className="text-xs text-slate-500 ml-auto">
+                  {previousWord[changedIdx]} {'→'} {word[changedIdx]}
+                </span>
+              )}
+              {isActive && !isRead && (
+                <span className="ml-auto text-blue-400 animate-pulse">{'◀'}</span>
+              )}
+              {isRead && <span className="ml-auto text-emerald-400">{'✓'}</span>}
+            </div>
+          );
+        })}
       </div>
     );
   };
 
-  const renderSentenceReading = () => {
-    if (!currentChallenge?.sentence) return null;
-    const words = currentChallenge.sentence.split(/\s+/);
-
+  /** The sentence stays printed for BOTH of its items: reading it is the first
+   *  task, and looking back at it is how the comprehension answer is found. The
+   *  phonics tint rides the READ only — on the question item it would point at
+   *  the answer whenever few decodable words survive. */
+  const renderSentence = (item: WordWorkoutItem) => {
+    const words = (item.sentence ?? '').split(/\s+/);
+    const isRead = item.kind === 'read_sentence';
     return (
       <div className="space-y-4">
-        {/* Was the ONE mode missing the !isPreReader gate the other three have
-            (a pre-reader can't read "Read this sentence"). Now band-gated AND
-            tier-gated, in that order. */}
-        {showModeInstruction && (
-          <p className="text-slate-300 text-center text-lg font-medium">
-            {MODE_CONFIG['sentence-reading'].instruction}
-          </p>
-        )}
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
           <div className="flex flex-wrap gap-2 justify-center">
             {words.map((word, idx) => {
-              const cleanWord = word.replace(/[.,!?'"]/g, '');
-              const isTapped = tappedWords.has(cleanWord);
-              const isCVC = currentChallenge.cvcWords?.includes(cleanWord);
-
+              const clean = word.replace(/[.,!?'"]/g, '').toLowerCase();
+              const isCvc = isRead && (item.cvcWords ?? []).includes(clean);
+              // The answer is marked only after the tutor affirms it.
+              const isAnswer = !isRead && revealed && clean === item.answerWord;
               return (
-                <button
+                <span
                   key={`${word}-${idx}`}
-                  onClick={() => handleWordTap(word)}
                   className={`
                     px-3 py-2 rounded-lg border text-xl font-bold
-                    transition-all cursor-pointer
-                    ${
-                      isTapped
-                        ? 'bg-amber-500/20 border-amber-400/40 text-amber-200'
-                        : isCVC
-                          ? 'bg-blue-500/10 border-blue-500/30 text-blue-200 hover:bg-blue-500/20'
-                          : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                    }
+                    ${isAnswer
+                      ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
+                      : isCvc
+                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-200'
+                        : 'bg-white/5 border-white/10 text-slate-300'}
                   `}
                 >
                   {word}
-                </button>
+                </span>
               );
             })}
           </div>
-          {/* The per-word buttons above are NEVER withdrawn — tap-to-hear is the
-              measured support (wordsReadIndependent). Only the HINT that points
-              at it goes away with the model read. */}
-          {allowSentenceModelRead && (
-            <p className="text-slate-500 text-xs text-center mt-3">
-              Tap any word to hear it
-            </p>
-          )}
         </div>
-        <div className="flex justify-center gap-3">
-          {/* Support tier #2: hard withdraws the whole-sentence MODEL read — the
-              student must assemble the sentence themselves. Band wins at PRE. */}
-          {allowSentenceModelRead && (
-            <LuminaReadAloud label="Hear the Sentence" onClick={handleModelRead} />
-          )}
-          {!showComprehension && !showNext && (
-            <LuminaButton tone="primary" onClick={handleSentenceDone}>
-              I Read It!
-            </LuminaButton>
-          )}
-        </div>
-        {showComprehension && (
-          <div className="rounded-xl bg-purple-500/10 border border-purple-500/30 p-4 space-y-3">
-            <p className="text-purple-200 font-medium">
-              {currentChallenge.comprehensionQuestion}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {(() => {
-                // Build choices from CVC words in the sentence
-                const answer = currentChallenge.comprehensionAnswer?.toLowerCase().trim() || '';
-                const cvcWords = (currentChallenge.cvcWords || []).map((w) => w.toLowerCase());
-                // Support tier #4: the answer-form lever. The answer is ALWAYS
-                // index 0 here (structurally retained however far the distractor
-                // slice is trimmed), and the generator's post-filter guarantees it
-                // is one of cvcWords. Absent tier ⇒ 4 ⇒ slice(0, 3) = legacy.
-                const distractors = cvcWords
-                  .filter((w) => w !== answer)
-                  .slice(0, comprehensionChoiceCount - 1);
-                const choices = [answer, ...distractors];
-                // Deterministic shuffle based on challenge id
-                const seed = currentChallenge.id
-                  .split('')
-                  .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-                const shuffled = [...choices];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                  const j = (seed + i) % (i + 1);
-                  [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                return shuffled.map((word) => {
-                  const isSelected = comprehensionSelected === word;
-                  const isCorrect = word === answer;
-                  const showResult = showNext;
-                  const choiceState = showResult
-                    ? isCorrect
-                      ? 'correct'
-                      : isSelected
-                        ? 'incorrect'
-                        : 'dimmed'
-                    : isSelected
-                      ? 'selected'
-                      : 'idle';
-                  return (
-                    <button
-                      key={word}
-                      onClick={() => handleComprehensionSelect(word)}
-                      disabled={showNext}
-                      className={`
-                        px-5 py-2.5 rounded-xl border-2 text-lg font-bold
-                        transition-all duration-200 select-none
-                        ${answerStateClasses[choiceState]}
-                        ${!showResult && choiceState === 'idle' ? 'hover:scale-[1.02] cursor-pointer' : ''}
-                        ${showResult && isCorrect ? 'scale-105' : ''}
-                      `}
-                    >
-                      {word}
-                    </button>
-                  );
-                });
-              })()}
-            </div>
-          </div>
+        {item.kind === 'answer_question' && (
+          <p className="text-center text-lg text-slate-200 font-semibold">{item.question}</p>
         )}
       </div>
     );
   };
 
+  const renderStage = (item: WordWorkoutItem) => {
+    switch (item.kind) {
+      case 'real_word':
+        return renderRealWord(item);
+      case 'picture_tap':
+        return renderPictureTap(item);
+      case 'chain_word':
+        return renderChain(item);
+      case 'read_sentence':
+      case 'answer_question':
+        return renderSentence(item);
+    }
+  };
+
   // ============================================================================
-  // Main render
+  // Render
   // ============================================================================
 
-  if (!currentChallenge) {
+  if (items.length === 0) {
     return (
       <LuminaCard className={className}>
-        <LuminaCardContent className="p-6">
-          <p className="text-slate-400 text-center">
-            No challenges available.
-          </p>
+        <LuminaCardContent className="p-8 text-center text-slate-400">
+          These words are still being chosen. Try generating them again.
         </LuminaCardContent>
       </LuminaCard>
     );
@@ -1304,117 +590,74 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
   return (
     <LuminaCard className={className}>
-      {/* Header chrome — hidden entirely at PRE (title/mode badge/vowel label/
-          counter/voice-toggle are adult text in the child's field, rule 7; the
-          vowel label also leaks the scope). Reader grades keep the full header. */}
-      {!isPreReader && (
-        <LuminaCardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-              <div className="flex items-center gap-2">
-                <LuminaBadge className="text-xs">
-                  {MODE_CONFIG[currentMode].icon} {MODE_CONFIG[currentMode].label}
-                </LuminaBadge>
-                {masteredVowels.length > 0 && (
-                  <LuminaBadge className="text-xs">
-                    Vowels: {masteredVowels.join(', ')}
-                  </LuminaBadge>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {!allChallengesComplete &&
-                currentMode === 'word-chains' &&
-                spokenChain.isSupported && (
-                  <button
-                    onClick={() => {
-                      if (voiceOn) spokenChain.cancel();
-                      setVoiceOn((v) => !v);
-                    }}
-                    className={`text-xs rounded-full px-2.5 py-1 border ${
-                      voiceOn
-                        ? 'text-slate-300 border-white/20'
-                        : 'text-slate-500 border-white/10'
-                    }`}
-                    title={voiceOn ? 'Turn off voice reading' : 'Read aloud with voice'}
-                  >
-                    {'🎙️'} {voiceOn ? 'on' : 'off'}
-                  </button>
-                )}
-              <LuminaBadge accent="blue" className="text-xs">
-                {currentIndex + 1} / {challenges.length}
-              </LuminaBadge>
-            </div>
-          </div>
-        </LuminaCardHeader>
-      )}
+      <LuminaCardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+          {!evaluation.hasSubmitted && (
+            <LuminaBadge accent={meta.accent} className="text-xs">
+              {meta.icon} {meta.label}
+            </LuminaBadge>
+          )}
+        </div>
+      </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Progress bar — chrome, hidden at PRE */}
-        {!allChallengesComplete && !isPreReader && (
-          <LuminaProgress
-            accent="emerald"
-            value={(currentIndex / Math.max(challenges.length, 1)) * 100}
-          />
+        {!evaluation.hasSubmitted && (
+          <>
+            <div className="flex items-center justify-center gap-4">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
+              />
+              {/* Tap-to-hear — what to do, and (on a comprehension item) the
+                  question again. NEVER a word of the print: everything on this
+                  stage is decoded cold. */}
+              <button
+                type="button"
+                onClick={runner.hearStimulus}
+                className={`
+                  flex h-11 w-11 items-center justify-center rounded-full
+                  bg-amber-500/15 border-2 border-amber-500/30
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
+                `}
+                aria-label="Hear the question again"
+              >
+                <span className="text-xl">🔁</span>
+              </button>
+            </div>
+
+            {currentItem && renderStage(currentItem)}
+
+            {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}
+            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap a picture" />
+          </>
         )}
 
-        {/* Feedback — text card hidden at PRE (a non-reader can't read it; the
-            SFX + the answer-choice ring/shake carry right vs wrong, rule 5). */}
-        {!allChallengesComplete && feedback && !isPreReader && (
-          <LuminaFeedbackCard
-            status={feedbackType === 'success' ? 'correct' : 'incorrect'}
-          >
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Mode content */}
-        {!allChallengesComplete && currentMode === 'real-vs-nonsense' && renderRealVsNonsense()}
-        {!allChallengesComplete && currentMode === 'picture-match' && renderPictureMatch()}
-        {!allChallengesComplete && currentMode === 'word-chains' && renderWordChains()}
-        {!allChallengesComplete && currentMode === 'sentence-reading' && renderSentenceReading()}
-
-        {/* Next button */}
-        {!allChallengesComplete && showNext && (
-          <div className="flex justify-center pt-2">
-            <LuminaActionButton
-              action="next"
-              onClick={handleNextChallenge}
-            >
-              {currentIndex < challenges.length - 1
-                ? 'Next Challenge'
-                : 'Finish'}
-            </LuminaActionButton>
-          </div>
-        )}
-
-        {/* All complete summary */}
-        {allChallengesComplete && (
-          <div className="text-center">
-            <p className="text-emerald-400 text-sm font-medium mb-1">
-              All challenges complete!
-            </p>
-            <p className="text-slate-400 text-xs">
-              {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-            </p>
-          </div>
-        )}
-
-        {/* Phase Summary Panel */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Word Workout Complete!"
-            celebrationMessage="You practiced reading in different ways!"
-            className="mt-4"
+            celebrationMessage={celebrationMessage}
           />
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
+
+/** Which letter changed between two chain words — render only. The pack ran the
+ *  same comparison as a BUILD GATE (a step that is not a one-letter
+ *  substitution drops the whole chain), so this cannot disagree with the ask. */
+function findChangedIndex(previous: string, word: string): number | undefined {
+  if (previous.length !== word.length) return undefined;
+  for (let i = 0; i < word.length; i++) {
+    if (previous[i] !== word[i]) return i;
+  }
+  return undefined;
+}
 
 export default WordWorkout;
