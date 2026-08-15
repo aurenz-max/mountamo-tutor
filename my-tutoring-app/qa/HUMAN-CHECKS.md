@@ -56,6 +56,42 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > 78 and is already one stale. Which is the third demonstration in two days of why this file
 > should rank rather than count.)*
 
+### #101 — **`word-workout` (DI port 16): the child's answer set now contains a NONWORD. Can the in-band judge hear "zat" as not-"cat"?** · OPEN
+
+**Filed under the standing rule, not by habit — this is NEW ANSWER MATERIAL.** Every spoken answer the
+family has driven so far is a real word, a sound, a count or a whole read line. `real_vs_nonsense` puts a
+PSEUDOWORD in the answer set: the child reads "cat" and "zat" and says the real one, and the miss to catch
+is them saying the pseudoword. No new response class (`short_spoken_word`, benched six ports over) and no
+new stimulus mechanism.
+
+⭐ **What makes it a real question:** the pair is ear-separable BY BUILD GATE — same length, different
+onset (`pairEarSeparable`), because a pair differing only in its final stop ("cat"/"cak") has no honest
+verdict from audio. That gate is reasoning, not evidence. What nobody has heard is whether a five-year-old
+saying a nonword survives the path at all: ASR has no lexical entry for "zat", and the failure mode is
+silent — it normalises to the nearest real word, which here is the *right answer*, so a wrong answer would
+be AFFIRMED. A machine drive cannot touch this: `--di` sends the student's turn as TEXT, where "zat" is
+just a string the judge refuses correctly (8/8, ×2 runs).
+
+**What to check (~4 min, one session):**
+1. `npm run dev` → a word-workout lesson at Grade 1, eval mode `real_vs_nonsense`. Tap the mic, then say
+   the **nonsense word** out loud, clearly. It must be REFUSED with
+   `"My turn: <real> is a real word. <Nonsense> is just silly sounds. Your turn. Which one is a real word?"`
+2. Say the **real word**. It must affirm — and confirm the tutor never said either word before you did
+   (the cold read is the whole mode).
+3. Say the nonsense word **mumbled / half-decoded**, the way a child sounding out actually does. This is
+   the case where a normalising transcript is most likely to hand back the real word.
+4. On a `word_chains` item, read the PREVIOUS word of the chain instead of the lit one (the signature
+   miss). It must refuse; the correction names what changed unless the support tier withdrew that cue.
+5. On `sentence_reading`, read the sentence with ONE small word swapped ("a" for "the"). The contrast
+   branch must name the words you actually said, not re-read the whole line.
+
+**Machine evidence already in hand** (so this row is only the acoustic half): plain drive 3/3 refused +
+3/3 affirmed; signature drive (the pseudoword) 8/8 refused + 8/8 affirmed ×2 runs; word_chains signature
+(the previous chain word) 8/8 + 8/8; sentence_reading 6/6 + 6/6 across read and comprehension items;
+picture_match gesture holds silent 5/5 at 0 audio bytes; cap drill clean after two fixes it found.
+**Source reports:** `qa/tutor-reports/word-workout-live-di-{plain,signature}-2026-08-14.md` ·
+**queue:** `qa/di/BACKLOG.md` item 16.
+
 ### #100 — **`story-talk` (DI port 15): the tutor now READS THE ANSWER ALOUD, on purpose, into an open mic. Does the judge ever credit its own voice to the child?** · OPEN
 
 **Filed under the standing rule, not by habit — this is a NEW STIMULUS MECHANISM.** Every judged
