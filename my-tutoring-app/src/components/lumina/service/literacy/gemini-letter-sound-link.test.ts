@@ -31,6 +31,16 @@ describe('LetterSoundLink DI content gate', () => {
     expect(isTargetableInMode('hear-see', 'x')).toBe(true);
   });
 
+  it('refuses i in keyword-match too — the ask needs a PICTURE the child can name', () => {
+    // The bar generalised from x when a probe drew `i` → "itch" → 🤏. The ask
+    // is "say the picture word"; there is no answer a five-year-old can give,
+    // so the tutor refuses every attempt. `i` keeps full coverage in the two
+    // directions whose answer is a held sound or a tap.
+    expect(isTargetableInMode('keyword-match', 'i')).toBe(false);
+    expect(isTargetableInMode('see-hear', 'i')).toBe(true);
+    expect(isTargetableInMode('hear-see', 'i')).toBe(true);
+  });
+
   it('retargets a stop draw onto a held sound inside the same group', () => {
     const replacement = retargetForMode('see-hear', GROUP_1, new Set());
     expect(replacement).not.toBeNull();

@@ -15,6 +15,8 @@ import {
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
 import {
   canProduceSound,
+  keywordFor,
+  keywordNamesItsPicture,
   PRODUCIBLE_LETTERS,
 } from '../../primitives/visual-primitives/literacy/letterSoundLinkScript';
 
@@ -175,8 +177,9 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"keyword-match": Student sees a letter and two pictures and SAYS ALOUD the picture word that starts with `
       + `that letter's sound. 2-3 challenges per session. Options are {sound: "keyword_word", isCorrect: boolean}. `
-      + `Exactly ONE correct. The correct keyword must genuinely START with the target letter's sound — never `
-      + `target the letter x here (its sound /ks/ does not begin English words). `
+      + `Exactly ONE correct. The correct keyword must genuinely START with the target letter's sound, AND its `
+      + `PICTURE must read as that word to a child who cannot read — never target x (its sound /ks/ does not begin `
+      + `English words) or i (no short-i word has a picture a five-year-old names). `
       + `Distractor keyword should start with a confusable sound (see DISTRACTOR RULES).`,
     schemaDescription: "'keyword-match' (see letter, SAY the picture word that starts with its sound)",
   },
@@ -263,7 +266,7 @@ const letterSoundLinkSchema: Schema = {
         },
         required: ["id", "mode", "targetLetter", "targetSound", "keywordWord", "keywordImage", "options"],
       },
-      description: "Array of 6-8 challenges mixing see-hear, hear-see, and keyword-match modes",
+      description: "Challenges mixing see-hear, hear-see and keyword-match modes. One letter per challenge — never repeat a target letter.",
     },
   },
   required: ["title", "letterGroup", "cumulativeLetters", "challenges"],
@@ -287,16 +290,18 @@ const LETTER_SOUNDS: Record<string, string> = {
   j: '/j/', z: '/z/', w: '/w/', v: '/v/', y: '/y/', x: '/ks/', qu: '/kw/',
 };
 
-const KEYWORD_MAP: Record<string, string> = {
-  s: 'sun', a: 'apple', t: 'top', i: 'itch', p: 'pig', n: 'net',
-  c: 'cat', k: 'kite', e: 'egg', h: 'hat', r: 'run', m: 'map', d: 'dog',
-  g: 'go', o: 'octopus', u: 'up', l: 'lip', f: 'fan', b: 'bat',
-  // `y` reads "yo-yo", never "yes". Under the judged loop a correction says
-  // "…and the word <keyword> starts with…", and a keyword that can open a
-  // sentence with the affirm sentinel would be read as a VERDICT by the
-  // engine's sentence scan. (✅ never said "yes" to a pre-reader anyway.)
-  j: 'jam', z: 'zip', w: 'web', v: 'van', y: 'yo-yo', x: 'box', qu: 'queen',
-};
+/**
+ * The anchor word for each letter — one lookup into the script module's
+ * `LETTER_KEYWORDS`, which owns the WORD and its PICTURE together.
+ *
+ * It used to be a local map here while the pictures lived in the component, so
+ * a pair that disagreed rendered the 📝 fallback with nothing to catch it. Six
+ * anchors changed when the two halves were joined (the picture has to read as
+ * the word in keyword-match): t tent, g goat, f fish, j juice, z zebra, l leaf.
+ */
+const KEYWORD_MAP: Record<string, string> = Object.fromEntries(
+  Object.keys(LETTER_SOUNDS).map((letter) => [letter, keywordFor(letter)]),
+);
 
 // Letters that share the same sound
 const SHARED_SOUND_MAP: Record<string, string[]> = {
@@ -320,18 +325,23 @@ const SHARED_SOUND_MAP: Record<string, string[]> = {
 //                  directions, where the TUTOR makes the sound and the child
 //                  taps or says a whole word. `PRODUCIBLE_LETTERS` is the same
 //                  list the script speaks from, imported rather than copied.
-//  · keyword-match the ask is "which picture STARTS with this letter's sound",
-//                  so the keyword must actually start with it. Every keyword
-//                  above does except `x` → "box": /ks/ never begins an English
-//                  word, so `x` is unaskable in this mode (it was already a
-//                  false anchor pre-DI; the spoken ask is what surfaced it).
+//  · keyword-match the ask is "which picture STARTS with this letter's sound"
+//                  and the answer is SAID ALOUD, so the anchor has to clear two
+//                  bars: the word must start with the sound, and the PICTURE
+//                  must read as the word. `x` fails the first (/ks/ never
+//                  begins an English word) and `i` fails the second (there is
+//                  no short-/ĭ/-initial word a five-year-old names from a
+//                  picture — igloo has no emoji, iguana reads "lizard"). Both
+//                  are `namesItsPicture: false` in `LETTER_KEYWORDS`, which is
+//                  the single gate now; the probe that drew `i` → 🤏 → "itch"
+//                  is what generalised the old `x`-only rule.
 //  · hear-see      no constraint — the tutor produces the sound, the child taps.
 // ============================================================================
 
 const MODE_TARGETABLE: Record<LetterSoundMode, (letter: string) => boolean> = {
   'see-hear': (letter) => canProduceSound(letter),
   'hear-see': () => true,
-  'keyword-match': (letter) => letter.toLowerCase() !== 'x',
+  'keyword-match': (letter) => keywordNamesItsPicture(letter),
 };
 
 /** Is this letter askable in this mode at all? Exported for the unit test —
@@ -405,25 +415,41 @@ const CONFUSABLE_DISTRACTORS: Record<string, string[]> = {
 /**
  * Pick the best confusable distractor letter for a given target,
  * filtering to only letters in the current cumulative group.
+ *
+ * `spent` holds the letters this session has already ANSWERED. A distractor
+ * drawn from that set is a wrong choice the child can eliminate without
+ * hearing the sound at all — the tutor named it out loud one item ago, and the
+ * choice here is binary. Excluded first, then honoured only if the group has
+ * nothing left (the pack's session gate drops the item in that case rather
+ * than shipping an eliminable one).
  */
-function pickDistractor(targetLetter: string, cumulativeLetters: string[]): string {
+function pickDistractor(
+  targetLetter: string,
+  cumulativeLetters: string[],
+  spent: Set<string> = new Set(),
+  alreadyShown: Set<string> = new Set(),
+): string {
+  const usable = (candidate: string) =>
+    candidate !== targetLetter && LETTER_SOUNDS[candidate] !== LETTER_SOUNDS[targetLetter];
+
   const candidates = CONFUSABLE_DISTRACTORS[targetLetter] || [];
+  const inGroup = candidates.filter((c) => cumulativeLetters.includes(c) && usable(c));
+  const confusable = inGroup.filter((c) => !spent.has(c));
+  const freshConfusable = confusable.find((c) => !alreadyShown.has(c));
+  if (freshConfusable) return freshConfusable;
+  if (confusable.length > 0) return confusable[0];
 
-  // Find the first confusable that is in the cumulative group
-  for (const candidate of candidates) {
-    if (cumulativeLetters.includes(candidate) && candidate !== targetLetter) {
-      // Extra guard: don't pick a letter with the exact same sound
-      if (LETTER_SOUNDS[candidate] !== LETTER_SOUNDS[targetLetter]) {
-        return candidate;
-      }
-    }
-  }
-
-  // Fallback: pick any letter from the group with a different sound
-  const fallbacks = cumulativeLetters.filter(
-    l => l !== targetLetter && LETTER_SOUNDS[l] !== LETTER_SOUNDS[targetLetter],
-  );
-  return fallbacks[Math.floor(Math.random() * fallbacks.length)] || cumulativeLetters[0];
+  // No in-group confusable — group 1 has almost none, because the table is
+  // built on voiced/unvoiced pairs and short-vowel confusions that only appear
+  // from group 2 on. Fall back to any group letter with a different sound,
+  // preferring one this session has not ANSWERED and has not already SHOWN as
+  // a wrong choice: the probe drew ⛺ as the wrong picture on three of four
+  // items, and by the third the child can rule it out without decoding.
+  const fallbacks = cumulativeLetters.filter(usable);
+  const unspent = fallbacks.filter((l) => !spent.has(l));
+  const unshown = unspent.filter((l) => !alreadyShown.has(l));
+  const pool = unshown.length > 0 ? unshown : unspent.length > 0 ? unspent : fallbacks;
+  return pool[Math.floor(Math.random() * pool.length)] || inGroup[0] || cumulativeLetters[0];
 }
 
 /**
@@ -525,6 +551,27 @@ export const generateLetterSoundLink = async (
   );
   const remediationSection = buildRemediationPrompt(ctx.remediationFocus);
 
+  // ── How many challenges this group can actually carry ─────────────────────
+  // A letter may be answered ONCE per session, and hear-see / keyword-match
+  // each need a second unspent letter for the distractor — so the ceiling is
+  // the mode's legal pool (minus one where there is a distractor to find), not
+  // a flat 6-8. Group 1 has four producible letters, so a pinned see-hear
+  // session is FOUR items; asking for eight there produced four duplicates
+  // that the pack gate would then drop one by one.
+  const pinnedMode = evalConstraint?.allowedTypes[0] as LetterSoundMode | undefined;
+  const legalTargets = pinnedMode
+    ? cumulativeLetters.filter((l) => MODE_TARGETABLE[pinnedMode]?.(l) ?? true)
+    : cumulativeLetters;
+  const burnsADistractor = pinnedMode ? pinnedMode !== 'see-hear' : true;
+  const maxChallenges = Math.max(
+    1,
+    Math.min(8, burnsADistractor ? legalTargets.length - 1 : legalTargets.length),
+  );
+  const minChallenges = Math.min(maxChallenges, 5);
+  const countAsk = minChallenges === maxChallenges
+    ? `exactly ${maxChallenges} challenges`
+    : `${minChallenges}-${maxChallenges} challenges`;
+
   const generationPrompt = `Create an interactive letter-sound correspondence activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevel}
@@ -534,7 +581,16 @@ CUMULATIVE LETTERS (all available): ${cumulativeLetters.join(', ')}
 LETTER-SOUND-KEYWORD REFERENCE:
 ${letterSoundRef}
 
-Generate 6-8 challenges. Each challenge links a letter to its sound and keyword.
+Generate ${countAsk}. Each challenge links a letter to its sound and keyword.
+
+ONE LETTER, ONE CHALLENGE (hard rule — a repeat is silently dropped in code):
+Every challenge must target a DIFFERENT letter, and no challenge may use as its
+DISTRACTOR a letter (or that letter's keyword) that an EARLIER challenge answered.
+The tutor says each answer out loud when it affirms, so the second ask on a letter
+is answered from memory of the first, and a distractor the tutor already named is
+eliminated without hearing the sound at all. There are only ${legalTargets.length}
+letters this direction can target in group ${letterGroup}, which is why the count
+above is what it is — do not pad it by reusing a letter.
 
 ${challengeTypeSection}
 ${remediationSection}
@@ -556,6 +612,9 @@ DISTRACTOR RULES (CRITICAL):
 - NEVER pair c and k as distractor options — they make the SAME sound /k/ and are impossible to tell apart!
 - NEVER pair letters that produce identical phonemes.
 - For hear-see mode: the two letter options must make DIFFERENT sounds.
+- For keyword-match: BOTH pictures must be nameable by a pre-reader. A wrong picture the child
+  cannot name turns the task into "pick the one you recognise" — draw the distractor keyword only
+  from: ${cumulativeLetters.filter(keywordNamesItsPicture).map((l) => KEYWORD_MAP[l]).join(', ')}
 - Suggested confusable pairs for this group: ${confusablePairsRef}
 
 MODE-SPECIFIC OPTION FORMATS:
@@ -565,7 +624,7 @@ MODE-SPECIFIC OPTION FORMATS:
 
 TARGETABLE LETTERS BY MODE (hard rule — a wrong draw is silently corrected in code):
 - see-hear: ONLY ${cumulativeLetters.filter(canProduceSound).join(', ') || '(none in this group)'}
-- keyword-match: any group letter EXCEPT x
+- keyword-match: ONLY ${cumulativeLetters.filter(keywordNamesItsPicture).join(', ') || '(none in this group)'}
 - hear-see: any group letter
 
 RULES:
@@ -615,11 +674,31 @@ LETTER GROUP DATA:
 
     // Validate challenges
     if (result.challenges) {
-      /** Targets already spent, so a retarget prefers an unused letter. */
+      /**
+       * Letters this session has already ANSWERED. Two jobs, and the second is
+       * new (19h-i-b port 7): a retarget prefers an unused letter, AND a
+       * distractor is drawn away from the set entirely. The pack enforces the
+       * same invariant at the runner boundary — a letter is answered once, and
+       * once answered it never comes back as the wrong choice — so what this
+       * loop buys is that the gate rarely has to DROP anything.
+       */
       const usedTargets = new Set<string>();
+      /** Letters whose ANCHOR WORD the session has spoken or revealed — the
+       *  see-hear and keyword-match targets. hear-see never names its anchor,
+       *  so its letters stay out (see `validateOptions`). */
+      const namedAnchors = new Set<string>();
+      /** Letters already offered as the WRONG choice, so a third ⛺ never
+       *  becomes eliminable by repetition alone. */
+      const shownAsWrong = new Set<string>();
       const retargeted: string[] = [];
+      const unaskable: string[] = [];
+      const kept: LetterSoundLinkChallenge[] = [];
 
-      result.challenges = result.challenges.map((ch: LetterSoundLinkChallenge, i: number) => {
+      /** A legal target for this mode that the session has not spent yet. */
+      const freshTargetFor = (mode: LetterSoundMode): string | null =>
+        cumulativeLetters.find((l) => MODE_TARGETABLE[mode](l) && !usedTargets.has(l)) ?? null;
+
+      result.challenges.forEach((ch: LetterSoundLinkChallenge, i: number) => {
         // Ensure IDs exist
         if (!ch.id) ch.id = `ch${i + 1}`;
 
@@ -629,21 +708,29 @@ LETTER GROUP DATA:
           ch.targetLetter = cumulativeLetters[i % cumulativeLetters.length];
         }
 
-        // DI content gate: the mode decides which letters are askable at all.
-        // Runs before every downstream fixup so the sound, keyword and options
-        // are all rebuilt around the legal target.
-        if (!MODE_TARGETABLE[ch.mode as LetterSoundMode]?.(ch.targetLetter)) {
-          const replacement = retargetForMode(
-            ch.mode as LetterSoundMode,
-            cumulativeLetters,
-            usedTargets,
-          );
-          if (replacement) {
-            retargeted.push(`${ch.id}: ${ch.mode} "${ch.targetLetter}" → "${replacement}"`);
-            ch.targetLetter = replacement;
+        // DI content gate: the mode decides which letters are askable at all,
+        // and the session decides which are still FRESH. Runs before every
+        // downstream fixup so the sound, keyword and options are all rebuilt
+        // around the legal target.
+        const mode = ch.mode as LetterSoundMode;
+        const illegal = !MODE_TARGETABLE[mode]?.(ch.targetLetter);
+        const repeated = usedTargets.has(ch.targetLetter);
+        if (illegal || repeated) {
+          const replacement = freshTargetFor(mode);
+          if (!replacement) {
+            // The mode's pool is exhausted for this group. Dropping beats
+            // shipping the same letter twice: at easy and medium the DISTAR
+            // model re-hands the answer over anyway, so a repeat measures
+            // nothing at all (N challenges = N problems).
+            unaskable.push(`${ch.id}: ${ch.mode} "${ch.targetLetter}"`);
+            return;
           }
+          retargeted.push(
+            `${ch.id}: ${ch.mode} "${ch.targetLetter}" → "${replacement}" `
+            + `(${illegal ? 'unaskable in this direction' : 'already answered this session'})`,
+          );
+          ch.targetLetter = replacement;
         }
-        usedTargets.add(ch.targetLetter);
 
         // Ensure targetSound uses the canonical sound
         ch.targetSound = LETTER_SOUNDS[ch.targetLetter] || ch.targetSound || '/s/';
@@ -657,21 +744,34 @@ LETTER GROUP DATA:
           ch.sharedSoundLetters = SHARED_SOUND_MAP[ch.targetLetter];
         }
 
-        // Validate options: must have exactly 2 with exactly 1 correct
-        ch.options = validateOptions(ch, cumulativeLetters);
+        // Validate options: exactly 2, exactly 1 correct, and a distractor the
+        // child cannot eliminate from an earlier verdict.
+        ch.options = validateOptions(
+          ch, cumulativeLetters, usedTargets, namedAnchors, shownAsWrong,
+        );
         const contrastAvailable = ch.mode !== 'hear-see'
           || hearSeeContrastAvailable(ctx.remediationFocus, cumulativeLetters);
         const remediationMove = letterSoundRemediationMoveFor(ch.mode, ctx.remediationFocus, contrastAvailable);
         if (remediationMove) ch.remediationMove = remediationMove;
         else delete ch.remediationMove;
 
-        return ch;
+        usedTargets.add(ch.targetLetter);
+        if (ch.mode !== 'hear-see') namedAnchors.add(ch.targetLetter);
+        kept.push(ch);
       });
+
+      result.challenges = kept;
 
       if (retargeted.length > 0) {
         console.log(
           `[letter-sound-link] DI content gate retargeted ${retargeted.length} challenge(s): `
           + retargeted.join('; '),
+        );
+      }
+      if (unaskable.length > 0) {
+        console.warn(
+          `[letter-sound-link] dropped ${unaskable.length} challenge(s) — the mode's letter `
+          + `pool for group ${letterGroup} is exhausted: ${unaskable.join('; ')}`,
         );
       }
 
@@ -749,14 +849,28 @@ LETTER GROUP DATA:
 // Validation Helpers
 // ============================================================================
 
+/** The anchor words, as a set — an option word outside it has no picture. */
+const ANCHOR_WORDS = new Set(Object.values(KEYWORD_MAP));
+
 /**
- * Ensure options array has exactly 2 entries with exactly 1 correct,
- * and the correct option matches the challenge's target.
- * Uses confusable distractor pairs for pedagogically meaningful distractors.
+ * Ensure options array has exactly 2 entries with exactly 1 correct, that the
+ * correct one matches the challenge's target, and that the DISTRACTOR is both
+ * renderable and not already spent.
+ *
+ * The old version wrote a PHONEME into the keyword-match distractor
+ * (`wrongOpt.sound = LETTER_SOUNDS[distractor]`) whenever Gemini emitted a
+ * distractor equal to the answer: the `sound` field carries a phoneme in the
+ * deleted see-hear option shape and a WORD in keyword-match, and the repair
+ * path took the wrong reading. The card would have shown 📝 and the tutor would
+ * have read *"The other picture's word — /z/ — is NOT the answer."* see-hear no
+ * longer has options at all, so `sound` means the anchor word, full stop.
  */
 function validateOptions(
   ch: LetterSoundLinkChallenge,
   cumulativeLetters: string[],
+  answeredLetters: Set<string>,
+  namedAnchors: Set<string>,
+  shownAsWrong: Set<string>,
 ): Array<{ letter?: string; sound?: string; isCorrect: boolean }> {
   const opts = ch.options || [];
 
@@ -766,81 +880,60 @@ function validateOptions(
     // printed distractor sound is the old "support net" that made the task
     // recognition instead of production.
     return [];
-  } else if (ch.mode === 'hear-see') {
-    return ensureTwoOptions(
-      opts,
-      ch.targetLetter,
-      ch.targetLetter,
-      'letter',
-      cumulativeLetters,
-    );
-  } else {
-    // keyword-match
-    return ensureTwoOptions(
-      opts,
-      ch.keywordWord,
-      ch.targetLetter,
-      'sound',
-      cumulativeLetters,
-    );
-  }
-}
-
-/**
- * Generic helper to ensure exactly 2 options with 1 correct answer.
- * Uses confusable distractor selection for pedagogically meaningful pairs.
- */
-function ensureTwoOptions(
-  existing: Array<{ letter?: string; sound?: string; isCorrect: boolean }>,
-  correctValue: string,
-  targetLetter: string,
-  field: 'letter' | 'sound',
-  cumulativeLetters: string[],
-): Array<{ letter?: string; sound?: string; isCorrect: boolean }> {
-  // Count correct answers
-  const correctCount = existing.filter(o => o.isCorrect).length;
-
-  // If we have exactly 2 options with exactly 1 correct, validate values
-  if (existing.length === 2 && correctCount === 1) {
-    const correctOpt = existing.find(o => o.isCorrect);
-    if (correctOpt) {
-      correctOpt[field] = correctValue;
-    }
-
-    // Ensure the distractor doesn't have the same value as correct
-    const wrongOpt = existing.find(o => !o.isCorrect);
-    if (wrongOpt && wrongOpt[field] === correctValue) {
-      // Replace with a confusable distractor
-      const distractor = pickDistractor(targetLetter, cumulativeLetters);
-      if (field === 'sound') {
-        wrongOpt.sound = LETTER_SOUNDS[distractor] || wrongOpt.sound;
-      } else {
-        wrongOpt.letter = distractor;
-      }
-    }
-
-    return existing;
   }
 
-  // Rebuild with confusable distractor
-  const distractor = pickDistractor(targetLetter, cumulativeLetters);
-  let distractorValue: string;
+  const isLetterMode = ch.mode === 'hear-see';
+  const field: 'letter' | 'sound' = isLetterMode ? 'letter' : 'sound';
+  const correctValue = isLetterMode ? ch.targetLetter : ch.keywordWord;
+  /**
+   * ⭐ THE DISTRACTOR HAS TO BE NAMEABLE TOO, and gating only the TARGET was not
+   * enough — the re-probe drew "sun vs 🤏" twice. A child who cannot name the
+   * wrong picture answers by picking the one they CAN name, which turns a
+   * sound discrimination into a picture-recognition task. hear-see is exempt:
+   * its options are letters and the child taps rather than names.
+   */
+  const distractorPool = isLetterMode
+    ? cumulativeLetters
+    : cumulativeLetters.filter(keywordNamesItsPicture);
+  const nameableAnchors = new Set(distractorPool.map((l) => KEYWORD_MAP[l]));
+  /** Is this option value a legal distractor value at all? */
+  const renderable = (value: string | undefined): value is string =>
+    !!value
+    && value !== correctValue
+    && (isLetterMode
+      ? cumulativeLetters.includes(value)
+      : ANCHOR_WORDS.has(value) && nameableAnchors.has(value));
+  /**
+   * Has this value already been handed to the child as an ANSWER? The two
+   * directions spend different currency, and conflating them stranded items:
+   * a LETTER is named by every direction (the affirmation, the tap, the
+   * printed stimulus), but an ANCHOR WORD is only named by the two that speak
+   * or reveal it. hear-see never says its keyword, so `tent` is still a live
+   * distractor after a hear-see item on `t` — matching the pack's own rule.
+   * With them merged, a group-1 blended session ran out of legal distractors
+   * on its fifth item and shipped a spent one for the pack to drop.
+   */
+  const spent = isLetterMode ? answeredLetters : namedAnchors;
+  const isSpent = (value: string) =>
+    isLetterMode ? spent.has(value) : spent.has(letterOfAnchor(value) ?? value);
 
-  if (field === 'sound') {
-    // For see-hear mode, distractor is a sound; for keyword-match, distractor is a keyword
-    distractorValue = existing.length > 0 && existing[0]?.isCorrect === false
-      ? (existing[0].sound || LETTER_SOUNDS[distractor])
-      : (field === 'sound' && correctValue.startsWith('/'))
-        ? LETTER_SOUNDS[distractor]
-        : KEYWORD_MAP[distractor] || LETTER_SOUNDS[distractor];
-  } else {
-    distractorValue = distractor;
-  }
+  const wrongOpt = opts.find((o) => !o.isCorrect);
+  const wrongLetter = (value: string) =>
+    isLetterMode ? value : letterOfAnchor(value) ?? value;
+  const keptWrong = renderable(wrongOpt?.[field])
+    && !isSpent(wrongOpt![field]!)
+    && !shownAsWrong.has(wrongLetter(wrongOpt![field]!))
+    ? wrongOpt![field]!
+    : (() => {
+        const letter = pickDistractor(ch.targetLetter, distractorPool, spent, shownAsWrong);
+        return isLetterMode ? letter : KEYWORD_MAP[letter];
+      })();
+  shownAsWrong.add(wrongLetter(keptWrong));
 
-  const options: Array<{ letter?: string; sound?: string; isCorrect: boolean }> = [
+  const options = [
     { [field]: correctValue, isCorrect: true },
-    { [field]: distractorValue, isCorrect: false },
-  ];
+    { [field]: keptWrong, isCorrect: false },
+  ] as Array<{ letter?: string; sound?: string; isCorrect: boolean }>;
 
   // Shuffle
   if (Math.random() > 0.5) {
@@ -848,4 +941,9 @@ function ensureTwoOptions(
   }
 
   return options;
+}
+
+/** Which letter does this anchor word belong to? */
+function letterOfAnchor(word: string): string | undefined {
+  return Object.keys(KEYWORD_MAP).find((letter) => KEYWORD_MAP[letter] === word);
 }

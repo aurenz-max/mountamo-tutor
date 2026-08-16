@@ -137,6 +137,15 @@ import {
   type LetterSpotterItem,
   type LetterSpotterTier,
 } from '@/components/lumina/primitives/visual-primitives/literacy/letterSpotterScript';
+import {
+  itemsFromChallenges as letterSoundLinkItems,
+  letterSoundLinkHarnessAnswers,
+  letterSoundLinkPackBase,
+  tapVerdictCue as letterSoundLinkTapVerdictCue,
+  type LetterSoundChallengeLike,
+  type LetterSoundItem,
+  type LetterSoundTier,
+} from '@/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -555,6 +564,55 @@ const letterSpotterAdapter: DiPortAdapter<LetterSpotterItem> = {
 };
 
 /**
+ * letter-sound-link (19h-i-b port 7). MIXED across three DIRECTIONS of the same
+ * mapping, and the only port in the sweep where each direction answers with a
+ * different KIND of thing: `see-hear` produces the SOUND (`continuant_sound`),
+ * `hear-see` taps the GRAPHEME (`manipulation` — a letter cannot be spoken,
+ * `letter_name` is a blocked class), `keyword-match` says the anchor WORD
+ * (`short_spoken_word`). Its gesture commit carries the TAPPED LETTER —
+ * interactive-book's `tapped` shape — drawn off the item, so no side table.
+ *
+ * What is different about its answer material, twice over:
+ *
+ *  1. **The exemption is the DISTAR MODEL, and only where the tier ships one.**
+ *     `see-hear`'s answer IS the sound the lead-in says out loud at `easy` and
+ *     `medium` — that is standing gate 3, not a leak — so `leakExemptSpan` is
+ *     the lead-in itself, issued from the builder the ask uses. At `hard` the
+ *     lead-in is empty and the oracle goes FLAT, which is the rung's whole
+ *     point and the one place the scan catches the sound arriving through the
+ *     catalog or a struggle response.
+ *  2. **`hear-see` carries the sweep's second one-character answer, and this
+ *     time the collision is with our OWN NOTATION.** `_norm` strips
+ *     punctuation, so the stimulus "/t/" becomes the bare token "t" — the
+ *     answer letter. For the thirteen letters spoken stretched ("sss", "aaa")
+ *     the scan is exact; for the other thirteen no scan can separate the
+ *     notation from the answer, so the token is declared off rather than left
+ *     to fire on every ask. Narrow, because the tutor is never TOLD the letter.
+ *
+ * Its sharpest drive is `--di-wrong signature` on `see_hear`: the signature
+ * wrong is the LETTER NAME ("ess" for s), which is this primitive's own
+ * documented signature error and the exact distinction the whole lesson exists
+ * to teach. `keyword_match` is the same trap through the other door — its
+ * signature wrong is the SOUND the tutor modelled seconds earlier, on-topic and
+ * fluent and naming no picture at all.
+ */
+const letterSoundLinkAdapter: DiPortAdapter<LetterSoundItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as LetterSoundChallengeLike[];
+    const tier = (data.supportTier as LetterSoundTier) ?? 'medium';
+    const maxAttempts = typeof data.maxAttempts === 'number' ? data.maxAttempts : undefined;
+    const items = letterSoundLinkItems(challenges, tier);
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: letterSoundLinkPackBase(items, maxAttempts),
+    };
+  },
+  answersFor: letterSoundLinkHarnessAnswers,
+  gestureVerdictCue: (item, gesture) => letterSoundLinkTapVerdictCue(item, String(gesture)),
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -570,6 +628,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'picture-vocabulary': pictureVocabularyAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'phoneme-explorer': phonemeExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'letter-spotter': letterSpotterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'letter-sound-link': letterSoundLinkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

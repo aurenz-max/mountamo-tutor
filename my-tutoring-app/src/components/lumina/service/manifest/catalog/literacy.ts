@@ -1547,6 +1547,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'Say the Sound can only target letters whose sound can be HELD (s n m f l r v z and the short vowels) — '
       + 'stops, affricates, glides and clusters are not askable as isolated child production and the generator '
       + 'retargets them automatically; they are covered by the other two directions instead. '
+      + 'Say the Word cannot target x or i — /ks/ never begins an English word, and no short-i word has a picture '
+      + 'a pre-reader names; both keep full coverage in the other two directions. '
+      + 'One letter is asked ONCE per session, so a group bounds how many challenges a lesson can carry. '
       + 'Do not route letter-NAMING objectives here — naming a letter aloud has no reliable judge.',
     // ── DI MODALITY (2026-08-11) — seventh literacy port. The tutor owns the
     // clock: no advance timer, no push-to-talk mic, no Next button, and no
@@ -1580,16 +1583,25 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // at all, because the letter determines the sound that IS the answer —
       // letterSoundLinkScript's stimulusFor is the single builder.
       contextKeys: ['challengeMode', 'stimulus'],
-      // Correction territory, not answer territory: every level describes what
-      // happens AFTER an attempt, and re-modeling is the scripted correction's
-      // job (standing gate 3).
+      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16,
+      // 19h-i-b port 7). The defect: a re-spoken ask opens with neither "Yes"
+      // nor "My turn:", so the reducer records no verdict, the correction
+      // counter freezes, and the child waits on a tutor that has already
+      // spoken. level1 and level2 were both exactly that.
       scaffoldingLevels: {
-        level1: 'Say the question once more, then wait for them alone.',
-        level2: 'Say the question again slowly and clearly, then wait.',
-        level3: 'Use the scripted correction line for this item, then hand the question back one more time.',
+        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it — inside the item message in the two spoken directions, inside the tap message in the find-the-letter direction. It already re-models the sound and hands the question back, so it IS the first scaffold, and it opens with "My turn:" where the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a re-stated sound, or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all, and the child waits on a lesson that cannot advance.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next question to you.',
       },
       // Observable behaviours only, with PERFORMABLE responses (script moves a
       // tutor can speak — never meta-instructions, which get recited).
+      //
+      // ⚠️ TWO ROWS HERE WERE 18d AND NO RUNG CENSUS REACHES THEM, because they
+      // sit on the ACCEPT side: both told the tutor to affirm without giving it
+      // the affirmation. "Warmly echo the clean sound" and "affirm it and echo
+      // the target word" produce a turn that opens with neither sentinel, so a
+      // CORRECT child stalls — the worst version of the stall, and invisible to
+      // a census that greps for a re-spoken ask. Census by MEANING.
       commonStruggles: [
         {
           pattern: 'Says the letter NAME where the SOUND was asked for - "ess" for s, "em" for m',
@@ -1597,7 +1609,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Adds an "uh" to a consonant sound - "sssuh", "mmmuh"',
-          response: 'Count it as correct and warmly echo the clean sound once; a five-year-old\'s mouth is still learning.',
+          response: 'That is a correct answer - a five-year-old\'s mouth is still learning. Say the item\'s scripted affirmation, the one that opens with "Yes," and gives the clean sound; do not replace it with a warmer line of your own, because a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict and the child waits.',
         },
         {
           pattern: 'Goes quiet, or answers so softly the audio is unclear',
@@ -1605,7 +1617,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Says a fair different name for the same picture - "cap" for a hat picture',
-          response: 'A fair name for the same picture is a correct answer: affirm it and echo the target word.',
+          response: 'A fair name for the same picture is a correct answer. Say the item\'s scripted affirmation exactly - it opens with "Yes," and echoes the target word for them, which is both the verdict the activity is listening for and the anchor you wanted to give.',
         },
       ],
       aiDirectives: [

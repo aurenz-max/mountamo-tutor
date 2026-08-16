@@ -3,8 +3,9 @@
 **Scope:** one `DiPortAdapter` per judged-runner port, so `/tutor-test --di` can drive it headlessly.
 **Queue of record:** `qa/di/BACKLOG.md` item **19h-i-b**. **18d rides inside each port's slice.**
 **Executor:** per port — extract the cue surface → harness answers → adapter → drive → fix → commit.
-**State: 4 of 11 done.** `counting-board` `d7f4133b` · `addition-subtraction-scene` `6e114db1` ·
-per-mode backfill `76287c78` · `push-pull-arena` `e41691d1` · **`picture-vocabulary` (this slice)**.
+**State: 7 of 11 done.** `counting-board` `d7f4133b` · `addition-subtraction-scene` `6e114db1` ·
+per-mode backfill `76287c78` · `push-pull-arena` `e41691d1` · `picture-vocabulary` `cfc4bcad` ·
+`phoneme-explorer` `0cc11335` · `letter-spotter` `f43a804d` · **`letter-sound-link` (port 7)**.
 **Supersedes** `HANDOFF-19h-i-b-adapter-sweep-2026-08-16.md`.
 
 > **Two things changed that affect how you scope. Read §1 and §2.**
@@ -62,7 +63,7 @@ until you read each `moveOnCue` — the mode counts are exact):
 |---|---|---|---|---|
 | ~~`phoneme-explorer`~~ | 4 | 8 | 1 | **9, shipped port 5** |
 | ~~`letter-spotter`~~ | 3 | 6 | 1 drivable | **7, shipped port 6** |
-| `letter-sound-link` | 3 | 6 | 1–2 (hear_see taps — see ⚠️ below) | 7–8 |
+| ~~`letter-sound-link`~~ | 3 | 6 | 1 drivable | **8, shipped port 7** (2 blended) |
 | `decodable-reader` | 5 | 10 | 2–3 (read_along vs Q-modes vs proposition tap) | 12–13 |
 | `rhyme-studio` | 3 | 6 | 1–2 | 7–8 |
 | `read-aloud-studio` | 3 | 6 | 1–2 | 7–8 |
@@ -98,6 +99,20 @@ change. Two things only that drive reaches:
 
 Add one blended plain + one blended cap to any port with both answer kinds.
 
+### ⚠️ AMENDED BY PORT 7 (2026-08-16) — A PINNED DRIVE CANNOT SEE A HOW-TO-PLAY DEFECT
+
+The how-to-play is re-spoken only when the ACTION changes, and in a session pinned
+to one eval mode the action never changes after item 1. So a defect in a
+`howToPlayFor` line is exercised **exactly once, on the opening turn, on the mode
+you pinned** — and never at all for the other modes' lines.
+
+Port 7's leak fired for the first time on drive 7 of 8, in the blended session, on a
+`hear-see` item that happened to follow a `keyword-match` one: the line
+*"**I** say **a** sound — you tap the letter…"* carries the pronoun and the article,
+which are the answer for a target of `i` or `a`. Six pinned drives had passed over
+it. **The blended drive is not only for adjacency and tap-payload move-ons — it is
+the only drive that speaks every how-to-play line more than once.**
+
 ---
 
 ## 2. ⭐ THE PREVIOUS CENSUS HAD A BLIND SPOT: it counted only UNPORTED primitives
@@ -123,8 +138,8 @@ comment filter, and the previous handoff's version double-counted a comment.
 | Entry | scaffoldingLevels rungs to fix |
 |---|---|
 | `decodable-reader` | 2 |
-| `letter-sound-link` | 2 |
-| `letter-spotter` | 2 |
+| ~~`letter-sound-link`~~ | fixed (port 7) — the 2 rungs were right, **plus TWO `commonStruggles` rows on the ACCEPT side** |
+| ~~`letter-spotter`~~ | fixed (port 6) |
 | `read-aloud-studio` | 2 |
 | ~~`phoneme-explorer`~~ | fixed (port 5) — and it was **3**, not the 1 listed: census by MEANING |
 | ~~`letter-spotter`~~ | fixed (port 6) — the 2 rungs were right, **plus a `commonStruggles` row no rung census reaches** |
@@ -136,6 +151,22 @@ comment filter, and the previous handoff's version double-counted a comment.
 Silence is not an attempt, so no verdict is owed and a re-spoken ask is correct there.
 `push-pull-arena` shipped that shape deliberately. The defect is a re-spoken ask
 offered as a response to an ATTEMPT.
+
+### ⭐ AMENDED BY PORT 7 — 18d LIVES ON THE ACCEPT SIDE TOO, AND THAT VERSION IS WORSE
+
+Every census so far has hunted a re-spoken ASK, i.e. the wrong-answer branch. Port 7
+found two rows on the other branch:
+
+> *"Count it as correct and **warmly echo the clean sound once**"*
+> *"A fair name for the same picture is a correct answer: **affirm it and echo the
+> target word**"*
+
+Both tell the tutor to affirm and neither gives it the affirmation, so the turn opens
+with neither sentinel and a **CORRECT** child stalls. A child who is right and gets
+nothing is the worst version of the stall, and no grep for "say the question again"
+will ever find it. **Read every `commonStruggles` row and ask: does this tell the
+tutor to produce a VERDICT, or only a sentiment?** Point it at the item's scripted
+affirmation.
 
 ---
 
@@ -194,6 +225,26 @@ a leak that lives BETWEEN items (§4b's shared scale: neither item is wrong alon
 Put it in `itemsFromChallenges`, which sees the session. That is also the boundary the
 runner reads, so it covers hand-authored and cached payloads the generator fix cannot.
 
+⭐ **PORT 7 AMENDMENT — THE INVARIANT HAS TWO HALVES AND THEY ARE NOT THE SAME RULE.**
+"Answered once" is only the first. The second is *an answered thing may not come back
+as the WRONG CHOICE*: the choice is binary or near it, so a distractor the tutor has
+already named out loud is eliminated without doing the task. Port 7 drew both in one
+probe — "☀️ vs 🥅 → Yes, sun." at item 1, then "🥅 vs ☀️" at item 6.
+**And keep the two sets SEPARATE when you write the generator side.** Port 7 merged
+them (excluding any letter that had been a target) and the pool ran dry on item 5 of a
+group-1 blended session, stranding an item for the pack to drop. Only the directions
+that SPEAK or REVEAL a thing spend it — its tap direction never says its keyword, so
+that keyword stays a legal distractor.
+
+**(f) ⭐ NEW — two half-maps in two files that must agree, with nothing joining them.**
+Port 7's anchor WORD lived in the generator and its anchor PICTURE in the component,
+so a pair with no entry on the other side rendered the 📝 fallback **silently** — in
+the one mode whose ask is *"say the picture word"*. Worse than the fallback: nobody
+had checked that the pictures which DID resolve could be named (`i` → "itch" → 🤏,
+`g` → "go" → 🟢 — asks with no answer a five-year-old can give). If a port's content
+is split across the generator/component boundary, join it in the script module both
+import, then read every pair against the ask.
+
 **(e) ⭐ NEW — a line that is only correct for some generated values.** Port 4 said
 *"My turn: this is a shoes."* — `article()` guessed from the first letter, and the pool
 is an open LLM word list carrying plurals and mass nouns (`soap`, `bread`). A stemmer
@@ -248,7 +299,8 @@ row only for genuinely new ANSWER MATERIAL.
 
 | Finding | Home | State |
 |---|---|---|
-| `di-verdict-embellished` / `di-false-completion-claim` | **19h-i-c** | ⭐ **The tail hypothesis got its largest sample: `picture-vocabulary` 0 of 74 affirm beats over the text channel, carrying the `NEVER_PERFORM` tail from birth.** Standing: ten-frame 5/7 (weak tail), counting-board 3/7 then 5/7 (weak), ASS 0/14 (strong), push-pull-arena 0/16 (strong), picture-vocabulary 0/74 (strong, 15 sessions × 6 modes). Affirm-line length is out; the tail is in. **The cheap experiment is still owed and unchanged: counting-board received the extended tail in the item-21 backfill, so one re-drive of `count` over text is the direct before/after.** One session. |
+| `di-verdict-embellished` / `di-false-completion-claim` | **19h-i-c** | ⭐ **The tail hypothesis got its largest sample: `picture-vocabulary` 0 of 74 affirm beats over the text channel, carrying the `NEVER_PERFORM` tail from birth.** Standing: ten-frame 5/7 (weak tail), counting-board 3/7 then 5/7 (weak), ASS 0/14 (strong), push-pull-arena 0/16 (strong), picture-vocabulary 0/74 (strong), letter-sound-link 0/42 (strong). Affirm-line length is out; the tail is in. **The cheap experiment is still owed and unchanged: counting-board received the extended tail in the item-21 backfill, so one re-drive of `count` over text is the direct before/after.** One session. |
+| A false affirm CASCADES into the next beat | **note, no home needed** | Port 7: two false affirms each produced a `di-no-verdict` on the FOLLOWING beat, because the item was already closed and the tutor celebrated instead of judging. **A 2-defect drive can report 4 HIGHs.** Fix the affirm and count again before filing the second class. |
 | `di-tag-spoken` on non-cue beats | **19h-i-a** | A HARNESS ARTIFACT, not a production defect. `attach` fires on any unscripted floor-giving TEXT message, and on `--di` the child's answer is one. In production the child answers with AUDIO. Distinguish by format. |
 | Fabricated `[CURRENT STATE]` | **item 21** | Fix known: the `NEVER_PERFORM` tail. Give every port that tail. |
 | 18c pair | **18c** | Expected on every cap drill; these contracts deliberately COMMAND the verbatim repeat. Do not re-file. |
@@ -264,7 +316,7 @@ row only for genuinely new ANSWER MATERIAL.
 |---|---|
 | `cd my-tutoring-app && ./node_modules/.bin/tsc --noEmit -p tsconfig.json` | **803 = HEAD baseline**, 0 new, 0 in any touched file |
 | `npm run typecheck:lumina` | 0 |
-| `npx vitest run` | **3346 pass / 4 skipped / 0 fail** after port 4 |
+| `npx vitest run` | **3395 pass / 4 skipped / 0 fail** after port 7 |
 | probe `.probe.diPlan` | `droppedChallenges` explained, `packGateIssues` empty |
 | `--di` plain + signature per mode, cap per contract shape | 0 HIGH, or every HIGH fixed and re-driven |
 | revert-bite | every new gate bites |
@@ -303,7 +355,8 @@ the vitest tail are pre-existing jsdom teardown noise; 0 test files fail.
 
 ## 10. One-paragraph version
 
-Seven ports left, all in `literacy.ts` except `di-spoken-practice`. Per port: export the
+Four ports left (`decodable-reader`, `rhyme-studio`, `read-aloud-studio`,
+`di-spoken-practice`), all in `literacy.ts` except the last. Per port: export the
 cue surface and harness answers from the script module, spread it in the component,
 register the adapter, replace the suite's hand-rolled pack fixture, fix the catalog's
 rungs, then probe and drive **plain + signature per mode and cap per CONTRACT SHAPE** —

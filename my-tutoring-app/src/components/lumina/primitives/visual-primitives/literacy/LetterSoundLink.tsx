@@ -66,12 +66,8 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
-  completeCue,
-  itemCue,
-  itemFromChallenge,
-  moveOnCue,
-  pronounceCue,
-  stimulusFor,
+  itemsFromChallenges,
+  letterSoundLinkPackBase,
   tapVerdictCue,
   type LetterSoundItem,
   type LetterSoundMode,
@@ -144,19 +140,10 @@ const MODE_META: Record<LetterSoundMode, { badge: string; icon: string; accent: 
 /** Vowels = red, consonants = blue (the shipped colour code). */
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
-/** Keyword picture map. `y` reads "yo-yo", never "yes": a keyword that opens a
- *  correction sentence with the affirm sentinel would be read as a verdict by
- *  the engine's sentence scan (and ✅ never said "yes" to a pre-reader anyway). */
-const KEYWORD_IMAGES: Record<string, string> = {
-  sun: '☀️', apple: '🍎', top: '🔝', itch: '🤏', pig: '🐷', net: '🥅',
-  cat: '🐱', kite: '🪁', egg: '🥚', hat: '🎩', run: '🏃', map: '🗺️', dog: '🐶',
-  go: '🟢', octopus: '🐙', up: '⬆️', lip: '👄', fan: '🌬️', bat: '🦇',
-  jam: '🍯', zip: '⚡', web: '🕸️', van: '🚐', 'yo-yo': '🪀', box: '📦', queen: '👑',
-};
-
-const emojiFor = (word: string) => KEYWORD_IMAGES[word.toLowerCase()] || '📝';
-
-const DEFAULT_MAX_ATTEMPTS = 3;
+/* The keyword picture map moved to `letterSoundLinkScript.LETTER_KEYWORDS`,
+   beside the WORD it belongs to. It lived here while the words lived in the
+   generator, so a pair that disagreed rendered the 📝 fallback silently — in
+   the one mode whose ask is "say the picture word". */
 
 // ============================================================================
 // Props
@@ -195,8 +182,11 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
   const tier: LetterSoundTier = supportTier ?? 'medium';
 
+  /** The session build gate lives in the script module, because the invariant
+   *  it enforces spans ITEMS (a letter answered once; an answered letter never
+   *  offered back as the wrong choice) and no per-item builder can see it. */
   const items = useMemo<LetterSoundItem[]>(
-    () => challenges.map((ch) => itemFromChallenge(ch, emojiFor, tier)),
+    () => itemsFromChallenges(challenges, tier),
     [challenges, tier],
   );
 
@@ -256,22 +246,11 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     );
   }, [items, letterGroup, evaluation]);
 
-  // ── The pack — wording lives in letterSoundLinkScript.ts ───────────────────
+  // ── The pack — every cue comes off the shared surface ──────────────────────
+  // `letterSoundLinkPackBase` is the SAME value `run_tutor_live.py --di` drives
+  // through the drive-plan endpoint. Only what the SCREEN owns stays here.
   const pack = useMemo<JudgedScriptPack<LetterSoundItem>>(() => ({
-    primitiveType: 'letter-sound-link',
-    activityLine: 'live direct instruction letter-sound practice',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    pronounceCue,
-    contextFor: (item) => ({
-      challengeMode: item.mode,
-      stimulus: stimulusFor(item),
-    }),
-    // maxAttempts counts elicitations; the runner counts CORRECTIONS, so the
-    // first ask is not one of them. Tier `hard` ships 2 ⇒ one correction.
-    maxCorrections: Math.max(1, (maxAttempts ?? DEFAULT_MAX_ATTEMPTS) - 1),
+    ...letterSoundLinkPackBase(items, maxAttempts),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
       ready: (item) => item.answerKind === 'gesture'

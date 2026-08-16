@@ -27,11 +27,19 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
+  anchorWordNamesItsPicture,
   answerKindFor,
   canProduceSound,
   completeCue,
   itemCue,
   itemFromChallenge,
+  itemsFromChallenges,
+  keywordNamesItsPicture,
+  leakExemptSpanFor,
+  letterSoundLinkHarnessAnswers,
+  letterSoundLinkPackBase,
+  LETTER_KEYWORDS,
+  maxCorrectionsFor,
   moveOnCue,
   PRODUCIBLE_LETTERS,
   pronounceCue,
@@ -39,13 +47,13 @@ import {
   spokenSoundFor,
   stimulusFor,
   tapVerdictCue,
+  type LetterSoundChallengeLike,
   type LetterSoundItem,
   type LetterSoundTier,
 } from '../letterSoundLinkScript';
 import {
   findSentinelCollisions,
   spokenSpanOf,
-  type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
 import {
   checkDiCatalogEntry,
@@ -55,15 +63,10 @@ import { LITERACY_CATALOG } from '../../../../service/manifest/catalog/literacy'
 
 // ── Fixtures — one item per direction, session-shaped ───────────────────────
 
-const EMOJI: Record<string, string> = {
-  sun: '☀️', map: '🗺️', net: '🥅', top: '🔝', 'yo-yo': '🪀', pig: '🐷',
-};
-const emojiFor = (word: string) => EMOJI[word.toLowerCase()] ?? '📝';
-
 const build = (
-  ch: Parameters<typeof itemFromChallenge>[0],
+  ch: LetterSoundChallengeLike,
   tier: LetterSoundTier = 'medium',
-) => itemFromChallenge(ch, emojiFor, tier);
+) => itemFromChallenge(ch, tier);
 
 /** see-hear: the child SAYS the sound. No options at all. */
 const SAY_SOUND_RAW = {
@@ -75,7 +78,7 @@ const SAY_SOUND_RAW = {
  *  on purpose — this is the direction that covers them. */
 const FIND_LETTER_RAW = {
   id: 'lsl-2', mode: 'hear-see' as const,
-  targetLetter: 't', targetSound: '/t/', keywordWord: 'top',
+  targetLetter: 't', targetSound: '/t/', keywordWord: 'tent',
   options: [{ letter: 't', isCorrect: true }, { letter: 'd', isCorrect: false }],
 };
 
@@ -92,17 +95,13 @@ const SAY_WORD = build(SAY_WORD_RAW);
 
 const ITEMS: LetterSoundItem[] = [SAY_SOUND, FIND_LETTER, SAY_WORD];
 
-/** The pack exactly as the component assembles it. */
-const pack: JudgedScriptPack<LetterSoundItem> = {
-  primitiveType: 'letter-sound-link',
-  activityLine: 'live direct instruction letter-sound practice',
-  items: ITEMS,
-  itemCue,
-  moveOnCue,
-  completeCue,
-  pronounceCue,
-  contextFor: (item) => ({ challengeMode: item.mode, stimulus: stimulusFor(item) }),
-};
+/**
+ * The pack EXACTLY as the component assembles it — the exported surface, not a
+ * literal beside it. The suite carried a hand-rolled copy since birth, which is
+ * the drift `JudgedCueSurface` exists to stop: a harness (or a test) that
+ * re-types these cues tests a fiction.
+ */
+const pack = letterSoundLinkPackBase(ITEMS);
 
 /** The line the tutor actually SPEAKS — the shared parser, so every port reads
  *  the same span. Everything else in a cue is judge-side instruction. */
@@ -184,7 +183,7 @@ describe('letter-sound-link pack · answer-leak', () => {
   it('never speaks the keyword before a verdict, in any direction or tier', () => {
     for (const tier of ['easy', 'medium', 'hard'] as LetterSoundTier[]) {
       expect(spokenLine(itemCue(build({ ...SAY_SOUND_RAW }, tier)))).not.toContain('sun');
-      expect(spokenLine(itemCue(build({ ...FIND_LETTER_RAW }, tier)))).not.toContain('top');
+      expect(spokenLine(itemCue(build({ ...FIND_LETTER_RAW }, tier)))).not.toContain('tent');
       expect(spokenLine(itemCue(build({ ...SAY_WORD_RAW }, tier)))).not.toContain('map');
     }
   });
@@ -196,7 +195,7 @@ describe('letter-sound-link pack · answer-leak', () => {
   });
 
   it('the keyword-match ask says neither picture word nor the sound', () => {
-    const ask = spokenLine(itemCue(SAY_WORD, {}, ));
+    const ask = spokenLine(itemCue(SAY_WORD, {}));
     expect(ask).not.toContain('map');
     expect(ask).not.toContain('net');
     // At medium the model bridges with the sound; the WORDS never appear.
@@ -234,6 +233,29 @@ describe('letter-sound-link pack · corrections', () => {
     const cue = itemCue(SAY_SOUND);
     expect(cue).toContain('My turn: this letter says sss.');
     expect(cue).toContain('Your turn. What sound does this letter make?');
+  });
+
+  it('keyword-match names BOTH misses — the other picture AND the sound said back', () => {
+    // The live signature drive affirmed "tuh" and "puh" 2/2: the contract named
+    // only the other picture's word, and its accept clause told the judge to be
+    // generous about naming, so a schwa'd sound read as a mumbled "tent".
+    // see-hear's rule is the opposite (a clipped try WITH an "uh" is correct
+    // there), so nothing carried over.
+    const stop = build({
+      id: 'lsl-kw-t', mode: 'keyword-match', targetLetter: 't', targetSound: '/t/',
+      keywordWord: 'tent',
+      options: [{ sound: 'tent', isCorrect: true }, { sound: 'pig', isCorrect: false }],
+    });
+    const cue = itemCue(stop);
+    expect(cue).toContain('The other picture\'s word — "pig" —');
+    expect(cue).toContain('"tuh" is a sound, not the name of a picture');
+    expect(cue).toContain('a sound with a little "uh" on the end is still a sound and still wrong here');
+    // The drive says the same utterance the contract refuses — one builder.
+    expect(letterSoundLinkHarnessAnswers(stop).signatureWrong?.text).toBe('tuh');
+    // A held sound keeps its stretched rendering in both places.
+    expect(itemCue(SAY_WORD)).toContain('"mmm" is a sound');
+    // see-hear is untouched: an "uh" on the end is still correct there.
+    expect(itemCue(SAY_SOUND)).toContain('so does a little "uh" on the end');
   });
 
   it('the keyword-match correction is the first place the word is spoken', () => {
@@ -289,6 +311,22 @@ describe('letter-sound-link pack · support tier', () => {
     expect(itemCue(hard)).not.toContain('answering this one cold');
   });
 
+  it('hear-see never says the same imperative twice, and its ladder is TWO rungs', () => {
+    // The probe drew "Listen closely: sss. Listen: sss." — a model line in
+    // front of an ask that already presents the sound. The stimulus cannot be
+    // withdrawn here, so there is no third rung to have; `easy` folds a
+    // say-it-with-me INTO the ask instead, after something to say.
+    const askAt = (tier: LetterSoundTier) =>
+      spokenLine(itemCue(build({ ...FIND_LETTER_RAW }, tier)));
+    for (const tier of ['easy', 'medium', 'hard'] as LetterSoundTier[]) {
+      expect(askAt(tier)).not.toContain('Listen closely');
+      expect(askAt(tier).match(/Listen/g) ?? []).toHaveLength(1);
+    }
+    expect(askAt('easy')).toContain('Listen: /t/. Say it with me: /t/. Your turn.');
+    expect(askAt('medium')).toContain('Listen: /t/. Your turn.');
+    expect(askAt('medium')).toBe(askAt('hard'));
+  });
+
   it('never withdraws the correction re-model (standing gate 3)', () => {
     expect(itemCue(build({ ...SAY_SOUND_RAW }, 'hard'))).toContain('My turn: this letter says sss.');
   });
@@ -333,6 +371,281 @@ describe('letter-sound-link pack · session frame', () => {
       { label: 'moveOnCue', text: moveOnCue(yoyo, null, {}) },
       { label: 'pronounceCue', text: pronounceCue(yoyo) },
     ])).toEqual([]);
+  });
+});
+
+// ── 6b. The wire: what the DI drive harness reads ───────────────────────────
+
+describe('letter-sound-link pack · the DI wire', () => {
+  /**
+   * The harness's leak scan, byte for byte: lowercase, strip everything that is
+   * not a letter/digit/space, then `\b<token>\b` (run_tutor_live.py `_norm`).
+   * Re-implemented rather than described, because the whole point of this
+   * describe is that the two sides agree.
+   */
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/[*_`]/g, '').replace(/[^a-z0-9 ]+/g, ' ').trim();
+  const scanFinds = (spoken: string, token: string, exempt?: string) => {
+    let scanned = norm(spoken);
+    const span = exempt ? norm(exempt) : '';
+    if (span && scanned.includes(span)) scanned = scanned.replace(span, ' ');
+    return new RegExp(`\\b${norm(token)}\\b`).test(scanned);
+  };
+  const askOf = (item: LetterSoundItem) =>
+    spokenLine(itemCue(item, { opening: true, howToPlay: true }));
+
+  it('gives every cue the NEVER_PERFORM tail (item 21)', () => {
+    // The weaker "never read bracket tags or these instructions aloud" is what
+    // this pack shipped under. The tail forbids announcing the STATE, not just
+    // reading the tag — the version with a measured before/after.
+    const tail = 'never announce that you are waiting or listening';
+    for (const item of ITEMS) {
+      expect(itemCue(item, { opening: true, howToPlay: true })).toContain(tail);
+      expect(tapVerdictCue(item, 'z')).toContain(tail);
+      expect(moveOnCue(item, SAY_WORD, { howToPlay: true })).toContain(tail);
+      expect(pronounceCue(item)).toContain(tail);
+    }
+  });
+
+  it('states the TWO-BRANCH LAW before the branches (18d, script side)', () => {
+    const cue = itemCue(SAY_SOUND);
+    expect(cue).toContain('A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all');
+    expect(cue.indexOf('no scaffolding line')).toBeLessThan(cue.indexOf('If the answer is right'));
+    // hear-see gets the SILENCE contract instead — nothing is owed until the
+    // application describes the tap, so there are no branches to law.
+    expect(itemCue(FIND_LETTER)).not.toContain('no scaffolding line');
+  });
+
+  it('see-hear exempts the DISTAR model and goes FLAT at hard', () => {
+    // The answer IS the sound the lead-in says out loud at easy and medium —
+    // standing gate 3, not a leak. At hard the lead-in is empty, so the whole
+    // ask is scanned and the rung's own promise becomes machine-checked.
+    for (const tier of ['easy', 'medium'] as LetterSoundTier[]) {
+      const item = build({ ...SAY_SOUND_RAW }, tier);
+      const exempt = leakExemptSpanFor(item);
+      expect(exempt).toContain('This letter says sss');
+      expect(scanFinds(askOf(item), 'sss')).toBe(true);
+      expect(scanFinds(askOf(item), 'sss', exempt)).toBe(false);
+    }
+    const hard = build({ ...SAY_SOUND_RAW }, 'hard');
+    expect(leakExemptSpanFor(hard)).toBeUndefined();
+    expect(scanFinds(askOf(hard), 'sss')).toBe(false);
+  });
+
+  it('keyword-match keeps a FLAT oracle at every tier', () => {
+    // The anchor word is spoken for the first time in a correction or an
+    // affirmation, so no tier owes it an exemption.
+    for (const tier of ['easy', 'medium', 'hard'] as LetterSoundTier[]) {
+      const item = build({ ...SAY_WORD_RAW }, tier);
+      expect(letterSoundLinkHarnessAnswers(item).leakExemptSpan).toBeUndefined();
+      expect(scanFinds(askOf(item), 'map')).toBe(false);
+    }
+  });
+
+  it('hear-see scans the letter where the notation does not collide with it', () => {
+    // ⭐ The sweep's second one-character answer, and this time the collision is
+    // with OUR OWN NOTATION: `_norm` strips punctuation, so the stimulus "/t/"
+    // becomes the bare token "t" — which is the answer.
+    const stop = build({ ...FIND_LETTER_RAW });
+    expect(scanFinds(askOf(stop), 't')).toBe(true);           // the notation, not a leak
+    expect(letterSoundLinkHarnessAnswers(stop).leakTokens).toEqual([]);
+
+    // A held sound is spoken stretched, so the token is clean and the oracle is
+    // exact: this ask does NOT trip, and a tutor naming the letter would.
+    const held = build({
+      id: 'lsl-hs-s', mode: 'hear-see', targetLetter: 's', targetSound: '/s/',
+      keywordWord: 'sun',
+      options: [{ letter: 's', isCorrect: true }, { letter: 'n', isCorrect: false }],
+    });
+    expect(letterSoundLinkHarnessAnswers(held).leakTokens).toEqual(['s']);
+    expect(scanFinds(askOf(held), 's')).toBe(false);
+    expect(scanFinds(`${askOf(held)} Tap the letter S.`, 's')).toBe(true);
+  });
+
+  it('keeps hear-see FLAT for a and i — our own prose was reworded, not exempted', () => {
+    // The blended drive fired here: "I say a sound — you tap the letter…"
+    // carried the pronoun AND the article, and the how-to-play is re-spoken
+    // whenever the ACTION changes, so a pinned session never showed it. An
+    // exemption would have switched the oracle off over the prose we write.
+    for (const letter of ['i', 'a']) {
+      const item = build({
+        id: `lsl-hs-${letter}`, mode: 'hear-see', targetLetter: letter,
+        targetSound: letter === 'i' ? '/ĭ/' : '/ă/', keywordWord: 'itch',
+        options: [{ letter, isCorrect: true }, { letter: 'n', isCorrect: false }],
+      }, 'easy');
+      expect(letterSoundLinkHarnessAnswers(item).leakTokens).toEqual([letter]);
+      // Opening turn = greeting + how-to-play + ask, the widest surface there is.
+      expect(scanFinds(askOf(item), letter)).toBe(false);
+      // And the oracle is still live: a tutor that names the letter trips it.
+      expect(scanFinds(`${askOf(item)} Tap the letter ${letter.toUpperCase()}.`, letter)).toBe(true);
+    }
+  });
+
+  it('names the signature wrong each direction actually invites', () => {
+    // see-hear: the letter NAME, written out — over the DI wire the child's
+    // turn crosses as TEXT, and a lone "S" is not decidably the name.
+    expect(letterSoundLinkHarnessAnswers(SAY_SOUND).signatureWrong?.text).toBe('ess');
+    expect(letterSoundLinkHarnessAnswers(SAY_SOUND).correct).toBe('sss');
+    // keyword-match: the SOUND said back — the tutor's own modelled word,
+    // on-topic and naming no picture at all.
+    expect(letterSoundLinkHarnessAnswers(SAY_WORD).signatureWrong?.text).toBe('mmm');
+    expect(letterSoundLinkHarnessAnswers(SAY_WORD).plainWrong).toBe('net');
+    // hear-see answers with the hands: material is `tapped`, verdict is
+    // code-computed, and there is no signature wrong to name.
+    const tap = letterSoundLinkHarnessAnswers(FIND_LETTER);
+    expect(tap.tapped).toEqual({ correct: 't', wrong: 'd' });
+    expect(tap.signatureWrong).toBeUndefined();
+  });
+
+  it('caps corrections where production caps them', () => {
+    // maxAttempts counts ELICITATIONS, the runner counts CORRECTIONS. The
+    // component computed this and the drive plan defaulted to 2, so a `hard`
+    // session (maxAttempts 2) capped at 1 on screen and 2 on the wire.
+    expect(maxCorrectionsFor(undefined)).toBe(2);
+    expect(maxCorrectionsFor(2)).toBe(1);
+    expect(letterSoundLinkPackBase(ITEMS, 2).maxCorrections).toBe(1);
+    expect(letterSoundLinkPackBase(ITEMS).maxCorrections).toBe(2);
+  });
+});
+
+// ── 6c. The session invariant: one letter, one answer ───────────────────────
+
+describe('letter-sound-link pack · the session build gate', () => {
+  const raw = (over: Partial<LetterSoundChallengeLike> & { id: string }) => ({
+    mode: 'keyword-match' as const, targetLetter: 's', targetSound: '/s/',
+    keywordWord: 'sun',
+    options: [{ sound: 'sun', isCorrect: true }, { sound: 'net', isCorrect: false }],
+    ...over,
+  });
+
+  it('drops a second item on a letter an earlier item already answered', () => {
+    // At easy and medium the DISTAR model re-hands the answer over anyway, so
+    // the repeat measures nothing; at hard it is pure recall.
+    const items = itemsFromChallenges([
+      raw({ id: 'a', mode: 'see-hear', options: [] }),
+      raw({ id: 'b', mode: 'see-hear', options: [] }),
+    ]);
+    expect(items.map((i) => i.id)).toEqual(['a']);
+  });
+
+  it('drops a letter the tutor answered even when it comes back in another direction', () => {
+    const items = itemsFromChallenges([
+      raw({ id: 'a', mode: 'see-hear', options: [] }),
+      raw({
+        id: 'b', mode: 'hear-see',
+        options: [{ letter: 's', isCorrect: true }, { letter: 'n', isCorrect: false }],
+      }),
+    ]);
+    expect(items.map((i) => i.id)).toEqual(['a']);
+  });
+
+  it('drops an item whose DISTRACTOR the tutor already named — the elimination leak', () => {
+    // The probe drew exactly this: ch1 "sun vs net" → "Yes, sun.", then ch6
+    // "net vs sun". Neither item is wrong alone, which is why no per-item gate
+    // can see it.
+    const items = itemsFromChallenges([
+      raw({ id: 'sun' }),
+      raw({
+        id: 'net', targetLetter: 'n', targetSound: '/n/', keywordWord: 'net',
+        options: [{ sound: 'net', isCorrect: true }, { sound: 'sun', isCorrect: false }],
+      }),
+    ]);
+    expect(items.map((i) => i.id)).toEqual(['sun']);
+  });
+
+  it('keeps a distractor that has only been SHOWN, never named', () => {
+    // "net" was on screen in item 1 as the wrong picture and nobody said what
+    // it was, so answering it in item 2 is still a real discrimination.
+    const items = itemsFromChallenges([
+      raw({ id: 'sun' }),
+      raw({
+        id: 'net', targetLetter: 'n', targetSound: '/n/', keywordWord: 'net',
+        options: [{ sound: 'net', isCorrect: true }, { sound: 'map', isCorrect: false }],
+      }),
+    ]);
+    expect(items.map((i) => i.id)).toEqual(['sun', 'net']);
+  });
+
+  it('hear-see never spends its anchor — it is the one direction that never says it', () => {
+    const items = itemsFromChallenges([
+      raw({
+        id: 'tap-s', mode: 'hear-see',
+        options: [{ letter: 's', isCorrect: true }, { letter: 'n', isCorrect: false }],
+      }),
+      // "sun" is still unheard, so the keyword-match item on `n` survives.
+      raw({
+        id: 'say-n', targetLetter: 'n', targetSound: '/n/', keywordWord: 'net',
+        options: [{ sound: 'net', isCorrect: true }, { sound: 'sun', isCorrect: false }],
+      }),
+    ]);
+    expect(items.map((i) => i.id)).toEqual(['tap-s', 'say-n']);
+  });
+
+  it('refuses a keyword-match item whose picture does not name its word', () => {
+    // The probe drew `i` → "itch" → 🤏 and `g` → "go" → 🟢. The ask is "say the
+    // picture word"; there is no answer a five-year-old can give.
+    expect(keywordNamesItsPicture('i')).toBe(false);
+    expect(keywordNamesItsPicture('x')).toBe(false);
+    const items = itemsFromChallenges([
+      raw({
+        id: 'itch', targetLetter: 'i', targetSound: '/ĭ/', keywordWord: 'itch',
+        options: [{ sound: 'itch', isCorrect: true }, { sound: 'apple', isCorrect: false }],
+      }),
+    ]);
+    expect(items).toEqual([]);
+    // The same letter is fully askable in the two directions whose answer is a
+    // held sound or a tap.
+    expect(itemsFromChallenges([raw({
+      id: 'i-sound', mode: 'see-hear', targetLetter: 'i', targetSound: '/ĭ/',
+      keywordWord: 'itch', options: [],
+    })])).toHaveLength(1);
+  });
+
+  it('refuses a keyword-match item whose DISTRACTOR picture cannot be named', () => {
+    // Gating only the target was not enough: the re-probe drew "sun vs 🤏"
+    // twice. A child who cannot name the wrong picture answers by picking the
+    // one they can, which is picture recognition rather than a sound match.
+    expect(anchorWordNamesItsPicture('itch')).toBe(false);
+    expect(anchorWordNamesItsPicture('sun')).toBe(true);
+    expect(itemsFromChallenges([raw({
+      id: 'sun-vs-itch',
+      options: [{ sound: 'sun', isCorrect: true }, { sound: 'itch', isCorrect: false }],
+    })])).toEqual([]);
+    // hear-see is exempt — its options are letters and the child taps.
+    expect(itemsFromChallenges([raw({
+      id: 'tap-s-vs-i', mode: 'hear-see',
+      options: [{ letter: 's', isCorrect: true }, { letter: 'i', isCorrect: false }],
+    })])).toHaveLength(1);
+  });
+
+  it('the anchor word and its picture live in ONE map, and every anchor has one', () => {
+    // They used to be two half-maps in two files; a pair that disagreed
+    // rendered 📝 in the mode whose ask is "say the picture word".
+    for (const [letter, anchor] of Object.entries(LETTER_KEYWORDS)) {
+      expect(anchor.emoji, `${letter} → ${anchor.word}`).not.toBe('📝');
+      expect(anchor.word.length).toBeGreaterThan(0);
+    }
+    // The item derives BOTH from the map, so a cached payload carrying a
+    // retired anchor still renders the picture the pack believes in.
+    const stale = build({
+      id: 'stale', mode: 'see-hear', targetLetter: 'j', targetSound: '/j/',
+      keywordWord: 'jam',
+    });
+    expect(stale.keyword).toBe('juice');
+    expect(stale.keywordEmoji).toBe(LETTER_KEYWORDS.j.emoji);
+  });
+
+  it('a gated session still passes the family gates', () => {
+    const items = itemsFromChallenges([
+      raw({ id: 'a', mode: 'see-hear', options: [] }),
+      raw({ id: 'dupe', mode: 'see-hear', options: [] }),
+      raw({
+        id: 'b', targetLetter: 'm', targetSound: '/m/', keywordWord: 'map',
+        options: [{ sound: 'map', isCorrect: true }, { sound: 'net', isCorrect: false }],
+      }),
+    ]);
+    expect(items).toHaveLength(2);
+    expect(checkPackGates(letterSoundLinkPackBase(items))).toEqual([]);
   });
 });
 
