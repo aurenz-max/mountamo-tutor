@@ -6,6 +6,7 @@ import {
   isSayableSentence,
   isSayableWord,
   opensWithSentinel,
+  startsWithADigraph,
   SPOTTER_EMOJI,
 } from "../../primitives/visual-primitives/literacy/letterSpotterScript";
 import {
@@ -531,6 +532,41 @@ function buildLetterSpotterSchema(cumulativeLetters: string[]): Schema {
   };
 }
 
+/**
+ * ⭐ When ONE mode is pinned, that mode's fields stop being optional.
+ *
+ * `required` on the challenge item lists only what EVERY mode needs, because a
+ * find-it challenge must not be forced to carry a sentence. The cost showed up
+ * on the live probe (2026-08-16): a pinned `name_it` draw came back with six
+ * challenges carrying `targetLetter` and nothing else, so every item fell
+ * through to the hardcoded fallback word and a code-built frame — "Look at the
+ * ant.", "We found the ink." — a complete, well-formed, entirely topic-free
+ * lesson, graded as a success and indistinguishable from a good one downstream.
+ * One draw in two.
+ *
+ * The manifest pins an eval mode for essentially every production lesson, so
+ * this is the common path, not the corner. When exactly one mode is allowed the
+ * schema can demand that mode's fields outright, which turns a silent degrade
+ * into a schema violation the retry can act on.
+ */
+function requireFieldsForPinnedMode(schema: Schema, allowedTypes?: string[]): Schema {
+  if (!allowedTypes || allowedTypes.length !== 1) return schema;
+  const extra: Record<string, string[]> = {
+    'name-it': ['sentence', 'targetWord'],
+    'find-it': ['letterGrid'],
+    'match-it': ['options'],
+  };
+  const fields = extra[allowedTypes[0]];
+  if (!fields) return schema;
+  // Deep-enough clone: only the one nested `required` array is rewritten.
+  const next = JSON.parse(JSON.stringify(schema)) as Schema;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items = (next as any).properties?.challenges?.items;
+  if (!items) return schema;
+  items.required = Array.from(new Set([...(items.required ?? []), ...fields]));
+  return next;
+}
+
 // ============================================================================
 // Letter Group Definitions
 // ============================================================================
@@ -607,11 +643,12 @@ export const generateLetterSpotter = async (
   const newLetters = NEW_LETTERS[letterGroup];
 
   const baseSchema = buildLetterSpotterSchema(cumulativeLetters);
-  const activeSchema = evalConstraint
+  const constrainedSchema = evalConstraint
     ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
         fieldName: 'mode',
       })
     : baseSchema;
+  const activeSchema = requireFieldsForPinnedMode(constrainedSchema, evalConstraint?.allowedTypes);
 
   // -------------------------------------------------------------------------
   // Build prompt with eval-mode-scoped challenge type docs
@@ -673,6 +710,13 @@ so a sentence that is not English is not a smaller problem here, it is the produ
 - targetWord must be a COMMON, CONCRETE word a five-year-old already knows — an
   everyday object, animal, or action. Never a name, never a rare word, and never
   a word used as the wrong part of speech ("I see a pat write a note" is not English).
+- THE FIRST LETTER MUST SPELL THE FIRST SOUND. The child is asked what sound the
+  word STARTS with, so targetWord must never begin with a digraph: no "sheep" or
+  "shop" for s, no "chair" or "cheese" for c, no "think" or "three" for t, no
+  "phone" for p, no "knee" for k, no "write" for w. Those all begin with the
+  target letter and none of them begin with its sound, so the answer key would
+  teach a mapping that is false. Blends are fine ("grass" for g, "stop" for s) —
+  there the first letter does spell the first sound.
 - Get a/an right: "an ant", "an inky paw print", "a sun", "a top".
 - Vary how sentences begin. Do NOT start every sentence with "I see a".
 - No sentence may begin with the word "Yes".
@@ -680,6 +724,14 @@ so a sentence that is not English is not a smaller problem here, it is the produ
 RULES:
 - Use IDs: ch1, ch2, ch3, etc.
 - At least half the challenges should target NEW letters.
+- ONE LETTER MAY BE ANSWERED ONCE PER LESSON. In name-it and match-it the letter
+  IS the answer, and the live tutor says it out loud the moment it affirms ("Yes,
+  ant starts with A") — so a second challenge whose answer is that same letter is
+  answered from memory of the first instead of from the sound of its word. Give
+  every name-it and match-it challenge a DIFFERENT targetLetter, and do not reuse
+  a find-it letter as a later name-it or match-it target either: find-it NAMES its
+  letter aloud as the question, which would announce the later answer before the
+  child ever tried. find-it may repeat a letter freely — its answer is a position.
 - Every letter you emit — target, option, or grid cell — is a SINGLE character from the cumulative list.
 - For find-it grids: exactly 16 cells, each a single UPPERCASE letter, containing the
   target EXACTLY ONCE. The child taps the one cell holding it, so a second instance
@@ -766,6 +818,14 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
     result.cumulativeLetters = cumulativeLetters;
     result.newLetters = newLetters;
 
+    // How much of the lesson the CODE ended up authoring. A name-it item whose
+    // word and sentence both fall back is sound but topic-free, and a whole
+    // lesson doing it was invisible until a probe read the words (2026-08-16).
+    // Counted here, said out loud below.
+    let wordFallbacks = 0;
+    let sentenceFallbacks = 0;
+    let nameItCount = 0;
+
     // Validate challenges
     if (result.challenges) {
       result.challenges = result.challenges.map((ch, i) => {
@@ -787,6 +847,7 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
         // name-it: the model emits a PLAIN sentence; CODE owns the marker, the
         // article repair and the splice.
         if (ch.mode === 'name-it') {
+          nameItCount++;
           ch.emoji = SENTENCE_EMOJI;
           // The printed sentence is lowercase running text and the tappable
           // options are its letters, so the answer tiles are lowercase too. The
@@ -800,9 +861,16 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
           // the target letter. A word that doesn't isn't merely imperfect — it hides
           // the wrong letter while the answer key still says targetLetter, i.e. an
           // unsolvable item. (Live probe caught exactly this: 'fox' offered for 'x'.)
+          // `startsWithADigraph` is the SOUND half of the same guard: the live
+          // probe drew "sheep" for `s`, which leads with the target letter and
+          // still teaches a false mapping, because /ʃ/ is not what `s` spells.
+          // Swapping to the fallback word is better than dropping — the
+          // sentence then fails `spliceEmoji` and degrades to a frame below, so
+          // the item survives with an answer that is actually true.
           if (
             !ch.targetWord
             || !isSayableWord(ch.targetWord)
+            || startsWithADigraph(ch.targetWord)
             || ch.targetWord[0]?.toLowerCase() !== ch.targetLetter
           ) {
             const fallbackWords: Record<string, string> = {
@@ -817,6 +885,7 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
             ch.targetWord = candidate?.[0]?.toLowerCase() === ch.targetLetter
               ? candidate
               : ch.targetLetter + 'at';
+            wordFallbacks++;
           }
 
           // The SPOKEN form is the tutor's line, so it is repaired before it is
@@ -841,6 +910,7 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
             (w: string) => `Here is the ${w}.`,
             (w: string) => `We found the ${w}.`,
           ];
+          if (!usable) sentenceFallbacks++;
           const spokenSentence = usable
             ? modelSentence
             : FALLBACK_FRAMES[i % FALLBACK_FRAMES.length](ch.targetWord);
@@ -1026,6 +1096,19 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
     // Surface the tier to the live tutor (reveal policy is mode-aware per challenge).
     if (supportTier) {
       result.supportTier = supportTier;
+    }
+
+    // A whole name-it lesson authored by the fallback table is well-formed,
+    // pedagogically sound and completely topic-free — and it used to be silent.
+    if (nameItCount > 0 && (wordFallbacks > 0 || sentenceFallbacks > 0)) {
+      const level = wordFallbacks === nameItCount ? 'warn' : 'log';
+      console[level](
+        `[letter-spotter] CODE authored ${wordFallbacks}/${nameItCount} name-it words and `
+        + `${sentenceFallbacks}/${nameItCount} sentences`
+        + (wordFallbacks === nameItCount
+          ? ' — the ENTIRE name-it lesson is the fallback table, so the topic reached none of it.'
+          : '.'),
+      );
     }
 
     console.log('Letter Spotter Generated:', {

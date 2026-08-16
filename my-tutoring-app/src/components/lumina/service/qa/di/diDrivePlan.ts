@@ -128,6 +128,15 @@ import {
   type PhonemeChallengeLike,
   type PhonemeExplorerItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/phonemeExplorerScript';
+import {
+  itemsFromChallenges as letterSpotterItems,
+  letterSpotterHarnessAnswers,
+  letterSpotterPackBase,
+  tapVerdictCue as letterSpotterTapVerdictCue,
+  type LetterSpotterChallengeLike,
+  type LetterSpotterItem,
+  type LetterSpotterTier,
+} from '@/components/lumina/primitives/visual-primitives/literacy/letterSpotterScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -506,6 +515,46 @@ const phonemeExplorerAdapter: DiPortAdapter<PhonemeExplorerItem> = {
 };
 
 /**
+ * letter-spotter (19h-i-b port 6). MIXED, and the first port whose fork is
+ * decided by whether the answer HAS a spoken form at all: `name-it` says a
+ * letter, while `find-it` answers with a POSITION ("third box, second row" is
+ * not an answer a child says) and `match-it` answers with a lowercase FORM
+ * (saying "S" would not prove the child knows it). Its gesture commit carries
+ * the TAPPED LETTER — interactive-book's `tapped` shape — and both tap modes
+ * draw their wrong tap off the item itself, so no side table is needed.
+ *
+ * What is different about its answer material: the answer is ONE CHARACTER, and
+ * that breaks the flat leak oracle every earlier port has used. The harness
+ * scans `\b<token>\b` over a lowercased turn, so targets `a` and `i` collide
+ * with the article and the pronoun. Two of our own lines were reworded rather
+ * than exempted, which leaves the collision only in the GENERATED sentence a
+ * name-it ask reads aloud — exempted for exactly those two letters and flat for
+ * the other twenty-four. `find-it` carries NO leak tokens at all, and that is
+ * not the oracle switched off: the tutor is told the letter (its stimulus) and
+ * never told where it is, so the answer is absent from its context entirely.
+ *
+ * ⚠️ TWO OF THREE MODES CANNOT BE CAP-DRIVEN. `--di-cap` hangs the drill off the
+ * first VOICE item, and a session pinned to `find_it` or `match_it` has none —
+ * the harness now raises rather than silently running a plain drive. Their
+ * `moveOnCue` (which carries no close line, because their corrections already
+ * modelled everything they may say) is covered by pack gates, not live.
+ */
+const letterSpotterAdapter: DiPortAdapter<LetterSpotterItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as LetterSpotterChallengeLike[];
+    const tier = (data.supportTier as LetterSpotterTier) ?? 'medium';
+    const items = letterSpotterItems(challenges, tier);
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: letterSpotterPackBase(items),
+    };
+  },
+  answersFor: letterSpotterHarnessAnswers,
+  gestureVerdictCue: (item, gesture) => letterSpotterTapVerdictCue(item, String(gesture)),
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -520,6 +569,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'push-pull-arena': pushPullArenaAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'picture-vocabulary': pictureVocabularyAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'phoneme-explorer': phonemeExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'letter-spotter': letterSpotterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

@@ -103,7 +103,12 @@
  * token "yes" as belt-and-braces on the same hazard.
  */
 
-import { opensWithSentinel, type JudgedScriptItem, type ResponseClassId } from '../../../hooks/judgedScriptContract';
+import {
+  opensWithSentinel,
+  type JudgedCueSurface,
+  type JudgedScriptItem,
+  type ResponseClassId,
+} from '../../../hooks/judgedScriptContract';
 import { canProduceSound, spokenSoundFor } from './letterSoundLinkScript';
 
 // Re-exported so the generator imports its build gates from ONE address (the
@@ -212,6 +217,35 @@ export const isSayableWord = (word: string): boolean =>
  *  CLOSES the span early and everything after it becomes judge-side prose —
  *  the same structural surface the performed-"[WAIT silently]" defect lived
  *  on. Keep-or-drop, per this pack's no-backfill policy. */
+/**
+ * ⭐ Does this word's FIRST LETTER actually spell its first SOUND?
+ *
+ * The live probe for this port drew *"Say the letter that sheep starts with"*
+ * with an answer key of `S` — and every gate above passed it, because the word
+ * does lead with the target letter. Orthographically that is even true. But
+ * name-it's whole task, in the catalog's own words, is "initial sound to
+ * grapheme", the ask that precedes it is *"Listen for the sound at the very
+ * start of the word"*, and the sound at the very start of `sheep` is /ʃ/, which
+ * `s` does not spell. Affirming `S` there teaches a five-year-old a mapping
+ * that is false, inside the primitive whose job is to make it true.
+ *
+ * It is a whole CLASS, not one word: the initial digraphs are exactly the shape
+ * where letter one is the target and letter one is not the sound. `sh`, `ch`,
+ * `th`, `ph` are the common ones a K word list reaches for; `kn`, `wr`, `gn`
+ * are the silent-first-letter cousins.
+ *
+ * What is NOT here, deliberately: blends (`grass`, `stop` — the first letter
+ * does spell the first sound of the cluster), `wh` (`w` spells /w/ in `whale`),
+ * `gh` (`ghost` opens on /g/), and `qu` (`q` is only ever taught as `qu`, so a
+ * child answering Q for `quilt` is right). Banning those would cost real items
+ * to buy nothing.
+ */
+const INITIAL_DIGRAPHS = ['sh', 'ch', 'th', 'ph', 'kn', 'wr', 'gn'];
+export const startsWithADigraph = (word: string): boolean => {
+  const w = word.trim().toLowerCase();
+  return INITIAL_DIGRAPHS.some((d) => w.startsWith(d));
+};
+
 export const isSayableSentence = (sentence: string): boolean =>
   sentence.trim().length > 0
   && sentence.trim().length <= MAX_SENTENCE_CHARS
@@ -258,6 +292,9 @@ export const itemFromChallenge = (
     // babble that satisfies every semantic rule below (live probe, 2026-08-13).
     if (!isSayableWord(targetWord) || !isSayableSentence(spokenSentence)) return null;
     if (targetWord[0]?.toLowerCase() !== targetLetter) return null;
+    // The word must lead with the target letter AND that letter must spell the
+    // sound it leads with — `sheep` satisfies the first and fails the second.
+    if (startsWithADigraph(targetWord)) return null;
     if (opensWithSentinel(targetWord) || opensWithSentinel(spokenSentence)) return null;
     const occurrences = spokenSentence.match(
       new RegExp(`\\b${targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'),
@@ -312,14 +349,54 @@ export const itemFromChallenge = (
   };
 };
 
-/** Build the session, dropping what cannot be asked. */
+/**
+ * Build the session, dropping what cannot be asked — AND what cannot be asked
+ * SECOND.
+ *
+ * ⭐ THE SESSION INVARIANT (19h-i-b port 6). Every gate above judges one
+ * challenge in isolation, and there is a leak on this port that no single item
+ * can commit, because both halves of it are correct alone:
+ *
+ *   find-it's ask NAMES its target letter out loud — the letter is its
+ *   STIMULUS there, and a search for an unnamed target is a broken task, not a
+ *   harder one. name-it's and match-it's answers ARE a letter, and the whole
+ *   pack is built so no cue says one before the child does.
+ *
+ * Put "Find the letter A" at item 2 and "say the letter that ant starts with"
+ * at item 5 and the tutor has spoken item 5's answer, unearned, as item 2's
+ * question. The same thing happens between two answer-side items one beat
+ * later: an item always closes on an affirmation or a capped move-on, and BOTH
+ * name the letter ("Yes, ant starts with A."), so a second item on `a` is
+ * answered from memory of the first rather than from the sound of its word.
+ * Under the click-era tap surface this was invisible — nothing said the answer
+ * aloud — which is why it arrives with the modality.
+ *
+ * So: a letter may be ANSWERED once per session. Whoever claims it first keeps
+ * it, and a later name-it or match-it item on the same letter is dropped.
+ * find-it is never dropped for reuse — its answer is a position, and hearing a
+ * letter it is about to hunt for is the task working as intended.
+ *
+ * This lives here rather than generator-side for the reason §4(d) of the sweep
+ * gives: `itemsFromChallenges` is the boundary the RUNNER reads, so it also
+ * covers hand-authored and cached payloads that a prompt fix cannot reach. The
+ * generator prompt is fixed too, so the gate rarely has to bite.
+ */
 export const itemsFromChallenges = (
   challenges: LetterSpotterChallengeLike[],
   tier: LetterSpotterTier = 'medium',
-): LetterSpotterItem[] =>
-  challenges
-    .map((ch) => itemFromChallenge(ch, tier))
-    .filter((item): item is LetterSpotterItem => item !== null);
+): LetterSpotterItem[] => {
+  const spokenLetters = new Set<string>();
+  const items: LetterSpotterItem[] = [];
+  for (const ch of challenges) {
+    const item = itemFromChallenge(ch, tier);
+    if (!item) continue;
+    const answersWithALetter = item.mode !== 'find-it';
+    if (answersWithALetter && spokenLetters.has(item.targetLetter)) continue;
+    spokenLetters.add(item.targetLetter);
+    items.push(item);
+  }
+  return items;
+};
 
 // ── Small speakable helpers ─────────────────────────────────────────────────
 
@@ -331,10 +408,26 @@ const letterName = (item: LetterSpotterItem) => item.targetLetter.toUpperCase();
 
 // ── How-to-play — inside the quoted line (SWAP-1), re-spoken on action change ─
 
+/**
+ * ⭐ WHY name-it says "The star" and not "A star" (19h-i-b port 6).
+ *
+ * This pack's answer is ONE CHARACTER, which makes it the first port in the
+ * sweep whose leak token collides with ordinary English: the harness scans a
+ * tutor turn for `\b<token>\b` over lowercased text, so a target letter of `a`
+ * or `i` matches the article "a" and the pronoun "I" wherever they appear.
+ *
+ * There are two ways to answer that. Exempting a span switches the oracle off
+ * over prose WE wrote, which is the half most likely to leak. Removing the
+ * collision from our own lines keeps the oracle FLAT for all twenty-six
+ * letters, and costs a definite article that was more accurate anyway — there
+ * is exactly one marker, so "the star" is what a child sees. The exemption is
+ * then spent only where it must be: the GENERATED sentence (see
+ * `letterSpotterHarnessAnswers`), which we do not author.
+ */
 export const howToPlayFor = (item: LetterSpotterItem): string => {
   switch (item.mode) {
     case 'name-it':
-      return `A ${SPOTTER_EMOJI_NAME} is hiding the first letter of a word — you tell me the letter it is hiding! `;
+      return `The ${SPOTTER_EMOJI_NAME} is hiding the first letter of the word — you tell me the letter it is hiding! `;
     case 'find-it':
       return 'I name a letter — you find it in the boxes and tap it! ';
     case 'match-it':
@@ -362,14 +455,18 @@ const modelLine = (item: LetterSpotterItem): string => {
     case 'find-it':
       return 'Look at one row at a time, all the way across.';
     case 'match-it':
-      return 'A big letter and a little letter can look different and still be the same letter.';
+      // Plural, and not "A big letter …": the same one-character leak-token
+      // collision documented on `howToPlayFor`. The general statement is the
+      // one this line was always trying to make.
+      return 'Big letters and little letters can look different and still be the same letter.';
   }
 };
 
 const guideLine = (item: LetterSpotterItem): string => {
   switch (item.mode) {
     case 'name-it':
-      return 'I will say the word on its own after the sentence.';
+      // Not "I will say the word …" — same collision, on `i` this time.
+      return 'Then you will hear the word on its own.';
     case 'find-it':
       return 'Take your time and check every box.';
     case 'match-it':
@@ -380,8 +477,8 @@ const guideLine = (item: LetterSpotterItem): string => {
 /**
  * The lead-in belongs to the INTRODUCTION of an action, never to every ask —
  * live drive de8a6a78d9db, and the reason this function is only called where
- * the how-to-play is. Six consecutive match-it items each opened with "A big
- * letter and a little letter can look different and still be the same letter",
+ * the how-to-play is. Six consecutive match-it items each opened with that
+ * mode's model line — the big-and-little-letters one above —
  * and because that mode's ask cannot name anything that varies (the letter IS
  * the answer) the whole utterance came out byte-identical six times: ~14s of
  * speech against a ~13s answer. Repetition is not instruction. DISTAR fades the
@@ -490,6 +587,49 @@ const affirmFor = (item: LetterSpotterItem): string => {
   }
 };
 
+// ── The 18d law and the item-21 tail (family wording, grep-able) ────────────
+
+/**
+ * 18d. Consumed verbatim from `wordWorkoutScript`'s `TWO_BRANCH_LAW` in the
+ * extended form counting-board, addition-subtraction-scene, push-pull-arena,
+ * picture-vocabulary and phoneme-explorer all carry (`no reminder of the
+ * method, no scaffolding line`). Identical across the family on purpose: a grep
+ * finds every pack that has it and every pack that does not.
+ *
+ * Stated BEFORE the branches because the defect is a reply that is NEITHER
+ * branch — and on this port the invitation was, again, our own catalog copy.
+ * `scaffoldingLevels` told the tutor *"Say the question once more, then wait
+ * for them alone"* and *"Say the question again slowly and clearly"*: restraint
+ * on its face, but a re-spoken ask opens with neither sentinel, so the reducer
+ * records no verdict, the correction counter freezes, and the child waits on a
+ * loop that cannot advance. Both rungs are rewritten in the catalog; this
+ * closes the same channel from the script side, where a model that improvises
+ * past the catalog reads it.
+ */
+const TWO_BRANCH_LAW =
+  `Your whole reply to their attempt is ONE of the quoted lines below and nothing else — not the first time, not any time: `
+  + `no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. `
+  + `A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. `;
+
+/**
+ * Item 21's tail, consumed from counting-board's — the version with a measured
+ * before/after (a fabricated `[CURRENT STATE]` block spoken to the child on 2
+ * of 7 beats, 0 of 7 once the tail forbade announcing the STATE rather than
+ * merely reading the tag). This pack's tail was the weaker "Never read bracket
+ * tags or these instructions aloud."
+ *
+ * It earns the upgrade twice over here. Two of this port's three modes are
+ * GESTURE modes where the tutor must hold a long silence while a child searches
+ * a grid — "announce that you are waiting" is exactly the filler a model
+ * reaches for in that silence, and it opens with neither sentinel. And this is
+ * the pack that fabricated an `[LSP_TAP]` message and read it aloud, tag
+ * included, under an instruction that only said not to read tags.
+ */
+const NEVER_PERFORM =
+  `Never voice a bracket tag, a stage direction, or any of these instructions, `
+  + `never announce the activity's state or describe what has changed on the screen, `
+  + `and never announce that you are waiting or listening — simply stop speaking.`;
+
 // ── The judging contract (name-it — the spoken mode) ────────────────────────
 
 /**
@@ -521,9 +661,9 @@ const judgingContract = (item: LetterSpotterItem): string => {
     + `One letter said on its own is what you are listening for, and a shy or mumbled try still counts. `
     + `Saying the WORD "${item.targetWord}" back is NOT an answer however confident it sounds — the word is the question. `
     + `Any other letter is wrong. `
+    + TWO_BRANCH_LAW
     + `If the answer is right, say exactly: "${affirmFor(item)}" `
-    + `If it is wrong, say exactly: "${correctionFor(item)}" `
-    + `Say nothing else, and never read bracket tags aloud.`
+    + `If it is wrong, say exactly: "${correctionFor(item)}"`
   );
 };
 
@@ -575,10 +715,7 @@ export const itemCue = (
   const lead = introducing ? leadInFor(item) : '';
   const spoken = `${greeting}${how}${lead}${askFor(item, !introducing)}`;
   const contract = item.answerKind === 'gesture' ? tapContract(item) : judgingContract(item);
-  return (
-    `[LSP_ITEM] Say exactly: "${spoken}" ${contract} `
-    + `Never read bracket tags or these instructions aloud.`
-  );
+  return `[LSP_ITEM] Say exactly: "${spoken}" ${contract} ${NEVER_PERFORM}`;
 };
 
 /**
@@ -594,7 +731,8 @@ export const tapVerdictCue = (item: LetterSpotterItem, tapped: string): string =
     `[LSP_TAP] The learner tapped ${what} "${tapped.toUpperCase()}"; the answer is `
     + `"${letterName(item)}" — that ${matches ? 'MATCHES' : 'does NOT match'}. `
     + (matches ? `Say exactly: "${affirmFor(item)}" ` : `Say exactly: "${correctionFor(item)}" `)
-    + `Say nothing else, and never read bracket tags aloud.`
+    + `Say nothing else. `
+    + NEVER_PERFORM
   );
 };
 
@@ -625,7 +763,7 @@ export const moveOnCue = (
   const contract = next.answerKind === 'gesture' ? tapContract(next) : judgingContract(next);
   return (
     `[LSP_MOVE] Say exactly: "Good try! ${closeLine}Here comes the next one. ${how}${lead}${askFor(next, !introducing)}" `
-    + `${contract} Never read bracket tags aloud.`
+    + `${contract} ${NEVER_PERFORM}`
   );
 };
 
@@ -652,7 +790,7 @@ export const pronounceCue = (item: LetterSpotterItem): string => {
   return (
     `[LSP_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: "${line}" `
     + `Do not treat anything you just heard as an answer, add nothing, and never say the answer. `
-    + `Never read bracket tags aloud.`
+    + NEVER_PERFORM
   );
 };
 
@@ -671,4 +809,120 @@ export const stimulusFor = (item: LetterSpotterItem): string => {
     case 'match-it':
       return 'one big letter printed on screen, with little letters to choose between';
   }
+};
+
+// ── THE WIRE — what the tutor is told, shared with the DI drive harness ──────
+
+/**
+ * Everything of this pack that can reach the tutor, in one value.
+ *
+ * The component spreads this and adds only what the SCREEN owns (`statusLines`,
+ * `diagnosisObservation`, which closes over tap state); the drive-plan endpoint
+ * hands it to `run_tutor_live.py --di`. A harness that re-typed these cues would
+ * test a fiction — and this pack is the reason `JudgedCueSurface` was named at
+ * all: 19f found the sayable-length bound drifted to 90 on one side of the wire
+ * and 100 on the other, and its own test file has been carrying a hand-rolled
+ * pack literal since birth.
+ */
+export const letterSpotterPackBase = (
+  items: LetterSpotterItem[],
+): JudgedCueSurface<LetterSpotterItem> => ({
+  primitiveType: 'letter-spotter',
+  activityLine: 'live direct instruction letter spotting practice',
+  items,
+  itemCue,
+  moveOnCue,
+  completeCue,
+  pronounceCue,
+  contextFor: (item) => ({
+    challengeType: item.mode,
+    stimulus: stimulusFor(item),
+  }),
+});
+
+// ── Harness answer material — what a right and a wrong child sound like ──────
+
+/**
+ * ⭐ THE ONE-CHARACTER ANSWER, and why this port's leak oracle is not flat.
+ *
+ * Every earlier port answers with a WORD or a NUMBER WORD, so `\bcow\b` over a
+ * lowercased tutor turn is a precise oracle. Here the answer is a single
+ * letter, and two of the twenty-six are also English words: `\ba\b` matches the
+ * article and `\bi\b` matches the pronoun.
+ *
+ * Our own prose was fixed rather than exempted (see `howToPlayFor`), so the
+ * only remaining collision sits in the GENERATED sentence a name-it ask reads
+ * aloud — "I can see the ink." for target `i`, "Look at a big ant." for `a`.
+ * That span is exempted, and ONLY for those two letters: for the other
+ * twenty-four the oracle stays flat, and the greeting, the how-to-play, the
+ * DISTAR lead-in and the hand-over stay governed even for `a` and `i`.
+ *
+ * Emptying `leakTokens` instead would have switched the oracle off on the half
+ * most likely to leak (trap 4). Naming the exemption keeps it honest.
+ */
+export const leakExemptSpanFor = (item: LetterSpotterItem): string | undefined =>
+  item.mode === 'name-it' && (item.targetLetter === 'a' || item.targetLetter === 'i')
+    ? item.spokenSentence
+    : undefined;
+
+/**
+ * The letters a child reaches for when they are wrong but not guessing. Kept
+ * off `a` and `i` so a plain wrong answer is never itself unscannable, and off
+ * the target by construction at the call site.
+ */
+const LETTER_DECOYS = ['m', 'k', 'z', 'v', 'w'];
+
+/**
+ * The answers a headless student says on a judged drive. It lives beside the
+ * contract it mirrors because `judgingContract` CLAIMS the judge refuses each
+ * of these; this is that claim made testable. Change one, change both.
+ *
+ * The signature wrong is the contract's own named miss, and on this port it is
+ * the sharpest one the family has had a name for since counting-board:
+ *
+ *  - name-it: the WORD said back. A child asked what "ant" starts with who
+ *    answers "ant" has produced none of the answer — but the utterance carries
+ *    the target sound at its front, is a real word, is confident, and the tutor
+ *    itself said it aloud two seconds earlier. A judge listening loosely for
+ *    "something beginning with /a/" affirms it, which is why the contract names
+ *    it explicitly rather than leaving it to "any other letter is wrong".
+ *
+ * find-it and match-it answer with the HANDS, so their material is `tapped`
+ * (interactive-book's shape) and their verdict is code-computed — there is no
+ * signature wrong to name, because nothing is judged from what the child says.
+ */
+export const letterSpotterHarnessAnswers = (item: LetterSpotterItem) => {
+  const name = item.targetLetter.toUpperCase();
+  const decoy = LETTER_DECOYS.find((l) => l !== item.targetLetter) ?? 'm';
+
+  if (item.mode === 'name-it') {
+    return {
+      correct: name,
+      plainWrong: decoy.toUpperCase(),
+      signatureWrong: {
+        text: item.targetWord ?? '',
+        why: 'the word said straight back — it carries the target sound at its front, it is a real word said confidently, and the tutor spoke it aloud seconds earlier, so a judge listening for "something starting with that sound" affirms it. The contract names this miss by name',
+      },
+      leakTokens: [item.targetLetter],
+      leakExemptSpan: leakExemptSpanFor(item),
+    };
+  }
+
+  // find-it: the wrong tap is a real grid cell that is not the target, so the
+  // verdict cue describes something the stage can actually render.
+  // match-it: the wrong tap is a real option tile, for the same reason.
+  const wrongTap = item.mode === 'find-it'
+    ? (item.letterGrid ?? []).find((l) => l.toLowerCase() !== item.targetLetter)?.toLowerCase() ?? decoy
+    : item.options.find((o) => o !== item.targetLetter) ?? decoy;
+
+  return {
+    correct: name,
+    plainWrong: wrongTap.toUpperCase(),
+    tapped: { correct: item.targetLetter, wrong: wrongTap },
+    // find-it's answer is a POSITION the tutor is never told — it holds the
+    // letter as its stimulus and nothing else, so there is no token that could
+    // leak. That is a structurally unreachable leak class, not an oracle
+    // switched off. match-it's answer IS the letter, so it scans for it.
+    leakTokens: item.mode === 'find-it' ? [] : [item.targetLetter],
+  };
 };

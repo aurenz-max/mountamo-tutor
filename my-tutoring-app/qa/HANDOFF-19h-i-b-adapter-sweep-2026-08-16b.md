@@ -60,9 +60,9 @@ until you read each `moveOnCue` — the mode counts are exact):
 
 | Port | Modes | plain+sig | cap shapes (est.) | Total (est.) |
 |---|---|---|---|---|
-| `phoneme-explorer` | 4 | 8 | 1–2 | 9–10 |
-| `letter-spotter` | 3 | 6 | 2 (name/find are different acts) | 8 |
-| `letter-sound-link` | 3 | 6 | 2 (hear_see taps) | 8 |
+| ~~`phoneme-explorer`~~ | 4 | 8 | 1 | **9, shipped port 5** |
+| ~~`letter-spotter`~~ | 3 | 6 | 1 drivable | **7, shipped port 6** |
+| `letter-sound-link` | 3 | 6 | 1–2 (hear_see taps — see ⚠️ below) | 7–8 |
 | `decodable-reader` | 5 | 10 | 2–3 (read_along vs Q-modes vs proposition tap) | 12–13 |
 | `rhyme-studio` | 3 | 6 | 1–2 | 7–8 |
 | `read-aloud-studio` | 3 | 6 | 1–2 | 7–8 |
@@ -71,6 +71,32 @@ until you read each `moveOnCue` — the mode counts are exact):
 
 Down from the 90 the flat reading implied, and every cap drill now tests a move-on
 line no other one sends.
+
+### ⚠️ AMENDED BY PORT 6 (2026-08-16) — TWO CORRECTIONS THAT CHANGE THE ARITHMETIC
+
+**(a) `--di-wrong signature` is a NO-OP on a gesture-only session.** `build_di_journey`
+`continue`s past the wrong-kind branch for every gesture item, so a signature drive
+on a tap-only eval mode replays the plain drive BYTE FOR BYTE. The "plain+sig ×
+every eval mode" column above over-counts by one drive per gesture-only mode.
+letter-spotter's honest budget was **7, not 8**: `name_it` × (plain, signature, cap)
+plus one plain each for `find_it` and `match_it`, plus a blended pair. Count your
+port's gesture-only modes and subtract.
+
+**(b) ⭐ A MIXED SESSION IS REACHABLE, AND IT BUYS COVERAGE NOTHING ELSE DOES.**
+`resolveEvalModeConstraint` returns null for an unknown mode, and a null constraint
+means the generator emits every mode. So **`--eval-mode blended`** (any non-catalog
+string) drives one session containing both voice and gesture items — no harness
+change. Two things only that drive reaches:
+
+- a gesture item asked immediately after a voice item the tutor just judged IN-BAND,
+  which is the hardest place for it to go silent (it held, 4/4 on port 6);
+- with `--di-cap`, a **move-on cue whose payload is a TAP contract** — the cap hangs
+  off the first voice item, and in a blended session the NEXT item is often a tap
+  one. That **half-closes §7's "tap-mode `moveOnCue` is UNDRIVABLE"** row: a tap
+  contract delivered inside a move-on is now driven. What is still undrivable is a
+  cap on a tap ITEM itself.
+
+Add one blended plain + one blended cap to any port with both answer kinds.
 
 ---
 
@@ -100,9 +126,11 @@ comment filter, and the previous handoff's version double-counted a comment.
 | `letter-sound-link` | 2 |
 | `letter-spotter` | 2 |
 | `read-aloud-studio` | 2 |
-| `phoneme-explorer` | **1** — the previous handoff implied 2 |
+| ~~`phoneme-explorer`~~ | fixed (port 5) — and it was **3**, not the 1 listed: census by MEANING |
+| ~~`letter-spotter`~~ | fixed (port 6) — the 2 rungs were right, **plus a `commonStruggles` row no rung census reaches** |
 | ~~`picture-vocabulary`~~ | fixed (port 4) |
 | ~~`interactive-book`~~ | fixed (port 4, off-queue) |
+| `sound-swap` · `cvc-speller` · `word-flip` | 1 each — added to the census by port 5 |
 
 **`commonStruggles` "goes quiet" responses are NOT 18d instances. Do not "fix" them.**
 Silence is not an attempt, so no verdict is owed and a re-spoken ask is correct there.
@@ -225,7 +253,7 @@ row only for genuinely new ANSWER MATERIAL.
 | Fabricated `[CURRENT STATE]` | **item 21** | Fix known: the `NEVER_PERFORM` tail. Give every port that tail. |
 | 18c pair | **18c** | Expected on every cap drill; these contracts deliberately COMMAND the verbatim repeat. Do not re-file. |
 | ~~`interactive-book` `--di-cap` re-drive~~ | **18d** | ✅ **DONE in port 4's slice** — 3/3 corrections opened `My turn:`, no `di-no-verdict`; only the known 18c verbatim-repeat WARNs. Its off-queue 18d fix is live-verified, not assumed. |
-| Tap-mode `moveOnCue` is UNDRIVABLE | **19h-i-b** | ⭐ NEW. `--di-cap` drills the first VOICE item, so a gesture-only session has no cap path at all. On port 4 that leaves `receptive_match`'s move-on (must carry the next item's silence contract) and `association`'s close line covered by pack gates only, never live. The harness now RAISES instead of silently running a plain drive. Closing it needs either a mixed-session drive mode or a `--di-cap-item <id>` flag. |
+| Tap-mode `moveOnCue` is UNDRIVABLE | **19h-i-b** | ⭐ **HALF-CLOSED by port 6.** A **blended** drive (`--eval-mode blended` → null constraint → every mode) with `--di-cap` produces a move-on whose payload is a TAP contract, and letter-spotter's tutor honoured the silence inside it. Still open: a cap on a tap ITEM, since the cap hangs off the first voice item. Original note follows. `--di-cap` drills the first VOICE item, so a gesture-only session has no cap path at all. On port 4 that leaves `receptive_match`'s move-on (must carry the next item's silence contract) and `association`'s close line covered by pack gates only, never live. The harness now RAISES instead of silently running a plain drive. Closing it needs either a mixed-session drive mode or a `--di-cap-item <id>` flag. |
 | `counting-board` `subitize` un-glanced | 19c residual | One screen on the next counting-board touch. Pair it with the 19h-i-c re-drive, which lands on counting-board anyway. |
 
 ---

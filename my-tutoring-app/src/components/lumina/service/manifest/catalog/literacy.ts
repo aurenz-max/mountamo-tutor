@@ -1387,13 +1387,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // click-era block interpolated (targetLetter, sentence, targetWord) was
       // the ANSWER or the material that gives it away.
       contextKeys: ['challengeType', 'stimulus'],
-      // Correction territory, not answer territory: every level describes what
-      // happens AFTER an attempt, and re-modeling is the scripted correction's
-      // job (standing gate 3).
+      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16,
+      // 19h-i-b port 6). The defect: a re-spoken ask opens with neither "Yes"
+      // nor "My turn:", so the reducer records no verdict, the correction
+      // counter freezes, and the child waits on a tutor that has already spoken.
+      // level1 and level2 were both that, and the sweep's census counted them
+      // correctly here because this entry calls its stimulus "the question" and
+      // matches the family's fingerprint exactly. What a rung census cannot see
+      // is the fourth commonStruggles row below — census by MEANING.
       scaffoldingLevels: {
-        level1: 'Say the question once more, then wait for them alone.',
-        level2: 'Say the question again slowly and clearly, then wait.',
-        level3: 'Use the scripted correction line for this item, then hand the question back one more time.',
+        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it — inside the item message in the sentence direction, inside the touch message in the find and match directions. It already re-models and hands the question back, so it IS the first scaffold, and it opens with "My turn:" where the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a re-read of the sentence, or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all, and the child waits on a lesson that cannot advance.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next question to you.',
       },
       // Observable behaviours only, with PERFORMABLE responses (script moves a
       // tutor can speak — never meta-instructions, which get recited).
@@ -1411,8 +1416,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.',
         },
         {
-          pattern: 'Says a letter out loud instead of touching one',
-          response: 'Stay silent and keep waiting; only a touch is an answer here, and the application will report it.',
+          // 18d, the instance no rung census can reach — and this one was worse
+          // than a stall. Written before name-it became a SPOKEN mode, the row
+          // said flatly that "only a touch is an answer here", so a tutor
+          // reading it in the sentence direction would sit silent through a
+          // child's correct spoken letter: no verdict, no advance, and the one
+          // direction where speaking IS the answer. Scoped to the two touch
+          // directions, where silence is genuinely right because nothing has
+          // been committed yet.
+          pattern: 'Says a letter out loud in a TOUCH direction instead of touching one',
+          response: 'In the find and match directions a spoken letter is not an answer — the touch is, and the application reports it — so stay silent and keep waiting. In the sentence direction the opposite holds: a letter said out loud IS the answer there, and you judge it with the two lines that item message gave you.',
         },
       ],
       aiDirectives: [

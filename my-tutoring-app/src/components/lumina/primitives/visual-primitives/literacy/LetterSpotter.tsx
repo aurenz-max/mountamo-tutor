@@ -86,12 +86,8 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
-  completeCue,
-  itemCue,
   itemsFromChallenges,
-  moveOnCue,
-  pronounceCue,
-  stimulusFor,
+  letterSpotterPackBase,
   tapVerdictCue,
   SPOTTER_EMOJI,
   type LetterSpotterItem,
@@ -287,18 +283,11 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
   }, [items, letterGroup, newLetters, evaluation]);
 
   // ── The pack — wording lives in letterSpotterScript.ts ─────────────────────
+  // The cue surface is SPREAD, not re-declared: everything the tutor is told
+  // ships from the script module so the DI drive harness reads the same bytes
+  // this component sends (19h-i-b). Only the two screen-owned fields stay.
   const pack = useMemo<JudgedScriptPack<LetterSpotterItem>>(() => ({
-    primitiveType: 'letter-spotter',
-    activityLine: 'live direct instruction letter spotting practice',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    pronounceCue,
-    contextFor: (item) => ({
-      challengeType: item.mode,
-      stimulus: stimulusFor(item),
-    }),
+    ...letterSpotterPackBase(items),
     // Only what DIFFERS from the runner's defaults — a line restated here reads
     // as a deliberate pedagogic choice, so a byte-identical one is noise.
     statusLines: {

@@ -35,6 +35,9 @@ import {
   itemCue,
   itemFromChallenge,
   itemsFromChallenges,
+  leakExemptSpanFor,
+  letterSpotterHarnessAnswers,
+  letterSpotterPackBase,
   moveOnCue,
   pronounceCue,
   responseClassFor,
@@ -47,6 +50,7 @@ import {
 import {
   findSentinelCollisions,
   spokenSpanOf,
+  spokenSpansOf,
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
 import {
@@ -112,17 +116,14 @@ const MATCH = build(MATCH_RAW);
 
 const ITEMS: LetterSpotterItem[] = [SPOT, FIND, MATCH];
 
-/** The pack exactly as the component assembles it. */
-const pack: JudgedScriptPack<LetterSpotterItem> = {
-  primitiveType: 'letter-spotter',
-  activityLine: 'live direct instruction letter spotting practice',
-  items: ITEMS,
-  itemCue,
-  moveOnCue,
-  completeCue,
-  pronounceCue,
-  contextFor: (item) => ({ challengeType: item.mode, stimulus: stimulusFor(item) }),
-};
+/**
+ * The pack exactly as the component assembles it — the EXPORTED surface, not a
+ * copy of it. This file carried a hand-rolled literal from birth, which is the
+ * drift 19f found on both sides of this pack's wire (a sayable-length bound of
+ * 90 one side and 100 the other). Anything the tutor can be told now has one
+ * address, and the DI drive harness reads the same bytes.
+ */
+const pack: JudgedScriptPack<LetterSpotterItem> = letterSpotterPackBase(ITEMS);
 
 /** The line the tutor actually SPEAKS — the shared parser, which is anchored on
  *  every hand-over phrasing the family ships: `tapVerdictCue` quotes the tapped
@@ -350,6 +351,35 @@ describe('letter-spotter pack · build gates', () => {
     })).toBeNull();
   });
 
+  it('drops a name-it word whose first LETTER does not spell its first SOUND', () => {
+    // LIVE PROBE (2026-08-16, 19h-i-b port 6): "Say the letter that sheep
+    // starts with", answer key S. Every gate above passed it — the word leads
+    // with the target letter — but the ask one line earlier says "listen for
+    // the sound at the very start of the word", and /ʃ/ is not what `s`
+    // spells. Affirming S there teaches a false mapping inside the primitive
+    // whose job is to make it true.
+    for (const [letter, word] of [
+      ['s', 'sheep'], ['c', 'chair'], ['t', 'think'], ['p', 'phone'],
+      ['k', 'knee'], ['w', 'write'],
+    ] as const) {
+      expect(itemFromChallenge({
+        ...SPOT_RAW, id: `dg-${letter}`, targetLetter: letter, targetWord: word,
+        spokenSentence: `Look at the ${word}.`,
+        sentence: `Look at the ${SPOTTER_EMOJI}${word.slice(1)}.`,
+      })).toBeNull();
+    }
+    // BLENDS SURVIVE — there the first letter does spell the first sound, and
+    // banning them would cost real items to buy nothing. Same for `qu`, which
+    // is only ever taught as one thing.
+    for (const [letter, word] of [['g', 'grass'], ['s', 'stop']] as const) {
+      expect(itemFromChallenge({
+        ...SPOT_RAW, id: `bl-${letter}`, targetLetter: letter, targetWord: word,
+        spokenSentence: `Look at the ${word}.`,
+        sentence: `Look at the ${SPOTTER_EMOJI}${word.slice(1)}.`,
+      })).not.toBeNull();
+    }
+  });
+
   it('drops a name-it sentence holding the word twice (the answer stays spelled out)', () => {
     expect(itemFromChallenge({
       ...SPOT_RAW,
@@ -470,9 +500,9 @@ describe('letter-spotter pack · support tier', () => {
 
   it('easy hands over model + guide, medium the model only, hard nothing', () => {
     expect(line('easy')).toContain('Listen for the sound at the very start of the word.');
-    expect(line('easy')).toContain('I will say the word on its own after the sentence.');
+    expect(line('easy')).toContain('Then you will hear the word on its own.');
     expect(line('medium')).toContain('Listen for the sound at the very start of the word.');
-    expect(line('medium')).not.toContain('I will say the word on its own');
+    expect(line('medium')).not.toContain('hear the word on its own');
     expect(line('hard')).not.toContain('Listen for the sound at the very start');
   });
 
@@ -489,7 +519,7 @@ describe('letter-spotter pack · support tier', () => {
     for (const tier of TIERS) {
       const repeat = spokenLine(itemCue(build(SPOT_RAW, tier)));
       expect(repeat).not.toContain('Listen for the sound at the very start');
-      expect(repeat).not.toContain('I will say the word on its own');
+      expect(repeat).not.toContain('hear the word on its own');
       // The QUESTION is never withdrawn with it.
       expect(repeat).toContain('I see an ant walk away.');
     }
@@ -535,7 +565,7 @@ describe('letter-spotter pack · session frame', () => {
   it('the opening cue has ONE job: greeting + how-to-play + ask in the quoted line', () => {
     const opening = spokenLine(itemCue(SPOT, { opening: true, howToPlay: true }));
     expect(opening).toContain('Hi! Time to go letter spotting!');
-    expect(opening).toContain('is hiding the first letter of a word');
+    expect(opening).toContain('is hiding the first letter of the word');
     expect(opening).toContain('Say the letter that ant starts with.');
     // The how-to-play must ask for the same thing the ask does. It told the
     // child to "tap the letter it is hiding" for a whole port while the answer
@@ -597,7 +627,165 @@ describe('letter-spotter pack · session frame', () => {
     // changed every item: "the ⭐", "the 🌟", "the crystal ball", "the diamond",
     // "the target" — five names for one slot inside two minutes.
     expect(SPOTTER_EMOJI).toBe('⭐');
-    expect(spokenLine(itemCue(SPOT, { howToPlay: true }))).toContain('A star is hiding');
+    expect(spokenLine(itemCue(SPOT, { howToPlay: true }))).toContain('The star is hiding');
+  });
+});
+
+// ── 6b. The wire: what the DI drive harness reads ───────────────────────────
+
+describe('letter-spotter pack · the DI wire', () => {
+  /**
+   * The harness's leak scan, byte for byte: lowercase, strip everything that is
+   * not a letter/digit/space, then `\b<token>\b` (run_tutor_live.py `_norm`).
+   * Re-implemented rather than described, because the whole point of this
+   * describe is that the two sides agree.
+   */
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/[*_`]/g, '').replace(/[^a-z0-9 ]+/g, ' ').trim();
+  const scanFinds = (spoken: string, token: string, exempt?: string) => {
+    let scanned = norm(spoken);
+    const span = exempt ? norm(exempt) : '';
+    if (span && scanned.includes(span)) scanned = scanned.replace(span, ' ');
+    return new RegExp(`\\b${norm(token)}\\b`).test(scanned);
+  };
+
+  it('gives every cue the NEVER_PERFORM tail (item 21)', () => {
+    // The weaker "never read bracket tags aloud" is what this pack shipped
+    // under when it fabricated an [LSP_TAP] message and read it out — tag,
+    // instructions and all. The tail forbids announcing the STATE, not just
+    // reading the tag, which is the version with a measured before/after.
+    const tail = 'never announce that you are waiting or listening';
+    for (const item of ITEMS) {
+      expect(itemCue(item, { opening: true, howToPlay: true })).toContain(tail);
+      expect(tapVerdictCue(item, 'z')).toContain(tail);
+      expect(moveOnCue(item, SPOT_N, { howToPlay: true })).toContain(tail);
+      expect(pronounceCue(item)).toContain(tail);
+    }
+  });
+
+  it('states the TWO-BRANCH LAW before the branches (18d, script side)', () => {
+    // The catalog rungs are fixed too; this is the same channel closed where a
+    // model that improvises past the catalog reads it. Gesture items get the
+    // silence contract instead — nothing is owed until the tap is described.
+    const cue = itemCue(SPOT);
+    expect(cue).toContain('A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all');
+    expect(cue.indexOf('no scaffolding line')).toBeLessThan(cue.indexOf('If the answer is right'));
+    expect(itemCue(FIND)).not.toContain('no scaffolding line');
+  });
+
+  it('the leak oracle is FLAT for 24 letters and exempts a span for the other 2', () => {
+    // The one-character answer, and the reason two of our own lines were
+    // reworded rather than exempted: the harness scans lowercased text, so a
+    // target of `a` or `i` collides with the article and the pronoun. After the
+    // rewording the ONLY collision left is inside the generated sentence.
+    for (const letter of ['a', 'i']) {
+      const item = build({
+        ...SPOT_RAW, id: `lsp-${letter}`, targetLetter: letter,
+        targetWord: letter === 'a' ? 'ant' : 'ink',
+        spokenSentence: letter === 'a' ? 'I can see a big ant.' : 'I can see the ink.',
+        sentence: `x${SPOTTER_EMOJI}x`,
+      }, 'easy');
+      expect(leakExemptSpanFor(item)).toBe(item.spokenSentence);
+      // Without the exemption the ask trips; with it, it does not.
+      const ask = spokenLine(itemCue(item, { opening: true, howToPlay: true }));
+      expect(scanFinds(ask, letter)).toBe(true);
+      expect(scanFinds(ask, letter, leakExemptSpanFor(item))).toBe(false);
+    }
+    // Every other letter needs no exemption at all — and would not get one.
+    const clean = build({ ...SPOT_N_RAW }, 'easy');
+    expect(leakExemptSpanFor(clean)).toBeUndefined();
+    expect(scanFinds(spokenLine(itemCue(clean, { opening: true, howToPlay: true })), 'n')).toBe(false);
+    // match-it's own prose is flat for EVERY letter, exemption or not: the
+    // rewritten model line is why, and it is the reason this mode issues none.
+    for (const letter of ['a', 'i', 's']) {
+      const m = build({ ...MATCH_RAW, id: `m-${letter}`, targetLetter: letter, options: [letter, 'z', 'w', 'k'] }, 'easy');
+      expect(leakExemptSpanFor(m)).toBeUndefined();
+      expect(scanFinds(spokenLine(itemCue(m, { opening: true, howToPlay: true })), letter)).toBe(false);
+    }
+  });
+
+  it('hands the harness the contract\'s OWN named miss as the signature wrong', () => {
+    const answers = letterSpotterHarnessAnswers(SPOT);
+    expect(answers.correct).toBe('A');
+    expect(answers.signatureWrong?.text).toBe('ant');
+    // The claim and the contract have to be the same claim.
+    expect(itemCue(SPOT)).toContain('Saying the WORD "ant" back is NOT an answer');
+    expect(answers.plainWrong).not.toBe('A');
+    expect(answers.leakTokens).toEqual(['a']);
+  });
+
+  it('gives the tap modes a REAL wrong tap and find-it no leak tokens', () => {
+    const find = letterSpotterHarnessAnswers(FIND);
+    // A cell the grid actually holds — the verdict cue describes what the stage
+    // can render, never an invented letter.
+    expect(FIND.letterGrid).toContain(find.tapped!.wrong.toUpperCase());
+    expect(find.tapped!.wrong).not.toBe(FIND.targetLetter);
+    // find-it's answer is a POSITION the tutor is never told. Not an oracle
+    // switched off — a leak class with nothing to leak.
+    expect(find.leakTokens).toEqual([]);
+
+    const match = letterSpotterHarnessAnswers(MATCH);
+    expect(MATCH.options).toContain(match.tapped!.wrong);
+    expect(match.leakTokens).toEqual(['s']);
+  });
+
+  it('the cue surface is what the plan builder reads: ask, affirm, correction', () => {
+    // spokenSpansOf splits a voice cue into exactly those three, in that order
+    // — the shape diDrivePlan binds askLine/affirmLine/correctionLine from. A
+    // gesture item legitimately carries only the ask.
+    expect(spokenSpansOf(itemCue(SPOT))).toHaveLength(3);
+    expect(spokenSpansOf(itemCue(FIND))).toHaveLength(1);
+    expect(pack.primitiveType).toBe('letter-spotter');
+    expect(pack.contextFor(FIND)).toEqual({
+      challengeType: 'find-it',
+      stimulus: 'the letter P, hidden in a grid of sixteen letters',
+    });
+  });
+});
+
+// ── 6c. The session invariant — a leak no single item can commit ────────────
+
+describe('letter-spotter pack · one letter, answered once', () => {
+  it('drops a name-it item whose letter an earlier find-it already said aloud', () => {
+    // find-it NAMES its target ("Find the letter P") because the letter is its
+    // stimulus there. A later name-it item answering P has had its answer
+    // spoken, unearned, as another item's question — and neither item is wrong
+    // on its own, which is why no per-item gate can see it.
+    const kept = itemsFromChallenges([
+      FIND_RAW,                                            // says "P" out loud
+      { ...SPOT_RAW, id: 'lsp-p', targetLetter: 'p', targetWord: 'pan',
+        spokenSentence: 'Look at the pan.', sentence: `Look at the ${SPOTTER_EMOJI}an.` },
+      MATCH_RAW,
+    ]);
+    expect(kept.map((i) => i.id)).toEqual(['lsp-2', 'lsp-3']);
+  });
+
+  it('drops a SECOND item answering a letter the tutor has already affirmed', () => {
+    // An item always closes on an affirmation or a capped move-on, and both
+    // name the letter ("Yes, ant starts with A."), so a second `a` item is
+    // answered from memory of the first rather than from the sound of its word.
+    const kept = itemsFromChallenges([
+      SPOT_RAW,
+      { ...SPOT_RAW, id: 'lsp-a2', targetWord: 'apple', spokenSentence: 'Look at the apple.',
+        sentence: `Look at the ${SPOTTER_EMOJI}pple.` },
+      { ...MATCH_RAW, id: 'lsp-am', targetLetter: 'a', options: ['a', 's', 'n', 't'] },
+    ]);
+    expect(kept.map((i) => i.id)).toEqual(['lsp-1']);
+  });
+
+  it('lets find-it repeat a letter freely — its answer is a position', () => {
+    const kept = itemsFromChallenges([
+      FIND_RAW,
+      { ...FIND_RAW, id: 'lsp-2b' },
+      { ...FIND_RAW, id: 'lsp-2c' },
+    ]);
+    expect(kept).toHaveLength(3);
+  });
+
+  it('keeps a full session of distinct letters untouched (the revert-bite)', () => {
+    // The gate must not be paying for itself with real items: an ordinary
+    // session, where the generator honoured the prompt, loses nothing.
+    expect(itemsFromChallenges([SPOT_RAW, FIND_RAW, MATCH_RAW, SPOT_N_RAW])).toHaveLength(4);
   });
 });
 
@@ -624,6 +812,30 @@ describe('letter-spotter catalog · DI frame', () => {
     }
     // The re-read order that made one item play 2-4 times is gone with them.
     expect(prose.toLowerCase()).not.toContain('re-read the sentence');
+  });
+
+  it('18d: no rung and no struggle answers an ATTEMPT with a re-spoken ask', () => {
+    // A re-spoken ask opens with neither "Yes" nor "My turn:", so the reducer
+    // records no verdict, the correction counter freezes and the child waits.
+    // Both level rungs said exactly that; the fourth struggle row said worse,
+    // that "only a touch is an answer here" — in the one direction where a
+    // spoken letter IS the answer, that is a tutor sitting silent on a correct
+    // one. Censused by MEANING: the phrase "say the question again" is only
+    // this defect's most common costume.
+    const rungs = Object.values(entry.tutoring?.scaffoldingLevels ?? {});
+    expect(rungs).toHaveLength(3);
+    for (const rung of rungs) {
+      expect(rung).toContain('scripted correction line');
+      expect(rung.toLowerCase()).not.toMatch(/say the question (once more|again)/);
+    }
+    const struggles = entry.tutoring?.commonStruggles ?? [];
+    const spoken = struggles.find((s) => /says a letter out loud/i.test(s.pattern));
+    expect(spoken?.response).toContain('IS the answer there');
+    // The "goes quiet" shape is NOT this defect and must not be swept up with
+    // it: silence is not an attempt, so no verdict is owed and a re-spoken ask
+    // is the right move.
+    const quiet = struggles.find((s) => /goes quiet/i.test(s.pattern));
+    expect(quiet?.response).toContain('say the question one more time');
   });
 
   it('keeps every eval mode identity through the port', () => {
