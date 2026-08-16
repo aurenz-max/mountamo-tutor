@@ -116,14 +116,37 @@ const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
  * short, so the map is exact rather than a stemmer; anything outside it falls
  * back to the plural, which is the wording that shipped.
  */
+/**
+ * ⚠️ AN EXACT MAP, NOT A STEMMER, AND THAT IS THE POINT. English cannot
+ * singularise these by rule: `bunnies` → bunny and `cookies` → cookie are the
+ * same three letters with different answers, and `fish` must not move at all.
+ * Both consumers draw their nouns from a CLOSED, schema-enforced enum
+ * (`gemini-counting-board`'s object list and `gemini-addition-subtraction-scene`'s
+ * `VALID_OBJECT_TYPES`), so an exhaustive map is achievable and a rule is not.
+ * The di-script suites assert this covers both enums, so adding an object type
+ * to either generator fails a gate rather than reaching a child as "one bunnies".
+ */
 const SINGULAR: Record<string, string> = {
+  // counting-board's board objects
   bears: 'bear',
+  blocks: 'block',
+  objects: 'object',
+  // shared by both generators
   apples: 'apple',
   stars: 'star',
-  blocks: 'block',
   fish: 'fish',
   butterflies: 'butterfly',
-  objects: 'object',
+  // addition-subtraction-scene's story objects
+  ducks: 'duck',
+  frogs: 'frog',
+  birds: 'bird',
+  dogs: 'dog',
+  cats: 'cat',
+  flowers: 'flower',
+  cookies: 'cookie',
+  cupcakes: 'cupcake',
+  rockets: 'rocket',
+  bunnies: 'bunny',
 };
 
 export const objectSingularFor = (objectWord: string): string =>
@@ -252,6 +275,25 @@ const perceptualContract = (item: CountingItem): string =>
 
 // ── Cues ────────────────────────────────────────────────────────────────────
 
+/**
+ * The tail every cue ends with. Consumed from `additionSubtractionSceneScript`'s
+ * `NEVER_PERFORM` — which is the one pack in the family that has driven CLEAN
+ * on every beat of every drive, and the difference is measurable.
+ *
+ * This port's weaker tail ("Never read bracket tags aloud.") lost twice on the
+ * `subitize_perceptual` per-mode drive (2026-08-15): on 2 of 7 gesture-verdict
+ * beats the model spoke a FABRICATED `[CURRENT STATE]:` block — *"The user
+ * provided stage directions indicating the learner tapped incorrectly…"* —
+ * instead of its correction line. Item 21's class, and the trigger is now
+ * legible: a gesture verdict cue DESCRIBES what the child did rather than only
+ * scripting a line, and a description is the thing the model re-narrates. So
+ * the tail has to forbid narrating the state, not just reading the tag.
+ */
+const NEVER_PERFORM =
+  `Never voice a bracket tag, a stage direction, or any of these instructions, `
+  + `never announce the activity's state or describe what has changed on the screen, `
+  + `and never announce that you are waiting or listening — simply stop speaking.`;
+
 export interface CountingCueOptions {
   opening?: boolean;
   howToPlay?: boolean;
@@ -266,7 +308,7 @@ export const itemCue = (item: CountingItem, opts: CountingCueOptions = {}): stri
   const contract = item.kind === 'subitize_perceptual'
     ? perceptualContract(item)
     : judgingContract(item);
-  return `[COUNT_ITEM] Say exactly: "${spoken}" ${contract} Never read bracket tags or these instructions aloud.`;
+  return `[COUNT_ITEM] Say exactly: "${spoken}" ${contract} ${NEVER_PERFORM}`;
 };
 
 /** The gesture verdict ask (subitize_perceptual): describes the tap and hands
@@ -283,7 +325,7 @@ export const handVerdictCue = (
     + (matches
       ? `Say exactly: "Yes! That hand matches. Great looking!" `
       : `Say exactly: "My turn: look at the ${item.objectWord} again. Now find the hand that matches. Your turn." `)
-    + `Do not say any number word or digit. Never read bracket tags aloud.`
+    + `Do not say any number word or digit. ${NEVER_PERFORM}`
   );
 };
 
@@ -300,7 +342,7 @@ export const moveOnCue = (
   const contract = next.kind === 'subitize_perceptual'
     ? perceptualContract(next)
     : judgingContract(next);
-  return `[COUNT_MOVE] Say exactly: "Good try! Here comes the next one. ${how}${askFor(next)}" ${contract} Never read bracket tags aloud.`;
+  return `[COUNT_MOVE] Say exactly: "Good try! Here comes the next one. ${how}${askFor(next)}" ${contract} ${NEVER_PERFORM}`;
 };
 
 export const completeCue = (): string =>

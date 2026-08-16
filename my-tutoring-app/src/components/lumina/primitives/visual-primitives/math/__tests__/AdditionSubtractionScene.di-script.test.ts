@@ -38,6 +38,7 @@ import {
   answerKindFor,
   completeCue,
   equationFaultOf,
+  equationSpoken,
   equationVerdictCue,
   isSayableAnswer,
   itemCue,
@@ -64,9 +65,9 @@ import {
   checkPackGates,
 } from '../../../../hooks/judgedScriptContract.testkit';
 import { MATH_CATALOG } from '../../../../service/manifest/catalog/math';
-import { fallbackFor } from '../../../../service/math/gemini-addition-subtraction-scene';
+import { fallbackFor, VALID_OBJECT_TYPES } from '../../../../service/math/gemini-addition-subtraction-scene';
 import { DI_PORTS } from '../../../../service/qa/di/diDrivePlan';
-import { numberWordFor } from '../countingBoardScript';
+import { numberWordFor, objectSingularFor } from '../countingBoardScript';
 
 // ── Fixtures — one item per mode × band, session-shaped ─────────────────────
 
@@ -737,5 +738,65 @@ describe('the two-branch law (cap-drill finding, 2026-08-15 — 19h-i-f, 2nd por
     const prose = JSON.stringify(CATALOG_ENTRY.tutoring);
     expect(prose).not.toContain('Take your time. Look at the picture.');
     expect(prose).not.toContain('Think about what happened in the story"');
+  });
+});
+
+describe('the verdict lines agree in number with a scene of ONE (act_out drive, 2026-08-15)', () => {
+  const one = build({
+    ...ACT_OUT_SUB, id: 'one-left', startCount: 3, changeCount: 2, resultCount: 1,
+    objectType: 'bunnies', storyText: '3 bunnies sit in the grass. 2 bunnies hop away.',
+  }, K);
+
+  it('the SCENE verdict says "One bunny", never "One bunnies"', () => {
+    const spoken = spokenLine(sceneVerdictCue(one, 1));
+    expect(spoken).toContain('One bunny.');
+    expect(spoken).not.toContain('One bunnies');
+  });
+
+  it('the SPOKEN affirm tail agrees too', () => {
+    const voiceOne = build({
+      ...ACT_OUT_SUB, id: 'one-voice', startCount: 3, changeCount: 2, resultCount: 1,
+      objectType: 'bunnies', storyText: '3 bunnies sit in the grass. 2 bunnies hop away.',
+    }, G1);
+    expect(itemCue(voiceOne, {})).toContain('"Yes, one bunny left."');
+  });
+
+  it('plurals are untouched above one', () => {
+    expect(spokenLine(sceneVerdictCue(ACT_OUT_K, 3))).toContain('Three ducks.');
+  });
+});
+
+describe('the singular map stays exhaustive over the generator vocabulary', () => {
+  it('every VALID_OBJECT_TYPE has a singular form, or a scene of one misspeaks', () => {
+    // The map cannot be a stemmer (bunnies->bunny vs cookies->cookie), so the
+    // only thing that keeps it honest is this gate: add an object type to the
+    // generator enum without a singular and this fails, instead of a child
+    // hearing "Yes! One bunnies."
+    const missing = VALID_OBJECT_TYPES.filter((noun) => objectSingularFor(noun) === noun && noun !== 'fish');
+    expect(missing).toEqual([]);
+  });
+});
+
+describe('create-story: the EQUATION is the stimulus, so it is the exempt span', () => {
+  it('exempts the spoken equation, not the (empty) situation', () => {
+    // The build gate's own words: "The equation IS the prompt here: everything
+    // is public and there is no story to gate." The create_story drive filed 5
+    // di-answer-leak-in-ask HIGHs against that design (2026-08-15) — the oracle
+    // was missing the mode, the pack was not leaking.
+    const answers = addSubHarnessAnswers(CREATE_STORY);
+    expect(answers.leakExemptSpan).toBe(equationSpoken(CREATE_STORY));
+    expect(answers.leakExemptSpan).toContain(numberWordFor(CREATE_STORY.answer));
+    // And the ask really does speak it, which is what makes the exemption honest.
+    expect(spokenLine(itemCue(CREATE_STORY, {}))).toContain(equationSpoken(CREATE_STORY));
+  });
+
+  it('the exemption is scoped to that span — the rest of the ask is still governed', () => {
+    const ask = spokenLine(itemCue(CREATE_STORY, {}));
+    const outside = ask.replace(equationSpoken(CREATE_STORY), ' ');
+    expect(outside.toLowerCase()).not.toContain(numberWordFor(CREATE_STORY.answer));
+  });
+
+  it('story modes still exempt their SITUATION, not an equation', () => {
+    expect(addSubHarnessAnswers(SOLVE_K).leakExemptSpan).toBe(SOLVE_K.situation);
   });
 });

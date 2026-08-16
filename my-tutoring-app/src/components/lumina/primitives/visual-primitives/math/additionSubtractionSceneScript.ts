@@ -119,7 +119,7 @@ import type {
   ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
 import { opensWithSentinel } from '../../../hooks/judgedScriptContract';
-import { countWalk, numberWordFor } from './countingBoardScript';
+import { countedNoun, countWalk, numberWordFor } from './countingBoardScript';
 
 export type AddSubItemKind = 'act-out' | 'build-equation' | 'solve-story' | 'create-story';
 export type AddSubBand = 'K' | '1';
@@ -175,7 +175,7 @@ const WALK_CEILING = 10;
 
 /** "three plus two equals five" — the equation, spoken. The numerals stay off
  *  the tutor's tongue everywhere in this pack. */
-const equationSpoken = (item: Pick<AddSubSceneItem, 'operation' | 'startCount' | 'changeCount' | 'resultCount'>): string =>
+export const equationSpoken = (item: Pick<AddSubSceneItem, 'operation' | 'startCount' | 'changeCount' | 'resultCount'>): string =>
   `${numberWordFor(item.startCount)} ${item.operation === 'addition' ? 'plus' : 'take away'} `
   + `${numberWordFor(item.changeCount)} equals ${numberWordFor(item.resultCount)}`;
 
@@ -550,9 +550,12 @@ const affirmTailFor = (item: AddSubSceneItem): string => {
   if (item.kind === 'solve-story' && item.unknownPosition === 'start') {
     return `${answerWord} at the start`;
   }
+  // countedNoun, not answerWord + objectType — a scene of ONE is reachable on
+  // every subtraction story, and "Yes, one ducks left." is the same defect the
+  // act_out drive caught in `sceneVerdictCue` (2026-08-15).
   return item.operation === 'addition'
-    ? `${answerWord} ${item.objectType} now`
-    : `${answerWord} ${item.objectType} left`;
+    ? `${countedNoun(item.answer, item.objectType)} now`
+    : `${countedNoun(item.answer, item.objectType)} left`;
 };
 
 /**
@@ -644,8 +647,14 @@ export const sceneVerdictCue = (item: AddSubSceneItem, placed: number): string =
   const head =
     `[ASS_SCENE] The learner's picture ended with ${placed} ${item.objectType}; the story needs ${item.answer} — `
     + `that ${matches ? 'MATCHES' : 'does NOT match'}. `;
+  // `countedNoun` and not `numberWordFor` + objectType: a scene of ONE is
+  // reachable on every subtraction story, and the act_out drive (2026-08-15)
+  // caught this line saying "Yes! One bunnies. You acted out the story!" to a
+  // five-year-old. The module docblock already claims the directive builders
+  // are noun-free "so a count of one cannot produce 'bring one more ducks'" —
+  // that care was taken on the ASK and never reached the VERDICT.
   const line = matches
-    ? `Say exactly: "Yes! ${cap(numberWordFor(item.answer))} ${item.objectType}. ${item.kind === 'create-story' ? 'You made the story!' : 'You acted out the story!'}" `
+    ? `Say exactly: "Yes! ${cap(countedNoun(item.answer, item.objectType))}. ${item.kind === 'create-story' ? 'You made the story!' : 'You acted out the story!'}" `
     : `Say exactly: "${correctionFor(item)}" `;
   return `${head}${line}Never read bracket tags aloud.`;
 };
@@ -809,8 +818,20 @@ export const addSubHarnessAnswers = (item: AddSubSceneItem): AddSubHarnessAnswer
   const wrongValue = item.answer > SPOKEN_ANSWER_MIN ? item.answer - 1 : item.answer + 1;
   const publicValues = publicValuesFor(item);
   const leakTokens = publicValues.includes(item.answer) ? [] : [answerWord];
-  // The story is spoken inside the ask and may state its own operands.
-  const leakExemptSpan = item.situation || undefined;
+  // The stimulus is spoken inside the ask and may legitimately contain the
+  // answer (story-talk's mechanism, second use). Two different spans here:
+  //   - every story mode: the SITUATION, which states its public operands;
+  //   - `create-story`: the EQUATION, because it IS the prompt — this module's
+  //     build gate says so ("everything is public and there is no story to
+  //     gate"), so the result the child must build is necessarily spoken. The
+  //     create_story drive (2026-08-15) filed 5 HIGHs for exactly this, and
+  //     they were the oracle missing a mode, not the pack leaking.
+  // Subtracting the span keeps the scan STRONGER than emptying `leakTokens`:
+  // the answer named in the greeting, the how-to-play or the hand-over is
+  // still a HIGH.
+  const leakExemptSpan = item.kind === 'create-story'
+    ? equationSpoken(item)
+    : item.situation || undefined;
 
   const base: AddSubHarnessAnswers = {
     correct: answerWord,

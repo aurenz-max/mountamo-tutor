@@ -22,7 +22,10 @@ import {
 // Valid object types — must match OBJECT_EMOJI in AdditionSubtractionScene.tsx
 // ---------------------------------------------------------------------------
 
-const VALID_OBJECT_TYPES = [
+/** The story-object vocabulary, schema-enforced. EXPORTED so the judged pack's
+ *  singular map can be asserted exhaustive over it: an object added here must
+ *  gain a singular form, or a scene of one says "Yes! One bunnies." */
+export const VALID_OBJECT_TYPES = [
   'ducks', 'frogs', 'apples', 'birds', 'fish',
   'butterflies', 'dogs', 'cats', 'stars', 'flowers',
   'cookies', 'cupcakes', 'rockets', 'bunnies',
