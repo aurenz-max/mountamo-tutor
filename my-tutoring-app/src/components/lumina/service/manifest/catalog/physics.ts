@@ -109,12 +109,25 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     ],
     audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'LIVE-JUDGED forces practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD, you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Object: {{objectName}} on {{surface}}. The correct spoken answer: {{expectedAnswer}}.',
-      contextKeys: ['challengeType', 'objectName', 'surface', 'expectedAnswer'],
+      // The answer used to live in this sentence ("The correct spoken answer:
+      // {{expectedAnswer}}."), which held it in the persistent state block for
+      // the whole session while the child was still being asked for it. The
+      // per-turn judging contract inside each cue names the answer, scoped to
+      // the turn that needs it; the state block carries the STIMULUS only.
+      taskDescription: 'LIVE-JUDGED forces practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD, you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Object: {{objectName}} on {{surface}}. In the arena right now: {{stimulus}}.',
+      contextKeys: ['challengeType', 'objectName', 'surface', 'stimulus'],
+      // 18d: a rung that quotes a SPEAKABLE line is a third reply channel. On
+      // repeat wrong answers the model speaks the rung verbatim; it opens with
+      // neither sentinel, so the loop records `di-no-verdict` and the correction
+      // counter freezes with the child waiting. Level 3 was the worst kind —
+      // "Tap Go and watch closely. Then tell me." is the observe how-to-play
+      // almost word for word, so the model had a fluent, on-topic, sentinel-less
+      // line pre-approved. The pedagogy is good and survives; it now routes
+      // through the correction, which already opens "My turn:".
       scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name the answer.',
-        level2: 'Point the child at the evidence in one short sentence — "Watch which way it goes" — without naming the force word or outcome.',
-        level3: 'Invite one look together: "Tap Go and watch closely. Then tell me." Still never name the answer.',
+        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already models the physics idea and re-asks — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a look-at-the-evidence hint or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
       },
       commonStruggles: [
         { pattern: 'Describes the motion without committing to an answer word', response: 'The scripted ask names the two choices — re-speak it once and wait. The judging happens on the answer word.' },
@@ -128,10 +141,13 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
             + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
         },
         {
-          title: 'SENTINEL DISCIPLINE',
+          title: 'SENTINEL DISCIPLINE — AND YOUR WHOLE REPLY IS ONE OF TWO LINES',
           instruction:
             'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
+            + 'Never begin any other sentence with either opener. Your whole reply to an attempt is ONE of those two '
+            + 'quoted lines and nothing else — not the first time, not any time: no praise, no encouragement, no hint, '
+            + 'no reminder of the method, however kind it would be. A reply that is neither reaches the activity as no '
+            + 'verdict at all, and the child waits.',
         },
         {
           title: 'THE CHILD IS WATCHING PHYSICS — WAIT',
@@ -140,9 +156,11 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
             + 'The cue names the accepted answer words; judge what you heard against them.',
         },
         {
-          title: 'NEVER READ BRACKET TAGS',
+          title: 'NEVER READ BRACKET TAGS OR NARRATE THE SCREEN',
           instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken. '
+            + 'Never announce the activity\'s state or describe what has changed in the arena, and never announce that you '
+            + 'are waiting or listening — simply stop speaking.',
         },
       ],
     },

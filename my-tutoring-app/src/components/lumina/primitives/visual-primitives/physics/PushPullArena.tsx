@@ -54,15 +54,10 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
-  completeCue,
-  designPushSize,
-  headNoun,
-  itemCue,
-  moveOnCue,
-  predictMoves,
-  SURFACE_SPOKEN,
+  itemsFromChallenges,
+  pushPullArenaPackBase,
+  type ArenaChallengeLike,
   type ArenaItem,
-  type ArenaItemKind,
 } from './pushPullArenaScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
@@ -429,42 +424,6 @@ function drawArena(
 // Main Component
 // =============================================================================
 
-const ACTION_FOR_KIND: Record<ArenaItemKind, string> = {
-  observe: 'watch',
-  predict: 'predict',
-  compare: 'compare',
-  design: 'experiment',
-};
-
-/** Fallback spoken-answer computation for data generated before the port. */
-function resolveSpokenAnswer(ch: PushPullChallenge): { answer: string; alternates: string[] } {
-  if (ch.spokenAnswer) return { answer: ch.spokenAnswer, alternates: ch.spokenAlternates ?? [] };
-  switch (ch.type) {
-    case 'predict': {
-      const moves = predictMoves(ch.pushStrength ?? 5, ch.objectWeight, ch.surface);
-      return moves
-        ? { answer: 'moves', alternates: ['move', 'it moves', 'it will move', 'yes'] }
-        : { answer: 'stays', alternates: ['stay', 'stay still', 'it stays', 'no'] };
-    }
-    case 'compare': {
-      const lighter = (ch.object2Weight ?? 99) < ch.objectWeight
-        ? (ch.object2Name ?? ch.objectName)
-        : ch.objectName;
-      return { answer: lighter.toLowerCase(), alternates: [headNoun(lighter)] };
-    }
-    case 'design': {
-      const size = designPushSize(ch.objectWeight, ch.surface);
-      return size === 'big'
-        ? { answer: 'big', alternates: ['a big push', 'strong', 'a strong push', 'hard'] }
-        : { answer: 'little', alternates: ['a little push', 'small', 'gentle', 'soft'] };
-    }
-    default:
-      return ch.pushDirection === 'pull'
-        ? { answer: 'pull', alternates: ['a pull', 'pulling', 'you pulled it'] }
-        : { answer: 'push', alternates: ['a push', 'pushing', 'you pushed it'] };
-  }
-}
-
 export default function PushPullArena({ data, className = '' }: PushPullArenaProps) {
   const {
     title,
@@ -490,41 +449,31 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     });
 
   // ── The pack ─────────────────────────────────────────────────────
-  const items = useMemo<ArenaItem[]>(() =>
-    challenges.map((ch) => {
-      const { answer, alternates } = resolveSpokenAnswer(ch);
-      return {
-        id: ch.id,
-        kind: ch.type,
-        answerKind: 'voice' as const,
-        responseClass: 'short_spoken_word' as const,
-        action: ACTION_FOR_KIND[ch.type],
-        objectName: ch.objectName,
-        object2Name: ch.object2Name,
-        surfaceSpoken: SURFACE_SPOKEN[ch.surface],
-        strength: ch.pushStrength ?? 5,
-        direction: ch.pushDirection ?? 'push',
-        spokenAnswer: answer,
-        alternates,
-      };
-    }),
+  // ONE builder, shared with the headless DI harness — and it now GATES: a
+  // challenge whose answer is not decisive (a predict sitting on the friction
+  // boundary, a compare whose two objects weigh the same, a design inside
+  // `designPushSize`'s murky band) is dropped rather than asked.
+  const items = useMemo<ArenaItem[]>(
+    () => itemsFromChallenges(challenges as ArenaChallengeLike[]),
     [challenges],
   );
 
+  /**
+   * Items can now DROP, so nothing may bind a challenge by position again:
+   * `challenges[runner.currentIndex]` counts challenges while the runner's index
+   * counts items, and one dropped item slides the arena one object out of step
+   * with the ask for the rest of the run. Bind by id.
+   */
+  const challengeById = useMemo(() => {
+    const map = new Map<string, PushPullChallenge>();
+    for (const ch of challenges) map.set(ch.id, ch);
+    return map;
+  }, [challenges]);
+
   const pack = useMemo<JudgedScriptPack<ArenaItem>>(() => ({
-    primitiveType: 'push-pull-arena',
-    activityLine: 'live direct instruction pushes-and-pulls practice',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    contextFor: (item) => ({
-      challengeType: item.kind,
-      objectName: item.objectName,
-      surface: item.surfaceSpoken,
-      expectedAnswer: item.spokenAnswer,
-    }),
-    // Only what DIFFERS from the runner's defaults.
+    ...pushPullArenaPackBase(items),
+    // Only what DIFFERS from the runner's defaults — and what only a mounted
+    // component can own.
     statusLines: {
       ready: (item) => item.kind === 'observe'
         ? 'Tap Go, watch, then say what you saw.'
@@ -545,7 +494,9 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const metrics: PushPullArenaMetrics = {
       type: 'push-pull-arena',
-      evalMode: challenges[0]?.type,
+      // The mode actually ASKED — a dropped first challenge would otherwise
+      // stamp the evaluation with a mode this run never ran.
+      evalMode: items[0]?.kind,
       challengesCompleted: summary.outcomes.length,
       challengesCorrect: summary.solvedCount,
       totalAttempts: summary.attemptsCount,
@@ -554,7 +505,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
         summary.attemptsCount / Math.max(summary.outcomes.length, 1),
     };
     submitResult(summary.accuracy >= 70, summary.accuracy, metrics);
-  }, [challenges, submitResult]);
+  }, [items, submitResult]);
 
   // ── Canvas & physics state ───────────────────────────────────────
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -620,8 +571,8 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     gradeLevel: 'Kindergarten',
     exhibitId,
     onFinished: handleFinished,
-    onItemOpened: (_item, index) => {
-      const challenge = challenges[index];
+    onItemOpened: (item) => {
+      const challenge = challengeById.get(item.id);
       if (!challenge) return;
       revealRanRef.current = false;
       initPhysics(challenge);
@@ -647,7 +598,9 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     },
   });
 
-  const currentChallenge = challenges[runner.currentIndex] ?? null;
+  const currentChallenge = runner.currentItem
+    ? challengeById.get(runner.currentItem.id) ?? null
+    : null;
   const currentKind = runner.currentItem?.kind;
   const showForceArrows = currentChallenge?.showForceArrows ?? true;
   const showMotionReadout = currentChallenge?.showMotionReadout ?? true;
@@ -683,7 +636,8 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     canvas.height = CANVAS_H * dpr;
     canvas.style.width = `${CANVAS_W}px`;
     canvas.style.height = `${CANVAS_H}px`;
-    if (challenges[0]) initPhysics(challenges[0]);
+    const first = items[0] ? challengeById.get(items[0].id) : undefined;
+    if (first) initPhysics(first);
     const ctx = canvas.getContext('2d');
     if (ctx) drawArena(ctx, physicsRef.current, dpr, showForceArrows, showMotionReadout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -721,11 +675,14 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   // ── Phase summary ────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!hasSubmitted) return [];
-    return phaseResultsFromSummary(challenges, runner.summary, (ch) => {
-      const config = PHASE_TYPE_CONFIG[ch.type] ?? { label: ch.type, icon: '🧲' };
-      return { label: `${config.label} — ${ch.objectName}`, icon: config.icon };
+    // Over ITEMS, not challenges: a challenge the build gate dropped was never
+    // asked, so a summary row for it would report a 0 against a child who was
+    // never shown it.
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
+      const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🧲' };
+      return { label: `${config.label} — ${item.objectName}`, icon: config.icon };
     });
-  }, [hasSubmitted, runner.summary, challenges]);
+  }, [hasSubmitted, runner.summary, items]);
 
   // =============================================================================
   // Render
@@ -755,11 +712,11 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       <LuminaCardContent className="space-y-4">
         {!hasSubmitted && (
           <>
-            {challenges.length > 0 && (
+            {items.length > 0 && (
               <div className="mb-2 flex justify-center">
                 <LuminaChallengeCounter
-                  current={Math.min(runner.currentIndex + 1, challenges.length)}
-                  total={challenges.length}
+                  current={Math.min(runner.currentIndex + 1, items.length)}
+                  total={items.length}
                   variant="dots"
                 />
               </div>

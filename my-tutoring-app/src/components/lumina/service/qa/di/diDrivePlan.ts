@@ -106,6 +106,13 @@ import {
   type WordWorkoutChallengeLike,
   type WordWorkoutItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/wordWorkoutScript';
+import {
+  itemsFromChallenges as pushPullArenaItems,
+  pushPullArenaHarnessAnswers,
+  pushPullArenaPackBase,
+  type ArenaChallengeLike,
+  type ArenaItem,
+} from '@/components/lumina/primitives/visual-primitives/physics/pushPullArenaScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -379,6 +386,38 @@ const additionSubtractionSceneAdapter: DiPortAdapter<AddSubSceneItem> = {
 };
 
 /**
+ * push-pull-arena (the SCIENCE port, 19h-i-b port 3). ALL-VOICE — the child
+ * watches or runs a canvas simulation and answers out loud, so there is no
+ * gesture commit and every item is judged from the answer text.
+ *
+ * What is different about its answer material: every mode closes on a TWO-WORD
+ * SPOKEN MENU, so the answer word is inside the ask by construction. That makes
+ * it the first port where `leakExemptSpan` covers the QUESTION rather than a
+ * stimulus — story-talk subtracts a story it read aloud, this subtracts the menu
+ * it must name. The oracle stays live over the greeting, the how-to-play and the
+ * hand-over, which is what caught predict's how-to-play saying "before anything
+ * moves" on a `moves` item.
+ *
+ * Its signature wrongs are the four ways a child sounds fluent without
+ * answering: describing the motion instead of naming the force, restating the
+ * setup instead of committing, naming the heavier object WITH the
+ * heavier-slides-farther reason, and reporting the experiment instead of the
+ * push size it called for.
+ */
+const pushPullArenaAdapter: DiPortAdapter<ArenaItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as ArenaChallengeLike[];
+    const items = pushPullArenaItems(challenges);
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: pushPullArenaPackBase(items),
+    };
+  },
+  answersFor: pushPullArenaHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -390,6 +429,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'counting-board': countingBoardAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'addition-subtraction-scene':
     additionSubtractionSceneAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'push-pull-arena': pushPullArenaAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

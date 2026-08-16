@@ -20,6 +20,7 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import {
+  DESIGN_SETUPS,
   FRICTION_MU,
   FORCE_SCALE_N,
   designPushSize,
@@ -573,22 +574,21 @@ Vary surfaces across challenges for variety.
       }
 
       if (type === 'design') {
-        // Decisive by construction: big = heavy on carpet (~39N needed),
-        // little = light on ice/wood (≤8N) — see designPushSize's murky band.
-        const wantsBig = challenge.objectWeight >= 5;
-        if (wantsBig) {
-          const heavy = pickObject(Math.max(8, challenge.objectWeight));
-          challenge.objectName = heavy.name;
-          challenge.objectWeight = heavy.weight;
-          challenge.objectEmoji = heavy.emoji;
-          challenge.surface = 'carpet';
-        } else {
-          const light = pickObject(Math.min(2, challenge.objectWeight));
-          challenge.objectName = light.name;
-          challenge.objectWeight = light.weight;
-          challenge.objectEmoji = light.emoji;
-          challenge.surface = surface === 'ice' ? 'ice' : 'wood';
-        }
+        // Decisive AND non-degenerate by construction — walk DESIGN_SETUPS by
+        // position so the object, the surface and the ANSWER all alternate.
+        //
+        // The old branch read `wantsBig` off the LLM's weight and then collapsed
+        // it: `pickObject(Math.max(8, w))` takes the first library object at
+        // that weight, so every draw from 5 to 8 became the Barrel, and big was
+        // pinned to carpet. A live DI probe drew the Barrel on the carpet as
+        // items 2 AND 3 — the same problem asked twice, byte-identical — in a
+        // set that answered "big" three times of four. See DESIGN_SETUPS.
+        const setup = DESIGN_SETUPS[i % DESIGN_SETUPS.length];
+        const designObj = pickObject(undefined, setup.objectName);
+        challenge.objectName = designObj.name;
+        challenge.objectWeight = designObj.weight;
+        challenge.objectEmoji = designObj.emoji;
+        challenge.surface = setup.surface;
         challenge.goalDescription = c.goalDescription || 'Move it all the way across';
         challenge.pushStrength = 5;
         challenge.pushDirection = 'push';
