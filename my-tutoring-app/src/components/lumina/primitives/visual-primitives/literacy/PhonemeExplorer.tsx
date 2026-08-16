@@ -60,14 +60,10 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
-  completeCue,
   hearSoundCue,
   hearWordCue,
-  itemCue,
   itemsFromChallenges,
-  moveOnCue,
-  pronounceCue,
-  stimulusFor,
+  phonemeExplorerPackBase,
   type PhonemeExplorerItem,
 } from './phonemeExplorerScript';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -239,19 +235,11 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     );
   }, [items.length, evaluation]);
 
-  // ── The pack — wording lives in phonemeExplorerScript.ts ──────────────────
+  // ── The pack — the tutor's whole side is `phonemeExplorerPackBase`, spread ─
+  //    from the script module so the DI drive-plan endpoint replays the SAME
+  //    cues this component sends. Only what the SCREEN owns stays here.
   const pack = useMemo<JudgedScriptPack<PhonemeExplorerItem>>(() => ({
-    primitiveType: 'phoneme-explorer',
-    activityLine: 'live direct instruction phoneme awareness practice',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    pronounceCue,
-    contextFor: (item) => ({
-      challengeType: item.kind,
-      stimulus: stimulusFor(item),
-    }),
+    ...phonemeExplorerPackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
       ready: (item) => item.kind === 'segment'

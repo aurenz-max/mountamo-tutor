@@ -52,6 +52,25 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"blend": The tutor says the sounds one at a time and the student SAYS the blended word aloud. `
       + `Set phonemeSequence (array of individual sounds, e.g., ["k","a","t"]), word (the word those `
       + `sounds make, e.g., "cat") and emoji (depicting the word). No choices — the spoken word IS the answer. `
+      // The clause `segment` has always carried, arriving here after a probe
+      // caught the walk being SPELLED rather than sounded: "cow" came back as
+      // ["c","o","w"] and "duck" as ["d","u","c"]. The tutor SPEAKS this array
+      // one sound at a time and the child blends what they hear, so a spelled
+      // sequence asks a question whose answer is not the word — and unlike
+      // segment, where the walk is only a correction scaffold, here the walk IS
+      // the ask and there is nothing to degrade to.
+      + `The array is SOUNDS, not letters: "cow" is 2 sounds ["k","ow"] and "duck" is 3 ["d","u","k"] — `
+      + `never use "c", "q" or "x", which are letters that stand for other sounds (/k/, /s/, /kw/, /ks/) `
+      + `and cannot be said aloud on their own. Blending your array out loud must land exactly on word. `
+      // Root cause, one level up from the spelling: measured over four draws the
+      // model reliably CHOSE "cow" for a farm topic and then spelled it
+      // ["c","o","w"], so the build gate dropped that slot every time (1-2 of 5
+      // per draw, always the same position). Steering the WORD is what actually
+      // stops it — the sounds-not-letters clause alone only fixed the spelling
+      // some of the time.
+      + `PICK WORDS THAT DO NOT CONTAIN c, q or x at all (choose "pig", "hen", "dog", "rat", "duck" over `
+      + `"cow", "cat", "fox", "chick") — a word spelled with one of those letters is the case the model `
+      + `most often spells out instead of sounding out. `
       + `K: 3-phoneme CVC words. Grade 1: 4-phoneme words with blends. Grade 2: 4-5 phoneme words.`,
     schemaDescription: "'blend' (say the word the sounds make)",
   },
@@ -361,7 +380,33 @@ function buildModePlan(allowed: string[], total: number): PhonemeMode[] {
 
 type RawChallenge = Record<string, unknown>;
 
+/**
+ * One mode's challenges, retried once if the first attempt yields nothing.
+ *
+ * The retry is the third leg of the flash-lite template (bound arrays → 8192
+ * tokens → retry+degrade) and this generator only ever had the first two. It
+ * matters more here than the token bump did, because of what an empty pool
+ * COSTS: `generatePhonemeExplorer` falls back to a single hardcoded isolate item
+ * about a Bear and a Ball, so one flaky call turns a five-item lesson on the
+ * requested topic into a one-item lesson on neither. Probe draws of `isolate`
+ * came back 0, 0, 3, 5 and 0 of 5 — the same call, the same prompt, the same
+ * grade. A second attempt is far cheaper than shipping that fallback to a child.
+ */
 async function generateModeChallenges(
+  mode: PhonemeMode,
+  count: number,
+  gradeKey: string,
+  topic: string,
+  intent: string | undefined,
+  remediationFocus: string | undefined,
+): Promise<RawChallenge[]> {
+  const first = await generateModeAttempt(mode, count, gradeKey, topic, intent, remediationFocus);
+  if (first.length > 0) return first;
+  console.warn(`[PhonemeExplorer] ${mode} returned no usable challenges — retrying once`);
+  return generateModeAttempt(mode, count, gradeKey, topic, intent, remediationFocus);
+}
+
+async function generateModeAttempt(
   mode: PhonemeMode,
   count: number,
   gradeKey: string,
@@ -394,7 +439,17 @@ Relate words to the topic "${topic}" when possible, but prioritize phonological 
     config: {
       responseMimeType: "application/json",
       responseSchema: modeSchema(mode, count),
-      maxOutputTokens: 4096,
+      // 8192, not 4096 (the flash-lite truncation template: bound every schema
+      // array, then give the call room). `isolate` is by far the widest payload
+      // in this family — 5 challenges x (4 scalar fields + 4 choices x 3 fields)
+      // — and at 4096 it was running out mid-object. The failure was SILENT and
+      // graded as success: a truncated body fails JSON.parse, `generateModeChallenges`
+      // returns [], every pool comes back empty and `buildFallbackChallenge`
+      // ships a ONE-ITEM activity built on "Bear / Ball, Cat, Dog, Sun" — the
+      // same hardcoded item whatever the topic was. Three probe draws of
+      // `isolate` returned 0, 0 and 3 of the 5 requested; the other three modes,
+      // which carry no `choices` array, were unaffected at 5/5.
+      maxOutputTokens: 8192,
       systemInstruction: SYSTEM_INSTRUCTION,
     },
   });

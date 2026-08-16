@@ -1017,19 +1017,31 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // governed: tier latitude is now IN the scripted ask (enumeration) and
       // the render flags, so there is nothing left for the tutor to decide.
       contextKeys: ['challengeType', 'stimulus'],
-      // Correction territory, not answer territory: every level describes what
-      // happens AFTER an attempt; re-modeling is the scripted correction's job.
+      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16,
+      // 19h-i-b port 5). The defect: a re-spoken ask opens with neither "Yes"
+      // nor "My turn:", so the reducer records no verdict, the correction
+      // counter freezes, and the child waits on a tutor that has already spoken.
+      // ⚠️ THE SWEEP'S CENSUS SAID THIS ENTRY HAD ONE BAD RUNG. It had TWO.
+      // level1 matched the family's "Say the question once more" fingerprint and
+      // was counted; level2's "Say the sounds again" did not match it and was
+      // missed — but on `blend` the sounds ARE the ask, so that rung is the same
+      // re-spoken question wearing this port's vocabulary. A fingerprint census
+      // undercounts wherever a port names its own stimulus.
       scaffoldingLevels: {
-        level1: 'Say the question once more, then wait for them alone.',
-        level2: 'Say the sounds again, slowly and clearly, then wait.',
-        level3: 'Use the scripted correction line for this item, then hand the question back one more time.',
+        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the sound work and asks again — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a slower reading of the sounds, or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
       },
       // Observable behaviours only, with PERFORMABLE responses (script moves a
       // tutor can speak or do — never meta-instructions, which get recited).
       commonStruggles: [
         {
           pattern: 'Says the NAME of a letter instead of a word - "bee" for the letter B',
-          response: 'Treat a letter name as not yet answered: say the sound once more, then ask again for the word.',
+          // 18d, third instance on this entry and the one the rung census cannot
+          // see at all: a letter name IS an attempt, so a verdict is owed, and
+          // "say the sound once more, then ask again" owes none. The other three
+          // rows already routed through the scripted correction.
+          response: 'Treat a letter name as not yet answered: give the scripted correction for this item, which re-models the sound work and asks again.',
         },
         {
           pattern: 'Says the separate sounds without the blended word at the end - "k... a... t" and stops',

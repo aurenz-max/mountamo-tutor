@@ -121,6 +121,13 @@ import {
   type PictureVocabChallengeLike,
   type PictureVocabItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyScript';
+import {
+  itemsFromChallenges as phonemeExplorerItems,
+  phonemeExplorerHarnessAnswers,
+  phonemeExplorerPackBase,
+  type PhonemeChallengeLike,
+  type PhonemeExplorerItem,
+} from '@/components/lumina/primitives/visual-primitives/literacy/phonemeExplorerScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -462,6 +469,43 @@ const pictureVocabularyAdapter: DiPortAdapter<PictureVocabItem> = {
 };
 
 /**
+ * phoneme-explorer (19h-i-b port 5). ALL-VOICE across four modes — the 4-choice
+ * grid was a costume on every one of them — so there is no gesture commit and
+ * every item is judged from the answer text.
+ *
+ * What is different about its answer material: this is the first port whose
+ * answers are not all the same KIND. `segment` answers with a benched number
+ * word ("three") while the other three answer with a short spoken word, so one
+ * session mixes `number_word_to_20` and `short_spoken_word` response classes and
+ * the leak oracle has to hold over both.
+ *
+ * Its `leakExemptSpan` is narrower than any other port's: not the whole ask
+ * (picture-vocabulary) and not a two-word menu (push-pull-arena), but exactly
+ * `isolate`'s four-card enumeration clause — and only at the tiers that read it
+ * aloud, because the hard tier's ask drops the menu and the flat oracle is
+ * correct there. The exemption is issued from the same builder the ask uses.
+ *
+ * Its sharpest drive is `--di-wrong signature` on `isolate`: the signature wrong
+ * is the tutor's OWN EXAMPLE WORD, which genuinely starts with the target sound
+ * and was spoken aloud seconds earlier, so a judge grading against the rule it
+ * just stated ("does it start with mmm?") affirms it. `blend` is the same trap
+ * in the other direction — the separate sounds carry every phoneme of the answer
+ * without landing on the word.
+ */
+const phonemeExplorerAdapter: DiPortAdapter<PhonemeExplorerItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as PhonemeChallengeLike[];
+    const items = phonemeExplorerItems(challenges);
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: phonemeExplorerPackBase(items),
+    };
+  },
+  answersFor: phonemeExplorerHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -475,6 +519,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
     additionSubtractionSceneAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'push-pull-arena': pushPullArenaAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'picture-vocabulary': pictureVocabularyAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'phoneme-explorer': phonemeExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
