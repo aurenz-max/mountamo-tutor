@@ -573,10 +573,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'Working the answer out from the page is the entire skill being practiced, so nothing you say may '
         + 'hand it over first.',
       contextKeys: ['challengeType', 'stimulus'],
+      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16).
+      // Found by the per-rung census run during picture-vocabulary's port
+      // (19h-i-b port 4), NOT by the sweep: interactive-book shipped 2026-08-14,
+      // before 18d's literacy shape was named, so the handoff's table — which
+      // censused only the ports still UNPORTED — could not see it. A shipped
+      // port has been carrying a live no-verdict channel since.
+      // The defect: a re-spoken ask opens with neither "Yes" nor "My turn:", so
+      // the reducer records no verdict, the correction counter freezes, and the
+      // child waits on a tutor that has already spoken.
       scaffoldingLevels: {
-        level1: 'Say the question once more, then wait for them alone.',
-        level2: 'Say the question again slowly and clearly, then wait.',
-        level3: 'Use the scripted correction line for this item, then hand the question back one more time.',
+        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the answer and asks again — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it. On a find item there is no line to speak here: the application sends the verdict to you in an [IB_TAP] message.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a slower reading of the ask, or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
       },
       commonStruggles: [
         {
@@ -1763,10 +1772,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // Correction territory, not answer territory: every level describes what
       // happens AFTER an attempt, and re-modeling is the scripted correction's
       // job (standing gate 3).
+      //
+      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16).
+      // The first two used to read "Say the question once more, then wait for
+      // them alone." / "Say the question again slowly and clearly, then wait."
+      // That reads as restraint and is a NO-VERDICT CHANNEL: a re-spoken ask
+      // opens with neither "Yes" nor "My turn:", so the reducer records no
+      // verdict, the correction counter freezes, and the child waits on a tutor
+      // that has already spoken. Only level3 was ever correct — which is exactly
+      // why a per-ENTRY grep for "scripted correction" reported this entry as
+      // already fixed. Census per RUNG.
       scaffoldingLevels: {
-        level1: 'Say the question once more, then wait for them alone.',
-        level2: 'Say the question again slowly and clearly, then wait.',
-        level3: 'Use the scripted correction line for this item, then hand the question back one more time.',
+        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the word and asks again — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it. On a tap mode there is no line to speak here: the application sends the verdict to you in a [PV_TAP] message.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a slower reading of the ask, or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
       },
       // Observable behaviours only, with PERFORMABLE responses (script moves a
       // tutor can speak or do — never meta-instructions, which get recited).
@@ -1801,7 +1820,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'it. Each carries a judging rule: affirmations must begin with "Yes" and corrections must begin with '
             + '"My turn", using the exact quoted lines. Never begin any other sentence with those words. Judge '
             + 'honestly from the audio: affirm a right answer, correct a wrong or missing one, and do not praise to '
-            + 'be kind. The application decides which word comes next; never introduce one yourself.',
+            + 'be kind. The application decides which word comes next; never introduce one yourself. '
+            + 'YOUR WHOLE REPLY TO AN ATTEMPT IS ONE OF THOSE TWO QUOTED LINES and nothing else — not the first '
+            + 'time, not any time: no praise, no encouragement, no hint, no reminder of the method, no re-spoken '
+            + 'question, however kind it would be. A reply that is neither reaches the activity as no verdict at '
+            + 'all, and the child waits.',
         },
         {
           title: 'THE OPENING LINE ALREADY TEACHES THE GAME',

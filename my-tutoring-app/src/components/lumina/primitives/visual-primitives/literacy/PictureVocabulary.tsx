@@ -53,14 +53,9 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
-  completeCue,
-  itemCue,
-  itemFromChallenge,
-  moveOnCue,
-  pickModelOppositePair,
-  pronounceCue,
+  itemsFromChallenges,
+  pictureVocabularyPackBase,
   scaleSpokenFor,
-  stimulusFor,
   tapVerdictCue,
   type PictureVocabItem,
 } from './pictureVocabularyScript';
@@ -171,12 +166,18 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   const stableInstanceIdRef = useRef(instanceId || `picture-vocabulary-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Items + the code-owned opposite model pair ─────────────────────────────
+  // ── Items ──────────────────────────────────────────────────────────────────
+  // `itemsFromChallenges` is the SAME builder the DI drive-plan endpoint calls,
+  // so the harness and the child drop the same unaskable items. It gates: a tap
+  // mode whose cards do not contain the target, a pair whose two sides are the
+  // same word, a scale whose blanked rung is not the answer, a frame with no
+  // blank or one that speaks its own target. Everything downstream binds to
+  // `items`, never to `challenges` — a dropped challenge is one the child is
+  // never shown, and scoring it would report a 0 against an item that never ran.
   const items = useMemo<PictureVocabItem[]>(
-    () => challenges.map(itemFromChallenge),
+    () => itemsFromChallenges(challenges),
     [challenges],
   );
-  const modelPair = useMemo(() => pickModelOppositePair(items), [items]);
 
   // ── Per-item stage state ───────────────────────────────────────────────────
   /** The tapped card's word (gesture modes) — cleared on retry and item open. */
@@ -199,14 +200,16 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     const metrics: PictureVocabularyMetrics = {
       type: 'picture-vocabulary',
       challengeType: data.challengeType,
-      totalChallenges: challenges.length,
+      // ITEMS: this is IRT evidence, and a gated-out challenge the child was
+      // never asked would deflate accuracy against a denominator that never ran.
+      totalChallenges: items.length,
       correctCount: summary.solvedCount,
       attemptsCount: summary.attemptsCount,
       firstTryCount: summary.firstTryCount,
       hintsViewed: summary.hearTaps,
       overallAccuracy: summary.accuracy,
-      averageAttemptsPerChallenge: challenges.length > 0
-        ? summary.attemptsCount / challenges.length
+      averageAttemptsPerChallenge: items.length > 0
+        ? summary.attemptsCount / items.length
         : 0,
     };
     evaluation.submitResult(
@@ -217,21 +220,15 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [challenges.length, data.challengeType, evaluation]);
+  }, [items.length, data.challengeType, evaluation]);
 
   // ── The pack — wording lives in pictureVocabularyScript.ts ────────────────
   const pack = useMemo<JudgedScriptPack<PictureVocabItem>>(() => ({
-    primitiveType: 'picture-vocabulary',
-    activityLine: 'live direct instruction picture vocabulary practice',
-    items,
-    itemCue: (item, opts) => itemCue(item, opts, { modelPair }),
-    moveOnCue: (item, next, opts) => moveOnCue(item, next, opts, { modelPair }),
-    completeCue,
-    pronounceCue,
-    contextFor: (item) => ({
-      challengeType: item.kind,
-      stimulus: stimulusFor(item),
-    }),
+    // Everything the tutor is ever told comes from the shared cue surface, so
+    // the DI harness cannot drift from what production sends. What stays here
+    // is what only a mounted component can own: lines that are RENDERED, and a
+    // diagnosis that reads the tapped card out of component state.
+    ...pictureVocabularyPackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
       ready: (item) => item.answerKind === 'gesture'
@@ -266,7 +263,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
               ? `Heard "${lastHeard}".`
               : 'The tutor judged the answer wrong from the audio.',
           },
-  }), [items, modelPair]);
+  }), [items]);
 
   const runner = useJudgedScriptRunner<PictureVocabItem>({
     pack,
@@ -308,7 +305,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   /** Say-it and tap-it runs are both legitimate here, so the copy names what
    *  this one was — claiming "voice and hands" is wrong on either pure run. */
   const celebrationMessage = useMemo(() => {
-    const n = challenges.length;
+    const n = items.length;
     switch (judgedAnswerMix(items)) {
       case 'gesture':
         return `You worked on ${n} words — you found every one!`;
@@ -317,15 +314,19 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       default:
         return `You worked on ${n} words with your own voice!`;
     }
-  }, [items, challenges.length]);
+  }, [items]);
 
+  // ITEMS, not challenges: a challenge the build gate dropped was never opened,
+  // so it has no outcome — and `phaseResultsFromSummary` scores a missing
+  // outcome 0 rather than dropping the row, which would report a failure
+  // against a word the child was never asked.
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(challenges, runner.summary, (ch) => {
-      const meta = MODE_META[ch.type];
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
+      const meta = MODE_META[item.kind];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, challenges]);
+  }, [evaluation.hasSubmitted, runner.summary, items]);
 
   // ============================================================================
   // Render helpers
@@ -524,7 +525,10 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   // Main render
   // ============================================================================
 
-  if (challenges.length === 0) {
+  // ITEMS: a payload can arrive with challenges that the build gate all rejects
+  // (no cards containing the target, frames with no blank). Gating on
+  // `challenges` there would mount a runner with nothing to run.
+  if (items.length === 0) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -553,9 +557,12 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
         {!evaluation.hasSubmitted && (
           <>
             <div className="flex justify-center">
+              {/* The runner's index counts ITEMS, so the denominator must too —
+                  against `challenges.length` the dots would show "4 of 5" on
+                  the last word of a session one item was gated out of. */}
               <LuminaChallengeCounter
-                current={Math.min(runner.currentIndex + 1, challenges.length)}
-                total={challenges.length}
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
                 variant="dots"
               />
             </div>

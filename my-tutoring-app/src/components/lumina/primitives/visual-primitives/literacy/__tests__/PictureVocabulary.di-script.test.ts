@@ -25,13 +25,17 @@ import {
   completeCue,
   itemCue,
   itemFromChallenge,
+  itemsFromChallenges,
   moveOnCue,
   pickModelOppositePair,
+  pictureVocabularyHarnessAnswers,
+  pictureVocabularyPackBase,
   pronounceCue,
   responseClassFor,
   scaleSpokenFor,
   stimulusFor,
   tapVerdictCue,
+  type PictureVocabChallengeLike,
   type PictureVocabItem,
 } from '../pictureVocabularyScript';
 import {
@@ -46,47 +50,56 @@ import { LITERACY_CATALOG } from '../../../../service/manifest/catalog/literacy'
 
 // ── Fixtures — one item per mode, session-shaped ────────────────────────────
 
-const RECEPTIVE = itemFromChallenge({
+/** A fixture must SURVIVE the build gate. Typing the null away would let a
+ *  fixture the gate rejects sit in the session silently testing nothing. */
+const built = (ch: PictureVocabChallengeLike): PictureVocabItem => {
+  const item = itemFromChallenge(ch);
+  if (!item) throw new Error(`fixture "${ch.id}" was rejected by the build gate`);
+  return item;
+};
+
+const RECEPTIVE = built({
   id: 'pv-1', type: 'receptive_match', word: 'dog', emoji: '🐶',
   options: [
     { word: 'dog', emoji: '🐶' }, { word: 'sun', emoji: '☀️' },
     { word: 'cup', emoji: '☕' }, { word: 'bus', emoji: '🚌' },
   ],
 });
-const NAMING = itemFromChallenge({ id: 'pv-2', type: 'naming', word: 'apple', emoji: '🍎' });
-const OPPOSITE = itemFromChallenge({
+const NAMING = built({ id: 'pv-2', type: 'naming', word: 'apple', emoji: '🍎' });
+const OPPOSITE = built({
   id: 'pv-3', type: 'opposite', word: 'small', emoji: '🐭', baseWord: 'big', baseEmoji: '🐘',
 });
-const ASSOCIATION = itemFromChallenge({
+const ASSOCIATION = built({
   id: 'pv-4', type: 'association', word: 'shoe', emoji: '👟', baseWord: 'sock', baseEmoji: '🧦',
   options: [
     { word: 'shoe', emoji: '👟' }, { word: 'fork', emoji: '🍴' },
     { word: 'nest', emoji: '🪺' }, { word: 'key', emoji: '🔑' },
   ],
 });
-const SCALE = itemFromChallenge({
+const SCALE = built({
   id: 'pv-5', type: 'gradable_scale', word: 'cool', emoji: '🌡️',
   scaleWords: ['freezing', 'cold', 'cool', 'warm', 'hot'], scaleTargetIndex: 2,
 });
-const FRAME = itemFromChallenge({
+// frameSpoken is deliberately kept, and deliberately TRUNCATED, exactly as the
+// generator emitted it in the 2026-08-16 probe: the ask must no longer use it.
+const FRAME = built({
   id: 'pv-6', type: 'sentence_frame', word: 'bed', emoji: '🛏️',
-  frameDisplay: 'We sleep in a ____.', frameSpoken: 'We sleep in a... hmm... what?',
+  frameDisplay: 'We sleep in a ____ at night.',
+  frameSpoken: 'We sleep in a... hmm... what?',
 });
 
 const ITEMS: PictureVocabItem[] = [RECEPTIVE, NAMING, OPPOSITE, ASSOCIATION, SCALE, FRAME];
 const modelPair = pickModelOppositePair(ITEMS);
 
-/** The pack exactly as the component assembles it (minus component closures). */
-const pack: JudgedScriptPack<PictureVocabItem> = {
-  primitiveType: 'picture-vocabulary',
-  activityLine: 'live direct instruction picture vocabulary practice',
-  items: ITEMS,
-  itemCue: (item, opts) => itemCue(item, opts, { modelPair }),
-  moveOnCue: (item, next, opts) => moveOnCue(item, next, opts, { modelPair }),
-  completeCue,
-  pronounceCue,
-  contextFor: (item) => ({ challengeType: item.kind, stimulus: stimulusFor(item) }),
-};
+/**
+ * The pack PRODUCTION assembles — the shared cue surface itself, not a literal
+ * that mirrors it. This file used to re-declare the pack field by field, which
+ * is a fixture that can go green while the component and the DI harness send
+ * something else; all three earlier ports in this sweep carried the same drift.
+ * `PictureVocabulary.tsx` spreads exactly this and adds only its rendered status
+ * lines and the diagnosis that reads component state.
+ */
+const pack: JudgedScriptPack<PictureVocabItem> = pictureVocabularyPackBase(ITEMS);
 
 /** The line the tutor actually SPEAKS — the shared parser, so every port reads
  *  the same span. Everything else in a cue is judge-side instruction. */
@@ -107,10 +120,10 @@ describe('picture-vocabulary pack · structural gates', () => {
     // gate — it compares consecutive items of the same action, and a real
     // session runs several naming items in a row.
     const twice = [
-      itemFromChallenge({ id: 'n1', type: 'naming', word: 'apple', emoji: '🍎' }),
-      itemFromChallenge({ id: 'n2', type: 'naming', word: 'chair', emoji: '🪑' }),
+      built({ id: 'n1', type: 'naming', word: 'apple', emoji: '🍎' }),
+      built({ id: 'n2', type: 'naming', word: 'chair', emoji: '🪑' }),
     ];
-    expect(checkPackGates({ ...pack, items: twice })).toEqual([]);
+    expect(checkPackGates(pictureVocabularyPackBase(twice))).toEqual([]);
   });
 
   it('maps modes to the ruled answer material and benched classes', () => {
@@ -155,7 +168,21 @@ describe('picture-vocabulary pack · answer-leak', () => {
     expect(spokenLine(itemCue(ASSOCIATION))).toContain('sock');
     expect(spokenLine(itemCue(ASSOCIATION))).not.toContain('shoe');
     expect(spokenLine(itemCue(SCALE))).toContain('freezing, cold, hmm, warm, hot');
-    expect(spokenLine(itemCue(FRAME))).toContain('We sleep in a... hmm... what?');
+    expect(spokenLine(itemCue(FRAME))).toContain('We sleep in a ... hmm ... at night.');
+    // REVERT-BITE for the probe's finding: the generator's own frameSpoken was
+    // the sentence CUT OFF AT THE BLANK, so the clause that decides the answer
+    // never reached the child. The spoken frame is derived from frameDisplay
+    // now; the truncated field must not survive anywhere in the ask.
+    expect(spokenLine(itemCue(FRAME))).not.toContain('what?');
+    expect(spokenLine(itemCue(FRAME))).toContain('at night');
+    // A blank at the END must not leave "... hmm ...." — the ellipsis and the
+    // sentence's own stop collide, and this line is spoken to a five-year-old.
+    const tailBlank = built({
+      id: 'pv-7', type: 'sentence_frame', word: 'chair', emoji: '🪑',
+      frameDisplay: 'We sit on a ____.',
+    });
+    expect(spokenLine(itemCue(tailBlank))).toContain('We sit on a ... hmm.');
+    expect(spokenLine(itemCue(tailBlank))).not.toContain('hmm ....');
   });
 
   it('re-speaks the QUESTION on tap-to-hear, never the answer', () => {
@@ -186,8 +213,11 @@ describe('picture-vocabulary pack · corrections', () => {
   it('every spoken-mode correction opens with the correct sentinel, names the answer, and re-elicits', () => {
     const naming = itemCue(NAMING);
     expect(naming).toContain('If it is wrong, say exactly: "My turn:');
-    expect(naming).toContain('this is an apple');   // article-correct model
-    expect(naming).toContain('Your turn. What is this?');
+    // NO article frame: the pool carries plurals and mass nouns, so "this is
+    // a shoes" / "this is a soap" are one live drive apart. The bare word is
+    // the model, and it is correct for every noun class.
+    expect(naming).toContain('If it is wrong, say exactly: "My turn: Apple. Your turn. What is this?"');
+    expect(naming).not.toMatch(/My turn: this is an? /);
 
     const opposite = itemCue(OPPOSITE, {}, { modelPair });
     expect(opposite).toContain('the opposite of big is small');
@@ -198,7 +228,7 @@ describe('picture-vocabulary pack · corrections', () => {
     expect(scale).toContain('The missing word is cool');
 
     const frame = itemCue(FRAME);
-    expect(frame).toContain('We sleep in a bed.');
+    expect(frame).toContain('We sleep in a bed at night.');
     expect(frame).toContain('Your turn. Say the missing word.');
   });
 
@@ -291,5 +321,147 @@ describe('picture-vocabulary catalog · DI frame', () => {
 
   it('the scale walk helper blanks exactly the target rung', () => {
     expect(scaleSpokenFor(SCALE)).toBe('freezing, cold, hmm, warm, hot');
+  });
+
+  it('every rung of the scaffolding ladder routes through the scripted correction (18d)', () => {
+    // The defect this bites: level1/level2 used to say "Say the question once
+    // more, then wait for them alone." A re-spoken ask opens with NEITHER
+    // sentinel, so the reducer records no verdict and the correction counter
+    // freezes with the child waiting. level3 was always correct — which is why
+    // a per-ENTRY grep reported this entry clean. Assert per RUNG.
+    const rungs = Object.values(entry.tutoring!.scaffoldingLevels!);
+    expect(rungs).toHaveLength(3);
+    for (const rung of rungs) {
+      expect(rung.toLowerCase()).toContain('scripted correction line');
+      expect(rung.toLowerCase()).not.toMatch(/say the question (once more|again)/);
+    }
+  });
+});
+
+// ── 7. The judged-loop harness surface (19h-i-b port 4) ─────────────────────
+
+describe('picture-vocabulary · DI harness surface', () => {
+  it('states the two-branch law BEFORE the branches on every spoken contract', () => {
+    // 18d: the law has to arrive before "If the answer is right", or a model
+    // reading top-down has already met both branches when it is told they are
+    // the only two. Wording is byte-shared with the family so a grep finds it.
+    for (const item of [NAMING, OPPOSITE, SCALE, FRAME]) {
+      const cue = itemCue(item, {}, { modelPair });
+      const law = cue.indexOf('Your whole reply to their attempt is ONE of the quoted lines below');
+      expect(law).toBeGreaterThan(-1);
+      expect(cue).toContain('no scaffolding line');
+      expect(law).toBeLessThan(cue.indexOf('If the answer is right'));
+    }
+  });
+
+  it('gives every cue the NEVER_PERFORM tail (item 21)', () => {
+    const cues = [
+      itemCue(NAMING), itemCue(RECEPTIVE),
+      moveOnCue(NAMING, SCALE, {}, { modelPair }),
+      tapVerdictCue(RECEPTIVE, 'sun'), pronounceCue(SCALE),
+    ];
+    for (const cue of cues) {
+      expect(cue).toContain('never announce the activity\'s state');
+      expect(cue).toContain('never announce that you are waiting or listening');
+    }
+  });
+
+  it('drops asks that have no defensible answer, and keeps the ones that do', () => {
+    const kept = itemsFromChallenges([
+      { id: 'ok', type: 'naming', word: 'apple', emoji: '🍎' },
+      // A tap mode whose cards do not contain the target: the tap can never
+      // match, so the child is corrected to the cap for answering correctly.
+      { id: 'no-target', type: 'receptive_match', word: 'dog', emoji: '🐶',
+        options: [{ word: 'sun', emoji: '☀️' }, { word: 'cup', emoji: '☕' }] },
+      // A pair whose two sides are the same word asks for what it just said.
+      { id: 'same-word', type: 'opposite', word: 'big', emoji: '🐘', baseWord: 'big', baseEmoji: '🐘' },
+      // The blanked rung is not the answer — the ask would say "hmm" in the
+      // wrong place and the correction would name a word off the scale.
+      { id: 'bad-rung', type: 'gradable_scale', word: 'cool', emoji: '🌡️',
+        scaleWords: ['cold', 'cool', 'warm'], scaleTargetIndex: 0 },
+      // The answer appears twice on the scale, so the spoken walk says it aloud.
+      { id: 'dupe-rung', type: 'gradable_scale', word: 'cool', emoji: '🌡️',
+        scaleWords: ['cool', 'warm', 'cool'], scaleTargetIndex: 0 },
+      // No blank: frameFilledFor returns the sentence unchanged, so the
+      // correction never models the word in place.
+      { id: 'no-blank', type: 'sentence_frame', word: 'bed', emoji: '🛏️',
+        frameDisplay: 'We sleep in a bedroom.', frameSpoken: 'We sleep in a what?' },
+      // The frame names its own target elsewhere in the sentence, so the spoken
+      // form gives the answer away before the child can produce it. (The old
+      // leak channel — a truncated-or-leaky frameSpoken — is closed by
+      // construction now: the spoken frame is derived from frameDisplay.)
+      { id: 'frame-leak', type: 'sentence_frame', word: 'bed', emoji: '🛏️',
+        frameDisplay: 'A bed is soft, so we sleep in a ____.', frameSpoken: 'ignored' },
+    ]);
+    expect(kept.map((i) => i.id)).toEqual(['ok']);
+  });
+
+  it('never runs two blanks on ONE scale — each ask would speak the other answer', () => {
+    // Found by the live drive: the generator padded a thin scale pool by
+    // re-blanking a scale it had already used, so item 1 asked
+    // "quiet, soft, hmm, noisy" (speaking item 5's answer) and item 5 asked
+    // "quiet, hmm, loud, noisy" (speaking item 1's). Neither item is wrong
+    // ALONE, so only a session-level gate can see it.
+    const SCALE_WORDS = ['quiet', 'soft', 'loud', 'noisy'];
+    const kept = itemsFromChallenges([
+      { id: 's1', type: 'gradable_scale', word: 'loud', emoji: '🔊',
+        scaleWords: SCALE_WORDS, scaleTargetIndex: 2 },
+      { id: 's2', type: 'gradable_scale', word: 'soft', emoji: '🔉',
+        scaleWords: SCALE_WORDS, scaleTargetIndex: 1 },
+      { id: 's3', type: 'gradable_scale', word: 'cool', emoji: '🌡️',
+        scaleWords: ['cold', 'cool', 'warm', 'hot'], scaleTargetIndex: 1 },
+    ]);
+    expect(kept.map((i) => i.id)).toEqual(['s1', 's3']);
+    // The surviving asks share no answer with each other.
+    const asks = kept.map((i) => spokenLine(itemCue(i)));
+    expect(asks[0]).not.toContain('cool');
+    expect(asks[1]).not.toContain('loud');
+  });
+
+  it('exempts ONLY receptive_match from the leak oracle, and covers its whole ask', () => {
+    // receptive_match is the one mode whose ask says the target aloud and is
+    // still not a leak: the tutor speaks the word, the child taps its picture.
+    // Subtracting the ask keeps the oracle live over the greeting and the
+    // how-to-play, so a tutor naming the target while explaining still fails.
+    const receptive = pictureVocabularyHarnessAnswers(RECEPTIVE);
+    expect(receptive.leakExemptSpan).toBe('Listen: dog. Your turn. Tap the dog.');
+    const opening = spokenLine(itemCue(RECEPTIVE, { opening: true, howToPlay: true }));
+    expect(opening.replace(receptive.leakExemptSpan!, ' ')).not.toContain('dog');
+
+    for (const item of [NAMING, OPPOSITE, ASSOCIATION, SCALE, FRAME]) {
+      expect(pictureVocabularyHarnessAnswers(item).leakExemptSpan).toBeUndefined();
+    }
+  });
+
+  it('mirrors each mode\'s NAMED miss as its signature wrong', () => {
+    // The contract CLAIMS the judge refuses these; this is the claim made
+    // drivable. Change one, change both.
+    expect(pictureVocabularyHarnessAnswers(OPPOSITE).signatureWrong?.text).toBe('big');
+    expect(itemCue(OPPOSITE, {}, { modelPair })).toContain('"big" said back is NOT the answer');
+
+    const scale = pictureVocabularyHarnessAnswers(SCALE);
+    expect(SCALE.scaleWords).toContain(scale.signatureWrong?.text);
+    expect(scale.signatureWrong?.text).not.toBe('cool');
+
+    expect(pictureVocabularyHarnessAnswers(NAMING).signatureWrong?.text).toBe('a thing');
+    expect(itemCue(NAMING)).toContain('true of almost anything like "a thing"');
+
+    const frame = pictureVocabularyHarnessAnswers(FRAME);
+    expect(frame.signatureWrong?.text).toBeTruthy();
+    expect(frame.signatureWrong?.text).not.toBe('bed');
+  });
+
+  it('commits tap modes with a card the stage actually renders', () => {
+    for (const item of [RECEPTIVE, ASSOCIATION]) {
+      const answers = pictureVocabularyHarnessAnswers(item);
+      const words = (item.options ?? []).map((o) => o.word);
+      expect(answers.tapped?.correct).toBe(item.word);
+      expect(words).toContain(answers.tapped?.wrong);
+      expect(answers.tapped?.wrong).not.toBe(item.word);
+    }
+    // Spoken modes commit nothing with their hands.
+    for (const item of [NAMING, OPPOSITE, SCALE, FRAME]) {
+      expect(pictureVocabularyHarnessAnswers(item).tapped).toBeUndefined();
+    }
   });
 });

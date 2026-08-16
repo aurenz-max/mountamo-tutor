@@ -432,6 +432,25 @@ describe('interactive-book catalog · DI frame', () => {
     expect(checkDiCatalogEntry(entry, pack, TITLE)).toEqual([]);
   });
 
+  it('every rung of the scaffolding ladder routes through the scripted correction (18d)', () => {
+    // This port SHIPPED (2026-08-14) carrying level1/level2 as "Say the question
+    // once more, then wait for them alone." / "Say the question again slowly and
+    // clearly, then wait." — a re-spoken ask opens with NEITHER sentinel, so the
+    // reducer records no verdict, the correction counter freezes, and the child
+    // waits on a tutor that has already spoken.
+    //
+    // It survived because level3 was always correct, so a per-ENTRY grep for
+    // "scripted correction" reported the entry clean, and because the 19h-i-b
+    // handoff censused only the ports still UNPORTED — this one had already
+    // shipped. Found by the per-RUNG census during port 4. Gate it per rung.
+    const rungs = Object.values(entry.tutoring!.scaffoldingLevels!);
+    expect(rungs).toHaveLength(3);
+    for (const rung of rungs) {
+      expect(rung.toLowerCase()).toContain('scripted correction line');
+      expect(rung.toLowerCase()).not.toMatch(/say the (question|instruction) (once more|again)/);
+    }
+  });
+
   it('carries no directive for a deleted channel', () => {
     const prose = [
       entry.description ?? '',

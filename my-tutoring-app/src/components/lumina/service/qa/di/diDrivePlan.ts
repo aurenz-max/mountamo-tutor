@@ -113,6 +113,14 @@ import {
   type ArenaChallengeLike,
   type ArenaItem,
 } from '@/components/lumina/primitives/visual-primitives/physics/pushPullArenaScript';
+import {
+  itemsFromChallenges as pictureVocabularyItems,
+  pictureVocabularyHarnessAnswers,
+  pictureVocabularyPackBase,
+  tapVerdictCue as pictureVocabularyTapVerdictCue,
+  type PictureVocabChallengeLike,
+  type PictureVocabItem,
+} from '@/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -418,6 +426,42 @@ const pushPullArenaAdapter: DiPortAdapter<ArenaItem> = {
 };
 
 /**
+ * picture-vocabulary (19h-i-b port 4, and the widest fork in the sweep at SIX
+ * eval modes). MIXED, and unusually its fork is a RESPONSE-CLASS ruling rather
+ * than a difficulty one: `receptive_match` and `association` tap emoji cards
+ * because "what goes with sock" has many honest spoken answers and open-set
+ * spoken production is a benched class — so the cards close the answer set while
+ * the relation stays the skill. Its gesture commit carries the TAPPED WORD
+ * (interactive-book's shape), but the card list rides on the item, so unlike
+ * interactive-book no wrong-tap side table is needed here.
+ *
+ * What is different about its answer material: `receptive_match` is the only
+ * item in the family whose ask SAYS THE TARGET ALOUD and is still not a leak —
+ * the tutor speaks the word and the child taps its picture, so the word is the
+ * question and the picture is the answer. That is the one mode carrying a
+ * `leakExemptSpan`; the other five have answer-free asks and keep a flat oracle.
+ *
+ * Its sharpest drive is `--di-wrong signature` on `opposite`: the signature
+ * wrong is the BASE WORD said straight back, which the ask itself spoke seconds
+ * earlier, so a judge grading on "did I hear a real word from the prompt"
+ * affirms it. `gradable_scale` is that trap one step further — its signature
+ * wrong is a rung the tutor read aloud as part of the stimulus.
+ */
+const pictureVocabularyAdapter: DiPortAdapter<PictureVocabItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as PictureVocabChallengeLike[];
+    const items = pictureVocabularyItems(challenges);
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: pictureVocabularyPackBase(items),
+    };
+  },
+  answersFor: pictureVocabularyHarnessAnswers,
+  gestureVerdictCue: (item, gesture) => pictureVocabularyTapVerdictCue(item, String(gesture)),
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -430,6 +474,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'addition-subtraction-scene':
     additionSubtractionSceneAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'push-pull-arena': pushPullArenaAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'picture-vocabulary': pictureVocabularyAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

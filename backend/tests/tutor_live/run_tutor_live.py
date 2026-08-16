@@ -2060,6 +2060,20 @@ def build_di_journey(live: Dict[str, Any], grade: str,
     capped_id = None
     if cap_drill:
         capped_id = next((i["id"] for i in plan["items"] if i["answerKind"] == "voice"), None)
+        if capped_id is None:
+            # It used to fall through here and run an ordinary plain drive with no
+            # notice, so a gesture-only session (a tap eval mode pinned with
+            # --eval-mode) LOOKED like a cap drill in the log and in any report
+            # counting it. picture-vocabulary's receptive_match and association
+            # drives were both counted as cap drills before this was caught.
+            raise RuntimeError(
+                "--di-cap has nothing to drill: every item in this session is a "
+                "GESTURE item, and the cap drill hangs off the first VOICE item. "
+                "This is a real coverage gap, not a flag error — the move-on cue "
+                "for a tap item is only reachable by capping a tap item, which "
+                "this harness cannot do. Drive a spoken eval mode to exercise the "
+                "correction branch, and cover the tap move-on with pack gates."
+            )
     skip_next_ask = False
 
     for index, item in enumerate(plan["items"]):

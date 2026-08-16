@@ -676,29 +676,32 @@ const buildGradableChallenge = (
 };
 
 /**
- * 5 challenges, one per distinct scale where possible. Prefer an INTERIOR rung
- * (endpoints are guessable; a missing middle forces real gradient reasoning).
- * Pads by reusing scales with a shifted rung when there are fewer than 5.
+ * Up to 5 challenges, ONE PER DISTINCT SCALE. Prefer an INTERIOR rung (endpoints
+ * are guessable; a missing middle forces real gradient reasoning).
+ *
+ * NO PADDING BY REUSE, and the live drive is why. It used to top the session up
+ * to 5 by re-blanking a scale it had already used, and a drive drew
+ * `quiet/soft/loud/noisy` twice: item 1 blanked "loud" and so ASKED
+ * "quiet, soft, hmm, noisy" — which speaks item 5's answer aloud — and item 5
+ * blanked "soft" and asked "quiet, hmm, loud, noisy", speaking item 1's. Two
+ * blanks on one scale means each ask gives the other away, so the second item is
+ * recall, not gradient reasoning. (The family's answer-leak rule with a delay on
+ * it; `N challenges = N problems`, another sighting.)
+ *
+ * The padding also DEFEATED THE CALLER'S RETRY: the caller warns at
+ * "only N/5 usable" and regenerates asking for 6 scales, but a padded array was
+ * always length 5, so that path could never fire on a thin pool. Returning the
+ * honest count is what lets it run.
  */
 const assembleGradable = (scales: GradableScale[]): PictureVocabChallenge[] => {
   const challenges: PictureVocabChallenge[] = [];
-  const shuffled = shuffle(scales);
   const interiorIndex = (n: number): number =>
     n <= 3 ? 1 : 1 + Math.floor(Math.random() * (n - 2)); // [1, n-2]
 
-  for (const scale of shuffled) {
+  for (const scale of shuffle(scales)) {
     if (challenges.length === 5) break;
     const ch = buildGradableChallenge(scale, interiorIndex(scale.words.length));
     if (ch) challenges.push(ch);
-  }
-  // Thin pool: reuse scales with a shifted target rung to reach 5 (best-effort).
-  let guard = 0;
-  while (challenges.length < 5 && shuffled.length > 0 && guard < 20) {
-    const scale = shuffled[guard % shuffled.length];
-    const idx = (interiorIndex(scale.words.length) + guard) % scale.words.length;
-    const ch = buildGradableChallenge(scale, idx);
-    if (ch) challenges.push(ch);
-    guard += 1;
   }
   return challenges;
 };
