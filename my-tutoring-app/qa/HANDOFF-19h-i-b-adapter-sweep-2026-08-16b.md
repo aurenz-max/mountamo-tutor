@@ -3,9 +3,9 @@
 **Scope:** one `DiPortAdapter` per judged-runner port, so `/tutor-test --di` can drive it headlessly.
 **Queue of record:** `qa/di/BACKLOG.md` item **19h-i-b**. **18d rides inside each port's slice.**
 **Executor:** per port — extract the cue surface → harness answers → adapter → drive → fix → commit.
-**State: 7 of 11 done.** `counting-board` `d7f4133b` · `addition-subtraction-scene` `6e114db1` ·
+**State: 8 of 11 done.** `counting-board` `d7f4133b` · `addition-subtraction-scene` `6e114db1` ·
 per-mode backfill `76287c78` · `push-pull-arena` `e41691d1` · `picture-vocabulary` `cfc4bcad` ·
-`phoneme-explorer` `0cc11335` · `letter-spotter` `f43a804d` · **`letter-sound-link` (port 7)**.
+`phoneme-explorer` `0cc11335` · `letter-spotter` `f43a804d` · `letter-sound-link` `8daf2a87` · **`decodable-reader` (port 8)**.
 **Supersedes** `HANDOFF-19h-i-b-adapter-sweep-2026-08-16.md`.
 
 > **Two things changed that affect how you scope. Read §1 and §2.**
@@ -64,7 +64,7 @@ until you read each `moveOnCue` — the mode counts are exact):
 | ~~`phoneme-explorer`~~ | 4 | 8 | 1 | **9, shipped port 5** |
 | ~~`letter-spotter`~~ | 3 | 6 | 1 drivable | **7, shipped port 6** |
 | ~~`letter-sound-link`~~ | 3 | 6 | 1 drivable | **8, shipped port 7** (2 blended) |
-| `decodable-reader` | 5 | 10 | 2–3 (read_along vs Q-modes vs proposition tap) | 12–13 |
+| ~~`decodable-reader`~~ | 5 | 10 | 3 (all drivable, one via `--di-cap-item`) | **13, shipped port 8** (16 sessions) |
 | `rhyme-studio` | 3 | 6 | 1–2 | 7–8 |
 | `read-aloud-studio` | 3 | 6 | 1–2 | 7–8 |
 | `di-spoken-practice` | 3 | 6 | 1 | 7 |
@@ -113,6 +113,42 @@ which are the answer for a target of `i` or `a`. Six pinned drives had passed ov
 it. **The blended drive is not only for adjacency and tap-payload move-ons — it is
 the only drive that speaks every how-to-play line more than once.**
 
+### ⭐ AMENDED BY PORT 8 (2026-08-16) — A NAMED-ITEM CAP EXISTS NOW, AND A NEAR-EMPTY ASK IS A LEAK CHANNEL
+
+**(a) `--di-cap-item <ITEM_ID>` pins the drill to a named VOICE item.** §7 asked for
+this flag by name. Use it when a pack's `moveOnCue` differs by item KIND and the shape
+you need is never first: decodable-reader has three, and the only one carrying a CLOSE
+LINE that names the answer sits behind four read items. Gesture ids raise with what
+building the gesture path would take, so nothing degrades silently.
+
+**(b) ⚠️ A PORT WHOSE ASK NAMES NOTHING WILL HAVE ITS STATE BLOCK READ ALOUD.**
+decodable-reader's non-opening read ask is *"Your turn. Read it."* — four words, by
+design, because the cold read IS the mode. The tutor filled that silence from
+`{{stimulus}}` and **spoke the printed line before the child decoded it**, on three
+consecutive asks, inside a fabricated `[CURRENT STATE]` block. `NEVER_PERFORM` was
+already on every cue and did not prevent it.
+
+**The rule for your port: if your ask is short and your state block holds the answer
+material, the state block is a live audio channel, not a private note.** Push a
+DESCRIPTION of the item and let the judging contract carry the value — the contract is
+read at the moment of judging, which is the only moment the tutor needs it. Check your
+catalog `taskDescription` in the same pass: this one said *"that thing … **reads**:
+{{stimulus}}"*, which is an instruction to narrate.
+
+**(c) The two-branch law does not cover handing the FLOOR back.** Both of port 8's
+embellishments ended *"Do you want to read another line?"* / *"What would you like to
+read next?"* — not praise, so `TWO_BRANCH_LAW` misses them, and they land where the
+model feels a phase closing. A pack with more than one item KIND has phase boundaries
+inside one run and will offer the model wrap-up moments a single-shape pack never does.
+Port 8 added `NO_FLOOR_HANDBACK` **separately** from the family tail so a grep still
+finds `NEVER_PERFORM` byte-identical; copy the clause, not a fork of the tail.
+
+**(d) Read the leak tokens against the QUESTION, not just the ask.** Port 8 filed a HIGH
+on a leak that had not happened — *"What did the frog **hop** on first?"* against the
+card "The frog did **hop** on a stem". Subtracting the question's words makes the oracle
+SHARPER (tokens narrow to the real answer), not softer. Same rule fixed two signature
+pickers on the same port.
+
 ---
 
 ## 2. ⭐ THE PREVIOUS CENSUS HAD A BLIND SPOT: it counted only UNPORTED primitives
@@ -137,10 +173,10 @@ comment filter, and the previous handoff's version double-counted a comment.
 
 | Entry | scaffoldingLevels rungs to fix |
 |---|---|
-| `decodable-reader` | 2 |
+| ~~`decodable-reader`~~ | fixed (port 8) — the 2 rungs were right, **plus TWO `commonStruggles` rows AND one `aiDirective`, all three on the ACCEPT side** |
 | ~~`letter-sound-link`~~ | fixed (port 7) — the 2 rungs were right, **plus TWO `commonStruggles` rows on the ACCEPT side** |
 | ~~`letter-spotter`~~ | fixed (port 6) |
-| `read-aloud-studio` | 2 |
+| `read-aloud-studio` | ~~2~~ fixed off-queue (port 8) — **gate-covered, NOT driven** |
 | ~~`phoneme-explorer`~~ | fixed (port 5) — and it was **3**, not the 1 listed: census by MEANING |
 | ~~`letter-spotter`~~ | fixed (port 6) — the 2 rungs were right, **plus a `commonStruggles` row no rung census reaches** |
 | ~~`picture-vocabulary`~~ | fixed (port 4) |

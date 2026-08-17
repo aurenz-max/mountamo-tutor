@@ -1765,3 +1765,99 @@ needs no new row** — the C3 finding is machine territory (an `identify`/`descr
 not pixel debt; the file is current through **#65, next free ID = 66**, and no report newer
 than its as-of date carries unfolded browser debt.
 
+
+
+---
+
+## Archived by `/pm` 2026-08-16 — the 2026-08-13 reconcile note (verbatim)
+
+> ### `/pm` 2026-08-13 — what this run corrected
+>
+> **Drift #1 — THE INDEX LAGGED ITS OWN QUEUES BY SIX HOURS, and every stale claim was about
+> the same event: a design the user overturned mid-day.** `WORKSTREAMS.md` was last written
+> 11:41; `qa/di/BACKLOG.md` and `HUMAN-CHECKS.md` at 17:15. In between, `letter-spotter`'s
+> `name-it` went from a TAP to a SPOKEN answer on a user ruling, and `ten-frame` was driven
+> four times. So the index sat there saying *"the math half is entirely undriven"* and *"the
+> first pack in the family with NO SPOKEN MODE"* — both false, both written in good faith at
+> the moment of shipping. **Third consecutive run with this exact shape** (08-11: index said
+> "held" after the ff; 08-12: said "deployed" after the branch outgrew the deploy). The
+> generalisation is now firm enough to act on: **a shipping session edits the queue, the
+> source, and the human row — all local edits it is already in — and never walks back up to
+> the global claim.** The index cannot be kept true by the sessions that invalidate it.
+>
+> **Drift #2 — A DEAD BLOCK WAS STILL LIVE DOCTRINE IN THREE PLACES, and one of them is the
+> most-copied paragraph in the family.** *(Count raised from two to three later in the same run —
+> the third copy was in this index's own CLOSED section, saying LetterSpotter has no voice wiring
+> "by ruling". Even the run hunting the stale claims undercounted them on first pass.)* `letter_name` was overturned by the user's
+> letter-spotter drive and is `accepted-build-ahead` in `judgedScriptContract.ts` — but
+> `qa/di/BACKLOG.md` **standing gate 1** and `cvcSpellerScript.ts` both still read *"Letter
+> NAMES remain BLOCKED"* hours later. Both fixed. **This one is not cosmetic:** standing gate 1
+> is what a port consults to decide whether a mode may speak, so a stale block silently costs
+> the next port a spoken mode it is allowed to have — the inverse of the defect this very
+> ruling was correcting. **Where a class status lives in code, every prose copy is a dangling
+> pointer** (the `/add-spoken-judge` retirement found five of these; the mechanism recurs
+> because prose is cheap to write and invisible to `tsc`).
+>
+> **Drift #3 — HUMAN-CHECKS CONTRADICTED ITSELF, and the count was wrong for the third run
+> running.** #97 exists **twice** — a `### ` section (filed by the porting session: "TAP-ONLY,
+> NEVER DRIVEN") and a table row (filed by the drive session: "name-it SPOKEN, PARTIALLY
+> DRIVEN"). Reconciled: the section is now the STATUS of record, the table row keeps the full
+> criteria, each points at the other. #96 (`decodable-reader`) **does** have a row; the header
+> both omitted it from the count and asserted it did not exist. **13 → 14.**
+> **⭐ The count has now been wrong on three consecutive reconciles, and the standing rule from
+> 08-12 ("re-verify counts AFTER the edit") did not save it — because the failure is not
+> arithmetic.** A count is a *global* claim living in a file that only ever receives *local*
+> edits, so it is stale by construction. **Proposal, needs a user word: stop maintaining a
+> count.** Let the header carry the RANKING (what to drive first and why) and let the rows be
+> their own census — a wrong ranking is visible to anyone reading it; a wrong count is not.
+>
+> **⭐ THE RUN'S REAL FINDING — A DRIVEN SURFACE READS AS SAFER THAN IT IS.** #98 (`ten-frame`)
+> has FOUR drives; #97 (`letter-spotter`) has one; both stay open, for the same narrow reason:
+> **every drive answered correctly.** The sitting has already paid for itself — drives 1–3 of
+> ten-frame each found a *blocking* defect no machine test could have caught (a dead frame the
+> 40-test suite missed **because the bug healed itself on a wrong answer**; a flash killed by
+> `micLevel` re-render churn that **only reproduces with the mic open**; the flash firing before
+> the tutor's line rather than after). But all three were **MACHINERY**. The judge — the thing
+> the entire modality exists for — has still never been tested on any math surface, and on
+> literacy it has two user strikes (#91, #92) plus one deliberate miss on #95's `accuracy`.
+> **So the pull list is re-ranked to separate "the surface works" from "the judge refuses",**
+> because a row that reads "driven, worked great" is the row a sitting will skip.
+>
+> **Non-drift — the machine lane's throughput is real and the gates held.** Five ports in ~24h
+> (8 `rhyme-studio`, 9 `read-aloud-studio`, 10 `decodable-reader`, 11 `letter-spotter`, 12
+> `ten-frame` = the first MATH port), each with typecheck:lumina 0, full-suite green, census
+> greps clean, and live real-pipeline probes. The concurrent-writer discipline held for the
+> fourth run: the owning sessions filed their own rows and `/pm` reconciled what it found.
+>
+> **Ship hygiene: the tree is ONE lane and it is now large.** ~6,300 changed lines across five
+> ports plus the shared runner/engine, the `/add-di-loop` skill, three catalogs,
+> `problem_type_registry.py` and the backend preview widening — all judged-loop, so it slices
+> as one commit set, not two. Source has been quiet since 15:04; the queues were written at
+> 17:15, ~19 minutes before this reconcile. **`/ship` proposed, not taken** — and the cost of
+> waiting is now explicit: **five user drives' worth of fixes exist only in this working tree.**
+>
+> **WIP: 2+1, held.** ACTIVE 1 judged-loop (hot — five ports and five drives today). ACTIVE 2
+> pilot onboarding (**untouched since 08-11, ~2 days** — not yet starved by the 3-day rule, but
+> it owns the only *external* deadline on the board and its top item is machine-gated and
+> unblocked). +1 DI closeout (unwritten since 08-10; still a documentation slice plus one probe).
+>
+> **✅ TWO HYGIENE CALLS — ASKED, RULED, AND EXECUTED IN THIS RUN.** Both had been flagged
+> repeatedly without ever being put to the user as a question; the 08-12 note named that as its
+> own failure mode (*"a deferral that never becomes a question is just a recurring line item"*)
+> and this run closed it.
+> 1. **`## ACTIVE` → the stream queues (user: move it).** 1,368 lines of per-stream detail moved
+>    verbatim into the owning queues — `qa/di/BACKLOG.md` (708 lines, which had been carrying a
+>    second copy of its own queue), `qa/reader-fit/BACKLOG.md` (362), `qa/la-k2-grammar/BACKLOG.md`
+>    (99), `qa/topic-traces/HANDOFF-primitive-selection-2026-08-08.md` (85), `qa/support-tiers/BACKLOG.md`
+>    (44), and a **new `qa/science-depth/BACKLOG.md`** (70) — that stream had no queue file at
+>    all, which is precisely why its detail had nowhere to live but the index. `## DELEGATED`
+>    also gave up 145 lines of 2026-08-03 WIP notes to the archive: history filed under a heading
+>    that reads as live state. **Index: 1,727 → ~290 lines. Nothing deleted, every block linked.**
+>    ⭐ The DI block is the one that mattered — a ~700-line duplicate of the queue it points at is
+>    exactly how the two registers came to disagree about `letter_name` and about #97.
+> 2. **HUMAN-CHECKS → one format (user: merge it).** All **68 table rows** are now `###` sections
+>    carrying the same text; the two IDs that existed twice (#95, #97) became one row each with a
+>    `#### … FULL CRITERIA` continuation. **78 open rows, #98 → #3, one list, newest first**, with
+>    the older refresh notes moved to a "Filing history" section. Content preservation was checked
+>    row by row, not eyeballed. The header now ranks before it counts: **14 judged-loop rows are
+>    the sitting; the other ~64 are a July pixel-debt tail, not a queue.**
