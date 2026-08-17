@@ -12,6 +12,121 @@ what is true now. **Queues are authority over anything in this file.**
 Live index: [`WORKSTREAMS.md`](../../WORKSTREAMS.md)
 
 ---
+> ### ARCHIVED by `/pm` 2026-08-17 — the predecessor note (portfolio concentration)
+>
+> ### `/pm` 2026-08-16 — the portfolio-concentration reconcile (user question: *"are we
+> doing port work on the same primitives over and over? 150+ primitives and I feel I'm
+> working on the same 10-15"* and *"is this actually improving quality or is it busy work?"*)
+>
+> **⭐ FINDING 1 — THE FEELING IS ABOUT DEPTH, NOT BREADTH, AND THE BREADTH NUMBER IS FINE.**
+> Measured, not estimated: **182 of 219 primitive components touched since 2026-06-01; 63
+> distinct components in August alone.** So the portfolio is not idle and the 10-15 figure is
+> not literal. What concentrates is **depth**: counting how many of the seven live queue files
+> name each of the **197 catalog ids** gives **30 primitives in ZERO queue, 57 in exactly one,
+> and 37 in four or more** — and the 4+ set is exactly this week's roster (`word-sorter` 6,
+> then `word-workout`/`rhyme-studio`/`phoneme-explorer`/`letter-sound-link`/`cvc-speller`/
+> `phonics-blender`/`planetary-explorer` at 5). **A primitive in four queues gets four slices;
+> a primitive in zero gets none, forever.** Domain skew says the same thing: file-touches since
+> 07-15 are literacy 175 · direct-instruction 129 · math 120 against **biology 23 · chemistry 13
+> · physics 13**, while the catalog is math 61 · literacy 32 · **engineering 24** · core 19 ·
+> biology 17 · chemistry 14. Engineering has 24 primitives and no lane.
+>
+> **The mechanism is already in memory and it has now been measured:
+> [[feedback_worked-primitives-self-select]] — every lane picks its roster by what is CHEAP,
+> and prior work is what makes a primitive cheap.** The DI sweep roster, the reader-fit roster
+> and the support-tiers roster are substantially the SAME literacy-phonics set, because each
+> lane inherits the previous lane's contracts, tests and probes. This was named on 08-03 (the
+> coin-counter pilot swap) as a one-off judgement call; it is structural, and this is the first
+> run to put a number on it.
+>
+> **⭐ FINDING 2 — THE PORT WORK IS NOT BUSY WORK, BUT THE VALUE IS NOT COMING FROM THE
+> ADAPTER.** The adapter is ~15 lines (port 4's own report says so). The six shipped port
+> commits are **759 / 964 / 1,115 / 1,268 / 1,269 / 1,760 lines**. The split per port is
+> consistently: ~300–400 lines of `<primitive>Script.ts` (the judged dialogue contract — new
+> pedagogical content), **30–85 lines of `gemini-<primitive>.ts` generator fixes**, 25–37 lines
+> of catalog scaffolding fixes, a **net-NEGATIVE component diff** (click-era buttons deleted),
+> and the balance in tests + live drive reports. **Two generator fixes were re-verified against
+> the diff this run rather than taken from the report:**
+> - `gemini-phoneme-explorer.ts`: `maxOutputTokens: 4096 → 8192` + retry-once. Before it, the
+>   widest schema in the family truncated mid-object, `JSON.parse` failed, and a **hardcoded
+>   fallback shipped silently and graded as success** — every `isolate` lesson was a one-item
+>   lesson about a bear whatever the topic.
+> - `gemini-letter-spotter.ts`: `startsWithADigraph` gate. The live probe drew *"Say the letter
+>   that **sheep** starts with"*, answer key `S` — the primitive whose entire job is letter-sound
+>   mapping was affirming a false one, and every gate passed it.
+>
+> **Neither defect is a DI defect. Both were live for the click-era surface and would still be
+> live today if the port had not happened.** ⭐ **So the honest description of the lane is: the
+> port is a FORCING FUNCTION. It is the only workflow that makes someone read one primitive
+> end-to-end and run a live generation probe against it, and the probe is what finds the
+> defects.** That is real quality, and it also means **the quality does not require the port** —
+> which is the lever on the 10-15 problem.
+>
+> **⭐ FINDING 3 — THE SILENT-FALLBACK CLASS IS PORTFOLIO-WIDE, MACHINE-CHECKABLE, AND SITS IN
+> THE DOMAIN WITH THE MOST PRIMITIVES AND THE LEAST ATTENTION.** Generalising phoneme-explorer's
+> defect into a grep over the 209 production generators: **33 carry a hardcoded fallback with NO
+> retry and NO `console.warn`/`error`** — i.e. they can ship fallback content to a child, and
+> nothing anywhere says so. **32 of the 33 are `service/math/`** (the 33rd is calendar), and math
+> is 61 catalog entries against literacy's 32. Full list in the queue row below. This is a
+> **sweep, not a sitting** — it is greppable, it needs no mic, and it is the exact shape memory
+> already parked on 07-06 as [[project_flash-lite-truncation-template]] ("~50-gen sweep") and
+> never ran. **The 08-16 evidence upgrades it from a hardening chore to a measured
+> content-integrity defect with a live citation.**
+>
+> **WIP: the rule is 2+1 and the board is running 1.** The judged loop has taken essentially
+> everything since 08-09; **stream 00 (lesson ordering, item B′) is now STARVED 8 DAYS** — its
+> top item is ~15 lines, no LLM call, success criterion already measured (19 of 72 scorable
+> blocks inverted → 0). It was flagged starved at 6 days on 08-14 and has not moved. **Second
+> ACTIVE slot proposed below, and it is deliberately NOT another literacy lane.**
+>
+> **Non-drift worth recording: the sweep's throughput is real.** Six ports in ~30 hours
+> (`d7f4133b` 08-15 → `f43a804d` 08-16 16:36), 0 HIGH findings across ~40 drive sessions, tree
+> clean at each. The lane is not slow; it is narrow. **Nothing in this note argues for stopping
+> it** — 5 of 11 ports remain and the marginal port still finds 3–4 real defects.
+>
+> **Standing rule proposed from Finding 1 (needs no ruling to start, but say if you disagree):
+> a lane's roster must be picked from DEMAND, not from what already has contracts.** Concretely
+> — before a new sweep opens, check its roster against the zero-queue list; if the overlap is
+> zero, the sweep is re-working the worked set.
+>
+> ### ⚖️ USER RULING, same session 2026-08-16 — **CAPABILITY BEFORE RE-TESTING**
+>
+> *"the better use of time is actually adding then testing DI-specific capabilities to the
+> remaining math and literacy primitives before tons of testing on primitives I've already
+> tested."* **Accepted, and it corrects this run's own move #1.** The silent-fallback sweep is
+> DEMOTED from the top of the board — not because the defect is not real, but because
+> **Finding 2 makes the sweep largely redundant with the plan the user picked: porting a math
+> primitive FORCES the live generation probe that finds exactly that defect class.** 32 of the
+> 33 silent-fallback generators are math. Do not run both lanes; **let the math ports harvest
+> it**, and keep the 33-item list as the *checklist a math port consults*, not as its own sweep.
+>
+> **THE REAL FRONTIER, measured this run:** judged packs exist for **26** primitives. Catalog
+> ids with NO judged pack: **57 of 61 math · 18 of 32 literacy = 75.** The current 19h-i-b sweep
+> has **5** left. So the capability frontier is 15× the queue that has been absorbing the board.
+>
+> **⭐ BUT IT IS NOT ONE SWEEP — it splits three ways, and only one is a straight continuation:**
+>
+> | Class | Roster | Judge support today | Verdict |
+> |---|---|---|---|
+> | **A — word/number answer** | ~~`syllable-clapper`~~ ✅ (port 17) · ~~`word-builder`~~ ✅ (port 19) · `spelling-pattern-explorer` · ~~`word-sorter`~~ ✅ (port 18) · `poetry-lab` `rhyme_hunt`, plus the numeral-answer math set | ✅ `short_spoken_word`, `open_set_word`, `closed_set_choice`, numerals | **`/add-di-loop` works as-is.** Straight continuation of the proven pattern. |
+> | **B — manipulation-native math** | `shape-composer` · `net-folder` · `transformation-lab` · `coordinate-graph` · `tape-diagram` · `place-value-chart` etc. | ◐ `manipulation` exists but is the LEAST-proven class | Portable, but the adapter shape differs — the answer is a BUILD, and per [[feedback_di-spoken-first-not-tap]] these are the ports where a tap **is** legitimately the answer. Pilot one before sweeping. |
+> | **C — literacy PRODUCTION** | ~13 of the 18: `story-map` · `paragraph-architect` · `opinion-builder` · `revision-workshop` · `character-web` · `evidence-finder` · `story-planner` · `text-structure-analyzer` · `sentence-builder` · `context-clues-detective` · `figurative-language-finder` · `genre-explorer` · `sentence-analyzer` | 🔴 **NONE** | **BLOCKED on a judge capability that does not exist.** `ResponseClassId` in `judgedScriptContract.ts` has **11 classes and every one is closed or word-level — the ceiling is `open_set_word`.** Their eval modes are `oreo`, `cer`, `add_details`, `combine_sentences`, `transitions`, `reorganize`, `concision`, `theme_craft`, `trait_evidence`, `evaluate_evidence_strength`: the child PRODUCES a sentence or restructures text. `sentence_read_aloud` is recall of on-screen text, not production. This is [[feedback_production-modality-roadmap]] arriving as a hard blocker. |
+>
+> **⭐ THE LEVERAGE ARGUMENT FALLS OUT OF THE TABLE: one new response class (a produced
+> sentence, judged on CRITERIA rather than string match) unlocks ~13 literacy primitives at
+> once. The 5 remaining ports in the current sweep unlock 5.** That is the highest-leverage
+> unbuilt capability on this board, and it is a capability, not a test — exactly the direction
+> the ruling names.
+>
+> **⚠️ AND THE CHEAPEST UNBLOCK IS A 30-MINUTE SITTING THE USER CAN DO TODAY.** `HUMAN-CHECKS`
+> **#63 is genuinely OPEN** (verified this run at `HUMAN-CHECKS.md:1328`, not inferred): it
+> decides whether `di-math-facts counting_next` may ever reach 1–120 or must keep saturating at
+> 20. **Math ports beyond 20 are gated on it.** `npm run dev` → di-bench 🎯 → probe set
+> *"Counting to 120"* → mic on. It is the one human row standing between the ruling and the
+> larger half of the math roster.
+
+---
+
 > ### Old WIP notes moved out of the live index's `## DELEGATED` heading — `/pm` 2026-08-13
 >
 > These are 2026-08-03-and-earlier reconcile WIP notes. They sat under `## DELEGATED` in the
