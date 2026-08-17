@@ -147,6 +147,15 @@ import {
   type LetterSoundTier,
 } from '@/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript';
 import {
+  itemsFromChallenge as wordSorterItemsFromChallenge,
+  itemsFromChallenges as wordSorterItems,
+  wordSorterHarnessAnswers,
+  wordSorterPackBase,
+  type WordSorterChallengeLike,
+  type WordSorterItem,
+  type WordSorterTier,
+} from '@/components/lumina/primitives/visual-primitives/literacy/wordSorterScript';
+import {
   itemsFromTargets as wordBuilderItems,
   wordBuilderHarnessAnswers,
   wordBuilderPackBase,
@@ -784,6 +793,46 @@ const wordBuilderAdapter: DiPortAdapter<WordBuilderItem> = {
 };
 
 /**
+ * word-sorter (SEVENTEENTH literacy port). ALL-VOICE across three modes — every
+ * tap failed the costume test, so there is no gesture commit and every item is
+ * judged from the answer text.
+ *
+ * Like word-workout, ONE CHALLENGE IS NOT ONE ITEM: a sort challenge expands to
+ * a judged ask PER WORD and a match challenge to one per pair, so `dropped`
+ * counts CHALLENGES that produced nothing rather than the items/challenges
+ * difference. A session is additionally length-capped, which is NOT a drop and
+ * is reported by the script module rather than here.
+ *
+ * What is different about its answer material: the sort ask closes on a SPOKEN
+ * MENU, so the answer is inside the question by construction — push-pull-arena's
+ * shape. `leakExemptSpan` subtracts exactly that clause, and the exemption is
+ * TIER-CONDITIONAL: at `hard` for a reader the ask names no groups and the
+ * oracle goes flat, which is that rung's whole point. A `match_pairs` ask never
+ * speaks its bank (it is printed), so those items carry no exemption at all.
+ *
+ * Its sharpest drive is `--di-wrong signature` on any mode: the signature wrong
+ * is THE STIMULUS WORD SAID STRAIGHT BACK — a real word, said confidently, that
+ * the tutor itself spoke two seconds earlier, so a judge grading on "did I hear
+ * something relevant to this item" affirms it. picture-vocabulary's documented
+ * trap, and here it is the same shape in both directions of the pack.
+ */
+const wordSorterAdapter: DiPortAdapter<WordSorterItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as WordSorterChallengeLike[];
+    const opts = {
+      tier: (data.supportTier as WordSorterTier) ?? 'medium',
+      isPreReader: (data.gradeLevel as string) === 'K',
+    };
+    const items = wordSorterItems(challenges, opts);
+    const dropped = challenges.filter(
+      (ch) => wordSorterItemsFromChallenge(ch, opts).length === 0,
+    ).length;
+    return { items, dropped, surface: wordSorterPackBase(items) };
+  },
+  answersFor: wordSorterHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -807,6 +856,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'word-workout': wordWorkoutAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'word-sorter': wordSorterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

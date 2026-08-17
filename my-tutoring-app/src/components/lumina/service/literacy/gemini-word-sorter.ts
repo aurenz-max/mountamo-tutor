@@ -7,6 +7,14 @@ import {
   WordSorterChallenge,
   type DistractorMatch,
 } from '../../primitives/visual-primitives/literacy/WordSorter';
+// The judged loop's build gates, IMPORTED not copied — both sides of the wire
+// must agree on what is sayable, and hand-synced copies drift (the
+// letter-spotter 90-vs-100 defect). `wordSorterScript.ts` is the one address.
+import {
+  isSayableLabel,
+  isSayableWord,
+  optionsEarSeparable,
+} from '../../primitives/visual-primitives/literacy/wordSorterScript';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -19,18 +27,45 @@ import {
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   binary_sort: {
-    promptDoc: '"binary_sort": Sort word cards into 2 labeled buckets (e.g., noun/verb, singular/plural). 6-8 word cards.',
-    schemaDescription: "'binary_sort' (two-bucket sorting)",
+    promptDoc: '"binary_sort": The tutor says a word and the student SAYS which of 2 groups it belongs with (e.g., noun/verb, singular/plural). 6-8 word cards.',
+    schemaDescription: "'binary_sort' (say which of two groups)",
   },
   ternary_sort: {
-    promptDoc: '"ternary_sort": Sort word cards into 3 labeled buckets (e.g., past/present/future, noun/verb/adjective). 8-10 word cards.',
-    schemaDescription: "'ternary_sort' (three-bucket sorting)",
+    promptDoc: '"ternary_sort": The tutor says a word and the student SAYS which of 3 groups it belongs with (e.g., past/present/future). 8-10 word cards.',
+    schemaDescription: "'ternary_sort' (say which of three groups)",
   },
   match_pairs: {
-    promptDoc: '"match_pairs": Match word pairs (e.g., singular→plural, word→antonym, word→synonym). 5-6 pairs.',
-    schemaDescription: "'match_pairs' (pair matching)",
+    promptDoc: '"match_pairs": The tutor says a word and the student SAYS its partner from the printed word bank (singular→plural, word→antonym, word→synonym). 5-6 pairs.',
+    schemaDescription: "'match_pairs' (say the partner word)",
   },
 };
+
+/**
+ * SPEECH GATES, generator side (the judged loop runs the same functions
+ * build-side — belt and suspenders on both sides of the wire).
+ *
+ * Writing the spoken ask AUDITS the content, which is the point: a group label
+ * a tap never had to justify becomes a word a five-year-old must hear, hold and
+ * say back. "Things that are alive" was a fine mat caption and is an unsayable
+ * answer, so it drops here rather than reaching a child as a question.
+ */
+const SPOKEN_CONTENT_RULES =
+  `SPOKEN ACTIVITY — the tutor SAYS each word aloud and the student ANSWERS OUT LOUD. Every label and every word `
+  + `is read to a five-year-old and said back by them, so:\n`
+  + `- every group label is ONE or TWO plain words a child can say ("Animals", "Food", "Action Words"). `
+  + `Never a phrase, never a sentence, never punctuation or brackets\n`
+  + `- no two labels may share a word ("Big" and "Big Things" sound the same when a child answers "big")\n`
+  + `- no label may also be one of the words being sorted\n`
+  + `- every word to sort is ONE word (a two-word compound like "ice cream" is fine)\n`
+  + `- no label and no word may begin with "yes" or "my turn"`;
+
+/** Are these labels a fair, askable, SAYABLE closed set? Every guard is the
+ *  judge's: two labels it cannot tell apart give an utterance two homes. */
+const labelsUsable = (labels: string[]): boolean =>
+  labels.length > 0
+  && labels.every(isSayableLabel)
+  && new Set(labels.map((l) => l.toLowerCase())).size === labels.length
+  && optionsEarSeparable(labels);
 
 // ---------------------------------------------------------------------------
 // Grade-specific guidelines
@@ -171,6 +206,11 @@ export function selectDistractorMatches(
     const key = text.toLowerCase();
     if (!key || taken.has(key)) continue;
     if (allHaveEmoji && !d.emoji) continue;
+    // A decoy joins the bank the child reads and says aloud, so it carries the
+    // stimulus gates too — including ear-separability against everything already
+    // in the bank, or the decoy makes a real answer unjudgeable.
+    if (!isSayableWord(text)) continue;
+    if (!optionsEarSeparable([...pairs.map((p) => p.match), ...out.map((o) => o.text), text])) continue;
     taken.add(key);
     out.push({ id: d.id, text, ...(d.emoji && !noneHaveEmoji ? { emoji: d.emoji } : {}) });
   }
@@ -329,10 +369,17 @@ function buildMatchPairsSchema(gradeKey: string): Schema {
           properties: {
             id: { type: Type.STRING, description: "Unique ID (ch1, ch2, ...)" },
             instruction: { type: Type.STRING, description: "Clear instruction for the student" },
+            relationLabel: {
+              type: Type.STRING,
+              description:
+                "How the partner relates to the term — EXACTLY ONE of: opposite, synonym, plural, rhyme. "
+                + "All pairs in this challenge must share it. The tutor turns it into the spoken question "
+                + "(\"Which word means the opposite of big?\"), so it must be true of every pair.",
+            },
             pairCount: { type: Type.INTEGER, description: "Number of pairs (5-6)" },
             ...pairProps,
           },
-          required: ["id", "instruction", "pairCount",
+          required: ["id", "instruction", "relationLabel", "pairCount",
             "pair0Term", "pair0Match", "pair1Term", "pair1Match",
             "pair2Term", "pair2Match", "pair3Term", "pair3Match",
             "pair4Term", "pair4Match",
@@ -383,6 +430,16 @@ function reconstructSortChallenge(
     return null;
   }
 
+  // SPEECH GATE — the labels are the ANSWER SET a child says out loud. Nothing
+  // repairs an unsayable or indistinguishable label; the challenge drops.
+  if (!labelsUsable(bucketLabels)) {
+    console.warn(
+      `[WordSorter] Rejected ${type} challenge: labels [${bucketLabels.join(', ')}] `
+      + 'are not a sayable, ear-separable answer set',
+    );
+    return null;
+  }
+
   // Bucket emojis (pre-reader answer surface) — index-aligned with bucketLabels
   const bucketEmojis = bucketLabels.map((_, i) => (flat[`bucket${i}Emoji`] as string) || '');
   const hasBucketEmojis = bucketEmojis.some(e => e);
@@ -405,6 +462,18 @@ function reconstructSortChallenge(
       continue;
     }
 
+    // SPEECH GATE — the word is READ ALOUD as the question. An unsayable string
+    // becomes babble in a five-year-old's ear, and a word that IS a group label
+    // turns the ask into a riddle ("Listen: animals. Animals, or Food?").
+    if (!isSayableWord(text)) {
+      console.warn(`[WordSorter] Skipped word "${text}" — not sayable as a spoken stimulus`);
+      continue;
+    }
+    if (bucketLabels.some((b) => b.toLowerCase() === text.trim().toLowerCase())) {
+      console.warn(`[WordSorter] Skipped word "${text}" — it is also a group label`);
+      continue;
+    }
+
     words.push({
       id: `w${i}`,
       word: text,
@@ -416,6 +485,13 @@ function reconstructSortChallenge(
   const minWords = type === 'binary_sort' ? 4 : 6;
   if (words.length < minWords) {
     console.warn(`[WordSorter] Rejected ${type} challenge: only ${words.length}/${minWords} valid words`);
+    return null;
+  }
+
+  // A sort whose surviving words all share one bucket is passable by saying the
+  // same group every round — the same defect a one-option menu is.
+  if (new Set(words.map((w) => w.correctBucket)).size < 2) {
+    console.warn(`[WordSorter] Rejected ${type} challenge: every surviving word lands in one group`);
     return null;
   }
 
@@ -452,6 +528,13 @@ function reconstructMatchPairsChallenge(
     const match = flat[`pair${i}Match`] as string | undefined;
     if (!term || !match) continue;
 
+    // SPEECH GATE — the term is READ ALOUD and the partner is SAID BACK, so
+    // both must be sayable words that cannot be misread as a verdict.
+    if (!isSayableWord(term) || !isSayableWord(match)) {
+      console.warn(`[WordSorter] Skipped pair "${term}"/"${match}" — not sayable as a spoken exchange`);
+      continue;
+    }
+
     pairs.push({
       id: `p${i}`,
       term,
@@ -466,10 +549,27 @@ function reconstructMatchPairsChallenge(
     return null;
   }
 
+  // The partners are the printed word bank the child chooses from ALOUD, so
+  // they carry the same ear-separability gate the group labels do: an utterance
+  // that fits two entries has no honest verdict.
+  const partnerTexts = pairs.map((p) => p.match);
+  if (!optionsEarSeparable(partnerTexts)) {
+    console.warn(
+      `[WordSorter] Rejected match_pairs challenge: bank [${partnerTexts.join(', ')}] is not ear-separable`,
+    );
+    return null;
+  }
+
+  const relationLabel = ((flat.relationLabel as string) || '').trim();
   const challenge: WordSorterChallenge = {
     id: flat.id as string,
     type: 'match_pairs',
     instruction: flat.instruction as string,
+    // How the partner relates to the term — this is what lets the spoken ask be
+    // a question ("Which word means the opposite of big?") rather than a shrug.
+    // Unrecognised or absent falls back to the askable generic build-side, since
+    // the printed bank still leaves exactly one right answer.
+    ...(relationLabel ? { relationLabel } : {}),
     pairs: shuffleArray(pairs),
   };
 
@@ -523,6 +623,8 @@ For each challenge:
 - word0Text..word7Text: The words to sort
 - word0Emoji..word7Emoji: Emoji for each word (REQUIRED for K — the emoji must show the word's meaning; recommended for grade 1-2)
 - word0Bucket..word7Bucket: Must EXACTLY match bucket0 or bucket1
+
+${SPOKEN_CONTENT_RULES}
 
 RULES:
 - Distribute words roughly evenly across the 2 buckets
@@ -581,6 +683,8 @@ For each challenge:
 - word0Emoji..word9Emoji: Emoji for each word (REQUIRED for K — the emoji must show the word's meaning)
 - word0Bucket..word9Bucket: Must EXACTLY match bucket0, bucket1, or bucket2
 
+${SPOKEN_CONTENT_RULES}
+
 RULES:
 - Distribute words across all 3 buckets (at least 2 per bucket)
 - Mix up word order — do NOT group by bucket
@@ -631,6 +735,7 @@ ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 
 For each challenge:
 - instruction: Clear matching instruction (e.g., "Match each word with its opposite")
+- relationLabel: EXACTLY ONE of "opposite", "synonym", "plural", "rhyme" — the relationship EVERY pair in this challenge shares
 - pairCount: 5-6 pairs
 - pair0Term..pair5Term: The term words (left column)
 - pair0TermEmoji..pair5TermEmoji: Emoji for each term (REQUIRED for K-1 — must show the word's meaning)
@@ -639,10 +744,14 @@ For each challenge:
 - decoy0Word, decoy1Word: TWO decoy words that are NOT the partner of ANY term — same word class and length band as the real match words, so they look like they belong in the right column
 - decoy0Emoji, decoy1Emoji: Emoji for each decoy (REQUIRED for K-1 — a decoy with no picture beside matches that all have one gives itself away)
 
+${SPOKEN_CONTENT_RULES}
+
 RULES:
-- Each pair should have a clear, unambiguous relationship (opposites, synonyms, singular/plural, etc.)
+- Each pair must have ONE unambiguous partner — the student SAYS it out loud, so a term with two defensible partners is a broken question
+- Every pair in a challenge shares the SAME relationship, and relationLabel names it
 - Do NOT reveal answers through ordering — randomize the match column${wordingRule}
 - The decoy words must NEVER be a correct partner for any term, and must never repeat a term or a match
+- No two match words (or decoys) may share a word — the student says one aloud and the tutor must be able to tell which
 - All words must be age-appropriate for grade ${gradeKey}
 - For K: use simple opposites (big/small, hot/cold) or rhyming pairs (cat/hat)
 - For grade 1-2: can include singular/plural, word/antonym, word/synonym

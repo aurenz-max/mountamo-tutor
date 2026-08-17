@@ -3847,110 +3847,175 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'word-sorter',
     description:
-      'Interactive word sorting — drag word cards into labeled category buckets. Supports binary sorting (noun/verb, singular/plural), '
-      + 'ternary sorting (past/present/future, noun/verb/adjective), and pair matching (antonyms, irregular plurals). '
-      + 'ESSENTIAL for K-2 grammar, vocabulary, and comprehension.',
+      'LIVE-JUDGED SPOKEN word sorting (Direct Instruction). The tutor says a word out loud and the student ANSWERS OUT LOUD — '
+      + 'naming the group it belongs with (two groups, or three), or naming its partner from a printed word bank '
+      + '(opposites, synonyms, plurals, rhymes). The tutor judges the spoken answer, corrects contrastively, and its own '
+      + 'affirmation advances the lesson. Nothing is tapped or dragged. REQUIRES A MICROPHONE. '
+      + 'ESSENTIAL for K-2 grammar, vocabulary and categorization.',
     constraints:
-      'Requires 2-3 bucket categories per challenge. Words must be age-appropriate and sortable by a single clear criterion. '
-      + 'Match pairs limited to 5-6 per challenge. BAND FLOOR: at Kindergarten use binary_sort or ternary_sort only — '
-      + 'match_pairs is text-to-text matching (rhymes, antonyms) that requires decoding, so it is for Grade 1+.',
+      'REQUIRES A MICROPHONE — every answer is spoken; there is no tap, drag or button path. '
+      + 'Requires 2-3 group categories per challenge, each labelled with ONE or TWO plain words a child can say back '
+      + '(a label that is a phrase, or that shares a word with another label, is dropped). Words must be age-appropriate '
+      + 'and sortable by a single clear criterion. Match pairs limited to 5-6 per challenge and every term must have ONE '
+      + 'defensible partner. BAND FLOOR: at Kindergarten use binary_sort or ternary_sort only — match_pairs answers from a '
+      + 'printed bank, which requires decoding, so it is for Grade 1+.',
+    // ── DI MODALITY (2026-08-16) — SEVENTEENTH literacy port. The tutor owns
+    // the clock: it says the word, asks once, waits, judges the spoken answer
+    // from the audio in-band, and its own affirmation is the advance. No advance
+    // timer, no Next button, no push-to-talk mic.
+    // THE FORK HAS NO SPLIT — a group name and a partner word are both things a
+    // five-year-old says across a table, so all three modes are SPOKEN and every
+    // tap is deleted. The costume test is what decided it: a child who cannot
+    // categorise at all could still tap a bucket correctly at a 1-in-2 floor, be
+    // told instantly it was wrong, and re-tap until it landed.
+    // WHAT IS NOT A COSTUME AND STAYS: the mats and the word bank. A sort whose
+    // groups are not knowable is a broken task, not a harder one — the screen is
+    // the PAGE, and it was the ACTION that was the costume, never the paper.
+    // THE BANK NO LONGER SHRINKS: the click era consumed it, so the last pair of
+    // every match challenge had one option left and needed no reading at all.
+    // Cue lines and the per-item judging contracts live in `wordSorterScript.ts`
+    // (hand-authored, DISTAR); this block is the session-level frame. SENTINEL
+    // DISCIPLINE (standing gate 2) re-checked on every line below: no sentence
+    // begins with "Yes" or with "My turn", and the same gate binds every
+    // generated label and word, which the build gates enforce on both sides.
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'binary_sort',
-        label: 'Two Buckets (Tier 1)',
+        label: 'Two Groups (Tier 1)',
+        // β UNCHANGED on the DI port, deliberately. The tap became speech, but
+        // the answer SET did not change size and the ask re-states both choices
+        // every round, so the discrimination demand is identical — only the
+        // response channel moved. (Contrast story-talk/letter-spotter, where a
+        // 1-of-4 MENU was deleted outright and the guess floor went with it.)
         beta: 1.5,
         scaffoldingMode: 2,
         challengeTypes: ['binary_sort'],
-        description: 'Sort word cards into 2 labeled buckets (e.g., nouns vs verbs, singular vs plural)',
+        description: 'Hear a word, then SAY which of 2 groups it belongs with (nouns vs verbs, singular vs plural). Spoken production; nothing is tapped.',
       },
       {
         evalMode: 'ternary_sort',
-        label: 'Three Buckets (Tier 2)',
+        label: 'Three Groups (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 3,
         challengeTypes: ['ternary_sort'],
-        description: 'Sort word cards into 3 labeled buckets (e.g., past/present/future tense)',
+        description: 'Hear a word, then SAY which of 3 groups it belongs with (past/present/future tense). Spoken production; nothing is tapped.',
       },
       {
         evalMode: 'match_pairs',
-        label: 'Match Pairs (Tier 3)',
+        label: 'Find the Partner (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 4,
         challengeTypes: ['match_pairs'],
-        description: 'Grade 1+ ONLY (never Kindergarten — text-to-text matching requires decoding). Match word pairs (singular→plural, word→antonym, word→synonym)',
+        description: 'Grade 1+ ONLY (never Kindergarten — the word bank is read, not heard). Hear a word, then SAY its partner from the printed bank (singular→plural, word→antonym, word→synonym, rhyme). The bank stays whole all challenge, so no answer is ever reachable by elimination.',
       },
     ],
     tutoring: {
       taskDescription:
-        'Student is sorting words by {{sortingTopic}}. Challenge {{challengeNumber}}/{{totalChallenges}} ({{challengeType}}): {{instruction}}. '
-        + 'Buckets: {{bucketLabels}}. Sorted {{wordsSorted}}/{{totalWords}} words. Attempt: {{attemptNumber}}. '
-        + 'Word the student is holding right now (empty if none): {{selectedWord}}. '
-        + 'On-screen support tier: {{supportTier}} ("(not set)" = no tier is in play, treat it as full support; '
-        + 'easy/medium = bucket picture cues, already-filed word badges, and a criterion-naming instruction are all on screen; '
-        + 'hard = all three are withdrawn on purpose).',
-      contextKeys: [
-        'challengeType', 'instruction', 'bucketLabels', 'wordsSorted', 'totalWords',
-        'attemptNumber', 'challengeNumber', 'totalChallenges', 'gradeLevel', 'sortingTopic', 'selectedWord',
-        'supportTier',
-      ],
+        'Live-judged Direct Instruction word sorting for a young child. You say one word out loud, ask where it '
+        + 'belongs, and the child answers OUT LOUD. Right now the task identity is "{{challengeType}}" and what '
+        + 'is in front of them is {{stimulus}}. In the two sorting identities the child SAYS the group; in '
+        + '"match_pairs" the child SAYS the partner word from the list printed on their screen. You speak the '
+        + 'exact scripted lines from each bracketed application message, you re-ask when the child asks to hear '
+        + 'the question again, and you judge each spoken attempt from the audio you heard using only the two '
+        + 'allowed reply branches. Deciding where a word belongs is the entire skill being practised, so the '
+        + 'child produces the answer — there is nothing to tap, drag, or point at.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // Correction territory, not answer territory, and every level is a
+      // BEHAVIOUR rather than a line you may say. A ladder that quotes speakable
+      // hints is a no-verdict stall: on a repeated wrong answer the model
+      // reaches for the sanctioned-sounding alternative and says something that
+      // opens with neither sentinel, so the loop records no verdict at all and
+      // the correction counter freezes (18d).
       scaffoldingLevels: {
-        level1:
-          '"Listen — I\'ll say the word out loud for you. Say it with me. Which group does it SOUND like it belongs with? Tap the bucket you think!"',
-        level2:
-          '"Say the word {{selectedWord}} out loud with me. Now listen to our sorting question one more time — I\'ll ask it again. Think about what the word MEANS, then tap your best guess."',
-        level3:
-          '"Let\'s do this one together. The word is {{selectedWord}} — say it with me. I\'ll give you a clue about how the groups are different, and then YOU tap the bucket you think. Ready? Listen..."',
+        level1: 'Use the scripted correction line for this word, then hand the question back and wait.',
+        level2: 'Use that same scripted correction line again, unchanged, and give them longer in silence.',
+        level3: 'Use that same scripted correction line again — the wording is fixed, the patience is what changes.',
       },
+      // Observable behaviours only, and the first entry is the SIGNATURE error:
+      // the wrong answer that arrives fluent, confident, and most likely to be
+      // affirmed by mistake.
       commonStruggles: [
-        { pattern: 'Student places a word in the wrong bucket repeatedly', response: '"Let\'s slow down and do this one together. I\'ll say the word out loud — you say it after me. Now listen to our sorting question again, then tap the bucket that sounds right."' },
-        { pattern: 'Student hesitates and does not tap anything', response: '"Pick any card to start — there is no wrong order! Tap one and I\'ll say it out loud. Then we\'ll figure out where it goes together."' },
-        { pattern: 'Student confuses two similar categories', response: '"Some words are tricky! Say the word out loud with me and think about what it MEANS. I\'ll give you a clue about how the two groups are different — then you make the pick."' },
-        { pattern: 'Student taps matches at random in pair matching', response: '"Let\'s slow down. Tap one word on the left and I\'ll say it out loud. Then listen while we think about its partner — which one sounds right together?"' },
+        {
+          pattern: 'Says the word back instead of answering — "dog" when asked where dog belongs',
+          response: 'That is the question repeated, not an answer, however confident it sounds. Run the scripted correction, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Says a group name with the ending changed, or inside a phrase — "animal", "it is an animal"',
+          response: 'That is a correct answer — affirm it with the scripted line. Categorising is what is being measured, not diction.',
+        },
+        {
+          pattern: 'Describes the word instead of placing it — "it has four legs", "it is furry"',
+          response: 'Noticing is not yet answering. Run the scripted correction, then ask once more and wait.',
+        },
+        {
+          pattern: 'Names a partner that is not on their screen when asked to find one',
+          response: 'Only a word from their printed list can be right here. Run the scripted correction, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Goes quiet after the question, or asks to hear it again',
+          response: 'Silence is a five-year-old weighing two groups against each other — wait. If they ask, the application sends the re-ask; never volunteer one.',
+        },
       ],
-      // ORIENT + STIMULUS beat (reader-fit RF-1): word-sorter claims K — a
-      // pre-reader cannot decode the instruction, the word cards, or the bucket
-      // labels, and contextKeys are tutor-reference only. In lesson mode the
-      // [PRIMITIVE SWITCH]/greeting cap the tutor at one sentence, so without a
-      // directive the tutor greets and stops, stranding the non-reader. These
-      // directives make voicing the sort the mandatory first action and override
-      // the one-sentence cap (addition-subtraction-scene pattern).
       aiDirectives: [
         {
-          title: 'SAY THE SORT OUT LOUD FIRST — the student is a K-2 child who may not read',
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
           instruction:
-            'The student may not be able to read the instruction, the word cards, or the bucket labels — you are their voice. '
-            + 'Whenever a new sorting challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), your FIRST action is: '
-            + '(1) say what we are doing in child terms — the challenge is: "{{instruction}}"; '
-            + '(2) name each bucket out loud so the child knows the choices: {{bucketLabels}} — EXCEPT in the name-free '
-            + 'stance the SUPPORT TIER directive defines (support tier "hard" at Grade 1 and above), where you skip this '
-            + 'step and let the on-screen labels speak for themselves; at Kindergarten you name the buckets aloud at EVERY tier; '
-            + '(3) ask the sorting question as a spoken question (for example, "Is it an animal, or something an animal DOES?"). '
-            + 'Saying the sort out loud IS your greeting for this activity — this overrides any instruction to keep the '
-            + 'transition to a single sentence. Never say which bucket a word belongs in.',
+            'Messages tagged [WSR_ITEM], [WSR_MOVE], [WSR_HEAR] or [WSR_COMPLETE] contain the only lesson words '
+            + 'you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket label '
+            + 'is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" and '
+            + 'corrections begin with "My turn" — never begin any other sentence with those words. Judge honestly '
+            + 'from the audio and do not praise to be kind. YOUR VERDICT LINE IS THE END OF YOUR TURN: you never '
+            + 'continue into another question, never say the next word, and never announce what is coming. The '
+            + 'application decides which word comes next and sends it to you when the screen is ready — a question '
+            + 'you ask early is about the wrong word, and the child then hears it twice.',
         },
         {
-          title: 'SAY WORD CARDS ALOUD — the child reads with your voice',
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
           instruction:
-            'When you receive a [WORD_STAGED] or [WORD_TAP] message, say that word aloud clearly — just the word itself, '
-            + 'warmly and once. The child cannot read the card; your voice is how they know what it says. '
-            + 'Never hint at which bucket or match the word belongs to when saying it.',
+            'The first [WSR_ITEM] carries the greeting, how the game works and the whole first question inside '
+            + 'one quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity '
+            + 'in your own words, and do not add a warm-up question — the quoted line is the whole opening. Say '
+            + 'the word slowly and clearly: for a child who cannot read the card, your voice IS the card.',
         },
         {
-          title: 'SUPPORT TIER — how much of the sorting rule you may say out loud',
+          title: 'WHAT COUNTS AS AN ANSWER',
           instruction:
-            'The support tier is {{supportTier}} — the scaffolding level the on-screen activity is set to. Your talk must '
-            + 'MATCH it, because you are a second scaffold channel and can undo what the screen deliberately withheld. '
-            + 'If it is "(not set)" there is no tier in play: behave as at easy. '
-            + 'easy — full support: name each bucket aloud, restate the sorting rule in child terms, and think it through with the student. '
-            + 'medium — light support: name each bucket aloud and ask the sorting question, but do not restate the rule for every word. '
-            + 'hard — name-free coaching: the on-screen instruction does NOT name the sorting rule, the bucket picture cues are '
-            + 'gone, and the already-sorted word badges are hidden, so you must not supply any of that. Do not state the '
-            + 'criterion, do not read the bucket labels aloud for a Grade 1+ student, and never name the group a word belongs '
-            + 'to. Coach by question instead ("Say the word out loud. What do you notice about it?"). '
-            + 'BAND FLOOR — at Kindergarten the child cannot read anything on screen, so at EVERY tier including hard you '
-            + 'still say each word card aloud when it is staged ([WORD_STAGED] / [WORD_TAP]) and you still name each bucket '
-            + 'aloud so the choices exist for them; what hard withholds at Kindergarten is the sorting RULE, never the words. '
-            + 'At every tier you never say which bucket or match is correct — that is the answer the student is producing.',
+            'Every answer here is SPOKEN, and the [WSR_ITEM] message names the one that is correct. In the two '
+            + 'sorting identities it is a GROUP NAME: the label alone, or with its ending changed, or inside a '
+            + 'little phrase — "Animals", "animal", "it is an animal" — are all the same answer, and you affirm '
+            + 'any of them. In "match_pairs" it is one WORD from the list printed on the child\'s screen, alone or '
+            + 'inside a phrase. What is not an answer: the word you just said, repeated back to you; a '
+            + 'description of the word; or a word that is not one of the choices. THE LAW: you never say the '
+            + 'answer before the child does, in any identity, at any support level. There is nothing on screen '
+            + 'for them to tap, so never suggest picking, pointing, dragging or showing you anything.',
+        },
+        {
+          title: 'THE CHOICES ARE THE QUESTION, NOT A HINT LADDER',
+          instruction:
+            'When the quoted line names the groups ("Animals, or Food?"), that IS the question — a sort whose '
+            + 'groups are unknowable cannot be answered at all, so naming them is never a leak. When the quoted '
+            + 'line does NOT name them, the groups are printed and the student is expected to read them: say only '
+            + 'what is quoted and do not helpfully list them. In "match_pairs" the word list is always printed and '
+            + 'never spoken — do not read it out, do not read any part of it, and do not say how many words are '
+            + 'left. Never say which group or which word is correct until you have given a verdict.',
+        },
+        {
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not name the '
+            + 'choices again to nudge them. A long pause is a five-year-old weighing what a word MEANS, and that '
+            + 'work IS the activity. Think time is unbounded and the application, not the clock, decides when to '
+            + 'move on.',
+        },
+        {
+          title: 'HEAR IT AGAIN ON DEMAND',
+          instruction:
+            'When you receive [WSR_HEAR], the child asked to hear the question again. Say ONLY the quoted line — '
+            + 'the word once more and the question — warmly and slowly, then go back to waiting. Add nothing, '
+            + 'judge nothing you just heard, and never let the repeat carry more help than the first asking did: '
+            + 'no extra stress on any word, no clue about which group fits. This channel is answered at every '
+            + 'grade and every support tier.',
         },
       ],
     },
