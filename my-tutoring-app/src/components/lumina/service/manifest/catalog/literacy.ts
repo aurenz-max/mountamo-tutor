@@ -3062,73 +3062,184 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   // ===== READING: INFORMATIONAL TEXT (RI) =====
   {
     id: 'text-structure-analyzer',
-    description: 'Students identify organizational structure of informational passages: cause-effect, compare-contrast, problem-solution, chronological, or description. Highlight signal words, select structure type, drag content onto visual templates (Venn, T-chart, flowchart, timeline). ESSENTIAL for grades 2-6 informational reading.',
-    constraints: 'Best for grades 2-6. Requires informational text with clear organizational structure.',
+    description:
+      'LIVE-JUDGED SPOKEN informational text structure analysis (Direct Instruction). The student READS a printed '
+      + 'passage and ANSWERS OUT LOUD three ways: naming the linking word in a sentence the tutor points them at, '
+      + 'naming how the whole passage is organised (cause-effect, compare-contrast, problem-solution, time order or '
+      + 'description) from a printed menu, and naming which part of a chart each key idea belongs in. The tutor judges '
+      + 'each spoken answer, corrects contrastively, and its own affirmation advances the lesson. Nothing is tapped, '
+      + 'highlighted or dragged. REQUIRES A MICROPHONE. ESSENTIAL for grades 2-6 informational reading.',
+    constraints:
+      'REQUIRES A MICROPHONE — every answer is spoken; there is no tap, highlight, drag or button path. '
+      + 'Best for grades 2-6 (the student reads the passage themselves; the tutor never reads it aloud). Requires '
+      + 'informational text with ONE clear organizational structure and AT MOST ONE connecting word per sentence — a '
+      + 'sentence carrying two of them has two right answers and its question is dropped. Chart regions must be one or '
+      + 'two plain words a child can say back and tell apart by ear (never "Item A" / "Item B"), and a key idea may '
+      + 'never contain the name of the region it belongs to.',
+    // ── DI MODALITY (2026-08-16) — EIGHTEENTH literacy port, first of the
+    // closed-set literacy frontier (qa/di/BACKLOG.md item 22). The tutor owns
+    // the clock: it points at a sentence, asks once, waits, judges the spoken
+    // answer from the audio in-band, and its own affirmation is the advance. No
+    // advance timer, no Next button, no push-to-talk mic.
+    // ALL FOUR PHASES WENT TO ZERO TAPS. A linking word, a structure name and a
+    // chart region are all things a nine-year-old says across a table, so the
+    // fork ended at step 1's first question three times over. The costume test
+    // decided the deletions: a child who cannot analyse structure at all could
+    // still click a pre-marked span, tap one of two cards at a 1-in-2 floor, and
+    // re-tap a misplaced idea until it landed.
+    // WHAT IS NOT A COSTUME AND STAYS: the passage, the printed structure menu
+    // and the labelled mats — the screen is the PAGE, and it was the ACTION that
+    // was the costume, never the paper.
+    // ⚠️ THE HEADER USED TO PRINT THE ANSWER: a badge rendered the structure type
+    // beside the grade chip from the first paint. No string gate in this family
+    // would have caught it; it is a pixel, not an utterance.
+    // Cue lines and the per-item judging contracts live in
+    // `textStructureAnalyzerScript.ts` (hand-authored, DISTAR); this block is the
+    // session-level frame. SENTINEL DISCIPLINE (standing gate 2) re-checked on
+    // every line below: no sentence begins with "Yes" or with "My turn", and the
+    // same gate binds every generated region label and excerpt, which the build
+    // gates enforce on both sides of the wire.
+    audioInput: { manual_activity: true },
     evalModes: [
-      { evalMode: 'chronological_description', label: 'Chronological/Description (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['chronological', 'description'], description: 'Identify sequence or descriptive structure.' },
-      { evalMode: 'cause_effect', label: 'Cause-Effect (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['cause-effect'], description: 'Identify cause and effect relationships.' },
-      { evalMode: 'compare_contrast', label: 'Compare-Contrast (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['compare-contrast'], description: 'Analyze similarities and differences.' },
-      { evalMode: 'problem_solution', label: 'Problem-Solution (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['problem-solution'], description: 'Identify problem and proposed solutions.' },
+      // β RAISED 0.5 ACROSS THE BOARD, and only because the STRUCTURE changed at
+      // the first step. The click era rendered the signal words as the only
+      // clickable spans in the passage — the answer set was visually delimited,
+      // so a child could click every marked span and score full marks on that
+      // phase with no knowledge at all, and at `easy` they arrived
+      // pre-highlighted. That is now unaided spoken PRODUCTION of a word from a
+      // sentence. (The Identify step's β would NOT have moved on its own:
+      // word-sorter's rule — the menu is still printed and still named aloud, so
+      // the answer set did not change size and only the response channel moved.)
+      { evalMode: 'chronological_description', label: 'Chronological/Description (Tier 1)', beta: 2.5, scaffoldingMode: 1, challengeTypes: ['chronological', 'description'], description: 'SAY the linking word, then SAY whether the passage is Time Order or Description, then SAY where each idea goes. Spoken production; nothing is tapped.' },
+      { evalMode: 'cause_effect', label: 'Cause-Effect (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['cause-effect'], description: 'SAY the linking word (because, so, as a result), then NAME the cause-effect structure aloud, then SAY whether each idea is a Cause or an Effect.' },
+      { evalMode: 'compare_contrast', label: 'Compare-Contrast (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['compare-contrast'], description: 'SAY the linking word (however, similarly, unlike), then NAME the compare-contrast structure aloud, then SAY which side of the chart each idea belongs on.' },
+      { evalMode: 'problem_solution', label: 'Problem-Solution (Tier 3)', beta: 4.0, scaffoldingMode: 3, challengeTypes: ['problem-solution'], description: 'SAY the linking word, then NAME the problem-solution structure aloud — the hardest discrimination in the set, since cause-effect also means "this leads to that" — then SAY whether each idea is the Problem or a Solution.' },
     ],
     supportsEvaluation: true,
     tutoring: {
+      // ⚠️ `challengeType` IS THE STEP, NOT THE EVAL MODE. This primitive's eval
+      // modes ARE the structure types, so pushing the mode would park the
+      // Identify ANSWER in the tutor's context for the whole session, where it
+      // can be volunteered on any turn. The answer arrives per item, inside the
+      // cue, and leaves with it.
       taskDescription:
-        'You are the reading-strategy coach for this text-structure analysis activity. '
-        + 'The student is analyzing the passage "{{title}}" at Grade {{gradeLevel}} across four phases: '
-        + 'find signal words, identify the organizational structure, map key ideas onto a template, then review. '
-        + 'Current phase: {{currentPhase}}. '
-        + 'Signal words found: {{signalWordsFound}} of {{signalWordsTotal}}. '
-        + 'Key ideas placed: {{keyIdeasPlaced}} of {{keyIdeasTotal}}. Attempts: {{attempts}}. '
-        + 'The passage is actually organized as {{structureType}} — this is the ANSWER the student must discover. '
-        + 'NEVER state the structure type outright; instead steer them to the signal words and template clues so they reason it out.',
-      contextKeys: [
-        'title', 'gradeLevel', 'currentPhase', 'structureType',
-        'signalWordsFound', 'signalWordsTotal',
-        'keyIdeasPlaced', 'keyIdeasTotal', 'attempts',
-      ],
+        'Live-judged Direct Instruction text-structure analysis. An informational passage is printed on the '
+        + 'child\'s screen and THEY read it — you never read it aloud, because decoding it is the skill being '
+        + 'practised. Right now the step is "{{challengeType}}" and what is in front of them is {{stimulus}}. '
+        + 'In "find-signal" the child SAYS the one word in a sentence that links the ideas. In "name-structure" '
+        + 'the child SAYS which of the printed structures the whole passage uses. In "place-idea" you read one '
+        + 'idea aloud and the child SAYS which part of the chart it belongs in. You speak the exact scripted '
+        + 'lines from each bracketed application message, you re-ask when the child asks to hear the question '
+        + 'again, and you judge each spoken attempt from the audio you heard using only the two allowed reply '
+        + 'branches. Working out how the text is built is the entire skill, so the child produces every answer — '
+        + 'there is nothing to tap, highlight, drag, or point at.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // Correction territory, not answer territory, and every level is a
+      // BEHAVIOUR rather than a line you may say. A ladder that quotes speakable
+      // hints is a no-verdict stall: on a repeated wrong answer the model
+      // reaches for the sanctioned-sounding alternative and says something that
+      // opens with neither sentinel, so the loop records no verdict at all and
+      // the correction counter freezes (18d).
       scaffoldingLevels: {
-        level1:
-          'SIGNAL-WORDS phase: "What transition words do you see — words like because, first, however, or unlike?" '
-          + 'IDENTIFY phase: "What do the signal words you found tell you about how the ideas connect?" '
-          + 'MAP phase: "Where does this idea belong in the template?" '
-          + 'REVIEW phase: "Does your structure choice match the signal words you highlighted?"',
-        level2:
-          'SIGNAL-WORDS phase: "Re-read slowly and tap every word that links one idea to another." '
-          + 'IDENTIFY phase: "Group the signal words you found — do they show time order, a comparison, a cause, or a problem being solved?" '
-          + 'MAP phase: "Read each region label, then ask which key idea answers it." '
-          + 'REVIEW phase: "Check each region: does every idea sit in the part that matches it?"',
-        level3:
-          'SIGNAL-WORDS phase: "Look for one signal word per sentence that joins ideas, and highlight it." '
-          + 'IDENTIFY phase: "Match your signal-word family to a structure: order words = sequence, likeness/difference words = compare, because/so = cause, problem/solution words = problem-solution. Then choose." '
-          + 'MAP phase: "Take one key idea at a time and place it in the region whose label it best answers." '
-          + 'REVIEW phase: "Walk region by region and confirm each placement before submitting — adjust any that feel off."',
+        level1: 'Use the scripted correction line for this item, then hand the question back and wait.',
+        level2: 'Use that same scripted correction line again, unchanged, and give them longer in silence.',
+        level3: 'Use that same scripted correction line again — the wording is fixed, the patience is what changes.',
       },
+      // Observable behaviours only, and the first entry is the SIGNATURE error:
+      // the wrong answer that arrives fluent, confident, and most likely to be
+      // affirmed by mistake.
       commonStruggles: [
-        { pattern: 'Highlights content words instead of transition/signal words', response: 'Point out that signal words connect ideas (like, because, first) rather than name things.' },
-        { pattern: 'Picks a structure that ignores the signal words found', response: 'Ask which signal words they highlighted and what those words usually show.' },
-        { pattern: 'Places key ideas in the wrong template region', response: 'Have them read the region label aloud and ask which idea answers it.' },
-        { pattern: 'Many attempts without progress (attempts > 1)', response: 'Slow down to one phase at a time — start by re-reading the signal words for a clue.' },
-        { pattern: 'Confuses compare-contrast with cause-effect', response: 'Ask: are two things being measured against each other, or is one thing making another happen?' },
+        {
+          pattern: 'Says a word that NAMES something instead of the linking word — "river" or "flooded" from the sentence they were pointed at',
+          response: 'That is a naming word read off the line, not a linking word, however clearly they read it — and that mix-up is the whole point of this step. Run the scripted correction, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Names a close relative of the right structure — problem-solution for cause-effect, since both mean "this leads to that"',
+          response: 'Telling those two apart is exactly what is being measured, so it is wrong. Run the scripted correction, then ask once more and wait.',
+        },
+        {
+          pattern: 'Says the idea back to you instead of placing it, when asked where it goes',
+          response: 'Those words are the question repeated, not an answer. Run the scripted correction, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Says a structure or region name with the ending changed, or inside a phrase — "cause", "it is the order one", "it goes in Effect"',
+          response: 'That is a correct answer — affirm it with the scripted line. Reading the structure is what is being measured, not diction.',
+        },
+        {
+          pattern: 'Goes quiet after the question, or asks to hear it again',
+          response: 'Silence is a child re-reading a sentence, and that reading IS the activity — wait. If they ask, the application sends the re-ask; never volunteer one.',
+        },
       ],
       aiDirectives: [
         {
-          title: 'ACTIVITY INTRODUCTION',
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
           instruction:
-            'When you receive [ACTIVITY_START], warmly introduce the text-structure activity for the passage "{{title}}". '
-            + 'Tell the student to begin by tapping the signal words that show how the passage is organized. '
-            + 'Do NOT name or hint at the correct structure type — discovering it is the goal. Keep it to 2-3 sentences.',
+            'Messages tagged [TSA_ITEM], [TSA_MOVE], [TSA_HEAR] or [TSA_COMPLETE] contain the only lesson words '
+            + 'you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket label '
+            + 'is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" and '
+            + 'corrections begin with "My turn" — never begin any other sentence with those words. Judge honestly '
+            + 'from the audio and do not praise to be kind. YOUR VERDICT LINE IS THE END OF YOUR TURN: you never '
+            + 'continue into another question, never say the next sentence or idea, and never announce what is '
+            + 'coming. The application decides what comes next and sends it to you when the screen is ready — a '
+            + 'question you ask early is about the wrong thing, and the child then hears it twice.',
         },
         {
-          title: 'PHASE TRANSITIONS',
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
           instruction:
-            'When you receive [PHASE_TO_IDENTIFY], [PHASE_TO_MAP], or [PHASE_TO_REVIEW], briefly orient the student to the new phase in one sentence. '
-            + 'Never name the correct structure and never place ideas for them.',
+            'The first [TSA_ITEM] carries the greeting, how this step works and the whole first question inside '
+            + 'one quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity '
+            + 'in your own words, and do not add a warm-up question — the quoted line is the whole opening. Each '
+            + 'time the step changes, the next quoted line teaches the new step the same way.',
         },
         {
-          title: 'COMPLETION FEEDBACK',
+          title: 'NEVER READ THE PASSAGE ALOUD',
           instruction:
-            'When you receive [ANALYSIS_CORRECT], celebrate briefly and name one strength. '
-            + 'When you receive [ANALYSIS_INSIGHT], encourage the student, then reflect on which signal words point to the real structure so they learn from the miss — coach the reasoning, do not just announce the answer.',
+            'The passage is printed on the child\'s screen and reading it is the skill this activity exists to '
+            + 'build. Never read the passage, a sentence of it, or any part of a sentence aloud — not to help, not '
+            + 'to re-ask, not when they go quiet. When you point them at a sentence you name its POSITION only '
+            + '("the second sentence"). The one exception is written into the cue itself: in the "place-idea" step '
+            + 'the quoted line contains a short idea for you to read, and you read exactly that and nothing more.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER',
+          instruction:
+            'Every answer here is SPOKEN, and the [TSA_ITEM] message names the one that is correct for the step '
+            + 'you are on. In "find-signal" it is ONE WORD from the sentence — the word that joins ideas, alone or '
+            + 'inside a little phrase ("because", "it is because", "the word because"). In "name-structure" it is '
+            + 'one of the printed structures: the whole label, or just the part that tells it apart ("cause" for '
+            + '"Cause and Effect"), or where it sits in the list ("the second one"). In "place-idea" it is a chart '
+            + 'region: the label alone, with its ending changed, or inside a phrase — all the same answer. What is '
+            + 'NOT an answer: a word that names a thing instead of linking ideas; the idea you just read, repeated '
+            + 'back to you; or a structure or region that is not the correct one, however close a relative it is. '
+            + 'THE LAW: you never say the answer before the child does, at any step, at any support level. There '
+            + 'is nothing on screen for them to tap, so never suggest picking, pointing, highlighting or showing '
+            + 'you anything.',
+        },
+        {
+          title: 'THE CHOICES ARE THE QUESTION, NOT A HINT LADDER',
+          instruction:
+            'When the quoted line names the structures or the chart parts ("Cause, or Effect?"), that IS the '
+            + 'question — a choice whose options are unknowable cannot be answered at all, so naming them is never '
+            + 'a leak. When the quoted line does NOT name them, they are printed and the student is expected to '
+            + 'read them: say only what is quoted and do not helpfully list them. Never say which structure or '
+            + 'which part is correct until you have given a verdict.',
+        },
+        {
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not name the '
+            + 'choices again to nudge them. A long pause is a child re-reading a sentence and weighing what it '
+            + 'does, and that work IS the activity. Think time is unbounded and the application, not the clock, '
+            + 'decides when to move on.',
+        },
+        {
+          title: 'HEAR IT AGAIN ON DEMAND',
+          instruction:
+            'When you receive [TSA_HEAR], the child asked to hear the question again. Say ONLY the quoted line — '
+            + 'the question once more — warmly and slowly, then go back to waiting. Add nothing, judge nothing you '
+            + 'just heard, and never let the repeat carry more help than the first asking did: no extra stress on '
+            + 'any word, no clue about which structure or which part fits, and never the passage text. This '
+            + 'channel is answered at every grade and every support tier.',
         },
       ],
     },

@@ -56,6 +56,62 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > 78 and is already one stale. Which is the third demonstration in two days of why this file
 > should rank rather than count.)*
 
+### #104 — **`text-structure-analyzer` (DI port 18): the family's first MULTI-WORD CONNECTIVE answers, said by a child who is READING them off a page** · OPEN
+
+**Filed under the standing rule — this is NEW ANSWER MATERIAL, and `closed_set_choice` is not the new part.**
+word-sorter proved the closed set at scale and decodable-reader proved the proposition menu, so
+`name-structure` ("Cause and Effect" from a printed list of three) inherits both. What neither covers is
+**`find-signal`**, whose answers on three of the four eval modes are not words at all but PHRASES:
+**"As a result", "In contrast", "The problem is", "One solution", "on the other hand"** — three and four
+function words with no stress and no content. `short_spoken_word` is benched for *one short word from a
+closed per-item set*, and a four-word run of unstressed function words is a different acoustic object.
+
+⭐ **What makes it a real question, and why `--di` cannot reach it.** Over a text channel these judged
+perfectly — 16/16 refused, 16/16 affirmed, four modes, zero HIGHs. Over a mic, three things change and
+none of them are visible in a transcript:
+  (a) **function-word phrases are the worst case for an amplitude bracket.** "As a result" is three
+      unstressed syllables a child reads haltingly off a page — *"as… a… result"* — and our turn closes
+      on silence. If it splits, the judge is handed "as" and refuses a correct answer. This is
+      di-sentence-reading's `silenceCloseMs` finding aimed at the shortest possible connected text, and
+      this pack does NOT raise the window.
+  (b) **the accept clause invites a fragment by design.** It accepts the phrase "alone or inside a little
+      phrase" — so *"it is because"* and *"the word as a result"* are correct, which means a truncated
+      transcript of a right answer and a genuine miss can be the same string.
+  (c) **ASR swallows short function words.** "In contrast" against "contrast", "One solution" against
+      "solution" — whether the transcript arrives whole is unmeasured, and the judge is handed the whole
+      phrase as its target.
+
+**What to check (~6 min, one session):**
+1. `npm run dev` → a text-structure-analyzer lesson at Grade 4, eval mode `problem_solution`. Tap the mic
+   once. The tutor should say *"Read sentence two. Which word links the ideas?"* and then STOP.
+2. Say a multi-word connective **fluently** — "the problem is". It must affirm with
+   `"Yes, The problem is is the word that links them."`
+3. Say the same phrase **haltingly, with real pauses** — *"the… problem… is"*. This is a CORRECT answer.
+   If it is refused, read the transcript: a fragment means the silence window closed early and the fix is
+   `silenceCloseMs`, not the contract.
+4. Say a **content word from the same sentence** ("stormwater", "flooding"). It must be REFUSED — this is
+   the pack's named signature error and the one a lenient judge affirms.
+5. Switch to `chronological_description` and confirm the tutor says **"Read sentence one"**, never "the
+   first sentence" — the ordinal form leaked the answer and was fixed on 2026-08-17 (see below).
+6. On the structure step, say just **"cause"** for "Cause and Effect". The short form is a full answer by
+   contract; confirm it is affirmed and not refused for diction.
+7. ⚠️ Confirm the tutor NEVER reads the passage aloud, at any beat, including a re-ask.
+
+**Machine evidence already in hand** (so this row is only the acoustic half): 5 live drives across all
+four eval modes — **16/16 wrong REFUSED, 16/16 right AFFIRMED** on the first mode and PASS with zero
+findings on the other three; `packGateIssues: []` on live content in every mode; every session ALL-VOICE
+(0 gesture items); exactly ONE `name-structure` item per run, which is the payload shape resolving the
+scope's headline §4d worry structurally. The `problem_solution` drive refused **"Cause and Effect"** —
+the nearest-sibling discrimination axis 2 deliberately manufactures — 2/2.
+⭐ **The drive EARNED its keep on this port:** the first `chronological_description` run caught a
+CONFIRMED HIGH `di-answer-leak-in-ask` 2/2 — the ask named the sentence by ORDINAL ("Read the **first**
+sentence") and a chronological passage's signal words ARE ordinals, so the archetypal item said its own
+answer aloud before asking for it. Worst possible landing (Tier-1 mode, grade-2 band floor). Fixed to
+cardinals + a general `askIsAnswerFree` build gate that DROPS any item whose ask contains its own answer;
+re-driven PASS.
+**Source reports:** `qa/tutor-reports/text-structure-analyzer-live-di-{signature,plain}-2026-08-17.md` ·
+**queue:** `qa/di/BACKLOG.md` item 22.
+
 ### #103 — **`word-builder` (DI port 19): the longest spoken answers the family has judged, from the oldest students it has had. Does a four-syllable academic word survive the path?** · OPEN
 
 **Filed under the standing rule — this is NEW ANSWER MATERIAL, and it is new in two directions at once.**

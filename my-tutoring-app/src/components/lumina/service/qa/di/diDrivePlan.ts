@@ -178,6 +178,13 @@ import {
   type DecodableReaderItem,
   type DecodableReaderPayload,
 } from '@/components/lumina/primitives/visual-primitives/literacy/decodableReaderScript';
+import {
+  itemsFromPayload as textStructureItems,
+  textStructureAnalyzerHarnessAnswers,
+  textStructureAnalyzerPackBase,
+  type TextStructureItem,
+  type TextStructurePayloadLike,
+} from '@/components/lumina/primitives/visual-primitives/literacy/textStructureAnalyzerScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -833,6 +840,54 @@ const wordSorterAdapter: DiPortAdapter<WordSorterItem> = {
 };
 
 /**
+ * text-structure-analyzer (EIGHTEENTH literacy port, and the first of the
+ * closed-set literacy frontier — item 22). ALL-VOICE across three STEPS of one
+ * passage, so there is no gesture commit anywhere.
+ *
+ * ⚠️ ITS `build` READS A PAYLOAD, NOT A `challenges` ARRAY — the only adapter in
+ * the registry whose port has no challenge list at all. One generation is ONE
+ * passage with ONE `structureType`, and the pack expands it into a judged read
+ * per signal word, a single structure question, and a judged placement per key
+ * idea. `dropped` therefore counts askable CANDIDATES the build gates refused
+ * (an ambiguous sentence, an excerpt naming its own mat), which is a generator
+ * signal; the session-length cap is reported separately by the script module and
+ * is not a drop.
+ *
+ * What is different about its answer material, three ways over:
+ *
+ *  1. **The one-per-session Identify ask.** The scope predicted a pinned session
+ *     would repeat the same structure question with the same answer on every
+ *     item — §4d as the default state of a production run. The PAYLOAD resolves
+ *     it: one passage, one structureType, so the pack can only build one such
+ *     ask. A drive sees exactly one `name-structure` item however many items it
+ *     has, which is worth knowing before reading a judgment matrix.
+ *  2. **The find-signal leak oracle is completely FLAT, and is this port's
+ *     sharpest gate.** The ask names a sentence by POSITION and never reads it
+ *     aloud — decoding the passage is the skill — so the answer word is absent
+ *     from everything the tutor says. Nothing is subtracted, and a linking word
+ *     arriving through the greeting, the lead-in, the catalog or a struggle
+ *     response is always a finding. The other two steps close on a spoken menu
+ *     and subtract exactly that clause (push-pull-arena's shape,
+ *     tier-conditional like word-sorter's: at `hard` above the band floor no
+ *     menu is spoken and those oracles go flat too).
+ *  3. **Three different signature wrongs in one pack.** `find-signal`'s is a
+ *     CONTENT WORD read straight off the sentence the child was pointed at —
+ *     this primitive's own documented commonest error, and a real word clearly
+ *     read from the line, so a judge grading on "did they say a word from that
+ *     sentence" affirms it. `name-structure`'s is the NEAREST structure, the
+ *     sibling axis-2 deliberately puts in the menu at `hard` because both mean
+ *     "this leads to that". `place-idea`'s is the excerpt SAID BACK — the
+ *     tutor's own words from two seconds earlier.
+ */
+const textStructureAnalyzerAdapter: DiPortAdapter<TextStructureItem> = {
+  build: (data) => {
+    const { items, dropped } = textStructureItems(data as TextStructurePayloadLike);
+    return { items, dropped, surface: textStructureAnalyzerPackBase(items) };
+  },
+  answersFor: textStructureAnalyzerHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -857,6 +912,8 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'word-workout': wordWorkoutAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'word-sorter': wordSorterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'text-structure-analyzer':
+    textStructureAnalyzerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

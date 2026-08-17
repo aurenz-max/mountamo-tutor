@@ -1,36 +1,102 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * TextStructureAnalyzer — DI modality (EIGHTEENTH literacy port, 2026-08-16;
+ * qa/di/BACKLOG.md item 22, port 1 of the closed-set literacy frontier). The
+ * Live tutor owns the clock: it points at a sentence, asks ONCE, waits, judges
+ * the child's spoken answer from the audio in-band, corrects contrastively, and
+ * its OWN affirmation is the advance. There is no advance timer, no Next button,
+ * no push-to-talk mic, and no answer on screen before the tutor affirms.
+ *
+ * THE MODALITY, in one sitting:
+ *
+ *   "I point you at one sentence — you read it and tell me which word links
+ *    the ideas. Your turn. Read the second sentence."         → "because"
+ *   "Yes, because is the word that links them."
+ *   "Now you tell me how the whole passage is put together.
+ *    Cause and Effect, Time Order, or Description?"           → "Cause and Effect"
+ *   "Listen: the river rose over its banks.
+ *    Does that go with Cause, or Effect?"                     → "Cause"
+ *
+ * WHAT WENT, AND WHY:
+ *  - **All four phases' taps.** Clicking a highlighted span, tapping one of two
+ *    cards at a 1-in-2 floor, and re-tapping a misplaced idea until it landed
+ *    are three actions a child who cannot analyse structure performs perfectly.
+ *    All three answers are spoken now (`textStructureAnalyzerScript.ts`).
+ *  - **⚠️ THE HEADER BADGE THAT PRINTED THE ANSWER.** The card rendered
+ *    `<LuminaBadge>{structureType.replace('-', ' ')}</LuminaBadge>` beside the
+ *    grade chip, so "cause effect" was on screen from the first paint, above a
+ *    menu asking the child to work it out. No string gate in this family would
+ *    ever have caught it — it is a pixel, not an utterance.
+ *  - **The `easy` pre-highlight.** `prehighlightSignalWords` seeded phase 1's
+ *    answers as a perception cue. The lever is not deleted, it MOVES to the same
+ *    axis without the answer in it: easy/medium highlight the focus SENTENCE
+ *    (which one to read), hard highlights nothing. Signal words light up only
+ *    once the tutor has affirmed them.
+ *  - **The Next/Back/Submit rail, the phase chips, the attempts counter and the
+ *    feedback card.** Corrections cap in the runner; `PhaseSummaryPanel` reports.
+ *  - **Six improvised tutor sends** (`[ACTIVITY_START]`, `[PHASE_TO_IDENTIFY]`,
+ *    `[PHASE_TO_MAP]`, `[PHASE_TO_REVIEW]`, `[ANALYSIS_CORRECT]`,
+ *    `[ANALYSIS_INSIGHT]`). The cues carry the entire spoken surface.
+ *  - **The printed instruction sentences.** The tutor's line IS the instruction
+ *    now (SWAP-1). Two instruction channels is what the click era had.
+ *
+ * WHAT STAYED — the PAGE, never the voice:
+ *  - The passage. It is the reading material, and the tutor never reads it
+ *    aloud: decoding it is the skill.
+ *  - The printed structure menu with its kid-friendly glosses, and the labelled
+ *    mats. A structure question whose candidates are unknowable is a broken task,
+ *    not a harder one.
+ *  - The `easy` worked anchor, shown pre-placed on its mat and excluded from the
+ *    asked items — an exemplar is page material, not a question.
+ *  - Tap-to-hear, which re-speaks the QUESTION and is never withdrawn.
+ *
+ * Cue lines, judging contracts and build gates live in
+ * `textStructureAnalyzerScript.ts` (hand-authored, DISTAR). Nothing in this file
+ * writes a spoken line.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  LuminaBadge,
   LuminaCard,
+  LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
-  LuminaCardContent,
-  LuminaBadge,
-  LuminaButton,
+  LuminaChallengeCounter,
+  LuminaDropZone,
   LuminaPanel,
-  LuminaActionButton,
-  LuminaAnswerChoice,
-  LuminaFeedbackCard,
-  accentText,
-  dropZoneStateClass,
-  type LuminaAccent,
-  type AnswerChoiceState,
+  LuminaReadAloudGlyph,
   type DropZoneState,
 } from '../../../ui';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { TextStructureAnalyzerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { SoundManager } from '../../../utils/SoundManager';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import {
+  itemsFromPayload,
+  textStructureAnalyzerPackBase,
+  wordBoundedIndexOf,
+  type StructureTypeId,
+  type TextStructureAction,
+  type TextStructureItem,
+  type TextStructureTier,
+} from './textStructureAnalyzerScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
-export type StructureType = 'cause-effect' | 'compare-contrast' | 'problem-solution' | 'chronological' | 'description';
+export type StructureType = StructureTypeId;
 
 export interface TextStructureAnalyzerData {
   title: string;
@@ -38,24 +104,27 @@ export interface TextStructureAnalyzerData {
   passage: string;
   structureType: StructureType;
 
-  // Signal words embedded in the passage
+  /** Signal words embedded in the passage. Offsets are recomputed from the
+   *  passage text by `locateSignalWords`; the model is told not to count. */
   signalWords: Array<{
     word: string;
-    startIndex: number;       // char offset in passage
+    startIndex: number;
     endIndex: number;
   }>;
 
-  // Structure options for Phase 2 (Identify)
+  /** The printed structure menu. `label` is CANONICAL (owned by the script
+   *  module, derived from `type`) so a spoken closed set cannot have its option
+   *  strings authored per generation; `description` is the generated gloss. */
   structureOptions: Array<{
     type: StructureType;
     label: string;
     description: string;
   }>;
 
-  // Template mapping for Phase 3 (Map)
+  /** The mats — "Cause" / "Effect", "Problem" / "Solution". */
   templateRegions: Array<{
     regionId: string;
-    label: string;                // e.g. "Cause", "Effect", "Problem", "Solution", "First", "Then", "Finally"
+    label: string;
   }>;
 
   keyIdeas: Array<{
@@ -64,28 +133,27 @@ export interface TextStructureAnalyzerData {
     correctRegionId: string;
   }>;
 
-  // Why the author chose this structure
   authorPurposeExplanation?: string;
 
   // ──────────────────────────────────────────────────────────────────────
   // Within-mode support tier (config.difficulty) — on-screen scaffolding only.
   // These NEVER change the passage, the correct structure, the signal-word set,
-  // or any correctRegionId. They only withdraw helps so a strong student works
-  // the SAME task more unaided. All optional; absent = full-help legacy behavior.
+  // or any correctRegionId.
   // ──────────────────────────────────────────────────────────────────────
 
-  /** easy: signal words start highlighted as a model (perception cue). hard: student finds them. */
-  prehighlightSignalWords?: boolean;
-  /** easy/medium: phase instructions name the reading strategy / signal-word families. hard: neutral. */
+  /** easy/medium: the ASK names the structures and mats aloud; hard prints them
+   *  only (band floor at grade 2 forces it on at every tier). Consumed by the
+   *  script module from `supportTier`. */
   nameStrategy?: boolean;
-  /** easy: fewer structure options in Phase 2 (correct + 1 distractor). hard: full option set.
-   *  Answer-bearing: the correct option is ALWAYS retained by the generator. */
+  /** easy: fewer structures in the spoken menu. FLOORED AT THREE by the script
+   *  module — a 2-option menu is a 1-in-2 guess on the run's single Identify
+   *  ask, and the guess floor is what a judged loop exists to delete. Saturates
+   *  at 2 in grade 2, where the curriculum has only two structures in band. */
   maxStructureOptions?: number;
-  /** easy: one key idea is pre-placed in its correct region as a worked anchor. hard: all blank.
-   *  Decoupled into anchorIdeaId so the answer key is untouched — this only seeds the start state. */
+  /** easy: one key idea is shown already placed as a worked example. It is
+   *  EXCLUDED from the asked items and never spoken. */
   anchorIdeaId?: string;
-  /** Support tier label, threaded through for any tier-aware UI affordances. */
-  supportTier?: 'easy' | 'medium' | 'hard';
+  supportTier?: TextStructureTier;
 
   // Evaluation props
   instanceId?: string;
@@ -96,10 +164,6 @@ export interface TextStructureAnalyzerData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<TextStructureAnalyzerMetrics>) => void;
 }
 
-// ============================================================================
-// Props
-// ============================================================================
-
 interface TextStructureAnalyzerProps {
   data: TextStructureAnalyzerData;
   className?: string;
@@ -109,24 +173,18 @@ interface TextStructureAnalyzerProps {
 // Constants
 // ============================================================================
 
-type AnalysisPhase = 'signal-words' | 'identify' | 'map' | 'review';
+type TextStructureAccent = NonNullable<PhaseResult['accentColor']>;
 
-// Structure identity stays on labels/badges; region bodies use drop-zone state.
-const STRUCTURE_ACCENTS: Record<StructureType, LuminaAccent> = {
-  'cause-effect': 'orange',
-  'compare-contrast': 'blue',
-  'problem-solution': 'emerald',
-  'chronological': 'amber',
-  'description': 'purple',
+const ACTION_META: Record<
+  TextStructureAction,
+  { label: string; icon: string; accent: TextStructureAccent }
+> = {
+  'find-signal': { label: 'Linking Words', icon: '🔗', accent: 'amber' },
+  'name-structure': { label: 'How It Is Built', icon: '🧭', accent: 'blue' },
+  'place-idea': { label: 'Where Ideas Go', icon: '🗂️', accent: 'emerald' },
 };
 
-const STRUCTURE_ICONS: Record<StructureType, string> = {
-  'cause-effect': 'arrow-right',
-  'compare-contrast': 'columns',
-  'problem-solution': 'lightbulb',
-  'chronological': 'clock',
-  'description': 'list',
-};
+const MAT_COLORS = ['text-violet-300', 'text-sky-300', 'text-emerald-300', 'text-amber-300'];
 
 // ============================================================================
 // Component
@@ -134,556 +192,350 @@ const STRUCTURE_ICONS: Record<StructureType, string> = {
 
 const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, className }) => {
   const {
-    title, gradeLevel, passage, structureType, signalWords, structureOptions,
-    templateRegions, keyIdeas, authorPurposeExplanation,
-    prehighlightSignalWords, nameStrategy, maxStructureOptions, anchorIdeaId,
-    instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
+    title,
+    gradeLevel = '4',
+    passage,
+    structureType,
+    templateRegions = [],
+    keyIdeas = [],
+    anchorIdeaId,
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
-  // Strategy naming defaults ON (legacy / full-help) unless a tier withdraws it.
-  const strategyNamed = nameStrategy ?? true;
-
-  // Tier-aware option set for Phase 2 (Identify). The correct option is ALWAYS
-  // present (the generator guarantees it); we only trim distractors so an easy
-  // student chooses among fewer. Never re-orders away the answer.
-  const visibleStructureOptions = useMemo(() => {
-    if (!maxStructureOptions || maxStructureOptions >= structureOptions.length) return structureOptions;
-    const correct = structureOptions.filter(o => o.type === structureType);
-    const distractors = structureOptions.filter(o => o.type !== structureType);
-    // correct + first (max-1) distractors, preserving original relative order.
-    const kept = [...correct, ...distractors.slice(0, Math.max(0, maxStructureOptions - correct.length))];
-    return structureOptions.filter(o => kept.includes(o));
-  }, [structureOptions, maxStructureOptions, structureType]);
-
-  const [currentPhase, setCurrentPhase] = useState<AnalysisPhase>('signal-words');
-  // easy: signal words start pre-highlighted as a worked model; the student
-  // verifies/refines rather than hunting from scratch.
-  const [highlightedWords, setHighlightedWords] = useState<Set<number>>(() =>
-    prehighlightSignalWords ? new Set(signalWords.map((_, i) => i)) : new Set()
-  );
-  const [selectedStructure, setSelectedStructure] = useState<StructureType | null>(null);
-  // easy: one key idea is pre-placed in its correct region as a worked anchor.
-  // This seeds the START state only — the answer key (correctRegionId) is untouched.
-  const [ideaMapping, setIdeaMapping] = useState<Record<string, string>>(() => {
-    if (!anchorIdeaId) return {};
-    const anchor = keyIdeas.find(k => k.ideaId === anchorIdeaId);
-    return anchor ? { [anchor.ideaId]: anchor.correctRegionId } : {};
-  });
-  const [attemptsCount, setAttemptsCount] = useState(0);
-  const [showFeedback, setShowFeedback] = useState(false);
-
-  // Stable fallback instance ID — must not change across renders.
   const stableInstanceIdRef = useRef(instanceId || `text-structure-analyzer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<TextStructureAnalyzerMetrics>({
+  /** Build gates drop what cannot be asked — a placeholder in a judged loop
+   *  becomes a spoken ask the tutor has to stand behind. */
+  const { items, sentences } = useMemo(() => itemsFromPayload(data), [data]);
+
+  /**
+   * The affirmed item's reveal payload. Set on the affirm and rendered behind
+   * `runner.revealHeld` — NOT `currentSolved` and NOT `stage`, and deliberately
+   * never cleared in `onItemOpened` (18b): the runner opens the next item in the
+   * SAME dispatch as the affirmation, so both of the obvious gates are already
+   * false by render time and a payload cleared there paints on the last item and
+   * nowhere else.
+   */
+  const [reveal, setReveal] = useState<{ action: TextStructureAction; answer: string } | null>(null);
+
+  // ── Evaluation ─────────────────────────────────────────────────────────────
+  const evaluation = usePrimitiveEvaluation<TextStructureAnalyzerMetrics>({
     primitiveType: 'text-structure-analyzer',
     instanceId: resolvedInstanceId,
-    skillId, subskillId, objectiveId, exhibitId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ---------------------------------------------------------------------------
-  // AI Tutoring Integration — context-aware reading-strategy coach. The tutor
-  // never names the correct structure; it points at signal words and the
-  // template so the student reasons it out themselves.
-  // ---------------------------------------------------------------------------
-  const correctStructureLabel = useMemo(
-    () => structureOptions.find(o => o.type === structureType)?.label ?? structureType.replace('-', ' '),
-    [structureOptions, structureType]
-  );
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const solvedOf = (action: TextStructureAction) => {
+      const ids = new Set(items.filter((i) => i.action === action).map((i) => i.id));
+      return summary.outcomes.filter((o) => ids.has(o.id) && o.solved).length;
+    };
+    const totalOf = (action: TextStructureAction) =>
+      items.filter((i) => i.action === action).length;
 
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    gradeLevel,
-    currentPhase,
-    structureType,
-    signalWordsTotal: signalWords.length,
-    signalWordsFound: highlightedWords.size,
-    keyIdeasTotal: keyIdeas.length,
-    keyIdeasPlaced: Object.keys(ideaMapping).length,
-    attempts: attemptsCount,
-  }), [
-    title, gradeLevel, currentPhase, structureType,
-    signalWords.length, highlightedWords.size,
-    keyIdeas.length, ideaMapping, attemptsCount,
-  ]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'text-structure-analyzer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
-
-  // Activity introduction — fire once when the AI tutor connects.
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] This is a text-structure analysis activity for Grade ${gradeLevel}: "${title}". `
-      + `The student reads an informational passage, hunts for ${signalWords.length} signal words, identifies how the passage is organized, `
-      + `then maps ${keyIdeas.length} key ideas onto a structure template. `
-      + `Introduce the activity warmly and tell them to start by tapping the signal words that show how the passage is organized. `
-      + `Do NOT name the structure type — that is what they will figure out. Keep it to 2-3 sentences.`,
-      { silent: true }
-    );
-  }, [isConnected, gradeLevel, title, signalWords.length, keyIdeas.length, sendText]);
-
-  // Phase navigation
-  const phases: AnalysisPhase[] = ['signal-words', 'identify', 'map', 'review'];
-  const phaseLabels: Record<AnalysisPhase, string> = {
-    'signal-words': 'Signal Words',
-    'identify': 'Identify',
-    'map': 'Map',
-    'review': 'Review',
-  };
-
-  const nextPhase = () => {
-    const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) {
-      SoundManager.navigate();
-      const next = phases[idx + 1];
-      setCurrentPhase(next);
-
-      // Phase-transition coaching — introduce the new task without solving it.
-      if (next === 'identify') {
-        sendText(
-          `[PHASE_TO_IDENTIFY] The student found ${highlightedWords.size} of ${signalWords.length} signal words and is now choosing how the passage is organized. `
-          + `Briefly tell them to use the signal words they found as clues to pick the structure. Do NOT name the correct structure. One sentence.`,
-          { silent: true }
-        );
-      } else if (next === 'map') {
-        sendText(
-          `[PHASE_TO_MAP] The student selected the "${structureOptions.find(o => o.type === selectedStructure)?.label ?? 'a'}" structure and is now placing ${keyIdeas.length} key ideas onto the template regions. `
-          + `Briefly tell them to drop each idea into the part of the template where it belongs. Do NOT place any ideas for them. One sentence.`,
-          { silent: true }
-        );
-      } else if (next === 'review') {
-        sendText(
-          `[PHASE_TO_REVIEW] The student placed all ${keyIdeas.length} key ideas and is reviewing their analysis before submitting. `
-          + `Briefly invite them to double-check their structure choice and idea placement, then submit. One sentence.`,
-          { silent: true }
-        );
-      }
-    }
-  };
-  const prevPhase = () => {
-    const idx = phases.indexOf(currentPhase);
-    if (idx > 0) {
-      SoundManager.navigate();
-      setCurrentPhase(phases[idx - 1]);
-    }
-  };
-
-  // Toggle signal word highlight
-  const toggleSignalWord = useCallback((index: number) => {
-    setHighlightedWords(prev => {
-      const next = new Set(Array.from(prev));
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-  }, []);
-
-  // Render passage with clickable signal words
-  const renderPassageWithSignalWords = useMemo(() => {
-    if (signalWords.length === 0) return <p className="text-slate-200 text-sm leading-relaxed">{passage}</p>;
-
-    // Sort signal words by startIndex
-    const sorted = [...signalWords].sort((a, b) => a.startIndex - b.startIndex);
-    const elements: React.ReactNode[] = [];
-    let lastEnd = 0;
-
-    sorted.forEach((sw, i) => {
-      // Text before this signal word
-      if (sw.startIndex > lastEnd) {
-        elements.push(
-          <span key={`text-${i}`} className="text-slate-200">
-            {passage.slice(lastEnd, sw.startIndex)}
-          </span>
-        );
-      }
-
-      const isHighlighted = highlightedWords.has(i);
-      elements.push(
-        <span
-          key={`sw-${i}`}
-          onClick={() => currentPhase === 'signal-words' ? toggleSignalWord(i) : undefined}
-          className={`${
-            currentPhase === 'signal-words' ? 'cursor-pointer hover:bg-yellow-400/30' : ''
-          } ${
-            isHighlighted ? 'bg-yellow-400/30 text-yellow-200 underline underline-offset-2' : 'text-slate-200'
-          } rounded px-0.5 transition-colors`}
-        >
-          {passage.slice(sw.startIndex, sw.endIndex)}
-        </span>
-      );
-      lastEnd = sw.endIndex;
-    });
-
-    // Remaining text
-    if (lastEnd < passage.length) {
-      elements.push(<span key="text-end" className="text-slate-200">{passage.slice(lastEnd)}</span>);
-    }
-
-    return <p className="text-sm leading-relaxed">{elements}</p>;
-  }, [passage, signalWords, highlightedWords, currentPhase, toggleSignalWord]);
-
-  // Map an idea to a region
-  const mapIdeaToRegion = useCallback((ideaId: string, regionId: string) => {
-    SoundManager.snap();
-    setIdeaMapping(prev => ({ ...prev, [ideaId]: regionId }));
-  }, []);
-
-  // Calculate mapping accuracy
-  const mappingAccuracy = useMemo(() => {
-    let correct = 0;
-    let total = keyIdeas.length;
-    if (total === 0) return 100;
-    keyIdeas.forEach(idea => {
-      if (ideaMapping[idea.ideaId] === idea.correctRegionId) correct++;
-    });
-    return Math.round((correct / total) * 100);
-  }, [keyIdeas, ideaMapping]);
-
-  // Submit evaluation
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-    setAttemptsCount(prev => prev + 1);
-
-    const structureCorrect = selectedStructure === structureType;
-    const signalWordsFound = highlightedWords.size;
-    const signalWordsTotal = signalWords.length;
-    const accuracy = mappingAccuracy;
-
-    // Score: structure ID (35%) + signal words (30%) + mapping (35%)
-    const structScore = structureCorrect ? 35 : 0;
-    const signalScore = signalWordsTotal > 0 ? Math.round((signalWordsFound / signalWordsTotal) * 30) : 30;
-    const mapScore = Math.round((accuracy / 100) * 35);
-    const score = structScore + signalScore + mapScore;
-
+    const mapTotal = totalOf('place-idea');
     const metrics: TextStructureAnalyzerMetrics = {
       type: 'text-structure-analyzer',
-      structureIdentifiedCorrectly: structureCorrect,
-      signalWordsFound,
-      signalWordsTotal,
-      templateMappingAccuracy: accuracy,
+      structureIdentifiedCorrectly: solvedOf('name-structure') > 0,
+      signalWordsFound: solvedOf('find-signal'),
+      signalWordsTotal: totalOf('find-signal'),
+      templateMappingAccuracy: mapTotal === 0
+        ? 0
+        : Math.round((solvedOf('place-idea') / mapTotal) * 100),
       structureType,
-      attemptsCount: attemptsCount + 1,
+      attemptsCount: summary.attemptsCount,
     };
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
+      metrics,
+      { itemResults: summary.outcomes, hearTaps: summary.hearTaps },
+      undefined,
+      summary.diagnosisEvidence,
+    );
+  }, [items, structureType, evaluation]);
 
-    submitEvaluation(score >= 50, score, metrics, {
-      highlightedWords: Array.from(highlightedWords),
-      selectedStructure,
-      ideaMapping,
-    });
-    setShowFeedback(true);
+  // ── The pack — wording lives in textStructureAnalyzerScript.ts ─────────────
+  const pack = useMemo<JudgedScriptPack<TextStructureItem>>(() => ({
+    ...textStructureAnalyzerPackBase(items),
+    statusLines: {
+      idle: 'Tap the microphone to start reading.',
+      ready: () => 'Read the passage — then say your answer out loud.',
+      retry: () => 'Have another go — say your answer out loud.',
+      noVerdict: () => 'One more time — say your answer out loud.',
+      done: 'Great reading today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      const heard = lastHeard?.trim() ?? '';
+      const challenge = item.action === 'find-signal'
+        ? `Read one sentence, then say the word that links the ideas: "${item.stimulusText}"`
+        : item.action === 'name-structure'
+          ? 'Read the whole passage, then say how it is organised.'
+          : `Say which part of the chart an idea belongs in: "${item.stimulusText}"`;
+      return {
+        challenge,
+        expected: `"${item.answer}" said out loud.`,
+        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+      };
+    },
+  }), [items]);
 
-    // Completion coaching — react to how the analysis went.
-    const selectedLabel = structureOptions.find(o => o.type === selectedStructure)?.label ?? 'their choice';
-    if (structureCorrect && accuracy === 100) {
-      sendText(
-        `[ANALYSIS_CORRECT] The student finished: identified the "${correctStructureLabel}" structure correctly, `
-        + `found ${signalWordsFound} of ${signalWordsTotal} signal words, and mapped every key idea correctly. `
-        + `Celebrate briefly and name one thing they did well (e.g., using signal words to spot the structure). One or two sentences.`,
-        { silent: true }
-      );
-    } else {
-      sendText(
-        `[ANALYSIS_INSIGHT] The student finished and submitted. They chose the "${selectedLabel}" structure `
-        + `(the passage is actually ${correctStructureLabel}), found ${signalWordsFound} of ${signalWordsTotal} signal words, and placed ideas with ${accuracy}% accuracy. `
-        + `Encourage them, then briefly reflect on the signal words that point to the real structure so they learn from it — do not just announce the answer flatly.`,
-        { silent: true }
-      );
+  const runner = useJudgedScriptRunner<TextStructureItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel,
+    exhibitId,
+    onFinished: handleFinished,
+    onAffirmed: (item) => setReveal({ action: item.action, answer: item.answer }),
+  });
+
+  const currentItem = runner.currentItem;
+  const actionMeta = ACTION_META[currentItem?.action ?? 'find-signal'];
+
+  /**
+   * The linking words this run has already earned, by sentence. Read off the
+   * runner's solved ledger rather than a local set, so the only thing that can
+   * light a word up in the passage is a tutor affirmation.
+   */
+  const affirmedWordBySentence = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const item of items) {
+      if (item.action !== 'find-signal' || !runner.solvedIds.has(item.id)) continue;
+      map.set(item.sentenceIndex, item.answer);
     }
-  }, [
-    hasSubmittedEvaluation, selectedStructure, structureType, highlightedWords,
-    signalWords, mappingAccuracy, attemptsCount, submitEvaluation, ideaMapping,
-    structureOptions, correctStructureLabel, sendText,
-  ]);
+    return map;
+  }, [items, runner.solvedIds]);
 
-  // Render progress — phase navigation chrome (no kit equivalent for the
-  // labeled multi-phase chip rail; grading-state colors mark completed/active).
-  const renderProgress = () => (
-    <div className="flex items-center gap-2 mb-4">
-      {phases.map((phase, i) => {
-        const isActive = phase === currentPhase;
-        const phaseIdx = phases.indexOf(currentPhase);
-        const isCompleted = i < phaseIdx;
+  /** Ideas already filed on their mats — same rule, same ledger. */
+  const filedByRegion = useMemo(() => {
+    const map = new Map<string, string[]>();
+    if (anchorIdeaId) {
+      const anchor = keyIdeas.find((k) => k.ideaId === anchorIdeaId);
+      const label = templateRegions.find((r) => r.regionId === anchor?.correctRegionId)?.label;
+      if (anchor && label) map.set(label, [anchor.text]);
+    }
+    for (const item of items) {
+      if (item.action !== 'place-idea' || !runner.solvedIds.has(item.id)) continue;
+      map.set(item.answer, [...(map.get(item.answer) ?? []), item.stimulusText]);
+    }
+    return map;
+  }, [items, runner.solvedIds, anchorIdeaId, keyIdeas, templateRegions]);
+
+  /** The choice the tutor is affirming right now, for the reveal ring. Guarded
+   *  on the ACTION: by render time the surface may already point at the next
+   *  step, and ringing one of its choices would be wrong. */
+  const revealedChoice =
+    runner.revealHeld && reveal && reveal.action === currentItem?.action ? reveal.answer : null;
+
+  const focusSentence =
+    currentItem?.action === 'find-signal' && currentItem.showFocusSentence
+      ? currentItem.sentenceIndex
+      : -1;
+
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+      label: ACTION_META[item.action].label,
+      icon: ACTION_META[item.action].icon,
+      accentColor: ACTION_META[item.action].accent,
+    }));
+  }, [evaluation.hasSubmitted, runner.summary, items]);
+
+  // ============================================================================
+  // Render
+  // ============================================================================
+
+  if (items.length === 0) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-8 text-center text-slate-400">
+          This passage is still being written. Try generating it again.
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  /**
+   * The passage — printed material, never an answer surface and never read
+   * aloud by the tutor. Nothing here is clickable: the child reads it and says
+   * the answer. A linking word is marked only once the tutor has affirmed it.
+   */
+  const renderPassage = () => (
+    <LuminaPanel className="p-4">
+      <p className="text-sm leading-relaxed text-slate-200">
+        {sentences.map((sentence) => {
+          const isFocus = sentence.index === focusSentence;
+          const affirmed = affirmedWordBySentence.get(sentence.index);
+          const at = affirmed ? wordBoundedIndexOf(sentence.text, affirmed) : -1;
+          const body = at >= 0 && affirmed
+            ? (
+              <>
+                {sentence.text.slice(0, at)}
+                <span className="rounded bg-amber-400/25 px-0.5 text-amber-200 underline underline-offset-2">
+                  {sentence.text.slice(at, at + affirmed.length)}
+                </span>
+                {sentence.text.slice(at + affirmed.length)}
+              </>
+            )
+            : sentence.text;
+          return (
+            <span
+              key={sentence.index}
+              className={`rounded px-0.5 transition-colors ${
+                isFocus ? 'bg-sky-400/15 ring-1 ring-sky-400/40' : ''
+              }`}
+            >
+              {body}{' '}
+            </span>
+          );
+        })}
+      </p>
+    </LuminaPanel>
+  );
+
+  /** The structure menu — printed, glossed, and not a button. The child says
+   *  which one it is; the ring appears only when the tutor affirms. */
+  const renderStructureMenu = (item: TextStructureItem) => (
+    <div className="grid gap-2">
+      {item.choices.map((label, idx) => {
+        const isRevealed = revealedChoice === label;
         return (
-          <React.Fragment key={phase}>
-            {i > 0 && <div className={`h-0.5 w-6 ${isCompleted || isActive ? 'bg-emerald-500/60' : 'bg-slate-600/40'}`} />}
-            <div className={`px-2 py-1 rounded text-xs font-medium border ${
-              isCompleted ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-              : isActive ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-              : 'bg-slate-700/20 border-slate-600/30 text-slate-500'
-            }`}>
-              {phaseLabels[phase]}
-            </div>
-          </React.Fragment>
+          <div
+            key={label}
+            className={`rounded-xl border p-3 transition-colors ${
+              isRevealed
+                ? 'border-emerald-400/40 bg-emerald-500/15'
+                : 'border-white/10 bg-white/5'
+            }`}
+          >
+            <p className={`text-sm font-medium ${isRevealed ? 'text-emerald-200' : 'text-slate-100'}`}>
+              {label}
+            </p>
+            {item.choiceNotes[idx] && (
+              <p className="mt-0.5 text-xs text-slate-400">{item.choiceNotes[idx]}</p>
+            )}
+          </div>
         );
       })}
     </div>
   );
 
-  // Render template for Phase 3 (Map). The idea-assignment mechanics stay
-  // bespoke while region bodies use the shared drop-zone state language.
-  const renderTemplate = () => {
-    const unmappedIdeas = keyIdeas.filter(idea => !ideaMapping[idea.ideaId]);
-    return (
-      <div className="space-y-3">
-        {/* Unmapped ideas (drag source) */}
-        {unmappedIdeas.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-xs text-slate-500">Drag key ideas to the correct region:</p>
-            <div className="flex flex-wrap gap-1.5">
-              {unmappedIdeas.map(idea => (
-                <div key={idea.ideaId} className="px-2 py-1.5 rounded-md bg-white/5 border border-white/10 text-slate-300 text-xs cursor-grab">
-                  {idea.text}
-                </div>
+  /** The mats. Nothing is clickable and nothing is dragged: the child says the
+   *  mat's name. Filed ideas are what the tutor has already affirmed, plus the
+   *  `easy` worked anchor, which is marked as the example it is. */
+  const renderMats = (item: TextStructureItem) => (
+    <div className={`grid gap-3 ${item.choices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+      {item.choices.map((label, idx) => {
+        const filed = filedByRegion.get(label) ?? [];
+        const isRevealed = revealedChoice === label;
+        const zoneState: DropZoneState = isRevealed ? 'correct' : filed.length > 0 ? 'filled' : 'idle';
+        return (
+          <div key={label} className="w-full">
+            <h3 className={`mb-2 text-center text-sm font-bold ${MAT_COLORS[idx] ?? MAT_COLORS[0]}`}>
+              {label}
+            </h3>
+            <LuminaDropZone
+              state={zoneState}
+              className="min-h-[88px] content-start justify-start gap-1 pointer-events-none p-2"
+            >
+              {filed.map((text) => (
+                <span key={text} className="rounded bg-black/20 px-2 py-1 text-xs text-slate-200">
+                  {text}
+                  {anchorIdeaId
+                    && keyIdeas.find((k) => k.ideaId === anchorIdeaId)?.text === text
+                    && <span className="ml-1 opacity-60">(example)</span>}
+                </span>
               ))}
-            </div>
+            </LuminaDropZone>
           </div>
-        )}
-
-        {/* Template regions */}
-        <div className={`grid gap-2 ${
-          templateRegions.length === 2 ? 'grid-cols-2'
-          : templateRegions.length === 3 ? 'grid-cols-3'
-          : 'grid-cols-2'
-        }`}>
-          {templateRegions.map(region => {
-            const mappedIdeas = keyIdeas.filter(idea => ideaMapping[idea.ideaId] === region.regionId);
-            const zoneState: DropZoneState = mappedIdeas.length > 0 ? 'filled' : 'idle';
-            return (
-              <div
-                key={region.regionId}
-                className={`min-h-[80px] rounded-xl p-3 transition-all ${dropZoneStateClass(zoneState)}`}
-              >
-                <p className={`mb-2 text-xs font-bold uppercase tracking-wide ${accentText[STRUCTURE_ACCENTS[structureType]]}`}>
-                  {region.label}
-                </p>
-                <div className="space-y-1">
-                  {mappedIdeas.map(idea => {
-                    const isAnchor = idea.ideaId === anchorIdeaId;
-                    return (
-                      <div key={idea.ideaId} className={`text-xs rounded px-2 py-1 flex items-center justify-between gap-1 ${
-                        isAnchor ? 'bg-emerald-500/15 border border-emerald-500/30' : 'bg-black/20'
-                      }`}>
-                        <span>{idea.text}{isAnchor && <span className="ml-1 opacity-60">(example)</span>}</span>
-                        {isAnchor ? (
-                          <span className="text-emerald-300/60 text-xs shrink-0">★</span>
-                        ) : (
-                          <button
-                            onClick={() => setIdeaMapping(prev => {
-                              const next = { ...prev };
-                              delete next[idea.ideaId];
-                              return next;
-                            })}
-                            className="text-white/40 hover:text-white/70 text-xs shrink-0"
-                          >
-                            x
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {mappedIdeas.length === 0 && (
-                    <p className="py-1 text-center text-xs text-slate-500">Place ideas here</p>
-                  )}
-                </div>
-                {/* Drop area — click to assign */}
-                {unmappedIdeas.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {unmappedIdeas.map(idea => (
-                      <button
-                        key={idea.ideaId}
-                        onClick={() => mapIdeaToRegion(idea.ideaId, region.regionId)}
-                        className="w-full rounded border border-white/10 bg-white/5 px-2 py-1 text-left text-xs text-slate-500 transition-colors hover:bg-white/10 hover:text-slate-300"
-                      >
-                        + {idea.text}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // ============================================================================
-  // Main Render
-  // ============================================================================
+        );
+      })}
+    </div>
+  );
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
-              <LuminaBadge accent={STRUCTURE_ACCENTS[structureType]} className="text-xs">
-                {structureType.replace('-', ' ')}
-              </LuminaBadge>
-            </div>
+            <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
           </div>
+          {/* NO STRUCTURE BADGE. The click era printed the answer here. */}
+          {!evaluation.hasSubmitted && (
+            <LuminaBadge accent={actionMeta.accent} className="text-xs">
+              {actionMeta.icon} {actionMeta.label}
+            </LuminaBadge>
+          )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {renderProgress()}
-
-        {/* Phase 1: Signal Words */}
-        {currentPhase === 'signal-words' && (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-500">
-              {strategyNamed
-                ? 'Tap the signal words (transition words like "because", "first", "however") that show how this passage is organized:'
-                : 'Tap the words in the passage that show how it is organized:'}
-            </p>
-            {/* PAINTING: clickable signal-word spans inside the readout panel */}
-            <LuminaPanel>
-              {renderPassageWithSignalWords}
-            </LuminaPanel>
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-slate-400">
-                Found: {highlightedWords.size} / {signalWords.length} signal words
-              </p>
-              <LuminaActionButton action="next" onClick={nextPhase} disabled={highlightedWords.size === 0}>
-                Next: Identify Structure
-              </LuminaActionButton>
+        {!evaluation.hasSubmitted && (
+          <>
+            <div className="flex items-center justify-center gap-4">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
+              />
+              {/* Tap-to-hear — the question again, never a hint ladder, and
+                  never withdrawn by band or tier. */}
+              <button
+                type="button"
+                onClick={runner.hearStimulus}
+                className={`
+                  flex h-11 w-11 items-center justify-center rounded-full
+                  bg-amber-500/15 border-2 border-amber-500/30
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
+                `}
+                aria-label="Hear the question again"
+              >
+                <span className="text-xl">🔁</span>
+              </button>
+              <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
-          </div>
-        )}
 
-        {/* Phase 2: Identify Structure */}
-        {currentPhase === 'identify' && (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-500">
-              {strategyNamed
-                ? 'Use the signal words you found to decide: what organizational structure does this passage use?'
-                : 'What organizational structure does this passage use? Justify it from the text.'}
-            </p>
-            <div className="grid gap-2">
-              {visibleStructureOptions.map(opt => {
-                const isSelected = selectedStructure === opt.type;
-                const state: AnswerChoiceState = isSelected ? 'selected' : 'idle';
-                return (
-                  <LuminaAnswerChoice
-                    key={opt.type}
-                    state={state}
-                    onClick={() => { SoundManager.select(); setSelectedStructure(opt.type); }}
-                    className="p-3"
-                  >
-                    <p className="text-sm font-medium">{opt.label}</p>
-                    <p className="text-xs opacity-70 mt-0.5">{opt.description}</p>
-                  </LuminaAnswerChoice>
-                );
-              })}
-            </div>
-            <div className="flex justify-between">
-              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
-              <LuminaActionButton action="next" onClick={nextPhase} disabled={!selectedStructure}>
-                Next: Map Ideas
-              </LuminaActionButton>
-            </div>
-          </div>
-        )}
+            {renderPassage()}
 
-        {/* Phase 3: Map Key Ideas */}
-        {currentPhase === 'map' && (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-500">
-              {strategyNamed
-                ? <>Place each key idea into the correct part of the {structureType.replace('-', ' ')} template:</>
-                : 'Place each key idea into the region where it belongs:'}
-            </p>
-            {renderTemplate()}
-            <div className="flex justify-between">
-              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
-              <LuminaActionButton action="next" onClick={nextPhase}
-                disabled={Object.keys(ideaMapping).length < keyIdeas.length}>
-                Review
-              </LuminaActionButton>
-            </div>
-          </div>
-        )}
+            {currentItem?.action === 'name-structure' && renderStructureMenu(currentItem)}
 
-        {/* Phase 4: Review */}
-        {currentPhase === 'review' && (
-          <div className="space-y-4">
-            {/* Summary */}
-            <div className="space-y-2">
-              <LuminaPanel className="p-3">
-                <p className="text-xs text-slate-500 mb-1">Signal Words Found:</p>
-                <div className="flex flex-wrap gap-1">
-                  {signalWords.map((sw, i) => (
-                    <span key={i} className={`text-xs px-1.5 py-0.5 rounded ${
-                      highlightedWords.has(i) ? 'bg-yellow-400/20 text-yellow-300' : 'bg-slate-700/40 text-slate-500'
-                    }`}>
-                      {sw.word}
-                    </span>
-                  ))}
+            {currentItem?.action === 'place-idea' && (
+              <div className="space-y-3">
+                <div className="flex justify-center">
+                  <div className="rounded-2xl border-2 border-white/15 bg-white/5 px-6 py-3 text-center text-sm font-medium text-slate-100">
+                    {currentItem.stimulusText}
+                  </div>
                 </div>
-              </LuminaPanel>
+                {renderMats(currentItem)}
+              </div>
+            )}
 
-              <LuminaPanel className="p-3">
-                <p className="text-xs text-slate-500 mb-1">Selected Structure:</p>
-                <p className={`text-sm font-medium ${selectedStructure === structureType ? 'text-emerald-300' : 'text-slate-200'}`}>
-                  {structureOptions.find(o => o.type === selectedStructure)?.label || 'None selected'}
-                </p>
-              </LuminaPanel>
+            {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}
+            <JudgedMicPanel run={runner} />
+          </>
+        )}
 
-              <LuminaPanel className="p-3">
-                <p className="text-xs text-slate-500 mb-1">Template Mapping:</p>
-                {templateRegions.map(region => {
-                  const mapped = keyIdeas.filter(i => ideaMapping[i.ideaId] === region.regionId);
-                  return (
-                    <div key={region.regionId} className="mt-1">
-                      <span className="text-xs font-bold text-slate-400">{region.label}:</span>
-                      {mapped.length > 0 ? (
-                        mapped.map(i => <span key={i.ideaId} className="text-xs text-slate-300 ml-1">{i.text}</span>)
-                      ) : (
-                        <span className="text-xs text-slate-600 ml-1">Empty</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </LuminaPanel>
-            </div>
-
-            {/* Submit / Feedback */}
-            <div className="flex justify-between">
-              <LuminaButton tone="subtle" onClick={prevPhase}>Edit</LuminaButton>
-              {!hasSubmittedEvaluation ? (
-                <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
-                  Submit
-                </LuminaActionButton>
-              ) : (
-                <LuminaFeedbackCard
-                  status={selectedStructure === structureType ? 'correct' : 'insight'}
-                  label="Analysis Complete!"
-                  className="w-full text-center"
-                  teachingNote={authorPurposeExplanation || undefined}
-                >
-                  <span className="text-sm text-slate-400">
-                    Structure: {selectedStructure === structureType ? 'Correct' : 'Incorrect'} |
-                    Signal Words: {highlightedWords.size}/{signalWords.length} |
-                    Mapping: {mappingAccuracy}%
-                  </span>
-                </LuminaFeedbackCard>
-              )}
-            </div>
-          </div>
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
+            heading="Text Structure Complete!"
+            celebrationMessage="Great reading — you told me every answer out loud!"
+          />
         )}
       </LuminaCardContent>
     </LuminaCard>

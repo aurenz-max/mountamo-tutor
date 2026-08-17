@@ -9,6 +9,28 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+/**
+ * ⚠️ THE BUILD GATES ARE IMPORTED, NEVER COPIED (DI port, 2026-08-16).
+ *
+ * This generator and `textStructureAnalyzerScript.ts` are the two sides of one
+ * wire, and both have to agree on what is sayable, which spans exist in the
+ * passage, and what the structure labels ARE. letter-spotter's two sides drifted
+ * to 90 vs 100 characters on exactly this question and disagreed live about what
+ * a sayable sentence was; one address is the fix.
+ *
+ * `STRUCTURE_LABEL` in particular is now the pack's, not the model's: the child
+ * SAYS the label out loud and the judge is handed it as a target, so it cannot
+ * be authored per generation.
+ */
+import {
+  isSayableLabel,
+  locateSignalWords,
+  MIN_STRUCTURE_OPTIONS_EASY,
+  opensWithSentinel,
+  optionsEarSeparable,
+  STRUCTURE_GLOSS,
+  STRUCTURE_LABEL,
+} from '../../primitives/visual-primitives/literacy/textStructureAnalyzerScript';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -26,7 +48,11 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"compare-contrast": Analyze similarities and differences in text. `
       + `The passage should use signal words like "however", "similarly", "in contrast", "on the other hand", "both". `
-      + `Template regions: Similarities / Differences (or Item A / Item B). Key ideas map to comparison regions.`,
+      // ⚠️ NOT "Item A / Item B" — the child SAYS the region name, and said out
+      // loud those two are indistinguishable (the ear-separability gate drops
+      // them, which would silently delete the placement step on every
+      // compare-contrast passage). Name the things being compared.
+      + `Template regions: name the TWO THINGS being compared ("Frogs" / "Toads" / "Both"), or Similarities / Differences. Key ideas map to comparison regions.`,
     schemaDescription: "'compare-contrast' (analyze similarities and differences, β 3.0)",
   },
   'problem-solution': {
@@ -94,8 +120,15 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 // ---------------------------------------------------------------------------
 
 interface TextStructureSupportScaffold {
-  /** #1 perception: easy seeds the signal words pre-highlighted as a model. */
-  prehighlightSignalWords: boolean;
+  /**
+   * ⚠️ #1 perception, REBUILT ANSWER-FREE (DI port, 2026-08-16). This used to be
+   * `prehighlightSignalWords`, which seeded phase 1's ANSWERS on screen before
+   * the tutor asked for them — fine while a click graded them, an answer leak
+   * the moment the child has to produce one. The lever survives on the same axis
+   * with the answer taken out of it: easy/medium highlight the FOCUS SENTENCE
+   * (which one to read), hard highlights nothing. The component derives that
+   * from `supportTier` directly, so nothing is stamped on the payload.
+   */
   /** #2 instruction: easy/medium name the strategy (signal-word families, structure name). */
   nameStrategy: boolean;
   /** #5 answer-form: number of structure options shown in Phase 2 (correct always kept). */
@@ -116,13 +149,35 @@ function resolveSupportStructure(
 
   if (tier === 'easy') {
     return {
-      prehighlightSignalWords: true,
+      // ⚠️ NO LONGER TRUE UNDER THE JUDGED LOOP, and the field is kept only so a
+      // cached payload still typechecks: pre-highlighting the signal words
+      // printed phase 1's ANSWERS before the tutor asked for them. The perception
+      // lever moved to the same axis without the answer in it — easy/medium
+      // highlight the focus SENTENCE, hard highlights nothing (the component
+      // derives that from `supportTier`).
       nameStrategy: true,
-      maxStructureOptions: 2, // correct + 1 distractor
+      /**
+       * ⭐ THREE, NOT TWO (DI port, item 22 §5).
+       *
+       * Under a tap, `correct + 1 distractor` was scaffolding: the child picked
+       * from a short menu and a wrong pick was corrected instantly. Under the
+       * judged loop it is a 1-IN-2 GUESS FLOOR on the single Identify ask of the
+       * entire run — the payload carries one passage and one structureType, so
+       * there is exactly one such ask — and a coin flip then decides the whole
+       * measurement of the skill. The guess floor is precisely what a judged loop
+       * exists to delete.
+       *
+       * It CLAMPS to the band rather than inflating: grade 2 has only two
+       * structures in the curriculum (`structuresByGrade`), so it saturates at 2
+       * there, which is a real ceiling and not a softening (word-sorter's
+       * binary_sort shape). Axis 2 is untouched — the near-distractor ladder
+       * still runs 0 → 1 → all.
+       */
+      maxStructureOptions: MIN_STRUCTURE_OPTIONS_EASY,
       showAnchorIdea: true,
       promptLines: [
         lead,
-        'EASY: the signal words begin highlighted as a worked model, the instructions name the reading strategy (look for transition words, then match the structure), the Identify step shows only the correct structure plus ONE distractor, and one key idea is pre-placed in its region as an example.',
+        'EASY: the instructions name the reading strategy (look for the linking words, then match the structure), the Identify step shows the correct structure plus two clearly-different distractors, and one key idea is shown already placed in its region as a worked example.',
         'Keep the title and description neutral — never state the support level or name the answer (the structure type or where ideas go).',
       ],
     };
@@ -130,13 +185,12 @@ function resolveSupportStructure(
 
   if (tier === 'medium') {
     return {
-      prehighlightSignalWords: false,
       nameStrategy: true,
       maxStructureOptions: 3,
       showAnchorIdea: false,
       promptLines: [
         lead,
-        'MEDIUM: the student finds the signal words unaided, the instructions still name the reading strategy, the Identify step shows three structure options, and no key idea is pre-placed.',
+        'MEDIUM: the student finds the linking words unaided, the instructions still name the reading strategy, the Identify step shows three structure options, and no key idea is shown pre-placed.',
         'Keep the title and description neutral — never state the support level or name the answer.',
       ],
     };
@@ -144,13 +198,12 @@ function resolveSupportStructure(
 
   // hard — all scaffolds withdrawn; the student works and justifies unaided.
   return {
-    prehighlightSignalWords: false,
     nameStrategy: false,
     maxStructureOptions: undefined, // full option set
     showAnchorIdea: false,
     promptLines: [
       lead,
-      'HARD: no signal words are pre-highlighted, the instructions do NOT name the strategy or the structure (the student must justify the structure from the text), the Identify step shows the full option set, and no key idea is pre-placed.',
+      'HARD: nothing on the page is highlighted, the instructions do NOT name the strategy or the structure (the student must justify the structure from the text), the Identify step shows the full option set, and no key idea is shown pre-placed.',
       'Keep the title and description neutral — never state the support level or name the answer.',
     ],
   };
@@ -197,23 +250,15 @@ function distance(a: StructureType, b: StructureType): number {
   return STRUCTURE_DISTANCE[a]?.[b] ?? 2;
 }
 
-/** Kid-friendly option labels/descriptions for any distractor type the LLM did
- *  not author (used only when reconstructing the option set to a tier target). */
-const STRUCTURE_FALLBACK_LABEL: Record<StructureType, string> = {
-  'cause-effect': 'Cause and Effect',
-  'compare-contrast': 'Compare and Contrast',
-  'problem-solution': 'Problem and Solution',
-  'chronological': 'Sequence / Time Order',
-  'description': 'Description',
-};
-
-const STRUCTURE_FALLBACK_DESC: Record<StructureType, string> = {
-  'cause-effect': 'One thing makes another thing happen.',
-  'compare-contrast': 'How two things are alike and different.',
-  'problem-solution': 'A problem is named, then ways to fix it.',
-  'chronological': 'Events told in the order they happen.',
-  'description': 'Details and features about one topic.',
-};
+/**
+ * The option labels are CANONICAL and owned by the script module — the child
+ * says one out loud and the judge is handed it as a target, so it may not be
+ * authored per generation. The gloss stays generated wherever the model wrote
+ * one; `STRUCTURE_GLOSS` only fills in for a distractor type the model did not
+ * describe (which happens whenever axis 2 reconstructs the option set).
+ */
+const STRUCTURE_FALLBACK_LABEL = STRUCTURE_LABEL;
+const STRUCTURE_FALLBACK_DESC = STRUCTURE_GLOSS;
 
 interface TextStructureProblemShape {
   /** # of NEAR (distance ≤ 2) distractors the trimmed option set must lead with.
@@ -312,8 +357,14 @@ const textStructureAnalyzerSchema: Schema = {
     gradeLevel: { type: Type.STRING, description: "Target grade level ('2' through '6')" },
     passage: { type: Type.STRING, description: "Informational passage (4-10 sentences, appropriate reading level)" },
     structureType: { type: Type.STRING, enum: ["cause-effect", "compare-contrast", "problem-solution", "chronological", "description"], description: "The organizational structure of the passage" },
+    // ⚠️ EVERY ARRAY IS BOUNDED (flash-lite truncation template). All four used
+    // to be unbounded against a wide schema on `gemini-flash-lite-latest` with
+    // no ceiling at all — the exact shape that returns a payload truncated
+    // mid-string. The caps are the grade ladder's own ceilings (see gradeNotes),
+    // so nothing a grade actually asks for is refused.
     signalWords: {
       type: Type.ARRAY,
+      maxItems: '8',
       items: {
         type: Type.OBJECT,
         properties: {
@@ -326,6 +377,7 @@ const textStructureAnalyzerSchema: Schema = {
     },
     structureOptions: {
       type: Type.ARRAY,
+      maxItems: '5',
       items: {
         type: Type.OBJECT,
         properties: {
@@ -338,6 +390,7 @@ const textStructureAnalyzerSchema: Schema = {
     },
     templateRegions: {
       type: Type.ARRAY,
+      maxItems: '4',
       items: {
         type: Type.OBJECT,
         properties: {
@@ -349,6 +402,7 @@ const textStructureAnalyzerSchema: Schema = {
     },
     keyIdeas: {
       type: Type.ARRAY,
+      maxItems: '8',
       items: {
         type: Type.OBJECT,
         properties: {
@@ -365,31 +419,86 @@ const textStructureAnalyzerSchema: Schema = {
 };
 
 /**
- * SP-8: Recompute startIndex/endIndex from passage text.
- * LLMs cannot reliably compute character offsets — derive deterministically.
+ * SP-8: recompute startIndex/endIndex from the passage text — LLMs cannot count
+ * characters, so the model is told not to try.
+ *
+ * ⚠️ THE IMPLEMENTATION MOVED TO `textStructureAnalyzerScript.locateSignalWords`
+ * AND GAINED A WORD BOUNDARY (DI port, 2026-08-16). The version that lived here
+ * used a bare `indexOf` on the lowercased passage, so the signal word "so"
+ * matched inside "also" and "before" inside "beforehand" — the highlight landed
+ * on the wrong span. That was cosmetic while a highlight was decoration; it is
+ * load-bearing now, because the SENTENCE a match falls in decides which item the
+ * child is asked to read. It also de-duplicates: a word listed twice can only
+ * ever produce one askable item.
  */
 function recomputeSignalWordOffsets(
   passage: string,
   signalWords: { word: string; startIndex: number; endIndex: number }[],
 ): { word: string; startIndex: number; endIndex: number }[] {
-  const lowerPassage = passage.toLowerCase();
-  const recomputed: { word: string; startIndex: number; endIndex: number }[] = [];
-
+  const located = locateSignalWords(passage, signalWords);
+  const kept = new Set(located.map((sw) => sw.word.toLowerCase()));
   for (const sw of signalWords) {
-    const searchWord = sw.word.toLowerCase();
-    const idx = lowerPassage.indexOf(searchWord);
-    if (idx >= 0) {
-      recomputed.push({
-        word: sw.word,
-        startIndex: idx,
-        endIndex: idx + sw.word.length,
-      });
-    } else {
+    if (!kept.has(sw.word.toLowerCase())) {
       console.warn(`[TextStructureAnalyzer] Signal word "${sw.word}" not found in passage — dropping`);
     }
   }
+  return located.map((sw) => ({
+    word: sw.word,
+    startIndex: sw.startIndex,
+    endIndex: sw.endIndex,
+  }));
+}
 
-  return recomputed;
+/**
+ * Generator-side build gates — the same calls the script module runs on its
+ * side of the wire, so a question that would be dropped on screen is re-drawn
+ * or reported here instead of silently vanishing. KEEP-OR-DROP, never backfill:
+ * a placeholder in a judged loop becomes a spoken ask the tutor must stand
+ * behind.
+ */
+function applyJudgedBuildGates(result: TextStructureAnalyzerData): void {
+  // 1. Mats must be sayable, distinct, and separable BY EAR. "Item A" / "Item B"
+  //    carry a unique token each and are indistinguishable the moment a child
+  //    says one out loud, which is why the ear gate has a minimum word length.
+  const regions = (result.templateRegions ?? []).filter(
+    (r) => !!r?.regionId && isSayableLabel(r.label ?? ''),
+  );
+  const labels = regions.map((r) => r.label);
+  const distinct = new Set(labels.map((l) => l.toLowerCase())).size === regions.length;
+  if (regions.length < 2 || !distinct || !optionsEarSeparable(labels)) {
+    console.warn(
+      `[text-structure-analyzer] template regions [${labels.join(', ')}] are not an askable spoken set `
+      + '— the idea-placement step will build no items.',
+    );
+  }
+  result.templateRegions = regions;
+
+  // 2. An excerpt may not NAME its own mat ("The problem was the flooding" under
+  //    a mat labelled "Problem" is answerable by hearing one word), may not open
+  //    with a verdict sentinel, and must belong to a surviving region.
+  const labelTokens = new Set(
+    labels.flatMap((l) => l.toLowerCase().replace(/[^a-z0-9\s]+/g, ' ').split(/\s+/).filter(Boolean)),
+  );
+  const regionIds = new Set(regions.map((r) => r.regionId));
+  const before = (result.keyIdeas ?? []).length;
+  result.keyIdeas = (result.keyIdeas ?? []).filter((idea) => {
+    if (!idea?.ideaId || !idea.text || !regionIds.has(idea.correctRegionId)) return false;
+    if (opensWithSentinel(idea.text)) return false;
+    const words = idea.text.toLowerCase().replace(/[^a-z0-9\s]+/g, ' ').split(/\s+/).filter(Boolean);
+    return !words.some((w) => labelTokens.has(w));
+  });
+  if (result.keyIdeas.length !== before) {
+    console.log(
+      `[text-structure-analyzer] dropped ${before - result.keyIdeas.length} key idea(s) that named `
+      + 'their own region, opened with a verdict sentinel, or had no region.',
+    );
+  }
+
+  // 3. The anchor must still exist after the drop — it is shown pre-placed as a
+  //    worked example and excluded from the asked items.
+  if (result.anchorIdeaId && !result.keyIdeas.some((i) => i.ideaId === result.anchorIdeaId)) {
+    result.anchorIdeaId = result.keyIdeas.length > 1 ? result.keyIdeas[0].ideaId : undefined;
+  }
 }
 
 type TextStructureAnalyzerConfig = Partial<TextStructureAnalyzerData> & {
@@ -511,12 +620,34 @@ AVAILABLE STRUCTURES for this grade: ${availableStructures.join(', ')}
 ${challengeTypeSection}
 ${structureTypeOverride}
 ${tierSection}
+## THIS IS A SPOKEN, LIVE-JUDGED ACTIVITY — WHAT THAT CHANGES
+The student never taps anything. A tutor points them at ONE sentence and they SAY the linking
+word; then they SAY how the passage is organised; then, for each key idea read aloud to them,
+they SAY which part of the chart it belongs in. Every string below is therefore either printed
+for them to read or said out loud by a tutor, and four rules follow from that:
+
+A. ⭐ **ONE LINKING WORD PER SENTENCE.** A sentence containing two connecting words ("Then it
+   makes a chrysalis, and after two weeks a butterfly comes out") has TWO right answers to
+   "which word links the ideas?", so the activity DROPS it and the student loses that round.
+   Put at most ONE connecting word in any single sentence, and spread the signal words across
+   different sentences.
+B. **Region labels must be sayable and tellable-apart BY EAR.** One or two plain words a child
+   can say back ("Cause", "Effect", "Problem", "Solution", "Before", "After", "Main Topic",
+   "Details"). NEVER label regions with letters or numbers ("Item A" / "Item B", "Group 1") —
+   said out loud those are indistinguishable. For compare-contrast, NAME THE TWO THINGS being
+   compared ("Frogs", "Toads", "Both").
+C. ⭐ **A key idea may NEVER contain the name of the region it belongs to.** "The problem was the
+   flooding" filed under "Problem" is answerable by hearing one word rather than by thinking.
+   Rewrite the excerpt so it states the content without naming its own region.
+D. **Never begin any excerpt, label, title or description with "Yes" or with "My turn"** — those
+   two openers are reserved verdict signals in the spoken session.
+
 Rules:
 1. Write an informational passage using ONE primary structure from the available list
-2. Embed signal words naturally — include the word field with the exact text as it appears in the passage. Do NOT worry about startIndex/endIndex accuracy — they will be recomputed automatically.
-3. structureOptions: always provide 3-4 options including the correct one plus plausible distractors from the available structures list
-4. templateRegions: create regions matching the chosen structure (e.g. Cause/Effect for cause-effect, Before/After for chronological)
-5. keyIdeas: short excerpts from the passage that students drag to template regions
+2. Embed signal words naturally — include the word field with the exact text as it appears in the passage. Do NOT worry about startIndex/endIndex accuracy — they will be recomputed automatically. Every signal word must appear in a DIFFERENT sentence (rule A).
+3. structureOptions: always provide 3-4 options including the correct one plus plausible distractors from the available structures list. Write the kid-friendly description for each; the LABEL is set by the application, so do not worry about its exact wording.
+4. templateRegions: create regions matching the chosen structure (e.g. Cause/Effect for cause-effect, Before/After for chronological), under rule B
+5. keyIdeas: short excerpts from the passage (14 words or fewer) that the tutor reads aloud, under rule C
 6. CRITICAL — Signal words must ONLY be words that belong to the chosen structure type. Do NOT include signal words from other structure types:
    - cause-effect ONLY: "because", "so", "as a result", "therefore", "since", "due to", "consequently", "leads to"
    - compare-contrast ONLY: "however", "similarly", "in contrast", "on the other hand", "both", "alike", "different", "whereas", "unlike"
@@ -532,7 +663,17 @@ Rules:
       config: {
         responseMimeType: "application/json",
         responseSchema: activeSchema,
-        systemInstruction: 'You are an expert K-6 reading comprehension instructor specializing in informational text structure analysis. You create grade-appropriate passages with clear organizational patterns and embedded signal words. You are meticulous about character offsets — count carefully. Template regions match the passage structure. Key ideas are concise excerpts that clearly belong to one region.',
+        /**
+         * 8192 IS THE RIGHT NUMBER *HERE* — checked against the model actually
+         * configured rather than pasted. The truncation template's ceiling is
+         * calibrated on `gemini-flash-lite-latest`, where the whole budget is
+         * payload; word-builder needed 25000 only because it moved to a THINKING
+         * model that spends the same ceiling on reasoning first. This call is
+         * flash-lite, and every array above is now bounded, so the ceiling is a
+         * runaway backstop rather than a limit the content can reach.
+         */
+        maxOutputTokens: 8192,
+        systemInstruction: 'You are an expert K-6 reading comprehension instructor specializing in informational text structure analysis. You create grade-appropriate passages with clear organizational patterns and embedded signal words. This activity is SPOKEN and live-judged: the student reads the passage and says every answer out loud, so each sentence carries at most one connecting word, region labels are plain words a child can say and tell apart by ear, and a key idea never contains the name of the region it belongs to.',
       }
     });
     const text = response.text;
@@ -544,6 +685,11 @@ Rules:
       result.signalWords = recomputeSignalWordOffsets(result.passage, result.signalWords);
     }
 
+    // The judged-loop build gates, run on THIS side of the wire too (the script
+    // module runs the same calls on the other). Applied before the anchor is
+    // chosen, so a worked example is never picked from an idea that then drops.
+    applyJudgedBuildGates(result);
+
     // ── Within-mode support tier: withdraw on-screen scaffolding (never the content).
     //    Applied AFTER the signal-word offset recompute so the tier can only remove
     //    help. Gated ONLY on supportTier being present (a blended/auto session is a
@@ -551,15 +697,32 @@ Rules:
     //    structure-agnostic, so resolve once from the resolved structureType. ──
     if (supportTier) {
       const sc = resolveSupportStructure(result.structureType ?? (pinnedType ?? 'description'), supportTier);
-      result.prehighlightSignalWords = sc.prehighlightSignalWords;
       result.nameStrategy = sc.nameStrategy;
       result.maxStructureOptions = sc.maxStructureOptions;
       result.supportTier = supportTier;
-      // Worked anchor (easy): pre-place exactly ONE key idea in its correct region.
-      // Decoupled into anchorIdeaId so the answer key (correctRegionId) is untouched —
-      // the component seeds the start state only. Pick deterministically (first idea).
-      if (sc.showAnchorIdea && result.keyIdeas && result.keyIdeas.length > 1) {
-        result.anchorIdeaId = result.keyIdeas[0].ideaId;
+      /**
+       * Worked anchor (easy): show exactly ONE key idea already placed in its
+       * correct region. Decoupled into `anchorIdeaId` so the answer key
+       * (correctRegionId) is untouched — this only seeds what is printed.
+       *
+       * ⚠️ IT IS DRAWN FROM THE MOST-REPRESENTED REGION, not simply the first
+       * idea (DI port, 2026-08-16). The anchor is EXCLUDED from the asked items —
+       * an exemplar is not a question — so taking it off a region that has only
+       * one idea strands that region, and a placement step whose remaining ideas
+       * all land on one mat is answerable by saying that mat's name every round.
+       * The script module's coverage gate then drops the whole step, which is
+       * correct and also means `easy` silently loses its third phase. Picking
+       * from the biggest region keeps both mats reachable.
+       */
+      if (sc.showAnchorIdea && result.keyIdeas && result.keyIdeas.length > 2) {
+        const perRegion = new Map<string, number>();
+        for (const idea of result.keyIdeas) {
+          perRegion.set(idea.correctRegionId, (perRegion.get(idea.correctRegionId) ?? 0) + 1);
+        }
+        const fullest = Array.from(perRegion.entries()).sort((a, b) => b[1] - a[1])[0];
+        result.anchorIdeaId = fullest && fullest[1] > 1
+          ? result.keyIdeas.find((i) => i.correctRegionId === fullest[0])?.ideaId
+          : undefined;
       } else {
         result.anchorIdeaId = undefined;
       }
@@ -618,6 +781,28 @@ Rules:
 
       console.log(`[text-structure-analyzer] Support tier "${supportTier}" applied (${pinnedType ? 'single-mode ' + pinnedType : 'blended'}; structure=${result.structureType}).`);
     }
+
+    /**
+     * ⭐ CANONICALISE THE OPTION LABELS — always, tier or no tier.
+     *
+     * The child SAYS one of these out loud and the judge is handed it as the
+     * target string, so it cannot be authored per generation: one
+     * "Cause/Effect Relationship" and the ask is unsayable, one "Sequence of
+     * Events" beside "Order of Events" and no utterance has an honest home. The
+     * five labels are owned by `textStructureAnalyzerScript` and derived from
+     * the `type` enum, which makes ear-separability true by construction over a
+     * set of five we control.
+     *
+     * The model's GLOSS is kept wherever it wrote one — it is printed beside the
+     * label, is never the answer, and is the half worth generating.
+     */
+    result.structureOptions = (result.structureOptions ?? [])
+      .filter((opt) => !!opt && ALL_STRUCTURES.includes(opt.type as StructureType))
+      .map((opt) => ({
+        type: opt.type,
+        label: STRUCTURE_LABEL[opt.type as StructureType],
+        description: opt.description?.trim() || STRUCTURE_GLOSS[opt.type as StructureType],
+      }));
 
     // Exclude targetEvalMode + difficulty from the raw config spread (difficulty is
     // consumed above into structured scaffold fields; don't leak the raw string).
