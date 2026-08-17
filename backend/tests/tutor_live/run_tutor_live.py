@@ -2015,7 +2015,8 @@ DONE_CLAIM_RE = re.compile(
 
 
 def build_di_journey(live: Dict[str, Any], grade: str,
-                     wrong_kind: str = "plain", cap_drill: bool = False) -> Dict[str, Any]:
+                     wrong_kind: str = "plain", cap_drill: bool = False,
+                     cap_item: Optional[str] = None) -> Dict[str, Any]:
     plan = live.get("diPlan")
     if not plan:
         raise RuntimeError(
@@ -2058,7 +2059,30 @@ def build_di_journey(live: Dict[str, Any], grade: str,
     # then the runner's move-on cue — which carries the NEXT item's ask, so that
     # cue REPLACES the next ask beat exactly as it does in production.
     capped_id = None
-    if cap_drill:
+    if cap_item:
+        # --di-cap-item: pin the drill to a NAMED item instead of the first
+        # spoken one. A pack whose move-on cue differs by item KIND cannot be
+        # covered otherwise — decodable-reader (port 8) has three shapes and
+        # only one of them is ever the first voice item, and the one that is
+        # NOT reachable is the only one carrying a close line that names the
+        # answer. Section 7 of the sweep handoff asked for exactly this flag.
+        match = next((i for i in plan["items"] if i["id"] == cap_item), None)
+        if match is None:
+            raise RuntimeError(
+                f'--di-cap-item "{cap_item}" is not in this session. Items: '
+                + ", ".join(f'{i["id"]}({i["answerKind"]}/{i.get("action")})'
+                            for i in plan["items"])
+            )
+        if match["answerKind"] != "voice":
+            raise RuntimeError(
+                f'--di-cap-item "{cap_item}" is a GESTURE item. The cap drill '
+                "answers wrong in TEXT, and a gesture item's verdict is computed "
+                "in code from the described placement — capping one needs the "
+                "drill to replay gestureVerdict.wrong N times, which this harness "
+                "does not do yet. Cover a tap move-on with pack gates."
+            )
+        capped_id = cap_item
+    elif cap_drill:
         capped_id = next((i["id"] for i in plan["items"] if i["answerKind"] == "voice"), None)
         if capped_id is None:
             # It used to fall through here and run an ordinary plain drive with no
@@ -2212,6 +2236,7 @@ def build_di_journey(live: Dict[str, Any], grade: str,
             "pack_gate_issues": plan["packGateIssues"],
             "wrong_kind": wrong_kind,
             "cap_drill": bool(capped_id),
+            "capped_item": capped_id,
             "grade": grade,
         },
     }
@@ -2282,9 +2307,18 @@ def run_di_oracles(results: List[BeatResult], events: List[str],
             # stimulus the subtraction misses and the whole line is scanned,
             # which is the right direction for a leak oracle to fail.
             scanned = _norm(spoken)
-            exempt = _norm(di.get("leak_exempt_span") or "")
-            if exempt and exempt in scanned:
-                scanned = scanned.replace(exempt, " ")
+            # A pack may declare MORE THAN ONE legitimate span: decodable-reader's
+            # read-along choice question reads the whole story aloud AND names
+            # every card, with the question sitting between them, so one
+            # contiguous span would swallow the question — the very place a
+            # tutor giving the answer away would do it. A bare string still
+            # works; every port before port 8 sends one.
+            exempt_raw = di.get("leak_exempt_span") or ""
+            spans = exempt_raw if isinstance(exempt_raw, list) else [exempt_raw]
+            for span in spans:
+                exempt = _norm(span or "")
+                if exempt and exempt in scanned:
+                    scanned = scanned.replace(exempt, " ")
             for token in di.get("leak_tokens") or []:
                 if re.search(rf"\b{re.escape(_norm(token))}\b", scanned):
                     add("HIGH", "di-answer-leak-in-ask", b,
@@ -2927,6 +2961,13 @@ async def amain() -> int:
                          "the only path that reaches two open defects: a correction "
                          "repeated word for word, and a capped item that re-asks a "
                          "question the runner withdraws 0.9s later (BACKLOG 18c b/c).")
+    ap.add_argument("--di-cap-item", default=None, metavar="ITEM_ID",
+                    help="cap a NAMED item instead of the first spoken one. Use when a "
+                         "pack's move-on cue differs by item kind and the shape you need "
+                         "is never first — decodable-reader's choice move-on is the only "
+                         "one of its three that names the answer, and a decode session "
+                         "always opens on a read line. Voice items only; the error message "
+                         "lists the session's item ids.")
     args = ap.parse_args()
 
     print(f"[1/4] Firebase sign-in…")
@@ -2941,13 +2982,14 @@ async def amain() -> int:
     print(f"      tier-1 status: {live.get('status')}; scaffold keys: {list((live.get('tutoring') or {}).keys())}")
 
     if args.di:
-        journey = build_di_journey(live, args.grade, args.di_wrong, args.di_cap)
+        journey = build_di_journey(live, args.grade, args.di_wrong, args.di_cap,
+                                   args.di_cap_item)
         meta = journey["meta"]
         print(f"      judged loop: {meta['items']} items "
               f"({meta['voice_items']} spoken / {meta['gesture_items']} hands), "
               f"{meta['dropped_challenges']} challenge(s) dropped by the build gates, "
               f"wrong-answer mode: {meta['wrong_kind']}"
-              f"{', cap drill ON' if meta['cap_drill'] else ''}")
+              + (f", cap drill ON ({meta['capped_item']})" if meta['cap_drill'] else ''))
         if meta["pack_gate_issues"]:
             print(f"      ⚠ pack gates over LIVE content: {meta['pack_gate_issues']}")
     else:

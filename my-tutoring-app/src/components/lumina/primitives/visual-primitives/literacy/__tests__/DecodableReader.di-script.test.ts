@@ -35,8 +35,11 @@ import {
   completeCue,
   contrastCorrectionLine,
   correctionLine,
+  decodableReaderHarnessAnswers,
+  decodableReaderPackBase,
   evidenceLineFor,
   itemCue,
+  itemsFromChallenges,
   moveOnCue,
   opensWithSentinel,
   optionsEarSeparable,
@@ -103,17 +106,15 @@ const CHOICE = answerItemFromQuestion(PROPOSITION_Q, 1, 'main_idea', SENTENCES)!
 
 const ITEMS: DecodableReaderItem[] = [READ, SPOKEN, CHOICE];
 
-/** The pack exactly as the component assembles it (minus component closures). */
-const pack: JudgedScriptPack<DecodableReaderItem> = {
-  primitiveType: 'decodable-reader',
-  activityLine: 'live direct instruction decodable story reading with comprehension',
-  items: ITEMS,
-  itemCue,
-  moveOnCue,
-  completeCue: () => completeCue('literal'),
-  pronounceCue,
-  contextFor: (item) => ({ challengeType: item.kind, stimulus: stimulusFor(item) }),
-};
+/**
+ * The pack exactly as the component assembles it — the SHARED cue surface, not
+ * a hand-rolled copy of it. The literal that used to sit here was the eighth
+ * such copy the sweep has found: a fixture that re-types the pack can pass
+ * while the real one drifts, which is the exact defect 19f caught on both sides
+ * of letter-spotter's wire.
+ */
+const pack: JudgedScriptPack<DecodableReaderItem> =
+  decodableReaderPackBase(ITEMS, 'literal');
 
 /** The line the tutor actually SPEAKS — the shared parser, so every port reads
  *  the same span. Everything else in a cue is judge-side instruction. */
@@ -435,7 +436,16 @@ describe('decodable-reader pack · the answer is never given away', () => {
   });
 
   it('the stimulus pushed to the tutor is answer-free by construction', () => {
-    expect(stimulusFor(READ)).toBe('The cat sat on a mat.');
+    // REVERT-BITE for the port's worst live finding: a read item used to push
+    // its LINE here, and the tutor fabricated a [CURRENT STATE] block reading
+    // it aloud on three consecutive asks — before the child decoded a word.
+    // A non-opening read ask is "Your turn. Read it.", which names nothing by
+    // design, so the state block was the only content in the room.
+    expect(stimulusFor(READ)).not.toContain('The cat sat on a mat');
+    expect(stimulusFor(READ)).toContain('6-word line');
+    expect(stimulusFor(READ)).toContain('must not guess, describe or announce it');
+    // …and the judging contract still quotes it, which is where it is needed.
+    expect(itemCue(READ)).toContain('the printed line "The cat sat on a mat." read aloud');
     expect(stimulusFor(SPOKEN)).toBe('What did the cat sit on?');
     expect(stimulusFor(CHOICE)).toBe('What is the story mostly about?');
     expect(stimulusFor(SPOKEN)).not.toMatch(/\bmat\b/i);
@@ -556,6 +566,46 @@ describe('decodable-reader pack · session frame and catalog', () => {
     expect(steering).toMatch(/microphone/i);
   });
 
+  it('every scaffolding rung routes through a scripted VERDICT line (18d)', () => {
+    // REVERT-BITE. Both rungs used to say "Say the instruction once more, then
+    // wait for them alone" — restraint on its face and a STALL in fact: a
+    // re-spoken ask opens with neither sentinel, so the reducer records no
+    // verdict, the correction counter freezes, and the child waits on a loop
+    // that cannot advance.
+    const rungs = Object.values(entry.tutoring?.scaffoldingLevels ?? {});
+    expect(rungs.length).toBe(3);
+    for (const rung of rungs) {
+      expect(rung).toMatch(/scripted correction line/i);
+      expect(rung).not.toMatch(/say the (instruction|question|ask) (again|once more)/i);
+    }
+  });
+
+  it('every ACCEPT-side struggle response hands over the scripted line, not just the move (18d)', () => {
+    // The worse half of 18d, and no grep for a re-spoken ask reaches it: a row
+    // that says "treat it as correct and affirm it" tells the tutor WHAT to do
+    // and never gives it the WORDS, so the turn opens with neither sentinel and
+    // a child who is RIGHT gets nothing. Three of them shipped here — two rows
+    // and one aiDirective.
+    const accepts = (entry.tutoring?.commonStruggles ?? [])
+      .filter((s) => /treat it as correct|correct answer/i.test(s.response));
+    expect(accepts.length).toBeGreaterThan(0);
+    for (const struggle of accepts) {
+      expect(struggle.response).toMatch(/scripted (affirmation|line)/i);
+    }
+    const directives = (entry.tutoring?.aiDirectives ?? []).map((d) => d.instruction).join(' ');
+    expect(directives).not.toMatch(/affirm it and echo the word/i);
+    expect(directives).toMatch(/scripted affirmation line/i);
+  });
+
+  it('a "goes quiet" row is NOT 18d and keeps its re-spoken ask', () => {
+    // Silence is not an attempt, so no verdict is owed and re-asking is right.
+    // This is the line between the two, pinned so a future sweep does not
+    // "fix" it (push-pull-arena shipped this shape deliberately).
+    const quiet = (entry.tutoring?.commonStruggles ?? [])
+      .find((s) => /goes quiet/i.test(s.pattern));
+    expect(quiet?.response).toMatch(/once more/i);
+  });
+
   it('the βs moved with the STRUCTURE, not for taste', () => {
     // Every decode mode now contains unaided oral reading judged word by word,
     // so the ladder starts above di-sentence-reading's decodable_sentence (2.5).
@@ -563,6 +613,310 @@ describe('decodable-reader pack · session frame and catalog', () => {
     expect(modes.read_along).toBeLessThan(modes.literal);
     for (const mode of ['literal', 'sequence', 'inference', 'main_idea']) {
       expect(modes[mode]).toBeGreaterThan(2.5);
+    }
+  });
+});
+
+// ── 10. The 18d law and the item-21 tail, on every cue ─────────────────────
+
+describe('decodable-reader pack · the two-branch law and the never-perform tail', () => {
+  const everyCue = [
+    ...ITEMS.map((item) => itemCue(item, { opening: true, howToPlay: true })),
+    ...ITEMS.map((item) => itemCue(item)),
+    ...ITEMS.map((item) => moveOnCue(item, null)),
+    moveOnCue(READ, SPOKEN, { howToPlay: true }),
+    moveOnCue(SPOKEN, CHOICE, { howToPlay: true }),
+    ...ITEMS.map(pronounceCue),
+    completeCue('literal'),
+    completeCue('read_along'),
+  ];
+
+  it('every judging contract states the two-branch law BEFORE its branches', () => {
+    // The defect is a reply that is NEITHER branch. Family wording, verbatim,
+    // so a grep finds every pack that has it and every pack that does not.
+    for (const item of ITEMS) {
+      const cue = itemCue(item);
+      const law = cue.indexOf('Your whole reply to their attempt is ONE of the quoted lines below');
+      expect(law).toBeGreaterThan(-1);
+      expect(cue).toContain('no reminder of the method, no scaffolding line');
+      expect(law).toBeLessThan(cue.indexOf('say exactly'));
+    }
+  });
+
+  it('every cue carries the item-21 tail, not the weaker bracket-tag line', () => {
+    // The measured fix for a fabricated [CURRENT STATE] block, and this pack
+    // asks for the family's longest silences — "take your time, I'm listening"
+    // is a turn that opens with neither sentinel while the child is mid-word.
+    for (const cue of everyCue) {
+      expect(cue).toContain('never announce that you are waiting or listening');
+      expect(cue).toContain('never announce the activity\'s state');
+    }
+  });
+
+  it('every cue forbids the tutor asking a question of its OWN', () => {
+    // REVERT-BITE for a live finding the two-branch law does NOT cover: the
+    // sequence drive's two embellishments both ended by handing the floor back
+    // ("Do you want to read another line?"), not by praising. This pack has two
+    // real phase boundaries inside one run — the reading ends, the questions
+    // begin — so the model gets two wrap-up moments a single-shape pack never
+    // offers it, and a question it asks is withdrawn before the child answers.
+    for (const cue of everyCue) {
+      expect(cue).toContain('Never ask the learner anything that is not inside a quoted line');
+    }
+  });
+
+  it('the move-on and complete cues still stop the tutor', () => {
+    expect(moveOnCue(READ, null)).toContain('Then stop — the activity is over.');
+    expect(completeCue('literal')).toContain('Then stop — the activity is over.');
+  });
+});
+
+// ── 11. The SESSION invariant — no answer is named twice ───────────────────
+
+describe('decodable-reader pack · the session invariant', () => {
+  it('DROPS a second question whose answer the tutor already said out loud', () => {
+    // §4(d): no single item violates this and no per-item gate can see it.
+    // Every comprehension item closes by SAYING its answer ("Yes, mat."), so a
+    // second question with the same answer measures recall of the tutor's own
+    // last sentence. A K passage is 2-3 sentences and the generator is asked
+    // for two questions about it, so this collision is a live draw, not a
+    // theoretical one.
+    const twice: DecodableQuestionLike = {
+      ...LITERAL_Q,
+      question: 'Where did the cat have a nap?',
+    };
+    const built = buildItems(SENTENCES, [LITERAL_Q, twice], 'literal');
+    expect(built.filter((i) => i.kind !== 'read_line').map((i) => i.id)).toEqual(['q-1']);
+  });
+
+  it('DROPS a second CHOICE question that closes on the same proposition', () => {
+    const built = buildItems(
+      SENTENCES,
+      [PROPOSITION_Q, { ...PROPOSITION_Q, question: 'What is this story about?' }],
+      'main_idea',
+    );
+    expect(built.filter((i) => i.kind !== 'read_line').length).toBe(1);
+  });
+
+  it('DROPS a passage sentence printed twice — the affirmation already said it', () => {
+    const built = buildItems(
+      [SENTENCES[0], SENTENCES[1], wordsOf('s3', 'The dog can run.')],
+      [LITERAL_Q],
+      'literal',
+    );
+    expect(built.filter((i) => i.kind === 'read_line').map((i) => i.id))
+      .toEqual(['line-s1', 'line-s2']);
+  });
+
+  it('KEEPS an already-named answer as a later DISTRACTOR — that is the intended trap', () => {
+    // Port 7's other half does NOT transfer here, and gating it would starve a
+    // two-question draw for nothing: a distractor that is a true story detail
+    // is exactly what the generator is told to build for inference/main_idea,
+    // and a child who picks it has made the intended error, not a free one.
+    const second: DecodableQuestionLike = {
+      question: 'What did the dog do?',
+      options: [
+        { id: 'A', text: 'The dog ran fast.', emoji: '🐕' },
+        { id: 'B', text: 'A cat and a dog at home.', emoji: '🏠' },
+      ],
+      correctOptionId: 'A',
+    };
+    const built = buildItems(SENTENCES, [PROPOSITION_Q, second], 'main_idea');
+    expect(built.filter((i) => i.kind !== 'read_line').length).toBe(2);
+  });
+
+  it('the payload boundary the RUNNER reads is the one the component reads', () => {
+    // The mode fork and the legacy single-question coalesce used to live in the
+    // component; the DI adapter would have had to re-derive both. `dropped`
+    // counts against what was ASKABLE in this mode — a read-along's passage
+    // sentences were never candidates.
+    const decode = itemsFromChallenges({
+      readingMode: 'decode',
+      comprehensionType: 'main_idea',
+      passage: { sentences: SENTENCES },
+      comprehensionQuestion: PROPOSITION_Q,
+    });
+    expect(decode.mode).toBe('main_idea');
+    expect(decode.items.map((i) => i.kind)).toEqual(['read_line', 'read_line', 'answer_choice']);
+    expect(decode.dropped).toBe(0);
+
+    const along = itemsFromChallenges({
+      readingMode: 'read_along',
+      comprehensionType: 'literal',
+      passage: { sentences: SENTENCES },
+      comprehensionQuestions: [LITERAL_Q],
+    });
+    expect(along.mode).toBe('read_along');
+    expect(along.items.map((i) => i.kind)).toEqual(['answer_spoken']);
+    expect(along.dropped).toBe(0);
+  });
+});
+
+// ── 12. Harness answer material — the contract's claims, made testable ─────
+
+describe('decodable-reader pack · what a right and a wrong child sound like', () => {
+  it('a read is answered by saying the line back, and missed by ONE small word', () => {
+    // The signature miss the reading contract calls the commonest there is: it
+    // keeps the meaning and the rhythm, so a judge grading on gist affirms it.
+    const answers = decodableReaderHarnessAnswers(READ);
+    expect(answers.correct).toBe('The cat sat on a mat.');
+    expect(answers.signatureWrong?.text).toBe('A cat sat on a mat.');
+    // …and the contract it drives names that exact substitution.
+    expect(itemCue(READ)).toContain('"the" for "a"');
+    // The plain wrong swaps a CONTENT word — localisable, so the contrastive
+    // branch is the one it should reach.
+    expect(answers.plainWrong).not.toBe(answers.correct);
+    expect(answers.plainWrong).toMatch(/^The cat sat on a \w+\.$/);
+    expect(answers.plainWrong).not.toContain('mat');
+  });
+
+  it('the small-word swap stays an utterance a real child could produce', () => {
+    // The first signature drive said "A pets are at home", which no five-year-
+    // old says — a judge could refuse it as gibberish rather than as the wrong
+    // word, and the drive would score a pass it had not earned. The scan skips
+    // an article in front of a plural and takes the next candidate, which on
+    // that line is the pronoun swap the same child actually makes.
+    const plural = readItemFromSentence(wordsOf('s9', 'The pets are at home.'), 0)!;
+    const swap = decodableReaderHarnessAnswers(plural).signatureWrong?.text;
+    expect(swap).not.toMatch(/^A pets/);
+    expect(swap).toBe('The pets are to home.');
+  });
+
+  it('a spoken answer is missed by a word from the story that does not answer it', () => {
+    // Drawn from the passage's CONTENT words, not the evidence sentence and
+    // not the raw passage: the first probe returned "with" (a preposition no
+    // judge would affirm) and the second "have". Reading the phonics tags the
+    // generator already produces — `sight` IS the function-word tag — turns it
+    // into a same-category noun, which is the version a lenient judge affirms.
+    const built = buildItems(SENTENCES, [LITERAL_Q], 'literal');
+    const spoken = built.find((i) => i.kind === 'answer_spoken')!;
+    const answers = decodableReaderHarnessAnswers(spoken);
+    expect(answers.correct).toBe('mat');
+    expect(spoken.evidenceLine).toBe('The cat sat on a mat.');
+    expect(spoken.storyContentWords).toEqual(['the', 'cat', 'sat', 'mat', 'dog', 'can', 'run']);
+    // …and never a word the QUESTION already said, which is the contract's
+    // OTHER refusal ("the question said back to you"), not this one.
+    expect(answers.signatureWrong?.text).toBe('sat');
+    expect(spoken.question).not.toContain(answers.signatureWrong!.text);
+    expect(itemCue(spoken)).toContain('A word from the story that does NOT answer this question is wrong');
+    // The plain wrong is off-story entirely — the baseline refusal test.
+    expect(passageTextFrom(SENTENCES)).not.toContain(answers.plainWrong);
+  });
+
+  it('a choice answer is SAID IN THE SHORT FORM, and missed by ONE word of a wrong card', () => {
+    // The accept side is the contract's whole design, so the harness drives it
+    // on the CORRECT beat rather than only on the signature one. The signature
+    // is the shortest utterance that still names a wrong card — `shortFormOf`'s
+    // tail collapses to the whole card whenever the distinguishing word comes
+    // first, which the sequence probe hit on BOTH questions and which left the
+    // signature drive byte-identical to the plain one.
+    const answers = decodableReaderHarnessAnswers(CHOICE);
+    expect(answers.correct).toBe('cat and a dog at home');
+    expect(answers.signatureWrong?.text).toBe('trip');
+    expect(answers.plainWrong).toBe('A trip to the moon');
+    expect(itemCue(CHOICE)).toContain('the part that tells it apart from the others');
+  });
+
+  it('DROPS a choice set with a card no five-year-old could say back', () => {
+    // The child SAYS the card, so the ceiling is the benched utterance window,
+    // not a new number. Dropped, never trimmed: a trimmed option is a different
+    // proposition, and it may be the correct one that got shorter.
+    expect(answerItemFromQuestion(
+      {
+        question: 'What is the story mostly about?',
+        options: [
+          { id: 'A', text: 'Various cute pets enjoying their day at home together.', emoji: '🏠' },
+          { id: 'B', text: 'A trip to the moon.', emoji: '🚀' },
+        ],
+        correctOptionId: 'A',
+      },
+      0,
+      'main_idea',
+      SENTENCES,
+    )).toBeNull();
+    expect(answerItemFromQuestion(PROPOSITION_Q, 0, 'main_idea', SENTENCES)).not.toBeNull();
+  });
+
+  it('the READ leak oracle scans the line\'s own content words, with no exemption', () => {
+    // This port's sharpest oracle and the one no earlier port has: decoding
+    // print is the skill, so print is not the channel — the AUDIO is. It makes
+    // the catalog's NEVER READ A LINE THE CHILD HAS NOT READ YET directive
+    // machine-checkable.
+    const answers = decodableReaderHarnessAnswers(READ);
+    expect(answers.leakTokens).toContain('cat');
+    expect(answers.leakTokens).toContain('mat');
+    expect(answers.leakExemptSpan).toBeUndefined();
+    // …and the ask it is scanned against contains none of them.
+    expect(spokenLine(itemCue(READ, { opening: true, howToPlay: true })))
+      .not.toMatch(/\b(cat|mat|sat)\b/i);
+  });
+
+  it('the pack subtracts its OWN prose words, so a move-on cannot fire a false leak', () => {
+    // The move-on beat is scanned with the NEXT item's tokens, and this pack's
+    // apology says "we will read that one again another DAY". A passage word
+    // that is also one of our prose words stops being a leak token; a 3-8 word
+    // line has several others and any ONE of them fires the oracle.
+    const dayLine = readItemFromSentence(wordsOf('s9', 'The dog naps all day.'), 0)!;
+    const answers = decodableReaderHarnessAnswers(dayLine);
+    expect(moveOnCue(READ, dayLine)).toContain('again another day');
+    expect(answers.leakTokens).not.toContain('day');
+    expect(answers.leakTokens).toContain('naps');
+  });
+
+  it('read-along subtracts the STORY, decode does not — the tutor reads only one of them', () => {
+    const along = buildItems(SENTENCES, [LITERAL_Q], 'read_along');
+    const alongAnswers = decodableReaderHarnessAnswers(along[0]);
+    expect(alongAnswers.leakExemptSpan)
+      .toBe('Listen to our story. The cat sat on a mat. The dog can run. ');
+    // In DECODE mode the child reads the story, not the tutor, so the answer
+    // word is flat-scanned — which catches a tutor reading ahead.
+    expect(decodableReaderHarnessAnswers(SPOKEN).leakExemptSpan).toBeUndefined();
+    expect(decodableReaderHarnessAnswers(SPOKEN).leakTokens).toEqual(['mat']);
+  });
+
+  it('a choice item never scans a word the QUESTION had to say', () => {
+    // Found LIVE, on the sequence drive: "What did the frog hop on first?"
+    // against the card "The frog did hop on a stem" filed a HIGH on "hop",
+    // which is distinctive of that card and is also how the question is asked.
+    // Subtracting the question narrows the oracle to the real answer.
+    const item = answerItemFromQuestion(
+      {
+        question: 'What did the frog hop on first?',
+        options: [
+          { id: 'A', text: 'The frog did hop on a stem.', emoji: '🌱' },
+          { id: 'B', text: 'The bird sang a song.', emoji: '🐦' },
+        ],
+        correctOptionId: 'A',
+      },
+      0,
+      'sequence',
+      SENTENCES,
+    )!;
+    const answers = decodableReaderHarnessAnswers(item);
+    expect(answers.leakTokens).toEqual(['stem']);
+    expect(answers.leakTokens).not.toContain('hop');
+  });
+
+  it('a read-along CHOICE question needs TWO exempt spans, and gets a list', () => {
+    // The first pack in the family with two legitimate spans in one ask: the
+    // story it reads aloud and the menu it must name, with the QUESTION sitting
+    // between them. One contiguous span would swallow the question — which is
+    // exactly where a tutor giving the answer away would do it.
+    const along = buildItems(SENTENCES, [PROPOSITION_Q], 'read_along');
+    const spans = decodableReaderHarnessAnswers(along[0]).leakExemptSpan;
+    expect(Array.isArray(spans)).toBe(true);
+    expect(spans).toHaveLength(2);
+    expect((spans as string[])[0]).toContain('A trip to the moon');
+    expect((spans as string[])[1]).toContain('Listen to our story.');
+  });
+
+  it('every item declares a benched class and a correct answer that is not empty', () => {
+    for (const item of [...ITEMS, ...buildItems(SENTENCES, [LITERAL_Q], 'read_along')]) {
+      const answers = decodableReaderHarnessAnswers(item);
+      expect(answers.correct.length).toBeGreaterThan(0);
+      expect(answers.plainWrong.length).toBeGreaterThan(0);
+      expect(answers.plainWrong).not.toBe(answers.correct);
+      expect(answers.signatureWrong?.text ?? 'x').not.toBe(answers.correct);
     }
   });
 });

@@ -146,6 +146,13 @@ import {
   type LetterSoundItem,
   type LetterSoundTier,
 } from '@/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript';
+import {
+  decodableReaderHarnessAnswers,
+  decodableReaderPackBase,
+  itemsFromChallenges as decodableReaderItems,
+  type DecodableReaderItem,
+  type DecodableReaderPayload,
+} from '@/components/lumina/primitives/visual-primitives/literacy/decodableReaderScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -178,8 +185,16 @@ export interface DiHarnessAnswers {
    *
    * Omit it wherever the flat rule is true (story-talk's own feeling_check mode
    * omits it — the feeling is absent from the story, so any mention is a leak).
+   *
+   * ⭐ A LIST, because decodable-reader (port 8) is the first pack with TWO
+   * legitimate spans in ONE ask: a read-along choice question reads the whole
+   * story aloud (the mode's stimulus) AND names every card (the closed set),
+   * with the QUESTION sitting between them. One contiguous span covering both
+   * would swallow the question too, and the question is exactly where a tutor
+   * that gave the answer away would have done it. The harness subtracts each
+   * span in turn; a bare string still works and no earlier port changed.
    */
-  leakExemptSpan?: string;
+  leakExemptSpan?: string | string[];
 }
 
 export interface DiDriveItem {
@@ -613,6 +628,57 @@ const letterSoundLinkAdapter: DiPortAdapter<LetterSoundItem> = {
 };
 
 /**
+ * decodable-reader (19h-i-b port 8). ALL-VOICE across five modes and THREE
+ * kinds of answer, and the first port in the sweep whose items are not all the
+ * same SHAPE: a session is the passage read one sentence at a time
+ * (`sentence_read_aloud`, the family's only multi-word judged utterance) and
+ * then the comprehension questions asked about it — a word from the story said
+ * aloud (`short_spoken_word`) or a whole proposition named from the menu the
+ * tutor just read out (`closed_set_choice`). Nothing is tapped: the 2026-08-13
+ * user ruling took the buttons out, and a `gesture` item appearing here is the
+ * regression.
+ *
+ * What is different about its answer material, three ways over:
+ *
+ *  1. **The correct answer is a SENTENCE the harness has to say back.** Every
+ *     other port's `correct` is a token. Here the plain wrong swaps one CONTENT
+ *     word of the printed line (localisable — the contrastive branch) and the
+ *     signature wrong swaps one SMALL word ("the" for "a"), which the reading
+ *     contract calls the commonest miss there is: it keeps the meaning and the
+ *     rhythm, and a judge grading the read on gist affirms it every time.
+ *  2. **The choice items answer in the SHORT FORM on the correct beat too.**
+ *     The contract's accept side is its whole design — "the mat" for "The cat
+ *     sat on the mat" is a full answer, not a lesser one — so the harness says
+ *     the short form when it is right, and the signature wrong is that same
+ *     shape aimed at a wrong card, which on inference and main-idea is a TRUE
+ *     detail of the story as well as a short one.
+ *  3. **The read-line leak oracle is the sharpest in the sweep.** It scans the
+ *     printed line's own content words with NO exemption: decoding print is the
+ *     skill, so print is not the channel and the AUDIO is — which makes the
+ *     catalog's `NEVER READ A LINE THE CHILD HAS NOT READ YET` directive
+ *     machine-checkable for the first time. The other two forks subtract what
+ *     the tutor legitimately says: the story in `read_along` (story-talk's
+ *     rule) and the spoken menu on a choice item (push-pull-arena's, one size
+ *     up) — and a read-along choice item needs BOTH, which is why
+ *     `leakExemptSpan` grew a list form on this port.
+ *
+ * THREE CAP SHAPES, and unusually all three are drivable: the read move-on
+ * carries a different apology ("we will read that one again another day"), the
+ * spoken move-on carries none, and the choice move-on is the only one with a
+ * CLOSE LINE — it names the answer, because its corrections never may. Only the
+ * first is reachable by `--di-cap` alone (the drill hangs off the first VOICE
+ * item, which in every decode mode is a read line), so the other two are driven
+ * with `--di-cap-item`, added for this port.
+ */
+const decodableReaderAdapter: DiPortAdapter<DecodableReaderItem> = {
+  build: (data) => {
+    const { items, mode, dropped } = decodableReaderItems(data as DecodableReaderPayload);
+    return { items, dropped, surface: decodableReaderPackBase(items, mode) };
+  },
+  answersFor: decodableReaderHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -629,6 +695,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'phoneme-explorer': phonemeExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'letter-spotter': letterSpotterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'letter-sound-link': letterSoundLinkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'decodable-reader': decodableReaderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

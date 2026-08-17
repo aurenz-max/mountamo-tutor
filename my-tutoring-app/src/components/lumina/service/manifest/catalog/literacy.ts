@@ -370,8 +370,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction reading of a decodable story. The child has ONE thing on screen at a '
-        + 'time and the application decides what it is. Right now that thing is a "{{challengeType}}" and it '
-        + 'reads: "{{stimulus}}". You speak the exact scripted lines from each bracketed application message and '
+        // "and it READS: {{stimulus}}" was the invitation that produced a
+        // fabricated [CURRENT STATE] block reading a passage line aloud before
+        // the child decoded it (sequence signature drive, 2026-08-16). A read
+        // item no longer sends its line at all, and this phrasing no longer
+        // asserts that whatever arrives is the text of it.
+        + 'time and the application decides what it is. Right now that thing is a "{{challengeType}}": '
+        + '{{stimulus}}. You speak the exact scripted lines from each bracketed application message and '
         + 'nothing else, then you judge what you heard. Never introduce the next sentence or question yourself, '
         + 'and never read ahead to part of the story the child has not reached.',
       // Trimmed 13 -> 2, to exactly what the component pushes through
@@ -386,9 +391,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // happens AFTER an attempt. Re-modeling is the scripted correction's job,
       // and on a read line NOTHING here may read the line — that is the second
       // channel the cold-read guard exists to close.
+      // 18d: EVERY rung routes through a scripted VERDICT line. The two this
+      // replaced ("Say the instruction once more, then wait for them alone")
+      // read as restraint and were a stall: a re-spoken ask opens with neither
+      // sentinel, so the reducer records no verdict at all, the correction
+      // counter freezes, and a child who has just read a line waits on a loop
+      // that cannot advance. Nothing here may read a printed line the child has
+      // not read — that is the second channel the cold-read guard exists to
+      // close — so the re-model a stuck reader gets is the scripted correction,
+      // which quotes the line for exactly that purpose.
       scaffoldingLevels: {
-        level1: 'Say the instruction once more, then wait for them alone.',
-        level2: 'Say the instruction once more, more slowly, then wait. Do not read the line for them and do not answer the question for them.',
+        level1: 'Use the scripted correction line for this item exactly as the cue quotes it, then wait for them alone.',
+        level2: 'Use the same scripted correction line again, said more slowly. Add nothing to it: do not read the line for them outside that quote and do not answer the question for them.',
         level3: 'Use the scripted correction line for this item, then hand it back to them one more time.',
       },
       // Observable behaviours only, with PERFORMABLE responses (script moves a
@@ -401,7 +415,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Sounds out slowly, word by word, but lands on every word correctly',
-          response: 'Treat it as correct and affirm it — effortful decoding that reaches the right words is reading.',
+          // 18d ON THE ACCEPT SIDE, which is the worse half of it: this said
+          // "treat it as correct and affirm it" and never handed over the
+          // affirmation, so the turn opened with neither sentinel and a child
+          // who had just read the whole line correctly stalled. A child who is
+          // RIGHT and gets nothing is the worst version of the stall, and no
+          // grep for a re-spoken ask finds it. Point it at the scripted line.
+          response: 'Treat it as correct: say the cue\'s scripted affirmation line for this item, word for word, and nothing else. Effortful decoding that reaches the right words is reading.',
         },
         {
           pattern: 'Answers a comprehension question with a word from the story that does not answer it',
@@ -413,7 +433,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Says the answer inside a phrase - "on the mat" when the answer is "mat"',
-          response: 'Treat it as correct and affirm it, echoing the single answer word so they hear it on its own.',
+          // Same accept-side 18d: "affirm it, echoing the answer word" told the
+          // tutor WHAT to do and never gave it the words, and the cue's
+          // affirmation already echoes the word on its own.
+          response: 'Treat it as correct: say the cue\'s scripted affirmation line for this item, word for word — it already echoes the single answer word so they hear it on its own.',
         },
         {
           pattern: 'Names a choice with only the part that tells it apart - "the mat", "the second one" - instead of saying the whole sentence back',
@@ -459,8 +482,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             'For a sentence to read: every printed word, correctly and in order. Judge accuracy, never speed — a '
             + 'slow sounded-out reading that lands on the right words is CORRECT, and so is one where the child '
             + 'catches and fixes their own slip. For a spoken comprehension answer: the one word the cue names, '
-            + 'and it still counts inside a phrase ("on the mat" answers "mat") or said as a fair synonym — '
-            + 'affirm it and echo the word. THE LAW: never say the answer before the child has answered. On a '
+            + 'and it still counts inside a phrase ("on the mat" answers "mat") or said as a fair synonym. '
+            // 18d, third instance in this entry and the only one in a directive:
+            // "affirm it and echo the word" named the MOVE and withheld the
+            // WORDS, so a tutor following it opened with neither sentinel and a
+            // CORRECT child stalled. Every accept path in this block now ends at
+            // the same quoted line, which already echoes the answer.
+            + 'However it arrives, a correct answer is answered with the cue\'s own scripted affirmation line, '
+            + 'said word for word. THE LAW: never say the answer before the child has answered. On a '
             + 'question your correction is the first place the answer may be spoken, and on a choice question '
             + 'you never say which one is right at all.',
         },
@@ -3140,9 +3169,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // happens AFTER an attempt. Re-modeling is the scripted correction's job,
       // and on an accuracy line NOTHING here may read the line — that is the
       // second channel the cold-read guard exists to close.
+      // 18d, fixed OFF-QUEUE from port 8's census (the sweep's own rule: census
+      // every DI catalog entry, not the queue — this entry is a shipped DI port
+      // still waiting for its adapter, so the stall is live). Both rungs said
+      // "say the instruction once more", which opens with neither sentinel: the
+      // reducer records no verdict, the correction counter freezes, and the
+      // child waits on a loop that cannot advance. GATE-COVERED, NOT DRIVEN —
+      // 19h-i-b port 9 drives these when read-aloud-studio gets its adapter.
       scaffoldingLevels: {
-        level1: 'Say the instruction once more, then wait for them alone.',
-        level2: 'Say the instruction once more, more slowly, then wait. Do not read the line for them.',
+        level1: 'Use the scripted correction line for this item exactly as the cue quotes it, then wait for them alone.',
+        level2: 'Use the same scripted correction line again, said more slowly. Add nothing to it, and do not read the line for them outside that quote.',
         level3: 'Use the scripted correction line for this item, then hand the reading back one more time.',
       },
       // Observable behaviours only, with PERFORMABLE responses (script moves a
@@ -3163,7 +3199,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Sounds out slowly, word by word, but lands on every word correctly',
-          response: 'Treat it as correct and affirm it — effortful decoding that reaches the right words is reading.',
+          // The accept-side 18d, same row as decodable-reader's and fixed in
+          // the same census pass. Gate-covered, not driven — see the rungs above.
+          response: 'Treat it as correct: say the cue\'s scripted affirmation line for this item, word for word, and nothing else. Effortful decoding that reaches the right words is reading.',
         },
         {
           pattern: 'Stops in the middle of a line and starts again',

@@ -52,7 +52,7 @@
  * primitives, and this one is no longer the exception.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -78,14 +78,10 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
-  buildItems,
-  completeCue,
   correctOptionText,
-  itemCue,
-  moveOnCue,
+  decodableReaderPackBase,
+  itemsFromChallenges,
   passageTextFrom,
-  pronounceCue,
-  stimulusFor,
   type DecodableOption,
   type DecodableReaderItem,
   type DecodableReaderMode,
@@ -250,32 +246,34 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
   // names), so it is suppressed there — reader-fit contract rules 2-7.
   const isEarlyBand = gradeLevel === 'K' || gradeLevel === '1';
 
-  /** The eval-mode identity: read-along is a READING mode, the other four are
-   *  comprehension SKILLS. Together they decide the answer material. */
-  const mode: DecodableReaderMode =
-    readingMode === 'read_along' ? 'read_along' : (comprehensionType ?? 'literal');
-
   const stableInstanceIdRef = useRef(instanceId || `decodable-reader-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // ── Items (drop-gated) ────────────────────────────────────────────────────
+  // The mode fork, the legacy single-question coalesce and the build gates all
+  // live at ONE boundary now, because the DI drive harness reads the same one:
+  // a harness that re-derived any of them would drive a different session from
+  // the one the child gets.
   const sentences = useMemo(() => passage?.sentences ?? [], [passage]);
-  const questions = useMemo(
-    () => comprehensionQuestions ?? (comprehensionQuestion ? [comprehensionQuestion] : []),
-    [comprehensionQuestions, comprehensionQuestion],
+  const { items, mode, dropped } = useMemo(
+    () => itemsFromChallenges({
+      readingMode,
+      comprehensionType,
+      passage: { sentences },
+      comprehensionQuestions,
+      comprehensionQuestion,
+    }),
+    [readingMode, comprehensionType, sentences, comprehensionQuestions, comprehensionQuestion],
   );
 
-  const items = useMemo<DecodableReaderItem[]>(() => {
-    const built = buildItems(sentences, questions, mode);
-    const askable = (mode === 'read_along' ? 0 : sentences.length) + questions.length;
-    if (built.length < askable) {
+  useEffect(() => {
+    if (dropped > 0) {
       console.warn(
-        `[DecodableReader] dropped ${askable - built.length} unaskable item(s) `
-        + '(word-window / sentinel / answer-material / ear-separability gates)',
+        `[DecodableReader] dropped ${dropped} unaskable item(s) (word-window / sentinel / `
+        + 'answer-material / ear-separability / repeated-answer gates)',
       );
     }
-    return built;
-  }, [sentences, questions, mode]);
+  }, [dropped]);
 
   const passageText = useMemo(() => passageTextFrom(sentences), [sentences]);
 
@@ -324,19 +322,11 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     );
   }, [items, mode, gradeLevel, readingMode, phonicsPatternsInPassage, evaluation]);
 
-  // ── The pack — wording lives in decodableReaderScript.ts ──────────────────
+  // ── The pack — everything the TUTOR is told lives in the shared cue surface
+  //    (decodableReaderScript.ts), which the DI drive harness reads too. Only
+  //    what the SCREEN owns stays here.
   const pack = useMemo<JudgedScriptPack<DecodableReaderItem>>(() => ({
-    primitiveType: 'decodable-reader',
-    activityLine: 'live direct instruction decodable story reading with comprehension',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue: () => completeCue(mode),
-    pronounceCue,
-    contextFor: (item) => ({
-      challengeType: item.kind,
-      stimulus: stimulusFor(item),
-    }),
+    ...decodableReaderPackBase(items, mode),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
       ready: (item) => item.kind === 'read_line'

@@ -13,6 +13,7 @@ import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
   opensWithSentinel,
+  optionSayable,
   optionsEarSeparable,
   sentenceText,
   wordsIn,
@@ -227,6 +228,9 @@ const questionUsable = (q: RawQuestion, wantsSpokenAnswer: boolean): boolean => 
     && !!q.correctOptionId
     && options.some((o) => o.id === q.correctOptionId)
     && options.every((o) => !!(o.text ?? '').trim() && !opensWithSentinel(o.text ?? ''))
+    // The child SAYS this card back, so an over-long one asks for an utterance
+    // no bench sitting covers — same gate the pack runs at build time.
+    && options.every(optionSayable)
     && optionsEarSeparable(options);
 
   return spokenOk || choicesOk;
@@ -404,8 +408,9 @@ GRADE 2 GUIDELINES:
 ${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 ${readAlongSection}${answerSection}
-THIS TEXT IS SPOKEN ALOUD BY A LIVE TUTOR, AND TWO RULES ARE ABSOLUTE:
+THIS TEXT IS SPOKEN ALOUD BY A LIVE TUTOR, AND THREE RULES ARE ABSOLUTE:
 - Every sentence in the passage is ${MIN_SENTENCE_WORDS} to ${MAX_SENTENCE_WORDS} words long. The child reads one sentence at a time as a single breath; a sentence outside that range is thrown away.
+- EVERY SENTENCE IS COMPLETE, NATURAL ENGLISH — this is the rule that gets broken most, so check every line against it before you answer. The child reads the line aloud EXACTLY as printed and the tutor judges every word, so a missing article is not a small flaw: a child who reads "They have a fish in the tank" off a line printed as "They have a fish in tank" is marked WRONG for reading English correctly. NEVER drop "a", "an" or "the" before a singular thing. WRONG: "They have a fish in tank." / "His frog can hop on rug." / "They went on a trip to park." RIGHT: "They have a fish in the tank." / "His frog can hop on a rug." / "They went to the park." If the natural sentence will not fit in ${MAX_SENTENCE_WORDS} words, write a SHORTER natural sentence — never a clipped one.
 - NOTHING you write may BEGIN a sentence with the word "Yes" or the words "My turn" — not the passage, not a question, not an answer choice. Those two openings are reserved: the tutor's own words would be mistaken for a verdict and the lesson would jump ahead. Anywhere ELSE in a sentence they are fine.
 ${gradeContext[gradeLevelKey] || gradeContext['K']}
 ${challengeTypeSection}
@@ -438,7 +443,8 @@ REQUIRED INFORMATION:
     : `Pick the comprehension skill that best fits your passage: one of "literal", "sequence", "inference", or "main_idea". Set comprehensionType to that value and make the questions genuinely demand that skill.`}
 
 6. **Comprehension Questions**: EXACTLY ${questionCount} DIFFERENT questions about the passage, each an object with:
-   - question: Clear question about the passage content that genuinely requires the comprehensionType skill above. The tutor SAYS this to the child, so write it the way you would ask a five-year-old out loud.
+   - question: Clear question about the passage content that genuinely requires the comprehensionType skill above. The tutor SAYS this to the child, so write it the way you would ask a five-year-old out loud — CONCRETE words a five-year-old already uses. Never talk ABOUT the text: no "the speaker", "the narrator", "the passage", "the author", "what action", "the central message". Ask "Who is at home?", not "Who is at home with the speaker?"; ask "What do they like to do?", not "What action do they like to do?". A child who cannot understand the question cannot show you they understood the story.
+   - The ${questionCount} questions must have DIFFERENT answers. Two questions that land on the same word or the same idea are one question asked twice: the tutor says the answer out loud when it affirms the first, so the second measures nothing and the activity throws it away.
    - answerWord: ${wantsSpokenAnswer
      ? 'The ONE word that answers it, exactly as spelled in the passage. Never "yes" or "no", never a phrase.'
      : 'Leave this out — the answer here is a whole idea, not a word.'}
@@ -447,7 +453,8 @@ REQUIRED INFORMATION:
      - text: The option text
      - emoji: ONE emoji that pictures this option, so a K-1 reader can answer by picture (see the emoji rules in the schema). Every option gets a distinct, fair picture — never reuse an emoji and never give only the correct option a "real" picture.
    - correctOptionId: The letter ID of the correct option (e.g., "B")
-   - Options are SPOKEN — the tutor reads them out and the child says which one. Keep each to 3-7 words, and give every option at least one key word that appears in NO other option (never let one option's words all appear inside another's).
+   - Options are SPOKEN — the tutor reads them out and the child says which one. Keep each to 3-7 words (an option over ${MAX_SENTENCE_WORDS} is thrown away), and give every option at least one key word that appears in NO other option (never let one option's words all appear inside another's).
+   - EVERY OPTION IS SAYABLE BY A FIVE-YEAR-OLD, because saying it IS the answer. Use the plain concrete words a child uses: "The pets play at home", never "Various cute pets enjoying their day at home". No "various", "enjoying", "several", "a variety of", no -ing noun phrases. If you would not hear it from a six-year-old, rewrite it.
    - The ${questionCount} questions must ask about DIFFERENT parts of the story — never the same fact worded two ways.
    - Mix up the position of the correct answer across questions and across generations
    - Distractors must be plausible but wrong; NEVER let the correct answer be the only complete or only on-topic option
