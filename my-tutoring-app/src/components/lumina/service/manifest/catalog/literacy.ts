@@ -73,42 +73,191 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'word-builder',
-    description: 'Interactive morphology lab where students construct complex words from roots, prefixes, and suffixes to understand their meaning. Drag-and-drop construction with visual breakdown showing how word parts combine. Perfect for vocabulary development, etymology, and morphological analysis in language arts.',
-    constraints: 'Best for grades 3-8. Requires words that can be meaningfully broken into morphological components (prefixes, roots, suffixes).',
+    misconceptionScope: 'primitive',
+    description:
+      'Live Direct Instruction MORPHOLOGY with a spoken tutor. The tutor asks, waits, judges what it '
+      + 'hears, and its own affirmation moves the lesson on. A board of word parts — prefixes, roots and '
+      + 'suffixes, each printed with its meaning — stays on screen as a reference wall; the tutor says what '
+      + 'a word MEANS and the child works out which parts make it and SAYS THE WHOLE WORD out loud. Nothing '
+      + 'is assembled by hand, nothing is tapped and nothing on screen shows the word before the tutor '
+      + 'affirms it. '
+      + 'Four complexity tiers from single affixes to Greek/Latin and multi-morpheme academic vocabulary. '
+      + 'Requires a microphone. Ideal for vocabulary development, etymology and morphological analysis — and '
+      + 'for the skill those exist to serve: meeting an unfamiliar academic word in text and being able to '
+      + 'say it and unpack it.',
+    constraints:
+      'Requires the live tutor and a microphone. Best for grades 3-8 — the child READS the parts board, so '
+      + 'this is not a pre-reader primitive. Requires words that break into morphemes that spell the word '
+      + 'exactly when joined in order (un+help+ful, tele+scope); words needing a spelling change at the join '
+      + '(happy+ly, run+ing) are excluded. The answer is SPOKEN, so pick this for objectives about building '
+      + 'or unpacking word meaning, not for spelling objectives — those need a written surface.',
+    // ── DI MODALITY (2026-08-16) — the FIRST judged port above the K-2 band.
+    // The tutor owns the clock: it states what the word means, waits, judges
+    // the spoken word from the audio in-band, corrects contrastively, and its
+    // own line is the advance. No Check button, no Next button, no advance
+    // timer, no push-to-talk mic anywhere in the path.
+    // THE FORK IS ALL-VOICE, BY USER RULING. The port was queued as a hybrid
+    // ("tap to build, then speak") on the reading that assembling morphemes in
+    // order is the BUILD shape the spoken-first ruling exempts; the user
+    // overturned it: "kind of disagree on tap, this feels like a pure spoken
+    // with cards on the board". The exemption is for answers with no spoken
+    // form, and a spoken word CARRIES its morphemes — /ʌn/-/hɛlp/-/fəl/ is
+    // audible where c-a-t is not. phonics-blender had already shed the same
+    // tile-arranging step for the same reason one layer down.
+    // THE CARDS SURVIVED THE BUTTON. A morpheme wall with meanings is what a
+    // teacher lays on the table and it is what makes this construction rather
+    // than vocabulary recall — but it is PRINT: nothing on it is tappable,
+    // because a tappable card is a menu and a menu is a guess floor.
+    // THE OPEN-SET HALF WAS REFRAMED, NOT BENCHED. "tele means far, so what
+    // does telescope mean?" is open_set_word (BLOCKED), so the ask runs the
+    // other way — the tutor states the meaning and the child produces the word
+    // (short_spoken_word, one target). The morphology stays in the board, the
+    // correction's meaning walk and the reveal.
+    // Cue lines and the per-item judging contract live in
+    // `wordBuilderScript.ts` (hand-authored, DISTAR); this block is the
+    // session-level frame.
+    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
+    // taskDescription, scaffolding level, struggle response or directive
+    // sentence begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'simple_affix',
         label: 'Simple Affixes (Tier 1)',
-        beta: 1.5,
+        beta: 2.0,
         scaffoldingMode: 1,
         challengeTypes: ['simple_affix'],
-        description: 'Single prefix or suffix with a common root (un+happy, play+ful).',
+        description:
+          'Single prefix or suffix with a common root (un+happy, play+ful), said aloud from its meaning. '
+          + 'β 1.5 → 2.0 on the 2026-08-16 DI port: unlimited drag-and-Check became one spoken attempt plus '
+          + 'two judged corrections, which is a STRUCTURAL change to what a correct response costs.',
       },
       {
         evalMode: 'compound_affix',
         label: 'Compound Affixes (Tier 3)',
-        beta: 3.0,
+        beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['compound_affix'],
-        description: 'Prefix + root + suffix combinations (un+help+ful, re+play+able).',
+        description:
+          'Prefix + root + suffix said aloud from its meaning (un+help+ful, re+play+able). β 3.0 → 3.5, '
+          + 'same structural reason as Tier 1.',
       },
       {
         evalMode: 'greek_latin',
         label: 'Greek/Latin Roots (Tier 4)',
-        beta: 5.0,
+        beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['greek_latin'],
-        description: 'Academic words from Greek/Latin morphemes (bio+log+y, tele+scope).',
+        description:
+          'Academic words from Greek/Latin morphemes said aloud (bio+graph+y, tele+scope). β 5.0 → 5.5, '
+          + 'same structural reason — and this is the tier the spoken answer exists for, since pronouncing '
+          + 'an unfamiliar academic word IS the outcome the mode teaches.',
       },
       {
         evalMode: 'multi_morpheme',
         label: 'Multi-Morpheme (Tier 6)',
-        beta: 7.0,
+        beta: 7.5,
         scaffoldingMode: 6,
         challengeTypes: ['multi_morpheme'],
-        description: 'Complex multi-morpheme words with abstract roots (pre+dict+able, anti+bio+tic).',
+        description:
+          'Complex multi-morpheme words with abstract bound roots said aloud (pre+dict+able, anti+bio+tic). '
+          + 'β 7.0 → 7.5, same structural reason.',
       },
     ],
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction morphology for a student in grades 3-8. The complexity tier is '
+        + '"{{challengeType}}" and the question side is "{{stimulus}}". You say what a word MEANS and the '
+        + 'student says the WHOLE WORD back, out loud; you judge what you hear and nothing else. You speak '
+        + 'the exact scripted lines from each bracketed application message and nothing more. Working out '
+        + 'which parts make the word, and in what order, is the entire skill being practiced — so the word '
+        + 'is never on screen before you affirm it, and you never build it for them first.',
+      // Exactly what the pack pushes through contextFor. The click-era block
+      // had none; anything naming the word, its parts, or even HOW MANY parts
+      // it takes would put the answer (or most of it) in the persistent state
+      // block, which is the channel a tutor has been caught narrating.
+      contextKeys: ['challengeType', 'stimulus'],
+      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION. A
+      // re-spoken ask opens with neither "Yes" nor "My turn:", so the reducer
+      // records no verdict, the correction counter freezes, and the child waits
+      // on a tutor that has already spoken. Written this way from birth on this
+      // port rather than reproduced and then fixed.
+      scaffoldingLevels: {
+        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it inside the item message. It already takes the meaning apart and hands the question back, so it IS the first scaffold, and it opens with "My turn:" where the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken clue, a re-worded definition or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all, and the child waits on a lesson that cannot advance.',
+        level3: 'Still the same scripted correction line. If the student is stuck after it, say nothing further — the activity moves the lesson on by itself, names the word and its parts as it goes, and carries the next clue to you.',
+      },
+      // Observable behaviours only, with PERFORMABLE responses (script moves a
+      // tutor can speak — never meta-instructions, which get recited verbatim).
+      commonStruggles: [
+        {
+          pattern: 'Says only the root of the word - "help" for unhelpful, "scope" for telescope',
+          response: 'Treat it as a wrong answer and run the scripted correction line for the item, then wait. One part of the word is not the word, however confidently it arrives.',
+        },
+        {
+          pattern: 'Says the parts one at a time and stops before joining them - "un... help... ful"',
+          response: 'Wait a moment longer first, because that is how the word gets built and it may still arrive. If the whole word never comes, run the scripted correction line and hand the question back.',
+        },
+        {
+          pattern: 'Says a real word made from only some of the parts - "helpful" for unhelpful',
+          response: 'Treat it as a wrong answer and run the scripted correction line, which walks the meaning of every part in order. Do not explain the miss in your own words.',
+        },
+        {
+          pattern: 'Says the parts in the wrong order - "fulhelpun"',
+          response: 'Treat it as a wrong answer and run the scripted correction line for the item; it states the meanings in order, which is the fix.',
+        },
+        {
+          pattern: 'Goes quiet and says nothing for a long time',
+          response: 'Wait longer in silence first, then say the clue one more time exactly as the item message wrote it and wait again.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [WB_ITEM], [WB_MOVE], [WB_HEAR] or [WB_COMPLETE] contain the only lesson words '
+            + 'you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket '
+            + 'label is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" '
+            + 'and corrections begin with "My turn" — never begin any other sentence with those words. The '
+            + 'application decides which word comes next; never introduce one yourself and never announce '
+            + 'progress.',
+        },
+        {
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
+          instruction:
+            'The first [WB_ITEM] carries the greeting, how the game works, and the first clue inside one '
+            + 'quoted line. Speak it and stop. Do not greet the student separately, do not explain the '
+            + 'activity in your own words, and do not add a warm-up question — the quoted line is the whole '
+            + 'opening.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER',
+          instruction:
+            'The student answers OUT LOUD with ONE WORD: the whole word the clue describes. The [WB_ITEM] '
+            + 'message names the one word that is correct. Accept it inside a phrase, and accept it built '
+            + 'aloud part by part so long as the whole word arrives at the end — that is how this is taught. '
+            + 'One part of the word on its own is not an answer, parts said without ever joining them are '
+            + 'not an answer, and a different real word made from only some of the parts is wrong. THE LAW: '
+            + 'never say the answer word, never spell it, and never name its parts in order before the '
+            + 'student has earned it — the parts said in order ARE the word.',
+        },
+        {
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you give the clue, STOP. Do not re-ask, do not fill the pause, do not offer a hint, and '
+            + 'do not count down. A long silence is a student reading a board of word parts and testing '
+            + 'combinations, and that testing IS the activity. Think time is unbounded and the application, '
+            + 'not the clock, decides when to move on.',
+        },
+        {
+          title: 'HEAR IT AGAIN ON DEMAND',
+          instruction:
+            'A [WB_HEAR] message means the student asked to hear the clue again. Say only the line it quotes, '
+            + 'warmly, and then wait exactly as before. It is the question side only, it is never withdrawn, '
+            + 'and nothing said just before it is an answer to judge.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
 

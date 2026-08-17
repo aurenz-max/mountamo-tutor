@@ -3,7 +3,7 @@
 // Components access these types via orderedComponents.data which is typed as 'any'.
 // The specific types remain in their source files for type-safety within generators.
 
-import type { PrimitiveEvaluationResult } from './evaluation/types';
+import type { PrimitiveEvaluationResult, WordBuilderMetrics } from './evaluation/types';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -1089,8 +1089,19 @@ export interface TargetWord {
 export interface WordBuilderData {
   title: string;
   complexityLevel: WordBuilderComplexity;
-  availableParts: WordPart[]; // Pool of parts to drag from
+  /** The morpheme word wall — PRINT, not an answer surface (DI port). */
+  availableParts: WordPart[];
   targets: TargetWord[]; // Words to build (3-5 challenges)
+  /** Stamped by the generator; the judged session opens at this grade. */
+  gradeLevel?: string;
+
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<WordBuilderMetrics>) => void;
 }
 
 // Periodic Table Types

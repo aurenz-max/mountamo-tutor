@@ -4,6 +4,19 @@
  * Generates word-building challenges where students construct words from
  * prefixes, roots, and suffixes. Supports four complexity levels controlled
  * by the IRT eval mode system via a root-level `complexityLevel` enum.
+ *
+ * ── THE DI PORT CHANGED WHAT A VALID TARGET IS ──────────────────────────────
+ * Under the click-era Check button a slightly-wrong target was survivable: the
+ * child dragged tiles and code compared ids. Under the judged loop the tutor
+ * SAYS the clue, the child SAYS the word, and the affirmation says the assembly
+ * out loud — so a target whose parts do not compose its word teaches a false
+ * decomposition, and a clue containing its own answer is the question and the
+ * answer read in one breath.
+ *
+ * Both sides of that wire are gated, and the gates are IMPORTED from
+ * `wordBuilderScript` rather than copied. Hand-synced copies drift: the two
+ * sides of letter-spotter's wire disagreed live on what a sayable sentence was
+ * (90 chars vs 100) until the copies were deleted.
  */
 
 import { Type, Schema } from '@google/genai';
@@ -15,6 +28,14 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import {
+  isSayableProse,
+  isSayableWord,
+  itemsFromTargets,
+  MAX_CLUE_CHARS,
+  MIN_MORPHEME_CHARS,
+  opensWithSentinel,
+} from '../../primitives/visual-primitives/literacy/wordBuilderScript';
 
 // ── Re-export types for consumers ──────────────────────��───────────────────
 export interface WordPart {
@@ -37,6 +58,9 @@ export interface WordBuilderData {
   complexityLevel: 'simple_affix' | 'compound_affix' | 'greek_latin' | 'multi_morpheme';
   availableParts: WordPart[];
   targets: TargetWord[];
+  /** Stamped here so the judged session opens at the right grade — this
+   *  primitive's band is 3-8 and the runner's fallback is kindergarten. */
+  gradeLevel?: string;
 }
 
 // ── Challenge type docs (one per eval mode) ──────────────────────────────��─
@@ -118,6 +142,11 @@ const baseSchema: Schema = {
         },
         required: ['id', 'text', 'type', 'meaning'],
       },
+      // Bounded (this SDK types minItems/maxItems as STRINGS — knowledge-check
+      // precedent) so a wide draw cannot run the response past the token
+      // ceiling and truncate mid-object.
+      minItems: '8',
+      maxItems: '15',
       description: 'Pool of 10-15 word parts including distractors.',
     },
     targets: {
@@ -152,6 +181,8 @@ const baseSchema: Schema = {
         },
         required: ['word', 'parts', 'hint', 'definition', 'sentenceContext'],
       },
+      minItems: '3',
+      maxItems: '5',
       description: '3-5 target words to build, ordered easiest → hardest.',
     },
   },
@@ -199,9 +230,14 @@ ${challengeTypeSection}
 
 ## Critical Rules
 
-1. **NEVER put the target word in the hint.** The hint must describe the word without naming it.
+This exercise is spoken: a live tutor READS THE HINT ALOUD and the student SAYS
+the whole word back. Rules 1, 2 and 8-11 exist because of that, and an item that
+breaks any of them is DROPPED rather than repaired — a broken item shortens the
+lesson, a repaired one gets read to a child.
+
+1. **NEVER put the target word in the hint.** The hint must describe the word without naming it, and must not contain it as part of a longer word either.
    - GOOD hint: "Describing something that cannot be helped"
-   - BAD hint: "The word unhelpful"
+   - BAD hint: "The word unhelpful" / "Unhelpfully done"
 
 2. **sentenceContext must use ___ (three underscores) in place of the target word.** Students should not see the answer.
    - GOOD: "The broken elevator was ___ for people in wheelchairs."
@@ -220,6 +256,19 @@ ${challengeTypeSection}
 
 7. **Order targets from easiest to hardest** within the set.
 
+8. **THE PARTS MUST SPELL THE WORD EXACTLY**, joined in order with nothing added, removed or changed. The tutor says the assembly out loud when the student gets it right, so it has to be true.
+   - GOOD: un + help + ful = "unhelpful" · tele + scope = "telescope" · in + struct + ion = "instruction"
+   - BAD: happy + ly ("happily" changes y to i) · run + ing ("running" doubles the n) · bio + log + y (never split a single letter off)
+   - If a word you want needs a spelling change, choose a different word.
+
+9. **Every part's \`text\` is at least ${MIN_MORPHEME_CHARS} letters**, lowercase a-z only, no hyphens or dots. A one-letter part has no spoken form.
+
+10. **Each hint is ONE short sentence a tutor can say in a breath** — at most ${MAX_CLUE_CHARS} characters, no quotation marks, no underscores, no line breaks.
+
+11. **No two target words may overlap, and no hint or sentence may mention another target's word.** "helpful" and "unhelpful" in the same set means the tutor speaks one word's answer while asking the other.
+
+12. **Never begin any word, hint, definition, sentence or meaning with "Yes" or with "My turn"** — those two openers are reserved verdict signals in the spoken session.
+
 ${!evalConstraint ? `## Grade-Level Guidelines
 - Grades 3-4: Use common English prefixes/suffixes (un-, re-, -ful, -ly) with everyday roots
 - Grades 5-6: Introduce Greek/Latin roots (bio-, geo-, -graph-, -scope-) with academic vocabulary
@@ -227,17 +276,44 @@ ${!evalConstraint ? `## Grade-Level Guidelines
 ` : ''}
 Generate 3-5 target words with a pool of 10-15 available parts.`;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: prompt,
-    config: {
-      responseMimeType: 'application/json',
-      responseSchema: activeSchema,
-    },
-  });
+  const draw = async (): Promise<WordBuilderData> => {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: activeSchema,
+        /**
+         * ⚠️ 25000, NOT the family's 8192 — because this generator is on a
+         * THINKING model and that number is a non-thinking one.
+         *
+         * The truncation template ("bound every schema array, then give the
+         * call room, 8192") is calibrated on `gemini-flash-lite-latest`, where
+         * the whole budget is payload. `gemini-3-flash-preview` spends the SAME
+         * ceiling on its reasoning first, so 8192 left roughly 850 characters
+         * for the response: the live probe truncated mid-string on BOTH draws
+         * of `simple_affix` and `compound_affix` (the retry is what made it two
+         * draws), while `greek_latin` and `multi_morpheme` came back clean —
+         * a ceiling that is fatal for half the modes and invisible for the
+         * rest, which is the same shape phoneme-explorer's 4096 had.
+         *
+         * The bound still earns its place as a runaway backstop; it just has to
+         * be a thinking-model number (custom-visual's precedent).
+         */
+        maxOutputTokens: 25000,
+      },
+    });
+    if (!response.text) throw new Error('No content generated');
+    return JSON.parse(response.text) as WordBuilderData;
+  };
 
-  if (!response.text) throw new Error('No content generated');
-  const data = JSON.parse(response.text) as WordBuilderData;
+  let data: WordBuilderData;
+  try {
+    data = await draw();
+  } catch (error) {
+    console.warn('[WordBuilder] first draw failed, retrying once:', error);
+    data = await draw();
+  }
 
   // Post-processing: inject complexityLevel if Gemini dropped it
   if (!data.complexityLevel && evalConstraint) {
@@ -247,24 +323,64 @@ Generate 3-5 target words with a pool of 10-15 available parts.`;
     data.complexityLevel = 'compound_affix'; // sensible default for mixed mode
   }
 
-  // Validate: ensure all target part IDs exist in availableParts
-  const partIds = new Set(data.availableParts.map((p) => p.id));
-  for (const target of data.targets) {
-    for (const pid of target.parts) {
-      if (!partIds.has(pid)) {
-        console.warn(`[WordBuilder] Target "${target.word}" references missing part "${pid}"`);
-      }
-    }
-  }
+  data.availableParts = data.availableParts ?? [];
+  data.targets = data.targets ?? [];
+
+  // ── KEEP-OR-DROP, never backfill ──────────────────────────────────────────
+  // The click-era version console.warn'd about a target referencing a missing
+  // part and shipped it anyway, because the Check button could still compare
+  // ids. In the judged loop a broken target becomes a SPOKEN ask the tutor has
+  // to stand behind, so it is dropped here and again in `itemsFromTargets` —
+  // the same gates on both sides of the wire, imported rather than copied.
+  const beforeParts = data.availableParts.length;
+  data.availableParts = data.availableParts.filter((part) => {
+    const text = (part?.text ?? '').trim();
+    const meaning = (part?.meaning ?? '').trim();
+    return (
+      !!part?.id
+      && text.length >= MIN_MORPHEME_CHARS
+      && /^[a-z]+$/i.test(text)
+      && isSayableProse(meaning, 40)
+      && !opensWithSentinel(text)
+      && !opensWithSentinel(meaning)
+    );
+  });
+
+  const beforeTargets = data.targets.length;
+  data.targets = data.targets.filter((target) => {
+    const word = (target?.word ?? '').trim();
+    const hint = (target?.hint ?? '').trim();
+    return (
+      isSayableWord(word)
+      && !opensWithSentinel(word)
+      && isSayableProse(hint, MAX_CLUE_CHARS)
+      && !opensWithSentinel(hint)
+      && !hint.toLowerCase().includes(word.toLowerCase())
+    );
+  });
+
+  // The authority on askability is the builder the RUNNER reads — run it here
+  // so the log reports what the lesson will actually contain, not what the
+  // model returned.
+  const askable = itemsFromTargets(data.targets, data.availableParts, data.complexityLevel);
 
   console.log('🔤 Word Builder Generated:', {
     topic,
     title: data.title,
     complexityLevel: data.complexityLevel,
-    partCount: data.availableParts?.length || 0,
-    targetCount: data.targets?.length || 0,
+    partCount: data.availableParts.length,
+    partsDropped: beforeParts - data.availableParts.length,
+    targetCount: data.targets.length,
+    targetsDropped: beforeTargets - data.targets.length,
+    askableItems: askable.length,
     evalMode: config?.targetEvalMode ?? 'mixed',
   });
+
+  if (askable.length === 0) {
+    console.warn('[WordBuilder] no target survived the build gates — the lesson will render empty');
+  }
+
+  data.gradeLevel = gradeContext;
 
   return data;
 };

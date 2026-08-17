@@ -147,6 +147,15 @@ import {
   type LetterSoundTier,
 } from '@/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript';
 import {
+  itemsFromTargets as wordBuilderItems,
+  wordBuilderHarnessAnswers,
+  wordBuilderPackBase,
+  type TargetWordLike as WordBuilderTargetLike,
+  type WordBuilderComplexity,
+  type WordBuilderItem,
+  type WordPartLike as WordBuilderPartLike,
+} from '@/components/lumina/primitives/visual-primitives/literacy/wordBuilderScript';
+import {
   itemsFromChallenges as syllableClapperItems,
   syllableClapperHarnessAnswers,
   syllableClapperPackBase,
@@ -729,6 +738,52 @@ const syllableClapperAdapter: DiPortAdapter<SyllableClapperItem> = {
 };
 
 /**
+ * word-builder — the FIRST judged port above the K-2 band (grades 3-8
+ * morphology). ALL-VOICE across all four complexity tiers, so there is no
+ * gesture commit; the tiers are DIFFICULTY, not task identities, so one session
+ * is one `action` and the how-to-play is spoken once.
+ *
+ * ⚠️ Its `build` reads TWO fields, not one. Every other adapter maps
+ * `data.challenges`; a word-builder item is a target word joined to the shared
+ * `availableParts` pool, and the pool is where the morphemes and their meanings
+ * live — an adapter that passed only the targets would build zero items and
+ * report the generator as broken.
+ *
+ * What is different about its answer material:
+ *
+ *  1. **`plainWrong` is a real morphology error rather than an unrelated
+ *     token.** It is the parts IN THE WRONG ORDER ("fulhelpun"), which is the
+ *     one miss the printed board cannot help with — the cards say what each
+ *     part MEANS and nothing about where it goes. Every other port's plain
+ *     wrong is arbitrary; this one drives the ordering half of the skill.
+ *  2. **The signature wrong is the ROOT said straight back** ("help" for
+ *     unhelpful, "scope" for telescope) — picture-vocabulary's base-word shape,
+ *     sharpened by the board: the root is a real word, it is printed in front
+ *     of the child, it carries the target's core meaning, and the tutor's own
+ *     correction says what it means out loud. A judge listening for "did they
+ *     say something from the parts" affirms it.
+ *  3. **The leak oracle is FLAT with no exemption anywhere.** The two ports
+ *     before it needed one because their answer was a single character; a
+ *     multi-syllable word collides with nothing, the ask never says it, and the
+ *     build gate drops any clue or context sentence that contains it.
+ */
+const wordBuilderAdapter: DiPortAdapter<WordBuilderItem> = {
+  build: (data) => {
+    const targets = (data.targets ?? []) as WordBuilderTargetLike[];
+    const pool = (data.availableParts ?? []) as WordBuilderPartLike[];
+    const complexity = ((data.complexityLevel as WordBuilderComplexity)
+      ?? 'compound_affix') as WordBuilderComplexity;
+    const items = wordBuilderItems(targets, pool, complexity);
+    return {
+      items,
+      dropped: targets.length - items.length,
+      surface: wordBuilderPackBase(items),
+    };
+  },
+  answersFor: wordBuilderHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -746,6 +801,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'letter-spotter': letterSpotterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'letter-sound-link': letterSoundLinkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'syllable-clapper': syllableClapperAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'word-builder': wordBuilderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'decodable-reader': decodableReaderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

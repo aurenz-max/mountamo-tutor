@@ -56,6 +56,52 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > 78 and is already one stale. Which is the third demonstration in two days of why this file
 > should rank rather than count.)*
 
+### #103 — **`word-builder` (DI port 19): the longest spoken answers the family has judged, from the oldest students it has had. Does a four-syllable academic word survive the path?** · OPEN
+
+**Filed under the standing rule — this is NEW ANSWER MATERIAL, and it is new in two directions at once.**
+The response class is `short_spoken_word` (benched nine ports over) but every previous member of it is one
+or two syllables: "cat", "sun", "push", "Animals". This port's answers are **"unhelpful", "telescope",
+"interaction", "metamorphic", "displacement"** — three and four syllables, several of them Greek/Latin
+academic vocabulary a Grade 6 student is meeting for the first time. And it is the **first judged port
+above the K-2 band**, so it is also the first time the mic has been asked to carry a Grade 3-8 voice.
+
+⭐ **What makes it a real question, and why `--di` cannot reach it.** The judge is handed one target and
+asked whether the child said it, which is safe arithmetic on a short word. Over four syllables three
+things change and none of them are visible over a text channel:
+  (a) **the accept clause invites a fragmented utterance by design** — "built out loud part by part so
+      long as the whole word arrives at the end" — so the child's audio is legitimately *"un… help…
+      ful… unhelpful"*, and our amplitude bracket may close the turn on one of those internal pauses and
+      hand the judge a fragment. This is di-sentence-reading's `silenceCloseMs` finding in miniature, and
+      this port does NOT raise the window (a word is not connected text). If it splits, raising it is the
+      fix and the row is what will say so.
+  (b) **the named signature wrong is a PREFIX of the right answer.** The contract refuses the root said
+      back ("help" for unhelpful, "scope" for telescope, "thermo" for thermometer) — but a truncated
+      transcript of a correct answer looks exactly like that miss, so a transport failure and a genuine
+      error are the same string. Refused 7/7 over text; over a mic it is the case to watch.
+  (c) **ASR normalisation on an unfamiliar academic word.** A Grade 6 saying "metamorphic" for the first
+      time will approximate it; whether the transcript comes back as the target, as a near-miss the judge
+      refuses, or silently corrected to something else is unmeasured.
+
+**What to check (~5 min, one session):**
+1. `npm run dev` → a word-builder lesson at Grade 4, eval mode `compound_affix`. Tap the mic once and say
+   the whole word **fluently**. It must affirm with `"Yes, <word> — <part>, <part>, <part>."`
+2. Say a word **part by part with real pauses** — *"un… help… ful… unhelpful"*. This is a CORRECT answer
+   by contract. If it is refused, check the transcript: a fragment means the silence window closed early.
+3. Say **only the root** ("help"). It must be REFUSED with `"My turn: take the meaning apart…"`.
+4. Say the parts **in the wrong order** ("fulhelpun"). It must be refused.
+5. Switch to `greek_latin` at Grade 6 and say a four-syllable target ("metamorphic", "atmosphere"). This
+   is the acoustic edge of the class.
+6. Get one item wrong twice to reach the cap and confirm the close line names the word AND its parts —
+   that is the only beat where the link is made for a capped item.
+
+**Machine evidence already in hand** (so this row is only the acoustic half): 7 live drives across all
+four eval modes — 27/27 wrong REFUSED, 24/24 right AFFIRMED, the signature wrong (the root said straight
+back) refused **7/7**, **24/24 affirmations were the bare scripted line with zero embellishment**, and the
+cap drill produced no `di-no-verdict` (18d held, authored in from birth) — only the known-open 18c(c)
+verbatim-repeat WARN this pack's contract deliberately commands.
+**Source reports:** `qa/tutor-reports/word-builder-live-di-*-2026-08-16.md` ·
+**queue:** `qa/di/BACKLOG.md` item 16.
+
 ### #101 — **`word-workout` (DI port 16): the child's answer set now contains a NONWORD. Can the in-band judge hear "zat" as not-"cat"?** · OPEN
 
 **Filed under the standing rule, not by habit — this is NEW ANSWER MATERIAL.** Every spoken answer the
