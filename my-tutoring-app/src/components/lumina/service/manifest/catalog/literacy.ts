@@ -871,82 +871,196 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'syllable-clapper',
-    description: 'Syllable clapping activity where students hear a word and tap/clap to count its syllables. Visual bar splits into color-coded syllable segments. AI tutor pronounces words and syllables. Supports 1-4 syllable words. Perfect for phonological awareness development. ESSENTIAL for kindergarten literacy.',
-    constraints: 'Requires 1-4 syllable words appropriate for kindergarten. Each word needs correct syllable segmentation.',
+    misconceptionScope: 'primitive',
+    description:
+      'Live Direct Instruction syllable counting with a spoken tutor. The tutor SAYS a word with '
+      + 'purposeful enunciation — one joined stream, never broken into its parts — the child claps the '
+      + 'parts with their own hands and SAYS how many parts they heard, and the tutor’s own affirmation '
+      + 'moves the lesson on. The word is deliberately never printed before the answer is affirmed, so a '
+      + 'reader cannot chunk it by sight instead of hearing it; the only thing on screen before then is a '
+      + 'tap-to-hear button. There are no clap buttons, no counters, no answer buttons and nothing to '
+      + 'click to advance. Requires a microphone. ESSENTIAL for kindergarten phonological awareness.',
+    constraints:
+      'Words must be ONE word, concrete, picturable, and recognisable BY EAR — the child never sees them. '
+      + 'Every word must have ONE syllable count all English speakers agree on: words whose count varies by '
+      + 'speaker ("squirrel", "fire", "flower", "every", "chocolate", "comfortable", "interesting") are '
+      + 'rejected in code, because a judged tutor would refuse a child who was right. 1-4 syllables '
+      + '(5 tolerated). Spoken answers are COUNTS, never letters or sounds. Requires the live tutor and a '
+      + 'microphone.',
+    // ── DI MODALITY (2026-08-16) — literacy port. The click era shipped a
+    // `👏 Clap!` button, six counter circles and a `Check (3 claps)` label: the
+    // button failed the costume test outright (a child who cannot hear a single
+    // boundary can press it three times) and the circles did the COUNTING, which
+    // is the one act the primitive exists to train. The clapping is not deleted
+    // — it moved off the screen and into the room, where the child's own hands
+    // are, exactly as at a teacher's table.
+    // ⭐ THE ENUNCIATION IS THE INSTRUMENT AND IT IS A LADDER: chanted in parts
+    // hands the count over (legal ONLY in the correction, and on a model word
+    // the session never asks about); stretched-but-joined supports; whole at
+    // natural pace is the real task. The click era had this backwards — its own
+    // reveal policy said "never state the NUMBER of parts before the student
+    // claps" while telling the easy tier to say the word "broken into its parts
+    // with clear pauses" as the scaffold. Three beats IS three.
+    // Cue lines and per-item judging contracts live in `syllableClapperScript.ts`
+    // (hand-authored, DISTAR); items a tutor could not honestly ask (parts that
+    // do not spell their word, a count outside 1..5, a dialect-variable word)
+    // are DROPPED at build, never degraded.
+    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
+    // taskDescription, scaffolding level, struggle response or directive
+    // sentence begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'easy',
-        label: 'Easy Words (Tier 1)',
-        beta: 1.5,
+        label: 'Short Words (Tier 1)',
+        // β raised 1.5 → 2.0 at the DI port because the STRUCTURE changed: the
+        // click era gave a 6-circle running tally, three attempts and a
+        // directional miss hint ("too many claps"), which over a 1-to-4 answer
+        // space is a binary search almost nobody fails. The answer is now
+        // unaided spoken production with two corrections.
+        beta: 2.0,
         scaffoldingMode: 1,
         challengeTypes: ['easy'],
-        description: 'High-frequency 1-2 syllable words with clear boundaries. AI over-emphasizes beats and paces slowly.',
+        description:
+          'High-frequency 1-2 syllable words with clear boundaries. The tutor says the word twice at the '
+          + 'most-supported tier (natural, then slower and still joined) and invites the hands.',
       },
       {
         evalMode: 'medium',
-        label: 'Medium Words (Tier 2)',
-        beta: 2.5,
+        label: 'Longer Words (Tier 2)',
+        // β 2.5 → 3.0, same structural reason as tier 1.
+        beta: 3.0,
         scaffoldingMode: 2,
         challengeTypes: ['medium'],
-        description: '2-3 syllable words, broader vocabulary including compound words. AI models once then lets student try.',
+        description:
+          '2-3 syllable words, broader vocabulary including compound words, whose beats are obvious to the '
+          + 'ear. Said once, naturally; the child claps and says the count.',
       },
       {
         evalMode: 'hard',
-        label: 'Hard Words (Tier 3)',
-        beta: 3.5,
+        label: 'Long Words (Tier 3)',
+        // β 3.5 → 4.0, same structural reason as tier 1.
+        beta: 4.0,
         scaffoldingMode: 3,
         challengeTypes: ['hard'],
-        description: '3-4 syllable words with some ambiguous boundaries. AI says word naturally, student parses independently.',
+        description:
+          '3-4 syllable words — longer and less familiar, but every beat still cleanly heard. Length is the '
+          + 'difficulty, never ambiguity: a word whose count varies by speaker has no defensible answer and '
+          + 'is dropped rather than graded.',
       },
     ],
     tutoring: {
       taskDescription:
-        'Syllable clapping activity. Word {{currentChallenge}}/{{totalChallenges}}: '
-        + '"{{currentWord}}" ({{syllableCount}} syllables: {{syllables}}). '
-        + 'Student clapped: {{studentClaps}}. Attempts: {{attempts}}.',
-      contextKeys: [
-        'currentWord', 'syllableCount', 'syllables',
-        'studentClaps', 'currentChallenge', 'totalChallenges', 'attempts',
-        // Within-mode SUPPORT tier ('easy'|'medium'|'hard'; null when the manifest
-        // sent no difficulty). ORTHOGONAL to this primitive's eval modes, which
-        // reuse those same three words for the WORD-LENGTH band.
-        'supportTier',
-      ],
+        'Live-judged Direct Instruction syllable counting for a young child. Right now the word band is '
+        + '"{{challengeType}}" and the word you are saying is "{{stimulus}}". You say the word out loud; the '
+        + 'child claps its parts with their hands and answers with a NUMBER, and you judge the audio you '
+        + 'heard. You speak the exact scripted lines from each bracketed application message and nothing '
+        + 'else. Hearing the parts inside a spoken word — not reading them — is the entire skill being '
+        + 'practiced, so the word is never shown on screen and nothing prints an answer.',
+      // Exactly what the pack pushes through updateContext (and what the
+      // connect-time primitive_data also carries). The stimulus is ANSWER-FREE
+      // by construction: the word IS the question here and the answer is the
+      // COUNT, which is never pushed. The old seven keys went with the improvised
+      // turns they served — there is no `studentClaps` any more because there is
+      // no clap button, and no `supportTier` directive because tier latitude now
+      // lives IN the scripted ask (the second saying, the clap invitation).
+      contextKeys: ['challengeType', 'stimulus'],
+      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION. A re-spoken
+      // ask or a quoted hint opens with neither "Yes" nor "My turn:", so the
+      // reducer records no verdict, the correction counter freezes, and the child
+      // waits on a tutor that has already spoken. Authored correct at birth.
       scaffoldingLevels: {
-        level1: '"Let\'s clap the word! Say it with me and clap each part."',
-        level2: '"Listen: {{currentWord}}. I\'ll say it slowly — clap when you hear a new part."',
-        level3: '"{{currentWord}} has {{syllableCount}} parts: {{syllables}}. Clap with me: [clap each syllable]."',
+        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already says the word, says its parts one at a time, names the count and asks again — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a slower saying of the word, a chin-drop tip or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next word to you.',
       },
+      // Observable behaviours only, with PERFORMABLE responses (script moves a
+      // tutor can speak or do — never meta-instructions, which get recited).
       commonStruggles: [
-        { pattern: 'Clapping too many times (adding extra syllables)', response: 'Say the word slowly and naturally. Only clap when your mouth makes a new sound.' },
-        { pattern: 'Clapping once for all multi-syllable words', response: 'Put your hand under your chin. Each time your chin drops, that\'s a new syllable.' },
-        { pattern: 'Confusing syllables with phonemes', response: 'We\'re listening for big parts, not little sounds. "Cat" is one clap. "Kitten" is two claps.' },
+        {
+          pattern: 'Says a number that is one MORE than the parts - an extra beat on the last part',
+          response: 'Treat it as not yet answered: give the scripted correction for this word, which says the parts one at a time and names the count, then asks again.',
+        },
+        {
+          pattern: 'Counts out loud and keeps going past the total - "one, two, three, four" for a three-part word',
+          response: 'Judge the number they LAND on, not the numbers along the way. If they landed past the total, give the scripted correction for this word.',
+        },
+        {
+          pattern: 'Says the word back, or says its parts, without ever saying a number',
+          response: 'Treat it as not yet answered: give the scripted correction, which ends by asking how many parts.',
+        },
+        {
+          pattern: 'Counts the little sounds instead of the big parts - says "nine" for butterfly',
+          response: 'Treat it as not yet answered: the scripted correction says the parts as whole beats, names the count, then asks again.',
+        },
+        {
+          pattern: 'Goes quiet after being asked',
+          response: 'Say the question once more, then wait for them alone.',
+        },
       ],
       aiDirectives: [
         {
-          title: 'PRONUNCIATION COMMANDS',
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
           instruction:
-            'When you receive [PRONOUNCE_WORD], say the word naturally and clearly. Just the word. '
-            + 'When you receive [PRONOUNCE_SYLLABLES], say the word with clear pauses between syllables '
-            + '(e.g., "but...ter...fly"). Exaggerate the breaks slightly. '
-            + 'When you receive [PRONOUNCE_SYLLABLE], say just the single syllable requested.',
+            'Messages tagged [SC_ITEM], [SC_MOVE], [SC_COMPLETE] or [SC_HEAR] contain the only lesson words '
+            + 'you may speak. The square-bracket label is private metadata: never speak, reproduce, or invent '
+            + 'it. Each carries a judging rule: affirmations must begin with "Yes" and corrections must begin '
+            + 'with "My turn", using the exact quoted lines. Never begin any other sentence with those words. '
+            + 'Judge honestly from the audio: affirm a right answer, correct a wrong or missing one, and do '
+            + 'not praise to be kind. The application decides which word comes next; never introduce one '
+            + 'yourself.',
         },
         {
-          title: 'SUPPORT-TIER REVEAL POLICY',
+          title: 'HOW YOU SAY THE WORD IS THE LESSON',
           instruction:
-            'The support tier for this session is {{supportTier}} (null means full help). That is the '
-            + 'SUPPORT axis — how much scaffolding the student gets — and it is NOT the word-length '
-            + 'band, even though both use the words easy, medium and hard. You are a second scaffold '
-            + 'channel, so match your spoken help to the on-screen tier: '
-            + 'easy or null — you may say the word broken into its parts with clear pauses, clap along, '
-            + 'and replay the parts after a correct answer. '
-            + 'medium — on a miss say the word slowly and let the student find the parts; do NOT replay '
-            + 'the parts after a correct answer. '
-            + 'hard — the clap tally is hidden on screen, so say the word NATURALLY and WHOLE at normal '
-            + 'pace; never break it into parts, never clap along, and never replay the parts. '
-            + 'At EVERY tier you still say the word aloud on demand (this is a listening task, and the '
-            + 'spoken word is never withdrawn), and you NEVER state how many parts the word has before '
-            + 'the student claps — the count IS the answer.',
+            'In the ask, the word is ONE JOINED STREAM every time you say it — even, unhurried, and never '
+            + 'broken into parts, because the parts are exactly what the child is counting. Saying it in '
+            + 'beats gives the answer away just as surely as saying the number would. When a cue tells you '
+            + 'to say the word a second time, that second saying is slower and more drawn out, still one '
+            + 'unbroken stream. The ONLY place you ever say a word in separate parts is the scripted '
+            + 'correction line, which writes them out with spaced dots — say those exactly as written, one '
+            + 'beat at a time with a clear pause between them. That model is earned, because the child has '
+            + 'already answered.',
+        },
+        {
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
+          instruction:
+            'The first [SC_ITEM] of a session has the greeting, the rule, a worked example on a practice '
+            + 'word, and the question INSIDE its quoted line. Speak that quote exactly and add nothing of '
+            + 'your own: no separate greeting, no how-to-play of your own wording, no rephrased question. '
+            + 'The practice word in that example is deliberately not one of the words the child will be '
+            + 'asked about, so say it as written and do not substitute a word of your own. This OVERRIDES '
+            + 'any "keep it to one sentence" cap from a lesson switch.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER (and the answer law)',
+          instruction:
+            'The answer is ONE NUMBER from the child\'s own mouth. Counting the parts aloud counts too — '
+            + 'judge the number they LAND on, because that is their answer, and a count that keeps going '
+            + 'past the total is wrong even though the right number was said along the way. The number '
+            + 'inside a little phrase counts. Saying the word back, or saying its parts with no number, is '
+            + 'not yet an answer. LAW: never say how many parts a word has before the child has been '
+            + 'affirmed — the microphone is open the whole time; the scripted correction is the one place '
+            + 'the count is spoken, and only because the attempt is already judged.',
+        },
+        {
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you ask, STOP and stay silent until the child answers. Do not re-ask, do not fill the '
+            + 'pause, do not say the word again unprompted, and do not answer for them. They are clapping '
+            + 'the word with their hands and listening to it inside their own head, and that IS the '
+            + 'activity, so the pause is longer here than it feels. If they tap to hear the word you will '
+            + 'receive a separate [SC_HEAR] message: answer that and nothing more, then go back to waiting.',
+        },
+        {
+          title: 'WORD OR PART ON DEMAND ([SC_HEAR])',
+          instruction:
+            'When you receive a message starting with [SC_HEAR], immediately and clearly say ONLY what it '
+            + 'quotes — the question again, or one single word part — and nothing else. Do NOT spell '
+            + 'anything, do NOT break a word into parts unless the quote itself writes them out, do NOT add '
+            + 'commentary, and do NOT treat anything you just heard as an attempt to judge. This is the '
+            + 'child tapping to re-hear the stimulus, which is how a pre-reader recovers it, and it is '
+            + 'answered at every grade, including while you are waiting for their answer.',
         },
       ],
     },

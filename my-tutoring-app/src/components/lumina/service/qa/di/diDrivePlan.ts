@@ -147,6 +147,13 @@ import {
   type LetterSoundTier,
 } from '@/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript';
 import {
+  itemsFromChallenges as syllableClapperItems,
+  syllableClapperHarnessAnswers,
+  syllableClapperPackBase,
+  type SyllableChallengeLike,
+  type SyllableClapperItem,
+} from '@/components/lumina/primitives/visual-primitives/literacy/syllableClapperScript';
+import {
   decodableReaderHarnessAnswers,
   decodableReaderPackBase,
   itemsFromChallenges as decodableReaderItems,
@@ -679,6 +686,49 @@ const decodableReaderAdapter: DiPortAdapter<DecodableReaderItem> = {
 };
 
 /**
+ * syllable-clapper (the DI port, 2026-08-16). ALL-VOICE and SINGLE-ACTION — the
+ * three eval modes are word-LENGTH bands, not different tasks, so every item is
+ * `count-parts` and there is no gesture commit anywhere. The click era's `Clap!`
+ * button was a tally widget wearing a manipulative's costume; the clapping now
+ * happens with the child's own hands, off screen, and only the spoken count
+ * crosses the wire.
+ *
+ * What is different about its answer material, twice over:
+ *
+ *  1. **The signature wrong is manufactured BY the accept clause, more sharply
+ *     than anywhere else in the family.** A five-year-old counts out loud, so
+ *     "one, two, three" must be accepted for a three-part word — which makes
+ *     "one, two, three, four" an utterance that contains the correct answer,
+ *     spoken fluently in a natural counting rhythm, and is wrong. Only reading
+ *     the LANDING separates them. It is the same shape phoneme-explorer's
+ *     `segment` and counting-board's counted modes drive, and it matters most
+ *     here: over-counting (an extra beat on the last syllable) is this
+ *     primitive's own documented commonest error.
+ *  2. **The leak oracle is FLAT and the ask still says a number.** The
+ *     how-to-play works a practice word ("Watch me first: pencil. Pen … cil.
+ *     That is two parts.") and `pickModelWord` guarantees that count is never
+ *     the item's own — so no `leakExemptSpan` is issued and the oracle stays
+ *     live over the greeting, the worked example, the ask and the hand-over. A
+ *     model that substitutes its own practice word is caught by it.
+ *
+ * ⚠️ Its `--di-cap` drill is a SINGLE contract shape: `moveOnCue` is
+ * mode-invariant (one action) and every item is voice, so one cap drive covers
+ * the port.
+ */
+const syllableClapperAdapter: DiPortAdapter<SyllableClapperItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as SyllableChallengeLike[];
+    const items = syllableClapperItems(challenges);
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: syllableClapperPackBase(items),
+    };
+  },
+  answersFor: syllableClapperHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -695,6 +745,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'phoneme-explorer': phonemeExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'letter-spotter': letterSpotterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'letter-sound-link': letterSoundLinkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'syllable-clapper': syllableClapperAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'decodable-reader': decodableReaderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

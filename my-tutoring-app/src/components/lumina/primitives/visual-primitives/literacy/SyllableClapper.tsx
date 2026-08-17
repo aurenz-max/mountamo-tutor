@@ -1,27 +1,75 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * SyllableClapper — DI modality. The Live tutor owns the clock: it says the word
+ * with purposeful enunciation, waits, judges the child's spoken count from the
+ * audio in-band, corrects contrastively, and its OWN affirmation is the advance.
+ * There is no advance timer, no Clap button, no Check button, no Next button and
+ * no push-to-talk mic anywhere in this file.
+ *
+ * ⭐ THE CLAP MOVED OFF THE SCREEN AND INTO THE ROOM. The click era's `👏 Clap!`
+ * button failed the costume test outright — a child who cannot hear a single
+ * syllable boundary can press it three times — and the six counter circles it
+ * filled did the COUNTING, which is the one act this primitive exists to train.
+ * The ask now invites the hands ("Clap the parts with your hands, then tell me
+ * how many parts"), and those hands are the child's own, invisible to us exactly
+ * as they are to a teacher at a table whose real signal is the spoken count.
+ *
+ * ANSWER-LEAK RULE, and it is the whole reason this stage is nearly empty:
+ * NOTHING ON SCREEN MAY EQUAL WHAT THE CHILD IS ABOUT TO SAY. The word is never
+ * printed before the affirmation (a reader chunks it orthographically instead of
+ * hearing it), and the split syllable bar — three boxes for a three-part word —
+ * is literally the answer drawn as furniture. Both live behind `revealHeld`,
+ * which opens on her affirmation and closes when her cue for the next item is
+ * SENT. Pre-affirm the child has her voice and tap-to-hear, which is what they
+ * would have at the table.
+ *
+ * SUPPORT TIERS SURVIVE AS ASK LEVERS (L3 contract, re-based): the on-screen
+ * tally and the directional miss hint are gone with the button they measured, so
+ * the tier now shapes the ENUNCIATION — easy hears the word twice (natural, then
+ * slower and still joined), medium once, and hard loses the clap invitation so
+ * the segmenting happens in the ear alone. `syllableClapperScript` honors both
+ * flags; the spoken word and tap-to-hear are never withdrawn at any tier.
+ *
+ * Items that cannot be asked or judged honestly — parts that do not spell their
+ * word, a count outside 1..5, or a word whose syllable count is not one number
+ * in English ("squirrel", "every", "fire") — are DROPPED at build time by
+ * `itemsFromChallenges`. Ship nothing over a broken ask.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaButton,
-  LuminaActionButton,
-  LuminaProgress,
-  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaChallengeCounter,
+  type LuminaAccent,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SyllableClapperMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  hearPartCue,
+  itemsFromChallenges,
+  syllableClapperPackBase,
+  type SyllableBand,
+  type SyllableClapperItem,
+} from './syllableClapperScript';
 import { SoundManager } from '../../../utils/SoundManager';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -30,21 +78,22 @@ import { SoundManager } from '../../../utils/SoundManager';
 interface SyllableChallenge {
   id: string;
   word: string;
-  syllableCount: number;       // 1-4
+  syllableCount: number;       // 1-5; the LENGTH of `syllables` is authoritative
   syllables: string[];         // ["but", "ter", "fly"]
   imageDescription: string;
-  difficulty: number;           // 3-5
+  difficulty: number;          // 3-5
   /** WORD-LENGTH band (the eval mode). NOT the support tier — see `supportTier`. */
   challengeType: 'easy' | 'medium' | 'hard';
 
   // ── Within-mode SUPPORT-TIER scaffolds (stamped by the generator from
-  //    ctx.supportTier). Display / feedback only — they NEVER change the word,
-  //    the syllable split, or the answer. All optional; absent ⇒ byte-identical
-  //    legacy full-help render, so every existing payload is unaffected. ──
-  /** #1 perception — show the 6-circle clap tally + the count echo on Check. Default: shown. */
-  showClapCounter?: boolean;
-  /** #2 feedback — say WHICH WAY the clap count missed ("too many"/"not enough"). Default: directional. */
-  directionalErrorHint?: boolean;
+  //    ctx.supportTier). ASK levers now, not render levers: the click era's
+  //    on-screen tally and directional miss hint went with the Check button
+  //    they measured. All optional; absent ⇒ the fully supported ask, so every
+  //    legacy payload still plays. ──
+  /** The ask says the word a second time, slower and still joined. easy only. */
+  echoWordSlowly?: boolean;
+  /** The ask invites the hands. Withdrawn at the hard tier (motor scaffold). */
+  inviteClap?: boolean;
 }
 
 export interface SyllableClapperData {
@@ -52,10 +101,13 @@ export interface SyllableClapperData {
   /**
    * Within-mode SUPPORT tier from the manifest (config.difficulty). Orthogonal
    * to `challengeType`, which happens to use the same three words for the WORD
-   * LENGTH band. Threaded to the tutor reveal policy.
+   * LENGTH band. The generator stamps the per-challenge flags from it; nothing
+   * in this component reads it, which is what makes the two axes structurally
+   * unable to contaminate each other.
    */
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SyllableChallenge[];
+  gradeLevel?: string;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -65,10 +117,6 @@ export interface SyllableClapperData {
   exhibitId?: string;
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<SyllableClapperMetrics>) => void;
 }
-
-// ============================================================================
-// Props
-// ============================================================================
 
 interface SyllableClapperProps {
   data: SyllableClapperData;
@@ -84,50 +132,14 @@ const SYLLABLE_COLORS = [
   'bg-purple-500/30 border-purple-400/50 text-purple-200',
   'bg-emerald-500/30 border-emerald-400/50 text-emerald-200',
   'bg-amber-500/30 border-amber-400/50 text-amber-200',
+  'bg-rose-500/30 border-rose-400/50 text-rose-200',
 ];
 
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  easy: { label: 'Easy Words', icon: '👏', accentColor: 'blue' },
-  medium: { label: 'Medium Words', icon: '👏👏', accentColor: 'purple' },
-  hard: { label: 'Hard Words', icon: '👏👏👏', accentColor: 'emerald' },
+const BAND_META: Record<SyllableBand, { badge: string; icon: string; accent: LuminaAccent }> = {
+  easy: { badge: 'Short Words', icon: '👏', accent: 'blue' },
+  medium: { badge: 'Longer Words', icon: '👏', accent: 'purple' },
+  hard: { badge: 'Long Words', icon: '👏', accent: 'emerald' },
 };
-
-const MAX_CLAPS = 6;
-const MAX_ATTEMPTS = 3;
-const GRADE_LEVEL = 'K';
-
-// ============================================================================
-// SUPPORT-TIER reveal policy
-//
-// The live tutor is a SECOND scaffold channel, so its modelling latitude has to
-// match the on-screen tier — otherwise a hard tier hides the clap tally while
-// the tutor happily chants "but...ter...fly" and hands the answer over anyway.
-// This is also the selector that finally makes the catalog's scaffoldingLevels
-// ladder real: level1/2/3 were all shipped to the model with nothing choosing
-// among them.
-//   easy   → level 3: pre-segmented model on a miss + syllable replay after a
-//                     correct answer.
-//   medium → level 2: still model the segmented re-say on a miss, but no
-//                     post-correct replay — their own count is the confirmation.
-//   hard   → level 1: say the word NATURALLY and WHOLE on a miss; never
-//                     pre-segment it (the segmentation IS the answer) and never
-//                     replay the parts after a correct answer.
-// At EVERY tier the tutor still SAYS THE WORD on demand — this is a listening
-// task and the spoken stimulus is the primitive's whole point; it is never
-// withdrawn. And at every tier the tutor must never state the NUMBER of parts
-// before the student claps.
-// ============================================================================
-
-function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    return '[SUPPORT_TIER easy] Full scaffolding (use scaffolding level 3): you may say the word broken into its parts with clear pauses and clap along, and you may replay the parts after a correct answer. Never state the NUMBER of parts before the student claps.';
-  }
-  if (tier === 'medium') {
-    return '[SUPPORT_TIER medium] Light scaffolding (use scaffolding level 2): on a miss, say the word slowly and let the student find the parts. Do NOT replay the parts after a correct answer. Never state the NUMBER of parts before the student claps.';
-  }
-  return '[SUPPORT_TIER hard] Minimal scaffolding (use scaffolding level 1): say the word NATURALLY and WHOLE at normal pace. Never break it into parts for the student, never clap along, and never replay the parts after a correct answer — the segmentation is exactly what they are producing. Ask what they hear. Never state the NUMBER of parts.';
-}
 
 // ============================================================================
 // Component
@@ -137,7 +149,6 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
   const {
     title,
     challenges = [],
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -146,50 +157,35 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     onEvaluationSubmit,
   } = data;
 
-  // ── Activity gate ─────────────────────────────────────────────
-  const [hasStarted, setHasStarted] = useState(false);
+  const gradeLevel = data.gradeLevel ?? 'kindergarten';
 
-  // ── Clapping state ────────────────────────────────────────────
-  const [clapCount, setClapCount] = useState(0);
-  const [hasChecked, setHasChecked] = useState(false);
-  const [showSyllables, setShowSyllables] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [isCelebrating, setIsCelebrating] = useState(false);
-  const [isClapping, setIsClapping] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
-
-  // ── Timing ────────────────────────────────────────────────────
-  const startTimeRef = useRef(Date.now());
-
-  // ── Instance ID ───────────────────────────────────────────────
   const stableInstanceIdRef = useRef(instanceId || `syllable-clapper-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Shared challenge progress hook ────────────────────────────
-  const {
-    currentIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  const ctx = useLuminaAIContext();
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.challengeType,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
+  // ── Items (drop-gated) ────────────────────────────────────────────────────
+  const items = useMemo<SyllableClapperItem[]>(() => {
+    const built = itemsFromChallenges(challenges);
+    if (built.length < challenges.length) {
+      console.warn(
+        `[SyllableClapper] dropped ${challenges.length - built.length} unaskable challenge(s) `
+        + '(split/join, count range, sayability or dialect-variable gates)',
+      );
+    }
+    return built;
+  }, [challenges]);
 
-  // ── Evaluation ────────────────────────────────────────────────
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<SyllableClapperMetrics>({
+  // ── The reveal payload (18b) ──────────────────────────────────────────────
+  // Set on the affirmation, rendered behind `runner.revealHeld`, and DELIBERATELY
+  // NOT cleared when the next item opens: the runner fires `onAffirmed` and
+  // `onItemOpened` in ONE dispatch, so a payload cleared there paints on the last
+  // item and nowhere else — the family-wide bug 18b closed. The hold is the gate;
+  // the next affirmation overwrites the payload.
+  const [revealed, setRevealed] = useState<SyllableClapperItem | null>(null);
+
+  // ── Evaluation ────────────────────────────────────────────────────────────
+  const evaluation = usePrimitiveEvaluation<SyllableClapperMetrics>({
     primitiveType: 'syllable-clapper',
     instanceId: resolvedInstanceId,
     skillId,
@@ -199,277 +195,88 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const [submittedScore, setSubmittedScore] = useState<number | null>(null);
-
-  const currentChallenge = challenges[currentIndex];
-
-  // ── Support-tier scaffolds ────────────────────────────────────
-  // Read with `!== false` so an ABSENT field (every legacy payload, and any
-  // session the manifest sends without a difficulty) renders the full-help UI
-  // byte-identically. Gated on the tier fields ONLY — never on challengeType,
-  // whose 'easy'|'medium'|'hard' values name the WORD-LENGTH band, not support.
-  const showClapCounter = currentChallenge?.showClapCounter !== false;
-  const directionalErrorHint = currentChallenge?.directionalErrorHint !== false;
-  // Segmented modelling by the tutor is the audible twin of the on-screen tally:
-  // withdrawn only at the hard tier, kept whenever no tier was sent.
-  const tutorMaySegment = supportTier !== 'hard';
-  // Replaying the syllables after a correct answer is the top rung only.
-  const tutorMayReplayAfterCorrect = supportTier === undefined || supportTier === 'easy';
-
-  // ── AI Tutoring integration ───────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    currentWord: currentChallenge?.word ?? '',
-    syllableCount: currentChallenge?.syllableCount ?? 0,
-    syllables: currentChallenge?.syllables?.join(', ') ?? '',
-    studentClaps: clapCount,
-    currentChallenge: currentIndex + 1,
-    totalChallenges: challenges.length,
-    attempts: currentAttempts,
-    supportTier: supportTier ?? null,
-  }), [currentChallenge, currentIndex, challenges.length, currentAttempts, clapCount, supportTier]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'syllable-clapper',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: GRADE_LEVEL,
-  });
-
-  // ── Activity introduction — fire once when connected ──────────
-  const hasIntroducedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasStarted || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-
-    const policy = tutorRevealPolicy(supportTier);
-    sendText(
-      `[ACTIVITY_START] This is a syllable clapping activity for kindergarten. `
-      + `There are ${challenges.length} words to clap. `
-      + `Warmly introduce the activity: "We're going to clap the parts of words!" `
-      + `Then say the first word "${currentChallenge.word}" clearly and naturally.`
-      + (policy ? ` ${policy}` : ''),
-      { silent: true },
-    );
-  }, [hasStarted, isConnected, currentChallenge, challenges.length, sendText, supportTier]);
-
-  // ── Pronounce word when challenge changes ─────────────────────
-  useEffect(() => {
-    if (!currentChallenge || !isConnected || !hasIntroducedRef.current) return;
-    if (currentIndex === 0) return; // First challenge handled by ACTIVITY_START
-
-    const policy = tutorRevealPolicy(supportTier);
-    sendText(
-      `[PRONOUNCE_SOUND] The word is "${currentChallenge.word}". ${currentChallenge.word}.`
-      + (policy ? ` ${policy}` : ''),
-      { silent: true },
-    );
-  }, [currentIndex, currentChallenge, isConnected, sendText, supportTier]);
-
-  // ── Reset state when challenge advances ───────────────────────
-  useEffect(() => {
-    setClapCount(0);
-    setHasChecked(false);
-    setShowSyllables(false);
-    setFeedback('');
-    setFeedbackType('');
-    setIsCelebrating(false);
-  }, [currentIndex]);
-
-  // ── Handle clap ───────────────────────────────────────────────
-  const handleClap = useCallback(() => {
-    if (hasChecked || clapCount >= MAX_CLAPS) return;
-
-    SoundManager.tap();
-    setClapCount(prev => prev + 1);
-    setIsClapping(true);
-    setTimeout(() => setIsClapping(false), 200);
-  }, [hasChecked, clapCount]);
-
-  // ── Handle check (submit clap count) ──────────────────────────
-  const handleCheck = useCallback(() => {
-    if (hasChecked || clapCount === 0 || !currentChallenge) return;
-
-    incrementAttempts();
-    const isCorrect = clapCount === currentChallenge.syllableCount;
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setHasChecked(true);
-      setShowSyllables(true);
-      setFeedback(
-        `Yes! "${currentChallenge.word}" has ${currentChallenge.syllableCount} `
-        + `part${currentChallenge.syllableCount > 1 ? 's' : ''}!`,
-      );
-      setFeedbackType('success');
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-
-      sendText(
-        `[CLAP_CORRECT] Student correctly clapped ${clapCount} times for "${currentChallenge.word}" `
-        + `(${currentChallenge.syllableCount} syllables: ${currentChallenge.syllables.join(', ')}). `
-        + (tutorMayReplayAfterCorrect
-          ? `Celebrate briefly: "Yes! ${currentChallenge.word} has ${currentChallenge.syllableCount} parts! Let's hear them..."`
-          : `Celebrate briefly: "Yes! ${currentChallenge.word} has ${currentChallenge.syllableCount} parts!" Then STOP — do NOT say the parts again.`),
-        { silent: true },
-      );
-
-      // After a beat, replay the syllables — the TOP scaffold rung only. At
-      // medium/hard the student's own correct count is the confirmation.
-      if (tutorMayReplayAfterCorrect) {
-        setTimeout(() => {
-          sendText(
-            `[PRONOUNCE_SYLLABLES] Say "${currentChallenge.word}" broken into syllables with clear pauses: `
-            + `"${currentChallenge.syllables.join('...')}". Exaggerate the breaks slightly.`,
-            { silent: true },
-          );
-        }, 2000);
-      }
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(
-        directionalErrorHint
-          ? (clapCount > currentChallenge.syllableCount
-            ? "That's too many claps. Listen again..."
-            : "That's not enough claps. Listen again...")
-          // hard: no direction of error — the student re-segments the word
-          // instead of binary-searching the count.
-          : 'Not quite. Listen again.',
-      );
-      setFeedbackType('error');
-
-      sendText(
-        `[CLAP_INCORRECT] Student clapped ${clapCount} times but "${currentChallenge.word}" has `
-        + `${currentChallenge.syllableCount} syllables. Attempt ${currentAttempts + 1}. `
-        + (tutorMaySegment
-          ? `Say "Hmm, let me say it again slowly. Listen for the parts..." `
-            + `then re-say with breaks: "${currentChallenge.syllables.join('...')}".`
-          : `Say "Not quite — listen again." then say the WHOLE word "${currentChallenge.word}" `
-            + `naturally at normal pace. Do NOT break it into parts, do NOT clap along, and do NOT `
-            + `say how many parts it has — finding the parts is the student's work.`),
-        { silent: true },
-      );
-
-      // After max attempts, reveal answer
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
-        setTimeout(() => {
-          setHasChecked(true);
-          setShowSyllables(true);
-          setFeedback(
-            `"${currentChallenge.word}" has ${currentChallenge.syllableCount} `
-            + `part${currentChallenge.syllableCount > 1 ? 's' : ''}: `
-            + `${currentChallenge.syllables.join(' · ')}`,
-          );
-          setFeedbackType('success');
-          recordResult({
-            challengeId: currentChallenge.id,
-            correct: false,
-            attempts: currentAttempts + 1,
-          });
-        }, 1500);
-      } else {
-        // Reset claps for retry
-        setTimeout(() => {
-          setClapCount(0);
-          setFeedback('');
-          setFeedbackType('');
-        }, 1500);
-      }
-    }
-  }, [
-    hasChecked, clapCount, currentChallenge, currentAttempts,
-    incrementAttempts, recordResult, sendText,
-    directionalErrorHint, tutorMaySegment, tutorMayReplayAfterCorrect,
-  ]);
-
-  // ── Handle syllable segment tap ───────────────────────────────
-  const handleSyllableTap = useCallback((syllable: string) => {
-    if (!showSyllables) return;
-
-    sendText(
-      `[PRONOUNCE_SYLLABLE] Say just the syllable "${syllable}" clearly. Nothing else.`,
-      { silent: true },
-    );
-  }, [showSyllables, sendText]);
-
-  // ── Submit final evaluation ───────────────────────────────────
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const totalCount = challenges.length;
-    const overallPct = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
-    const totalAttempts = challengeResults.reduce((sum, r) => sum + r.attempts, 0);
-    const elapsed = Date.now() - startTimeRef.current;
-
-    // Calculate syllable count distribution
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const syllableCountsEncountered: Record<number, number> = {};
-    for (const ch of challenges) {
-      syllableCountsEncountered[ch.syllableCount] =
-        (syllableCountsEncountered[ch.syllableCount] || 0) + 1;
+    for (const item of items) {
+      syllableCountsEncountered[item.partCount] =
+        (syllableCountsEncountered[item.partCount] ?? 0) + 1;
     }
-
     const metrics: SyllableClapperMetrics = {
       type: 'syllable-clapper',
-      wordsCorrect: correctCount,
-      wordsTotal: totalCount,
-      clapCountAccuracy: overallPct,
+      wordsCorrect: summary.solvedCount,
+      wordsTotal: items.length,
+      clapCountAccuracy: summary.accuracy,
       syllableCountsEncountered,
-      attemptsCount: totalAttempts,
+      attemptsCount: summary.attemptsCount,
     };
-
-    setSubmittedScore(overallPct);
-    submitEvaluation(
-      overallPct >= 60,
-      overallPct,
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
       metrics,
-      { durationMs: elapsed, challengeResults },
+      { challengeResults: summary.outcomes },
+      undefined,
+      summary.diagnosisEvidence,
     );
+  }, [items, evaluation]);
 
-    // AI celebration
-    const phaseScoreStr = phaseResults.map(
-      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-    ).join(', ');
-    sendText(
-      `[SESSION_COMPLETE] All ${totalCount} words done! Scores by syllable count: ${phaseScoreStr}. `
-      + `Overall: ${overallPct}%. Celebrate the full session!`,
-      { silent: true },
-    );
-  }, [
-    hasSubmittedEvaluation, challengeResults, challenges,
-    phaseResults, submitEvaluation, sendText,
-  ]);
+  // ── The pack — the tutor's whole side is `syllableClapperPackBase`, spread ─
+  //    from the script module so the DI drive-plan endpoint replays the SAME
+  //    cues this component sends. Only what the SCREEN owns stays here.
+  const pack = useMemo<JudgedScriptPack<SyllableClapperItem>>(() => ({
+    ...syllableClapperPackBase(items),
+    statusLines: {
+      ready: () => 'Listen, then say how many parts.',
+      retry: () => 'Have another go — say how many parts.',
+      affirmedNext: 'Yes! You heard the parts.',
+      done: 'Great listening today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => ({
+      challenge: `Count the parts in "${item.word}".`,
+      expected: `${item.answer} (${item.partCount})`,
+      observed: lastHeard
+        ? `Heard "${lastHeard}".`
+        : 'The tutor judged the answer wrong from the audio.',
+    }),
+  }), [items]);
 
-  // ── Advance to next challenge ─────────────────────────────────
-  const handleNext = useCallback(() => {
-    if (!advanceProgress()) {
-      submitFinalEvaluation();
-      setShowSummary(true);
-      return;
-    }
-    sendText(
-      `[NEXT_CHALLENGE] Moving to word ${currentIndex + 2} of ${challenges.length}.`,
-      { silent: true },
-    );
-  }, [advanceProgress, currentIndex, challenges.length, sendText, submitFinalEvaluation]);
+  const runner = useJudgedScriptRunner<SyllableClapperItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel,
+    exhibitId,
+    onFinished: handleFinished,
+    onAffirmed: setRevealed,
+  });
 
-  // ── Undo last clap ────────────────────────────────────────────
-  const handleUndoClap = useCallback(() => {
-    if (hasChecked || clapCount === 0) return;
-    setClapCount(prev => prev - 1);
-  }, [hasChecked, clapCount]);
+  const currentItem = runner.currentItem;
+  /** The affirmed item whose reveal is still on screen. `revealHeld` — never
+   *  `currentSolved` or `stage`, both of which describe the item that has
+   *  ALREADY replaced the affirmed one by render time (18b). */
+  const revealItem = runner.revealHeld ? revealed : null;
+
+  // ── Tap ONE part of the reveal bar to hear it (post-affirm only) ──────────
+  const hearPart = useCallback((part: string) => {
+    if (!ctx.isConnected) return;
+    SoundManager.tap();
+    ctx.sendText(hearPartCue(part), { silent: true, scripted: true });
+    // Context methods are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.isConnected]);
+
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
+      const meta = BAND_META[item.band];
+      return { label: meta.badge, icon: meta.icon };
+    });
+  }, [evaluation.hasSubmitted, runner.summary, items]);
 
   // ============================================================================
   // Main Render
   // ============================================================================
 
-  if (challenges.length === 0) {
+  if (items.length === 0) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -479,217 +286,105 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     );
   }
 
-  const elapsedMs = Date.now() - startTimeRef.current;
-
-  // ── Start screen ──────────────────────────────────────────────
-  if (!hasStarted) {
-    return (
-      <LuminaCard className={className}>
-        <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
-          <div className="text-4xl">{'👏'}</div>
-          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
-          <LuminaBadge className="text-xs">Kindergarten</LuminaBadge>
-          <p className="text-slate-400 text-sm max-w-sm">
-            {challenges.length} words to clap. Listen to each word and clap once
-            for each part you hear!
-          </p>
-          <LuminaButton
-            tone="primary"
-            onClick={() => {
-              startTimeRef.current = Date.now();
-              setHasStarted(true);
-            }}
-            className="px-8 py-3 text-lg"
-          >
-            Start Clapping!
-          </LuminaButton>
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
+  const bandMeta = BAND_META[currentItem?.band ?? 'easy'];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <LuminaBadge className="text-xs">Kindergarten</LuminaBadge>
-          </div>
-          {currentChallenge && !showSummary && (
-            <LuminaBadge accent="purple" className="text-xs">
-              {'👏'} Syllable Clapping
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+          {!evaluation.hasSubmitted && currentItem && (
+            <LuminaBadge accent={bandMeta.accent} className="text-xs">
+              {bandMeta.icon} {bandMeta.badge}
             </LuminaBadge>
           )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Progress indicator */}
-        {!showSummary && (
+        {!evaluation.hasSubmitted && (
           <>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">
-                Word {currentIndex + 1} of {challenges.length}
-              </span>
-              <span className="text-slate-500 text-xs">
-                {challengeResults.filter(r => r.correct).length} correct
-              </span>
+            <div className="flex justify-center">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
+              />
             </div>
-            <LuminaProgress
-              accent="purple"
-              value={((hasChecked ? currentIndex + 1 : currentIndex) / challenges.length) * 100}
-            />
+
+            {/* The stimulus. The word is NEVER printed here — it arrives in her
+                voice, and a printed word lets a reader chunk it by sight instead
+                of hearing it. Tapping re-asks the whole question (question-side
+                audio only; the ask carries no count). */}
+            <div className="flex flex-col items-center gap-3">
+              <button
+                onClick={runner.hearStimulus}
+                disabled={!runner.running}
+                data-testid="hear-word"
+                className={`
+                  rounded-2xl border-2 px-12 py-8 text-center transition-all duration-200
+                  disabled:opacity-40 disabled:cursor-default
+                  ${runner.stimulusTapped
+                    ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
+                    : 'bg-emerald-500/10 border-emerald-500/30 cursor-pointer'}
+                `}
+              >
+                <span className="text-6xl">🔊</span>
+                <p className="text-xs text-emerald-300/70 mt-3">Tap to hear the word again</p>
+              </button>
+              <p className="text-center text-base text-slate-300 font-medium">
+                {currentItem?.inviteClap === false
+                  ? 'How many parts do you hear? Say the number!'
+                  : 'Clap the parts — then say how many!'}
+              </p>
+            </div>
+
+            {/* The reveal — the first moment the word, the split and the count
+                may appear on screen, and it holds for exactly as long as she is
+                saying the affirmation. Tap a part to hear it. */}
+            {revealItem && (
+              <LuminaPanel className="p-4 space-y-3" data-testid="reveal">
+                <div className="flex gap-1">
+                  {revealItem.parts.map((part, idx) => (
+                    <button
+                      key={`${revealItem.id}-${idx}`}
+                      onClick={() => hearPart(part)}
+                      className={`
+                        flex-1 rounded-xl border-2 p-3 text-center cursor-pointer
+                        transition-all duration-200 hover:scale-105 active:scale-95
+                        ${SYLLABLE_COLORS[idx % SYLLABLE_COLORS.length]}
+                      `}
+                    >
+                      <span className="text-2xl font-bold block">{part}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-center text-emerald-300 text-lg font-black">
+                  {revealItem.word} — {revealItem.answer}{' '}
+                  {revealItem.partCount === 1 ? 'part' : 'parts'}
+                </p>
+                {revealItem.imageDescription && (
+                  <p className="text-center text-sm text-slate-500 italic">
+                    {revealItem.imageDescription}
+                  </p>
+                )}
+                <p className="text-center text-xs text-slate-600">Tap a part to hear it</p>
+              </LuminaPanel>
+            )}
+
+            {/* Every answer here is spoken. */}
+            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {/* Challenge content */}
-        {!showSummary && currentChallenge && (
-          <div className="space-y-6">
-            {/* Word display / Syllable bar */}
-            <div className="flex flex-col items-center space-y-3">
-              {!showSyllables ? (
-                /* Unsplit word bar */
-                <div className={`
-                  w-full max-w-md rounded-2xl border-2 p-6 text-center transition-all duration-300
-                  bg-white/5 border-white/15
-                  ${isCelebrating ? 'ring-2 ring-emerald-500/50' : ''}
-                `}>
-                  <span className="text-4xl font-bold text-slate-100">
-                    {currentChallenge.word}
-                  </span>
-                  {currentChallenge.imageDescription && (
-                    <p className="text-sm text-slate-500 italic mt-2">
-                      {currentChallenge.imageDescription}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                /* Split syllable bar */
-                <div className="w-full max-w-md">
-                  <div className={`
-                    flex gap-1 transition-all duration-500
-                    ${isCelebrating ? 'animate-bounce' : ''}
-                  `}>
-                    {currentChallenge.syllables.map((syllable, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSyllableTap(syllable)}
-                        className={`
-                          flex-1 rounded-xl border-2 p-4 text-center
-                          transition-all duration-300 cursor-pointer
-                          hover:scale-105 active:scale-95
-                          ${SYLLABLE_COLORS[idx % SYLLABLE_COLORS.length]}
-                        `}
-                      >
-                        <span className="text-2xl font-bold block">{syllable}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {currentChallenge.imageDescription && (
-                    <p className="text-sm text-slate-500 italic mt-2 text-center">
-                      {currentChallenge.imageDescription}
-                    </p>
-                  )}
-                  <p className="text-xs text-slate-600 text-center mt-1">
-                    Tap each part to hear it
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Clap counter (circles) — support-tier lever #1: withdrawn at the
-                hard tier so the running count lives in working memory. Absent
-                field ⇒ shown (legacy). */}
-            {!hasChecked && showClapCounter && (
-              <div className="flex justify-center gap-2" data-testid="clap-tally">
-                {Array.from({ length: MAX_CLAPS }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`
-                      w-8 h-8 rounded-full border-2 transition-all duration-200
-                      flex items-center justify-center text-sm
-                      ${idx < clapCount
-                        ? 'bg-amber-500/30 border-amber-400/60 text-amber-300 scale-110'
-                        : 'bg-white/5 border-white/10 text-slate-600'
-                      }
-                    `}
-                  >
-                    {idx < clapCount ? '👏' : ''}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Clap + Check buttons */}
-            {!hasChecked && (
-              <div className="flex flex-col items-center gap-3">
-                <button
-                  onClick={handleClap}
-                  disabled={clapCount >= MAX_CLAPS}
-                  className={`
-                    rounded-xl bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300
-                    px-10 py-6 text-2xl transition-transform disabled:opacity-50
-                    ${isClapping ? 'scale-110' : 'scale-100'}
-                  `}
-                >
-                  {'👏'} Clap!
-                </button>
-
-                <div className="flex gap-3">
-                  {clapCount > 0 && (
-                    <LuminaButton
-                      tone="subtle"
-                      onClick={handleUndoClap}
-                      className="text-sm"
-                    >
-                      Undo
-                    </LuminaButton>
-                  )}
-                  {clapCount > 0 && (
-                    <LuminaActionButton action="check" onClick={handleCheck}>
-                      {/* The count echo is the SAME scaffold as the tally above —
-                          withdrawing one without the other would leak the count
-                          straight back. Both ride on showClapCounter. */}
-                      {showClapCounter
-                        ? `Check (${clapCount} clap${clapCount !== 1 ? 's' : ''})`
-                        : 'Check'}
-                    </LuminaActionButton>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Feedback banner */}
-        {feedback && !showSummary && (
-          <LuminaFeedbackCard
-            status={feedbackType === 'error' ? 'incorrect' : 'correct'}
-            className="text-center"
-          >
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Next / Finish button */}
-        {hasChecked && !showSummary && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="next" onClick={handleNext}>
-              {currentIndex < challenges.length - 1 ? 'Next Word' : 'Finish'}
-            </LuminaActionButton>
-          </div>
-        )}
-
-        {/* Phase summary panel */}
-        {showSummary && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedScore ?? undefined}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Syllable Clapping Complete!"
-            celebrationMessage="You clapped out all the word parts!"
-            className="mb-6"
+            celebrationMessage="Your ears found the parts in every word!"
+            className="mt-4"
           />
         )}
       </LuminaCardContent>
