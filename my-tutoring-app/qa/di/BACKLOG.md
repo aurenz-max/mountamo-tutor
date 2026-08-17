@@ -93,17 +93,15 @@ first DI roster picked from demand rather than from what already has contracts.
 
 #### Pull order and why
 
-1. **`text-structure-analyzer`** — the strongest pedagogy of the five (informational reading is
-   named ESSENTIAL for grades 2-6 in its own catalog block) and the cleanest closed set: five
-   named structures, each with signal words the correction can teach. **Start here.**
-   **📍 SCOPED — read `qa/HANDOFF-di-text-structure-analyzer-2026-08-16.md` before writing a
-   line.** Generator read end-to-end, component skimmed; nothing built. ⭐ **Its headline is a
-   pack-shaping finding no earlier port has had: the eval modes ARE the structure types, so a
-   PINNED session asks the same Identify question with the same answer on every item** — §4d as
-   the default state of every production run, not a collision to avoid. Three ways out, costed.
-   Also flags the trap that axis-2 structural difficulty (`STRUCTURE_DISTANCE`) deliberately
-   selects the MOST confusable options at `hard`, which is the opposite of what
-   `closed_set_choice` ear-separability requires — and that `easy` ships a 1-in-2 guess floor.
+1. ~~**`text-structure-analyzer`**~~ ✅ **SHIPPED 2026-08-17 `a4792128` — DI port 18. Close block
+   below.** **Next pull is #2 `genre-explorer`.**
+   *(⚠️ The `⛔ DO NOT PULL — A CONCURRENT SESSION IS ALREADY PORTING IT` note that stood here
+   from 2026-08-16 08:06 was a FALSE ALARM, and worth one line because the failure mode is
+   cheap to repeat: a `/pm` run read the in-flight working tree of the session executing THIS
+   ENTRY'S OWN handoff — `textStructureAnalyzerScript.ts` untracked, component rewritten,
+   generator modified — and reported it as an unknown third party. `git status` before scoping
+   a port is still right; what it needed was to check the pull pointer it had itself just
+   written. The handoff was the scope, and it was being followed.)*
 2. **`genre-explorer`** — zero-queue, and `identify_basic` is BINARY, which is the gentlest
    possible first item for the class at the low band.
 3. **`sentence-analyzer`** — zero-queue; its two lower modes are literally multiple choice, and
@@ -113,6 +111,107 @@ first DI roster picked from demand rather than from what already has contracts.
    other three modes and leave `idiom` for item 23.
 5. **`evidence-finder`** — the only one needing two classes in one pack; do it last, when the
    `locate_evidence` read-aloud fork has the other four behind it.
+
+#### ✅ CLOSED 2026-08-17 — port 1 of 5: `text-structure-analyzer` (DI port 18), commit `a4792128`
+
+**ALL-VOICE, four phases to zero taps.** The costume test struck every one: a child who cannot
+analyse structure could still click a pre-marked span, tap one of two cards at a 1-in-2 floor,
+and re-tap a misplaced idea until it landed.
+
+| Step | Was | Now | Class |
+|---|---|---|---|
+| `find-signal` | click pre-marked spans | SAY the linking word in a sentence named by number | `short_spoken_word` |
+| `name-structure` | tap 1 of 2-4 cards | SAY how the passage is organised | `closed_set_choice` |
+| `place-idea` | click idea → region | SAY the mat's name (word-sorter's shape) | `short_spoken_word` |
+| `review` | Submit button | deleted — `PhaseSummaryPanel` | — |
+
+⚠️ **The handoff's §4 read `place-idea` as `closed_set_choice`; it ships as `short_spoken_word`.**
+A region label is a NAME ("Cause", "Effect", "Both"), not a proposition — word-sorter's mats
+exactly — and that class is BENCHED rather than build-ahead, so it is the stronger footing.
+
+**Files:** `textStructureAnalyzerScript.ts` (new, 1.3k) · `TextStructureAnalyzer.tsx` (rewritten)
+· `gemini-text-structure-analyzer.ts` · `catalog/literacy.ts` · `service/qa/di/diDrivePlan.ts`
+(17 ports) · `__tests__/TextStructureAnalyzer.di-script.test.ts` (new, 57 tests).
+
+**Deletions:** every tap/drag/highlight handler · the Next/Back/Submit rail · the phase chips ·
+`attemptsCount`/`showFeedback` · six improvised `sendText` sends (`[ACTIVITY_START]`,
+`[PHASE_TO_*]` ×3, `[ANALYSIS_CORRECT]`, `[ANALYSIS_INSIGHT]`) · `useLuminaAI`.
+
+##### Findings
+
+1. ⭐ **§3 RESOLVES STRUCTURALLY — way 1, and not a choice.** The scope's headline was that a
+   pinned session repeats one Identify question with one answer on every item. The payload
+   carries ONE passage and ONE `structureType` and there is no `challenges[]`, so the pack can
+   only ever build a SINGLE `name-structure` ask; items 2..N necessarily come from the other two
+   phases. Confirmed on live content in all four modes (one per run, every run).
+   **Residual, one layer up and out of a pack's reach:** a LESSON stacking several instances at
+   one pinned mode gives several passages that are all cause-effect, and after the first the
+   child can name the structure without reading. That is instance-density, and 8 of 9 asks in a
+   run are still fresh-text items.
+2. ⭐ **TWO ANSWERS WERE ON SCREEN BEFORE THEY WERE EARNED**, both invisible while a button
+   graded: the header badge rendered `structureType` from the first paint ("cause effect" above
+   a menu asking the child to work it out), and `prehighlightSignalWords` pre-marked phase 1's
+   answers at `easy`. **Neither is a string a tutor says, so no gate in this family would have
+   caught either** — they were found by walking the stage asking "does anything on screen equal
+   what I am about to ask them to say?". The perception lever survives answer-free: easy/medium
+   highlight the focus SENTENCE, hard highlights nothing.
+3. ⭐ **PHASE 1 IS AN AMBIGUOUS ASK UNLESS *CODE* SCOPES IT.** "Say the transition word" has as
+   many right answers as the sentence has connectives, and the model's `signalWords` array
+   cannot see the ones it did not write down — a child naming the unlisted one is right and
+   would be refused. Gated with a code-owned `TRANSITION_WORDS` list: the sentence must carry
+   exactly ONE. Drop rate on live content 0/0/2/1 across the four modes.
+4. **AXIS 2 AND EAR-SEPARABILITY DO NOT FIGHT** — the scope called this the sharpest trap.
+   Measured rather than eyeballed: confusability is SEMANTIC, separability ACOUSTIC, and the five
+   canonical labels share only "and", so the full five-way set passes `optionsEarSeparable` at
+   `hard`. Nothing softened.
+5. **`easy`'s 2-option menu → 3** (band-clamped; saturates at 2 in grade 2, where the curriculum
+   has only two structures in band). Under a tap it was scaffolding; under a judged loop it is a
+   1-in-2 guess deciding the run's ONLY Identify ask. Axis 2 untouched (near ladder 0 → 1 → all).
+6. **The five structure LABELS are now canonical and generator-imported.** A spoken closed set
+   cannot have its option strings authored per generation.
+7. **`challengeType` in the context channel is the STEP, never the eval mode** — the modes ARE
+   the structure types, so pushing the mode would park the Identify answer in the tutor's context
+   for the whole session.
+8. Generator: word-boundary offsets (`indexOf` matched "so" inside "also"), all four arrays
+   bounded + `maxOutputTokens: 8192` (correct for flash-lite — checked against the model actually
+   configured, not pasted), the `Item A / Item B` region steering removed, and the `easy` anchor
+   now drawn from the most-represented region so excluding it cannot strand a mat.
+
+##### ⭐ The drive earned its keep — a CONFIRMED HIGH no machine gate had
+
+The first `chronological_description` run caught `di-answer-leak-in-ask` **2/2**: the ask named
+the sentence by ORDINAL (*"Read the **first** sentence"*) and **a chronological passage's signal
+words ARE ordinals** — so on the archetypal item, where "First" opens sentence one, the ask said
+its own answer aloud immediately before asking for it. Worst possible landing: that mode is Tier 1
+AND the grade-2 band floor, i.e. the most common session in the catalog was the leaking one.
+Fixed to CARDINALS ("Read sentence one") **and closed at the channel** with `askIsAnswerFree`,
+which drops any item whose ask contains its own answer — the collision arrived from the SCOPING
+DEVICE, which no per-branch check would have been watching. Re-driven PASS.
+
+##### Gates
+
+`typecheck:lumina` 0 · full `tsc` 803 = baseline · census greps 0/0/0/0 · 57 pure di-script tests
+· 1013 literacy+hooks tests green · live probe **all four eval modes** (`packGateIssues: []` on
+live content, 100% voice, exactly one Identify per run) · **5 headless judged drives**:
+`cause_effect` 16/16 refused + 16/16 affirmed; `chronological_description`, `compare_contrast`,
+`problem_solution` PASS with zero findings; `problem_solution` refused the nearest sibling
+("Cause and Effect") 2/2 — the discrimination axis 2 deliberately manufactures.
+**Cap drill: 0 HIGH, 2 WARN, both family-shape and neither this pack's** —
+`di-correction-verbatim-repeat` (13 other ports; the deliberate 18d trade-off, fixed wording over
+escalation, because escalation means improvised lines and no-verdict stalls) and
+`di-capped-item-asks-then-withdraws` (8 other ports; structural to "correction re-elicits" plus a
+runner cap).
+**Probe words drawn:** wetlands/beavers/ice-states — `because`, `As a result`, `Therefore`, `so`,
+`First`, `Next`, `After that`, `Finally`, `Similarly`, `However`, `In contrast`,
+`The problem is`, `One solution`; mats `Cause`/`Effect`, `Beginning`/`Middle`/`End`,
+`Ice`/`Steam`/`Both`, `Trouble`/`Fix`.
+
+**Mic row: HUMAN-CHECKS #104** — owed under the standing rule, and NOT for `closed_set_choice`
+(word-sorter and decodable-reader cover that). The new material is `find-signal`'s **multi-word
+connective PHRASES** — "As a result", "The problem is", "In contrast", "on the other hand" —
+three and four unstressed function words, which is a different acoustic object from
+`short_spoken_word`'s benched "one short word" and the worst case for an amplitude bracket. No
+text drive can reach it.
 
 #### ⚠️ SCOPE FROM THE ANSWER MATERIAL, NOT FROM THIS TABLE
 
