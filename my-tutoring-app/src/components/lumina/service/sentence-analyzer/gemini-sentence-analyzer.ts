@@ -1,9 +1,33 @@
 /**
- * Sentence Analyzer Generator — Gemini content generator for interactive
- * sentence grammar analysis with 4 challenge types.
+ * Sentence Analyzer Generator — Gemini content generator for LIVE-JUDGED DI
+ * sentence grammar analysis (DI port 20, 2026-08-17).
  *
- * Uses flat-field schema to avoid malformed LLM JSON for arrays, then
- * reconstructs typed arrays in post-validation.
+ * ⚠️ THE MULTIPLE-CHOICE FIELDS ARE GONE. The click era asked the model for
+ * `posOption0-3`, `roleOption0-3`, `sentenceTypeOption0-3`, `correctPos` and
+ * `correctRole` — fourteen flat fields whose only consumer was a tap surface.
+ * The child now SAYS the label, the answer set is the code-owned GRADE WALL in
+ * `sentenceAnalyzerScript.ts`, and each word's own `pos` / `role` is the single
+ * answer key for every mode.
+ *
+ * The words also stopped being flat: `word0Text..word7Role` became a nested array
+ * whose items REQUIRE all three fields, because the live probe showed the model
+ * labelling only word 0 and leaving the rest of the answer key empty. Full
+ * finding on `sentenceAnalyzerSchema` below — it is the sharpest thing this port
+ * learned and it cost `label_all` its entire identity while reporting success.
+ *
+ * ⭐ THE ONE IT GAINED IS `subjectEndIndex`, AND IT IS A CONTENT FIX. The click
+ * era derived subject/predicate in the COMPONENT as
+ * `role.includes('subject') ? 'subject' : 'predicate'`, which put every
+ * determiner and every subject-side modifier in the predicate — "The" and
+ * "clever" in "The clever fox jumped quickly". A judged loop turns that from a
+ * silently-wrong tap into a tutor refusing a correct child out loud, so the
+ * boundary is now stated by the model and VALIDATED here rather than inferred.
+ *
+ * Every label the model may write is enum-constrained to the canonical vocabulary
+ * the pack speaks and the wall prints, and the build gates are IMPORTED from the
+ * script module rather than copied — both sides of the wire must agree on what is
+ * sayable (letter-spotter's 19f drift, where two hand-synced copies disagreed
+ * live on what a sayable sentence was).
  */
 
 import { Type, Schema } from '@google/genai';
@@ -13,6 +37,20 @@ import type {
   SentenceAnalyzerChallenge,
   SentenceWord,
 } from '../../primitives/visual-primitives/literacy/SentenceAnalyzer';
+import {
+  ALL_POS,
+  ALL_ROLES,
+  ALL_SENTENCE_TYPES,
+  MIN_WORDS_FOR_SIDE,
+  canonicalPos,
+  canonicalRole,
+  canonicalSentenceType,
+  namesAGrammarTerm,
+  opensWithSentinel,
+  posWallFor,
+  roleWallFor,
+  type SentenceTier,
+} from '../../primitives/visual-primitives/literacy/sentenceAnalyzerScript';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -27,138 +65,183 @@ import {
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   identify_pos: {
-    promptDoc: `"identify_pos": A specific word in the sentence is highlighted. The student must identify its part of speech from 4 multiple-choice options. Foundational skill — grades 2-4.`,
-    schemaDescription: "'identify_pos' (identify part of speech of a highlighted word)",
+    promptDoc: `"identify_pos": The tutor names one word of the sentence out loud and the student SAYS its part of speech. Foundational skill — grades 2-4.`,
+    schemaDescription: "'identify_pos' (say the part of speech of one named word)",
   },
   identify_role: {
-    promptDoc: `"identify_role": A specific word in the sentence is highlighted. The student must identify its grammatical role (Subject, Predicate, Direct Object, etc.) from 4 multiple-choice options. Grades 3-6.`,
-    schemaDescription: "'identify_role' (identify grammatical role of a highlighted word)",
+    promptDoc: `"identify_role": The tutor names one word of the sentence out loud and the student SAYS what job it does (Subject, Predicate, Direct Object...). Grades 3-6.`,
+    schemaDescription: "'identify_role' (say the grammatical role of one named word)",
   },
   label_all: {
-    promptDoc: `"label_all": The student must label the part of speech for EVERY word in the sentence. No multiple-choice — they select from the set of POS tags used in the sentence. Most demanding recall task — grades 4-7.`,
-    schemaDescription: "'label_all' (label part of speech of every word)",
+    promptDoc: `"label_all": The tutor walks the sentence word by word and the student SAYS the part of speech of each one in turn. The most demanding recall task — grades 4-7.`,
+    schemaDescription: "'label_all' (say the part of speech of every word in turn)",
   },
   parse_structure: {
-    promptDoc: `"parse_structure": Two-step challenge. Step 1: group each word as Subject or Predicate. Step 2: classify the sentence type (Declarative, Interrogative, Imperative, Exclamatory) from 4 options. Grades 4-8.`,
-    schemaDescription: "'parse_structure' (group words into subject/predicate, classify sentence type)",
+    promptDoc: `"parse_structure": Two steps. The tutor names words one at a time and the student SAYS whether each is in the subject or the predicate; then the student SAYS what kind of sentence it is. Grades 4-8. REQUIRES subjectEndIndex.`,
+    schemaDescription: "'parse_structure' (say subject-or-predicate per word, then the sentence kind)",
   },
 };
 
 // ---------------------------------------------------------------------------
-// Flat Gemini schema — max 8 words per sentence, flat option fields
+// Within-mode support tier (config.difficulty) — scaffolding, NOT content
 // ---------------------------------------------------------------------------
 
-const sentenceAnalyzerSchema: Schema = {
+function normalizeSupportTier(difficulty?: string): SentenceTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  if (d === 'easy' || d === 'medium' || d === 'hard') return d;
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Grade resolution — the canonical value, never the prose
+// ---------------------------------------------------------------------------
+
+/**
+ * Grades 2-8, this primitive's range, resolved in the order the contract
+ * requires: the CANONICAL objective grade first, the normalized BAND KEY second,
+ * and never a digit scraped out of `gradeContext` prose (see the call site).
+ *
+ * The band fallback maps to the middle of each band rather than its floor. A
+ * free-form "elementary" lesson has no objective grade to read, and answering it
+ * with grade 1 — the band's bottom — is the exact failure this replaces.
+ */
+export const resolveGrade = (grade?: string, band?: string): number => {
+  const canonical = (grade ?? '').trim();
+  if (/^K$/i.test(canonical)) return 2;
+  if (/^\d{1,2}$/.test(canonical)) return Math.min(Math.max(Number(canonical), 2), 8);
+
+  switch ((band ?? '').toLowerCase().trim()) {
+    case 'toddler':
+    case 'preschool':
+    case 'kindergarten':
+      return 2;
+    case 'middle-school':
+      return 7;
+    case 'high-school':
+    case 'undergraduate':
+    case 'graduate':
+    case 'phd':
+      return 8;
+    case 'elementary':
+    default:
+      // The MIDDLE of grades 1-5, clamped into this primitive's range.
+      return 4;
+  }
+};
+
+const TIER_GUARDRAIL =
+  'TIER GUARDRAIL: config.difficulty changes only how much the tutor says BEFORE the question — never '
+  + 'the sentences, never a label, never the subject boundary. Generate the same content at every tier.';
+
+// ---------------------------------------------------------------------------
+// The schema — a NESTED word array, not flat fields
+// ---------------------------------------------------------------------------
+
+const POS_ENUM = ALL_POS as unknown as string[];
+const ROLE_ENUM = ALL_ROLES as unknown as string[];
+const TYPE_ENUM = ALL_SENTENCE_TYPES as unknown as string[];
+
+/**
+ * ⭐ THE WORDS ARE A NESTED ARRAY, AND THE FLAT `word0Text..word7Role` FIELDS
+ * THIS FILE USED TO CARRY ARE GONE. Two live-probe findings forced it, and
+ * neither was visible to any unit test (2026-08-17):
+ *
+ * 1. **THE MODEL LABELLED ONLY `word0`.** Every probe came back with word 0
+ *    carrying a part of speech and a role and every later word carrying neither
+ *    — "The:Determiner/Modifier brown:-/- bear:-/- runs.:-/-". Twenty-four flat
+ *    fields cannot all be `required` (a three-word sentence would have to invent
+ *    `word7Pos`), so twenty-two of them were optional, and an optional
+ *    enum-constrained field is one the model is free to skip. The old header
+ *    called flat fields the fix for malformed array JSON; on this model they are
+ *    the cause of a silently INCOMPLETE ANSWER KEY. `label_all` — the mode whose
+ *    entire identity is walking every word — was reduced to a single ask about
+ *    the first word of each sentence, and it reported success while doing it.
+ *    A nested item with `required: ['text', 'pos', 'role']` makes the labels
+ *    non-optional PER WORD, which is the guarantee the mode needs.
+ *
+ * 2. **⚠️ `maxItems` ON TWO NESTED ARRAYS IS A HARD `400 INVALID_ARGUMENT`, AND
+ *    THE FAMILY'S STANDING RULE POINTS THE WRONG WAY HERE.** The flash-lite
+ *    truncation template says to bound EVERY schema array. Bounding both of this
+ *    schema's arrays makes every request fail before generation starts.
+ *
+ *    Bisected twice against the live API, because the first diagnosis was wrong.
+ *    On the flat schema, dropping `maxItems` fixed it AND dropping all sixteen
+ *    word enums fixed it, which reads as a whole-schema complexity budget. It is
+ *    not: after the nested rewrite — three enum properties instead of sixteen —
+ *    it still failed with both arrays bounded, and passed the moment EITHER bound
+ *    came off. The bound that survives is the OUTER one on `challenges`, since
+ *    that is the array whose length actually governs output size; `words` is
+ *    bounded by the sentence and sliced to 8 in code.
+ *
+ *    Carry the shape, not the number: a `maxItems` costs something that stacks
+ *    down the nesting, so bound the array that can actually run away and leave
+ *    the inner one to code. And note WHY no gate but this one could see it — a
+ *    400 is not a truncation. There is no partial output to detect, no fallback
+ *    fires, and `tsc` plus 59 unit tests were green over a generator that could
+ *    not make a single successful call.
+ */
+export const sentenceAnalyzerSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: {
-      type: Type.STRING,
-      description: 'Engaging title for the sentence analysis activity',
-    },
-    description: {
-      type: Type.STRING,
-      description: 'Brief description of the activity',
-    },
-    gradeLevel: {
-      type: Type.STRING,
-      description: "Target grade level ('2' through '8')",
-    },
+    title: { type: Type.STRING, description: 'Engaging title for the grammar activity' },
+    description: { type: Type.STRING, description: 'One short sentence describing the activity' },
+    gradeLevel: { type: Type.STRING, description: "Target grade level ('2' through '8')" },
     challenges: {
       type: Type.ARRAY,
+      maxItems: '6',
       items: {
         type: Type.OBJECT,
         properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique challenge ID (e.g., 'ch1', 'ch2')",
-          },
+          id: { type: Type.STRING, description: "Unique challenge ID (e.g., 'ch1', 'ch2')" },
           type: {
             type: Type.STRING,
             enum: ['identify_pos', 'identify_role', 'label_all', 'parse_structure'],
+            description: "Challenge type: 'identify_pos', 'identify_role', 'label_all', or 'parse_structure'",
+          },
+          sentence: { type: Type.STRING, description: 'The complete sentence as a single string' },
+          words: {
+            type: Type.ARRAY,
+            // ⚠️ NO `maxItems` HERE — see finding 2 above. The OUTER bound is the
+            // one kept, because it is the one that governs output size; this
+            // array is bounded by the sentence itself (3-8 words) and sliced to
+            // 8 in `validateChallenge` regardless.
             description:
-              "Challenge type: 'identify_pos', 'identify_role', 'label_all', or 'parse_structure'",
+              'EVERY word of the sentence, in order, each with BOTH labels. One entry per word — '
+              + 'a sentence of five words has five entries, and none of them may be left out.',
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                text: {
+                  type: Type.STRING,
+                  description: 'The word exactly as it appears, with any punctuation attached ("ran.")',
+                },
+                pos: { type: Type.STRING, enum: POS_ENUM, description: 'This word\'s part of speech' },
+                role: { type: Type.STRING, enum: ROLE_ENUM, description: 'This word\'s job in the sentence' },
+              },
+              // ⭐ ALL THREE REQUIRED — this is finding 1's fix.
+              required: ['text', 'pos', 'role'],
+            },
           },
-          sentence: {
-            type: Type.STRING,
-            description: 'The full sentence text',
-          },
-          // --- Flat word fields (max 8 words) ---
-          wordCount: {
-            type: Type.NUMBER,
-            description: 'Number of words in the sentence (1-8)',
-          },
-          word0Text: { type: Type.STRING, description: 'Word 0 text' },
-          word0Pos: { type: Type.STRING, description: 'Word 0 part of speech (Noun, Verb, Adjective, Adverb, Pronoun, Preposition, Conjunction, Determiner, Interjection)' },
-          word0Role: { type: Type.STRING, description: 'Word 0 grammatical role (Subject, Predicate, Direct Object, Indirect Object, Object of Preposition, Modifier, Conjunction, Determiner)' },
-          word1Text: { type: Type.STRING, description: 'Word 1 text' },
-          word1Pos: { type: Type.STRING, description: 'Word 1 part of speech' },
-          word1Role: { type: Type.STRING, description: 'Word 1 grammatical role' },
-          word2Text: { type: Type.STRING, description: 'Word 2 text' },
-          word2Pos: { type: Type.STRING, description: 'Word 2 part of speech' },
-          word2Role: { type: Type.STRING, description: 'Word 2 grammatical role' },
-          word3Text: { type: Type.STRING, description: 'Word 3 text' },
-          word3Pos: { type: Type.STRING, description: 'Word 3 part of speech' },
-          word3Role: { type: Type.STRING, description: 'Word 3 grammatical role' },
-          word4Text: { type: Type.STRING, description: 'Word 4 text' },
-          word4Pos: { type: Type.STRING, description: 'Word 4 part of speech' },
-          word4Role: { type: Type.STRING, description: 'Word 4 grammatical role' },
-          word5Text: { type: Type.STRING, description: 'Word 5 text' },
-          word5Pos: { type: Type.STRING, description: 'Word 5 part of speech' },
-          word5Role: { type: Type.STRING, description: 'Word 5 grammatical role' },
-          word6Text: { type: Type.STRING, description: 'Word 6 text' },
-          word6Pos: { type: Type.STRING, description: 'Word 6 part of speech' },
-          word6Role: { type: Type.STRING, description: 'Word 6 grammatical role' },
-          word7Text: { type: Type.STRING, description: 'Word 7 text' },
-          word7Pos: { type: Type.STRING, description: 'Word 7 part of speech' },
-          word7Role: { type: Type.STRING, description: 'Word 7 grammatical role' },
-
-          // --- identify_pos / identify_role: target word ---
-          targetWordIndex: {
-            type: Type.NUMBER,
-            description: 'Index (0-based) of the target word for identify_pos / identify_role challenges. Not used for label_all or parse_structure.',
-          },
-
-          // --- identify_pos options (flat) ---
-          posOption0: { type: Type.STRING, description: 'POS option 0 (for identify_pos)' },
-          posOption1: { type: Type.STRING, description: 'POS option 1 (for identify_pos)' },
-          posOption2: { type: Type.STRING, description: 'POS option 2 (for identify_pos)' },
-          posOption3: { type: Type.STRING, description: 'POS option 3 (for identify_pos)' },
-          correctPos: {
-            type: Type.STRING,
-            description: 'Correct part of speech answer (for identify_pos). Must exactly match one of posOption0-3.',
-          },
-
-          // --- identify_role options (flat) ---
-          roleOption0: { type: Type.STRING, description: 'Role option 0 (for identify_role)' },
-          roleOption1: { type: Type.STRING, description: 'Role option 1 (for identify_role)' },
-          roleOption2: { type: Type.STRING, description: 'Role option 2 (for identify_role)' },
-          roleOption3: { type: Type.STRING, description: 'Role option 3 (for identify_role)' },
-          correctRole: {
-            type: Type.STRING,
-            description: 'Correct grammatical role answer (for identify_role). Must exactly match one of roleOption0-3.',
-          },
-
-          // --- parse_structure fields (flat) ---
           sentenceType: {
             type: Type.STRING,
-            description: 'Sentence type classification (for parse_structure): Declarative, Interrogative, Imperative, or Exclamatory',
+            enum: TYPE_ENUM,
+            description: 'What kind of sentence this is. REQUIRED for parse_structure.',
           },
-          sentenceTypeOption0: { type: Type.STRING, description: 'Sentence type option 0 (for parse_structure)' },
-          sentenceTypeOption1: { type: Type.STRING, description: 'Sentence type option 1 (for parse_structure)' },
-          sentenceTypeOption2: { type: Type.STRING, description: 'Sentence type option 2 (for parse_structure)' },
-          sentenceTypeOption3: { type: Type.STRING, description: 'Sentence type option 3 (for parse_structure)' },
-
-          // --- explanation (all types) ---
+          subjectEndIndex: {
+            type: Type.NUMBER,
+            description:
+              'parse_structure ONLY: the 0-based index of the LAST word of the COMPLETE SUBJECT — '
+              + 'including any articles and describing words in front of the naming word. In '
+              + '"The clever fox jumped quickly" the complete subject is "The clever fox", so this is 2. '
+              + 'OMIT this field entirely if the subject is not one unbroken run of words at the START of '
+              + 'the sentence (a command has no subject word at all; a question splits it).',
+          },
           explanation: {
             type: Type.STRING,
-            description: 'Explanation shown after the student answers. Explain WHY the answer is correct.',
+            description: 'Why the labels are what they are (2-3 student-friendly sentences). Shown only AFTER the tutor confirms.',
           },
         },
-        required: [
-          'id', 'type', 'sentence', 'wordCount',
-          'word0Text', 'word0Pos', 'word0Role',
-          'explanation',
-        ],
+        required: ['id', 'type', 'sentence', 'words', 'explanation'],
       },
       description: 'Array of 4-6 grammar challenges',
     },
@@ -167,158 +250,107 @@ const sentenceAnalyzerSchema: Schema = {
 };
 
 // ---------------------------------------------------------------------------
-// Flat → structured reconstruction helpers
+// Validation
 // ---------------------------------------------------------------------------
+
+interface RawWord {
+  text?: string;
+  pos?: string;
+  role?: string;
+}
 
 interface FlatChallenge {
   id: string;
   type: string;
   sentence: string;
-  wordCount: number;
   explanation: string;
-  targetWordIndex?: number;
-  correctPos?: string;
-  correctRole?: string;
+  words?: RawWord[];
   sentenceType?: string;
-  [key: string]: unknown;
+  subjectEndIndex?: number;
 }
 
-function reconstructWords(flat: FlatChallenge): SentenceWord[] {
+/**
+ * KEEP-OR-DROP, never backfill. The click era padded option lists with the literal
+ * string "Other" and patched `correctPos` into whichever slot was free; a
+ * placeholder in a judged loop becomes a spoken ask the tutor has to stand behind.
+ * Anything that cannot be asked cleanly returns null and the session is shorter.
+ */
+function validateChallenge(flat: FlatChallenge): SentenceAnalyzerChallenge | null {
+  const sentence = (flat.sentence ?? '').replace(/\s+/g, ' ').trim();
+  if (!sentence || !flat.id || !CHALLENGE_TYPE_DOCS[flat.type]) return null;
+
+  // Belt and suspenders on both sides of the wire: the pack runs these too.
+  if (namesAGrammarTerm(sentence)) return null;
+  if (opensWithSentinel(sentence)) return null;
+
   const words: SentenceWord[] = [];
-  const count = Math.min(Math.max(flat.wordCount || 1, 1), 8);
-  for (let i = 0; i < count; i++) {
-    const text = flat[`word${i}Text`] as string | undefined;
-    const pos = flat[`word${i}Pos`] as string | undefined;
-    const role = flat[`word${i}Role`] as string | undefined;
-    if (text) {
-      words.push({
-        id: `w${i}`,
-        text,
-        partOfSpeech: pos || 'Unknown',
-        grammaticalRole: role || 'Unknown',
-      });
-    }
-  }
-  return words;
-}
-
-function reconstructOptions(flat: FlatChallenge, prefix: string): string[] {
-  const opts: string[] = [];
-  for (let i = 0; i < 4; i++) {
-    const val = flat[`${prefix}${i}`] as string | undefined;
-    if (val) opts.push(val);
-  }
-  return opts;
-}
-
-// ---------------------------------------------------------------------------
-// Post-validation: ensure each challenge has all required fields for its type
-// ---------------------------------------------------------------------------
-
-function validateChallenge(
-  flat: FlatChallenge,
-): SentenceAnalyzerChallenge | null {
-  const words = reconstructWords(flat);
+  (flat.words ?? []).slice(0, 8).forEach((word, i) => {
+    const text = (word?.text ?? '').trim();
+    if (!text) return;
+    const pos = canonicalPos(word?.pos);
+    const role = canonicalRole(word?.role);
+    // A word with no canonical label cannot be asked about, but it still occupies
+    // its position in the printed sentence — so it is kept with an empty label
+    // rather than removed. Removing it would shift every later index, including
+    // `subjectEndIndex`, which is an answer key.
+    words.push({ id: `w${i}`, text, partOfSpeech: pos ?? '', grammaticalRole: role ?? '' });
+  });
   if (words.length === 0) return null;
 
-  const base = {
+  const base: SentenceAnalyzerChallenge = {
     id: flat.id,
     type: flat.type as SentenceAnalyzerChallenge['type'],
-    sentence: flat.sentence,
+    sentence,
     words,
     explanation: flat.explanation || 'No explanation provided.',
   };
 
-  switch (flat.type) {
-    case 'identify_pos': {
-      const posOptions = reconstructOptions(flat, 'posOption');
-      const targetIdx = flat.targetWordIndex ?? 0;
-      const correctPos = flat.correctPos;
-      if (posOptions.length < 2 || !correctPos) return null;
-      // Ensure correctPos is in the options list
-      if (!posOptions.includes(correctPos)) {
-        posOptions[posOptions.length - 1] = correctPos;
-      }
-      // Pad to 4 options if needed
-      while (posOptions.length < 4) posOptions.push('Other');
-      // Clamp targetWordIndex
-      const safeIdx = Math.min(Math.max(targetIdx, 0), words.length - 1);
-      return {
-        ...base,
-        targetWordIndex: safeIdx,
-        posOptions,
-        correctPos,
-      };
-    }
-
-    case 'identify_role': {
-      const roleOptions = reconstructOptions(flat, 'roleOption');
-      const targetIdx = flat.targetWordIndex ?? 0;
-      const correctRole = flat.correctRole;
-      if (roleOptions.length < 2 || !correctRole) return null;
-      if (!roleOptions.includes(correctRole)) {
-        roleOptions[roleOptions.length - 1] = correctRole;
-      }
-      while (roleOptions.length < 4) roleOptions.push('Other');
-      const safeIdx = Math.min(Math.max(targetIdx, 0), words.length - 1);
-      return {
-        ...base,
-        targetWordIndex: safeIdx,
-        roleOptions,
-        correctRole,
-      };
-    }
-
-    case 'label_all': {
-      // All words need accurate POS — already in words[].partOfSpeech
-      // Reject if any word has Unknown POS (Gemini failed)
-      if (words.some(w => w.partOfSpeech === 'Unknown')) return null;
-      return base;
-    }
-
-    case 'parse_structure': {
-      const stOptions = reconstructOptions(flat, 'sentenceTypeOption');
-      const sentenceType = flat.sentenceType;
-      if (!sentenceType || stOptions.length < 2) return null;
-      if (!stOptions.includes(sentenceType)) {
-        stOptions[stOptions.length - 1] = sentenceType;
-      }
-      while (stOptions.length < 4) stOptions.push('Other');
-      // Reject if any word has Unknown role (needed for subject/predicate grouping)
-      if (words.some(w => w.grammaticalRole === 'Unknown')) return null;
-      return {
-        ...base,
-        sentenceType,
-        sentenceTypeOptions: stOptions,
-      };
-    }
-
-    default:
-      return null;
+  if (flat.type === 'identify_pos' || flat.type === 'label_all') {
+    // At least one word must carry a POS, or there is nothing to ask.
+    return words.some((w) => w.partOfSpeech) ? base : null;
   }
+
+  if (flat.type === 'identify_role') {
+    return words.some((w) => w.grammaticalRole) ? base : null;
+  }
+
+  // parse_structure
+  const sentenceType = canonicalSentenceType(flat.sentenceType);
+  if (!sentenceType) return null;
+  const end = flat.subjectEndIndex;
+  const validEnd =
+    typeof end === 'number' && Number.isInteger(end)
+    && end >= 0 && end < words.length - 1 && words.length >= MIN_WORDS_FOR_SIDE;
+  return {
+    ...base,
+    sentenceType,
+    // An invalid boundary is DROPPED, not clamped: the pack then builds the
+    // sentence-kind ask and skips the side asks, which is a shorter session
+    // rather than a wrong answer key.
+    ...(validEnd ? { subjectEndIndex: end as number } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Generator
 // ---------------------------------------------------------------------------
 
-/**
- * Generate Sentence Analyzer content using Gemini.
- *
- * Creates 4-6 grammar analysis challenges across 4 challenge types.
- * Uses flat-field schema to avoid LLM JSON malformation, then reconstructs
- * and validates each challenge before returning.
- */
 export const generateSentenceAnalyzer = async (
   topic: string,
+  /** Band PROSE for prompts. Deliberately not read for the grade — see
+   *  `resolveGrade` and the resolution block below. */
   gradeContext: string,
   config?: {
     intent?: string;
     title?: string;
     targetEvalMode?: string;
+    difficulty?: string;
+    /** Canonical curriculum grade for this objective — 'K' or '1'..'12'. */
+    grade?: string;
+    /** Normalized band key ('elementary', 'kindergarten', …) — the fallback. */
+    gradeBand?: string;
   },
 ): Promise<SentenceAnalyzerData> => {
-  // --- Eval mode constraint ---
   const evalConstraint = resolveEvalModeConstraint(
     'sentence-analyzer',
     config?.targetEvalMode,
@@ -326,85 +358,119 @@ export const generateSentenceAnalyzer = async (
   );
 
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(
-        sentenceAnalyzerSchema,
-        evalConstraint.allowedTypes,
-        CHALLENGE_TYPE_DOCS,
-      )
+    ? constrainChallengeTypeEnum(sentenceAnalyzerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
     : sentenceAnalyzerSchema;
 
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
-    CHALLENGE_TYPE_DOCS,
-  );
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  const tier = normalizeSupportTier(config?.difficulty);
 
-  // --- Grade-level prompt context ---
-  const gradeGuidelines: Record<string, string> = {
-    '2': `GRADE 2: Simple 3-5 word sentences. Common POS: Noun, Verb, Adjective, Determiner. Roles: Subject, Predicate. Only identify_pos and label_all types. Use familiar vocabulary (cat, run, big).`,
-    '3': `GRADE 3: 4-6 word sentences. Add Adverb, Pronoun. Roles: Subject, Predicate, Modifier. All types except parse_structure. Use grade-appropriate vocab.`,
-    '4': `GRADE 4: 5-7 word sentences. Full POS set. All 4 challenge types. Introduce compound subjects and predicates. Direct Objects appear.`,
-    '5': `GRADE 5: 5-7 word sentences. Include Preposition, Conjunction. All roles including Object of Preposition. All 4 challenge types with harder sentences.`,
-    '6': `GRADE 6: 5-8 word sentences. Complex grammar: compound-complex structures, prepositional phrases, varied sentence types. All challenge types.`,
-    '7': `GRADE 7: 6-8 word sentences. Advanced grammar: participial phrases, indirect objects, appositives. All challenge types with nuanced analysis.`,
-    '8': `GRADE 8: 6-8 word sentences. Sophisticated structures: subordinate clauses (treated as single words where appropriate), advanced roles. All challenge types.`,
+  // --- Grade resolution -----------------------------------------------------
+  //
+  // ⭐ THE CLICK ERA READ `gradeContext.match(/(\d)/)` AND IT WAS WRONG FOR EVERY
+  // ELEMENTARY LESSON — a pre-existing content-fidelity bug this port surfaced
+  // and which `GenerationContext` names outright: *"NEVER parse grade out of
+  // gradeContext prose; read this."*
+  //
+  // `gradeContext` is a PROSE SENTENCE, not a grade: "elementary students
+  // (grades 1-5) — age-appropriate vocabulary…". The first digit in it is the
+  // BOTTOM of the band, so every grade-1-to-5 objective resolved to 1, and a
+  // grade-5 lesson got grade-1 sentences with a grade-1 vocabulary wall.
+  //
+  // Under a tap that was a quiet fidelity failure. Under the judged loop it also
+  // DELETES TWO OF FOUR EVAL MODES: the pack builds nothing for `identify_role`
+  // or `parse_structure` below grade 3, because those grades have no role
+  // vocabulary in scope. That is how it was found — the judged drive on
+  // `identify_role` failed with "every generated challenge was dropped", and the
+  // gate was right; the grade reaching it was not.
+  const safeGrade = resolveGrade(config?.grade, config?.gradeBand);
+
+  const gradeGuidelines: Record<number, string> = {
+    2: 'GRADE 2: 3-5 word sentences, familiar vocabulary (cat, run, big). Only identify_pos and label_all.',
+    3: 'GRADE 3: 4-6 word sentences. Grade-appropriate vocabulary. No parse_structure.',
+    4: 'GRADE 4: 5-7 word sentences. Compound subjects and predicates appear; direct objects appear.',
+    5: 'GRADE 5: 5-7 word sentences. Prepositional phrases appear.',
+    6: 'GRADE 6: 5-8 word sentences. Compound-complex structures and varied sentence kinds.',
+    7: 'GRADE 7: 6-8 word sentences. Participial phrases, indirect objects, appositives.',
+    8: 'GRADE 8: 6-8 word sentences. Subordinate clauses and advanced roles.',
   };
 
-  // Extract numeric grade from gradeContext string
-  const gradeMatch = gradeContext.match(/(\d)/);
-  const gradeKey = gradeMatch ? gradeMatch[1] : '4';
-  const safeGradeKey = Object.keys(gradeGuidelines).includes(gradeKey) ? gradeKey : '4';
+  /**
+   * THE VOCABULARY IN SCOPE, STATED. The pack DROPS any word whose label is off
+   * the grade wall, so a model writing "Interjection" at grade 2 costs an item.
+   * Telling it the wall up front is cheaper than dropping what it returns.
+   */
+  const posWall = posWallFor(safeGrade);
+  const roleWall = roleWallFor(safeGrade);
 
   const prompt = `Create a sentence grammar analysis activity about: "${topic}".
 
-TARGET GRADE LEVEL: ${safeGradeKey}
-${gradeGuidelines[safeGradeKey]}
+TARGET GRADE LEVEL: ${safeGrade}
+${gradeGuidelines[safeGrade] ?? gradeGuidelines[4]}
 
 ${challengeTypeSection}
 
-PURPOSE: ${config?.intent || 'Practice identifying parts of speech and grammatical roles'}
+PURPOSE: ${config?.intent || 'Practice naming parts of speech and grammatical roles out loud'}
 
-INSTRUCTIONS:
-Generate 4-6 challenges. Each challenge has ONE sentence broken into individual words (max 8 words per sentence).
+⚠️ THIS ACTIVITY IS SPOKEN. A live tutor reads each question aloud and the student
+ANSWERS OUT LOUD. There are no multiple-choice options anywhere — the student says
+the grammar label from memory, with a printed word wall for reference.
 
-For EACH challenge provide:
-- id: Unique ID (ch1, ch2, etc.)
-- type: One of the challenge types listed above
-- sentence: The complete sentence as a single string
-- wordCount: Number of words (1-8). Count each word separately — "The cat sat" = 3 words
-- word0Text through word{N-1}Text: Each word's text (include punctuation attached to the word, e.g., "ran." for the last word)
-- word0Pos through word{N-1}Pos: Part of speech for each word. Use EXACTLY these labels: Noun, Verb, Adjective, Adverb, Pronoun, Preposition, Conjunction, Determiner, Interjection
-- word0Role through word{N-1}Role: Grammatical role for each word. Use EXACTLY these labels: Subject, Predicate, Direct Object, Indirect Object, Object of Preposition, Modifier, Conjunction, Determiner
-- explanation: WHY the answer is correct (2-3 sentences, student-friendly)
+VOCABULARY IN SCOPE AT THIS GRADE — use ONLY these:
+- Parts of speech: ${posWall.join(', ')}
+- Jobs in a sentence: ${roleWall.length ? roleWall.join(', ') : '(none — this grade does not do roles)'}
+A word labelled outside these lists is DROPPED and the activity gets shorter.
 
-TYPE-SPECIFIC FIELDS:
-- identify_pos: Set targetWordIndex (0-based index of the target word), posOption0-3 (4 POS choices, 1 correct + 3 plausible distractors), correctPos (must exactly match one option)
-- identify_role: Set targetWordIndex, roleOption0-3 (4 role choices), correctRole (must exactly match one option)
-- label_all: No extra fields needed — the word POS labels ARE the answer key
-- parse_structure: Set sentenceType (Declarative/Interrogative/Imperative/Exclamatory), sentenceTypeOption0-3 (always include all 4 sentence types as options)
+Generate 4-6 challenges. Each has ONE sentence of 3-8 words.
 
-CRITICAL RULES:
-- Every word MUST have accurate POS and grammatical role labels
-- For identify_pos: correctPos MUST match the actual POS of words[targetWordIndex]
-- For identify_role: correctRole MUST match the actual role of words[targetWordIndex]
-- Distractors must be plausible but clearly wrong (e.g., for a Verb target, include Noun, Adjective, Adverb as distractors)
-- Do NOT include the period/punctuation as a separate word — attach it to the last word
-- Sentences should be topically relevant to "${topic}"
-${!evalConstraint ? '- Vary challenge types across the set — include at least 2 different types\n' : ''}
-EXAMPLE (identify_pos):
+For EACH challenge:
+- id: Unique ID (ch1, ch2, ...)
+- type: one of the challenge types above
+- sentence: the complete sentence as one string
+- words: ONE ENTRY PER WORD, in order, each with text, pos and role.
+  ⚠️ EVERY word gets BOTH labels. "The cat sat" is three entries and six labels —
+  a word with a missing pos or role makes the whole challenge unusable, because a
+  live tutor has to say the label out loud and judge a child against it.
+- explanation: why the labels are what they are (2-3 student-friendly sentences)
+
+parse_structure ALSO needs:
+- sentenceType: Declarative, Interrogative, Imperative or Exclamatory
+- subjectEndIndex: the 0-based index of the LAST word of the COMPLETE SUBJECT.
+  The complete subject includes the articles and describing words in FRONT of the
+  naming word. In "The clever fox jumped quickly" it is "The clever fox", so
+  subjectEndIndex is 2 — NOT 2 because "fox" is the subject, but because "The
+  clever fox" ends at index 2.
+  OMIT subjectEndIndex if the subject is not one unbroken run of words at the
+  START of the sentence. A command ("Close the door.") has no subject word. A
+  question ("Where did the fox go?") splits it. Those are still fine sentences for
+  the sentence-kind step — just leave the field out.
+
+HARD RULES — a challenge that breaks one is thrown away:
+- ⚠️ THE SENTENCE MAY NOT CONTAIN ANY GRAMMAR WORD. No "noun", "verb", "adjective",
+  "adverb", "pronoun", "preposition", "conjunction", "determiner", "interjection",
+  "subject", "predicate", "object", "modifier", "declarative", "interrogative",
+  "imperative" or "exclamatory" anywhere in it. The tutor reads the sentence aloud,
+  and a sentence containing a grammar word says an answer before it is asked.
+- No sentence may begin with "Yes" or with "My turn" — those are the tutor's own
+  verdict words.
+- Every word MUST have an accurate part of speech AND an accurate job.
+- Do NOT make punctuation a separate word — attach it to the word before it.
+- Sentences should be about "${topic}".
+${!evalConstraint ? '- Vary challenge types across the set — include at least 2 different types\n' : ''}${tier ? `\n${TIER_GUARDRAIL}\n` : ''}
+EXAMPLE (parse_structure):
 {
   "id": "ch1",
-  "type": "identify_pos",
+  "type": "parse_structure",
   "sentence": "The clever fox jumped quickly.",
-  "wordCount": 5,
-  "word0Text": "The", "word0Pos": "Determiner", "word0Role": "Determiner",
-  "word1Text": "clever", "word1Pos": "Adjective", "word1Role": "Modifier",
-  "word2Text": "fox", "word2Pos": "Noun", "word2Role": "Subject",
-  "word3Text": "jumped", "word3Pos": "Verb", "word3Role": "Predicate",
-  "word4Text": "quickly.", "word4Pos": "Adverb", "word4Role": "Modifier",
-  "targetWordIndex": 1,
-  "posOption0": "Adjective", "posOption1": "Noun", "posOption2": "Verb", "posOption3": "Adverb",
-  "correctPos": "Adjective",
-  "explanation": "The word 'clever' is an Adjective because it describes the noun 'fox'. Adjectives tell us more about nouns — what kind, which one, or how many."
+  "words": [
+    { "text": "The",      "pos": "Determiner", "role": "Modifier" },
+    { "text": "clever",   "pos": "Adjective",  "role": "Modifier" },
+    { "text": "fox",      "pos": "Noun",       "role": "Subject" },
+    { "text": "jumped",   "pos": "Verb",       "role": "Predicate" },
+    { "text": "quickly.", "pos": "Adverb",     "role": "Modifier" }
+  ],
+  "sentenceType": "Declarative",
+  "subjectEndIndex": 2,
+  "explanation": "The complete subject is 'The clever fox' — everything that tells us WHO the sentence is about. The rest tells us what it did."
 }`;
 
   try {
@@ -414,15 +480,20 @@ EXAMPLE (identify_pos):
       config: {
         responseMimeType: 'application/json',
         responseSchema: activeSchema,
+        // 8192 is correct for THIS model — flash-lite is non-thinking, so the
+        // ceiling is not shared with a reasoning budget (word-builder's finding
+        // is about gemini-3-flash-preview, which this is not).
+        maxOutputTokens: 8192,
         systemInstruction:
-          'You are an expert K-8 grammar and language arts specialist. You create precise, pedagogically sound sentence analysis exercises. Every POS and grammatical role label must be linguistically accurate. You choose grade-appropriate sentences that clearly demonstrate the targeted grammar concepts.',
+          'You are an expert K-8 grammar and language arts specialist writing content for a SPOKEN tutoring '
+          + 'session. Every part-of-speech and grammatical-role label must be linguistically accurate, because '
+          + 'a live tutor will judge a child out loud against it. You choose grade-appropriate sentences that '
+          + 'clearly demonstrate the targeted grammar concepts.',
       },
     });
 
     const text = response.text;
-    if (!text) {
-      throw new Error('No data returned from Gemini API');
-    }
+    if (!text) throw new Error('No data returned from Gemini API');
 
     const raw = JSON.parse(text) as {
       title: string;
@@ -431,27 +502,29 @@ EXAMPLE (identify_pos):
       challenges: FlatChallenge[];
     };
 
-    // --- Reconstruct and validate challenges ---
     const validChallenges: SentenceAnalyzerChallenge[] = [];
     for (const flat of raw.challenges ?? []) {
       const challenge = validateChallenge(flat);
-      if (challenge) {
-        validChallenges.push(challenge);
-      } else {
-        console.warn(`[SentenceAnalyzer] Rejected invalid challenge: ${flat.id} (type=${flat.type})`);
-      }
+      if (challenge) validChallenges.push(challenge);
+      else console.warn(`[SentenceAnalyzer] Rejected invalid challenge: ${flat?.id} (type=${flat?.type})`);
     }
 
-    // Fallback: if all challenges were rejected, throw so caller can retry
     if (validChallenges.length === 0) {
       throw new Error('All generated challenges failed validation — no usable content');
     }
 
     const result: SentenceAnalyzerData = {
       title: config?.title || raw.title || 'Sentence Analysis',
-      description: raw.description || 'Analyze sentence structure and grammar.',
-      gradeLevel: raw.gradeLevel || safeGradeKey,
+      description: raw.description || 'Say what each word is doing in the sentence.',
+      /**
+       * ⚠️ THE GRADE WE RESOLVED AND PROMPTED WITH, NOT THE ONE THE MODEL WROTE
+       * (genre-explorer drive finding, 2026-08-17). `isBandFloor` hangs the
+       * read-aloud accommodation off this field, and a model-authored "Grade 2"
+       * silently withdrew it there.
+       */
+      gradeLevel: String(safeGrade),
       challenges: validChallenges,
+      ...(tier ? { supportTier: tier } : {}),
     };
 
     logEvalModeResolution('SentenceAnalyzer', config?.targetEvalMode, evalConstraint);
@@ -459,8 +532,9 @@ EXAMPLE (identify_pos):
     console.log('Sentence Analyzer Generated:', {
       title: result.title,
       gradeLevel: result.gradeLevel,
+      supportTier: result.supportTier,
       challengeCount: validChallenges.length,
-      types: validChallenges.map(c => c.type),
+      types: validChallenges.map((c) => c.type),
       rejected: (raw.challenges?.length ?? 0) - validChallenges.length,
     });
 

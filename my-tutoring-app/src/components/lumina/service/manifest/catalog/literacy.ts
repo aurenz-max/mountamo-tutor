@@ -19,32 +19,103 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   // ===== EXISTING PRIMITIVES =====
   {
     id: 'sentence-analyzer',
-    description: 'Interactive sentence grammar analysis. Students identify parts of speech, grammatical roles, label all words, and parse sentence structure. 4 progressive challenge types from concrete identification to full structural parsing. Perfect for grades 2-8 grammar and language arts.',
-    constraints: 'Requires language/grammar content. Best for grades 2-8.',
+    misconceptionScope: 'primitive',
+    description:
+      'Live Direct Instruction GRAMMAR with a spoken tutor. The tutor names one word of a printed '
+      + 'sentence, waits, judges what it hears, and its own confirmation moves the lesson on. The child '
+      + 'SAYS the grammar label out loud — "adjective", "subject", "predicate", "declarative" — with a '
+      + 'printed word wall of the vocabulary in scope beside them for reference. Nothing is tapped, there '
+      + 'are no multiple-choice options anywhere, and no label appears on screen before the tutor confirms '
+      + 'it. Four progressive tasks from naming one word\'s part of speech to walking a whole sentence and '
+      + 'parsing its structure. Requires a microphone. Ideal for grades 2-8 grammar and language arts.',
+    constraints:
+      'Requires the live tutor and a microphone. Grades 2-8. The sentence is PRINTED (and read aloud at '
+      + 'grade 2), so the child must be able to follow written text at their grade. Sentences containing '
+      + 'grammar vocabulary are excluded — the tutor reads the sentence aloud, and a sentence containing '
+      + 'the word "noun" says an answer before it is asked. The answer is SPOKEN, so pick this for '
+      + 'objectives about NAMING grammatical structure, not for editing or writing objectives — those need '
+      + 'a written surface.',
+    // ── DI MODALITY (2026-08-17) — item 22, port 3 of the closed-set literacy
+    // frontier. The tutor owns the clock: it asks, waits, judges the spoken label
+    // from the audio in-band, corrects contrastively, and its own affirmation is
+    // the advance. No Check button, no Next button, no advance timer, no
+    // push-to-talk mic anywhere in the path.
+    //
+    // ALL FOUR MODES ARE SPOKEN, and the roster that scoped this port priced all
+    // four as `closed_set_choice` off this entry's OWN former description ("from
+    // multiple choice options"). They ship `short_spoken_word`: a part of speech
+    // is a NAME, one word, one target. Third consecutive port to correct that
+    // column the same way — a menu is evidence the click era needed something to
+    // tap, never evidence about what the answer is made of.
+    //
+    // THE MENUS ARE GONE, THE WORD WALL REPLACED THEM. Per-item `posOptions` /
+    // `roleOptions` were a 1-in-4 guess floor assembled for a screen. What is
+    // printed now is GRADE-scoped and identical on every item, so it narrows
+    // nothing — unlike the click era's `label_all` chip bank, which printed
+    // exactly the labels the sentence used and could be counted against the words.
+    //
+    // ⭐ AND THE PORT FIXED THE SUBJECT/PREDICATE ANSWER KEY. The click era
+    // derived the side as `role.includes('subject')`, which put every determiner
+    // and every subject-side modifier in the PREDICATE. Under a button that
+    // silently marked correct children wrong; under a judged loop the tutor
+    // refuses a correct child out loud. The boundary is now an explicit generated
+    // field and a sentence that cannot state it drops its side asks.
+    //
+    // Cue lines and the per-item judging contract live in
+    // `sentenceAnalyzerScript.ts` (hand-authored, DISTAR); this block is the
+    // session-level frame.
+    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
+    // taskDescription, scaffolding level, struggle response or directive sentence
+    // begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     evalModes: [
+      // ⚠️ EVERY `description` BELOW IS MANIFEST STEERING AND NOTHING ELSE.
+      // The β rationale lives in this comment deliberately: a description is read
+      // by the model that PICKS this primitive and this mode, and a paragraph
+      // about what the click era used to do is tokens spent describing a surface
+      // that no longer exists.
+      //
+      // β MOVED ON THREE OF FOUR, and only where the STRUCTURE moved:
+      //   identify_pos    1.5 → 2.0  four options per item at a 1-in-4 floor
+      //                              became unaided production from the wall.
+      //   identify_role   3.0 → 3.5  same change, same size.
+      //   label_all       5.0 → 5.5  the chip bank listed exactly the sentence's
+      //                              own labels and could be counted against the
+      //                              words; the grade wall carries labels it does
+      //                              not use. One judged ask per word also
+      //                              replaces a single 80%-threshold score.
+      //   parse_structure 6.5 → 6.5  UNCHANGED. There was no menu here to delete;
+      //                              what changed is that its answer key is now
+      //                              correct, which makes it fairer, not harder.
       {
         evalMode: 'identify_pos',
         label: 'Identify POS (Tier 1)',
-        beta: 1.5,
+        beta: 2.0,
         scaffoldingMode: 1,
         challengeTypes: ['identify_pos'],
-        description: 'Identify the part of speech of a highlighted word from multiple choice options.',
+        description:
+          'The tutor names one word of the sentence and the student SAYS its part of speech, unaided, '
+          + "with the grade's word wall printed beside them for reference.",
       },
       {
         evalMode: 'identify_role',
         label: 'Identify Role (Tier 3)',
-        beta: 3.0,
+        beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['identify_role'],
-        description: 'Identify the grammatical role of a highlighted word from multiple choice options.',
+        description:
+          'The tutor names one word and the student SAYS what job it does in the sentence. Starts at '
+          + 'grade 3 — grade 2 has no role vocabulary in scope.',
       },
       {
         evalMode: 'label_all',
         label: 'Label All (Tier 4)',
-        beta: 5.0,
+        beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['label_all'],
-        description: 'Label every word in a sentence with its part of speech.',
+        description:
+          'The tutor walks the sentence word by word and the student SAYS each part of speech in turn '
+          + '— one judged answer per word, across a whole sentence.',
       },
       {
         evalMode: 'parse_structure',
@@ -52,21 +123,61 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         beta: 6.5,
         scaffoldingMode: 5,
         challengeTypes: ['parse_structure'],
-        description: 'Group words into subject/predicate and classify sentence type.',
+        description:
+          'The tutor names words one at a time and the student SAYS whether each is in the subject or '
+          + 'the predicate, then SAYS what kind of sentence it is.',
       },
     ],
     tutoring: {
-      taskDescription: 'Student is analyzing sentence grammar at the {{challengeType}} level. Current sentence: "{{sentence}}"',
-      contextKeys: ['challengeType', 'sentence', 'words', 'targetWord', 'gradeLevel'],
+      taskDescription:
+        'LIVE-JUDGED DIRECT INSTRUCTION. You are running a spoken grammar drill. The activity sends you '
+        + 'one [SAN_ITEM] control message per question containing the exact line to say and the answer to '
+        + 'judge against; you say that line, wait, judge what the child says out loud, and reply with '
+        + 'exactly one of the two quoted verdict lines it gives you. Your affirmation is what advances the '
+        + 'lesson — the activity moves when it hears it. Current step: {{challengeType}}. On screen: '
+        + '{{stimulus}}.',
+      contextKeys: ['challengeType', 'stimulus'],
       scaffoldingLevels: {
-        level1: '"What job does this word do in the sentence? Think about whether it names something, describes something, or shows action."',
-        level2: '"Let\'s break this down. Look at {{targetWord}} — does it answer WHO, WHAT, or WHAT ABOUT? That tells you its role."',
-        level3: '"In the sentence, the {{partOfSpeech}} \'{{targetWord}}\' acts as the {{grammaticalRole}} because it {{roleExplanation}}."',
+        level1:
+          'THE OPENING LINE ALREADY TEACHES THE GAME. The first [SAN_ITEM] carries the how-to-play inside '
+          + 'the line you are told to say. Say it and nothing more — do not add a greeting, a warm-up, or '
+          + 'an explanation of grammar in front of it.',
+        level2:
+          'WHAT COUNTS AS AN ANSWER: every answer in this activity is SPOKEN. The child says a grammar '
+          + 'label out loud — a part of speech, a job in the sentence, "subject" or "predicate", or what '
+          + 'kind of sentence it is. Each [SAN_ITEM] names the one correct answer and the forms of it that '
+          + 'count. THE LAW: never say that answer, or any other grammar label, before the child has '
+          + 'answered — not as a hint, not as an example, not as a reminder of the choices.',
+        level3:
+          'WAIT — the silence is theirs. After your line, stop speaking. A child works out a grammar label '
+          + 'slowly, their think time is unbounded, and there is no clock. Never announce that you are '
+          + 'waiting or listening.',
       },
       commonStruggles: [
-        { pattern: 'Student confuses nouns and verbs when word can be both (e.g., "run", "play")', response: 'Ask: "In THIS sentence, is the word naming a thing or showing an action? Context decides."' },
-        { pattern: 'Student labels adjectives as adverbs or vice versa', response: 'Ask: "Is this word describing a NOUN (adjective) or describing a VERB (adverb)?"' },
-        { pattern: 'Student cannot distinguish subject from predicate', response: 'Ask: "Who or what is the sentence about? That is the subject. What does it DO or what IS it? That is the predicate."' },
+        {
+          pattern: 'Student says a part of speech when asked what JOB a word does',
+          response:
+            'Follow the [SAN_ITEM] correction line exactly — it opens "My turn:", names the job, and asks '
+            + 'again. Do not explain the difference between a part of speech and a job in your own words.',
+        },
+        {
+          pattern: 'Student says a label that sounds close to the right one — "adverb" for an adjective, "noun" for a pronoun',
+          response:
+            'Treat it as wrong and say the correction line exactly as given. Part of a label is not the '
+            + 'label, and separating those two is what this activity measures.',
+        },
+        {
+          pattern: 'Student goes quiet after the question',
+          response:
+            'Stay silent and wait. Silence is not an attempt, so there is nothing to judge yet — the '
+            + 'activity will send you the next control message when it needs one.',
+        },
+        {
+          pattern: 'Student asks to hear the question again',
+          response:
+            'The activity sends a [SAN_HEAR] message with the exact line to re-speak. Say only that line, '
+            + 'then wait again.',
+        },
       ],
     },
     supportsEvaluation: true,

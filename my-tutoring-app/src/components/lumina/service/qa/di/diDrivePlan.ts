@@ -192,6 +192,13 @@ import {
   type GenreExplorerItem,
   type GenreExplorerPayloadLike,
 } from '@/components/lumina/primitives/visual-primitives/literacy/genreExplorerScript';
+import {
+  sentenceAnalyzerHarnessAnswers,
+  sentenceAnalyzerPackBase,
+  itemsFromPayload as sentenceAnalyzerItems,
+  type SentenceAnalyzerItem,
+  type SentenceAnalyzerPayloadLike,
+} from '@/components/lumina/primitives/visual-primitives/literacy/sentenceAnalyzerScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -942,6 +949,55 @@ const genreExplorerAdapter: DiPortAdapter<GenreExplorerItem> = {
 };
 
 /**
+ * sentence-analyzer (TWENTIETH literacy port, third of the closed-set literacy
+ * frontier - item 22). ALL-VOICE across four ACTIONS over up to three printed
+ * sentences, so there is no gesture commit anywhere.
+ *
+ * WARNING - THIS PORT'S DRIVE PROVES A CONTENT FIX LANDED, not only that a judge
+ * behaves. The click era derived subject/predicate as `role.includes('subject')`,
+ * which keyed every determiner and every subject-side modifier to the PREDICATE -
+ * "The" and "clever" in "The clever fox jumped quickly". A button marked those
+ * children wrong in silence; a judged loop makes the tutor refuse a correct child
+ * out loud. `name-side`'s signature wrong is therefore THE OTHER SIDE said about
+ * exactly those words, and a judgment matrix for this port should be read starting
+ * from that column.
+ *
+ * Three more things are different about its answer material:
+ *
+ *  1. **`name-side` ships an empty `leakTokens`, deliberately.** Its answer is one
+ *     of the two words the ask must contain to be a question ("in the subject or
+ *     in the predicate?"). A leak oracle over it would fire on every turn and mean
+ *     nothing; the DISCRIMINATION oracle carries that action.
+ *  2. **The other three actions run a nearly FLAT leak oracle**, which is where
+ *     this port's leak evidence comes from. The grammar label is absent from the
+ *     ask, from the printed sentence (`namesAGrammarTerm` drops any sentence
+ *     containing grammar vocabulary), from the lead-in and from the how-to-play -
+ *     so anything outside the spoken WALL clause is a finding, and the wall is
+ *     spoken only on the item that introduces its action, and only at the band
+ *     floor or `easy`.
+ *  3. **Four different signature wrongs in one pack.** `name-pos`'s is the
+ *     CONFUSABLE TWIN drawn from the same `CONFUSABLE_WITH` map the contract uses
+ *     to write its strictness clause - adverb for an adjective, noun for a pronoun,
+ *     where one label literally contains the other. `name-role`'s is a PART OF
+ *     SPEECH said where the job was asked for, which is usually TRUE of the word
+ *     and therefore the miss a relevance-grading judge waves through.
+ *     `name-type`'s is DECLARATIVE, the default a child says without reading the
+ *     ending.
+ *
+ * Its `build` reads a `challenges` array, and `dropped` counts askable CANDIDATES
+ * the build gates refused - a word whose label is off the grade wall, a sentence
+ * naming a grammar term, a `parse_structure` sentence with no statable subject
+ * boundary. The session-length caps are reported separately and are not drops.
+ */
+const sentenceAnalyzerAdapter: DiPortAdapter<SentenceAnalyzerItem> = {
+  build: (data) => {
+    const { items, dropped } = sentenceAnalyzerItems(data as SentenceAnalyzerPayloadLike);
+    return { items, dropped, surface: sentenceAnalyzerPackBase(items) };
+  },
+  answersFor: sentenceAnalyzerHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -969,6 +1025,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'text-structure-analyzer':
     textStructureAnalyzerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'genre-explorer': genreExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'sentence-analyzer': sentenceAnalyzerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

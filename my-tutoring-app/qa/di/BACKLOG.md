@@ -111,11 +111,19 @@ first DI roster picked from demand rather than from what already has contracts.
    mode tapping while its two siblings went spoken, which is the letter-spotter hybrid the
    doctrine strikes at. **Three of the scope's four predictions were wrong on contact with the
    answer material; see finding 1.**
-3. **`sentence-analyzer`** ⬅️ **THE NEXT PULL** — zero-queue; its two lower modes are literally multiple choice, and
-   `label_all` / `parse_structure` are the "one challenge is not one item" split (fourth use:
-   one judged ask per word), not a blocker.
-4. **`figurative-language-finder`** — `idiom` (interpret the expression) is production; ship the
-   other three modes and leave `idiom` for item 23.
+3. ~~**`sentence-analyzer`**~~ ✅ **SHIPPED 2026-08-17 — DI port 20, ALL FOUR EVAL MODES. Close block
+   below.** **Next pull is #4 `figurative-language-finder`.** The scope's read — *"its two lower
+   modes are literally multiple choice"* — was the roster's own `description` quoted back, and it is
+   the THIRD time that column has been wrong in the same direction. All four modes ship
+   `short_spoken_word`. The `label_all` / `parse_structure` prediction held: both are the "one
+   challenge is not one item" split, and `label_all` was in fact ALREADY BROKEN in the click era for
+   an unrelated reason (see the close block's live-gate finding 2).
+   **⚠️ Two of this port's five biggest findings were UPSTREAM of it** — a wrong subject/predicate
+   answer key and a grade parser that resolved every elementary lesson to grade 1. Neither is
+   literacy-specific and neither was findable without calling the real API. Budget a live probe per
+   port; it is not a formality.
+4. **`figurative-language-finder`** ⬅️ **THE NEXT PULL** — `idiom` (interpret the expression) is
+   production; ship the other three modes and leave `idiom` for item 23.
 5. **`evidence-finder`** — the only one needing two classes in one pack; do it last, when the
    `locate_evidence` read-aloud fork has the other four behind it.
 
@@ -219,6 +227,164 @@ connective PHRASES** — "As a result", "The problem is", "In contrast", "on the
 three and four unstressed function words, which is a different acoustic object from
 `short_spoken_word`'s benched "one short word" and the worst case for an amplitude bracket. No
 text drive can reach it.
+
+#### ✅ CLOSED 2026-08-17 — port 3 of 5: `sentence-analyzer` (DI port 20), ALL FOUR EVAL MODES
+
+**ALL-VOICE, four actions to zero taps.** The costume test struck every one: a child who cannot
+tell an adjective from an adverb could still tap one of four cards at a 1-in-4 floor, drop a chip
+on a word, and cycle a toggle none → S → P → none until it looked right.
+
+| Step | Was | Now | Class |
+|---|---|---|---|
+| `name-pos` | tap 1 of 4 POS cards | SAY the part of speech of one named word | `short_spoken_word` |
+| `name-role` | tap 1 of 4 role cards | SAY what job a named word does | `short_spoken_word` |
+| `name-side` | cycle a per-word S/P toggle | SAY whether a word is in the subject or the predicate | `short_spoken_word` |
+| `name-type` | tap 1 of 4 type cards | SAY what kind of sentence it is | `short_spoken_word` |
+| review | Check / Next / Finish + explanation panel | deleted — `PhaseSummaryPanel` | — |
+
+⚠️ **The roster read `closed_set_choice`; all four ship `short_spoken_word` — the THIRD CONSECUTIVE
+PORT to correct that column the same way** (text-structure-analyzer's `place-idea`, genre-explorer's
+`name-genre`, now four modes at once). The line is not unlucky: it reads the click era's MENU as if
+the menu described the answer. A menu is evidence that a tap surface needed something to tap. Three
+ports is enough to fix the roster rather than the entry — **read the answer material, never the
+`description`, and note that this primitive's description was the roster's actual source** ("from
+multiple choice options").
+
+**Files:** `sentenceAnalyzerScript.ts` (new, ~1.2k) · `SentenceAnalyzer.tsx` (rewritten) ·
+`gemini-sentence-analyzer.ts` (schema rebuilt) · `catalog/literacy.ts` ·
+`registry/generators/coreGenerators.ts` · `service/qa/di/diDrivePlan.ts` (19 ports) ·
+`__tests__/SentenceAnalyzer.di-script.test.ts` (new, 63 tests).
+
+**Deletions:** all fourteen multiple-choice generator fields (`posOption0-3`, `roleOption0-3`,
+`sentenceTypeOption0-3`, `correctPos`, `correctRole`) · the `label_all` chip bank · the
+`parse_structure` toggle rail and its two-step Check · Check/Next/Finish · `showExplanation` ·
+`attemptsCount` · `POS_COLORS` applied before an answer is earned · `useLuminaAI` and six improvised
+`sendText` sends.
+
+##### Findings
+
+1. ⭐ **THE SUBJECT/PREDICATE ANSWER KEY WAS WRONG, AND THE PORT IS WHAT MADE IT VISIBLE.** The click
+   era derived the side in the COMPONENT: `role.includes('subject') ? 'subject' : 'predicate'`. Every
+   determiner and every subject-side modifier therefore keyed to the PREDICATE — "The" and "clever"
+   in "The clever fox jumped quickly" are the complete subject. Under a button that silently marked
+   correct children wrong; **under a judged loop the tutor refuses a correct child out loud**, which
+   is the worst landing a wrong key has. The boundary is now an explicit generated field
+   (`subjectEndIndex`) and a sentence that cannot state one — an imperative has no subject word, a
+   question splits it — DROPS its side asks instead of guessing. Confirmed live: the drive's own
+   content put an adjective in that position in **every** sentence it drew ("Hot is in the subject",
+   "Cold is in the subject"), so this was not a rare shape.
+2. ⭐ **THE GENERATOR RESOLVED EVERY ELEMENTARY LESSON TO GRADE 1**, and `GenerationContext` names the
+   rule it broke in as many words: *"NEVER parse grade out of `gradeContext` prose; read this."* The
+   click-era line was `gradeContext.match(/(\d)/)` — and `gradeContext` is a PROSE SENTENCE,
+   *"elementary students (grades 1-5) — …"*, whose first digit is the BOTTOM of the band. A grade-5
+   objective got grade-1 sentences. Pre-existing and invisible under a tap; under the judged loop it
+   **deletes two of four eval modes**, because `identify_role` and `parse_structure` build nothing
+   below grade 3 (no role vocabulary in scope). Now reads `ctx.grade` first, the normalized BAND key
+   second, and the band fallback maps to the band's MIDDLE rather than its floor.
+   **How it was found is the point:** the `identify_role` drive failed with *"every generated
+   challenge was dropped by the pack's build gates"*, and the gate was right — the grade reaching it
+   was not. A build gate firing correctly is a fine place to find an upstream bug.
+3. ⭐ **THE MENU DIED; THE WORD WALL REPLACED IT — AND THE WALL IS GRADE-SCOPED, NEVER SESSION-SCOPED.**
+   The click era's `label_all` bank was `new Set(words.map(w => w.partOfSpeech))`: it printed EXACTLY
+   the labels the sentence used, so a six-word sentence with four labels could be substantially
+   solved by counting the bank against the words. Defect class 3 with a different surface. The grade
+   wall carries labels the sentence does not use, so it narrows nothing — and it doubles as the
+   grade-fidelity gate the primitive never had (an off-wall label DROPS).
+4. ⭐ **THE SUBSET PAIR COULD NOT BE PRUNED, SO IT IS REFUSED IN WORDS INSTEAD.** "Noun" is inside
+   "Pronoun"; three role labels share "Object". `pruneForEar` is the family's usual answer and is
+   unavailable here — both members are core curriculum vocabulary and separating them IS the mode. The
+   contract takes the other route the class permits: the judge holds ONE target and is told that
+   *part of a label is not the label*. A STRICTNESS clause, not a leniency one. Driven at grade 4:
+   Adverb refused for Adjective ×2, Pronoun refused for Noun ×2.
+5. **THE LEAK ORACLE IS INAPPLICABLE ON `name-side`, and that is stated rather than papered over.**
+   Its answer is one of the two words the ask must contain to be a question at all. It ships
+   `leakTokens: []`; the DISCRIMINATION oracle carries it — and on this pack that oracle is unusually
+   load-bearing, because it is what proves finding 1 landed. The other three actions run a nearly
+   FLAT oracle: the label is absent from the ask, the sentence (`namesAGrammarTerm`), the lead-in and
+   the how-to-play, so anything outside the spoken wall clause is a finding.
+6. **`Conjunction` and `Determiner` were offered as grammatical ROLES.** They are parts of speech; a
+   word keyed to one has no clean answer to "what job does it do?". Gone from the role vocabulary,
+   and such a word is dropped as a role target.
+7. **The wall is spoken on the INTRODUCTION, never per item.** `label_all` runs four `name-pos` asks
+   back to back; appending the vocabulary to each is the recitation defect ruled twice on 2026-08-13.
+   `introducesAction` absorbs it — **genre-explorer's stamp, second consumer, and the finding
+   generalised exactly as its close block predicted it would.**
+8. **`challengeType` in the context channel is the ACTION, never the eval mode** — `parse_structure`
+   names its own two-word answer set aloud, so pushing the mode would park half that mode's answers in
+   the tutor's context for the whole session.
+9. **βs moved on three of four, and only where the STRUCTURE moved** (`identify_pos` 1.5→2.0,
+   `identify_role` 3.0→3.5, `label_all` 5.0→5.5 — a per-item 4-option floor became unaided production
+   from a wider wall; `parse_structure` UNCHANGED at 6.5, because it had no menu to delete and the
+   change there makes it fairer, not harder). ⚠️ The rationale lives in a CODE COMMENT, not in the
+   `description`: a description is read by the model that PICKS the mode, and a paragraph about the
+   click era is tokens spent describing a surface that no longer exists.
+
+##### ⭐ Three defects the LIVE GATES found that no unit test could
+
+`tsc` was clean and 59 unit tests were green over a generator **that could not make a single
+successful API call.**
+
+1. **`maxItems` ON TWO NESTED ARRAYS IS A HARD `400 INVALID_ARGUMENT` — and the family's standing rule
+   points the wrong way here.** The flash-lite truncation template says to bound EVERY schema array;
+   bounding both of this one's arrays broke every request. Bisected twice, because the first read was
+   wrong: on the flat schema, dropping `maxItems` fixed it AND dropping all sixteen word enums fixed
+   it, which looks like a whole-schema complexity budget — but after the nested rewrite cut sixteen
+   enum properties to three it STILL failed with both arrays bounded, and passed the moment either
+   bound came off. **Carry the shape, not the number: a `maxItems` costs something that stacks down
+   the nesting.** Bound the array that can run away; leave the inner one to code. A 400 is also not a
+   truncation — no partial output, no fallback, nothing to detect.
+2. **THE ANSWER KEY CAME BACK HALF EMPTY AND `label_all` LOST ITS ENTIRE IDENTITY.** Every probe
+   returned word 0 labelled and every later word carrying neither label
+   (`The:Determiner/Modifier brown:-/- bear:-/- runs.:-/-`). Twenty-four flat fields cannot all be
+   `required` — a three-word sentence would have to invent `word7Pos` — so twenty-two were optional,
+   and **an optional enum-constrained field is one the model is free to skip.** `label_all` was
+   building ONE ask about the first word of each sentence and reporting success. Fixed by the nested
+   `words` array with `required: ['text','pos','role']` per word: `dropped` went 8-13 → **0**, and
+   `label_all` builds 9 items instead of 3. The old header called flat fields the fix for malformed
+   array JSON; on this model they are the cause of an incomplete answer key.
+3. **THE ASK SAID "the word melts.?"** — the generator attaches sentence punctuation to the word it
+   belongs to so the PRINTED sentence is right, and the ask interpolated it verbatim, putting a full
+   stop against a question mark mid-question. **Every string gate in the family passed it**, because
+   none of them is about prosody; it was caught by READING THE DRIVE TRANSCRIPT. `speakableWord`
+   strips it from the spoken form only — the stage still prints "melts."
+
+##### Gates
+
+`typecheck:lumina` **0** · full `tsc` **803 = baseline** · census greps 0/0/0/0/0 (the one `onClick`
+is tap-to-hear) · **63** pure di-script tests.
+
+**Live generator probe** (6 mode×band runs, `qa/tutor-reports/sentence-analyzer-live-probe-2026-08-17.md`):
+6/6 PASS, `dropped: 0` in five of six, `checkPackGates` `[]` on every live pack.
+
+**Headless judged drives — all four eval modes, 30 judged items, 30/30 refused + 30/30 affirmed:**
+
+| Mode | Grade | Items | Wrongs | Verdict | Report |
+|---|---|---|---|---|---|
+| `identify_pos` | 4 | 6 | signature (confusable twin) | ✅ PASS | `…-signature-identify_pos-…` |
+| `identify_role` | 5 | 6 | signature (POS-for-job) | ✅ PASS | *(overwritten; matrix in this block)* |
+| `label_all` | band floor | 9 | signature | ✅ PASS | *(overwritten; matrix in this block)* |
+| `parse_structure` | 5 | 9 | signature (the other side) | ✅ PASS | `…-signature-parse_structure-…` |
+| cap drill | 4 | — | — | 3 accepted WARNs | `…-capdrill-…` |
+
+`identify_role` 6/6 refused **"noun"** — the part of speech said where the JOB was asked for, which is
+usually TRUE of the word and is therefore the miss a relevance-grading judge waves through.
+`parse_structure` 9/9, including refusing **"predicate"** for "Hot" and "Cold" — *the click-era key's
+own answer.*
+
+⚠️ **The cap drill's three WARNs are accepted family behaviour, not new:**
+`di-correction-verbatim-repeat` ×2 and `di-capped-item-asks-then-withdraws` are **18c(c)** and
+**18c(b)** — 13 and 8 other ports carry them, including the port shipped the day before. Fixed
+correction wording over escalation is the deliberate 18d trade-off.
+
+⚠️ **Two drive reports were overwritten by later runs** (the harness names by `--di-wrong`, not by
+mode). Their matrices are transcribed above; re-drive if the artifact is needed. Worth one line
+because it will happen to the next port too.
+
+##### Not proven
+
+Semantics only. **Mic row #106** — abstract metalanguage said haltingly by a child, the acoustically
+nested "noun"/"pronoun" pair, and whether `label_all`'s four-in-a-row reads as a brisk drill or as a
+machine.
 
 #### ✅ CLOSED 2026-08-17 — port 2 of 5: `genre-explorer` (DI port 19), ALL THREE EVAL MODES
 

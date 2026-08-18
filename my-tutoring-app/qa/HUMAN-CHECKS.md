@@ -9,9 +9,10 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-08-17, `/pm`)
 
-> **Newest five, all judged-loop mic rows:** #105 genre-explorer · #104 text-structure-analyzer ·
-> #103 word-builder · **#102 word-sorter (filed late 08-17 — see its own note)** · #101 word-workout.
-> Next free ID is **#106**. Re-grep before filing; concurrent sessions in this lane are normal.
+> **Newest five, all judged-loop mic rows:** #106 sentence-analyzer · #105 genre-explorer ·
+> #104 text-structure-analyzer · #103 word-builder · **#102 word-sorter (filed late 08-17 — see its
+> own note)**. Next free ID is **#107**. Re-grep before filing; concurrent sessions in this lane are
+> normal.
 
 > **📐 FORMAT UNIFIED 2026-08-13 (user ruling).** This file used to keep TWO "Open"
 > sections in two formats — a `###` section list for the judged-loop era and a 5-column
@@ -59,6 +60,43 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > *(#93 was struck between the merge and this line — the count in the merge banner above says
 > 78 and is already one stale. Which is the third demonstration in two days of why this file
 > should rank rather than count.)*
+
+### #106 — **`sentence-analyzer` (DI port 20): the first pack whose answer set is ABSTRACT METALANGUAGE, and the first with a genuine SUBSET pair in its vocabulary** · OPEN
+
+**Filed under the standing rule.** The machine half is closed: four eval modes driven headlessly,
+30 judged items, 30/30 refused on purpose and 30/30 affirmed, reports in
+`qa/tutor-reports/sentence-analyzer-live-di-*-2026-08-17.md`. Three things only a room can answer.
+
+**(a) THE ANSWER IS A WORD THE CHILD HAS NO PICTURE FOR.** Every earlier literacy port's answer was
+a thing — a word, a sound, a genre, a mat, a yes/no. "Adjective", "Predicate" and "Declarative" are
+metalanguage: four-syllable Latinate terms a child says haltingly, half-remembered, often with the
+stress in the wrong place (*ad-JEC-tive*, *DEC-la-ra-tive*). The text drive types them perfectly.
+Ask: does a hesitant, mis-stressed *"ad-jec... adjective?"* get affirmed, or does the judge want it
+fluent? A child who KNOWS the answer and struggles to pronounce it is the exact case this pack must
+not refuse.
+
+**(b) "NOUN" IS INSIDE "PRONOUN", AND THE PACK DELIBERATELY REFUSES THE PARTIAL.** The family's usual
+move for a subset pair is `pruneForEar` — drop one option. That is impossible here: both are core
+curriculum vocabulary and telling them apart IS the mode, so the contract instead says in as many
+words that *part of a label is not the label*. The text drive confirms the judge refuses "Noun" for
+a pronoun. **In a room, the two words are also acoustically nested** — a child saying "pronoun" with
+a swallowed first syllable produces something very close to "noun". Ask:
+- Does a clearly-said "pronoun" ever get scored as "noun"?
+- Does the strictness clause make the tutor refuse a child who was right but quiet?
+- Same question one band up for `Direct Object` / `Indirect Object`, where the whole difference is
+  an unstressed prefix.
+
+**(c) `label_all` IS THE LONGEST SINGLE-ACTION STRETCH THE FAMILY RUNS.** Up to four `name-pos` asks
+back to back over ONE sentence, then four more over the next. The protocol is spoken once
+(`introducesAction`) and the asks differ only by the word named. Ask: does that read as a brisk drill
+— which is what DISTAR intends — or as a machine asking the same question eight times? This is the
+first pack where the recitation risk is in the RHYTHM rather than in a repeated line, and no gate
+measures rhythm.
+
+**Drive it at grade 4+** (`identify_role` and `parse_structure` do not exist below grade 3 — the role
+vocabulary is not in scope, and the pack builds nothing rather than degrade). `parse_structure` is
+the one to watch: it carries the answer-key fix, and its asks are the two-word "subject or predicate"
+binary.
 
 ### #105 — **`genre-explorer` (DI port 19): `yes_no` gets its first high-volume caller, and the tutor now speaks 20-70 words of GENERATED NARRATIVE into an open mic before every band-floor ask** · OPEN
 

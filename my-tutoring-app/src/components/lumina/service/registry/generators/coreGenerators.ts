@@ -353,6 +353,13 @@ registerContextGenerator('sentence-analyzer', async (ctx) => {
   const data = await generateSentenceAnalyzer(ctx.topic, ctx.gradeContext, {
     ...(ctx.raw as AnyConfig),
     intent: ctx.intent,
+    // ⚠️ THE CANONICAL GRADE, not a digit scraped out of `gradeContext` prose.
+    // GenerationContext says it in as many words: "NEVER parse grade out of
+    // gradeContext prose; read this." The click-era generator did exactly that
+    // and resolved EVERY elementary lesson to grade 1 — see the resolution
+    // block in gemini-sentence-analyzer.ts.
+    grade: ctx.grade,
+    gradeBand: ctx.gradeLevel,
   });
   return {
     type: 'sentence-analyzer',
