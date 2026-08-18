@@ -102,9 +102,16 @@ first DI roster picked from demand rather than from what already has contracts.
    generator modified — and reported it as an unknown third party. `git status` before scoping
    a port is still right; what it needed was to check the pull pointer it had itself just
    written. The handoff was the scope, and it was being followed.)*
-2. **`genre-explorer`** — zero-queue, and `identify_basic` is BINARY, which is the gentlest
-   possible first item for the class at the low band.
-3. **`sentence-analyzer`** — zero-queue; its two lower modes are literally multiple choice, and
+2. ~~**`genre-explorer`**~~ ✅ **SHIPPED 2026-08-17 — DI port 19, ALL THREE MODES. Close block
+   below.** **Next pull is #3 `sentence-analyzer`.** The scope's open question — *"whether
+   `compare_genres` ships in this slice or forks"* — was answered **SHIPS**, and the reason
+   generalises: the `figurative-language-finder` precedent at #4 is about a CLASS blocker
+   (`idiom` needs `open_set_word`, which is BLOCKED), and `compare_genres` needed **nothing new**
+   — its contrast ask is `ordinal_word`, which is benched. Forking would have left the Tier-4
+   mode tapping while its two siblings went spoken, which is the letter-spotter hybrid the
+   doctrine strikes at. **Three of the scope's four predictions were wrong on contact with the
+   answer material; see finding 1.**
+3. **`sentence-analyzer`** ⬅️ **THE NEXT PULL** — zero-queue; its two lower modes are literally multiple choice, and
    `label_all` / `parse_structure` are the "one challenge is not one item" split (fourth use:
    one judged ask per word), not a blocker.
 4. **`figurative-language-finder`** — `idiom` (interpret the expression) is production; ship the
@@ -212,6 +219,155 @@ connective PHRASES** — "As a result", "The problem is", "In contrast", "on the
 three and four unstressed function words, which is a different acoustic object from
 `short_spoken_word`'s benched "one short word" and the worst case for an amplitude bracket. No
 text drive can reach it.
+
+#### ✅ CLOSED 2026-08-17 — port 2 of 5: `genre-explorer` (DI port 19), ALL THREE EVAL MODES
+
+**ALL-VOICE, three actions to zero taps.** The costume test struck every one: a child who cannot
+tell a fable from a news report could still toggle six checkbox rows at a 1-in-2 floor each, tap
+one of two genre cards, and press Submit.
+
+| Step | Was | Now | Class |
+|---|---|---|---|
+| `check-feature` | toggle a checklist row | SAY yes or no about one text | `yes_no` |
+| `name-genre` | tap 1 of N genre cards | SAY what kind of writing it is | `short_spoken_word` |
+| `pick-excerpt` | (did not exist) | SAY which of the two texts has it | `ordinal_word` |
+| review | Submit + an answer-key panel | deleted — `PhaseSummaryPanel` | — |
+
+⚠️ **The roster read `closed_set_choice`; it ships on `short_spoken_word` — the SECOND port in two
+days to correct that line the same way.** `closed_set_choice` is for a whole PROPOSITION whose free
+production would be `open_set_word`. "Fable" is a NAME (word-sorter's mats, text-structure-
+analyzer's regions), so it takes the BENCHED class. Two consecutive corrections is the roster
+reading descriptions instead of answer material — which is what its own §"SCOPE FROM THE ANSWER
+MATERIAL" note below predicts.
+
+**Files:** `genreExplorerScript.ts` (new, ~1.1k) · `GenreExplorer.tsx` (rewritten) ·
+`gemini-genre-explorer.ts` · `catalog/literacy.ts` · `service/qa/di/diDrivePlan.ts` (18 ports) ·
+`__tests__/GenreExplorer.di-script.test.ts` (new, 67 tests).
+
+**Deletions:** the feature checklist and its toggle handler · the genre `LuminaAnswerChoice` cards ·
+the Read/Features/Classify/Review rail + phase chips + excerpt tabs · the "Compare Excerpts Side by
+Side" button · the Review phase (which **printed each excerpt's correct genre beside a right/wrong
+chip**) · `comparisonMade`-on-button-press.
+
+##### Findings
+
+1. ⭐ **THREE OF THE SCOPE'S FOUR PREDICTIONS DIED ON CONTACT — and its own warning said they
+   would.** (a) *"one excerpt, name its genre"* — the payload carries 1-2 and the port raises it to
+   2-3, because **a binary answered ONCE is a coin flip deciding the whole measurement**; what
+   deletes the guess is the SESSION (2-3 genre calls + 4 feature calls ≈ 1/64), not the channel.
+   (b) *"`closed_set_choice`"* — see above. (c) *"a spoken yes/no collides with the sentinels"* —
+   it does not, and `RESPONSE_CLASSES.yes_no` already records why: the verdict scan reads the
+   TUTOR's output only, proven in the port-8 session log. The affirmation opens `"Yes,"` **even
+   when it affirms a NO**, which is the thing the pack actually owed. (d) The one that held:
+   the checklist IS defect class 1.
+2. ⭐ **THIS TUTOR READS THE TEXT ALOUD AT K-2 — the exact opposite of the port shipped one day
+   earlier, and the rule is a property of the ANSWER MATERIAL, not a family constant.**
+   text-structure-analyzer's tutor may never read the passage because its answer is a word IN it.
+   Genre's answer is a CATEGORY NAME that is not in the text at all, so reading a fable aloud gives
+   nothing away — and `identify_basic` is grades 1-2, where a child cannot decode four sentences
+   unaided. Two gates keep it honest: `namesAGenre` drops any excerpt containing a genre word, and
+   `opensWithSentinel` drops any whose sentence opens with a verdict marker. **This is the only
+   pack in the family whose tutor speaks generated narrative at length**, so `"Yes, said the fox."`
+   is a live hazard rather than a theoretical one. Driven live at K.
+3. ⭐ **THE LEAK ORACLE IS INAPPLICABLE ON TWO OF THREE ACTIONS, AND THAT IS STATED RATHER THAN
+   PAPERED OVER.** A `check-feature` answer is the word "yes"/"no" and a `pick-excerpt` answer is
+   "the first one" — tokens the ask MUST contain to be a question at all, and "Yes" is literally
+   the tutor's affirm sentinel. Both ship `leakTokens: []`; `askIsAnswerFree` runs on `name-genre`
+   only. What carries those two is the DISCRIMINATION oracle. `name-genre`'s own oracle is nearly
+   FLAT (the label is absent from the ask, the read-aloud, the how-to-play and the lead-in) and
+   goes fully flat at `hard` above the band floor.
+4. ⭐ **INTERLEAVING THE ACTIONS MAKES THE RUNNER'S HOW-TO-PLAY POLICY RECITE.** The runner
+   re-speaks the protocol whenever consecutive items change `action` — right for a blocked pack
+   (text-structure-analyzer changes action three times in nine items), wrong here: the evidence
+   step and the verdict step alternate PER TEXT so a six-year-old is not holding a fable in their
+   head for four items, and that fires the policy six times in nine. A 19-word protocol recited six
+   times is the 2026-08-13 ruling arriving through the ORDERING rather than through the ask. Fixed
+   with a build-time `introducesAction` stamp: spoken on the introduction, never on a switch back.
+   **This is a general finding for any future pack that interleaves.**
+5. ⭐ **THE MENU NEEDED A SUBSET GATE THIS VOCABULARY GENUINELY TRIGGERS.** "Fiction" beside
+   "Historical Fiction" is decodable-reader's subset shape: a child who says "fiction" has said
+   something that fits BOTH and there is no honest verdict. `pruneForEar` seeds with the ANSWERS
+   and admits options only while the set stays separable, so the generic label loses to the
+   specific one — which is also the right survivor pedagogically.
+6. **The genre LABELS are canonical and generator-imported** (schema enum-constrained), and the
+   feature field became `predicate` — a BASE-VERB phrase completing "Does this one ___?". A
+   checklist heading ("Has characters") produces *"Does this one has characters?"*, and it DROPS
+   rather than being conjugated: the schema owns the grammar, not a regex on our side.
+7. **`challengeType` in the context channel is the ACTION, never the eval mode** — `identify_basic`
+   names its own two-genre answer set, so pushing the mode would park half the answer in the
+   tutor's context for the whole session.
+8. **βs UNCHANGED** (word-sorter's rule): the menu is still printed and still named aloud at most
+   tiers, so the answer set did not change size — only the response channel moved. What changed is
+   the number of asks per session, which is a reliability change, not a difficulty one.
+
+##### ⭐ Four defects the LIVE GATES found that no unit test would have
+
+Three came from the live PROBE reading its own output, one from a drive:
+
+1. **`identify_basic` came back THREE-WAY at grade 2** (`[nonfiction, fiction, poem]`). My own
+   grade note said *"Fiction, nonfiction, poem"* and the model followed it over the mode's
+   *"two broad buckets only"* — a Tier-1 β-2.0 binary quietly measuring something else. **The
+   eval mode IS the task identity.** Split the grade note into SHAPE (always emitted, because
+   excerpt length became a reader-fit gate) and GENRES (suppressed for the binary mode), *and*
+   added the code gate on both sides of the wire — `BINARY_BUCKET`, which buckets what has a
+   defensible side and DROPS `poem`/`drama`, which can be either.
+2. **`classify_genre` returned `[biography, biography, historical-fiction]`** — two distinct
+   genres, so the weaker "all one genre" form of defect class 2 let all three asks through and
+   "Biography" answered two of them. Generalised to **one ask per DISTINCT genre**; the repeated
+   text keeps its evidence items and loses only the recall ask.
+3. **A `compare_genres` payload lost one of its two texts to the generator's own gates**, and the
+   pack built a perfectly valid TWO-item session — a Tier-1 shape delivered under a β of 4.5.
+   **Degrading a mode silently is worse than delivering nothing**: it now builds NOTHING unless two
+   texts and two contrastable features survive, and the component shows its "still being written"
+   panel.
+4. **The grade-1 drive did not read the text aloud** — `isBandFloor` compared a MODEL-AUTHORED
+   `gradeLevel` for exact equality with "1", and everywhere else in the family a wrapper like
+   "Grade 1" costs a cosmetic label. Here it silently withdraws a READER-FIT ACCOMMODATION. Fixed
+   at the source (**the generator stamps the grade it actually resolved and prompted with**) plus
+   a bounded wrapper tolerance behind it. ⚠️ **And a branch I wrote to make `--grade 1` reach the
+   floor was DEAD CODE** — `normalizeGradeLevel` runs before every generator and collapses 1-5 to
+   `elementary`, so the band key never carries a rung. Deleted, with the reason written down; the
+   floor is reachable by `--grade K` and by any caller setting `config.objectiveGrade`, and the K
+   drive is what proved it live.
+
+##### Gates
+
+`typecheck:lumina` **0** · full `tsc` **803 = baseline** · census greps **0/0** · **67 pure
+di-script tests** · full vitest **3660 passed / 0 failed** · live probe **6 cases across all three
+eval modes × 6 grades × 3 tiers — `packGateIssues: []` on live content every time, 100% voice, 0
+drops on the final run** · **6 headless judged drives**: `identify_basic` plain 12/12 refused +
+12/12 affirmed; `classify_genre` **signature** 27/27 + 27/27 (**"Folktale" refused for "Fable"
+3/3 — the sibling axis `GENRE_SIBLING` manufactures**); `compare_genres` **signature** 18/18 +
+18/18 (**"both of them" refused every time**); `identify_basic @ K` 12/12 + 12/12 **with the tutor
+reading each text aloud**. **Cap drill: 0 HIGH, 2 WARN, both family-shape and neither this pack's**
+— `di-correction-verbatim-repeat` (this contract deliberately commands fixed wording) and
+`di-capped-item-asks-then-withdraws` (structural to "correction re-elicits" plus a runner cap).
+**`di-no-verdict` never fired** — 18d authored in from birth.
+**Probe words drawn:** animal stories/weather/the moon/world-changers/volcanoes/the sea/tides/the
+sky — genres `fiction`·`nonfiction`·`poem`·`myth`·`fable`·`folktale`·`informational`·`biography`·
+`historical-fiction`·`persuasive`·`memoir`·`legend`; predicates *"have animals that talk"*, *"have
+animals that wear clothes"*, *"give real facts about nature"*, *"tell about a real person who
+lived"*, *"teach a lesson at the end"*, *"use rhyme at the ends of lines"*, *"explain how things
+began in ancient times"*, *"tell about a personal memory"*, *"use first-person pronouns like I and
+my"*, *"urge people to evacuate"*.
+
+**Mic row: HUMAN-CHECKS #105** — owed under the standing rule, and NOT for the genre names
+(`short_spoken_word` is covered by word-sorter's mats). The new material is **`yes_no` as a
+per-item ANSWER** — its acceptance drive has been owed since #94 and this is its first
+high-volume production caller (two thirds of every session) — and **the tutor speaking 20-70 words
+of generated narrative into an open mic before every band-floor ask**, which is a longer
+self-audio window than any pack has had. No text drive can reach either.
+
+**Residuals, none blocking:** (a) the harness names its report by wrong-kind only, so each run
+overwrites the last — the six reports here were preserved by hand into mode-suffixed copies, and a
+`--eval-mode` suffix is a one-line harness fix (word-builder filed the same one); (b) no
+`/add-support-tiers` history on this primitive, so `supportTier` is a config passthrough the
+generator stamps rather than a rung with evidence — the ladder should be added by that skill, not
+invented further in the pack; (c) `namesAGenre` refuses genre NAMES but deliberately allows
+"story", "tale", "play" and "article", so an excerpt opening *"Here is an article about…"* still
+ships (refusing them would drop most fiction ever written); (d) the feature drop rate at grade 6 ran
+5-of-6 on one draw, because at that band the genre names ARE the lesson vocabulary and the model
+reaches for them — the gate is right, the supply is thin.
 
 #### ⚠️ SCOPE FROM THE ANSWER MATERIAL, NOT FROM THIS TABLE
 

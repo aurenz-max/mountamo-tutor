@@ -33,6 +33,88 @@ A port costs **a script + a stage** — nothing else. The mechanics live in code
 
 ROUTE/CONVERT/LEAVE bucketing was proposed once and REJECTED. Do not re-derive it.
 
+## ⭐ The defect classes that REPEAT — read before Step 1
+
+*Routed here 2026-08-16 from the portfolio index, where they were unreachable by the
+person who needed them. Every one was found by a shipped port; each has cost at least
+one slice. Check them against your primitive before you write a line.*
+
+**1. One challenge is NOT one item.** (decodable-reader, then word-workout, word-sorter,
+word-builder.) A click-era "challenge" is a screenful; a judged item is one ask with one
+answer. A word chain is one judged read PER WORD, a sort is one ask per word, a match one
+per pair. **This is usually the port's biggest measurement change** — word-workout's click
+era scored EVERY chain `correct: true, score: 100` whatever the child said. Expand in
+`itemsFromChallenges`, cap the session length, and **SELECT rather than truncate**: a
+blind slice can strand a whole mat, which on a binary sort makes one label right forever.
+
+**2. The answer may be answered ONCE per session — and it has two halves.**
+(letter-spotter, then letter-sound-link, word-builder.) Every item closes by naming its
+answer aloud, so a later item on the same target is recall, not skill. Half two: **an
+answered thing may not come back as a WRONG CHOICE** — a distractor the tutor already
+named is eliminated for free. **Keep the two sets separate** (port 7 merged them and ran
+the pool dry, stranding an item). It lives in `itemsFromChallenges` — the only builder
+that sees the whole session. ⚠️ **Check whether your eval mode makes this the DEFAULT
+state**: where the mode pins the answer (text-structure-analyzer), every item shares one
+answer by construction.
+
+**3. The elimination leak a tap surface hides.** (word-sorter.) The click-era match column
+CONSUMED its entries, so the last pair of every challenge had one option left and needed
+no reading at all. Keep the bank WHOLE for the whole challenge — uniform N, no
+elimination — and let a support tier withdraw the *information*, not the options.
+
+**4. The MATS are not a costume.** (word-sorter, ten-frame R6, word-builder's cards.) The
+costume test is about the ACTION, never the paper. A sort whose groups are unknowable is a
+*broken* task, not a harder one — so the ask NAMES the groups and the answer sits inside
+the question by construction (`leakExemptSpan` on the menu clause and nothing else).
+**Make the exemption TIER-CONDITIONAL** and `hard` becomes a real spoken lever: the ask
+names nothing, the oracle goes flat, and a K band floor still beats the tier.
+
+**5. `VERDICT_ENDS_THE_TURN` — the affirmation that runs on into a FABRICATED next ask.**
+(word-sorter: **11 of 12 affirmations.**) *"Yes, spoon belongs with Hard. Your turn.
+Listen: teddy bear…"* — a real word from the challenge that is **not** the item the runner
+is about to send. `TWO_BRANCH_LAW` and `NEVER_PERFORM` both miss it because neither names
+*continuing the lesson*. It bites hardest where the ask is one rigid template and the
+affirmation is short. Put the clause on every cue **and** in the catalog directive.
+
+**6. A near-empty ask makes the `[CURRENT STATE]` block a live audio channel.**
+(decodable-reader: the tutor read the printed line aloud before the child decoded it, three
+consecutive asks.) Where the ask names nothing BY DESIGN because the cold read IS the mode,
+the model fills the silence from the state block. `NEVER_PERFORM` does not prevent it.
+**Push a DESCRIPTION and let the judging contract carry the value**; audit the catalog
+`taskDescription` in the same pass. And copy `NO_FLOOR_HANDBACK` **separately** — *"Do you
+want to read another line?"* is not praise, so the two-branch law misses it, and a pack
+with more than one item KIND has phase boundaries that invite it.
+
+**7. 18d lives on the ACCEPT side too, and that version is worse.** (letter-sound-link.)
+Every census hunts a re-spoken ASK, i.e. the wrong branch. *"Count it as correct and warmly
+echo the clean sound"* tells the tutor to affirm without giving it the affirmation, so the
+turn opens with neither sentinel and a **CORRECT child stalls**. No grep for a re-spoken
+ask finds it. **Read every `commonStruggles` row and ask: does this produce a VERDICT, or
+only a sentiment?** *(A "goes quiet" response is NOT 18d — silence is not an attempt.)*
+
+**8. Writing the spoken ask AUDITS THE CONTENT — assume the answer key is wrong.**
+(letter-sound-link's `x`→"box"; letter-spotter's *"say the letter that **sheep** starts
+with"*, answer key `S`.) A relation a tap never had to justify may be false out loud. Gate
+digraph/cluster classes (`sh ch th ph kn wr gn`) in CODE, never the prompt. Same family:
+syllable-clapper's `hard` band ASKED for dialect-ambiguous words, i.e. instructed the tutor
+to refuse a child who was right.
+
+**9. The reveal/model policy is often BACKWARDS in the click era.** (syllable-clapper: the
+policy said never state the number of parts before the child claps, then told the easy tier
+to say the word *"broken into its parts with clear pauses"* — three beats IS three.)
+**Purposeful enunciation is a ladder**: a chanted-in-parts model hands the count over, so it
+is legal ONLY in the correction and on a **code-picked model word the session never asks
+about**.
+
+**10. The token ceiling is per-MODEL, and a fan-out makes it fatal for one mode only.**
+phoneme-explorer truncated at `maxOutputTokens: 4096` — the widest schema in the family died
+mid-object, `JSON.parse` failed, and a hardcoded fallback **shipped silently, graded as
+success**. ⚠️ **Then word-builder proved the fix is not a constant: 8192 is a NON-THINKING
+number** — on `gemini-3-flash-preview` it is shared with the reasoning budget and truncated
+the payload at ~850 chars, killing two of four eval modes while the other two came back
+clean. **Bound the schema ARRAYS first**, then pick the ceiling from the model actually
+configured. A per-mode fan-out lets a ceiling be invisible in three modes and fatal in one.
+
 ## Step 1 — the answer-material fork (the creative core)
 
 **The whole fork is one picture (user ruling, 2026-08-13): a teacher sitting at a table with ONE student, and the primitive mirrors whatever the student would naturally do at that table.** If the student would answer OUT LOUD, the mode is spoken — the mic is the student's voice, and the screen never impersonates it with buttons. If the student would do the work ON THE PAGE — arrange the counters, write the letters in the boxes, point to the one they mean — **the screen IS that page**, and a gesture mode is honest work, not a concession the judge extracted. The screen plays the page; it never plays the voice, and it never grows apparatus the table doesn't have (menus, checkers, Next buttons). Both of this skill's historical failure modes are this picture violated from opposite sides: tiles added because the JUDGE was weak put a menu on a table that has none (letter-spotter), and reading "spoken is the modality" as a reason to take away the page would have deleted ten-frame's frame along with its steppers — the contract check is what kept the student's paper on the table (R6).

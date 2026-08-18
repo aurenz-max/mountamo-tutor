@@ -25,6 +25,38 @@ DELEGATED, or PARKED, each pointing at its queue file, under a **WIP limit of
 verification debt lives in `my-tutoring-app/qa/HUMAN-CHECKS.md` — never buried
 in per-stream Done entries, because only the user can close those rows.
 
+### ⚖️ THE INDEX HOLDS STATE ONLY — run these three gates before you finish
+
+**Restructured 2026-08-16 after the index was split three times in four days and
+regrew each time** (08-12 at 358KB; on 08-16 ONE table cell was 31,526 chars = 37%
+of the file, one day after 41,365 chars had been moved out of that same cell).
+**Splitting has a ~24h half-life. The cause was routing, not volume.**
+
+```bash
+wc -c < WORKSTREAMS.md                                  # ≤ 10000
+awk 'length>400 && /^\|/ {c++} END {print c+0}' WORKSTREAMS.md   # 0
+grep -c '^> ### ' WORKSTREAMS.md                        # 0 — no reconcile notes
+```
+
+**`/pm` does NOT write a reconcile note.** It reports its run to the USER in chat
+and edits rows in place. The predecessor-archiving rule is retired: superseded
+state lives in `git log -p WORKSTREAMS.md`, which is what an archive was manually
+re-implementing.
+
+**Route every finding at write time — never into the index:**
+
+| The finding… | Home |
+|---|---|
+| changes how the next slice is DONE | the executor skill (`/add-di-loop`, `/reader-fit`, …) |
+| is true about ONE primitive | `docs/contracts/<id>.md` |
+| is a defect CLASS | its own queue item (18d, 19h-i-c, SP-31) |
+| is evidence of a run | `qa/tutor-reports/`, `qa/<lane>/` |
+| is state (lane, health, next pull) | **the index — as a row** |
+
+*Measured 2026-08-16: of 12 landmark judged-loop findings, 12 were in the queue and
+only 2 were in the skill the executor reads. The index was the third copy — the one
+whose reader could not act on any of them.*
+
 ### Queue → executor registry
 
 | Queue / register | Task type | Executor skill(s) | Update discipline |
@@ -65,7 +97,9 @@ cross-references, never two competing entries.
    which to park. If an ACTIVE stream is starved (>3 days untouched), propose
    parking or resuming it deliberately.
 6. **Update `WORKSTREAMS.md`** — states, "now" pointers, as-of dates. Update
-   parked-stream rows ONLY with verified facts.
+   parked-stream rows ONLY with verified facts. **Then run the three gates above.**
+   If a row will not fit in 400 chars, the overflow is a finding and belongs in one
+   of the homes in the routing table — not in a longer cell.
 7. **Ship-hygiene nudge.** If the uncommitted surface spans >1 stream, propose
    `/ship` slices (shared files — EVAL_TRACKER, BACKLOG, harness — in their own
    slice).

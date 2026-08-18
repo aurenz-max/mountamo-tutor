@@ -1,11 +1,43 @@
 # HANDOFF — `/add-di-loop` on `text-structure-analyzer` (item 22, port 1 of 5)
 
-**Task:** port `text-structure-analyzer` to the DI judged loop.
-**Executor:** `/add-di-loop text-structure-analyzer`
-**Queue of record:** `qa/di/BACKLOG.md` **item 22** (opened `/pm` 2026-08-16 — read it first; it
-carries the roster, the pull order and the correction that created the lane).
-**State: NOTHING BUILT.** The generator was read end-to-end and the component was skimmed for
-its phase/answer surfaces. No script, no adapter, no tests, no catalog edit.
+> # ✅ EXECUTED AND CLOSED — the port SHIPPED 2026-08-17 as `a4792128` (DI port 18)
+>
+> **Do not execute this as a scope.** It is kept as the reasoning record behind a shipped
+> port; the close block lives in `qa/di/BACKLOG.md` item 22, and `/add-di-loop` carries the
+> defect classes this port contributed.
+>
+> ### ⚠️ The ⛔ header that stood here from 08-16 08:06 was a FALSE ALARM, and it is worth
+> ### one paragraph because the failure mode is cheap to repeat
+>
+> It read *"A CONCURRENT SESSION IS ALREADY PORTING THIS PRIMITIVE — do not touch their
+> files"*, citing an untracked `textStructureAnalyzerScript.ts` (1,273 lines), a rewritten
+> `TextStructureAnalyzer.tsx` and `gemini-text-structure-analyzer.ts` at +244. **All three
+> were real. None belonged to a third party** — a `/pm` run read the in-flight working tree
+> of the session executing *this file's own handoff* and reported it as an unknown session.
+> `git status` before scoping a port is still right; what it needed was to check the pull
+> pointer it had itself just written. **The header inverted its own lesson**: it warned that
+> a `??` on a `<primitive>Script.ts` is the signature of an in-flight port, which is true,
+> and then concluded a stranger was writing it.
+>
+> *Left standing, this would have parked a lane on a phantom. A stale doctrine line ("do not
+> touch these files") outlives a stale status line, because the next session copies it
+> forward — `tsc` sees none of it.*
+
+**Task (as originally scoped):** port `text-structure-analyzer` to the DI judged loop.
+**Queue of record:** `qa/di/BACKLOG.md` **item 22** (carries the close block and the roster).
+**State claim as written — *"nothing built"* — was true when written and false 8 hours later.**
+
+## 0. ⭐ HOW THE SHIPPED PORT ANSWERED THIS FILE
+
+The pack exports `answerKindFor`, `responseClassFor`, `EarSeparable`,
+`MIN_STRUCTURE_OPTIONS_EASY`, `MAX_SIGNAL_ITEMS`, `MAX_MAP_ITEMS` — §4 (the fork), §5
+(ear-separability + the easy guess floor) and the one-challenge-is-not-one-item split all
+landed. **§3 — this file's sharpest finding — was resolved STRUCTURALLY rather than with the
+`answeredOnce` invariant it proposed:** one payload is one passage, so a pinned session yields
+exactly ONE `name-structure` ask and the same-answer-every-item problem cannot arise.
+⚠️ **One call in §4 was overturned in the build:** `place-idea` ships as `short_spoken_word`,
+not `closed_set_choice` — a region label is a NAME ("Cause", "Effect"), not a proposition,
+which is word-sorter's mats exactly, and that class is BENCHED rather than build-ahead.
 
 > **⚠️ THE ONE THING TO READ BEFORE SCOPING: §3 below.** A session pinned to one eval mode has
 > **the same correct answer on every item at the Identify step, by construction.** That is not a

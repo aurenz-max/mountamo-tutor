@@ -185,6 +185,13 @@ import {
   type TextStructureItem,
   type TextStructurePayloadLike,
 } from '@/components/lumina/primitives/visual-primitives/literacy/textStructureAnalyzerScript';
+import {
+  genreExplorerHarnessAnswers,
+  genreExplorerPackBase,
+  itemsFromPayload as genreExplorerItems,
+  type GenreExplorerItem,
+  type GenreExplorerPayloadLike,
+} from '@/components/lumina/primitives/visual-primitives/literacy/genreExplorerScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -888,6 +895,53 @@ const textStructureAnalyzerAdapter: DiPortAdapter<TextStructureItem> = {
 };
 
 /**
+ * genre-explorer (NINETEENTH literacy port, second of the closed-set literacy
+ * frontier — item 22). ALL-VOICE across three STEPS over two or three short
+ * texts, so there is no gesture commit anywhere.
+ *
+ * ⚠️ ITS `build` READS A PAYLOAD, NOT A `challenges` ARRAY — the second adapter
+ * in the registry whose port has no challenge list. One generation is a small set
+ * of texts plus a shared feature list, and the pack expands it into a judged
+ * yes/no per feature-and-text, a judged contrast per distinguishing feature, and
+ * one genre call per text. `dropped` therefore counts askable CANDIDATES the
+ * build gates refused (an excerpt that names a genre, a checklist heading that is
+ * not a base-verb phrase, a feature true of BOTH texts in compare mode), which is
+ * a generator signal; the session-length caps are reported separately by the
+ * script module and are not drops.
+ *
+ * What is different about its answer material, three ways over:
+ *
+ *  1. **TWO OF THE THREE ACTIONS SHIP WITH AN EMPTY `leakTokens`, DELIBERATELY.**
+ *     A `check-feature` answer is the word "yes" or "no" and a `pick-excerpt`
+ *     answer is "the first one" — tokens the ask MUST contain to be a question at
+ *     all, and the tutor's own affirmation sentinel is literally the string "Yes".
+ *     A leak oracle over either would fire on every turn and mean nothing. What
+ *     carries those two is the DISCRIMINATION oracle; read a judgment matrix for
+ *     this port knowing the leak column is only about `name-genre`.
+ *  2. **`name-genre`'s leak oracle is the one that bites, and it is nearly flat.**
+ *     The genre label is absent from the ask, from the read-aloud text (any
+ *     excerpt naming a genre is dropped at build), from the how-to-play and from
+ *     the lead-in — so anything outside the spoken menu clause is a finding, and
+ *     at `hard` above the band floor no menu is spoken and the exemption
+ *     disappears entirely.
+ *  3. **Three different signature wrongs in one pack.** `check-feature`'s is the
+ *     FEATURE SAID BACK — the tutor's own words from two seconds earlier, which a
+ *     judge grading on relevance affirms. `pick-excerpt`'s is "both of them", the
+ *     generous hedge of a child who never contrasted the two texts. `name-genre`'s
+ *     is the SIBLING genre (folktale for fable, autobiography for biography) —
+ *     drawn from the same `GENRE_SIBLING` map the generator uses to ORDER its
+ *     distractors, so the wrong answer the tier deliberately admits is the exact
+ *     one the drive checks the judge refuses.
+ */
+const genreExplorerAdapter: DiPortAdapter<GenreExplorerItem> = {
+  build: (data) => {
+    const { items, dropped } = genreExplorerItems(data as GenreExplorerPayloadLike);
+    return { items, dropped, surface: genreExplorerPackBase(items) };
+  },
+  answersFor: genreExplorerHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -914,6 +968,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'word-sorter': wordSorterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'text-structure-analyzer':
     textStructureAnalyzerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'genre-explorer': genreExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

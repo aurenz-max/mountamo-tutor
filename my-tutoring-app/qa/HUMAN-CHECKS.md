@@ -7,7 +7,11 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open — ONE list, newest first (as of 2026-08-14, `/pm`)
+## Open — ONE list, newest first (as of 2026-08-17, `/pm`)
+
+> **Newest five, all judged-loop mic rows:** #105 genre-explorer · #104 text-structure-analyzer ·
+> #103 word-builder · **#102 word-sorter (filed late 08-17 — see its own note)** · #101 word-workout.
+> Next free ID is **#106**. Re-grep before filing; concurrent sessions in this lane are normal.
 
 > **📐 FORMAT UNIFIED 2026-08-13 (user ruling).** This file used to keep TWO "Open"
 > sections in two formats — a `###` section list for the judged-loop era and a 5-column
@@ -55,6 +59,48 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > *(#93 was struck between the merge and this line — the count in the merge banner above says
 > 78 and is already one stale. Which is the third demonstration in two days of why this file
 > should rank rather than count.)*
+
+### #105 — **`genre-explorer` (DI port 19): `yes_no` gets its first high-volume caller, and the tutor now speaks 20-70 words of GENERATED NARRATIVE into an open mic before every band-floor ask** · OPEN
+
+**Filed under the standing rule — and the genre NAMES are not the new part.** word-sorter proved
+the multi-syllable label from a printed set (`short_spoken_word`, #102), so "Fable" / "Historical
+Fiction" inherit it. Two things are genuinely new:
+
+**(a) `yes_no` IS TWO THIRDS OF EVERY SESSION NOW.** The class has been `accepted-build-ahead` since
+the 2026-08-12 rhyme-studio ruling with its acceptance drive owed on **#94**, and every caller since
+has used it for a handful of items. Here it is the evidence step of all three eval modes — four to
+six judged yes/no answers per sitting. Three ear questions no text drive can reach:
+- **"no" is VC-length**, the length `short_spoken_word` records as unbenched. Does a five-year-old's
+  clipped *"no"* survive the amplitude bracket, or does it fall under the open-mic floor?
+- The contract accepts *"yeah" / "nope" / "it does" / "it does not"*. Do those actually get affirmed,
+  or does the judge want the bare word?
+- **The tutor's own affirmation opens with the word "Yes" even when it affirms a NO.** On screen and
+  in the transcript that is correct and gate-proven. **In a room, does a child hear "Yes, that is
+  right — this one does not have animals that talk" as agreement with their "no"?** That is a
+  pedagogy question a machine cannot answer.
+
+**(b) THE LONGEST TUTOR SELF-AUDIO WINDOW THE FAMILY HAS SHIPPED.** At grades K-2 the tutor reads
+each text aloud before asking — 20-70 words of generated narrative, sometimes with dialogue — into
+a mic that is open the whole time (open-mic doctrine; no tutor-busy gate, by ruling). Every earlier
+port's tutor spoke a sentence. Ask:
+- Does the loop ever credit the tutor's own voice to the child across a window that long? (story-talk
+  #100 asks the same question over a much shorter read.)
+- Does the child interrupt mid-read, and if so does the turn machine recover?
+
+**How to reach it:** `cd my-tutoring-app && npm run dev`, Lumina tester → Genre Explorer.
+- `identify_basic` **at grade 1 or K** for the read-aloud + yes/no path (the one that matters most).
+- `classify_genre` at grade 3-4 for the multi-way genre name.
+- `compare_genres` at grade 5-6 for *"Does the first one … , or does the second one?"* → say
+  **"the first one"**, and separately try just **"first"** (the contract accepts the short form).
+
+**Wrong answers to say on purpose:** the FEATURE said straight back (*"animals that talk"* — the
+signature wrong the contract names; refused 27/27 headlessly, but that was TEXT); the opposite
+verdict; **"both of them"** on a contrast; and a SIBLING genre — *"Folktale"* where the answer is
+*"Fable"*, *"Autobiography"* where it is *"Biography"*.
+
+**Source report:** `qa/di/BACKLOG.md` item 22, port 2 close block. Machine evidence: 6 headless
+drives (`qa/tutor-reports/genre-explorer-live-di-*-2026-08-17.md`), 0 HIGH on the cap drill,
+67 di-script tests, 6-case live probe. **None of it is acoustics.**
 
 ### #104 — **`text-structure-analyzer` (DI port 18): the family's first MULTI-WORD CONNECTIVE answers, said by a child who is READING them off a page** · OPEN
 
@@ -157,6 +203,51 @@ cap drill produced no `di-no-verdict` (18d held, authored in from birth) — onl
 verbatim-repeat WARN this pack's contract deliberately commands.
 **Source reports:** `qa/tutor-reports/word-builder-live-di-*-2026-08-16.md` ·
 **queue:** `qa/di/BACKLOG.md` item 16.
+
+### #102 — **`word-sorter` (DI port 18 of the sweep): the answer is a multi-syllable CATEGORY LABEL, accepted with its ending changed. Does the ear separate two labels a word-level gate calls distinct?** · OPEN
+
+> ⚠️ **FILED LATE by `/pm` 2026-08-17.** The word-sorter ship block (`3bd7eeca`, `qa/di/BACKLOG.md`
+> item 16) states *"Mic row #102 filed"* — **it was not**; the commit never touched this file, and
+> the ID sat vacant between #101 and #103 for a day. Reconstructed from that block, which carries the
+> full ear question. *The claim-and-no-row failure mode is cheap to repeat: a port's own ship block is
+> not evidence its row exists — grep this file for the ID.*
+
+**Filed under the standing rule — NEW ANSWER MATERIAL.** `short_spoken_word` is benched on short
+CVC-shaped words. This port's answer is a **multi-syllable category label from a per-item closed set**
+("Animals", "Liquids", "Past"), and the contract **accepts it with its ending changed** — a child's
+"animal" is correct for "Animals". Neither half is covered by an existing bench.
+
+⭐ **Two ear questions `--di` cannot reach, because it sends text:**
+  (a) **the ear-separability gate is WORD-level, not phonetic.** It passes "Critters"/"Creatures" and
+      "Ice"/"Eyes" as distinct labels, which they are on paper. Over a mic on a binary sort, two labels
+      that collide acoustically make the item unanswerable — and the child will be scored wrong for it.
+  (b) **does a K child's "animal" actually get affirmed for "Animals"?** The singular/plural accept is a
+      contract clause, judged in-band; no drive has heard it spoken by a child-shaped voice.
+
+**What to check (~5 min, one session):**
+1. `npm run dev` → a word-sorter lesson at **Grade K**, eval mode `binary_sort`. Tap the mic once. The
+   tutor should say *"Your turn. Listen: cat. Which group does it belong with?"* — the mats stay printed,
+   nothing is tappable.
+2. Say the label **in the singular** ("animal" for "Animals"). It must be AFFIRMED. A refusal here is the
+   accept clause failing over audio, not a diction problem.
+3. Say the **stimulus word straight back** ("cat"). It must be REFUSED — the pack's signature error,
+   12/12 refused headlessly.
+4. Drive a session whose labels are near-homophones if one draws (**"Critters"/"Creatures"**). If both
+   route to the same verdict, the fix is a PHONETIC separability gate, not the contract.
+5. Switch to `difficulty: hard` at a reading band and confirm the ask **names no groups** — the mats are
+   printed and the tier withholds the criterion. At **K** the floor must beat the tier: the ask names them
+   anyway (a pre-reader cannot read a mat). ⚠️ **This is the one path no drive covered** — the headless
+   runs are all at the harness default Grade 3.
+6. On `match_pairs`, confirm the bank does **not** shrink as pairs are made: the last pair must still show
+   all N options. The click era consumed them, which made the final pair answerable without reading.
+
+**Machine evidence already in hand** (so this row is only the acoustic half + the K floor): live probe
+17 challenges / 0 dropped / packs clean across 3 eval modes × 3 grades × 3 tiers; headless drives
+**binary_sort 12/12 refused + 12/12 affirmed ×2 runs; ternary_sort 12/12 + 12/12 ×2; match_pairs
+signature 12/12 + 12/12 ×2** over opposites and rhymes; cap drill 14/14 refusals + 11/11 affirms after
+the two fixes (`VERDICT_ENDS_THE_TURN` — 11 of 12 affirmations had run on into a FABRICATED next ask,
+0/12 on the re-drive — and the deleted move-on close line).
+**Source:** `qa/di/BACKLOG.md` item 16, port 18 block · commit `3bd7eeca`.
 
 ### #101 — **`word-workout` (DI port 16): the child's answer set now contains a NONWORD. Can the in-band judge hear "zat" as not-"cat"?** · OPEN
 

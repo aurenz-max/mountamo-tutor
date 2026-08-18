@@ -3049,14 +3049,196 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'genre-explorer',
-    description: 'Students examine text excerpts and classify them by genre using feature checklists. Supports fiction, nonfiction, poetry, drama, folktale, myth, fable, biography, informational, persuasive. Side-by-side comparison of different genres on same topic. Perfect for grades 1-6 genre study.',
-    constraints: 'Best for grades 1-6. Needs text excerpts from different genres.',
+    description:
+      'LIVE-JUDGED SPOKEN genre classification (Direct Instruction). The student meets two or three short '
+      + 'texts and ANSWERS OUT LOUD three ways: saying yes or no to what is actually in a text ("does this one '
+      + 'have animals that talk?"), saying which of two texts something is true of, and NAMING what kind of '
+      + 'writing each text is from a printed menu (fiction/nonfiction, fable, myth, biography, informational, '
+      + 'poem…). The tutor judges each spoken answer, corrects contrastively, and its own affirmation advances '
+      + 'the lesson. Nothing is tapped, checked or dragged. REQUIRES A MICROPHONE. Perfect for grades 1-6 genre '
+      + 'study; at grades 1-2 the tutor reads each text aloud to the child.',
+    constraints:
+      'REQUIRES A MICROPHONE — every answer is spoken; there is no checkbox, tap or button path. '
+      + 'Best for grades 1-6. Needs two or three SHORT texts of different genres (a single text gives one '
+      + 'genre question and one is not a measurement). No text may contain the name of a kind of writing — an '
+      + 'excerpt saying "this fable" hands over the answer the moment it is read, and is dropped. Feature rows '
+      + 'must be base-verb phrases that complete "Does this one ___?" ("have animals that talk"), not headings. '
+      + 'At grades 1-2 each text must be 2-3 short sentences, because the tutor reads it aloud and repeats it '
+      + 'in a correction.',
+    // ── DI MODALITY (2026-08-17) — NINETEENTH literacy port, second of the
+    // closed-set literacy frontier (qa/di/BACKLOG.md item 22). The tutor owns
+    // the clock: it asks once, waits, judges the spoken answer from the audio
+    // in-band, and its own affirmation is the advance. No advance timer, no Next
+    // button, no push-to-talk mic.
+    // ALL THREE STEPS WENT TO ZERO TAPS. A yes/no about a text, a genre name and
+    // "which of these two" are all things a child says across a table, so the
+    // fork ended at step 1's first question three times over. The costume test
+    // decided the deletions: a child who cannot tell a fable from a news report
+    // could still toggle six checkbox rows at a 1-in-2 floor each, tap one of two
+    // genre cards, and press Submit.
+    // WHAT IS NOT A COSTUME AND STAYS: the texts and the printed genre menu — the
+    // screen is the PAGE, and it was the ACTION that was the costume.
+    // ⚠️ THIS TUTOR *DOES* READ THE TEXT ALOUD AT GRADES 1-2, which is the
+    // opposite of text-structure-analyzer's rule one entry down. That rule is a
+    // property of the ANSWER MATERIAL: there the answer is a word IN the passage,
+    // here it is a category name that is not in the text at all (any excerpt that
+    // names a genre is dropped). At the band floor, reading it is the
+    // accommodation a six-year-old needs.
+    // Cue lines and the per-item judging contracts live in `genreExplorerScript.ts`
+    // (hand-authored, DISTAR); this block is the session-level frame. SENTINEL
+    // DISCIPLINE (standing gate 2) re-checked on every line below: no sentence
+    // begins with "Yes" or with "My turn", and the same gate binds every generated
+    // excerpt — which matters more here than anywhere else in the family, because
+    // this is the only pack whose tutor speaks generated narrative at length.
+    audioInput: { manual_activity: true },
     evalModes: [
-      { evalMode: 'identify_basic', label: 'Fiction vs Nonfiction (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['identify_basic'], description: 'Binary fiction vs nonfiction recognition on one excerpt.' },
-      { evalMode: 'classify_genre', label: 'Classify Genre (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['classify_genre'], description: 'Multi-way classification among specific literary/informational genres.' },
-      { evalMode: 'compare_genres', label: 'Compare Genres (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['compare_genres'], description: 'Contrast two genres on the same topic side by side.' },
+      // βs UNCHANGED, and that is the word-sorter rule rather than an oversight:
+      // the genre menu is still printed and still named aloud at most tiers, so
+      // the answer set did not change size — only the response channel moved from
+      // recognition to production. What DID change is the number of asks per
+      // session (one excerpt became two or three), and that is a reliability
+      // change, not a difficulty one.
+      { evalMode: 'identify_basic', label: 'Fiction vs Nonfiction (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['identify_basic'], description: 'SAY yes or no about what is in each text, then SAY whether it is Fiction or Nonfiction. Two or three texts per sitting — a binary answered once is a coin flip, answered three times it is not.' },
+      { evalMode: 'classify_genre', label: 'Classify Genre (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['classify_genre'], description: 'SAY yes or no about what is in each text, then NAME its genre aloud from the printed menu (fable, myth, folktale, biography, informational, poem).' },
+      { evalMode: 'compare_genres', label: 'Compare Genres (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['compare_genres'], description: 'Two texts on one topic: SAY which of the two each distinguishing feature belongs to, then NAME both genres aloud. Only a feature true of exactly ONE text is asked.' },
     ],
     supportsEvaluation: true,
+    tutoring: {
+      // ⚠️ `challengeType` IS THE STEP, NOT THE EVAL MODE. `identify_basic` names
+      // its own two-genre answer set, so pushing the mode would park half the
+      // genre answer in the tutor's context for the whole session, where it can
+      // be volunteered on any turn. The answer arrives per item, inside the cue,
+      // and leaves with it.
+      taskDescription:
+        'Live-judged Direct Instruction genre work. Two or three short texts are printed on the child\'s '
+        + 'screen. Right now the step is "{{challengeType}}" and what is in front of them is {{stimulus}}. '
+        + 'In "check-feature" you ask whether one thing is true of a text and the child SAYS yes or no. In '
+        + '"pick-excerpt" you name one thing to look for and the child SAYS which of the two texts has it. In '
+        + '"name-genre" the child SAYS what kind of writing a text is, from the menu printed beside it. You '
+        + 'speak the exact scripted lines from each bracketed application message, you re-ask when the child '
+        + 'asks to hear the question again, and you judge each spoken attempt from the audio you heard using '
+        + 'only the two allowed reply branches. Working out what kind of writing it is from how it reads is the '
+        + 'entire skill, so the child produces every answer — there is nothing to tap, check, drag or point at.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // Correction territory, not answer territory, and every level is a
+      // BEHAVIOUR rather than a line you may say. A ladder that quotes speakable
+      // hints is a no-verdict stall: on a repeated wrong answer the model reaches
+      // for the sanctioned-sounding alternative and says something that opens with
+      // neither sentinel, so the loop records no verdict at all and the correction
+      // counter freezes (18d).
+      scaffoldingLevels: {
+        level1: 'Use the scripted correction line for this item, then hand the question back and wait.',
+        level2: 'Use that same scripted correction line again, unchanged, and give them longer in silence.',
+        level3: 'Use that same scripted correction line again — the wording is fixed, the patience is what changes.',
+      },
+      // Observable behaviours only, and the first entry is the SIGNATURE error:
+      // the wrong answer that arrives fluent, confident, and most likely to be
+      // affirmed by mistake. ⚠️ Every response here must produce a VERDICT, not a
+      // sentiment — "count it as correct and warmly echo it" is 18d on the accept
+      // side, and a CORRECT child then stalls because the turn opened with neither
+      // sentinel (the letter-sound-link finding).
+      commonStruggles: [
+        {
+          pattern: 'Says the thing you asked about back to you — "animals that talk" — instead of yes or no',
+          response: 'Those words are the question repeated, not a verdict, however confidently they land. Run the scripted correction, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Names a close relative of the right kind of writing — folktale for fable, autobiography for biography, persuasive for informational',
+          response: 'Telling those two apart is exactly what is being measured, so it is wrong. Run the scripted correction line, then ask once more and wait.',
+        },
+        {
+          pattern: 'Answers "both" or "neither" when asked which of the two texts has something',
+          response: 'Exactly one of the two has it, which is the only reason that question can be asked — so a hedge is wrong. Run the scripted correction, then hand the question back.',
+        },
+        {
+          pattern: 'Says the genre the everyday way — "a poem", "made up", "a true story about a person", "a play"',
+          response: 'That is a correct answer — affirm it with the scripted line. Reading the text is what is being measured, not the catalogue word.',
+        },
+        {
+          pattern: 'Answers yes or no in a natural form — "yeah", "nope", "it does", "it does not"',
+          response: 'That is the same answer as the bare word — affirm it with the scripted line and move on.',
+        },
+        {
+          pattern: 'Goes quiet after the question, or asks to hear it again',
+          response: 'Silence is a child re-reading the text, and that reading IS the activity — wait. If they ask, the application sends the re-ask; never volunteer one.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [GEX_ITEM], [GEX_MOVE], [GEX_HEAR] or [GEX_COMPLETE] contain the only lesson '
+            + 'words you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket '
+            + 'label is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" '
+            + 'and corrections begin with "My turn" — never begin any other sentence with those words. Judge '
+            + 'honestly from the audio and do not praise to be kind. YOUR VERDICT LINE IS THE END OF YOUR TURN: '
+            + 'you never continue into another question, never ask about another feature or another text, and '
+            + 'never announce what is coming. The application decides what comes next and sends it to you when '
+            + 'the screen is ready — a question you ask early is about the wrong thing, and the child then hears '
+            + 'it twice.',
+        },
+        {
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
+          instruction:
+            'The first [GEX_ITEM] carries the greeting, how this step works and the whole first question inside '
+            + 'one quoted line. Speak it and stop. Do not greet the child separately, do not explain the '
+            + 'activity in your own words, and do not add a warm-up question — the quoted line is the whole '
+            + 'opening. The first time each new step comes up, its quoted line teaches that step the same way, '
+            + 'and after that the question stands on its own.',
+        },
+        {
+          title: 'READ ONLY WHAT IS QUOTED',
+          instruction:
+            'At the youngest grades a quoted line contains a short text for you to read to the child, opening '
+            + '"Listen to this one" or "Listen to the first one". Read exactly that and nothing more. Outside '
+            + 'the quoted line you never read the texts on their screen, never re-read one to help, never '
+            + 'summarise one, and never quote a phrase from one back at them. Older children read the texts '
+            + 'themselves and you read none of it.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER',
+          instruction:
+            'Every answer here is SPOKEN, and the [GEX_ITEM] message names the one that is correct for the step '
+            + 'you are on. In "check-feature" it is a verdict — "yes", "yeah", "it does", "no", "nope", "it '
+            + 'does not" all count as whichever verdict they are. In "pick-excerpt" it is one of the two texts: '
+            + 'the whole phrase, or just the position ("first", "second"). In "name-genre" it is one of the '
+            + 'printed kinds of writing: the whole label, or the part that tells it apart ("historical" for '
+            + '"Historical Fiction"), or where it sits in the list, or the everyday way a child says it ("a '
+            + 'poem", "made up", "a true story about a person") — the cue lists the ones that count. What is '
+            + 'NOT an answer: the thing you asked about, said back to you; "both" or "neither" when you asked '
+            + 'which of two; or a kind of writing that is not the correct one, however close a relative it is. '
+            + 'THE LAW: you never say the answer before the child does, at any step, at any support level. '
+            + 'There is nothing on screen for them to tap, so never suggest picking, checking, pointing or '
+            + 'showing you anything.',
+        },
+        {
+          title: 'THE CHOICES ARE THE QUESTION, NOT A HINT LADDER',
+          instruction:
+            'When the quoted line names the kinds of writing ("Fable, Poem, or Informational?"), that IS the '
+            + 'question — a choice whose options are unknowable cannot be answered at all, so naming them is '
+            + 'never a leak. When the quoted line does NOT name them, they are printed and the student is '
+            + 'expected to read them: say only what is quoted and do not helpfully list them. Never say which '
+            + 'kind of writing is correct until you have given a verdict.',
+        },
+        {
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not name '
+            + 'the choices again to nudge them. A long pause is a child re-reading a text and weighing what '
+            + 'kind of writing it is, and that work IS the activity. Think time is unbounded and the '
+            + 'application, not the clock, decides when to move on.',
+        },
+        {
+          title: 'HEAR IT AGAIN ON DEMAND',
+          instruction:
+            'When you receive [GEX_HEAR], the child asked to hear the question again. Say ONLY the quoted line '
+            + '— the question once more, and at the youngest grades the short text with it — warmly and '
+            + 'slowly, then go back to waiting. Add nothing, judge nothing you just heard, and never let the '
+            + 'repeat carry more help than the first asking did: no extra stress on any word and no clue about '
+            + 'which answer fits. This channel is answered at every grade and every support tier.',
+        },
+      ],
+    },
   },
 
   // ===== READING: INFORMATIONAL TEXT (RI) =====

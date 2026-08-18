@@ -1,13 +1,18 @@
-# Workstreams — Archive
+# Workstreams — Archive (FROZEN 2026-08-16)
 
-Historical `/pm` reconcile notes, prior snapshots, and EXECUTED blocks split out of
-`WORKSTREAMS.md` on **2026-08-12** (user ruling: "split harder") after three consecutive
-reconciles flagged the index at 358KB / 3,194 lines — four tool calls to read.
-
-**Nothing here was deleted; it was moved verbatim.** The live index keeps the current
-snapshot table, the newest `/pm` note, and the ACTIVE / DELEGATED / PARKED / CLOSED
-sections. Everything below is history: read it for *why* a call was made, never for
-what is true now. **Queues are authority over anything in this file.**
+> ## ⛔ THIS FILE IS CLOSED. DO NOT ADD TO IT.
+>
+> It exists only so links into it keep resolving. **`/pm` no longer writes reconcile
+> notes at all**, so there is nothing left to archive — the index holds state, findings
+> route to the executor skill / contract / queue item at write time, and superseded
+> state lives in `git log -p WORKSTREAMS.md` (95+ commits).
+>
+> **This file was a manual re-implementation of git history**, and it cost 259KB to keep
+> a second copy of something already versioned. Read it for *why* a call was made before
+> 2026-08-16; never for what is true now.
+>
+> Safe to delete outright — `git rm` keeps every byte in history. Left in place only to
+> avoid breaking inbound links.
 
 Live index: [`WORKSTREAMS.md`](../../WORKSTREAMS.md)
 
