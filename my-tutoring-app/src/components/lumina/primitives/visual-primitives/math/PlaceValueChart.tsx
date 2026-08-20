@@ -1,31 +1,84 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+/**
+ * PlaceValueChart — LIVE-JUDGED DI surface (eighth math port; qa/di/BACKLOG.md
+ * item 18). The tutor asks with scripted lines, the child answers OUT LOUD
+ * (place names, value words) or WITH THEIR HANDS (writing a dictated number
+ * into the chart), the tutor judges in-band, and its own affirmation advances
+ * the lesson. The screen only follows.
+ *
+ * What the click era had and this file no longer does: two multiple-choice
+ * rows with Check buttons (the place menu and the word-form menu), a printed
+ * build target ("Now build 247") that made phase 3 a copy task, a Next Number
+ * control, a hint ladder, two 1200ms phase-advance timers, and an improvised
+ * tutor-commentary channel of nine pushed turns. The cues carry the entire
+ * spoken surface now; progression has exactly one cause, a tutor verdict.
+ *
+ * ⭐ THE CHART IS AN ANSWER KEY IN PIXELS FOR find_place — the FOURTH port in
+ * a row with this defect class (ten-frame's running counter, compare-objects'
+ * numbered unit boxes, ordinal-line's ordinal labels, now the column headers).
+ * While the ask is "which place is the four in?", labeled columns above the
+ * glowing digit ARE the answer, so analyze items render the NUMERAL ONLY — no
+ * chart, no headers. The labeled chart appears exactly where it is the page
+ * and not the key: on build items, where the answer is WHICH DIGIT goes in
+ * each labeled column (the ten-frame R6 boundary — the action was the costume,
+ * never the paper), and in the find_place REVEAL, where the column name is
+ * earned. The same rule deletes the "Target: 247" print and the green
+ * match-coloring on the live readout (a Check button that presses itself
+ * visually); the readout survives as the child's own trace, neutral at every
+ * tier.
+ *
+ * HOW A HANDS TURN CLOSES: stillness (`runner.armStillness`), shortened once
+ * every column is filled — never correctness-gated (a wrong number commits
+ * exactly as readily as the right one; that is what gives the tutor something
+ * to teach). The two windows are compare-objects' calibration pair, hand-tuned
+ * by ear there too.
+ *
+ * NO TIMED STIMULUS: the numeral (analyze) and the empty chart (build) are on
+ * screen for the whole item, so there is no `onPresentStimulus` and no clock
+ * to get wrong.
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
+ * tutor-busy; the tutor speaks only scripted lines; no visible timers;
+ * tap-to-hear re-speaks the QUESTION (on a build item that re-dictates the
+ * number — which is what replaces the printed target); interaction is gated on
+ * `runner.canAttempt`, never on `runner.stage`; the reveal renders on
+ * `runner.revealHeld` and is never cleared in `onItemOpened` (18b).
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaChallengeCounter,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
-  type PlaceValueChartMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import type { PlaceValueChartMetrics } from '../../../evaluation/types';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  buildVerdictCue,
+  itemsFromChallenges,
+  placeValuePackBase,
+  type PlaceValueItem,
+  type PlaceValueMode,
+  type PlaceValueTier,
+} from './placeValueScript';
+import { placeLabel } from './spokenNumberWords';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
-
-/**
- * Place Value Chart — multi-challenge place value model.
- *
- * Session walks the student through 3 distinct numbers in the SAME eval mode.
- * Each challenge has its own 3-phase within-challenge flow:
- *   Phase 1: Identify the Place (MC — which place is this digit in?)
- *   Phase 2: Find the Value     (MC — what is this digit worth?)
- *   Phase 3: Build the Number   (interactive — enter digits to construct)
- *
- * Per PRD §6c, every per-challenge state slot must reset on advance — see the
- * reset useEffect below. Per §6a #8, the stale-state guard lives in
- * completeCurrentChallenge (handler-driven, not effect-driven).
- */
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -37,7 +90,12 @@ export type PlaceValueChartChallengeType =
   | 'compare'
   | 'expanded_form';
 
-/** One place-value challenge. Owns its own number + place range + MC choices. */
+/** One place-value challenge: one number. The judged loop assigns each
+ *  challenge ONE role (analyze — the number prints and its glowing digit gets
+ *  two spoken asks; or dictate — the number never prints and the tutor says it
+ *  for the child to write). The click era's MC rows are declared because the
+ *  generator still emits them, and READ BY NOTHING: no judged item carries
+ *  them, so a cached challenge cannot put the buttons back. */
 export interface PlaceValueChartChallenge {
   id: string;
   targetNumber: number;
@@ -45,31 +103,19 @@ export interface PlaceValueChartChallenge {
   minPlace: number;
   maxPlace: number;
   placeNameChoices: string[];
-  /**
-   * Phase 2 MC. Display uses `wordForm` ("Seventy"); correctness compares on
-   * `value`. Word-form forces students to retrieve place-value vocabulary
-   * instead of mechanically appending zeros to the visible digit (PVC-1).
-   */
   digitValueChoices: { value: number; wordForm: string }[];
 }
 
 export interface PlaceValueChartData {
   title: string;
   description: string;
-  /** 1-6 challenges. Walked sequentially by the component. */
   challenges: PlaceValueChartChallenge[];
   /** Eval mode pinned for this session (all challenges share one mode). */
   challengeType: PlaceValueChartChallengeType;
 
-  // Session-level flags
+  // Session-level render levers (resolved by the generator's support tier).
   showExpandedForm?: boolean;
   showMultipliers?: boolean;
-  /**
-   * Within-mode support tier ('easy' | 'medium' | 'hard'). Set by the generator
-   * whenever the manifest pins config.difficulty. Drives the tutor's reveal level
-   * so it stays in sync with the on-chart scaffolds (multipliers / expanded-form
-   * panel) the tier withdrew. Absent = no tier (legacy default behavior).
-   */
   supportTier?: 'easy' | 'medium' | 'hard';
   gradeLevel?: string;
 
@@ -88,94 +134,29 @@ interface PlaceValueChartProps {
 }
 
 // ============================================================================
-// Within-challenge phase types
-// ============================================================================
-
-type LearningPhase = 'identify-place' | 'find-value' | 'build-number' | 'challenge-done';
-
-type FeedbackTone = 'success' | 'error' | 'hint' | 'info';
-
-// ============================================================================
 // Constants
 // ============================================================================
 
-const PLACE_NAMES: Record<number, string> = {
-  6: 'Millions',
-  5: 'Hundred Thousands',
-  4: 'Ten Thousands',
-  3: 'Thousands',
-  2: 'Hundreds',
-  1: 'Tens',
-  0: 'Ones',
-  '-1': 'Tenths',
-  '-2': 'Hundredths',
-  '-3': 'Thousandths',
+const PHASE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  find_place:   { label: 'Find the Place', icon: '📍' },
+  say_value:    { label: 'Say the Value',  icon: '💰' },
+  build_number: { label: 'Write It',       icon: '🏗️' },
 };
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  identify:      { label: 'Identify',      icon: '📍', accentColor: 'purple' },
-  build:         { label: 'Build',         icon: '🏗️', accentColor: 'emerald' },
-  compare:       { label: 'Compare',       icon: '⚖️', accentColor: 'amber' },
-  expanded_form: { label: 'Expanded Form', icon: '🧮', accentColor: 'blue' },
-};
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function getPlaceName(place: number): string {
-  return PLACE_NAMES[place] || `10^${place}`;
-}
-
-function getMultiplierLabel(place: number): string {
-  if (place === 0) return '×1';
-  if (place > 0) return `×${Math.pow(10, place).toLocaleString()}`;
-  return `×${(1 / Math.pow(10, Math.abs(place))).toString()}`;
-}
-
-function getDigitAtPlace(value: number, place: number): number {
-  const abs = Math.abs(value);
-  if (place >= 0) {
-    return Math.floor(abs / Math.pow(10, place)) % 10;
-  }
-  const decimalStr = abs.toFixed(Math.abs(place));
-  const parts = decimalStr.split('.');
-  if (!parts[1]) return 0;
-  const idx = Math.abs(place) - 1;
-  return idx < parts[1].length ? parseInt(parts[1][idx], 10) : 0;
-}
-
-function getDigitValue(digit: number, place: number): number {
-  return digit * Math.pow(10, place);
-}
-
-/** Per-phase score: 100 first try, then -20 per extra attempt, floored at 20. */
-function phaseScore(attempts: number): number {
-  if (attempts <= 0) return 0;
-  return Math.max(20, 100 - (attempts - 1) * 20);
-}
 
 /**
- * Tutor reveal level, calibrated to match the on-chart scaffolds the support
- * tier withdrew. Keeps the tutor from leaking what the tier hid:
- *   easy   → may name the place-value strategy / show expanded-form decomposition.
- *   medium → strategy is on-screen; nudge execution only, don't decompose for them.
- *   hard   → multipliers + panel gone; do NOT gift the decomposition — ask what
- *            each column is worth and let the student produce it.
- * Absent tier → legacy default coaching (treated like medium-ish nudging).
+ * HOW LONG THE CHART MAY STAY STILL BEFORE IT COMMITS. The window is the
+ * runner's (`armStillness`, 19c); these are the per-shape numbers, carried
+ * from compare-objects where they were tuned by ear. Both are STRUCTURAL,
+ * never correctness-gated — a wrong number commits through the same window as
+ * the right one.
  */
-function tutorRevealClause(tier?: 'easy' | 'medium' | 'hard'): string {
-  switch (tier) {
-    case 'easy':
-      return 'TIER easy: maximum support — you may name the place-value strategy and walk the expanded-form decomposition (e.g. "300 + 40 + 7") step by step.';
-    case 'medium':
-      return 'TIER medium: the expanded-form panel is on-screen but multiplier labels are gone — nudge the student to read it and reason about each column; do NOT decompose the whole number for them.';
-    case 'hard':
-      return 'TIER hard: multiplier labels and the expanded-form panel are withdrawn — do NOT name the decomposition or the place value. Ask what each column is worth and let the student produce it; never reveal the answer.';
-    default:
-      return '';
-  }
-}
+/** Mid-write: a child pauses to think between digits. */
+const WRITE_SETTLE_MS = 4000;
+/** Every column filled — a terminal shape, but a mis-type is normal, so it
+ *  still waits a beat rather than committing on the keystroke. */
+const WRITE_COMPLETE_SETTLE_MS = 1500;
+
+const multiplierLabel = (place: number): string => `×${Math.pow(10, place).toLocaleString()}`;
 
 // ============================================================================
 // Component
@@ -186,7 +167,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     title,
     description,
     challenges = [],
-    challengeType: sessionChallengeType,
+    challengeType,
     showExpandedForm = true,
     showMultipliers = true,
     supportTier,
@@ -199,82 +180,32 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     onEvaluationSubmit,
   } = data;
 
-  const stableInstanceIdRef = useRef(instanceId || `place-value-chart-${Date.now()}`);
+  const stableInstanceIdRef = useRef(instanceId || `place-value-chart-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress ─────────────────────────────────────────
-  const {
-    currentIndex,
-    results,
-    isComplete,
-    recordResult,
-    advance,
-  } = useChallengeProgress<PlaceValueChartChallenge>({
-    challenges,
-    getChallengeId: (c) => c.id,
-  });
+  // ── Items: the session's judged asks, gates applied (KEEP-OR-DROP) ────────
+  const items = useMemo(() => {
+    const mode = (['identify', 'build', 'compare', 'expanded_form'] as const).includes(
+      challengeType,
+    )
+      ? (challengeType as PlaceValueMode)
+      : 'compare';
+    const tier: PlaceValueTier = supportTier ?? 'medium';
+    return itemsFromChallenges(challenges, { mode, tier }).items;
+  }, [challenges, challengeType, supportTier]);
 
-  const currentChallenge = challenges[currentIndex] ?? null;
-  const targetNumber = currentChallenge?.targetNumber ?? 0;
-  const highlightedDigitPlace = currentChallenge?.highlightedDigitPlace ?? 0;
-  const minPlace = currentChallenge?.minPlace ?? 0;
-  const maxPlace = currentChallenge?.maxPlace ?? 3;
-  const placeNameChoices = currentChallenge?.placeNameChoices ?? [];
-  const digitValueChoices = currentChallenge?.digitValueChoices ?? [];
+  // ── Per-item stage state ──────────────────────────────────────────────────
+  /** The child's written digits, keyed by PLACE. Their trace, not the key. */
+  const [digitsByPlace, setDigitsByPlace] = useState<Record<number, string>>({});
+  /** Post-answer only (answer-leak rule). NOT cleared when the next item opens:
+   *  that clear and the `onAffirmed` that set it land in one React batch, so
+   *  the reveal would paint on the last item and nowhere else (18b).
+   *  `runner.revealHeld` is the gate. */
+  const [reward, setReward] = useState<string | null>(null);
+  /** What the chart held when it last stopped changing. */
+  const writtenRef = useRef<Record<number, string>>({});
 
-  const highlightedDigit = currentChallenge
-    ? getDigitAtPlace(targetNumber, highlightedDigitPlace)
-    : 0;
-  const highlightedValue = getDigitValue(highlightedDigit, highlightedDigitPlace);
-  const correctPlaceName = getPlaceName(highlightedDigitPlace);
-
-  const places = useMemo(() => {
-    const arr: number[] = [];
-    for (let p = maxPlace; p >= minPlace; p--) arr.push(p);
-    return arr;
-  }, [maxPlace, minPlace]);
-
-  // ── Per-challenge interaction state (resets on advance) ────────
-  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('identify-place');
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<FeedbackTone>('info');
-  const [selectedPlaceName, setSelectedPlaceName] = useState<string | null>(null);
-  const [placeAttempts, setPlaceAttempts] = useState(0);
-  const [selectedValue, setSelectedValue] = useState<number | null>(null);
-  const [valueAttempts, setValueAttempts] = useState(0);
-  const [digits, setDigits] = useState<Record<number, string>>({});
-  const [digitChangeCount, setDigitChangeCount] = useState(0);
-  const [buildAttempts, setBuildAttempts] = useState(0);
-  const [challengeHintCount, setChallengeHintCount] = useState(0);
-
-  const recordedRef = useRef(false);
-  const sessionCompleteFiredRef = useRef(false);
-
-  // Reset every per-challenge slot when the active challenge changes.
-  // PRD §6c: missing any slot leaks state from challenge N into challenge N+1.
-  useEffect(() => {
-    if (!currentChallenge) return;
-    setCurrentPhase('identify-place');
-    setFeedback('');
-    setFeedbackType('info');
-    setSelectedPlaceName(null);
-    setPlaceAttempts(0);
-    setSelectedValue(null);
-    setValueAttempts(0);
-    setDigits({});
-    setDigitChangeCount(0);
-    setBuildAttempts(0);
-    setChallengeHintCount(0);
-    recordedRef.current = false;
-  }, [currentChallenge?.id]);
-
-  // ── Evaluation hook ────────────────────────────────────────────
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<PlaceValueChartMetrics>({
+  const evaluation = usePrimitiveEvaluation<PlaceValueChartMetrics>({
     primitiveType: 'place-value-chart',
     instanceId: resolvedInstanceId,
     skillId,
@@ -284,843 +215,396 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── PhaseSummaryPanel: one row, aggregated by eval mode ────────
-  const phaseResults = usePhaseResults({
-    challenges,
-    results,
-    isComplete,
-    getChallengeType: () => sessionChallengeType,
-    phaseConfig: PHASE_TYPE_CONFIG,
-    getScore: (rs) =>
-      rs.length === 0
-        ? 0
-        : Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length),
-  });
-
-  // ── AI Tutoring ────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    challengeType: sessionChallengeType,
-    currentChallengeIndex: currentIndex,
-    totalChallenges: challenges.length,
-    targetNumber,
-    highlightedDigit,
-    highlightedPlace: correctPlaceName,
-    highlightedValue,
-    currentPhase,
-    supportTier,
-    gradeLevel: gradeLevel || 'Grade 3',
-  }), [
-    title, sessionChallengeType, currentIndex, challenges.length,
-    targetNumber, highlightedDigit, correctPlaceName, highlightedValue,
-    currentPhase, supportTier, gradeLevel,
-  ]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'place-value-chart',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    if (challenges.length === 0 || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-    const tierClause = tutorRevealClause(supportTier);
-    sendText(
-      `[ACTIVITY_START] Place value chart session: ${sessionChallengeType} mode, ${challenges.length} numbers. `
-      + `Each number runs through three phases (identify place, find value, build). `
-      + `First number: ${targetNumber.toLocaleString()}. Guide warmly.`
-      + (tierClause ? ` ${tierClause}` : ''),
-      { silent: true },
-    );
-  }, [isConnected, currentChallenge, challenges.length, sessionChallengeType, targetNumber, supportTier, sendText]);
-
-  const lastAnnouncedIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isConnected || !currentChallenge) return;
-    if (!hasIntroducedRef.current) return;
-    if (lastAnnouncedIdRef.current === null) {
-      lastAnnouncedIdRef.current = currentChallenge.id;
-      return;
-    }
-    if (lastAnnouncedIdRef.current === currentChallenge.id) return;
-    lastAnnouncedIdRef.current = currentChallenge.id;
-    sendText(
-      `[CHALLENGE_START] Number ${currentIndex + 1} of ${challenges.length}: ${targetNumber.toLocaleString()}. `
-      + `Highlighted digit: ${highlightedDigit} in the ${correctPlaceName} place. `
-      + `Start with Phase 1 (identify the place).`,
-      { silent: true },
-    );
-  }, [
-    currentChallenge, currentIndex, challenges.length, targetNumber,
-    highlightedDigit, correctPlaceName, isConnected, sendText,
-  ]);
-
-  // ── Per-challenge content match (stale-state guard, §6a #8) ────
-  const stateMatchesChallenge = useCallback(
-    (challenge: PlaceValueChartChallenge | null): boolean => {
-      if (!challenge) return false;
-      const expectedDigit = getDigitAtPlace(
-        challenge.targetNumber,
-        challenge.highlightedDigitPlace,
-      );
-      // The handler that called us reads highlightedDigit (derived from
-      // currentChallenge). If those match, state belongs to this challenge.
-      return expectedDigit === highlightedDigit;
+  // ── The pack: the exported cue surface + what only a mounted component owns ─
+  const pack = useMemo<JudgedScriptPack<PlaceValueItem>>(() => ({
+    ...placeValuePackBase(items),
+    statusLines: {
+      ready: (item) =>
+        item.answerKind === 'gesture'
+          ? 'Listen to the number, then write it.'
+          : 'Listen, then answer out loud.',
     },
-    [highlightedDigit],
-  );
-
-  // ── Per-challenge completion (called from build-phase submit) ──
-  const completeCurrentChallenge = useCallback(
-    (correct: boolean, score: number, extras: Record<string, unknown> = {}) => {
-      if (!currentChallenge) return;
-      if (recordedRef.current) return;
-      if (!stateMatchesChallenge(currentChallenge)) return;
-      recordedRef.current = true;
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct,
-        attempts: placeAttempts + valueAttempts + buildAttempts,
-        score,
-        hintsUsed: challengeHintCount,
-        ...extras,
-      });
+    diagnosisObservation: (item, { lastHeard }) => {
+      if (item.answerKind === 'gesture') {
+        const written = item.chartPlaces
+          .map((p) => writtenRef.current[p] ?? '·')
+          .join('');
+        return {
+          challenge: `write ${item.targetNumber} from dictation`,
+          expected: String(item.targetNumber),
+          observed: written,
+        };
+      }
+      return {
+        challenge: item.kind === 'find_place'
+          ? `name the place of the ${item.digit} in ${item.targetNumber}`
+          : `say the value of the ${item.digit} in ${item.targetNumber}`,
+        expected: item.answerText,
+        observed: lastHeard ?? '(nothing heard)',
+      };
     },
-    [
-      currentChallenge, stateMatchesChallenge, recordResult,
-      placeAttempts, valueAttempts, buildAttempts, challengeHintCount,
-    ],
-  );
+  }), [items]);
 
-  // ── Session complete → aggregate metrics + submitEvaluation ────
-  useEffect(() => {
-    if (!isComplete) return;
-    if (sessionCompleteFiredRef.current) return;
-    if (challenges.length === 0) return;
-    sessionCompleteFiredRef.current = true;
+  // ── Per-item reset — every item owns its starting state ───────────────────
+  const resetStageFor = useCallback(() => {
+    setDigitsByPlace({});
+    writtenRef.current = {};
+  }, []);
 
-    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
-    const correctCount = results.filter((r) => r.correct).length;
-    const firstTryCount = results.filter((r) => Number(r.score ?? 0) === 100).length;
-    const hintsViewed = results.filter((r) => Number(r.hintsUsed ?? 0) > 0).length;
-    const overallAccuracy = Math.round(
-      results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length),
-    );
-    const averageAttemptsPerChallenge =
-      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
-
+  // ── Metrics ───────────────────────────────────────────────────────────────
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const metrics: PlaceValueChartMetrics = {
       type: 'place-value-chart',
-      challengeType: sessionChallengeType,
-      totalChallenges: challenges.length,
-      correctCount,
-      attemptsCount: totalAttempts,
-      firstTryCount,
-      hintsViewed,
-      overallAccuracy,
-      averageAttemptsPerChallenge,
+      challengeType,
+      totalChallenges: items.length,
+      correctCount: summary.solvedCount,
+      attemptsCount: summary.attemptsCount,
+      firstTryCount: summary.firstTryCount,
+      hintsViewed: summary.hearTaps,
+      overallAccuracy: summary.accuracy,
+      averageAttemptsPerChallenge:
+        Math.round((summary.attemptsCount / Math.max(1, items.length)) * 10) / 10,
     };
-
-    sendText(
-      `[ALL_COMPLETE] Place value session complete. ${correctCount}/${challenges.length} correct. `
-      + `Overall accuracy: ${overallAccuracy}%. Celebrate completion.`,
-      { silent: true },
+    evaluation.submitResult(
+      summary.solvedCount === items.length,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes },
+      undefined,
+      summary.diagnosisEvidence,
     );
+  }, [items, challengeType, evaluation]);
 
-    if (!hasSubmittedEvaluation) {
-      const goalMet = correctCount === challenges.length;
-      submitEvaluation(goalMet, overallAccuracy, metrics, {
-        studentWork: {
-          challengeCount: challenges.length,
-          challengeType: sessionChallengeType,
-          numbers: challenges.map((c) => c.targetNumber),
-          scoresPerChallenge: challenges.map((c) => {
-            const r = results.find((rr) => rr.challengeId === c.id);
-            return Number(r?.score ?? 0);
-          }),
-        },
-      });
-    }
-  }, [
-    isComplete, results, challenges, sessionChallengeType,
-    sendText, submitEvaluation, hasSubmittedEvaluation,
-  ]);
+  const runner = useJudgedScriptRunner<PlaceValueItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel: gradeLevel || 'Grade 3',
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: resetStageFor,
+    onAffirmed: (item) => {
+      // The first moment an answer may appear on screen. The reveal is the
+      // PAIRING (digit, place, worth) — the thing the click era printed as a
+      // permanent scaffold, now earned.
+      switch (item.kind) {
+        case 'find_place':
+          setReward(`${item.digit} — ${placeLabel(item.place)}`);
+          break;
+        case 'say_value':
+          setReward(
+            `${item.answerText} (${(item.digit * Math.pow(10, item.place)).toLocaleString()})`,
+          );
+          break;
+        default: {
+          const parts = item.chartPlaces
+            .map((p, i) => item.expectedDigits[i] * Math.pow(10, p))
+            .filter((v) => v > 0)
+            .map((v) => v.toLocaleString());
+          setReward(`${item.targetNumber.toLocaleString()} = ${parts.join(' + ')}`);
+        }
+      }
+    },
+    onCorrectionRetry: (item) => {
+      // The tutor re-modeled in-band; clear the chart for another go. The
+      // stillness window is cancelled by the runner on this path.
+      if (item.kind === 'build_number') {
+        setDigitsByPlace({});
+        writtenRef.current = {};
+      }
+    },
+  });
 
-  // ── Phase 1: Check place name ──────────────────────────────────
-  const handleCheckPlace = useCallback(() => {
-    if (!currentChallenge) return;
-    if (selectedPlaceName === null) {
-      setFeedback('Please select an answer first!');
-      setFeedbackType('error');
-      return;
-    }
-    const nextPlaceAttempts = placeAttempts + 1;
-    setPlaceAttempts(nextPlaceAttempts);
+  const currentItem = runner.currentItem;
 
-    if (selectedPlaceName === correctPlaceName) {
-      SoundManager.playCorrect();
-      setFeedback(`Correct! The digit ${highlightedDigit} is in the ${correctPlaceName} place.`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Phase 1 (challenge ${currentIndex + 1}/${challenges.length}). `
-        + `Digit ${highlightedDigit} is in the ${correctPlaceName} place of ${targetNumber.toLocaleString()}. `
-        + `Attempt ${nextPlaceAttempts}. Brief celebration.`,
-        { silent: true },
-      );
-      setTimeout(() => {
-        setCurrentPhase('find-value');
-        setFeedback('');
-      }, 1200);
-    } else {
-      setFeedback(
-        `Not quite. Look at where the digit ${highlightedDigit} sits in ${targetNumber.toLocaleString()}. Count positions from the ones place.`,
-      );
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Phase 1 (identify the place — the place name IS the answer, so NEVER name it). `
-        + `Student chose "${selectedPlaceName}" but digit ${highlightedDigit} is in the ${correctPlaceName} place. `
-        + `Attempt ${nextPlaceAttempts}. Gentle hint about counting positions. `
-        + tutorRevealClause(supportTier),
-        { silent: true },
-      );
-      SoundManager.playIncorrect();
-    }
-  }, [
-    currentChallenge, selectedPlaceName, correctPlaceName, highlightedDigit,
-    targetNumber, placeAttempts, currentIndex, challenges.length, supportTier, sendText,
-  ]);
+  // ── The gesture commit ────────────────────────────────────────────────────
+  // No Submit control: nothing on screen may carry the child forward. The
+  // close describes the written number; THE MATCH IS COMPUTED IN CODE.
+  const commitChart = useCallback(() => {
+    const item = runner.currentItem;
+    if (!item || item.kind !== 'build_number') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    const written = item.chartPlaces.map((p) => {
+      const d = writtenRef.current[p];
+      return d === undefined || d === '' ? null : Number(d);
+    });
+    runner.submitGestureAttempt(buildVerdictCue(item, written));
+  }, [runner]);
 
-  // ── Phase 2: Check digit value ─────────────────────────────────
-  const handleCheckValue = useCallback(() => {
-    if (!currentChallenge) return;
-    if (selectedValue === null) {
-      setFeedback('Please select an answer first!');
-      setFeedbackType('error');
-      return;
-    }
-    const nextValueAttempts = valueAttempts + 1;
-    setValueAttempts(nextValueAttempts);
+  /** A hands turn closes on stillness; a full chart shortens the window but
+   *  never commits on the keystroke (a mis-type is normal). Further typing
+   *  re-arms it, and the runner cancels it at item open, at a correction and
+   *  at the commit. */
+  const armWriteSettle = useCallback((next: Record<number, string>) => {
+    const item = runner.currentItem;
+    writtenRef.current = next;
+    if (!item || item.kind !== 'build_number') return;
+    const filled = item.chartPlaces.filter((p) => (next[p] ?? '') !== '').length;
+    const complete = filled === item.chartPlaces.length;
+    runner.armStillness(commitChart, complete ? WRITE_COMPLETE_SETTLE_MS : WRITE_SETTLE_MS);
+  }, [runner, commitChart]);
 
-    if (selectedValue === highlightedValue) {
-      SoundManager.playCorrect();
-      const correctWord =
-        currentChallenge.digitValueChoices.find((c) => c.value === highlightedValue)?.wordForm
-        ?? highlightedValue.toLocaleString();
-      setFeedback(
-        `Correct! The digit ${highlightedDigit} in the ${correctPlaceName} place is "${correctWord}" (${highlightedValue.toLocaleString()}).`,
-      );
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Phase 2 (challenge ${currentIndex + 1}/${challenges.length}). `
-        + `Spoken value of digit ${highlightedDigit} in ${correctPlaceName} = "${correctWord}" (${highlightedValue.toLocaleString()}). `
-        + `Attempt ${nextValueAttempts}. Brief celebration that reinforces the vocabulary word.`,
-        { silent: true },
-      );
-      setTimeout(() => {
-        setCurrentPhase('build-number');
-        setFeedback('');
-      }, 1200);
-    } else {
-      const chosen = currentChallenge.digitValueChoices.find((c) => c.value === selectedValue);
-      setFeedback(
-        `Not quite. Try saying the digit ${highlightedDigit} together with its place name (${correctPlaceName}).`,
-      );
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Phase 2 (the spoken value IS the answer, so NEVER say the answer word directly). `
-        + `Student chose "${chosen?.wordForm ?? selectedValue}" but correct is the spoken value of digit ${highlightedDigit} in the ${correctPlaceName} place. `
-        + `Attempt ${nextValueAttempts}. Coach the student to verbalize the place-value vocabulary (e.g., "thirty", "two hundred", "five tenths"). `
-        + tutorRevealClause(supportTier),
-        { silent: true },
-      );
-      SoundManager.playIncorrect();
-    }
-  }, [
-    currentChallenge, selectedValue, highlightedValue, highlightedDigit,
-    correctPlaceName, highlightedDigitPlace, valueAttempts,
-    currentIndex, challenges.length, supportTier, sendText,
-  ]);
-
-  // ── Phase 3: Digit entry ───────────────────────────────────────
   const handleDigitChange = useCallback((place: number, value: string) => {
-    if (currentPhase === 'challenge-done') return;
+    const item = runner.currentItem;
+    if (!item || item.kind !== 'build_number') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const sanitized = value.replace(/[^0-9]/g, '').slice(-1);
     if (sanitized !== '') SoundManager.tick();
-    setDigits((prev) => {
-      const updated = { ...prev };
-      if (sanitized === '') {
-        delete updated[place];
-      } else {
-        updated[place] = sanitized;
-      }
-      return updated;
+    setDigitsByPlace((prev) => {
+      const next = { ...prev };
+      if (sanitized === '') delete next[place];
+      else next[place] = sanitized;
+      return next;
     });
-    setDigitChangeCount((p) => p + 1);
-  }, [currentPhase]);
+    // Computed OUTSIDE the state updater on purpose: `armWriteSettle` arms a
+    // real timer, and a side effect inside an updater runs twice under
+    // StrictMode's double-invoke — two live stillness windows racing to commit
+    // the same chart.
+    const next = { ...digitsByPlace };
+    if (sanitized === '') delete next[place];
+    else next[place] = sanitized;
+    armWriteSettle(next);
+  }, [runner, digitsByPlace, armWriteSettle]);
 
-  const calculateStudentValue = useCallback((): number => {
-    let value = 0;
-    for (let place = maxPlace; place >= minPlace; place--) {
-      const d = digits[place] || '0';
-      value += parseInt(d, 10) * Math.pow(10, place);
-    }
-    const decimalPlaces = minPlace < 0 ? Math.abs(minPlace) : 0;
-    return parseFloat(value.toFixed(decimalPlaces));
-  }, [digits, maxPlace, minPlace]);
+  // ── The drawings ──────────────────────────────────────────────────────────
 
-  const getExpandedForm = useCallback((): string[] => {
-    const parts: string[] = [];
-    for (let place = maxPlace; place >= minPlace; place--) {
-      const d = digits[place] || '0';
-      if (d !== '0') {
-        const val = parseInt(d, 10) * Math.pow(10, place);
-        parts.push(val.toLocaleString());
+  /** The numeral, comma-grouped, one digit glowing. Analyze items only — the
+   *  labeled chart would be the find_place answer in pixels. */
+  const renderNumeral = (item: PlaceValueItem) => {
+    const str = String(item.targetNumber);
+    const cells: React.ReactNode[] = [];
+    for (let i = 0; i < str.length; i++) {
+      const place = str.length - 1 - i;
+      if (i > 0 && (str.length - i) % 3 === 0) {
+        cells.push(<span key={`c${i}`} className="text-slate-500">,</span>);
       }
-    }
-    return parts;
-  }, [digits, maxPlace, minPlace]);
-
-  // ── Phase 3: Submit build ──────────────────────────────────────
-  const handleSubmitBuild = useCallback(() => {
-    if (!currentChallenge) return;
-    if (currentPhase === 'challenge-done') return;
-    const nextBuildAttempts = buildAttempts + 1;
-    setBuildAttempts(nextBuildAttempts);
-
-    const studentValue = calculateStudentValue();
-    const isCorrect = Math.abs(studentValue - targetNumber) < 0.0001;
-
-    if (!isCorrect) {
-      SoundManager.playIncorrect();
-      setFeedback(
-        `You built ${studentValue.toLocaleString()}, but the target is ${targetNumber.toLocaleString()}. Check each digit's column!`,
-      );
-      setFeedbackType('error');
-      sendText(
-        `[BUILD_INCORRECT] Phase 3 (challenge ${currentIndex + 1}/${challenges.length}). `
-        + `Built ${studentValue.toLocaleString()}; target ${targetNumber.toLocaleString()}. Attempt ${nextBuildAttempts}. `
-        + `Help find the wrong digit without giving the answer. `
-        + tutorRevealClause(supportTier),
-        { silent: true },
-      );
-      return;
-    }
-
-    const p1 = phaseScore(placeAttempts);
-    const p2 = phaseScore(valueAttempts);
-    const p3 = phaseScore(nextBuildAttempts);
-    const overallScore = Math.round((p1 + p2 + p3) / 3);
-
-    SoundManager.playCorrect();
-    setFeedback(`Excellent! You built ${targetNumber.toLocaleString()} correctly!`);
-    setFeedbackType('success');
-    setCurrentPhase('challenge-done');
-
-    completeCurrentChallenge(true, overallScore, {
-      targetNumber,
-      finalValue: studentValue,
-      placeAttempts,
-      valueAttempts,
-      buildAttempts: nextBuildAttempts,
-      digitChanges: digitChangeCount,
-    });
-
-    sendText(
-      `[CHALLENGE_COMPLETE] Number ${targetNumber.toLocaleString()} solved. `
-      + `Phase scores: Identify ${p1}%, Value ${p2}%, Build ${p3}%. Overall ${overallScore}%. `
-      + `${currentIndex + 1 < challenges.length ? 'Brief celebration; next number coming up.' : 'Final number — celebrate the full session!'}`,
-      { silent: true },
-    );
-  }, [
-    currentChallenge, currentPhase, buildAttempts, calculateStudentValue,
-    targetNumber, placeAttempts, valueAttempts, digitChangeCount,
-    currentIndex, challenges.length, completeCurrentChallenge, supportTier, sendText,
-  ]);
-
-  // ── Advance to next challenge ──────────────────────────────────
-  const handleNextChallenge = useCallback(() => {
-    advance();
-    // The per-challenge reset useEffect picks up the new currentChallenge.id
-    // and resets every state slot. recordedRef is reset there as well.
-  }, [advance]);
-
-  // ── Hints ──────────────────────────────────────────────────────
-  const handleShowHint = useCallback(() => {
-    if (!currentChallenge) return;
-    if (currentPhase === 'challenge-done') return;
-    setChallengeHintCount((c) => c + 1);
-    setFeedbackType('hint');
-
-    if (currentPhase === 'identify-place') {
-      setFeedback(
-        `Hint: In ${targetNumber.toLocaleString()}, count right-to-left from the ones place to find where ${highlightedDigit} sits.`,
-      );
-    } else if (currentPhase === 'find-value') {
-      setFeedback(
-        `Hint: Say the digit name, then the place. For example, a 3 in the Hundreds place is "Three Hundred"; a 5 in the Tens place is "Fifty".`,
-      );
-    } else {
-      setFeedback(
-        `Hint: Break ${targetNumber.toLocaleString()} into digits and match each to its column.`,
-      );
-    }
-    sendText(
-      `[HINT_REQUESTED] Phase ${currentPhase} for number ${targetNumber.toLocaleString()}. Help without giving the answer.`,
-      { silent: true },
-    );
-  }, [
-    currentChallenge, currentPhase, targetNumber, highlightedDigit,
-    correctPlaceName, highlightedDigitPlace, sendText,
-  ]);
-
-  // ── Feedback color map ─────────────────────────────────────────
-  const feedbackColors: Record<FeedbackTone, string> = {
-    success: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
-    error: 'bg-red-500/10 border-red-500/30 text-red-300',
-    hint: 'bg-blue-500/10 border-blue-500/30 text-blue-300',
-    info: 'bg-white/5 border-white/10 text-slate-300',
-  };
-
-  // ── Render number with highlighted digit ───────────────────────
-  const renderHighlightedNumber = () => {
-    if (!currentChallenge) return null;
-    const absStr = Math.abs(targetNumber).toString();
-    const parts = absStr.split('.');
-    const intPart = parts[0];
-    const decPart = parts[1] || '';
-
-    const charElements: React.ReactNode[] = [];
-    let charIdx = 0;
-
-    for (let i = 0; i < intPart.length; i++) {
-      const place = intPart.length - 1 - i;
-      const isHighlighted = place === highlightedDigitPlace;
-      if (i > 0 && (intPart.length - i) % 3 === 0) {
-        charElements.push(<span key={`comma-${charIdx++}`} className="text-slate-500">,</span>);
-      }
-      charElements.push(
+      const glowing = place === item.place;
+      cells.push(
         <span
-          key={`digit-${charIdx++}`}
-          className={isHighlighted
-            ? 'text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded-lg border border-indigo-400/40 mx-0.5'
+          key={`d${i}`}
+          className={glowing
+            ? 'text-indigo-200 bg-indigo-500/20 px-1.5 py-0.5 rounded-lg border border-indigo-400/50 mx-0.5 shadow-lg shadow-indigo-500/20'
             : 'text-white'}
         >
-          {intPart[i]}
+          {str[i]}
         </span>,
       );
     }
-
-    if (decPart) {
-      charElements.push(<span key={`dot-${charIdx++}`} className="text-yellow-400">.</span>);
-      for (let i = 0; i < decPart.length; i++) {
-        const place = -(i + 1);
-        const isHighlighted = place === highlightedDigitPlace;
-        charElements.push(
-          <span
-            key={`dec-${charIdx++}`}
-            className={isHighlighted
-              ? 'text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded-lg border border-indigo-400/40 mx-0.5'
-              : 'text-white'}
-          >
-            {decPart[i]}
-          </span>,
-        );
-      }
-    }
-
-    return charElements;
-  };
-
-  // ── Empty state ────────────────────────────────────────────────
-  if (challenges.length === 0) {
     return (
-      <div className={`w-full ${className || ''}`}>
-        <div className="max-w-6xl mx-auto p-8 text-center text-slate-400">
-          No place value challenges available.
+      <div className="flex flex-col items-center py-6 gap-2">
+        <div className="text-5xl font-bold font-mono flex items-end justify-center gap-0.5">
+          {cells}
+        </div>
+        {/* The column name is the find_place ANSWER — reveal only, never a
+            scaffold, whatever the click era's headers did. */}
+        <div className="h-5 text-sm font-semibold tracking-wide text-emerald-300">
+          {runner.revealHeld && item.kind === 'find_place' ? placeLabel(item.place) : ''}
         </div>
       </div>
     );
+  };
+
+  /** The chart — build items only, where the labeled columns are the PAGE (the
+   *  answer is which digit goes in each), never the key. No printed target, no
+   *  match-coloring: the tutor's dictation is the stimulus and her verdict is
+   *  the only grader. */
+  const renderChart = (item: PlaceValueItem) => {
+    const written = item.chartPlaces.map((p) => digitsByPlace[p] ?? '');
+    const child = written.every((d) => d === '')
+      ? null
+      : Number(item.chartPlaces.map((p) => digitsByPlace[p] || '0').join(''));
+    const expandedParts = item.chartPlaces
+      .map((p) => Number(digitsByPlace[p] || '0') * Math.pow(10, p))
+      .filter((v) => v > 0)
+      .map((v) => v.toLocaleString());
+
+    return (
+      <div className="py-4 px-2">
+        <div className="overflow-x-auto">
+          <div className="inline-flex flex-col min-w-full items-center">
+            {showMultipliers && (
+              <div className="flex gap-2 mb-1">
+                {item.chartPlaces.map((p) => (
+                  <div key={`m${p}`} className="w-16 text-center text-[10px] font-mono text-indigo-300/70">
+                    {multiplierLabel(p)}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 mb-2">
+              {item.chartPlaces.map((p) => (
+                <div key={`h${p}`} className="w-16 text-center text-[10px] font-semibold uppercase tracking-wide text-blue-300">
+                  {placeLabel(p)}
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              {item.chartPlaces.map((p) => (
+                <input
+                  key={`i${p}`}
+                  type="text"
+                  inputMode="numeric"
+                  value={digitsByPlace[p] || ''}
+                  onChange={(e) => handleDigitChange(p, e.target.value)}
+                  disabled={!runner.canAttempt || runner.isAwaitingGesture()}
+                  className="w-16 bg-slate-800/50 border border-white/10 rounded-lg px-2 py-4 text-center text-3xl font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-slate-600 disabled:opacity-60"
+                  maxLength={1}
+                  placeholder="·"
+                  aria-label={placeLabel(p)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* The child's own trace — their digits read back as a number. Neutral
+            at every tier: a green-on-match readout is a Check button that
+            presses itself. */}
+        {child !== null && (
+          <div className="mt-4 text-center text-lg font-mono text-indigo-300">
+            {child.toLocaleString()}
+          </div>
+        )}
+        {showExpandedForm && expandedParts.length > 0 && (
+          <div className="mt-2 text-center text-sm font-mono text-slate-400">
+            {expandedParts.join(' + ')}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => (
+      PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
+    ));
+  }, [evaluation.hasSubmitted, runner.summary, items]);
+
+  const celebrationMessage = useMemo(() => {
+    const spoken = items.some((i) => i.answerKind === 'voice');
+    const hands = items.some((i) => i.answerKind === 'gesture');
+    if (spoken && hands) return 'You said places and values out loud, and wrote numbers you heard!';
+    if (spoken) return 'You said every answer out loud!';
+    return 'You wrote every number you heard!';
+  }, [items]);
+
+  // ============================================================================
+  // Render
+  // ============================================================================
+
+  if (items.length === 0) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
+          <p className="text-slate-400 text-center">No place value challenges available.</p>
+        </LuminaCardContent>
+      </LuminaCard>
+    );
   }
 
-  const hasNextChallenge = currentIndex + 1 < challenges.length;
+  const isGestureItem = currentItem?.answerKind === 'gesture';
+
+  const stageWord = runner.stage === 'judging'
+    ? 'let’s see…'
+    : runner.currentSolved
+      ? 'yes!'
+      : runner.running
+        ? (isGestureItem ? 'write it' : 'say it out loud')
+        : 'get ready';
 
   return (
-    <div className={`w-full ${className || ''}`}>
-      <div className="max-w-6xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[150px] opacity-15 bg-indigo-500" />
-
-        <div className="relative z-10">
-          {/* ── Header ─────────────────────────────────── */}
-          <div className="mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Math:</span>
-              <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-indigo-500/20 text-indigo-300 border-indigo-500/30">
-                PLACE VALUE CHART
-              </span>
-              <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-white/5 text-slate-300 border-white/10">
-                {sessionChallengeType}
-              </span>
-            </div>
-            <h2 className="text-3xl font-light text-white mb-3">{title}</h2>
-            <p className="text-slate-300 leading-relaxed">{description}</p>
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            {currentItem && (
+              <div className="flex items-center gap-2">
+                <LuminaBadge accent="purple" className="text-xs">
+                  🔢 {challengeType}
+                </LuminaBadge>
+                <LuminaBadge accent="emerald" className="text-xs">
+                  {PHASE_TYPE_CONFIG[currentItem.kind]?.icon} {PHASE_TYPE_CONFIG[currentItem.kind]?.label}
+                </LuminaBadge>
+              </div>
+            )}
           </div>
+          <LuminaBadge accent="cyan" className="text-xs">
+            {isGestureItem ? 'Write it' : 'Say it out loud'}
+          </LuminaBadge>
+        </div>
+        {description && (
+          <p className="text-slate-400 text-sm mt-1">{description}</p>
+        )}
+      </LuminaCardHeader>
 
-          {/* ── Session progress dots ──────────────────── */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            {challenges.map((c, idx) => {
-              const r = results.find((rr) => rr.challengeId === c.id);
-              const isDone = !!r;
-              const isCurrent = idx === currentIndex && !isComplete;
-              return (
-                <div key={c.id} className="flex items-center gap-2">
-                  <div
-                    className={`flex items-center justify-center rounded-full border text-xs font-mono w-8 h-8 ${
-                      isDone
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                        : isCurrent
-                          ? 'bg-indigo-500/20 text-indigo-200 border-indigo-400/50 shadow-lg scale-105'
-                          : 'bg-white/5 text-slate-500 border-white/10'
-                    }`}
-                  >
-                    {isDone ? '✓' : idx + 1}
-                  </div>
-                  {idx < challenges.length - 1 && <div className="w-4 h-px bg-slate-600/40" />}
-                </div>
-              );
-            })}
-            <span className="ml-3 text-xs font-mono text-slate-400">
-              Number {Math.min(currentIndex + 1, challenges.length)} of {challenges.length}
-            </span>
-          </div>
-
-          {/* ── Number display ─────────────────────────── */}
-          {!isComplete && currentChallenge && (
-            <div className="flex justify-center mb-6">
-              <div className="glass-panel rounded-2xl border border-indigo-500/20 px-10 py-5 text-center">
-                <div className="text-5xl font-bold font-mono flex items-center justify-center gap-0.5">
-                  {renderHighlightedNumber()}
-                </div>
-                {currentPhase !== 'build-number' && currentPhase !== 'challenge-done' && (
-                  <div className="mt-3 text-sm text-slate-400">
-                    Highlighted digit: <span className="text-indigo-300 font-bold">{highlightedDigit}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── Phase indicator ────────────────────────── */}
-          {!isComplete && currentChallenge && currentPhase !== 'challenge-done' && (
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <PhasePill
-                label="1. Find the Place"
-                icon="📍"
-                state={
-                  currentPhase === 'identify-place' ? 'current'
-                  : 'done'
-                }
+      <LuminaCardContent className="space-y-4">
+        {!evaluation.hasSubmitted && currentItem && (
+          <>
+            <div className="flex items-center justify-center gap-4">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
               />
-              <div className="text-slate-600">{'→'}</div>
-              <PhasePill
-                label="2. Find the Value"
-                icon="💰"
-                state={
-                  currentPhase === 'find-value' ? 'current'
-                  : currentPhase === 'build-number' ? 'done'
-                  : 'upcoming'
-                }
-              />
-              <div className="text-slate-600">{'→'}</div>
-              <PhasePill
-                label="3. Build It"
-                icon="🏗️"
-                state={currentPhase === 'build-number' ? 'current' : 'upcoming'}
-              />
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════
-              Phase 1 — Identify the Place
-              ═══════════════════════════════════════════ */}
-          {!isComplete && currentChallenge && currentPhase === 'identify-place' && (
-            <div className="glass-panel rounded-2xl border border-indigo-500/30 p-6 mb-6 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-violet-500" />
-              <div className="pt-2">
-                <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
-                  <span className="text-2xl">{'📍'}</span>
-                  Step 1: Identify the Place
-                </h3>
-                <p className="text-slate-300 leading-relaxed mb-6">
-                  In the number{' '}
-                  <span className="font-mono font-bold text-white">{targetNumber.toLocaleString()}</span>, which place value is the highlighted digit{' '}
-                  <span className="text-indigo-300 font-bold">{highlightedDigit}</span> in?
-                </p>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {placeNameChoices.map((choice) => (
-                    <button
-                      key={choice}
-                      onClick={() => { SoundManager.select(); setSelectedPlaceName(choice); }}
-                      className={`p-4 rounded-xl border text-center transition-all duration-300 text-lg font-semibold ${
-                        selectedPlaceName === choice
-                          ? 'glass-panel border-indigo-400/50 text-indigo-300 shadow-lg scale-105'
-                          : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      {choice}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={handleCheckPlace}
-                  disabled={selectedPlaceName === null}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 px-6 rounded-xl disabled:bg-white/10 disabled:text-slate-500 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.02]"
-                >
-                  Check Answer
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════
-              Phase 2 — Find the Value
-              ═══════════════════════════════════════════ */}
-          {!isComplete && currentChallenge && currentPhase === 'find-value' && (
-            <div className="glass-panel rounded-2xl border border-amber-500/30 p-6 mb-6 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
-              <div className="pt-2">
-                <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
-                  <span className="text-2xl">{'💰'}</span>
-                  Step 2: Find the Value
-                </h3>
-                <p className="text-slate-300 leading-relaxed mb-6">
-                  The digit{' '}
-                  <span className="text-indigo-300 font-bold">{highlightedDigit}</span> is in the{' '}
-                  <span className="text-amber-300 font-semibold">{correctPlaceName}</span> place. How do you{' '}
-                  <span className="text-amber-300 font-semibold">say this digit&apos;s value</span> out loud?
-                </p>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {digitValueChoices.map((choice) => (
-                    <button
-                      key={choice.value}
-                      onClick={() => { SoundManager.select(); setSelectedValue(choice.value); }}
-                      className={`p-4 rounded-xl border text-center transition-all duration-300 text-xl font-semibold ${
-                        selectedValue === choice.value
-                          ? 'glass-panel border-amber-400/50 text-amber-300 shadow-lg scale-105'
-                          : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      {choice.wordForm}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={handleCheckValue}
-                  disabled={selectedValue === null}
-                  className="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-3 px-6 rounded-xl disabled:bg-white/10 disabled:text-slate-500 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.02]"
-                >
-                  Check Answer
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════
-              Phase 3 — Build the Number
-              ═══════════════════════════════════════════ */}
-          {!isComplete && currentChallenge && currentPhase === 'build-number' && (
-            <div className="glass-panel rounded-2xl border border-emerald-500/30 p-6 mb-6 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
-              <div className="pt-2">
-                <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
-                  <span className="text-2xl">{'🏗️'}</span>
-                  Step 3: Build the Number
-                </h3>
-                <p className="text-slate-300 leading-relaxed mb-6">
-                  Now build{' '}
-                  <span className="font-mono font-bold text-white">{targetNumber.toLocaleString()}</span> by entering each digit in the right column.
-                </p>
-
-                <div className="overflow-x-auto pb-4">
-                  <div className="inline-block min-w-full">
-                    {showMultipliers && (
-                      <div className="flex border-b border-white/10 mb-2">
-                        {places.map((place) => (
-                          <div
-                            key={`mult-${place}`}
-                            className="flex-1 min-w-[80px] px-2 py-2 text-center text-xs font-mono text-indigo-300/70"
-                          >
-                            {getMultiplierLabel(place)}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex border-b border-white/10 mb-4">
-                      {places.map((place) => (
-                        <div
-                          key={`name-${place}`}
-                          className={`flex-1 min-w-[80px] px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide ${
-                            place === 0 ? 'border-l border-r border-yellow-500/30 bg-yellow-500/5' : ''
-                          } ${place < 0 ? 'text-purple-300' : 'text-blue-300'}`}
-                        >
-                          {getPlaceName(place)}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex">
-                      {places.map((place) => (
-                        <div
-                          key={`digit-${place}`}
-                          className={`flex-1 min-w-[80px] px-2 ${
-                            place === 0 ? 'border-l border-r border-yellow-500/30' : ''
-                          }`}
-                        >
-                          <input
-                            type="text"
-                            value={digits[place] || ''}
-                            onChange={(e) => handleDigitChange(place, e.target.value)}
-                            className="w-full bg-slate-800/50 border border-white/10 rounded-lg px-3 py-4 text-center text-3xl font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-slate-600"
-                            maxLength={1}
-                            placeholder="0"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {minPlace < 0 && (
-                      <div className="mt-2 text-center">
-                        <div className="inline-block text-yellow-400 text-xs font-mono">
-                          {'↑'} Decimal point between Ones and Tenths
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-4 mb-4">
-                  <div className="text-lg font-mono text-white">
-                    Your number:{' '}
-                    <span
-                      className={`font-bold ${
-                        Math.abs(calculateStudentValue() - targetNumber) < 0.0001
-                          ? 'text-emerald-300'
-                          : 'text-indigo-300'
-                      }`}
-                    >
-                      {calculateStudentValue().toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="text-sm text-slate-400">
-                    Target: <span className="font-mono text-white">{targetNumber.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                {showExpandedForm && (
-                  <div className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">
-                    <h4 className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Expanded Form</h4>
-                    <div className="text-base text-white font-mono">
-                      {getExpandedForm().length > 0 ? getExpandedForm().join(' + ') : <span className="text-slate-500">0</span>}
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleSubmitBuild}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 hover:scale-[1.02]"
-                >
-                  Submit Number
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ═══════════════════════════════════════════
-              Challenge done — between-challenge step
-              ═══════════════════════════════════════════ */}
-          {!isComplete && currentChallenge && currentPhase === 'challenge-done' && hasNextChallenge && (
-            <div className="glass-panel rounded-2xl border border-emerald-500/30 p-6 mb-6 text-center">
-              <h3 className="text-xl font-light text-emerald-300 mb-3">Number {currentIndex + 1} complete!</h3>
-              <p className="text-slate-300 mb-4">
-                You built <span className="font-mono font-bold text-white">{targetNumber.toLocaleString()}</span> across all three phases. Ready for the next number?
-              </p>
+              {/* Tap-to-hear — the QUESTION again, never a hint ladder. On a
+                  build item this re-dictates the number, which is what
+                  replaces the printed target the click era showed. */}
               <button
-                onClick={handleNextChallenge}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 px-8 rounded-xl transition-all duration-300 hover:scale-[1.02]"
+                type="button"
+                onClick={runner.hearStimulus}
+                className={`flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all ${
+                  runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
+                }`}
+                aria-label="Hear the question again"
               >
-                Next Number →
+                <span className="text-xl">🔁</span>
               </button>
             </div>
-          )}
 
-          {/* ── Feedback bar ──────────────────────────── */}
-          {feedback && !isComplete && (
-            <div className={`p-4 rounded-xl mb-6 border transition-all duration-300 ${feedbackColors[feedbackType]}`}>
-              {feedback}
+            {/* The stage. The tutor speaks the ask — no printed instruction. */}
+            <div className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
+              {isGestureItem ? renderChart(currentItem) : renderNumeral(currentItem)}
             </div>
-          )}
 
-          {/* ── Phase Summary (session complete) ─────── */}
-          {isComplete && phaseResults.length > 0 && (
-            <PhaseSummaryPanel
-              phases={phaseResults}
-              overallScore={submittedResult?.score}
-              durationMs={elapsedMs}
-              heading="Session Complete!"
-              celebrationMessage={`You explored ${challenges.length} numbers across all three phases.`}
-              className="mb-6"
-            />
-          )}
+            {/* The reward — the first moment an answer may appear. Gated on
+                `revealHeld`, never on `currentSolved` (18b). */}
+            {reward && runner.revealHeld && (
+              <LuminaPanel className="p-3 text-center">
+                <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
+                  {reward}
+                </span>
+              </LuminaPanel>
+            )}
 
-          {/* ── Bottom actions ────────────────────────── */}
-          {!isComplete && currentPhase !== 'challenge-done' && (
-            <div className="flex gap-3 pt-4 border-t border-white/10">
-              <Button
-                variant="ghost"
-                onClick={handleShowHint}
-                className="px-5 py-2.5 bg-white/5 text-slate-300 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20"
-              >
-                Show Hint
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+            <p className="text-center text-xs text-slate-500">
+              {isGestureItem
+                ? 'Type one digit in each column — the tutor checks when you stop.'
+                : 'Listen to the question, then say your answer out loud.'}
+            </p>
+
+            {/* The orb tells the truth about the turn: a hands item is not
+                "I'm listening". */}
+            <JudgedMicPanel run={runner} gestureLabel="Write the number" />
+          </>
+        )}
+
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
+            heading="Place Value Complete!"
+            celebrationMessage={celebrationMessage}
+            className="mt-4"
+          />
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
-
-// ============================================================================
-// Helper components
-// ============================================================================
-
-interface PhasePillProps {
-  label: string;
-  icon: string;
-  state: 'current' | 'done' | 'upcoming';
-}
-
-const PhasePill: React.FC<PhasePillProps> = ({ label, icon, state }) => (
-  <div
-    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
-      state === 'current'
-        ? 'glass-panel border-white/30 text-white shadow-lg scale-105'
-        : state === 'done'
-          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-          : 'bg-white/5 border-white/10 text-slate-400'
-    }`}
-  >
-    <span className="text-lg">{state === 'done' ? '✅' : icon}</span>
-    <span className="font-medium text-sm">{label}</span>
-  </div>
-);
 
 export default PlaceValueChart;

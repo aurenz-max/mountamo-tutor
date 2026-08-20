@@ -33,6 +33,10 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { createNumberPool } from './numberPoolService';
+import {
+  isAskablePlace,
+  isInBandTarget,
+} from '../../primitives/visual-primitives/math/placeValueScript';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -799,18 +803,21 @@ export const generatePlaceValueChart = async (
 Create the wrapper metadata for a MULTI-CHALLENGE place value chart session for "${topic}"
 ${scopeSection} (${gradeLevel}).
 
-This session walks the student through ${instanceCount} DIFFERENT numbers. Each number runs through a 3-phase flow:
-  Phase 1: "Identify the Place" — pick the place name of a highlighted digit
-  Phase 2: "Find the Value"     — pick the value of that digit
-  Phase 3: "Build the Number"   — enter each digit in the chart
+This session walks the student through ${instanceCount} DIFFERENT numbers with a LIVE VOICE TUTOR
+(direct instruction). The tutor asks out loud and the student answers OUT LOUD or by WRITING:
+  - naming which place a glowing digit is in (spoken)
+  - saying what that digit is worth (spoken — "forty", "three hundred")
+  - writing a number the tutor says into the chart, one digit per column
 
 ${challengeTypeSection}
 ${tierSection}
 DO NOT include specific numbers in the title or description — the system picks ${instanceCount} numbers locally and the same session covers all of them.
 
 GUIDELINES:
-- title: short and number-free, e.g., "Place Value Practice — Grade 3" or "Build & Explore Place Value"
-- description: 1-2 sentences warmly introducing the multi-challenge session and the three phases. No specific numbers.
+- title: short and number-free, e.g., "Place Value Practice — Grade 3" or "Say It, Write It: Place Value"
+- description: 1-2 sentences warmly introducing the session: the tutor asks, the student says places
+  and values out loud and writes numbers they hear. No specific numbers. NEVER mention clicking,
+  buttons, choices, or checking answers — there are none.
 - showExpandedForm: true (recommended)
 - showMultipliers: true for K-4, optional for 5+
 - gradeLevel: echo back "${gradeLevel}"
@@ -819,7 +826,7 @@ Return ONLY the wrapper metadata in the response schema.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       temperature: 0.9,
@@ -845,12 +852,35 @@ Return ONLY the wrapper metadata in the response schema.
   const problemShape = supportTier
     ? resolveProblemShape(challengeType as ChallengeType, supportTier)
     : undefined;
-  const challenges = buildChallenges(
+  const built = buildChallenges(
     challengeType,
     instanceCount,
     config?.numberRange,
     problemShape,
   );
+
+  // ── Judged-loop content gates, generator-side (KEEP-OR-DROP, never repair;
+  // IMPORTED from placeValueScript so both sides of the wire run one
+  // predicate). The challenges are code-built, so a drop here is a bug in the
+  // builder above, not model noise — which is exactly why the warning names
+  // its reason instead of failing silently (the 33-generator silent-fallback
+  // lesson). A zero digit's worth is "zero", the excluded spoken answer, so a
+  // zero highlight is unaskable; out-of-band numbers have no benched words. ──
+  const challenges = built.filter((ch) => {
+    if (!isInBandTarget(ch.targetNumber)) {
+      console.warn(
+        `[PlaceValue] DROPPED challenge ${ch.id}: targetNumber ${ch.targetNumber} is outside the spoken band (11..99999)`,
+      );
+      return false;
+    }
+    if (!isAskablePlace(ch.targetNumber, ch.highlightedDigitPlace)) {
+      console.warn(
+        `[PlaceValue] DROPPED challenge ${ch.id}: place ${ch.highlightedDigitPlace} of ${ch.targetNumber} is not askable (zero digit, or outside the spoken places)`,
+      );
+      return false;
+    }
+    return true;
+  });
 
   console.log('🔢 Place Value Chart generated:', {
     topic,

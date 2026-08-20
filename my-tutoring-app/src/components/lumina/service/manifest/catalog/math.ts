@@ -387,52 +387,151 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'place-value-chart',
-    description: 'Multi-challenge interactive place value chart. Each session walks the student through 3 distinct numbers in the same eval mode. Each number runs through three within-challenge phases: (1) identify the place of a highlighted digit via multiple choice, (2) find the value of that digit via multiple choice, (3) build the number by entering digits into the chart. Supports whole numbers and decimals from millions to thousandths. ESSENTIAL for elementary place value instruction.',
-    constraints: 'Session-level configuration. The generator selects target numbers locally from the number pool service per the selected eval mode, so do NOT supply specific numbers, place ranges, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (K-2), build (2-3), compare (3-4), expanded_form (5+).',
-    evalModes: [
-      { evalMode: 'identify', label: 'Identify Place (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['identify'], description: 'Simple 2-digit numbers, identify place name and value.' },
-      { evalMode: 'build', label: 'Build Number (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['build'], description: '3-digit numbers, construct the number in the chart.' },
-      { evalMode: 'compare', label: 'Compare Places (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['compare'], description: '3-4 digit numbers with multiple non-zero digits.' },
-      { evalMode: 'expanded_form', label: 'Expanded Form (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['expanded_form'], description: '4+ digit numbers or decimals with expanded form.' },
-    ],
+    description: 'Live tutor-judged place value (DI modality) over 2- to 5-digit whole numbers. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. Each session alternates two kinds of number: for a PRINTED number with one glowing digit the child SAYS THE NAME OF ITS PLACE (ones through ten thousands) and then SAYS WHAT IT IS WORTH ("forty", "three hundred" — the spoken place-value vocabulary this primitive has always been about); for a number that is NEVER printed the tutor SAYS it and the child WRITES it into the labeled chart, one digit per column — dictation, where hearing "four hundred six" and writing 4-0-6 rather than 46 is the whole skill. ESSENTIAL for elementary place value instruction, grades 1-5.',
+    constraints: 'Requires a microphone: two of the three answer kinds are spoken and judged by the Live tutor, and there is no Check button, no Next button, and no multiple-choice row anywhere. Session-level configuration: the generator selects target numbers locally from the number pool service per the selected eval mode, so do NOT supply specific numbers, place ranges, or answer choices from the manifest. Whole numbers only, 11 to 99,999 — every spoken value word stays inside the place-value vocabulary (digit and decade words plus hundred/thousand), and a highlighted digit is never zero because "zero" is not an accepted spoken answer. A number that was printed for analysis is never dictated, and a dictated number is never printed — each would answer the other. Supports challengeTypes: identify (1-2), build (2-3), compare (3-4), expanded_form (5+).',
     tutoring: {
-      taskDescription: 'Walk through {{totalChallenges}} place-value problems in {{challengeType}} mode. Current: number {{currentChallengeIndex}} of {{totalChallenges}} = {{targetNumber}}. Phase: {{currentPhase}}. Highlighted digit: {{highlightedDigit}} in the {{highlightedPlace}} place.',
-      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetNumber', 'highlightedDigit', 'highlightedPlace', 'highlightedValue', 'currentPhase', 'gradeLevel'],
+      taskDescription: 'LIVE-JUDGED place value practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or by WRITING digits into the chart, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // ⚠️ 18d, applied at BIRTH: no level of this ladder may OFFER a quoted
+      // replacement line of its own. A quoted hint here is a sanctioned-sounding
+      // substitute for the scripted correction at exactly the moment the model
+      // wants one — it opens with neither sentinel, so the engine sees no
+      // verdict and the correction counter stalls. The ladder commands script
+      // fidelity; it never supplies an alternative. The click-era ladder here
+      // quoted three hint lines and its level3 printed the full construction.
       scaffoldingLevels: {
-        level1: '"Look at the highlighted digit. Think about its position in the number. What place is it in?"',
-        level2: '"The digit {{highlightedDigit}} is in the {{highlightedPlace}} place. How would you SAY that out loud? Try the digit name plus the place — for example, a 4 in the Hundreds place is \'four hundred\'."',
-        level3: '"In {{targetNumber}}, the digit {{highlightedDigit}} is in the {{highlightedPlace}} place. Say its value out loud (using the place vocabulary), then place each digit in the correct column on the chart to build the whole number."',
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name a place, a value, or a digit beyond what the ask names.',
+        level2: 'A wrong answer is never met with a hint of your own — speak the scripted "My turn:" correction from the cue again, exactly as written, even if you just said it.',
+        level3: 'If the child stays stuck, stay with the script: the correction walks the places (or the columns) and re-asks for you. Never invent encouragement, a new question, a softer hint, or a walk of your own.',
       },
       commonStruggles: [
-        { pattern: 'Confusing place name with spoken value', response: '"The PLACE is the position (ones, tens, hundreds). The SPOKEN VALUE combines the digit with the place name. A 5 in the Tens place is said \'fifty\' (not just \'five\' and not \'fifty hundred\')."' },
-        { pattern: 'Selecting the digit value when asked for the place', response: '"This question asks WHICH PLACE the digit is in — not what it is worth. Look at the column name above the highlighted digit."' },
-        { pattern: 'Picking a wrong word-form in Phase 2', response: '"Try saying the digit name first ({{highlightedDigit}} = \'one/two/three…\'), then add the place ({{highlightedPlace}}). The two pieces snap together into the spoken value."' },
-        { pattern: 'Entering digits in wrong columns during build phase', response: '"Read the number left to right: {{targetNumber}}. Match each digit to its column header. The leftmost digit goes in the highest place."' },
-        { pattern: 'Decimal place confusion', response: '"After the decimal point, places get 10 times smaller: tenths, hundredths, thousandths. The first digit after the dot is in the tenths place."' },
+        { pattern: 'Long silence', response: 'Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
+        { pattern: 'Says the digit\'s value, or the digit itself, when asked for its PLACE', response: 'That answers what the digit is worth, not where it sits, so it is wrong: speak the scripted "My turn:" correction, which walks the places from the end and re-asks.' },
+        { pattern: 'Says the bare digit when asked what it is WORTH (four for forty)', response: 'That says how many ones, not what the digit is worth in its place, so it is WRONG however close it sounds: speak the scripted correction, which is where digit and worth get told apart.' },
+        { pattern: 'Says the right digit at the wrong place (four hundred for forty)', response: 'Wrong place, wrong worth: speak the scripted "My turn:" correction exactly as written.' },
+        { pattern: 'Reads the whole number off the screen instead of answering', response: 'That does not answer the question — only the glowing digit\'s place or worth does. It is wrong: speak the scripted correction.' },
+        { pattern: 'Writes the digits in the wrong columns, or leaves a column empty', response: 'The chart is judged in code and you are told whether it matches — speak only the verdict line the cue gives you. The correction models the column walk on a different number and dictates the target again; never walk the target\'s own columns beyond it.' },
+        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
       ],
       aiDirectives: [
         {
-          title: 'PHASE-AWARE PLACE VALUE COACHING',
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
           instruction:
-            'In Phase 1 (Identify the Place): focus on position vocabulary — "The highlighted digit is in the {{highlightedPlace}} place. '
-            + 'Remember: places go ones, tens, hundreds as you move LEFT." '
-            + 'In Phase 2 (Say the Value): coach spoken vocabulary — combine the digit name with the place. '
-            + 'For Tens use the -ty form (twenty, thirty, …, ninety). For Hundreds/Thousands/Millions append the place word. '
-            + 'For decimals append the plural form (Tenths, Hundredths, Thousandths). '
-            + 'NEVER say the answer word directly — instead model with a different example digit. '
-            + 'In Phase 3 (Build the Number): guide construction column by column — "Read {{targetNumber}} digit by digit. '
-            + 'Which column does each digit go in? Start with the highest place and work right." '
-            + 'Use the mnemonic: "Each place is 10 times the one to its right."',
+            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it — '
+            + 'and never read the number on the screen out loud before the ask.',
         },
         {
-          title: 'GRADE-LEVEL ADAPTATION',
+          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
           instruction:
-            'For K-2: focus on ones, tens, hundreds with whole numbers only. Use concrete language: "The 3 is in the tens column, so it means 3 tens, which is 30." '
-            + 'For grades 3-4: extend to thousands and introduce decimals (tenths). Connect to money: "0.5 is like 50 cents — five tenths of a dollar." '
-            + 'For grade 5+: include millions and thousandths. Guide the ×10 pattern: "Moving one place left multiplies by 10. Moving right divides by 10."',
+            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants — this activity asks for three different kinds and you must never assume which. '
+            + 'On find_place the answer is a PLACE NAME — ones, tens, hundreds, thousands, ten thousands. The digit or its value said instead is the recorded confusion and is wrong. '
+            + 'On say_value the answer is the digit\'s WORTH said with place vocabulary — "forty", "three hundred". The bare digit is wrong however close it sounds: it says how many, not what it is worth. '
+            + 'Where ten thousands is on the chart, a bare "thousands" for the ten-thousands column is the wrong column and is corrected. '
+            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
+            + 'On a WRITING item (build_number) the child writes the number you dictated into the chart, and you are told what they wrote and whether it matches. '
+            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
+        },
+        {
+          title: 'THE VERDICT ENDS THE TURN',
+          instruction:
+            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another digit, or the next item, '
+            + 'even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong number.',
+        },
+        {
+          title: 'NEVER READ THE SCREEN OR THE STATE ALOUD',
+          instruction:
+            'Never read the number on the screen out loud during the child\'s turn — on an analysis item it contains the value they are about to say, and reading it hands the answer over. '
+            + 'Never read the [CURRENT STATE] block, its heading, or any of its lines aloud: it is context for you, never content for the child. '
+            + 'Never name the columns beyond what the quoted ask names.',
+        },
+        {
+          title: 'WRITING ITEMS ARE SILENT',
+          instruction:
+            'When the cue tells you the child answers by writing, say nothing at all while they work — no repeating the number, no digit names, no column names, no narration. '
+            + 'The dictation is said once in the ask; if the child wants it again they tap to hear it. '
+            + 'You will be told what number they wrote and whether it matches; only then do you speak the line the cue gives you.',
+        },
+        {
+          title: 'THE CHILD IS THINKING — WAIT',
+          instruction:
+            'Think time is unbounded. Never fill a silence, never count the columns for them, and never prompt while the child is looking at the number. The silence is theirs.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'HEAR-THE-QUESTION ON DEMAND',
+          instruction:
+            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
+            + 'treat nothing you just heard as an answer, and never say the answer. On a writing item that means dictating the whole number again, because it is never printed.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
         },
       ],
     },
+    audioInput: { manual_activity: true },
+    evalModes: [
+      {
+        evalMode: 'identify',
+        label: 'Identify Place (Tier 1)',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['identify'],
+        // β RAISED 1.5 → 2.0 (story-talk's lever): two 1-of-4 MENUS with
+        // unlimited Check retries became unaided spoken production — the place
+        // name and the value word both leave the child's mouth with no options
+        // row to lean on — and the build target no longer prints, so writing a
+        // 2-digit number is done from DICTATION (thirteen/thirty is now a real
+        // item, which a printed target could never ask).
+        description: '2-digit numbers. The child SAYS the glowing digit\'s place and what it is worth ("forty"), and WRITES numbers the tutor says — including the teen/-ty ear (thirteen vs thirty). Spoken production judged by the Live tutor; no choices anywhere.',
+      },
+      {
+        evalMode: 'build',
+        label: 'Write Number (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['build'],
+        // β RAISED 2.5 → 3.0 — a real STRUCTURAL change, not a channel swap.
+        // The click era printed the target above the chart, so building was
+        // copying digits left-to-right; the number is DICTATED now and the
+        // child translates speech into columns, where "four hundred six" → 406
+        // (not 46) is the mode's whole demand. The spoken analysis asks ride
+        // the same raise as identify.
+        description: '3-digit numbers, dictation-first: the tutor SAYS a number that is never printed and the child WRITES it into the labeled chart — the zero-trap (four hundred six is 4-0-6, not 46) is the target skill. Printed numbers get the two spoken analysis asks.',
+      },
+      {
+        evalMode: 'compare',
+        label: 'Compare Places (Tier 3)',
+        beta: 4.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['compare'],
+        // β RAISED 3.5 → 4.0 — the same two structural changes (menus deleted →
+        // unaided production; printed target → dictation) at 4-digit magnitude,
+        // where the value words are two-token ("four thousand") and the
+        // interior places are the confusable ones.
+        description: '4-digit numbers with multiple non-zero digits. Spoken place names through thousands, spoken values like "four thousand", and 4-digit dictation writing. Unaided production judged by the Live tutor.',
+      },
+      {
+        evalMode: 'expanded_form',
+        label: 'Expanded Form (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['expanded_form'],
+        // β RAISED 4.5 → 5.0 — same structural raise at 4-5 digit magnitude.
+        // Decimals are DROPPED from this mode's judged form: decimal place
+        // words have no benched spoken class, and the whole-number band
+        // already carries the ten-thousands/thousands ear discrimination this
+        // tier is for.
+        description: '4- to 5-digit whole numbers. The ten-thousands column arrives: the spoken answer must carry the "ten" ("ninety thousand"; bare "thousands" for that column is the recorded miss), and dictation writing runs to five columns. No decimals — decimal place words are not a benched spoken class.',
+      },
+    ],
     supportsEvaluation: true,
   },
   {

@@ -48,6 +48,7 @@ export type ResponseClassId =
   | 'yes_no'
   | 'number_word_to_20'
   | 'number_word_to_120'
+  | 'place_value_word'
   | 'ordinal_word'
   | 'sentence_read_aloud'
   | 'shape_name'
@@ -113,6 +114,22 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
     status: 'accepted-build-ahead',
     evidence: 'Item 10 build-ahead ruling (3986f77, 2026-08-06); acceptance sitting #63 owed.',
     notes: 'Multi-word numerals (twenty-one…). Ships only where the pack already gates on #63.',
+  },
+  place_value_word: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'USER BUILD-AHEAD RULING 2026-08-19, from the place-value-chart port (the session that '
+      + 're-read the ≤20 bench in code and ruled the >20 tier build-ahead for this shape). '
+      + 'Acceptance rides the SAME #63 multi-word-numeral sitting as number_word_to_120 — one '
+      + 'sitting clears both.',
+    notes:
+      'ONE digit\'s worth, said with place vocabulary: 1-2 tokens, each from a closed set — a '
+      + 'digit word ("seven"), a decade word ("forty"), or digit/decade + place word ("three '
+      + 'hundred", "ninety thousand"). The ≤20 subset sits inside benched number_word_to_20; '
+      + 'everything above ships only where the pack already gates on #63. The fully composed '
+      + 'numeral ("forty-seven thousand three hundred six") is NOT in this class — a pack must '
+      + 'never ask a child to SAY one (the tutor may dictate one; the child answers with hands). '
+      + 'Known near-pair for the sitting: the -ty/-teen ear ("forty"/"fourteen").',
   },
   ordinal_word: {
     status: 'benched',
