@@ -2110,18 +2110,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'skill',
     description:
       'Live Direct Instruction picture-vocabulary practice with a spoken tutor. ORAL VOCABULARY for K-1: the tutor '
-      + 'asks, waits, judges the child’s answer from the audio, and its own affirmation moves the lesson on. Four of '
+      + 'asks, waits, judges the child’s answer from the audio, and its own affirmation moves the lesson on. FIVE of '
       + 'the six modes are ANSWERED ALOUD — the child names a picture (Say It), produces an opposite (Opposites), '
-      + 'says the missing rung of a spoken word scale (Word Scale), or finishes a spoken sentence (Finish the '
-      + 'Sentence) — there are no word chips to tap and nothing on screen prints the answer. Two modes are ANSWERED '
-      + 'WITH THE HANDS on emoji-only picture cards — Listen & Find (hear a word, tap its picture) and Goes Together '
-      + '(tap the picture that goes with the shown thing, sock→shoe); the tap is the commit and the tutor’s verdict '
-      + 'is the advance. Tap-to-hear repeats the question. Requires a microphone. ESSENTIAL for K-1 vocabulary '
-      + 'development and oral language.',
+      + 'says what goes with a shown thing (Goes Together), says the missing rung of a spoken word scale (Word '
+      + 'Scale), or finishes a spoken sentence (Finish the Sentence) — there are no word chips to tap and nothing '
+      + 'on screen prints the answer. ONE mode is ANSWERED WITH THE HANDS on emoji-only picture cards: Listen & '
+      + 'Find (hear a word, tap its picture), where picking the referent out of four IS the receptive skill; the '
+      + 'tap is the commit and the tutor’s verdict is the advance. Tap-to-hear repeats the question. Requires a '
+      + 'microphone. ESSENTIAL for K-1 vocabulary development and oral language.',
     constraints:
       'Use concrete, picturable words with clear emoji matches. K: everyday nouns (animals, foods, clothes, home). '
-      + 'Answers are single spoken words or a picture tap — do not route open-ended production objectives (define a '
-      + 'word, use it in a sentence) here. Requires the live tutor and a microphone. '
+      + 'Answers are single spoken words or (receptive_match only) a picture tap. Goes Together accepts an OPEN set '
+      + 'of single-word answers judged against a rule; every other spoken mode has one defensible answer plus fair '
+      + 'synonyms. Do not route open-ended PHRASE production (define a word, use it in a sentence) here — the open '
+      + 'set is one word wide, not one sentence wide. Requires the live tutor and a microphone. '
       + 'The manifest must NOT supply specific words — the generator builds the word pool and challenges '
       + 'deterministically from the eval mode.',
     // ── DI MODALITY (2026-08-11) — fifth literacy port, first literacy consumer
@@ -2129,13 +2131,26 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // no advance timer, no push-to-talk mic, no Next button and no answer chips
     // anywhere in the path. The old 4-chip "support net" printed the answer for
     // any Grade-1 reader (word-flip's chips, a third time) and is deleted.
-    // ASSOCIATION TAPS INSTEAD OF SPEAKING, and that is a response-class ruling,
-    // not a softening: "what goes with sock" has many honest spoken answers
-    // (shoe, foot, laundry), and open-set spoken production is a BLOCKED benched
-    // class (standing gate 1) — the emoji cards close the set while the relation
-    // stays the skill. The cue lines and per-item judging contracts live in
+    // ⭐ ASSOCIATION WENT SPOKEN ON 2026-08-19 (item 25). It tapped emoji cards
+    // for exactly one reason — "what goes with sock" has many honest spoken
+    // answers (shoe, foot, drawer) and open-set spoken production was a BLOCKED
+    // response class, so the cards closed the set while the relation stayed the
+    // skill. `open_set_word` was BENCHED on 2026-08-19 (rhyme-studio: 72 probes
+    // over 6 rimes, zero false affirmations in the hard REFUSE buckets), the
+    // block is gone, and the cards were the costume. Five of six modes now
+    // answer aloud.
+    //
+    // RECEPTIVE_MATCH STILL TAPS, and that is a RULING rather than residual
+    // debt: a child without the word cannot pick the referent out of four
+    // distinct pictures, so the tap IS receptive identification. DI is
+    // spoken-first about answers a child would naturally SAY; pointing at the
+    // picture you just heard named is page-work.
+    //
+    // The cue lines and per-item judging contracts live in
     // `pictureVocabularyScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame.
+    // session-level frame. Association's six guards are scored in
+    // `service/qa/di/associationBench.ts` — the contract claims they are
+    // refused and the bench is that claim made testable.
     // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
     // taskDescription, scaffolding level, struggle response or directive
     // sentence begins with "Yes" or with "My turn".
@@ -2168,9 +2183,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 3,
         challengeTypes: ['association'],
         description:
-          'Word associations — see a thing, tap the picture that goes with it (sock→shoe) from 4 emoji-only '
-          + 'cards. Tapped rather than spoken: "what goes with X" has many honest spoken answers, and an open '
-          + 'answer set cannot be fairly judged — the cards close the set while the relation stays the skill.',
+          'Word associations — see and hear a thing, SAY something that goes with it aloud (sock→shoe). An OPEN '
+          + 'answer set: "what goes with sock" has several honest answers (shoe, foot, drawer), so the judge is '
+          + 'given the RULE rather than a list and any everyday thing that plainly goes with the stimulus counts. '
+          + 'A connection that needs a story to explain it does not, and neither does the name of the group '
+          + '(clothes) or another member of it (shirt). No picture cards — the child retrieves the partner.',
       },
       {
         evalMode: 'opposite',
@@ -2205,8 +2222,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction vocabulary practice for a young child. Right now the mode is '
-        + '"{{challengeType}}" and the question side is "{{stimulus}}". On spoken modes the child answers out loud '
-        + 'and you judge the audio you heard; on the tap modes (receptive_match, association) the child answers by '
+        + '"{{challengeType}}" and the question side is "{{stimulus}}". On the five spoken modes the child answers '
+        + 'out loud and you judge the audio you heard; on the ONE tap mode (receptive_match) the child answers by '
         + 'tapping a picture card, which you cannot see, so you stay silent until the application tells you what '
         + 'they tapped. You speak the exact scripted lines from each bracketed application message and nothing '
         + 'else. Retrieving the word from their own memory is the entire skill being practiced, so the child '
@@ -2251,6 +2268,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           response: 'Treat it as wrong: the scripted correction reads the whole scale and names the missing word, then asks again.',
         },
         {
+          pattern: 'Says the shown thing back on Goes Together - "sock" when asked what goes with sock',
+          response: 'Speak the ECHO correction branch the cue gives you for this exact case, not the general one: it says a thing cannot go with itself, models the relation on a different pair, and asks for something different.',
+        },
+        {
+          pattern: 'Names the whole group on Goes Together - "clothes" for sock, "animals" for dog',
+          response: 'Speak the GROUP correction branch the cue gives you: it says that names a whole group, asks for one thing, and models the relation on a different pair.',
+        },
+        {
+          pattern: 'Offers a thing on Goes Together that only connects through a story - "a cat, because cats play with socks"',
+          response: 'Treat it as wrong however charming the reasoning is, and speak the general scripted correction. A connection that needs explaining is not one a five-year-old is learning here.',
+        },
+        {
           pattern: 'Goes quiet after being asked',
           response: 'Say the question once more, then wait for them alone.',
         },
@@ -2292,14 +2321,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'also counts (a fair synonym, a close word for the same amount) and what looks like an answer and is '
             + 'not: the shown word said back unchanged (fluent and confident, which makes it the signature error), '
             + 'a word already given on the scale, or a category word like animal. All of those take the correction '
-            + 'branch, warmly. LAW: never say the target word before the child has been affirmed — the microphone '
+            + 'branch, warmly. GOES TOGETHER IS THE ONE OPEN MODE: there is no single target there, so its cue '
+            + 'hands you a RULE instead — accept any everyday thing that plainly goes with the shown thing, '
+            + 'including one you would not have thought of yourself, and refuse a connection you can only justify '
+            + 'by telling a story, the name of the group the shown thing belongs to, or another member of that '
+            + 'same group. LAW: never say the target word before the child has been affirmed — the microphone '
             + 'is open the whole time, so saying it first hands the answer over; the scripted correction is the one '
             + 'place the answer is spoken, and only because the attempt is already judged. On receptive_match you '
             + 'MUST say the stimulus word clearly — there the word is the question and the child answers by '
             + 'tapping.',
         },
         {
-          title: 'TAP ITEMS ARE SILENT (receptive_match, association)',
+          title: 'TAP ITEMS ARE SILENT (receptive_match)',
           instruction:
             'When the child answers by tapping a picture you cannot see the screen, so after you speak the ask you '
             + 'say NOTHING AT ALL until the application sends a [PV_TAP] message telling you what they tapped: no '

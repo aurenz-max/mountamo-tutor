@@ -8,16 +8,22 @@
  * Next button and no answer chips anywhere in this file.
  *
  * WHAT THE CHILD DOES, PER MODE.
- *  - naming / opposite / gradable_scale / sentence_frame: the answer is
- *    SPOKEN into an open mic and judged by the tutor from the audio in-band.
- *    The old 4-chip "support net" printed the answer for any Grade-1 reader
- *    (word-flip's chips, a third time) and is deleted.
- *  - receptive_match / association: the answer is a TAP on emoji-only picture
- *    cards. Receptive identification is a real 1-in-4 selection skill, and
- *    association PRODUCTION is an open spoken set ("what goes with sock" —
- *    shoe, foot, laundry are all honest), a BLOCKED response class — so the
- *    cards close the set while the relation stays the skill. The tap commits
+ *  - naming / opposite / gradable_scale / sentence_frame / association: the
+ *    answer is SPOKEN into an open mic and judged by the tutor from the audio
+ *    in-band. The old 4-chip "support net" printed the answer for any Grade-1
+ *    reader (word-flip's chips, a third time) and is deleted.
+ *  - receptive_match: the answer is a TAP on emoji-only picture cards.
+ *    Receptive identification is a real 1-in-4 selection skill — the tap IS
+ *    the skill, not a costume over a spoken one — so it stays. The tap commits
  *    through the gesture anchor; the tutor's verdict is the advance.
+ *
+ * ⭐ ASSOCIATION WENT SPOKEN ON 2026-08-19 (item 25). It tapped four emoji
+ * cards for exactly one reason: "what goes with sock" is an OPEN production
+ * set (shoe, foot, drawer, laundry are all honest) and `open_set_word` was a
+ * BLOCKED response class, so the cards closed the set while the relation
+ * stayed the skill. The class was BENCHED — the block is gone and the cards
+ * were the costume. THE ABSENCE OF FOUR CARDS ON AN ASSOCIATION ITEM IS THE
+ * PROOF THIS SHIPPED, exactly as the deleted word bank was for rhyme-studio.
  *
  * DELETED from the click-driven version: the Start with Voice / Start
  * tap-only fork and the whole voiceMode axis, the 4-option word chips and
@@ -72,7 +78,7 @@ export type PictureVocabChallengeType =
   | 'receptive_match'   // tutor says the word → student taps the picture (gesture)
   | 'naming'            // student sees the picture → says the word (spoken)
   | 'opposite'          // student sees a word+picture → says its opposite (spoken)
-  | 'association'       // student sees a word+picture → taps what GOES WITH it (gesture)
+  | 'association'       // student sees a word+picture → SAYS what goes with it (spoken, open set)
   | 'gradable_scale'    // ordered gradient with one rung blank → says the missing rung (spoken)
   | 'sentence_frame';   // tutor voices a sentence with a blank → says the missing word (spoken)
 
@@ -88,9 +94,10 @@ export interface PictureVocabChallenge {
   word: string;
   /** Picture (emoji) of the target word. Never shown pre-solve in sentence_frame mode. */
   emoji: string;
-  /** TAP MODES ONLY (receptive_match, association): exactly 4 emoji-distinct
-   *  cards including the target once. Spoken modes carry none — a printed
-   *  option list is an answer leak. */
+  /** TAP MODE ONLY (receptive_match): exactly 4 emoji-distinct cards including
+   *  the target once. Every spoken mode carries none — a printed option list is
+   *  an answer leak. Association stopped carrying them when it went spoken
+   *  (item 25); the field stays optional and simply goes unset there. */
   options?: PictureVocabOption[];
   // -- opposite / association --
   baseWord?: string;
@@ -140,7 +147,7 @@ const MODE_META: Record<PictureVocabChallengeType, { badge: string; icon: string
   receptive_match: { badge: 'Listen & Find', icon: '👂', accent: 'blue', prompt: 'Listen… then tap the picture!' },
   naming: { badge: 'Say It', icon: '🎙️', accent: 'emerald', prompt: 'What is this? Say it out loud!' },
   opposite: { badge: 'Opposites', icon: '🔁', accent: 'amber', prompt: 'What’s the opposite? Say it!' },
-  association: { badge: 'Goes Together', icon: '🧩', accent: 'pink', prompt: 'Tap the picture that goes with it!' },
+  association: { badge: 'Goes Together', icon: '🧩', accent: 'pink', prompt: 'What goes with it? Say it out loud!' },
   gradable_scale: { badge: 'Word Scale', icon: '🎚️', accent: 'cyan', prompt: 'Which word is missing? Say it!' },
   sentence_frame: { badge: 'Finish the Sentence', icon: '💬', accent: 'purple', prompt: 'Say the missing word!' },
 };
@@ -239,12 +246,23 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
         : 'Have another go — say your answer.',
       done: 'Great word work today!',
     },
+    /**
+     * ⚠️ ASSOCIATION NEEDED ITS OWN SPOKEN ARM, and this is the near-miss the
+     * type checker could not see. It used to sit in the GESTURE branch. Moving
+     * it to `answerKind === 'voice'` without adding a case here would have
+     * dropped it through the ternary chain to the sentence_frame fallback, so
+     * every association diagnosis would have read "Complete the sentence:
+     * undefined" — a well-formed record of the wrong challenge, fed to the
+     * misconception loop.
+     *
+     * Its `expected` is also the one that cannot be a single word: the set is
+     * open, so it names the RELATION and offers the generated partner as an
+     * example rather than as the answer.
+     */
     diagnosisObservation: (item, { lastHeard }) =>
       item.answerKind === 'gesture'
         ? {
-            challenge: item.kind === 'receptive_match'
-              ? `Hear "${item.word}" and tap its picture.`
-              : `Tap the picture that goes with "${item.baseWord}".`,
+            challenge: `Hear "${item.word}" and tap its picture.`,
             expected: `The picture of "${item.word}".`,
             observed: tappedRef.current
               ? `Tapped the picture of "${tappedRef.current}".`
@@ -255,10 +273,14 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
               ? 'Name the pictured vocabulary item aloud.'
               : item.kind === 'opposite'
                 ? `Produce the opposite of "${item.baseWord}" aloud.`
-                : item.kind === 'gradable_scale'
-                  ? `Say the missing word in the scale: ${scaleSpokenFor(item)}.`
-                  : `Complete the sentence: ${item.frameDisplay}`,
-            expected: `The word "${item.word}".`,
+                : item.kind === 'association'
+                  ? `Name something that naturally goes with "${item.baseWord}" aloud.`
+                  : item.kind === 'gradable_scale'
+                    ? `Say the missing word in the scale: ${scaleSpokenFor(item)}.`
+                    : `Complete the sentence: ${item.frameDisplay}`,
+            expected: item.kind === 'association'
+              ? `Any everyday thing that plainly goes with "${item.baseWord}" — for example "${item.word}".`
+              : `The word "${item.word}".`,
             observed: lastHeard
               ? `Heard "${lastHeard}".`
               : 'The tutor judged the answer wrong from the audio.',
@@ -436,6 +458,24 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
             <p className="text-center text-base text-slate-300 font-medium">{meta.prompt}</p>
           </div>
         );
+      /**
+       * ⭐ ASSOCIATION RENDERS THE STIMULUS AND NOTHING ELSE (item 25).
+       *
+       * `renderTapCards` is gone from this branch and no answer slot replaces
+       * it. That is the whole difference between reading four pictures and
+       * picking one, and thinking of a thing that goes with a sock —
+       * rhyme-studio's production mode, same shape, same argument.
+       *
+       * ⚠️ AND NOTHING NAMES `item.word` ON REVEAL, which is where a careless
+       * port would put the generated partner back. The set is OPEN: a child who
+       * was just affirmed may well have said "foot" or "drawer", and printing
+       * "shoe" at them would teach that their correct answer was the wrong one.
+       * The reveal is therefore a MARK, not a word — the stimulus card confirms
+       * the pairing happened and stays silent about which pairing it was. The
+       * generated partner reaches the child in exactly one place: the move-on
+       * cue, spoken, after two failed attempts, phrased as "one thing that goes
+       * with sock is…".
+       */
       case 'association':
         return (
           <div className="space-y-5">
@@ -444,14 +484,20 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 role="button"
                 tabIndex={0}
                 onClick={runner.hearStimulus}
-                className={stimulusCardClass('bg-pink-500/10', 'border-pink-500/30') + 'px-10 py-6'}
+                className={
+                  stimulusCardClass('bg-pink-500/10', 'border-pink-500/30')
+                  + 'px-10 py-6 '
+                  + (revealed ? 'ring-2 ring-emerald-400/50 ' : '')
+                }
               >
                 <span className="text-5xl">{item.baseEmoji}</span>
                 <div className="text-2xl font-black text-pink-200 mt-2">{item.baseWord}</div>
+                {revealed && (
+                  <div className="text-sm font-bold text-emerald-300 mt-2">🧩 They go together!</div>
+                )}
               </div>
             </div>
             <p className="text-center text-base text-slate-300 font-medium">{meta.prompt}</p>
-            {renderTapCards(item)}
           </div>
         );
       case 'gradable_scale': {

@@ -94,20 +94,43 @@ export interface PictureVocabItem extends JudgedScriptItem {
   options?: PictureVocabTapOption[];
 }
 
-/** The two modes whose answer is a committed tap (gesture anchor). */
+/**
+ * The ONE mode whose answer is a committed tap (gesture anchor).
+ *
+ * ⚠️ `association` LEFT THIS SET on 2026-08-19 (item 25) and must not come
+ * back. It tapped for exactly one reason — "what goes with sock" is an OPEN
+ * spoken production set and `open_set_word` was a BLOCKED response class, so
+ * the emoji cards closed the set while the relation stayed the skill. The
+ * class was BENCHED on 2026-08-19 (rhyme-studio, 72 probes, zero false
+ * affirmations), the block is gone, and the cards were the costume.
+ *
+ * `receptive_match` STAYS A TAP, and that is a RULING, not residual debt: a
+ * child without the word cannot pick the referent out of four distinct
+ * pictures, so the tap IS the receptive-identification skill rather than a
+ * costume over a spoken one. DI is spoken-first about answers a child would
+ * naturally SAY; pointing at the picture you just heard named is page-work,
+ * and `answerKind` resolves it that way by design.
+ */
 export const TAP_KINDS: ReadonlySet<PictureVocabItemKind> = new Set<PictureVocabItemKind>([
   'receptive_match',
-  'association',
 ]);
 
 export const answerKindFor = (kind: PictureVocabItemKind): 'voice' | 'gesture' =>
   TAP_KINDS.has(kind) ? 'gesture' : 'voice';
 
-/** Standing gate 1: spoken answers here are single short words from a closed
- *  per-item set (benched); tap answers are manipulations. Association
- *  PRODUCTION would be open_set_word (BLOCKED) — that is why it taps. */
+/** Does this mode hand the judge a RULE instead of an enumerated target?
+ *  (rhyme-studio's `isOpenSet`, same shape.) */
+export const isOpenSet = (kind: PictureVocabItemKind): boolean => kind === 'association';
+
+/** Standing gate 1: tap answers are manipulations; four spoken modes produce
+ *  one short word from a closed per-item set; `association` produces a word
+ *  from NO set at all — `open_set_word`, benched 2026-08-19. */
 export const responseClassFor = (kind: PictureVocabItemKind): ResponseClassId =>
-  TAP_KINDS.has(kind) ? 'manipulation' : 'short_spoken_word';
+  TAP_KINDS.has(kind)
+    ? 'manipulation'
+    : isOpenSet(kind)
+      ? 'open_set_word'
+      : 'short_spoken_word';
 
 /** Structural challenge shape as the generator emits it (duck-typed so this
  *  module never imports the component — the component imports us). */
@@ -138,7 +161,12 @@ const saysWord = (haystack: string | undefined, word: string): boolean =>
  * than a hard one, and each shape below has a specific way of failing the child:
  *
  *  - a tap mode whose cards do not contain the target — the tap can never match,
- *    so the child is corrected to the cap for answering correctly;
+ *    so the child is corrected to the cap for answering correctly. ⚠️ THIS GATE
+ *    IS KEYED TO `TAP_KINDS`, so it stopped applying to `association` the
+ *    moment that mode went spoken (item 25). That is the intended direction:
+ *    an open spoken ask has no cards to be wrong about, and requiring
+ *    `options` would drop every association item the generator now builds
+ *    without them. `receptive_match` still carries it;
  *  - an `opposite`/`association` with no base word — the ask renders "the
  *    opposite of undefined", and every correction re-ask inherits it;
  *  - a scale whose target rung is not at `scaleTargetIndex`, or appears twice —
@@ -268,6 +296,50 @@ export const pickModelOppositePair = (
   );
 };
 
+/**
+ * ⭐ THE ASSOCIATION MODEL PAIR — the same code-owned device, for the same
+ * reason, and it is what makes an OPEN correction possible at all.
+ *
+ * A closed mode's correction can name the answer, because there is one:
+ * `opposite` says "the opposite of big is small" and re-asks. Association has
+ * no such line to say. Naming the GENERATED partner ("a sock goes with a
+ * shoe") would hand over one of the several honest answers and kill the
+ * re-elicit — the child has just been told what to say next, so the retry is
+ * free. That is rhyme-studio's finding exactly: its production correction
+ * re-models the RIME rather than supplying a rhyme.
+ *
+ * So the correction models the RELATION on a pair this session never asks
+ * about. The child learns what "goes with" means from hammer/nail, and then
+ * answers about sock themselves.
+ *
+ * Pairs are chosen OFF the generator's own curated seed list (sock/shoe,
+ * spoon/fork, bed/pillow, cup/plate, dog/bone, key/lock, pencil/paper,
+ * bird/nest, toothbrush/toothpaste) so a collision is rare before the
+ * session-word filter even runs — and each one takes an article cleanly,
+ * which a GENERATED word cannot be trusted to do (the "this is a shoes"
+ * trap: the pool carries plurals and mass nouns, so the ask stays
+ * article-free and only these code-owned words are ever framed).
+ */
+const MODEL_ASSOCIATION_PAIRS: ReadonlyArray<readonly [string, string]> = [
+  ['hammer', 'nail'],
+  ['needle', 'thread'],
+  ['bread', 'butter'],
+  ['brush', 'paint'],
+  ['bat', 'ball'],
+];
+
+export const pickModelAssociationPair = (
+  items: ReadonlyArray<Pick<PictureVocabItem, 'word' | 'baseWord'>>,
+): readonly [string, string] => {
+  const sessionWords = new Set(
+    items.flatMap((i) => [i.word.toLowerCase(), (i.baseWord ?? '').toLowerCase()]),
+  );
+  return (
+    MODEL_ASSOCIATION_PAIRS.find(([a, b]) => !sessionWords.has(a) && !sessionWords.has(b))
+    ?? MODEL_ASSOCIATION_PAIRS[0]
+  );
+};
+
 // ── Small speakable helpers ─────────────────────────────────────────────────
 
 const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
@@ -313,9 +385,18 @@ export const frameSpokenFor = (item: PictureVocabItem): string =>
 
 // ── How-to-play — inside the quoted line (SWAP-1), re-spoken on action change ─
 
+/** The two code-owned model pairs a session resolves once. Both are functions
+ *  of the session's OWN words (they avoid every word it asks about), so they
+ *  are derived in `pictureVocabularyPackBase` and threaded from there — the
+ *  harness cannot model a pair the component would never have chosen. */
+export interface PictureVocabModelPairs {
+  modelPair: readonly [string, string];
+  assocPair: readonly [string, string];
+}
+
 export const howToPlayFor = (
   item: PictureVocabItem,
-  modelPair: readonly [string, string],
+  { modelPair, assocPair }: PictureVocabModelPairs,
 ): string => {
   switch (item.kind) {
     case 'receptive_match':
@@ -325,7 +406,7 @@ export const howToPlayFor = (
     case 'opposite':
       return `Opposites are as different as can be — like ${modelPair[0]} and ${modelPair[1]}. I say a word, you say its opposite! `;
     case 'association':
-      return 'Some things go together, like friends. I show a picture — you tap the picture that goes with it! ';
+      return `Some things go together, like friends — a ${assocPair[0]} goes with a ${assocPair[1]}. I say a word, you say what goes with it! `;
     case 'gradable_scale':
       return 'I say some words in order. One is missing — you say the missing word! ';
     case 'sentence_frame':
@@ -348,7 +429,7 @@ const askFor = (item: PictureVocabItem): string => {
     case 'opposite':
       return `${cap(item.baseWord ?? '')}. Your turn. What is the opposite of ${item.baseWord}?`;
     case 'association':
-      return `${cap(item.baseWord ?? '')}. Your turn. Tap the picture that goes with ${item.baseWord}.`;
+      return `${cap(item.baseWord ?? '')}. Your turn. What goes with ${item.baseWord}?`;
     case 'gradable_scale':
       return `Listen: ${scaleSpokenFor(item)}. Your turn. What word is missing?`;
     case 'sentence_frame':
@@ -359,7 +440,10 @@ const askFor = (item: PictureVocabItem): string => {
 // ── Corrections — DISTAR re-model then re-elicit (standing gate 3) ──────────
 // The answer is EARNED here: this is the first place the tutor may say it.
 
-const correctionFor = (item: PictureVocabItem): string => {
+const correctionFor = (
+  item: PictureVocabItem,
+  assocPair: readonly [string, string],
+): string => {
   switch (item.kind) {
     // NO ARTICLE, and no "this is" frame at all. The first live drive said
     // "My turn: this is a shoes." — the pool is an open LLM word list, so it
@@ -378,16 +462,125 @@ const correctionFor = (item: PictureVocabItem): string => {
       return `My turn: listen. ${(item.scaleWords ?? []).join(', ')}. The missing word is ${item.word}. Your turn. What word is missing?`;
     case 'sentence_frame':
       return `My turn: ${frameFilledFor(item)} ${cap(item.word)}. Your turn. Say the missing word.`;
+    /**
+     * ⭐ THE ONE CORRECTION IN THIS PACK THAT CANNOT NAME THE ANSWER.
+     *
+     * Every branch above earns the target here — that is DISTAR, and it is
+     * safe because there is exactly one right answer to earn. Association has
+     * several, so naming the generated partner would (a) assert one honest
+     * answer as THE answer, and (b) hand the child their next line, which
+     * makes the re-elicit ceremonial. rhyme-studio hit this first and answered
+     * it the same way: model the RULE, not a member of the set.
+     *
+     * So the relation is modeled on the code-owned pair and the ask returns
+     * untouched. The child hears what "goes with" means and still has to do
+     * the retrieval.
+     */
+    case 'association':
+      return (
+        `My turn: a ${assocPair[0]} goes with a ${assocPair[1]} — we use them together. `
+        + `Your turn. What goes with ${item.baseWord}?`
+      );
     default:
-      // Tap modes correct through tapVerdictCue, never through this contract.
+      // receptive_match corrects through tapVerdictCue, never through this contract.
       return '';
   }
 };
 
+/**
+ * ⭐ THE ECHO NEEDS ITS OWN SCRIPTED BRANCH — item 24's most transferable
+ * finding, ported before it could be rediscovered here.
+ *
+ * The child says the stimulus straight back. The generic correction re-models
+ * the relation on hammer/nail, which is the right move for a wrong partner and
+ * a NON-SEQUITUR to an echo, so the model does the sensible thing and goes off
+ * script to say something more apt. On the rhyme pilot that line was *"A word
+ * does not rhyme with itself in this game."* — right teaching, right refusal,
+ * and it opens with NEITHER sentinel, so the engine read no verdict and the
+ * loop went deaf. It hit 5 of 9 items, always on the first correction.
+ *
+ * Deleting the option cards makes it likelier here for the same reason
+ * deleting the word bank did there: with nothing to pick from, "say the word
+ * back" is the cheapest wrong answer available.
+ *
+ * Both branches open with `My turn` — the correction sentinel is what the
+ * engine classifies on, so a line without it is a line the loop cannot hear.
+ */
+const echoCorrectionFor = (
+  item: PictureVocabItem,
+  assocPair: readonly [string, string],
+): string =>
+  `My turn: ${item.baseWord} cannot go with itself. `
+  + `A ${assocPair[0]} goes with a ${assocPair[1]}. `
+  + `Your turn. Tell me something different that goes with ${item.baseWord}.`;
+
+/**
+ * ⭐ THE THIRD BRANCH — the category word ("clothes" for sock), on exactly the
+ * argument that earns the echo its own line: the generic correction does not
+ * address what the child actually did, so the model will improvise, and an
+ * improvised line opens with no sentinel.
+ *
+ * It is a DIFFERENT error from a wrong partner and it deserves different
+ * teaching. "Clothes" is not a failed guess at a partner; it is a correct
+ * observation about the wrong question — the child named the set sock is IN
+ * rather than a thing that goes WITH it. This is `opposite`'s base-echo
+ * failure in a new coat, and the fix is to name the distinction out loud.
+ *
+ * The line cannot quote what the child said (a say-exactly line is byte-fixed
+ * and the category word is unknown at build time), so it points with "that".
+ */
+const categoryCorrectionFor = (
+  item: PictureVocabItem,
+  assocPair: readonly [string, string],
+): string =>
+  `My turn: that names a whole group. I want one thing. `
+  + `A ${assocPair[0]} goes with a ${assocPair[1]}. `
+  + `Your turn. What goes with ${item.baseWord}?`;
+
 // ── Judging contracts (spoken modes) ────────────────────────────────────────
 
+/**
+ * ⭐ THE OPEN-SET ACCEPT CLAUSE — a RULE where the other four modes have a LIST.
+ *
+ * ⚠️ THIS IS A HARDER OPEN SET THAN RHYME, and the guards do not transfer by
+ * analogy. Rhyme's rule is nearly binary — does it share the rime, is it a
+ * real word — so a judge can be wrong about it but cannot RATIONALISE its way
+ * to a wrong answer. "Goes with" is semantic, graded and culture-dependent,
+ * and a sufficiently helpful model can construct a chain to almost anything
+ * ("a cat goes with a sock — cats love to play with socks!"). That is this
+ * class's false-affirmation mode and it has no analogue in rhyme.
+ *
+ * Two things this clause must do that a list does not have to:
+ *
+ *   AUTHORISE THE UNLISTED PARTNER. `sock → foot`, `sock → drawer`, `sock →
+ *   laundry` are all honest answers a five-year-old could give, and NONE of
+ *   them is the generated partner. This is the single biggest difference from
+ *   rhyme: the correct answer set is genuinely large and genuinely fuzzy, and
+ *   a clause that only accepts `shoe` fails real children. It is also the
+ *   probe that catches a judge quietly re-closing the set around its own first
+ *   guess.
+ *
+ *   DRAW THE LINE AT THE STORY, IN THE CLAUSE, NOT IN THE JUDGE'S TASTE. The
+ *   distinction that separates an honest unlisted partner from a rationalised
+ *   chain is whether the connection has to be EXPLAINED. `sock → drawer` needs
+ *   no story; `sock → cat` needs one. Writing that test into the contract is
+ *   what makes the wide accept side safe.
+ *
+ * The relation is stated as MUTUAL because the generator emits both directions
+ * of every pair (`expandAssociations`), so "what goes with shoe?" is a real
+ * ask and "sock" is its answer.
+ */
 const acceptClauseFor = (item: PictureVocabItem): string => {
   switch (item.kind) {
+    case 'association':
+      return (
+        `The learner has to name a REAL, everyday thing that plainly goes with ${item.baseWord} — `
+        + `something you would find with it, use with it, or keep with it in ordinary life. `
+        + `Things that go together go together BOTH WAYS, so it does not matter which one names the other. `
+        + `Any such thing is correct, INCLUDING ONE YOU DID NOT THINK OF YOURSELF: ${item.baseWord} honestly goes with `
+        + `several things, and the first one that came to your mind is not the only right answer. `
+        + `Judge the thing you heard, and a small mispronunciation from a five-year-old's mouth still counts. `
+      );
     case 'naming':
       return `A different fair name for the same thing — like puppy for a dog — also counts; affirm it and echo "${item.word}". `;
     case 'opposite':
@@ -401,8 +594,47 @@ const acceptClauseFor = (item: PictureVocabItem): string => {
   }
 };
 
+/**
+ * ⭐ THE SIX GUARDS. The honest risk of an open class is FALSE AFFIRMATION, and
+ * the two errors are not symmetric: a missed honest partner costs the child one
+ * more turn, while an affirmed wrong answer teaches that anything goes with
+ * anything. So this is where the mode spends its words.
+ *
+ * Each guard is a scored bucket in `associationBench.ts` — the contract CLAIMS
+ * these are refused and the bench is that claim made testable. Change one,
+ * change both.
+ *
+ * ⚠️ THERE IS NO NAME CLAUSE HERE, and its absence is deliberate. Rhyme's
+ * nonword guard carries one ("Bill" rhymes with "hill") because a name really
+ * can be a correct rhyme. A name is not a correct answer to "what goes with
+ * sock", so importing that exception would open the exact door the
+ * rationalised-chain guard exists to shut. The item-24 lesson that DOES
+ * transfer is the principle underneath it — an honest answer you did not list
+ * is still an honest answer — and that is carried by the accept clause's
+ * unlisted-partner sentence, not by a name exception.
+ */
 const wrongClauseFor = (item: PictureVocabItem): string => {
   switch (item.kind) {
+    case 'association':
+      return (
+        // ECHO — the stimulus said back, and the cheapest wrong answer now
+        // that there is no menu to pick from.
+        `The word "${item.baseWord}" said back is NOT the answer, however confident it sounds: a thing does not go with itself. `
+        // RATIONALISED CHAIN — THE SIGNATURE FAILURE OF THIS CLASS. Weighted
+        // heaviest in the bench, and the only guard with no rhyme analogue.
+        + `⭐ If you have to invent a story to explain why the two things go together, THEY DO NOT GO TOGETHER. `
+        + `"A cat goes with a sock because cats play with socks" is a story, and that answer is wrong. `
+        + `Accept only a plain everyday connection a five-year-old already knows, never one you can construct. `
+        // CATEGORY WORD — names the set, not a partner.
+        + `The name of the GROUP that ${item.baseWord} belongs to is not the answer either — that names the set ${item.baseWord} is IN, `
+        + `and the question asks for one thing that goes WITH it. `
+        // SAME-CATEGORY SWAP — same kind of thing is not the same as together.
+        + `Another member of that same group is not the answer either: being the same KIND of thing is not the same as going together. `
+        // NONWORD — the failure a closed card set made structurally impossible.
+        + `A made-up word is NOT the answer. If what you heard is not a real thing you know, it is wrong. `
+        // OFF-TASK — without this the judge has no scripted branch and invents one.
+        + `If you did not hear a thing at all, or the learner says they do not know, that is not an answer — treat it as wrong and run the correction. `
+      );
     case 'naming':
       return `A category word like animal or food, a word that would be true of almost anything like "a thing" or "stuff", or the name of something else, is NOT the answer — the one word that names THIS picture is. `;
     case 'opposite':
@@ -452,26 +684,64 @@ const NEVER_PERFORM =
   + `never announce the activity's state or describe what has changed on the screen, `
   + `and never announce that you are waiting or listening — simply stop speaking.`;
 
-const judgingContract = (item: PictureVocabItem): string =>
-  `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. Never say the answer during their turn. `
-  + `The correct answer is "${item.word}". ${acceptClauseFor(item)}${wrongClauseFor(item)}`
-  + TWO_BRANCH_LAW
-  + `If the answer is right, say exactly: "Yes, ${item.word}." `
-  + `If it is wrong, say exactly: "${correctionFor(item)}"`;
+/**
+ * The affirmation, which for `association` is the first in this pack that
+ * CANNOT NAME WHAT THE CHILD SAID.
+ *
+ * Every closed mode says the word back ("Yes, apple.") because the word is
+ * known before the child speaks. Here it is not, and the obvious line — "Yes,
+ * <what you said> goes with sock" — would make the contract a TEMPLATE rather
+ * than a say-exactly line, so the family's exact-line oracles
+ * (`DiDriveItem.affirmLine`, the harness's scripted-line comparison) would
+ * have to go soft for every open item. rhyme-studio solved it with deixis and
+ * so does this: "that" carries the reference, the line stays byte-fixed, and
+ * the affirmation still TEACHES — it names the relation at the moment it is
+ * earned, which is exactly where every other mode names its answer.
+ */
+const affirmFor = (item: PictureVocabItem): string =>
+  item.kind === 'association'
+    ? `Yes, that goes with ${item.baseWord} — they belong together.`
+    : `Yes, ${item.word}.`;
 
-/** Tap items carry a SILENCE contract (spell_word's pattern): there is nothing
- *  to judge until the application describes the tap. */
-const tapContract = (item: PictureVocabItem): string => {
-  const base = item.kind === 'association'
-    ? `Never say what goes with ${item.baseWord} — the tap is the answer. `
-    : '';
-  return (
-    `The quoted line is the ONLY thing you say on this turn; the learner answers by TAPPING a picture, not by speaking, so you then stay completely silent. `
-    + base
-    + `Do not describe the pictures, do not narrate, and do not judge anything you hear through the microphone. `
-    + `You will be told what the learner tapped and given the exact line to say; only then do you speak.`
-  );
-};
+const judgingContract = (
+  item: PictureVocabItem,
+  { assocPair }: PictureVocabModelPairs,
+): string =>
+  `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. Never say the answer during their turn. `
+  /**
+   * ⚠️ AN OPEN ITEM IS HANDED A RULE, NEVER A TARGET. Naming `item.word` here
+   * is what re-closes the set: a judge given "the correct answer is shoe"
+   * grades against shoe and refuses `foot`, `drawer` and `laundry`, which are
+   * the answers real children give. The generated partner survives only as
+   * the move-on close line, after the child has already failed twice.
+   */
+  + (isOpenSet(item.kind) ? '' : `The correct answer is "${item.word}". `)
+  + `${acceptClauseFor(item)}${wrongClauseFor(item)}`
+  + TWO_BRANCH_LAW
+  + `If the answer is right, say exactly: "${affirmFor(item)}" `
+  /**
+   * THREE BRANCHES, SPECIFIC FIRST. The model must reach the named case before
+   * it meets the catch-all "if it is wrong", or it never gets there.
+   *
+   * Consequence carried from item 24: the general correction is now the LAST
+   * spoken span of an association cue. `DiDriveItem.correctionLine` already
+   * takes `spans[spans.length - 1]` for exactly this reason and needs no
+   * change — but a test asserting a fixed span INDEX will break here, and
+   * should.
+   */
+  + (isOpenSet(item.kind)
+    ? `If the learner said "${item.baseWord}" back to you, say exactly: "${echoCorrectionFor(item, assocPair)}" `
+      + `If the learner named the whole group instead of one thing, say exactly: "${categoryCorrectionFor(item, assocPair)}" `
+      + `If it is wrong for any other reason, say exactly: "${correctionFor(item, assocPair)}"`
+    : `If it is wrong, say exactly: "${correctionFor(item, assocPair)}"`);
+
+/** The SILENCE contract (spell_word's pattern): there is nothing to judge until
+ *  the application describes the tap. `receptive_match` is the only mode that
+ *  still reaches this — association's silence branch died with its cards. */
+const tapContract = (_item: PictureVocabItem): string =>
+  `The quoted line is the ONLY thing you say on this turn; the learner answers by TAPPING a picture, not by speaking, so you then stay completely silent. `
+  + `Do not describe the pictures, do not narrate, and do not judge anything you hear through the microphone. `
+  + `You will be told what the learner tapped and given the exact line to say; only then do you speak.`;
 
 // ── Cues ────────────────────────────────────────────────────────────────────
 
@@ -482,7 +752,13 @@ export interface PictureVocabCueOptions {
 
 export interface PictureVocabCueSession {
   modelPair?: readonly [string, string];
+  assocPair?: readonly [string, string];
 }
+
+const pairsOf = (session: PictureVocabCueSession): PictureVocabModelPairs => ({
+  modelPair: session.modelPair ?? MODEL_OPPOSITE_PAIRS[0],
+  assocPair: session.assocPair ?? MODEL_ASSOCIATION_PAIRS[0],
+});
 
 /** One item's ask. ONE job: speak this (SWAP-1 — the how-to-play lives inside
  *  the quoted line; the catalog only forbids adding to it). */
@@ -491,26 +767,28 @@ export const itemCue = (
   opts: PictureVocabCueOptions = {},
   session: PictureVocabCueSession = {},
 ): string => {
-  const modelPair = session.modelPair ?? MODEL_OPPOSITE_PAIRS[0];
+  const pairs = pairsOf(session);
   const greeting = opts.opening ? 'Hi! Time to play with words! ' : '';
-  const how = opts.opening || opts.howToPlay ? howToPlayFor(item, modelPair) : '';
+  const how = opts.opening || opts.howToPlay ? howToPlayFor(item, pairs) : '';
   const spoken = `${greeting}${how}${askFor(item)}`;
-  const contract = item.answerKind === 'gesture' ? tapContract(item) : judgingContract(item);
+  const contract = item.answerKind === 'gesture' ? tapContract(item) : judgingContract(item, pairs);
   return `[PV_ITEM] Say exactly: "${spoken}" ${contract} ${NEVER_PERFORM}`;
 };
 
-/** The gesture verdict ask: the match is CODE-COMPUTED and the tutor is handed
- *  its exact line (handVerdictCue's pattern). The target word inside this
- *  instruction is for the judge's eyes; on a miss the spoken correction never
- *  names the association answer — the retry has to stay a real retry. */
+/**
+ * The gesture verdict ask: the match is CODE-COMPUTED and the tutor is handed
+ * its exact line (handVerdictCue's pattern).
+ *
+ * ⚠️ RECEPTIVE_MATCH ONLY. Association had a second pair of branches here and
+ * they died with its cards (item 25) — checked before deleting, exactly as the
+ * handoff asks: `receptive_match` still needs this cue, so the function stays
+ * and only the unreachable half goes. A tapped verdict for a spoken mode is
+ * now unrepresentable rather than merely unused.
+ */
 export const tapVerdictCue = (item: PictureVocabItem, tappedWord: string): string => {
   const matches = tappedWord.toLowerCase() === item.word.toLowerCase();
-  const affirm = item.kind === 'receptive_match'
-    ? `Yes! You found the ${item.word}.`
-    : `Yes! ${cap(item.baseWord ?? '')} goes with ${item.word}.`;
-  const correction = item.kind === 'receptive_match'
-    ? `My turn: listen again. ${cap(item.word)}. Your turn. Tap the ${item.word}.`
-    : `My turn: think about which one is used with ${item.baseWord} — they belong together. Your turn. Tap the picture that goes with ${item.baseWord}.`;
+  const affirm = `Yes! You found the ${item.word}.`;
+  const correction = `My turn: listen again. ${cap(item.word)}. Your turn. Tap the ${item.word}.`;
   return (
     `[PV_TAP] The learner tapped the picture of "${tappedWord}"; the right picture is "${item.word}" — `
     + `that ${matches ? 'MATCHES' : 'does NOT match'}. `
@@ -529,15 +807,26 @@ export const moveOnCue = (
   opts: PictureVocabCueOptions = {},
   session: PictureVocabCueSession = {},
 ): string => {
-  const modelPair = session.modelPair ?? MODEL_OPPOSITE_PAIRS[0];
+  const pairs = pairsOf(session);
+  /**
+   * Association closes its loop by naming ONE partner — its corrections never
+   * did (an open correction models the relation on a code-owned pair instead,
+   * so the retry stays a real retry), and a capped item must not end with the
+   * relation still unknown.
+   *
+   * "One thing that goes with X is Y", not "X goes with Y": the set is open,
+   * the child may well have said something else honest, and a line that names
+   * the generated partner as THE answer would teach a closed set at the exact
+   * moment the mode stops being one.
+   */
   const closeLine = item.kind === 'association'
-    ? `${cap(item.baseWord ?? '')} goes with ${item.word} — they belong together. `
+    ? `One thing that goes with ${item.baseWord} is ${item.word} — they belong together. `
     : '';
   if (!next) {
     return `[PV_MOVE] Say exactly: "Good try! ${closeLine}Words take practice — we will see that one again another day." Then stop.`;
   }
-  const how = opts.howToPlay ? howToPlayFor(next, modelPair) : '';
-  const contract = next.answerKind === 'gesture' ? tapContract(next) : judgingContract(next);
+  const how = opts.howToPlay ? howToPlayFor(next, pairs) : '';
+  const contract = next.answerKind === 'gesture' ? tapContract(next) : judgingContract(next, pairs);
   return `[PV_MOVE] Say exactly: "Good try! ${closeLine}Here comes the next one. ${how}${askFor(next)}" ${contract} ${NEVER_PERFORM}`;
 };
 
@@ -557,7 +846,7 @@ export const pronounceCue = (item: PictureVocabItem): string => {
       case 'opposite':
         return `${cap(item.baseWord ?? '')}. What is the opposite of ${item.baseWord}?`;
       case 'association':
-        return `${cap(item.baseWord ?? '')}. Tap the picture that goes with ${item.baseWord}.`;
+        return `${cap(item.baseWord ?? '')}. What goes with ${item.baseWord}?`;
       case 'gradable_scale':
         return `${cap(scaleSpokenFor(item))}. What word is missing?`;
       case 'sentence_frame':
@@ -598,22 +887,24 @@ export const stimulusFor = (item: PictureVocabItem): string => {
  * the `diagnosisObservation` that reads the tapped card); the drive-plan endpoint
  * builds the identical cues for the headless judged-loop harness.
  *
- * The opposite-rule MODEL PAIR is derived here rather than passed in, because it
- * is a function of the session's own words (`pickModelOppositePair` avoids every
- * word this session asks about). Deriving it inside the surface is what keeps
- * the harness from modeling a pair the component would never have chosen — the
- * exact drift the surface exists to prevent.
+ * BOTH MODEL PAIRS are derived here rather than passed in, because each is a
+ * function of the session's own words (`pickModelOppositePair` and
+ * `pickModelAssociationPair` avoid every word this session asks about).
+ * Deriving them inside the surface is what keeps the harness from modeling a
+ * pair the component would never have chosen — the exact drift the surface
+ * exists to prevent.
  */
 export const pictureVocabularyPackBase = (
   items: PictureVocabItem[],
 ): JudgedCueSurface<PictureVocabItem> => {
   const modelPair = pickModelOppositePair(items);
+  const assocPair = pickModelAssociationPair(items);
   return {
     primitiveType: 'picture-vocabulary',
     activityLine: 'live direct instruction picture vocabulary practice',
     items,
-    itemCue: (item, opts) => itemCue(item, opts, { modelPair }),
-    moveOnCue: (item, next, opts) => moveOnCue(item, next, opts, { modelPair }),
+    itemCue: (item, opts) => itemCue(item, opts, { modelPair, assocPair }),
+    moveOnCue: (item, next, opts) => moveOnCue(item, next, opts, { modelPair, assocPair }),
     completeCue,
     pronounceCue,
     contextFor: (item) => ({
@@ -650,6 +941,35 @@ export interface PictureVocabHarnessAnswers {
   leakTokens: string[];
   leakExemptSpan?: string;
 }
+
+/**
+ * ⚠️⚠️ THE INSTRUMENT MISTAKE THAT COST ITEM 24 A VERDICT, AND WHY THIS MODE
+ * DERIVES ONLY TWO WRONG ANSWERS.
+ *
+ * PROBE MATERIAL IS STIMULUS-SPECIFIC. Three separate times on 2026-08-19 the
+ * rhyme harness was wrong and the tutor was right, and two of the three first
+ * read as product failures: a fixture's rhyme borrowed across stimuli WAS the
+ * new item's target; a signature wrong borrowed from another item's echo probe
+ * was a perfectly valid answer. A borrowed or careless probe does not fail
+ * loudly — it produces a confident, well-formatted finding pointing at the
+ * wrong component.
+ *
+ * Association is MORE exposed to this than rhyme was, because whether a word
+ * is "a rationalised chain" or "an honest unlisted partner" is a judgment call
+ * a human makes when authoring it — and it cannot be made at all without
+ * seeing the stimulus. The generator emits arbitrary pairs, so for a GENERATED
+ * item there is no safe way to derive a same-category swap, a category word,
+ * or a chain: "cloud" looks like a chain until the stimulus turns out to be
+ * "rain".
+ *
+ * Exactly two wrong answers are safe for EVERY stimulus, because both are
+ * wrong BY DEFINITION rather than by semantics:
+ *   - the base word said back (an echo is wrong whatever the base is), and
+ *   - a nonword (not a word, so it cannot accidentally be an honest partner).
+ * Those are the two this function derives. Everything else lives in the
+ * hand-authored bench fixture, where a human read the stimulus first.
+ */
+const ASSOCIATION_NONWORD = 'blen';
 
 /** A concrete noun that is not the target and not already in the sentence —
  *  grammatical in the frame, and false. */
@@ -696,6 +1016,23 @@ export const pictureVocabularyHarnessAnswers = (
   }
 
   switch (item.kind) {
+    case 'association':
+      return {
+        ...base,
+        // The generator's partner is a CURATED, hand-checked pair (its prompt
+        // seeds sock/shoe, spoon/fork, bed/pillow, …), so it is a safe AFFIRM
+        // for a plain drive even though it is not the only right answer.
+        correct: word,
+        plainWrong: ASSOCIATION_NONWORD,
+        signatureWrong: {
+          text: item.baseWord ?? '',
+          why:
+            'the stimulus said straight back — the documented signature error for this mode. The ask itself '
+            + 'just spoke that word aloud, and deleting the option cards made it likelier because there is no '
+            + 'menu to pick from — so "say the word back" is now the cheapest wrong answer available. '
+            + 'It is also the ONLY drive that reaches the scripted echo branch',
+        },
+      };
     case 'naming':
       return {
         ...base,

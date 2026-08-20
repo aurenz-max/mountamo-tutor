@@ -24,9 +24,11 @@ import {
   answerKindFor,
   completeCue,
   itemCue,
+  isOpenSet,
   itemFromChallenge,
   itemsFromChallenges,
   moveOnCue,
+  pickModelAssociationPair,
   pickModelOppositePair,
   pictureVocabularyHarnessAnswers,
   pictureVocabularyPackBase,
@@ -69,12 +71,12 @@ const NAMING = built({ id: 'pv-2', type: 'naming', word: 'apple', emoji: '🍎' 
 const OPPOSITE = built({
   id: 'pv-3', type: 'opposite', word: 'small', emoji: '🐭', baseWord: 'big', baseEmoji: '🐘',
 });
+// NO `options`. That absence is the fixture's whole point: an association
+// challenge that carries no cards must still SURVIVE the build gate, which is
+// only true because the mode left `TAP_KINDS` (item 25). Before the port this
+// same literal was rejected.
 const ASSOCIATION = built({
   id: 'pv-4', type: 'association', word: 'shoe', emoji: '👟', baseWord: 'sock', baseEmoji: '🧦',
-  options: [
-    { word: 'shoe', emoji: '👟' }, { word: 'fork', emoji: '🍴' },
-    { word: 'nest', emoji: '🪺' }, { word: 'key', emoji: '🔑' },
-  ],
 });
 const SCALE = built({
   id: 'pv-5', type: 'gradable_scale', word: 'cool', emoji: '🌡️',
@@ -90,6 +92,10 @@ const FRAME = built({
 
 const ITEMS: PictureVocabItem[] = [RECEPTIVE, NAMING, OPPOSITE, ASSOCIATION, SCALE, FRAME];
 const modelPair = pickModelOppositePair(ITEMS);
+const assocPair = pickModelAssociationPair(ITEMS);
+/** What the pack itself threads — every cue assertion below uses this, so a
+ *  test cannot pass under a pair the component would never have picked. */
+const pairs = { modelPair, assocPair };
 
 /**
  * The pack PRODUCTION assembles — the shared cue surface itself, not a literal
@@ -127,16 +133,43 @@ describe('picture-vocabulary pack · structural gates', () => {
   });
 
   it('maps modes to the ruled answer material and benched classes', () => {
-    // Association TAPS because open-set spoken production is a BLOCKED class —
-    // this mapping is the ruling; changing it needs a bench, not an edit.
+    /**
+     * ⭐ THIS TEST WAS INVERTED BY ITEM 25, IN BOTH DIRECTIONS — it used to
+     * assert that association was a gesture/manipulation, which was the
+     * `open_set_word` BLOCK made testable. The class was benched, so the block
+     * is gone and the same assertions now pin the opposite fact.
+     *
+     * Both halves are load-bearing:
+     *  - association must be VOICE + `open_set_word`, or the cards are back;
+     *  - receptive_match must STAY gesture + manipulation. That is a ruling,
+     *    not debt (the tap IS receptive identification), and converting it
+     *    would be a regression, not the next rung.
+     */
+    expect(answerKindFor('association')).toBe('voice');
+    expect(responseClassFor('association')).toBe('open_set_word');
+    expect(isOpenSet('association')).toBe(true);
+
     expect(answerKindFor('receptive_match')).toBe('gesture');
-    expect(answerKindFor('association')).toBe('gesture');
     expect(responseClassFor('receptive_match')).toBe('manipulation');
-    expect(responseClassFor('association')).toBe('manipulation');
+
     for (const kind of ['naming', 'opposite', 'gradable_scale', 'sentence_frame'] as const) {
       expect(answerKindFor(kind)).toBe('voice');
       expect(responseClassFor(kind)).toBe('short_spoken_word');
+      expect(isOpenSet(kind)).toBe(false);
     }
+  });
+
+  it('builds an association item with NO option cards, and still drops one with no base', () => {
+    // The §3 near-miss, pinned: the cards-contain-the-target gate is keyed to
+    // TAP_KINDS, so it must no longer reach association — while the base-word
+    // gate, which is about the ASK being answerable at all, must still bite.
+    expect(itemFromChallenge({
+      id: 'a1', type: 'association', word: 'shoe', emoji: '👟', baseWord: 'sock', baseEmoji: '🧦',
+    })).not.toBeNull();
+    expect(itemFromChallenge({
+      id: 'a2', type: 'association', word: 'shoe', emoji: '👟',
+    })).toBeNull();
+    expect(ASSOCIATION.options).toBeUndefined();
   });
 
   it('stamps action per item so mixed sessions re-speak the how-to-play on mode change', () => {
@@ -165,8 +198,11 @@ describe('picture-vocabulary pack · answer-leak', () => {
   it('speaks the stimulus in every ask (the problem is STATED, not printed)', () => {
     expect(spokenLine(itemCue(RECEPTIVE))).toContain('dog');            // the word IS the question
     expect(spokenLine(itemCue(OPPOSITE, {}, { modelPair }))).toContain('opposite of big');
-    expect(spokenLine(itemCue(ASSOCIATION))).toContain('sock');
-    expect(spokenLine(itemCue(ASSOCIATION))).not.toContain('shoe');
+    // The ask HANDS OVER now instead of pointing at cards: "Sock. Your turn.
+    // What goes with sock?" — no "tap the picture" anywhere in the pack.
+    expect(spokenLine(itemCue(ASSOCIATION, {}, pairs))).toContain('What goes with sock?');
+    expect(spokenLine(itemCue(ASSOCIATION, {}, pairs))).not.toContain('Tap the picture');
+    expect(spokenLine(itemCue(ASSOCIATION, {}, pairs))).not.toContain('shoe');
     expect(spokenLine(itemCue(SCALE))).toContain('freezing, cold, hmm, warm, hot');
     expect(spokenLine(itemCue(FRAME))).toContain('We sleep in a ... hmm ... at night.');
     // REVERT-BITE for the probe's finding: the generator's own frameSpoken was
@@ -190,6 +226,10 @@ describe('picture-vocabulary pack · answer-leak', () => {
     expect(pronounceCue(OPPOSITE)).not.toContain('small');
     expect(pronounceCue(SCALE)).not.toContain('cool');
     expect(pronounceCue(FRAME)).not.toContain('bed');
+    // Association re-hears the SPOKEN question now, not a tap instruction.
+    expect(pronounceCue(ASSOCIATION)).not.toContain('shoe');
+    expect(pronounceCue(ASSOCIATION)).toContain('What goes with sock?');
+    expect(pronounceCue(ASSOCIATION)).not.toContain('Tap the picture');
     expect(pronounceCue(RECEPTIVE)).toContain('Tap the dog.'); // the word IS the question here
   });
 
@@ -248,17 +288,22 @@ describe('picture-vocabulary pack · corrections', () => {
 // ── 4. Tap modes: silence contract + code-computed verdict ──────────────────
 
 describe('picture-vocabulary pack · tap items', () => {
-  it('tap asks carry a SILENCE contract, not a judging contract', () => {
-    for (const item of [RECEPTIVE, ASSOCIATION]) {
-      const cue = itemCue(item);
-      // The wait is stated as a FACT about the turn, never as an order — the
-      // imperative form is what a model performed as "[WAIT silently]", and
-      // checkPackGates now refuses it.
-      expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
-      expect(cue).toContain('TAPPING a picture');
-      expect(cue).not.toContain('If the answer is right');
-    }
-    expect(itemCue(ASSOCIATION)).toContain('Never say what goes with sock');
+  it('the SILENCE contract is now receptive_match ALONE', () => {
+    const cue = itemCue(RECEPTIVE);
+    // The wait is stated as a FACT about the turn, never as an order — the
+    // imperative form is what a model performed as "[WAIT silently]", and
+    // checkPackGates now refuses it.
+    expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
+    expect(cue).toContain('TAPPING a picture');
+    expect(cue).not.toContain('If the answer is right');
+
+    // REVERT-BITE (item 25): association used to carry this same contract and a
+    // "Never say what goes with sock" line. Both are gone, and their absence is
+    // what proves the mode is judged rather than waited out.
+    const assoc = itemCue(ASSOCIATION, {}, pairs);
+    expect(assoc).not.toContain('TAPPING a picture');
+    expect(assoc).not.toContain('Never say what goes with sock');
+    expect(assoc).toContain('If the answer is right');
   });
 
   it('computes the verdict in code and hands the tutor its exact line', () => {
@@ -272,20 +317,95 @@ describe('picture-vocabulary pack · tap items', () => {
     expect(spokenLine(miss).startsWith('My turn:')).toBe(true);
   });
 
-  it('an association retry NEVER names the answer', () => {
-    // REVERT-BITE: the target rides in the instruction (judge's eyes) but the
-    // spoken correction must not say it, or the retry is free.
-    const miss = tapVerdictCue(ASSOCIATION, 'fork');
-    expect(miss).toContain('does NOT match');
-    expect(spokenLine(miss)).not.toContain('shoe');
-    expect(spokenLine(miss)).toContain('sock');
+  it('an association retry STILL never names a partner — now via the open correction', () => {
+    /**
+     * THE SAME PEDAGOGY, RE-PINNED ON THE NEW MECHANISM. It used to be enforced
+     * on tapVerdictCue's association branch, which no longer exists; the
+     * property it protected — a retry that hands over the answer is not a retry
+     * — is now carried by the correction modeling the RELATION on a code-owned
+     * pair instead of naming the generated partner.
+     */
+    const cue = itemCue(ASSOCIATION, {}, pairs);
+    const corrections = cue.slice(cue.indexOf('If the answer is right'));
+    expect(corrections).not.toContain('shoe');
+    expect(corrections).toContain(`a ${assocPair[0]} goes with a ${assocPair[1]}`);
+    expect(corrections).toContain('What goes with sock?');
   });
 
-  it('association closes its loop at move-on by naming the pair', () => {
-    expect(spokenLine(moveOnCue(ASSOCIATION, SCALE, { howToPlay: true }, { modelPair })))
-      .toContain('Sock goes with shoe');
+  it('hands the judge a RULE, never the generated partner', () => {
+    // ⚠️ THE FAILURE THIS BITES: naming the target re-closes the set. A judge
+    // told "the correct answer is shoe" grades against shoe and refuses foot,
+    // drawer and laundry — the answers real children give.
+    const cue = itemCue(ASSOCIATION, {}, pairs);
+    expect(cue).not.toContain('The correct answer is "shoe"');
+    expect(spokenLine(cue)).not.toContain('shoe');
+    expect(cue).toContain('INCLUDING ONE YOU DID NOT THINK OF YOURSELF');
+    // The closed modes must NOT have lost their target.
+    expect(itemCue(NAMING)).toContain('The correct answer is "apple"');
+  });
+
+  it('carries all six guards, and the chain guard by name', () => {
+    // The contract CLAIMS these are refused; associationBench.ts is that claim
+    // made testable. Change one, change both.
+    const cue = itemCue(ASSOCIATION, {}, pairs);
+    expect(cue).toContain('"sock" said back is NOT the answer');   // echo
+    expect(cue).toContain('invent a story');                        // rationalised chain
+    expect(cue).toContain('THEY DO NOT GO TOGETHER');
+    expect(cue).toContain('name of the GROUP');                     // category word
+    expect(cue).toContain('same KIND of thing');                    // same-category swap
+    expect(cue).toContain('A made-up word is NOT the answer');      // nonword
+    expect(cue).toContain('they do not know');                      // off-task
+    // The symmetry ruling (§2.3.1) is STATED, not left to inference.
+    expect(cue).toContain('BOTH WAYS');
+  });
+
+  it('gives the echo and the group word their OWN branches, ahead of the catch-all', () => {
+    /**
+     * ⭐ ITEM 24 MOST TRANSFERABLE FINDING. The generic correction is a
+     * non-sequitur to an echo, so the model goes off script to say something
+     * more apt — and an improvised line opens with NEITHER sentinel, so the
+     * engine reads no verdict and the loop goes deaf. It hit 5 of 9 items on
+     * the rhyme pilot, always on the first correction.
+     *
+     * Order is the whole point: a model reading top-down must reach the
+     * specific case BEFORE the catch-all.
+     */
+    const cue = itemCue(ASSOCIATION, {}, pairs);
+    const echo = cue.indexOf('If the learner said "sock" back to you');
+    const group = cue.indexOf('If the learner named the whole group');
+    const generic = cue.indexOf('If it is wrong for any other reason');
+    expect(echo).toBeGreaterThan(-1);
+    expect(group).toBeGreaterThan(-1);
+    expect(generic).toBeGreaterThan(-1);
+    expect(echo).toBeLessThan(generic);
+    expect(group).toBeLessThan(generic);
+
+    // Every branch opens with the correction sentinel, or the loop cannot hear it.
+    expect(cue).toContain('say exactly: "My turn: sock cannot go with itself.');
+    expect(cue).toContain('say exactly: "My turn: that names a whole group.');
+    // ...and none of them leaks a partner.
+    expect(cue.slice(echo)).not.toContain('shoe');
+  });
+
+  it('affirms with deixis, because it cannot know what the child said', () => {
+    // The first affirmation in this pack that cannot name the answer. "that"
+    // carries the reference so the line stays byte-fixed and the family's
+    // exact-line oracles need no exception for the open class.
+    expect(itemCue(ASSOCIATION, {}, pairs))
+      .toContain('say exactly: "Yes, that goes with sock — they belong together."');
+    expect(itemCue(NAMING)).toContain('say exactly: "Yes, apple."');
+  });
+
+  it('association closes its loop at move-on with ONE partner, not THE partner', () => {
+    // A capped item must not end with the relation still unknown — its
+    // corrections never named a partner, by design. But the phrasing matters:
+    // the child may have said something honest that was not "shoe", so the line
+    // offers an example rather than asserting the answer.
+    const close = spokenLine(moveOnCue(ASSOCIATION, SCALE, { howToPlay: true }, pairs));
+    expect(close).toContain('One thing that goes with sock is shoe');
+    expect(close).not.toContain('Sock goes with shoe');
     // Spoken modes modeled the answer in their corrections already — no close line.
-    expect(spokenLine(moveOnCue(OPPOSITE, SCALE, {}, { modelPair }))).not.toContain('small');
+    expect(spokenLine(moveOnCue(OPPOSITE, SCALE, {}, pairs))).not.toContain('small');
   });
 });
 
@@ -451,17 +571,39 @@ describe('picture-vocabulary · DI harness surface', () => {
     expect(frame.signatureWrong?.text).not.toBe('bed');
   });
 
-  it('commits tap modes with a card the stage actually renders', () => {
-    for (const item of [RECEPTIVE, ASSOCIATION]) {
-      const answers = pictureVocabularyHarnessAnswers(item);
-      const words = (item.options ?? []).map((o) => o.word);
-      expect(answers.tapped?.correct).toBe(item.word);
-      expect(words).toContain(answers.tapped?.wrong);
-      expect(answers.tapped?.wrong).not.toBe(item.word);
-    }
-    // Spoken modes commit nothing with their hands.
-    for (const item of [NAMING, OPPOSITE, SCALE, FRAME]) {
+  it('commits the ONE tap mode with a card the stage actually renders', () => {
+    const answers = pictureVocabularyHarnessAnswers(RECEPTIVE);
+    const words = (RECEPTIVE.options ?? []).map((o) => o.word);
+    expect(answers.tapped?.correct).toBe(RECEPTIVE.word);
+    expect(words).toContain(answers.tapped?.wrong);
+    expect(answers.tapped?.wrong).not.toBe(RECEPTIVE.word);
+
+    // Every spoken mode commits nothing with its hands — association included
+    // since item 25, which is the harness-side proof the cards are gone.
+    for (const item of [NAMING, OPPOSITE, ASSOCIATION, SCALE, FRAME]) {
       expect(pictureVocabularyHarnessAnswers(item).tapped).toBeUndefined();
     }
+  });
+
+  it('derives only STIMULUS-INDEPENDENT wrong answers for a generated association', () => {
+    /**
+     * ⚠️⚠️ THE INSTRUMENT MISTAKE THAT COST ITEM 24 A VERDICT. A borrowed or
+     * carelessly derived probe does not fail loudly — it produces a confident,
+     * well-formatted finding pointing at the WRONG COMPONENT. Three times in
+     * one day on the rhyme bench the harness was wrong and the tutor was right.
+     *
+     * Association is more exposed than rhyme, because "is this a rationalised
+     * chain or an honest unlisted partner?" cannot be answered without reading
+     * the stimulus. So exactly two wrong answers are derived here, and both are
+     * wrong BY DEFINITION rather than by semantics: the base said back, and a
+     * nonword. Everything else lives in the hand-authored bench fixture.
+     */
+    const answers = pictureVocabularyHarnessAnswers(ASSOCIATION);
+    expect(answers.signatureWrong?.text).toBe('sock');   // the echo — reaches the new branch
+    expect(answers.plainWrong).toBe('blen');             // a nonword — cannot be an honest partner
+    expect(answers.correct).toBe('shoe');                // the curated partner
+    // A generated item carries NO scored key: scoring needs a human who read
+    // the stimulus first.
+    expect(answers).not.toHaveProperty('probes');
   });
 });

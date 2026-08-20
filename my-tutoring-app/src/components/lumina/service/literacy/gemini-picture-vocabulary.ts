@@ -540,11 +540,14 @@ const buildOptions = (
 /**
  * Build one challenge of the given type from `entry`.
  *
- * DI PORT (2026-08-11): option cards exist ONLY on the two tap modes
- * (receptive_match, association) — for the four SPOKEN modes a printed option
- * list is an answer leak (word-flip's chips ruling), so no options are built
- * at all, which also frees those modes from the 3-distractor pool floor.
- * Both tap modes render emoji-only cards, so their emojis must be distinct.
+ * DI PORT (2026-08-11): option cards exist ONLY on tap modes — for a SPOKEN
+ * mode a printed option list is an answer leak (word-flip's chips ruling), so
+ * no options are built at all, which also frees those modes from the
+ * 3-distractor pool floor.
+ *
+ * ITEM 25 (2026-08-19): `association` JOINED THE SPOKEN MODES, leaving
+ * `receptive_match` as the only tap mode and the only caller of `buildOptions`
+ * here. Five of six modes are now answered out loud.
  */
 const buildChallenge = (
   type: PictureVocabChallengeType,
@@ -569,23 +572,34 @@ const buildChallenge = (
 
   if (type === 'association') {
     if (!hasValidAssociation(entry)) return null;
-    const target: PictureVocabOption = { word: entry.relatedWord!, emoji: entry.relatedEmoji! };
-    // Distractor candidates: other entries' words AND their partners.
-    const candidates: PictureVocabOption[] = others.flatMap(e => {
-      const c: PictureVocabOption[] = [{ word: e.word, emoji: e.emoji }];
-      if (hasValidAssociation(e)) c.push({ word: e.relatedWord!, emoji: e.relatedEmoji! });
-      return c;
-    });
-    // Emoji-only cards (tap answer) → emojis must be distinct. No forced base
-    // distractor: the prompt object itself is never a valid "goes-with" answer.
-    const options = buildOptions(target, candidates, { distinctEmojis: true });
-    if (!options) return null;
+    /**
+     * SPOKEN MODE SINCE 2026-08-19 (item 25) — no option cards.
+     *
+     * Association tapped four emoji-only cards for exactly one reason: "what
+     * goes with sock" is an OPEN spoken production set and `open_set_word` was
+     * a BLOCKED response class, so the cards closed the set while the relation
+     * stayed the skill. The class was benched, the block is gone, and the
+     * cards were the costume. The child says it now.
+     *
+     * TWO THINGS FELL OUT WITH THEM, and the second is a quiet win:
+     *  - a printed option list is an answer leak for a spoken mode (word-flip's
+     *    chips ruling, the same argument that stripped the other four modes);
+     *  - `buildOptions` returned null whenever the pool could not supply THREE
+     *    distinct-emoji distractors, and this branch returned null with it. A
+     *    thin pool therefore dropped association items that were perfectly
+     *    askable. An open ask needs nothing but a base word, so that floor is
+     *    gone and the mode now survives pools that used to starve it.
+     *
+     * The partner still rides on the challenge as `word`: it is what the
+     * move-on cue names when a capped child never produced one, and it is what
+     * the harness uses as a known-good AFFIRM. It is ONE right answer, not the
+     * only one, and nothing prints it before the tutor affirms.
+     */
     return {
       id: 'pv-pending',
       type,
       word: entry.relatedWord!,
       emoji: entry.relatedEmoji!,
-      options,
       baseWord: entry.word,
       baseEmoji: entry.emoji,
     };
@@ -609,7 +623,10 @@ const buildChallenge = (
     return { id: 'pv-pending', type, word: entry.word, emoji: entry.emoji };
   }
 
-  // receptive_match — emoji-only tap cards, emojis must be distinct.
+  // receptive_match — THE LAST TAP MODE. Emoji-only cards, emojis must be
+  // distinct. It keeps its cards because picking the referent you just heard
+  // named out of four pictures IS receptive identification; the tap is the
+  // skill, not a costume over a spoken answer.
   const target: PictureVocabOption = { word: entry.word, emoji: entry.emoji };
   const options = buildOptions(target, others.map(e => ({ word: e.word, emoji: e.emoji })), {
     distinctEmojis: true,
