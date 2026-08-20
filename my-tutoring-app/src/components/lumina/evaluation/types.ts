@@ -1868,6 +1868,21 @@ export interface EnergyCycleEngineMetrics extends BasePrimitiveMetrics {
   processDisrupted: boolean;            // Did they break a process via experiment
 }
 
+/** DI judged loop (first chemistry port): per-challenge-type accuracy so the
+ *  three eval modes (explore/identify/trend) read separately downstream. */
+export interface PeriodicTableMetrics extends BasePrimitiveMetrics {
+  type: 'periodic-table';
+  challengesCorrect: number;
+  challengesTotal: number;
+  /** explore — find-the-box taps. */
+  findAccuracy: number;
+  /** identify — spoken element names. */
+  identifyAccuracy: number;
+  /** trend — spoken comparisons and valence counts. */
+  trendAccuracy: number;
+  attemptsCount: number;
+}
+
 // -----------------------------------------------------------------------------
 // Chemistry Primitives
 // -----------------------------------------------------------------------------
@@ -3586,6 +3601,7 @@ export type PrimitiveMetrics =
   | PushPullArenaMetrics
   | RaceTrackLabMetrics
   | GravityDropTowerMetrics
+  | PeriodicTableMetrics
   // Chemistry
   | MatterExplorerMetrics
   | ReactionLabMetrics

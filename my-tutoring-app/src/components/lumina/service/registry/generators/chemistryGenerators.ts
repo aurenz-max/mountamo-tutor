@@ -30,6 +30,7 @@ import { generatePhExplorer } from '../../chemistry/gemini-ph-explorer';
 import { generateSafetyLab } from '../../chemistry/gemini-safety-lab';
 import { generateStoichiometryLab } from '../../chemistry/gemini-stoichiometry-lab';
 import { generateGasLawsSimulator } from '../../chemistry/gemini-gas-laws-simulator';
+import { buildPeriodicChallenges } from '../../chemistry/periodic-table-challenges';
 
 // ============================================================================
 // Helper Types
@@ -80,16 +81,42 @@ registerContextGenerator('molecule-viewer', async (ctx) => {
   };
 });
 
-// Periodic Table (interactive elements table). Self-contained — built inline from
-// the manifest title/intent/config, sourced from ctx.
+// Periodic Table (interactive elements table). Self-contained — all element
+// data lives in code, so even the JUDGED challenges are code-drawn: the draw
+// picks which elements, the script module computes every answer key, and no
+// LLM ever writes chemistry (see periodic-table-challenges.ts).
+//
+// THE FORK: an EXPLICIT eval-mode pin (lesson resolver / eval-test tester via
+// config.targetEvalMode) emits a DI judged session; no pin = the free
+// exploration surface every pre-DI lesson gets today. Deliberately no
+// intent-based LLM resolution here — flipping existing exploration slots into
+// judged sessions on an inferred mode would change lessons that never asked.
 registerContextGenerator('periodic-table', async (ctx) => {
   const config = getConfig({ config: ctx.raw });
-  // Periodic table is self-contained with all element data
+
+  const KNOWN_MODES = ['explore', 'identify', 'trend'] as const;
+  type PeriodicMode = (typeof KNOWN_MODES)[number];
+  const pin = String(config.targetEvalMode ?? '').trim();
+  const pinnedModes: PeriodicMode[] = pin === 'mixed'
+    ? [...KNOWN_MODES]
+    : pin.split('|')
+        .map((k) => k.trim())
+        .filter((k): k is PeriodicMode => (KNOWN_MODES as readonly string[]).includes(k));
+
+  const supportTier = ['easy', 'medium', 'hard'].includes(config.difficulty)
+    ? config.difficulty as 'easy' | 'medium' | 'hard'
+    : undefined;
+
+  const challenges = pinnedModes.length > 0
+    ? buildPeriodicChallenges(pinnedModes, { focusCategory: config.focusCategory })
+    : [];
+
   const data = {
     title: ctx.title || 'Periodic Table of Elements',
     description: ctx.intent || 'Explore the elements and their properties',
     highlightElements: config.highlightElements || [],
-    focusCategory: config.focusCategory
+    focusCategory: config.focusCategory,
+    ...(challenges.length > 0 ? { challenges, supportTier } : {}),
   };
   return {
     type: 'periodic-table',

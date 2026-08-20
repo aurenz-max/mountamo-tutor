@@ -47,38 +47,75 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'periodic-table',
-    description: 'Interactive periodic table of all 118 elements with detailed element information, electron shell visualization, stability charts, and category filtering. Perfect for teaching element properties, electron configuration, periodic trends, atomic structure, chemical categories, and the organization of the periodic table. Features clickable elements with modal views showing atomic number, mass, electron shells, valence electrons, phase, and band of stability.',
-    constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Ideal for introducing the periodic table or exploring specific element groups.',
+    description: 'Interactive periodic table of all 118 elements with group/period axes, element modal views (electron shells, stability, phase), and category filtering. Two surfaces: free EXPLORATION (clickable elements, search, family filters — ideal for introducing the table), and a live-judged DIRECT INSTRUCTION session when an eval mode is pinned — the spoken tutor asks, the child taps a box (Element Hunt) or answers OUT LOUD (element names, trend comparisons, outer-electron counts), and the tutor\'s own affirmation advances the lesson. Perfect for element properties, periodic trends, atomic structure, chemical families, and the organization of the table.',
+    constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Judged sessions require the live tutor and a microphone; the manifest must NOT supply element lists or answer keys — every challenge is drawn and keyed in code from the element table.',
+    // ── DI MODALITY (2026-08-19) — FIRST chemistry port. The tutor owns the
+    // clock in all four task shapes: it asks once, waits, judges the spoken
+    // answer in-band (or is handed the CODE-COMPUTED verdict for a tap), and
+    // its own line is the advance. No advance timer, no Next button, no
+    // push-to-talk mic anywhere in the path.
+    // THE PORT CLOSED A FICTION: these three eval modes were declared with
+    // supportsEvaluation: true while the generator emitted no challenges and
+    // the component rendered none — every lesson slot that pinned a mode got
+    // free exploration and no measurement.
+    // THE SPLIT (standing gate 1): find answers with a TAP because its answer
+    // is a POSITION on the page (the one honest tap shape here); name/compare/
+    // valence answer with the VOICE (short_spoken_word / closed_set_choice /
+    // number_word_to_20 — all benched or accepted-build-ahead).
+    // WHAT THE JUDGED SURFACE HIDES: the search bar (types "gold", gets Au),
+    // the category filter chips, and the tap-to-open element modal (shells on
+    // screen during a valence item is the answer in pixels). The element card
+    // returns as the reveal, after the affirmation.
+    // Cue lines and the per-item judging contracts live in
+    // `periodicTableScript.ts` (hand-authored, DISTAR); this block is the
+    // session-level frame. SENTINEL DISCIPLINE re-checked on every line below:
+    // no sentence begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'Student is exploring the periodic table. They have clicked on {{elementsExplored}} unique element(s) so far. Currently viewing: {{selectedElementName}} ({{selectedElementSymbol}}, atomic number {{selectedElementNumber}}), a {{selectedElementCategory}} in group {{selectedElementGroup}}, period {{selectedElementPeriod}}. Phase: {{selectedElementPhase}}. Valence electrons: {{selectedElementValence}}. Category filter active: {{hoveredCategory}}.',
-      contextKeys: ['title', 'focusCategory', 'selectedElementName', 'selectedElementSymbol', 'selectedElementNumber', 'selectedElementCategory', 'selectedElementGroup', 'selectedElementPeriod', 'selectedElementValence', 'selectedElementPhase', 'hoveredCategory', 'elementsExplored', 'categoriesExplored'],
+      taskDescription: 'Live-judged Direct Instruction on the periodic table. Right now the round type is "{{challengeType}}" and the question side is "{{stimulus}}". In explore rounds the learner answers by TAPPING a box on a table you cannot see — you stay silent until the application tells you what they tapped. In identify and trend rounds they answer OUT LOUD and you judge what you hear against the exact contract in each bracketed [PT_ITEM] message. You speak the exact scripted lines from those messages and nothing else. Reading the table themselves is the entire skill being practiced, so never volunteer an element\'s location, name, or count first. When the round type says free-exploration, this is instead the free table: react briefly and warmly to the [ELEMENT_SELECTED] and [GROUP_TREND] updates as an exploration guide.',
+      // Exactly what the pack pushes through contextFor — every key the
+      // click-era block interpolated (selectedElementName, valence, …) was
+      // the answer or the material that gives it away.
+      contextKeys: ['challengeType', 'stimulus'],
+      // 18d: every rung routes through the SCRIPTED correction. A re-spoken
+      // ask opens with neither "Yes" nor "My turn:", so the reducer records no
+      // verdict and the child waits on a lesson that cannot advance.
       scaffoldingLevels: {
-        level1: '"Click on an element to learn about it. What do you notice about how the elements are arranged on the table?"',
-        level2: '"Look at where {{selectedElementName}} sits — it\'s in group {{selectedElementGroup}}, period {{selectedElementPeriod}}. Elements in the same column share similar properties. Try clicking another element in the same group to compare!"',
-        level3: '"Let\'s explore {{selectedElementName}} ({{selectedElementSymbol}}) step by step. It\'s element number {{selectedElementNumber}} in the {{selectedElementCategory}} family. It has {{selectedElementValence}} valence electrons — that\'s the key to how it bonds. All elements in group {{selectedElementGroup}} have similar valence electrons, which is why they behave alike in chemical reactions. Try clicking a neighbor to see the pattern!"',
+        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it — inside the item message for spoken rounds, inside the tap message for explore rounds. It already re-models the table-reading route and hands the question back, and it opens with "My turn:" where the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next question to you.',
       },
+      // Observable behaviours only, with PERFORMABLE responses that produce a
+      // VERDICT (defect 7: a sentiment without the verdict line stalls a
+      // correct child).
       commonStruggles: [
-        { pattern: 'Student clicks elements randomly without reading the modal details', response: 'Guide: "When you click an element, take a moment to read its properties — the atomic number, electron shells, and phase. Each detail tells a story about how that element behaves!"' },
-        { pattern: 'Student does not understand why elements are arranged in rows and columns', response: 'Explain: "The table is organized by atomic number — each element has one more proton than the last. Rows (periods) fill up electron shells. Columns (groups) have the same number of outer electrons, so they behave similarly!"' },
-        { pattern: 'Student confuses groups (columns) and periods (rows)', response: 'Clarify: "Groups go UP and DOWN (columns) — elements in the same group are like a family with similar personalities. Periods go LEFT to RIGHT (rows) — they show how shells fill up with electrons."' },
-        { pattern: 'Student does not understand category colors or element families', response: 'Connect to properties: "Each color represents a family of elements. Alkali metals (one color) are super reactive. Noble gases (another color) barely react at all. Click the category buttons at the top to highlight a whole family!"' },
+        { pattern: 'Says the element\'s symbol letters instead of its name', response: 'Run the item\'s scripted correction line — the letters are the question, not the name — then wait in silence for their next try.' },
+        { pattern: 'Answers a trend question with the group number instead of the electron count', response: 'Run the item\'s scripted correction line, which re-models counting the tall columns, then wait in silence.' },
+        { pattern: 'Taps a box next to the right one', response: 'The tap message hands you the exact line for what they tapped — speak that line and nothing else.' },
+        { pattern: 'Goes quiet and neither speaks nor taps for a long time', response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.' },
       ],
       aiDirectives: [
         {
-          title: 'PERIODIC TRENDS',
+          title: 'THE VERDICT ENDS THE TURN',
           instruction:
-            'When the student explores multiple elements in the same group or period, highlight periodic trends: '
-            + 'atomic radius increases down a group and decreases across a period; '
-            + 'electronegativity increases across a period and decreases down a group; '
-            + 'reactivity patterns differ for metals vs nonmetals. '
-            + 'Keep explanations visual and age-appropriate.',
+            'After an affirmation or a correction, the turn is OVER — never run on into another question, '
+            + 'another element, or a next round of your own: the application sends every next question itself. '
+            + 'A continued turn asks about an item the screen is not showing.',
+        },
+        {
+          title: 'PERIODIC TRENDS (free exploration only)',
+          instruction:
+            'When the session is free exploration and the student clicks several elements in one group or period, '
+            + 'briefly highlight the trend: atomic radius increases down a group and decreases across a period; '
+            + 'reactivity patterns differ for metals vs nonmetals. Keep it visual and age-appropriate. '
+            + 'During judged rounds this directive is dormant — scripted lines only.',
         },
       ],
     },
     evalModes: [
-      { evalMode: 'explore', label: 'Explore (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['explore'], description: 'Navigate the table and recall basic element facts' },
-      { evalMode: 'identify', label: 'Identify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify'], description: 'Identify elements by properties or position' },
-      { evalMode: 'trend', label: 'Periodic Trends (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['trend'], description: 'Predict properties from periodic trends' },
+      { evalMode: 'explore', label: 'Element Hunt (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['explore'], description: 'DI judged: the tutor names a target — by name, spelled symbol, atomic number, or group and period — and the child taps its box. Verdict computed in code.' },
+      { evalMode: 'identify', label: 'Name It (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify'], description: 'DI judged, spoken: a position, number, or symbol clue; the child reads the table and says the element\'s name.' },
+      { evalMode: 'trend', label: 'Periodic Trends (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['trend'], description: 'DI judged, spoken: same-group size and reactivity comparisons plus main-group outer-electron counts, all keys computed from the table.' },
     ],
     supportsEvaluation: true,
   },

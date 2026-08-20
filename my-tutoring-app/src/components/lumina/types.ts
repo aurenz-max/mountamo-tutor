@@ -1104,15 +1104,46 @@ export interface WordBuilderData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<WordBuilderMetrics>) => void;
 }
 
+/** One judged periodic-table challenge — CODE-DRAWN from the element table
+ *  (never LLM-authored; every answer key is computed). The script module's
+ *  build gates (`periodicTableScript.itemFromChallenge`) validate and DROP,
+ *  never backfill. */
+export interface PeriodicTableChallenge {
+  id: string;
+  /** Maps 1:1 to the catalog eval modes. */
+  challengeType: 'explore' | 'identify' | 'trend';
+  /** explore (find): how the ask describes the target. */
+  findBy?: 'name' | 'symbol' | 'number' | 'position';
+  /** identify (name): which clue the ask gives. */
+  clueBy?: 'position' | 'number' | 'symbol';
+  /** trend: 'size' | 'reactivity' makes a compare pair; omitted = valence. */
+  axis?: 'size' | 'reactivity';
+  /** find / name / valence: the target's atomic number. */
+  targetNumber?: number;
+  /** compare: the two elements on offer, atomic numbers, ask order. */
+  pairNumbers?: number[];
+}
+
 // Periodic Table Types
 export interface PeriodicTableData {
   title?: string;
   description?: string;
   highlightElements?: number[]; // Array of atomic numbers to highlight
   focusCategory?: string; // Optional category to focus on
+  /** DI judged loop: present (non-empty) = the live tutor owns the session
+   *  (find / name / compare / valence items); absent = free exploration. */
+  challenges?: PeriodicTableChallenge[];
+  /** Within-mode support tier — the spoken DISTAR lead-in ladder. */
+  supportTier?: 'easy' | 'medium' | 'hard';
   // AI tutoring support (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   gradeBand?: string;
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: any) => void;
 }
 
 // Media Player Types (Audio-Visual Lesson Player with Knowledge Checks)
