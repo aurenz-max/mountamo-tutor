@@ -213,3 +213,14 @@ problem needs a picture.
   Manual R-sweep only, no `--check` run; jsdom pins in
   `CategorizationActivityProblem.microstep.test.tsx`, browser walk = HUMAN-CHECKS #109.
   Plan of record incl. the slice-2 judged-loop port: `qa/di/BACKLOG.md` item 23.
+- 2026-08-18 (later) — **DI port (item 23 slice 2): the judged loop is the primary surface.**
+  `KnowledgeCheck.tsx` forks all-or-nothing: judged (runner-owned, spoken-first, per-problem
+  evaluation bridges keep `::pN`) vs. the extracted `KnowledgeCheckTapFlow.tsx` (DI off).
+  **R6 RE-BASED, not forked:** the interim MCQ/TF voice chrome (`multipleChoiceVoiceReady`,
+  `useVoiceChoice`, viewport gate) is deleted; what R6 protected survives structurally — the
+  single-mic invariant is the runner's (one judged session owns the one mic), and the
+  sayability fork is `choiceSpokenReason` in `knowledgeCheckScript.ts` (unsayable draws
+  become an honest tap item, `manipulation`). R2's PRE read-aloud beat survives on the tap
+  surface; in judged mode the tutor's scripted ask IS the read-aloud (G3 closes in the
+  strong form for judged sessions). R7/R8: unchanged shape via the bridges. Machine gates +
+  3-probe live build green; headless drive + mic row #111 owed. `qa/di/BACKLOG.md` item 23.

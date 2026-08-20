@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { TrueFalseProblemData, VisualObjectCollection, VisualComparisonData, LetterTracingData, LetterPictureData, AlphabetSequenceData, RhymingPairsData, SightWordCardData, SoundSortData } from '../../types';
 import { ObjectCollection, ComparisonPanel, LetterPicture, AlphabetSequence, RhymingPairs, SightWordCard, SoundSort } from '../visual-primitives';
 import { LetterTracing } from '../LetterTracing';
 import { InsetRenderer } from './insets';
 import { SoundManager } from '../../utils/SoundManager';
-import { useVoiceChoice } from '../../hooks/useVoiceChoice';
-import { useVoiceViewportGate } from '../../hooks/useVoiceViewportGate';
 import {
   usePrimitiveEvaluation,
   type TrueFalseMetrics,
@@ -18,28 +16,25 @@ import {
   LuminaAnswerChoice,
   LuminaFeedbackCard,
   LuminaActionButton,
-  LuminaMicListener,
   type AnswerChoiceState,
 } from '../../ui';
 
 /**
- * True/False Problem Component
+ * True/False Problem Component — the TAP surface (DI off).
+ *
+ * VOICE LIVES IN THE JUDGED LOOP NOW (qa/di/BACKLOG.md item 23 slice 2): when
+ * the DI modality is on, KnowledgeCheck's judged surface asks this statement
+ * aloud and the child SAYS "true"/"false" — this component never mounts. The
+ * interim per-problem voice chrome that used to live here (a mic orb beside
+ * the Verify button, with its own capture hook and viewport gating) is
+ * deleted, not hidden: a mic orb beside a tap surface was the voice-mode fork
+ * the judged family removes on every port.
  *
  * EVALUATION INTEGRATION:
  * - Tracks student responses and performance on true/false questions
  * - Submits evaluation metrics on answer submission
  * - Supports competency tracking via skillId/subskillId/objectiveId
  * - Enables retry mechanism with resetAttempt
- *
- * VOICE (see /add-voice-control): the student can answer hands-free by saying
- * "true" / "false" — the single cleanest voice class (two phonetically distant
- * words, universal across every grade/subject). A single-unit useVoiceChoice
- * runs the mic/judge; a spoken verdict routes into the SAME select→submit path
- * a tap uses, so the tap path is unchanged and voice is purely additive. When
- * many problems stack on one screen, the screen owner passes `voiceEligible` so
- * only one mic is ever live (the engine has no global single-mic lock), and the
- * mic is viewport-gated (useVoiceViewportGate) so an off-screen problem never
- * listens.
  *
  * UI: answer FSM, feedback banner, and action buttons come from the Lumina UI
  * kit (LuminaAnswerChoice / LuminaFeedbackCard / LuminaActionButton). The
@@ -86,20 +81,17 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
     setSelectedAnswer(answer);
   };
 
-  // Grade + report a specific answer. `viaVoice` rides the studentWork so the
-  // screen owner can skip its outcome chime (useVoiceChoice already played one)
-  // and so voice usage is measurable. Both tap-Verify and voice land here.
-  const submitWith = useCallback((answer: boolean, viaVoice: boolean) => {
-    if (hasSubmittedEvaluation) return;
+  const handleSubmit = () => {
+    if (selectedAnswer === null || hasSubmittedEvaluation) return;
 
     setIsSubmitted(true);
 
-    const isCorrect = answer === data.correct;
+    const isCorrect = selectedAnswer === data.correct;
 
     const metrics: TrueFalseMetrics = {
       type: 'true-false',
       isCorrect,
-      selectedAnswer: answer,
+      selectedAnswer,
       correctAnswer: data.correct,
     };
 
@@ -109,65 +101,25 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
       metrics,
       {
         studentWork: {
-          selectedAnswer: answer,
+          selectedAnswer,
           statement: data.statement,
         },
-        viaVoice,
       }
     );
-  }, [hasSubmittedEvaluation, data.correct, data.statement, submitEvaluation]);
-
-  const handleSubmit = () => {
-    if (selectedAnswer === null) return;
-    submitWith(selectedAnswer, false);
   };
-
-  // ── Voice: say "true" / "false" to answer hands-free ───────────────────────
-  // The single answerable unit; options are the two spoken labels. `answer` is
-  // the grading key the controller never sends to the judge.
-  const voiceItems = useMemo(
-    () => [{ answer: data.correct ? 'true' : 'false', options: ['true', 'false'] }],
-    [data.correct],
-  );
-
-  // Presence gate: the mic may only be live while this problem is in the
-  // viewing window — an off-screen mount must never judge lesson chatter.
-  const { ref: viewportRef, inView } = useVoiceViewportGate<HTMLDivElement>();
-
-  // Eligible unless the screen owner parked this problem (only one mic may be
-  // live across stacked problems) or it's scrolled out of the viewing window.
-  // Closed once answered.
-  const voiceEligible = (data.voiceEligible ?? true) && !isSubmitted && inView;
-
-  const voice = useVoiceChoice({
-    items: voiceItems,
-    gradeLevel: data.gradeLevel,
-    active: voiceEligible,
-    onSubmit: (_idx, word) => {
-      if (isSubmitted) return;
-      const answer = word === 'true';
-      setSelectedAnswer(answer);
-      submitWith(answer, true);
-    },
-  });
 
   const handleReset = () => {
     setSelectedAnswer(null);
     setIsSubmitted(false);
     resetEvaluationAttempt();
-    voice.reset();
   };
 
   const isCorrect = selectedAnswer === data.correct;
 
-  // Answer-option state machine: which visual state each button is in. A voice
-  // verdict that degraded to a tap-confirm highlights its button pre-submit.
+  // Answer-option state machine: which visual state each button is in.
   const choiceState = (value: boolean): AnswerChoiceState => {
     if (!isSubmitted) {
-      if (selectedAnswer === value) return 'selected';
-      const label = value ? 'true' : 'false';
-      if (voice.highlight?.word === label) return 'selected';
-      return 'idle';
+      return selectedAnswer === value ? 'selected' : 'idle';
     }
     return value === data.correct
       ? 'correct'
@@ -177,7 +129,7 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
   };
 
   return (
-    <div ref={viewportRef} className="w-full">
+    <div className="w-full">
       {/* Statement */}
       <h3 className="text-2xl md:text-3xl font-bold text-white mb-8 leading-tight">
         {data.statement}
@@ -235,28 +187,6 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
           </LuminaAnswerChoice>
         ))}
       </div>
-
-      {/* Voice: hands-free "true" / "false". Orb only while the mic is in play
-          (eligible + unanswered) so stacked problems never show idle orbs. */}
-      {!isSubmitted && (data.voiceEligible ?? true) && (
-        <div className="flex flex-col items-center mb-8">
-          <LuminaMicListener
-            state={voice.voice.state}
-            level={voice.voice.level}
-            isSupported={voice.voice.isSupported}
-            dormant={voice.voice.dormant}
-            onStart={voice.voice.start}
-            onCancel={voice.voice.stop}
-            accent="blue"
-            size="sm"
-            idleLabel="Say “true” or “false”"
-            listeningLabel="Say “true” or “false”"
-          />
-          {voice.note && (
-            <p className="text-amber-300 text-sm mt-2 text-center">{voice.note}</p>
-          )}
-        </div>
-      )}
 
       {/* Action Area */}
       <div className="flex flex-col items-center">

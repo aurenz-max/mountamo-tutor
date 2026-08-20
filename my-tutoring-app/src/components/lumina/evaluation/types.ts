@@ -537,6 +537,31 @@ export interface TrueFalseMetrics extends BasePrimitiveMetrics {
   confidence?: number;          // If confidence tracking is enabled
 }
 
+/**
+ * One PROBLEM of a judged (DI) knowledge-check run — the spoken modality's
+ * per-problem submission (qa/di/BACKLOG.md item 23 slice 2). A problem expands
+ * into one or more judged items (a sort is one ask per item, a match one per
+ * pair); this aggregates that problem's items. There is no `selectedAnswer`
+ * shape here on purpose: the child answered OUT LOUD and the tutor judged the
+ * audio, so fabricating a tap-shaped answer field would be dishonest data.
+ */
+export interface KnowledgeCheckJudgedMetrics extends BasePrimitiveMetrics {
+  type: 'knowledge-check-judged';
+
+  /** The problem type this submission covers (multiple_choice, sort, …). */
+  problemType: string;
+  /** Judged item kinds this problem expanded into (choice, sort, blank, …). */
+  itemKinds: string[];
+  itemsTotal: number;
+  itemsSolved: number;
+  /** Tutor corrections spent across this problem's items. */
+  corrections: number;
+  /** Mean per-item score (100 / 67 / 33 / 0 by corrections). */
+  accuracy: number;
+  /** Items solved with zero corrections — solved ALONE. */
+  firstTryCount: number;
+}
+
 export interface ShortAnswerMetrics extends BasePrimitiveMetrics {
   type: 'short-answer';
 
@@ -3460,6 +3485,7 @@ export type PrimitiveMetrics =
   | SequencingActivityMetrics
   | CategorizationActivityMetrics
   | TrueFalseMetrics
+  | KnowledgeCheckJudgedMetrics
   | ShortAnswerMetrics
   | ComparisonPanelMetrics
   | FeatureExhibitMetrics

@@ -9,40 +9,94 @@ import { ComponentDefinition } from '../../../types';
 export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
   {
     id: 'knowledge-check',
-    description: 'Assessment checkpoint with single or multiple problems of various types (multiple choice, true/false, fill-in-blanks, matching, sequencing, categorization, scenario, short answer).',
-    constraints: 'Typically one per exhibit, at the end',
+    description:
+      'Assessment checkpoint with single or multiple problems of various types (multiple choice, true/false, '
+      + 'fill-in-blanks, matching, sequencing, categorization). SPOKEN-FIRST: with a microphone the Live tutor '
+      + 'runs it as a live-judged Direct Instruction check — it reads each question aloud (and the choices, where '
+      + 'there are choices) and the student ANSWERS OUT LOUD; the tutor judges the audio and its own affirmation '
+      + 'advances. Symbol/KaTeX choices are answered by touching the one you mean. Without a microphone it is a '
+      + 'tap surface, one problem at a time.',
+    constraints: 'Typically one per exhibit, at the end. The spoken form requires the live tutor and a microphone.',
+    // ── DI MODALITY (2026-08-18, qa/di/BACKLOG.md item 23 slice 2). The
+    // judged surface is all-or-nothing per SET (completion is gated per
+    // problem, so a partially-judged set would strand the check): if every
+    // problem builds at least one judged item and a mic exists, the whole set
+    // runs judged; otherwise the whole set runs as taps. The answer-material
+    // fork, build gates and every spoken line live in
+    // `primitives/knowledgeCheckScript.ts` (hand-authored, DISTAR).
+    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
+    // sentence here begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     tutoring: {
       taskDescription:
-        'Guide the student through an assessment checkpoint. '
-        + 'Problem count: {{problemCount}}. Current problem: {{currentProblemIndex}} of {{problemCount}}. '
-        + 'Problem type: {{currentProblemType}}. Question: "{{currentQuestion}}". '
-        + 'The student must answer each problem. Encourage careful thinking without revealing answers.',
-      contextKeys: [
-        'problemCount', 'currentProblemIndex', 'currentProblemType',
-        'currentQuestion', 'attemptNumber', 'lastAnswerCorrect',
-        'completedCount', 'correctCount',
-      ],
+        'A knowledge check — the closing questions of the lesson. The current question is a '
+        + '"{{challengeType}}": {{stimulus}}. With a microphone this runs as live-judged Direct '
+        + 'Instruction: you speak the exact scripted lines from each bracketed application message '
+        + 'and nothing else, then you judge what you heard. Without one it is a tap surface and the '
+        + 'tap-surface directives below apply. Never reveal an answer before the learner has answered.',
+      // Exactly what both surfaces push through updateContext. The answer key,
+      // the correct option and the verdict are deliberately NOT here — the
+      // judging contract tells the tutor what the answer is at the moment it
+      // judges, and a second copy in runtime state is a second channel to
+      // leak from.
+      contextKeys: ['challengeType', 'stimulus'],
       scaffoldingLevels: {
-        // Enact the question (say it), never point the student at on-screen text —
-        // a pre-reader cannot "re-read" anything. (reader-fit Audit B / indirect-script)
+        // 18d: every rung routes through a scripted VERDICT line or a plain
+        // re-read of the question — never an improvised re-ask, which opens
+        // with neither sentinel and stalls the judged loop.
         level1:
-          '"{{currentQuestion}} — what do you think? Take your time and look at each choice."',
+          'Help arrives through the scripted correction, never around it: after a miss, speak the '
+          + 'correction line exactly as given and stop.',
         level2:
-          '"Let\'s figure it out together. {{currentQuestion}} '
-          + 'Say each choice out loud with me — which one feels right to you?"',
+          'On the tap surface a struggling learner may hear the question again: read "{{stimulus}}" '
+          + 'aloud word for word, then let them choose. On the spoken surface the [KC_HEAR] message '
+          + 'carries that re-read for you.',
         level3:
-          '"Here\'s a clue: think about what we just learned. {{currentQuestion}} '
-          + 'Which choice matches that? You pick the one you think is right — you can always try again."',
+          'Never name or hint at the answer at any level. The activity closes each question itself '
+          + 'when the tries run out, and its closing line names the answer for you.',
       },
       commonStruggles: [
-        { pattern: 'Student selects an answer very quickly without reading all options', response: 'No rush! Let\'s hear every choice first, then pick the one you like best.' },
-        { pattern: 'Student makes the same mistake repeatedly after reset', response: 'Let\'s try it a new way. Listen again: {{currentQuestion}} Which one do you want to try this time?' },
-        { pattern: 'Student requests hints without attempting an answer first', response: 'Give it your best try first! Even a guess helps you learn. You can always try again.' },
-        { pattern: 'Student is stuck between two plausible options', response: 'Good thinking! Let\'s hear those two choices again — which one sounds right to you?' },
+        { pattern: 'The learner hedges between two choices without committing', response: 'Stay silent and let them settle on one — a committed answer is the only thing to judge.' },
+        { pattern: 'The learner says a piece of the question back instead of an answer', response: 'Treat it as thinking out loud, not an answer, and stay silent while they finish.' },
+        { pattern: 'The learner goes quiet for a long time', response: 'Their think time is unbounded. Stay silent, and never announce that you are waiting.' },
+        { pattern: 'The learner asks you to tell them the answer', response: 'Speak only: "It is your turn to answer." and stop.' },
       ],
       aiDirectives: [
         {
-          title: 'PRE-READER READ-ALOUD (K / early grade-1)',
+          title: 'LIVE-JUDGED DI (SPOKEN SURFACE)',
+          instruction:
+            'Messages tagged [KC_ITEM], [KC_MOVE], [KC_TAP], [KC_HEAR] and [KC_COMPLETE] carry exact '
+            + 'scripted lines and a judging contract. Speak only what the quoted line contains, then judge '
+            + 'what you hear against that contract. Affirmations open with the word "Yes," and corrections '
+            + 'open with the words "My turn:" — no other sentence you speak may open with either. The '
+            + 'verdict line ends your turn: never run on into the next question yourself; the application '
+            + 'sends it.',
+        },
+        {
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
+          instruction:
+            'The first [KC_ITEM] contains the greeting and the how-to-play inside its quoted line. '
+            + 'Add nothing before it and nothing after it — no separate welcome, no instructions of your own.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER (PER QUESTION KIND)',
+          instruction:
+            'The current kind is "{{challengeType}}". On true_false the child SAYS true or false — and a '
+            + 'spoken yes or no counts the same way. On choice, match and sort the child SAYS which choice: '
+            + 'the whole thing, or just the part that tells it apart, or where it sits in the list. On blank '
+            + 'the child SAYS the missing word, alone or inside the sentence. On choice_tap the child TOUCHES '
+            + 'a choice on the screen — there is nothing to listen for, and the application reports what they '
+            + 'chose and which line to say. The answer is never spoken by you before your affirmation.',
+        },
+        {
+          title: 'WAIT — THE SILENCE IS THEIRS',
+          instruction:
+            'After you speak a scripted ask, the learner is thinking, and their think time is unbounded. '
+            + 'You stay silent while they work: no filler, no encouragement mid-think, and never an '
+            + 'announcement that you are waiting or listening — you simply stop speaking.',
+        },
+        {
+          title: 'PRE-READER READ-ALOUD (TAP SURFACE ONLY)',
           instruction:
             'When you receive [QUIZ_READ_ALOUD], a pre-reader is on this problem and CANNOT read it. '
             + 'Read the question aloud word for word, then read EACH choice slowly with its letter '
@@ -53,14 +107,14 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
             + 'without revealing the answer and invite them to tap another picture.',
         },
         {
-          title: 'ANSWER FEEDBACK',
+          title: 'ANSWER FEEDBACK (TAP SURFACE)',
           instruction:
             'When you receive [ANSWER_CORRECT], briefly celebrate the student\'s success. '
             + 'Reinforce WHY the answer is correct in 1-2 sentences. Do not be overly verbose. '
             + 'If there are more problems, smoothly transition to encouraging them for the next one.',
         },
         {
-          title: 'INCORRECT ANSWER GUIDANCE',
+          title: 'INCORRECT ANSWER GUIDANCE (TAP SURFACE)',
           instruction:
             'When you receive [ANSWER_INCORRECT], do NOT reveal the correct answer. '
             + 'Provide encouragement and a focused hint based on the scaffolding level. '
@@ -68,7 +122,7 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
             + 'but still do not give the answer directly.',
         },
         {
-          title: 'HINT WALKTHROUGH',
+          title: 'HINT WALKTHROUGH (TAP SURFACE)',
           instruction:
             'When you receive [HINT_REQUESTED], provide a progressive hint based on the level indicated. '
             + 'Level 1: Ask a guiding question to redirect thinking. '
@@ -77,14 +131,14 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
             + 'NEVER reveal the correct answer in any hint level.',
         },
         {
-          title: 'PROBLEM INTRODUCTION',
+          title: 'PROBLEM INTRODUCTION (TAP SURFACE)',
           instruction:
             'When you receive [PROBLEM_SHOWN], briefly read the question aloud in an encouraging way. '
             + 'For multi-problem sets, acknowledge the student\'s progress. '
             + 'Keep it to 1-2 sentences. Do NOT hint at the answer.',
         },
         {
-          title: 'ASSESSMENT COMPLETION',
+          title: 'ASSESSMENT COMPLETION (TAP SURFACE)',
           instruction:
             'When you receive [ALL_COMPLETE], celebrate the student\'s effort. '
             + 'Mention how many they got correct out of the total. '
@@ -92,7 +146,7 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
             + 'Keep it to 2-3 encouraging sentences.',
         },
         {
-          title: 'SCRATCH PAD WORK REVIEW',
+          title: 'SCRATCH PAD WORK REVIEW (TAP SURFACE)',
           instruction:
             'When you receive [SCRATCH_PAD_ANALYSIS], the student has used the scratch pad '
             + 'to work through the problem by hand. The message includes a Gemini Flash Lite '
