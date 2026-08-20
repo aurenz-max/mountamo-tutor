@@ -16,7 +16,7 @@ export const getPlanetFact = async (planetName: string, gradeLevel: string = "3r
     const prompt = `Tell me 2 amazing and fun facts about ${planetName} that a ${gradeLevel} grader would love to know. Keep it short (under 60 words). Format as a simple list.`;
     
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-latest',
       contents: prompt,
     });
 
@@ -32,7 +32,7 @@ export const chatWithPlanet = async (planetName: string, userMessage: string): P
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-flash-latest',
             contents: `You are playing the role of the planet ${planetName} in a solar system explorer app for kids. Answer the following question from a student: "${userMessage}". Keep the answer friendly, educational, and relatively short (under 50 words).`,
         });
         return response.text || "I'm lost in space!";

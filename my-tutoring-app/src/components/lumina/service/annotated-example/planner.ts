@@ -27,7 +27,7 @@ import { REGISTERED_STEP_TYPES, formatCatalogForPrompt } from './registry';
 // Nested array of step objects. Each item is fully required so the model
 // can't ship a step with empty title/goal/seed. groundingBlockIndices is a
 // real INTEGER[] — no CSV parsing, no "empty string means injected" footgun.
-// gemini-3-flash-preview handles nested object schemas reliably; the prior
+// gemini-flash-latest handles nested object schemas reliably; the prior
 // flat-fielded design was a flash-lite workaround we no longer need.
 
 const PLANNER_SCHEMA: Schema = {
@@ -217,7 +217,7 @@ export async function planSteps(input: PlannerInput): Promise<PlannerDebugPayloa
   console.log(`[Planner] Planning ${input.blocks.length} block(s) globally with thinking model...`);
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-flash-latest',
     contents: buildPlannerPrompt(input),
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },

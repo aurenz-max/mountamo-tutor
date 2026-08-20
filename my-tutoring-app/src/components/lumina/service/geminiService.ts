@@ -87,7 +87,7 @@ const detailSchema: Schema = {
 export const generateItemDetail = async (contextTopic: string, item: string): Promise<ItemDetailData> => {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: `Context: Educational exhibit about "${contextTopic}".
       Task: Provide a deep-dive analysis for the specific item: "${item}".`,
       config: {

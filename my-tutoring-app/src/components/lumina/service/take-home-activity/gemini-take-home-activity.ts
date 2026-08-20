@@ -255,7 +255,7 @@ CONTEXT:
 Generate a complete, engaging take-home activity following these guidelines.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",

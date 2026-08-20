@@ -766,7 +766,7 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1523,7 +1523,7 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1692,7 +1692,7 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",

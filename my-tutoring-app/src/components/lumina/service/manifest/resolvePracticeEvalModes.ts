@@ -31,7 +31,7 @@ import { ai } from '../geminiClient';
 import { getComponentById } from './catalog';
 import type { PracticeManifest } from '../../types';
 
-const MODEL = 'gemini-3-flash-preview'; // same tier as the manifest
+const MODEL = 'gemini-flash-latest'; // same tier as the manifest
 
 interface Slot {
   slotId: string;

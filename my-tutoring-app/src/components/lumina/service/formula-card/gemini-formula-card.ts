@@ -128,7 +128,7 @@ export const generateFormulaCard = async (
   };
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: `Create a comprehensive formula card for: "${topic}"
 
 TARGET AUDIENCE: ${gradeContext}

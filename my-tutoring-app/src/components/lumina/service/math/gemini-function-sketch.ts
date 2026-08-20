@@ -621,7 +621,7 @@ EXAMPLE (quadratic):
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -696,7 +696,7 @@ EXAMPLE:
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -775,7 +775,7 @@ EXAMPLE:
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -848,7 +848,7 @@ EXAMPLE:
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },

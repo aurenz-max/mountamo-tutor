@@ -620,7 +620,7 @@ GEMINI_API_KEY=your-gemini-api-key
 
 **Optional:**
 ```
-GEMINI_MODEL=gemini-3-flash-preview    # default model
+GEMINI_MODEL=gemini-flash-latest    # default model
 GEMINI_TEMPERATURE=0.7                  # generation temperature
 LOG_LEVEL=INFO                          # logging level
 ALLOWED_ORIGINS=http://localhost:3000   # CORS origins

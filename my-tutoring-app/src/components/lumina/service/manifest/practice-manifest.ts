@@ -452,7 +452,7 @@ Return ONLY valid JSON matching the schema.`;
   callbacks?.onProgress?.('AI is thinking about the best problems...');
 
   const responseStream = await ai.models.generateContentStream({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -690,7 +690,7 @@ Return ONLY valid JSON matching the schema.`;
   callbacks?.onProgress?.('AI is designing your session...');
 
   const responseStream = await ai.models.generateContentStream({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },

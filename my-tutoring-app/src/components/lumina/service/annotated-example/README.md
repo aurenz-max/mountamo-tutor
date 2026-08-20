@@ -8,7 +8,7 @@ Three-stage pipeline that turns a topic prompt into a [RichAnnotatedExampleData]
 
 For worked math examples, that pattern fails: the planner doesn't know if the math is correct, the per-block generators have no shared math state, and the LLM tends to hallucinate intermediate steps. So we split planning from solving:
 
-1. **SOLVER** ([solver.ts](solver.ts)) — `gemini-3-flash-preview` with thinking HIGH and **code execution** writes a free-form prose solution. It separates strategic moves with `---`. It knows nothing about primitives. Code execution is the trick — every numerical step is grounded in a Python run, not LLM arithmetic.
+1. **SOLVER** ([solver.ts](solver.ts)) — `gemini-flash-latest` with thinking HIGH and **code execution** writes a free-form prose solution. It separates strategic moves with `---`. It knows nothing about primitives. Code execution is the trick — every numerical step is grounded in a Python run, not LLM arithmetic.
 2. **BLOCKS** ([blocks.ts](blocks.ts)) — deterministic split on `---`. No LLM. The solver already decided where one move ends and the next begins; re-deriving that boundary with another LLM just loses information.
 3. **PLAN + GENERATE** ([planner.ts](planner.ts) + [registry.ts](registry.ts) + [generators/](generators/)) — the planner sees the *whole* solved problem and produces an ordered `StepSpec[]`. Each spec maps 1:1 to a block, consolidates two adjacent blocks, or is **injected** (no grounding block — e.g. an opening graph for an area-between-curves problem). Per-spec generators run in parallel.
 
@@ -48,7 +48,7 @@ topic + gradeContext
 |---|---|---|
 | [solver.ts](solver.ts) | 1 | LLM solve with code execution. Output format is strict (TITLE/SUBJECT/PROBLEM/STRATEGY + `---`-separated moves). |
 | [blocks.ts](blocks.ts) | 2 | Pure string split. Re-indexes after filtering empty blocks. |
-| [planner.ts](planner.ts) | 3a | Single LLM call (`gemini-3-flash-preview`, thinking HIGH). Picks `stepType` per spec from the registry. Defaults to 1:1; merge/inject are explicitly bounded. Falls back to a 1:1 algebra plan on hard failure (`buildFallbackPlan`). |
+| [planner.ts](planner.ts) | 3a | Single LLM call (`gemini-flash-latest`, thinking HIGH). Picks `stepType` per spec from the registry. Defaults to 1:1; merge/inject are explicitly bounded. Falls back to a 1:1 algebra plan on hard failure (`buildFallbackPlan`). |
 | [registry.ts](registry.ts) | 3b | Single source of truth for the primitive catalog. Planner reads `whenToUse` from here; orchestrator looks up `generate` and `extractResult`. |
 | [generators/_shared.ts](generators/_shared.ts) | 3b | `PrimitiveDef` interface + `StepGeneratorContext` + the shared annotation schema (steps / strategy / misconceptions / connections — same 4 layers on every step). |
 | [generators/<type>.ts](generators/) | 3b | One file per primitive. Owns its Gemini schema, prompt, and post-processing. |

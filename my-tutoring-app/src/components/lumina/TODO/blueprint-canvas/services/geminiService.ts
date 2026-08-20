@@ -122,7 +122,7 @@ export const generateBlueprint = async (base64Image: string): Promise<BuildingDa
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: {
         parts: [
           { inlineData: { mimeType: "image/png", data: cleanBase64 } },
@@ -167,7 +167,7 @@ export const generateInterior = async (base64Image: string, roomName: string): P
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: {
         parts: [
           { inlineData: { mimeType: "image/png", data: cleanBase64 } },

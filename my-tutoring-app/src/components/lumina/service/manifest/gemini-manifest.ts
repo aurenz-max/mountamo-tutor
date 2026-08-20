@@ -388,7 +388,7 @@ Return ONLY valid JSON matching the schema.`;
     // Use streaming API — includeThoughts surfaces the model's thought summaries
     // as separate parts with part.thought === true
     const responseStream = await ai.models.generateContentStream({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: prompt,
       config: {
         thinkingConfig: {

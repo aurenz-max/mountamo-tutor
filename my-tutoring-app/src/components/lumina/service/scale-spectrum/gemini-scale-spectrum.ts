@@ -143,7 +143,7 @@ CONTEXT:
 Generate 4-6 items that span the spectrum meaningfully. Ensure the activity teaches discrimination—students should finish understanding WHY things fall where they do, not just WHERE.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",

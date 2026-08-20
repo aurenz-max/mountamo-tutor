@@ -278,7 +278,7 @@ Generate 3-5 target words with a pool of 10-15 available parts.`;
 
   const draw = async (): Promise<WordBuilderData> => {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-latest',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -289,7 +289,7 @@ Generate 3-5 target words with a pool of 10-15 available parts.`;
          *
          * The truncation template ("bound every schema array, then give the
          * call room, 8192") is calibrated on `gemini-flash-lite-latest`, where
-         * the whole budget is payload. `gemini-3-flash-preview` spends the SAME
+         * the whole budget is payload. `gemini-flash-latest` spends the SAME
          * ceiling on its reasoning first, so 8192 left roughly 850 characters
          * for the response: the live probe truncated mid-string on BOTH draws
          * of `simple_affix` and `compound_affix` (the retry is what made it two

@@ -9,7 +9,7 @@ Hierarchical search pipeline:
   5. Impact simulation + validation
 
 Uses google.genai client with gemini-embedding-2-preview for embeddings
-and gemini-3-flash-preview for LLM refinement.
+and gemini-flash-latest for LLM refinement.
 
 Checkpointing: Each phase saves results to Firestore so the pipeline can
 resume from the last completed phase if something fails mid-run.
@@ -34,7 +34,7 @@ from app.services.graph_analysis import GraphAnalysisEngine
 logger = logging.getLogger(__name__)
 
 EMBEDDING_MODEL = "gemini-embedding-2-preview"
-LLM_MODEL = "gemini-3-flash-preview"
+LLM_MODEL = "gemini-flash-latest"
 LLM_MODEL_LITE = "gemini-3.1-flash-lite-preview"
 
 

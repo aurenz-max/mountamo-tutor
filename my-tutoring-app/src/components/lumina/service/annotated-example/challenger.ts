@@ -545,7 +545,7 @@ export async function assignChallenges(input: ChallengerInput): Promise<Challeng
   let response;
   try {
     response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-latest',
       contents: buildChallengerPrompt(input, summaries),
       config: {
         thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },

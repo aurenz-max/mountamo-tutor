@@ -532,7 +532,7 @@ Return ONLY the wrapper metadata in the response schema.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       temperature: 0.9,

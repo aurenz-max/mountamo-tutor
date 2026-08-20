@@ -1,7 +1,7 @@
 /**
  * Solver — Stage 1 of the annotated-example pipeline.
  *
- * A smart model (gemini-3-flash-preview + thinking HIGH) solves the problem in
+ * A smart model (gemini-flash-latest + thinking HIGH) solves the problem in
  * free-form prose. Code execution is enabled so arithmetic is grounded in
  * actual computation, not LLM approximation. The solver knows nothing about
  * primitives or downstream schemas — it's teaching a student.
@@ -186,10 +186,10 @@ export async function solveProblem(
 ): Promise<SolvedProblem> {
   const prompt = buildSolverPrompt(topic, gradeContext, config);
 
-  console.log('[Solver] Running gemini-3-flash-preview with thinking + code execution...');
+  console.log('[Solver] Running gemini-flash-latest with thinking + code execution...');
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-flash-latest',
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },

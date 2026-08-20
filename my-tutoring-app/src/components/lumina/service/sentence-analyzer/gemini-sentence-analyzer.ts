@@ -482,7 +482,7 @@ EXAMPLE (parse_structure):
         responseSchema: activeSchema,
         // 8192 is correct for THIS model — flash-lite is non-thinking, so the
         // ceiling is not shared with a reasoning budget (word-builder's finding
-        // is about gemini-3-flash-preview, which this is not).
+        // is about gemini-flash-latest, which this is not).
         maxOutputTokens: 8192,
         systemInstruction:
           'You are an expert K-8 grammar and language arts specialist writing content for a SPOKEN tutoring '

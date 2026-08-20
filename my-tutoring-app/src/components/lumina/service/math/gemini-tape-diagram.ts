@@ -544,7 +544,7 @@ RULES:
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -618,7 +618,7 @@ RULES:
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -703,7 +703,7 @@ RULES:
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -831,7 +831,7 @@ ${stepCount >= 3
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },

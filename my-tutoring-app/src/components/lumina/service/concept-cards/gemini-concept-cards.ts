@@ -113,7 +113,7 @@ PRE-READER MODE (kindergarten — the child CANNOT read; the card FACE is a big 
   };
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: `Create ${itemCount} concept cards for: "${topic}"
 
 TARGET AUDIENCE: ${gradeContext}

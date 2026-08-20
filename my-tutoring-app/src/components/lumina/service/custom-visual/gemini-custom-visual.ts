@@ -236,7 +236,7 @@ Create something magical that makes learners light up with understanding. This i
 Respond ONLY with the complete HTML code. Do not include explanations or markdown formatting.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       maxOutputTokens: 25000,

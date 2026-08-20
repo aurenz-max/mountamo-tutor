@@ -111,7 +111,7 @@ Generate a reading passage broken into sections.
 Structure the text as a sequence of segments. Most segments will be 'text', but vocabulary words should be their own 'vocabulary' segments.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-flash-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
