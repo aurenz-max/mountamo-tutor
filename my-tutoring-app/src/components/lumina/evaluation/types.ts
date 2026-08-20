@@ -1921,16 +1921,26 @@ export interface ReactionLabMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+/**
+ * states-of-matter — JUDGED metrics (DI port, 2026-08-20). The click-era shape
+ * carried booleans a multiple-choice tile set (`heatingCurveRead`,
+ * `reversibilityUnderstood`) plus a slider-precision number; none of them
+ * survives a spoken loop, where every item is one ask with one answer and the
+ * tutor's own verdict is the score. One accuracy per eval mode, so the read
+ * model lines up with the three betas the catalog declares.
+ */
 export interface StatesOfMatterMetrics extends BasePrimitiveMetrics {
   type: 'states-of-matter';
-  stateIdentificationCorrect: number;
-  stateTotal: number;
-  phaseChangeIdentified: boolean;
-  particleModelExplained: boolean;
-  heatingCurveRead: boolean;
-  reversibilityUnderstood: boolean;
+  challengesCorrect: number;
+  challengesTotal: number;
+  /** observe — read the particle view and name the state. */
+  observeAccuracy: number;
+  /** predict — the state it will reach, or the phase change it goes through. */
+  predictAccuracy: number;
+  /** compare — melting points across two substances. */
+  compareAccuracy: number;
+  /** Distinct substances the session put on the bench. */
   substancesExplored: number;
-  temperatureControlPrecision: number;
   attemptsCount: number;
 }
 

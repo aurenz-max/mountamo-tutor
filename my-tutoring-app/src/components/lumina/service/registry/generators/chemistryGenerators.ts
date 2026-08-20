@@ -31,6 +31,8 @@ import { generateSafetyLab } from '../../chemistry/gemini-safety-lab';
 import { generateStoichiometryLab } from '../../chemistry/gemini-stoichiometry-lab';
 import { generateGasLawsSimulator } from '../../chemistry/gemini-gas-laws-simulator';
 import { buildPeriodicChallenges } from '../../chemistry/periodic-table-challenges';
+import { buildStatesOfMatterChallenges } from '../../chemistry/states-of-matter-challenges';
+import type { StatesChallengeType } from '../../../primitives/visual-primitives/chemistry/statesOfMatterScript';
 
 // ============================================================================
 // Helper Types
@@ -139,12 +141,43 @@ registerContextGenerator('reaction-lab', async (ctx) => ({
   data: await generateReactionLab(ctx),
 }));
 
-// States of Matter (interactive particle simulation)
-registerContextGenerator('states-of-matter', async (ctx) => ({
-  type: 'states-of-matter',
-  instanceId: ctx.instanceId,
-  data: await generateStatesOfMatter(ctx),
-}));
+// States of Matter (DI judged particle simulation). Gemini writes the
+// EXPLORATION payload only — title, substance, particle config, image prompt.
+// Every judged challenge is CODE-DRAWN from the substance table and every
+// answer key is computed (states-of-matter-challenges.ts), so no LLM writes
+// the science this primitive grades.
+//
+// THE FORK, and why it differs from periodic-table's: these three eval modes
+// were REAL in the click era (every payload carried graded challenges), so an
+// unpinned slot draws a MIXED judged session rather than silently losing its
+// measurement. A judged session with zero surviving items degrades to the free
+// exploration surface in the component — the build gates drop, they never
+// backfill.
+registerContextGenerator('states-of-matter', async (ctx) => {
+  const config = getConfig({ config: ctx.raw });
+  const data = await generateStatesOfMatter(ctx);
+
+  const KNOWN_MODES = ['observe', 'predict', 'compare'] as const;
+  const pin = String(config.targetEvalMode ?? '').trim();
+  const pinned: StatesChallengeType[] = pin === '' || pin === 'mixed'
+    ? [...KNOWN_MODES]
+    : pin.split('|')
+        .map((k) => k.trim())
+        .filter((k): k is StatesChallengeType => (KNOWN_MODES as readonly string[]).includes(k));
+  const modes = pinned.length > 0 ? pinned : [...KNOWN_MODES];
+
+  const supportTier = ['easy', 'medium', 'hard'].includes(config.difficulty)
+    ? config.difficulty as 'easy' | 'medium' | 'hard'
+    : undefined;
+
+  const challenges = buildStatesOfMatterChallenges(modes, { band: data.gradeBand ?? '3-5' });
+
+  return {
+    type: 'states-of-matter',
+    instanceId: ctx.instanceId,
+    data: { ...data, challenges, supportTier },
+  };
+});
 
 // Atom Builder (interactive atom construction with Bohr model)
 registerContextGenerator('atom-builder', async (ctx) => ({

@@ -226,27 +226,87 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'states-of-matter',
-    description: 'Interactive particle simulation where students control temperature and watch particles speed up, slow down, break free, or lock into place. Split view shows macroscopic substance (beaker) alongside particle model synchronized in real-time. Temperature slider with color-coded state ranges and phase markers. Supports multiple substances (water, wax, iron, chocolate, butter). K-2 focuses on ice/water/steam with simple observations. 3-5 adds heating curves, particle speed indicators, and substance comparison. Perfect for teaching the particle model of matter, phase transitions, and energy transfer. ESSENTIAL for K-5 science.',
-    constraints: 'Best for K-5. Use for science lessons on states of matter, particle model, phase changes, melting/boiling/freezing/condensation, temperature and energy, and kinetic theory. Grade-appropriate complexity adjusts automatically.',
+    description: 'Live-judged DIRECT INSTRUCTION particle simulation. The spoken tutor puts a substance on the bench beside its particle view, asks ONE question, and the child answers OUT LOUD — what state it is, what state it will reach when the tutor heats or cools it, what the change is called, or which of two named substances melts first. The tutor judges from the audio, and its own affirmation runs the experiment and advances the lesson. With no challenges in play the same primitive is a free exploration surface: a temperature slider, a macroscopic beaker and a synchronized particle model, heating curve and substance switcher. Perfect for the particle model of matter, phase transitions, melting and boiling points, and energy transfer. ESSENTIAL for K-5 science.',
+    constraints: 'Best for K-5. Use for science lessons on states of matter, the particle model, phase changes, melting/boiling/freezing/condensation, temperature and energy. Judged sessions require the live tutor and a microphone; every answer is SPOKEN, so there is nothing to tap. The manifest must NOT supply substances, temperatures or answer keys — every challenge is drawn and keyed in code from a substance table with real melting and boiling points. Grade-appropriate complexity adjusts automatically; K-2 stays on everyday, above-freezing substances and never hears a below-zero temperature.',
+    // ── DI MODALITY (2026-08-20) — THIRD science port, SECOND chemistry port.
+    // The tutor owns the clock in all three modes: it asks once, waits, judges
+    // the spoken answer in-band, and its own line is the advance. No advance
+    // timer, no Next button, no Check button, no push-to-talk mic anywhere.
+    // THE SPLIT (standing gate 1): EVERY mode is spoken. observe answers with a
+    // state word, predict with a state word or a phase-change word (both
+    // short_spoken_word), compare with one of two named substances
+    // (closed_set_choice). No gesture item exists, and that absence IS the
+    // port: every answer here is something a child says across a table.
+    // WHAT THE JUDGED SURFACE HIDES: the temperature slider (the ask is "what
+    // state WILL it be" — a slider beside a live beaker answers that by
+    // experiment), the state badge and the particle caption (both print the
+    // observe answer in words), the numeric temperature and the colour-zoned
+    // track with its MP/BP markers, and the substance switcher. All of them
+    // return in the reveal, after the affirmation.
+    // Cue lines and the per-item judging contracts live in
+    // `statesOfMatterScript.ts` (hand-authored, DISTAR); this block is the
+    // session-level frame. SENTINEL DISCIPLINE re-checked on every line below:
+    // no sentence begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'Student is exploring {{substanceName}} at {{currentTemperature}}°C (currently a {{currentState}}). Melting point: {{meltingPoint}}°C, Boiling point: {{boilingPoint}}°C. Particle energy: {{particleSpeed}}%. They have explored {{substancesExplored}} substance(s). On challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Attempt {{attemptNumber}}.',
-      contextKeys: ['gradeBand', 'substanceName', 'substanceFormula', 'meltingPoint', 'boilingPoint', 'currentTemperature', 'currentState', 'particleSpeed', 'substancesExplored', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber'],
+      // ⚠️ THE STIMULUS GOES LAST, and the never-read-aloud clause sits
+      // IMMEDIATELY before it (solar-system's shape). This port's first drive
+      // read the [CURRENT STATE] preamble aloud on 3 of 6 observe asks, and
+      // splitting that clause off into its own sentence earlier in the block
+      // only took it to 2 of 6 — an observe ask names nothing but the
+      // substance by design, so the state line has to identify itself as
+      // not-content at the exact point it arrives.
+      taskDescription: 'Live-judged Direct Instruction on states of matter. The learner answers OUT LOUD in every round, and you judge what you hear against the exact contract in each bracketed [SOM_ITEM] message. You speak the exact scripted lines from those messages and nothing else. Reading the beaker and the particle view is the entire skill being practiced, so never volunteer the state, the temperature, or what the substance is about to do. Current round type: {{challengeType}} (the special type free_explore means there is no judged loop — the child is exploring the open particle sim, and you react briefly and warmly to the [PHASE_CHANGE] and [SUBSTANCE_CHANGED] updates as a guide). The question side of what is on screen, described for you alone and never read aloud: {{stimulus}}.',
+      // Exactly what the pack pushes through contextFor — every key the
+      // click-era block interpolated (currentState, currentTemperature,
+      // particleSpeed, …) was the answer or the material that gives it away.
+      contextKeys: ['challengeType', 'stimulus'],
+      // 18d: every rung routes through the SCRIPTED correction. A re-spoken ask
+      // opens with neither "Yes" nor "My turn:", so the reducer records no
+      // verdict and the child waits on a lesson that cannot advance.
       scaffoldingLevels: {
-        level1: '"Look at the particles on the right side. What are they doing right now? Are they moving fast or slow?"',
-        level2: '"When {{substanceName}} is a {{currentState}}, the particles {{currentState === \'solid\' ? \'vibrate in place but stay locked together\' : currentState === \'liquid\' ? \'slide past each other but stay close\' : \'fly apart in all directions\'}}. Try changing the temperature and watch what happens!"',
-        level3: '"Let\'s think step by step. Right now the temperature is {{currentTemperature}}°C and the melting point is {{meltingPoint}}°C. If you raise the temperature past {{meltingPoint}}°C, the particles will get enough energy to break free from their spots. Try sliding the temperature up slowly and watch for the moment they start to slide!"',
+        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it inside the [SOM_ITEM] message. It already re-models the particle rule or the threshold rule and hands the question back, and it opens with "My turn:" where the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next question to you.',
       },
+      // Observable behaviours only, with PERFORMABLE responses that produce a
+      // VERDICT (defect 7: a sentiment without the verdict line stalls a
+      // correct child).
       commonStruggles: [
-        { pattern: 'Student cannot identify the current state from the particle view', response: 'Guide: "Look at how the particles are moving. If they\'re shaking but staying in place, it\'s a solid. If they\'re sliding around, it\'s a liquid. If they\'re bouncing off the walls everywhere, it\'s a gas!"' },
-        { pattern: 'Student does not understand why solids keep their shape', response: 'Explain: "See how the particles in a solid are packed tightly together and just vibrate? They\'re holding on to each other! That\'s why a solid keeps its shape — the particles can\'t move past each other."' },
-        { pattern: 'Student expects instant change at melting/boiling point', response: 'Clarify: "Phase changes happen right at the melting or boiling point. Keep the slider right at that temperature and watch — the particles are using all the energy to break free, not to get hotter!"' },
-        { pattern: 'Student struggles with heating curve plateaus', response: 'Guide: "The flat parts on the graph are the exciting moments — that\'s where the substance is changing state! All the energy goes into breaking particles apart, not making them hotter."' },
+        { pattern: 'Says the substance\'s name instead of its state', response: 'Run the item\'s scripted correction line — the question asks what state it is in, not what it is made of — then wait in silence for their next try.' },
+        { pattern: 'Names the state the substance is in right now instead of the state it will reach', response: 'Run the item\'s scripted correction line, which re-models the thresholds, then wait in silence.' },
+        { pattern: 'Answers a change question with a state word, such as "liquid" instead of "melting"', response: 'Run the item\'s scripted correction line, which names all four changes, then wait in silence.' },
+        { pattern: 'Compares two melting points and reads the comparison backwards', response: 'Run the item\'s scripted correction line, which puts the two numbers side by side, then wait in silence.' },
+        { pattern: 'Goes quiet and says nothing for a long time', response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'THE VERDICT ENDS THE TURN',
+          instruction:
+            'After an affirmation or a correction, the turn is OVER — never run on into another question, '
+            + 'another substance, another temperature, or a next round of your own: the application sends '
+            + 'every next question itself. A continued turn asks about a beaker the screen is not showing.',
+        },
+        {
+          title: 'THE CHILD IS LOOKING — WAIT',
+          instruction:
+            'Think time is unbounded. Never fill a silence, never describe the beaker or the particles out loud, '
+            + 'and never read back any line the application sent you for your own use. The silence is theirs.',
+        },
+        {
+          title: 'PARTICLE WONDER (free exploration only)',
+          instruction:
+            'When the session is free exploration and the learner drags the temperature across a threshold, '
+            + 'celebrate what the particles just did in one short sentence — broke free and started sliding, '
+            + 'or flew apart, or locked back into place. Keep it visual and age-appropriate. '
+            + 'During judged rounds this directive is dormant — scripted lines only.',
+        },
       ],
     },
     evalModes: [
-      { evalMode: 'observe', label: 'Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'Observe particle behavior and name the state of matter' },
-      { evalMode: 'predict', label: 'Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'Predict state changes from temperature adjustments' },
-      { evalMode: 'compare', label: 'Compare (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['compare'], description: 'Compare phase change points across substances' },
+      { evalMode: 'observe', label: 'Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'DI judged, spoken: read the particle view and SAY the state of matter. Beta held — the click era offered three labelled buttons and this asks for the same one-word answer unaided, which is harder in production but is still this primitive\'s easiest task identity.' },
+      { evalMode: 'predict', label: 'Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'DI judged, spoken: given the thresholds aloud, say the state the substance will reach when the tutor heats or cools it — or, at Grade 3-5, name the phase change itself (melting, freezing, boiling, condensing).' },
+      { evalMode: 'compare', label: 'Compare (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['compare'], description: 'DI judged, spoken: two substances with real melting points, both solid on the bench — say which melts first, or which is still solid at a stated temperature. Every key computed from the substance table.' },
     ],
     supportsEvaluation: true,
   },

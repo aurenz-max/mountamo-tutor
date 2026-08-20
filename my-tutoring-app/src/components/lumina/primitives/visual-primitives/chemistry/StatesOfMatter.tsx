@@ -1,9 +1,47 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+/**
+ * StatesOfMatter — TWO surfaces, forked on whether judged challenges arrived:
+ *
+ *  - DI JUDGED LOOP (challenges present — the normal path now): the Live tutor
+ *    owns the clock. It asks ONCE, waits, judges the spoken answer in-band,
+ *    corrects contrastively, and its own affirmation is the advance. No advance
+ *    timer, no Next button, no Check button, no push-to-talk mic, no printed
+ *    answer before the affirm.
+ *
+ *  - EXPLORATION (no challenges, or every one dropped by a build gate): the
+ *    free particle sim — slider, beaker, particle view, heating curve,
+ *    substance switcher — with the tutor as a silent guide reacting to
+ *    [PHASE_CHANGE] beats. The honest degrade, and a real reference surface.
+ *
+ * ⭐ ALL THREE EVAL MODES ARE SPOKEN. observe says the state, predict says the
+ * state it will reach or names the change, compare says one of two substances.
+ * The click era answered every one of those with a tile, a True/False pair or a
+ * text box, and the costume test cleared the board in one pass: a child who
+ * cannot read a particle view can still click one of three tiles.
+ *
+ * WHAT THE JUDGED SURFACE HIDES, and why each one is the answer rather than
+ * chrome:
+ *  - the TEMPERATURE SLIDER — the ask is "what state WILL it be", and a slider
+ *    beside a live beaker answers that by experiment (drag until the picture
+ *    changes). It is a Check button in a range input's clothes, so the tutor
+ *    gets it: the experiment runs on the affirmation, as the reveal.
+ *  - the STATE BADGE and the PARTICLE CAPTION ("Particles vibrate in place —
+ *    tightly packed") — both print the observe answer in words, above the
+ *    picture the child is supposed to read.
+ *  - the NUMERIC TEMPERATURE and the colour-zoned track with its MP/BP markers
+ *    — a spoken threshold plus a printed number is arithmetic, not observation,
+ *    and the coloured track paints the three states onto the scale itself.
+ *  - the SUBSTANCE SWITCHER — a compare item's other beaker is the question.
+ * All of them return in the REVEAL, behind `runner.revealHeld` (18b).
+ *
+ * Cue lines, judging contracts, build gates and the substance table live in
+ * `statesOfMatterScript.ts` (hand-authored, DISTAR). Nothing in this file
+ * writes a spoken line.
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Volume2 } from 'lucide-react';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -11,6 +49,39 @@ import {
 import type { StatesOfMatterMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaChallengeCounter,
+  type LuminaAccent,
+} from '../../../ui';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  SUBSTANCES,
+  carriesAnswerVocabulary,
+  itemsFromChallenges,
+  stateAt,
+  statesOfMatterPackBase,
+  substanceFactsOf,
+  tempSpoken,
+  type MatterState,
+  type StatesBand,
+  type StatesKind,
+  type StatesOfMatterItem,
+  type StatesTier,
+  type SubstanceFacts,
+} from './statesOfMatterScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -36,25 +107,27 @@ export interface ParticleConfig {
   showBonds: boolean;
 }
 
-export interface ChallengeOption {
-  id: string;
-  text: string;
-}
-
+/**
+ * One judged states-of-matter challenge — CODE-DRAWN from the substance table
+ * (never LLM-authored; every answer key is computed). The script module's build
+ * gates (`statesOfMatterScript.itemFromChallenge`) validate and DROP, never
+ * backfill: a placeholder item in a judged loop becomes a spoken ask the tutor
+ * has to stand behind.
+ */
 export interface StatesOfMatterChallenge {
   id: string;
-  type: 'identify_state' | 'predict_change' | 'explain_particles' | 'heating_curve' | 'compare_substances' | 'reversibility';
-  instruction: string;
-  targetAnswer: string;
-  targetTemp: number | null;
-  hint: string;
-  narration: string;
-  // Multiple choice scaffolding (optional — when present, renders MC buttons instead of textarea)
-  options?: ChallengeOption[];
-  correctOptionId?: string;
-  // True/False scaffolding (optional — when present, renders T/F buttons instead of textarea)
-  isTrueFalse?: boolean;
-  correctBoolean?: boolean;
+  /** Maps 1:1 to the catalog eval modes. */
+  challengeType: 'observe' | 'predict' | 'compare';
+  /** The facet within the mode. Omitted = the mode's first facet. */
+  kind?: 'name_state' | 'predict_state' | 'predict_change' | 'melt_first' | 'stay_solid';
+  /** observe / predict: which substance, by key into the code table. */
+  substanceKey?: string;
+  /** The temperature the beaker sits at while the child answers. */
+  startTemp?: number;
+  /** predict / stay_solid: where the tutor takes it. Never in the ask's picture. */
+  targetTemp?: number;
+  /** compare: the two substances on offer, by key, in ask order. */
+  pairKeys?: string[];
 }
 
 export interface StatesOfMatterData {
@@ -62,7 +135,12 @@ export interface StatesOfMatterData {
   description?: string;
   substance: SubstanceConfig;
   particleConfig: ParticleConfig;
-  challenges: StatesOfMatterChallenge[];
+  /** DI judged loop: present (non-empty) = the live tutor owns the session;
+   *  absent = the free exploration surface. */
+  challenges?: StatesOfMatterChallenge[];
+  /** Within-mode support tier — the spoken DISTAR lead-in ladder, and the
+   *  tier-conditional three-way menu on observe items. */
+  supportTier?: StatesTier;
   showOptions?: {
     showParticleView?: boolean;
     showTemperatureSlider?: boolean;
@@ -73,7 +151,7 @@ export interface StatesOfMatterData {
   };
   substances?: string[];
   imagePrompt?: string | null;
-  gradeBand?: 'K-2' | '3-5';
+  gradeBand?: StatesBand;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -115,18 +193,28 @@ const STATE_CONFIG = {
   },
 } as const;
 
-type MatterState = keyof typeof STATE_CONFIG;
-
-const PRESET_SUBSTANCES: Record<string, SubstanceConfig> = {
-  water: { name: 'Water', formula: 'H₂O', meltingPoint: 0, boilingPoint: 100, currentTemp: 25, color: { solid: '#93c5fd', liquid: '#3b82f6', gas: '#e2e8f0' } },
-  wax: { name: 'Wax', formula: null, meltingPoint: 60, boilingPoint: 370, currentTemp: 25, color: { solid: '#fde68a', liquid: '#f59e0b', gas: '#fef3c7' } },
-  iron: { name: 'Iron', formula: 'Fe', meltingPoint: 1538, boilingPoint: 2862, currentTemp: 25, color: { solid: '#94a3b8', liquid: '#ef4444', gas: '#fca5a5' } },
-  chocolate: { name: 'Chocolate', formula: null, meltingPoint: 34, boilingPoint: 350, currentTemp: 25, color: { solid: '#78350f', liquid: '#92400e', gas: '#d6d3d1' } },
-  nitrogen: { name: 'Nitrogen', formula: 'N₂', meltingPoint: -210, boilingPoint: -196, currentTemp: -220, color: { solid: '#c4b5fd', liquid: '#818cf8', gas: '#e0e7ff' } },
-  butter: { name: 'Butter', formula: null, meltingPoint: 32, boilingPoint: 250, currentTemp: 5, color: { solid: '#fde047', liquid: '#facc15', gas: '#fef9c3' } },
-};
+const PRESET_SUBSTANCES: Record<string, SubstanceConfig> = Object.fromEntries(
+  Object.values(SUBSTANCES).map((s) => [
+    s.key,
+    {
+      name: s.name,
+      formula: null,
+      meltingPoint: s.meltingPoint,
+      boilingPoint: s.boilingPoint,
+      currentTemp: Math.round((s.meltingPoint + Math.min(s.boilingPoint, s.meltingPoint + 60)) / 2),
+      color: s.color,
+    } satisfies SubstanceConfig,
+  ]),
+);
 
 const PARTICLE_SIZE_MAP = { small: 6, medium: 8, large: 10 };
+
+const DEFAULT_PARTICLES: ParticleConfig = {
+  count: 30,
+  size: 'medium',
+  showTrails: true,
+  showBonds: true,
+};
 
 // ============================================================================
 // Particle Simulation Sub-component
@@ -149,14 +237,16 @@ const ParticleSimulation: React.FC<{
   temperature: number;
   meltingPoint: number;
   boilingPoint: number;
-}> = ({ state, config, color, temperature, meltingPoint, boilingPoint }) => {
+  width?: number;
+  height?: number;
+}> = ({ state, config, color, temperature, meltingPoint, boilingPoint, width = 240, height = 180 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animFrameRef = useRef<number>(0);
 
   const particleRadius = PARTICLE_SIZE_MAP[config.size] || 8;
-  const W = 240;
-  const H = 180;
+  const W = width;
+  const H = height;
 
   // Initialize particles
   useEffect(() => {
@@ -173,7 +263,7 @@ const ParticleSimulation: React.FC<{
       const by = spacingY * (row + 1);
       return { id: i, x: bx, y: by, vx: 0, vy: 0, baseX: bx, baseY: by };
     });
-  }, [config.count]);
+  }, [config.count, W, H]);
 
   // Animation loop
   useEffect(() => {
@@ -182,7 +272,7 @@ const ParticleSimulation: React.FC<{
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Compute a normalized energy 0-1 based on where temp sits relative to melting/boiling
+    // Normalized energy 0-1 from where temp sits relative to melting/boiling
     const range = Math.max(boilingPoint - meltingPoint, 1);
     const rawEnergy = (temperature - (meltingPoint - range * 0.3)) / (range * 1.6);
     const energy = Math.max(0, Math.min(1, rawEnergy));
@@ -193,12 +283,10 @@ const ParticleSimulation: React.FC<{
       const particles = particlesRef.current;
       particles.forEach(p => {
         if (state === 'solid') {
-          // Vibrate around base position
           const amplitude = 1 + energy * 6;
           p.x = p.baseX + (Math.random() - 0.5) * amplitude;
           p.y = p.baseY + (Math.random() - 0.5) * amplitude;
         } else if (state === 'liquid') {
-          // Slow random walk, constrained loosely
           const speed = 0.3 + energy * 1.5;
           p.vx += (Math.random() - 0.5) * speed;
           p.vy += (Math.random() - 0.5) * speed;
@@ -206,13 +294,11 @@ const ParticleSimulation: React.FC<{
           p.vy *= 0.95;
           p.x += p.vx;
           p.y += p.vy;
-          // Keep in lower portion (liquid pools)
           if (p.x < particleRadius) { p.x = particleRadius; p.vx *= -0.5; }
           if (p.x > W - particleRadius) { p.x = W - particleRadius; p.vx *= -0.5; }
           if (p.y < H * 0.3) { p.y = H * 0.3; p.vy *= -0.5; }
           if (p.y > H - particleRadius) { p.y = H - particleRadius; p.vy *= -0.5; }
         } else {
-          // Gas — fast, bouncing everywhere
           const speed = 1 + energy * 3;
           p.vx += (Math.random() - 0.5) * speed;
           p.vy += (Math.random() - 0.5) * speed;
@@ -226,7 +312,6 @@ const ParticleSimulation: React.FC<{
           if (p.y > H - particleRadius) { p.y = H - particleRadius; p.vy = -Math.abs(p.vy); }
         }
 
-        // Draw trail
         if (config.showTrails && state !== 'solid') {
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
@@ -236,7 +321,6 @@ const ParticleSimulation: React.FC<{
           ctx.stroke();
         }
 
-        // Draw particle
         ctx.beginPath();
         ctx.arc(p.x, p.y, particleRadius, 0, Math.PI * 2);
         ctx.fillStyle = color + 'cc';
@@ -246,7 +330,6 @@ const ParticleSimulation: React.FC<{
         ctx.stroke();
       });
 
-      // Draw bonds for solid state
       if (config.showBonds && state === 'solid') {
         ctx.setLineDash([3, 3]);
         ctx.strokeStyle = color + '50';
@@ -271,7 +354,7 @@ const ParticleSimulation: React.FC<{
 
     animate();
     return () => cancelAnimationFrame(animFrameRef.current);
-  }, [state, config.showTrails, config.showBonds, color, particleRadius, temperature, meltingPoint, boilingPoint]);
+  }, [state, config.showTrails, config.showBonds, color, particleRadius, temperature, meltingPoint, boilingPoint, W, H]);
 
   return (
     <canvas
@@ -291,16 +374,14 @@ const ParticleSimulation: React.FC<{
 const SubstanceBeaker: React.FC<{
   state: MatterState;
   color: string;
-  substanceName: string;
-}> = ({ state, color, substanceName }) => {
+  caption: string;
+}> = ({ state, color, caption }) => {
   return (
     <div className="relative flex flex-col items-center justify-end h-[180px] w-full max-w-[240px] mx-auto">
-      {/* Beaker outline */}
       <div className="relative w-28 h-36 border-2 border-white/25 rounded-b-xl bg-slate-800/20 overflow-hidden">
-        {/* Substance fill */}
         {state === 'solid' && (
           <div
-            className="absolute bottom-0 left-0 right-0 h-1/2 rounded-t-sm"
+            className="absolute bottom-0 left-0 right-0 h-1/2 rounded-t-sm transition-all duration-700"
             style={{ background: color }}
           />
         )}
@@ -309,32 +390,30 @@ const SubstanceBeaker: React.FC<{
             className="absolute bottom-0 left-0 right-0 h-2/3 transition-all duration-700"
             style={{ background: `${color}90` }}
           >
-            {/* Surface ripple */}
             <div className="absolute top-0 left-0 right-0 h-1 animate-pulse" style={{ background: `${color}50` }} />
           </div>
         )}
         {state === 'gas' && (
           <div className="absolute inset-0 flex items-center justify-center">
-            {[...Array(5)].map((_, i) => (
+            {[0, 1, 2, 3, 4].map(i => (
               <div
                 key={i}
                 className="absolute w-4 h-4 rounded-full animate-bounce opacity-30"
                 style={{
                   background: color,
-                  left: `${20 + Math.random() * 60}%`,
-                  top: `${10 + Math.random() * 70}%`,
+                  left: `${20 + i * 14}%`,
+                  top: `${12 + ((i * 17) % 60)}%`,
                   animationDelay: `${i * 0.3}s`,
-                  animationDuration: `${1.5 + Math.random()}s`,
+                  animationDuration: `${1.5 + i * 0.2}s`,
                 }}
               />
             ))}
           </div>
         )}
 
-        {/* Steam wisps for gas */}
         {state === 'gas' && (
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1">
-            {[...Array(3)].map((_, i) => (
+            {[0, 1, 2].map(i => (
               <div
                 key={i}
                 className="w-2.5 h-2.5 rounded-full bg-white/10 animate-bounce"
@@ -345,13 +424,14 @@ const SubstanceBeaker: React.FC<{
         )}
       </div>
 
-      <span className="text-slate-400 text-[10px] mt-1">{substanceName}</span>
+      <span className="text-slate-400 text-[10px] mt-1">{caption}</span>
     </div>
   );
 };
 
 // ============================================================================
-// Energy Graph Sub-component
+// Energy Graph Sub-component (exploration only — a heating curve with phase
+// markers reads the answer off the scale during a judged ask)
 // ============================================================================
 
 const EnergyGraph: React.FC<{
@@ -370,16 +450,15 @@ const EnergyGraph: React.FC<{
   const meltX = tempToX(meltingPoint);
   const boilX = tempToX(boilingPoint);
 
-  // Simplified heating curve: rises, plateaus at melting, rises, plateaus at boiling, rises
   const yBottom = H - 10;
   const yTop = 10;
   const curvePoints = [
     { x: padding, y: yBottom },
     { x: meltX - 5, y: yBottom - (yBottom - yTop) * 0.3 },
-    { x: meltX + 5, y: yBottom - (yBottom - yTop) * 0.3 }, // plateau
+    { x: meltX + 5, y: yBottom - (yBottom - yTop) * 0.3 },
     { x: (meltX + boilX) / 2, y: yBottom - (yBottom - yTop) * 0.6 },
     { x: boilX - 5, y: yBottom - (yBottom - yTop) * 0.7 },
-    { x: boilX + 5, y: yBottom - (yBottom - yTop) * 0.7 }, // plateau
+    { x: boilX + 5, y: yBottom - (yBottom - yTop) * 0.7 },
     { x: W - padding, y: yTop },
   ];
 
@@ -389,20 +468,12 @@ const EnergyGraph: React.FC<{
     <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5">
       <span className="text-slate-500 text-[10px] uppercase tracking-wider">Heating Curve</span>
       <svg width={W} height={H} className="w-full" viewBox={`0 0 ${W} ${H}`}>
-        {/* Axis */}
         <line x1={padding} y1={yBottom} x2={W - padding} y2={yBottom} stroke="#334155" strokeWidth={1} />
-
-        {/* Curve */}
         <path d={pathD} fill="none" stroke="#06b6d4" strokeWidth={2} opacity={0.6} />
-
-        {/* Phase markers */}
         <line x1={meltX} y1={yTop} x2={meltX} y2={yBottom} stroke="#60a5fa" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
         <text x={meltX} y={H - 1} textAnchor="middle" fill="#60a5fa" fontSize={8}>MP</text>
-
         <line x1={boilX} y1={yTop} x2={boilX} y2={yBottom} stroke="#fb923c" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
         <text x={boilX} y={H - 1} textAnchor="middle" fill="#fb923c" fontSize={8}>BP</text>
-
-        {/* Current temperature marker */}
         <circle cx={Math.max(padding, Math.min(W - padding, currentX))} cy={yBottom - 3} r={4} fill="#22d3ee" />
       </svg>
     </div>
@@ -419,25 +490,428 @@ interface StatesOfMatterProps {
 }
 
 // ============================================================================
-// Component
+// Judged surface (DI modality)
 // ============================================================================
 
-const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
+const MODE_META: Record<StatesKind, { badge: string; icon: string; accent: LuminaAccent }> = {
+  name_state: { badge: 'What State?', icon: '🔍', accent: 'blue' },
+  predict_state: { badge: 'Predict', icon: '🔮', accent: 'purple' },
+  predict_change: { badge: 'Name the Change', icon: '🔄', accent: 'purple' },
+  melt_first: { badge: 'Which Melts First?', icon: '⚖️', accent: 'emerald' },
+  stay_solid: { badge: 'Still Solid?', icon: '⚖️', accent: 'emerald' },
+};
+
+/** What the reveal ramps TO — the experiment the child predicted, run. */
+const revealTempFor = (item: StatesOfMatterItem): number => {
+  if (item.kind === 'melt_first') {
+    const [a, b] = item.pair!;
+    return Math.min(a.meltingPoint, b.meltingPoint) + 20;
+  }
+  return item.targetTemp ?? item.startTemp ?? 0;
+};
+
+interface RevealPayload {
+  item: StatesOfMatterItem;
+  fromTemp: number;
+  toTemp: number;
+  line: string;
+}
+
+/** One beaker + its particle view, with everything that NAMES a state stripped
+ *  unless the reveal is open. */
+const MatterLab: React.FC<{
+  substance: SubstanceFacts;
+  temperature: number;
+  particles: ParticleConfig;
+  revealed: boolean;
+  compact?: boolean;
+}> = ({ substance, temperature, particles, revealed, compact }) => {
+  const state = stateAt(substance, temperature);
+  const conf = STATE_CONFIG[state];
+  const color = substance.color[state];
+  const size = compact ? { w: 190, h: 140 } : { w: 240, h: 180 };
+
+  return (
+    <div className="flex-1 min-w-0">
+      <span className="text-slate-500 text-[10px] uppercase tracking-wider block text-center mb-1">
+        {substance.name}
+      </span>
+      <div className={compact ? 'grid grid-cols-1 gap-2' : 'grid grid-cols-1 sm:grid-cols-2 gap-4'}>
+        <SubstanceBeaker
+          state={state}
+          color={color}
+          /* The numeric temperature is the REVEAL, not the stimulus: a spoken
+             threshold beside a printed number turns observation into
+             arithmetic. */
+          caption={revealed ? `${substance.name} at ${temperature}°C` : substance.name}
+        />
+        <div>
+          <ParticleSimulation
+            state={state}
+            config={particles}
+            color={color}
+            temperature={temperature}
+            meltingPoint={substance.meltingPoint}
+            boilingPoint={substance.boilingPoint}
+            width={size.w}
+            height={size.h}
+          />
+          {/* The caption states the answer in words. It comes back with the
+              affirmation and not one moment sooner. */}
+          {revealed && (
+            <p className="text-slate-400 text-[10px] text-center mt-1 italic">
+              {conf.particleDesc}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StatesOfMatterJudged: React.FC<StatesOfMatterProps> = ({ data, className }) => {
   const {
     title,
-    description,
-    substance: initialSubstance,
-    particleConfig,
     challenges = [],
-    showOptions = {},
-    substances: availableSubstances,
-    gradeBand = 'K-2',
+    particleConfig,
+    supportTier,
+    gradeBand = '3-5',
     instanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
     onEvaluationSubmit,
+  } = data;
+
+  const stableInstanceIdRef = useRef(instanceId || `states-of-matter-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const tier: StatesTier = supportTier ?? 'medium';
+  const particles = particleConfig ?? DEFAULT_PARTICLES;
+
+  /** Build gates drop what cannot be asked — a placeholder in a judged loop
+   *  becomes a spoken ask the tutor has to stand behind. */
+  const items = useMemo<StatesOfMatterItem[]>(
+    () => itemsFromChallenges(challenges, { band: gradeBand, tier }),
+    [challenges, gradeBand, tier],
+  );
+
+  /**
+   * Defect 11, the PIXELS half done in strings: the lesson title is read by the
+   * child (and printed over the beaker), so a generated "Watch the Ice Melt!"
+   * answers an observe item before the tutor has finished asking.
+   */
+  const safeTitle = useMemo(
+    () => (title && !carriesAnswerVocabulary(title) ? title : 'States of Matter'),
+    [title],
+  );
+
+  /** The reveal payload (18b): set in `onAffirmed`, rendered behind
+   *  `runner.revealHeld`, deliberately NOT cleared in `onItemOpened` — the
+   *  runner fires both in ONE dispatch on the advance path, so clearing there
+   *  paints the reveal on the last item and nowhere else. */
+  const [reveal, setReveal] = useState<RevealPayload | null>(null);
+  const [rampTemp, setRampTemp] = useState<number | null>(null);
+
+  const evaluation = usePrimitiveEvaluation<StatesOfMatterMetrics>({
+    primitiveType: 'states-of-matter',
+    instanceId: resolvedInstanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const rate = (predicate: (item: StatesOfMatterItem) => boolean) => {
+      const scoped = items.filter(predicate);
+      if (scoped.length === 0) return 100;
+      const solved = scoped.filter(
+        (item) => summary.outcomes.find((o) => o.id === item.id)?.solved,
+      ).length;
+      return Math.round((solved / scoped.length) * 100);
+    };
+
+    const metrics: StatesOfMatterMetrics = {
+      type: 'states-of-matter',
+      challengesCorrect: summary.solvedCount,
+      challengesTotal: items.length,
+      observeAccuracy: rate((item) => item.challengeType === 'observe'),
+      predictAccuracy: rate((item) => item.challengeType === 'predict'),
+      compareAccuracy: rate((item) => item.challengeType === 'compare'),
+      substancesExplored: new Set(
+        items.flatMap((item) => (item.pair ? item.pair.map((s) => s.key) : item.substance ? [item.substance.key] : [])),
+      ).size,
+      attemptsCount: summary.attemptsCount,
+    };
+
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      undefined,
+      summary.diagnosisEvidence,
+    );
+  }, [items, evaluation]);
+
+  // ── The pack — wording lives in statesOfMatterScript.ts ────────────────────
+  // The cue surface is SPREAD, not re-declared, so the DI drive harness reads
+  // the same bytes this component sends.
+  const pack = useMemo<JudgedScriptPack<StatesOfMatterItem>>(() => ({
+    ...statesOfMatterPackBase(items),
+    statusLines: {
+      ready: () => 'Listen, then say your answer.',
+      retry: () => 'Listen again — then say your answer.',
+      done: 'Great science today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      const heard = (lastHeard ?? '').trim();
+      const observed = heard ? `Said "${heard}".` : 'Said something that did not match.';
+      switch (item.kind) {
+        case 'name_state':
+          return {
+            challenge: `Read the particle view and name the state of ${item.substance?.name}.`,
+            expected: `"${item.answerState}".`,
+            observed,
+          };
+        case 'predict_state':
+          return {
+            challenge: `Predict the state of ${item.substance?.name} at ${tempSpoken(item.targetTemp ?? 0)}.`,
+            expected: `"${item.answerState}".`,
+            observed,
+          };
+        case 'predict_change':
+          return {
+            challenge: `Name the phase change ${item.substance?.name} goes through at ${tempSpoken(item.targetTemp ?? 0)}.`,
+            expected: `"${item.answerChange}".`,
+            observed,
+          };
+        case 'melt_first':
+        case 'stay_solid':
+          return {
+            challenge: `Melting-point comparison: ${item.pair?.[0].name} vs ${item.pair?.[1].name}.`,
+            expected: `"${item.answerName}".`,
+            observed,
+          };
+      }
+    },
+  }), [items]);
+
+  const runner = useJudgedScriptRunner<StatesOfMatterItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel: gradeBand === 'K-2' ? 'Kindergarten' : 'Grade 3-5',
+    exhibitId,
+    onFinished: handleFinished,
+    onAffirmed: (item) => {
+      const from = item.startTemp ?? 0;
+      const to = revealTempFor(item);
+      const line = item.kind === 'name_state'
+        ? `${item.substance!.name} at ${item.startTemp}°C`
+        : item.kind === 'predict_state'
+          ? `${item.substance!.name} reaches ${to}°C`
+          : item.kind === 'predict_change'
+            ? `${item.substance!.name}: ${item.answerChange}`
+            : `${item.answerName} — melting point ${
+              (item.pair ?? []).find((s) => s.name === item.answerName)?.meltingPoint ?? ''
+            }°C`;
+      setReveal({ item, fromTemp: from, toTemp: to, line });
+    },
+  });
+
+  const showReveal = runner.revealHeld && reveal !== null;
+
+  /**
+   * The experiment RUNS on the affirmation — the reveal ramps the beaker from
+   * where the child saw it to where the tutor said she was taking it, while she
+   * says so.
+   *
+   * ⚠️ Every dependency here is a PRIMITIVE. A timer effect that depends on
+   * `runner` tears down and re-arms faster than it can fire, because the runner
+   * is a fresh object every render and the open mic re-renders many times a
+   * second — that is how ten-frame's subitize flash never once ran while
+   * passing 42 tests and a clean tsc.
+   */
+  const revealId = reveal?.item.id ?? null;
+  const revealFrom = reveal?.fromTemp ?? null;
+  const revealTo = reveal?.toTemp ?? null;
+  useEffect(() => {
+    if (!showReveal || revealFrom == null || revealTo == null) {
+      setRampTemp(null);
+      return;
+    }
+    if (revealFrom === revealTo) {
+      setRampTemp(revealTo);
+      return;
+    }
+    setRampTemp(revealFrom);
+    const steps = 20;
+    let step = 0;
+    const id = setInterval(() => {
+      step += 1;
+      setRampTemp(Math.round(revealFrom + ((revealTo - revealFrom) * step) / steps));
+      if (step >= steps) clearInterval(id);
+    }, 60);
+    return () => clearInterval(id);
+  }, [showReveal, revealId, revealFrom, revealTo]);
+
+  useEffect(() => {
+    if (showReveal) SoundManager.playCorrect();
+  }, [showReveal, revealId]);
+
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
+      const meta = MODE_META[item.kind];
+      return { label: meta.badge, icon: meta.icon };
+    });
+  }, [evaluation.hasSubmitted, runner.summary, items]);
+
+  const currentItem = runner.currentItem;
+
+  /**
+   * WHICH item is on the bench right now. On the advance path the runner opens
+   * the next item in the SAME dispatch as the affirmation, so by render time
+   * `currentItem` is already the NEXT one while the tutor is still saying the
+   * verdict for the last. The reveal therefore renders its OWN item — anything
+   * else puts the previous item's answer over the next item's substance.
+   */
+  const staged = showReveal && reveal ? reveal.item : currentItem;
+  const stagedTemp = showReveal && rampTemp != null
+    ? rampTemp
+    : staged?.startTemp ?? 0;
+
+  const modeMeta = MODE_META[staged?.kind ?? 'name_state'];
+
+  if (items.length === 0) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
+          <p className="text-slate-400 text-center">No challenges available.</p>
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <LuminaCardTitle className="text-lg">{safeTitle}</LuminaCardTitle>
+          {!evaluation.hasSubmitted && staged && (
+            <LuminaBadge accent={modeMeta.accent} className="text-xs">
+              {modeMeta.icon} {modeMeta.badge}
+            </LuminaBadge>
+          )}
+        </div>
+      </LuminaCardHeader>
+
+      <LuminaCardContent className="space-y-4">
+        {!evaluation.hasSubmitted && (
+          <>
+            <div className="flex items-center justify-center gap-4">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
+              />
+              {/* Tap-to-hear the question again — never the answer. */}
+              <button
+                type="button"
+                onClick={runner.hearStimulus}
+                aria-label="Hear the question again"
+                className={`
+                  flex items-center justify-center w-10 h-10 rounded-full
+                  bg-amber-500/15 border-2 border-amber-500/30 text-amber-300
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
+                `}
+              >
+                <Volume2 size={18} />
+              </button>
+            </div>
+
+            {/* THE BENCH. No slider, no thermometer readout, no phase markers,
+                no state badge, no substance switcher — every one of them either
+                answers the ask or lets the child run the experiment the tutor
+                is asking them to predict. */}
+            <div className="flex flex-col sm:flex-row gap-4 items-start justify-center">
+              {staged?.pair
+                ? staged.pair.map((s) => (
+                    <MatterLab
+                      key={s.key}
+                      substance={s}
+                      temperature={stagedTemp}
+                      particles={particles}
+                      revealed={showReveal}
+                      compact
+                    />
+                  ))
+                : staged?.substance && (
+                    <MatterLab
+                      substance={staged.substance}
+                      temperature={stagedTemp}
+                      particles={particles}
+                      revealed={showReveal}
+                    />
+                  )}
+            </div>
+
+            {/* Reveal-on-affirm: the state, in words, for exactly as long as
+                the tutor's affirmation is being spoken (runner.revealHeld). */}
+            {showReveal && reveal && (
+              <div className="flex justify-center">
+                <div className="flex items-center gap-3 rounded-2xl border-2 border-emerald-400/30 bg-emerald-500/10 px-5 py-2.5 animate-in fade-in duration-300">
+                  {!reveal.item.pair && (
+                    <LuminaBadge
+                      accent="emerald"
+                      className={`text-sm ${STATE_CONFIG[stateAt(reveal.item.substance!, stagedTemp)].textClass}`}
+                    >
+                      {STATE_CONFIG[stateAt(reveal.item.substance!, stagedTemp)].emoji}{' '}
+                      {STATE_CONFIG[stateAt(reveal.item.substance!, stagedTemp)].label}
+                    </LuminaBadge>
+                  )}
+                  <span className="text-emerald-200 text-sm font-medium">{reveal.line}</span>
+                </div>
+              </div>
+            )}
+
+            <JudgedMicPanel run={runner} />
+          </>
+        )}
+
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
+            heading="Experiment Complete!"
+            celebrationMessage={`You worked out what heat does across ${items.length} rounds — out loud!`}
+            className="mt-4"
+          />
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
+  );
+};
+
+// ============================================================================
+// Exploration surface (pre-DI behavior, preserved)
+// ============================================================================
+
+const StatesOfMatterExplorer: React.FC<StatesOfMatterProps> = ({ data, className }) => {
+  const {
+    title,
+    description,
+    substance: initialSubstance,
+    particleConfig,
+    showOptions = {},
+    substances: availableSubstances,
+    gradeBand = 'K-2',
+    instanceId,
   } = data;
 
   const {
@@ -449,59 +923,21 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
     showParticleSpeed = false,
   } = showOptions;
 
-  // -------------------------------------------------------------------------
-  // State
-  // -------------------------------------------------------------------------
-
   const [substance, setSubstance] = useState<SubstanceConfig>(initialSubstance);
   const [temperature, setTemperature] = useState(initialSubstance.currentTemp);
   const [substancesExplored, setSubstancesExplored] = useState<Set<string>>(new Set([initialSubstance.name]));
-
-  // Challenge tracking
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [currentAttempts, setCurrentAttempts] = useState(0);
-  const [challengeAnswer, setChallengeAnswer] = useState('');
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    challengeId: string;
-    correct: boolean;
-    attempts: number;
-  }>>([]);
-
-  // Metric tracking
-  const [stateIdCorrect, setStateIdCorrect] = useState(0);
-  const [stateIdTotal, setStateIdTotal] = useState(0);
-  const [phaseChangeIdentified, setPhaseChangeIdentified] = useState(false);
-  const [particleModelExplained, setParticleModelExplained] = useState(false);
-  const [heatingCurveRead, setHeatingCurveRead] = useState(false);
-  const [reversibilityUnderstood, setReversibilityUnderstood] = useState(false);
-  const [tempPrecisionSum, setTempPrecisionSum] = useState(0);
-  const [tempPrecisionCount, setTempPrecisionCount] = useState(0);
-
-  // Phase change celebration
   const [lastCrossedTransition, setLastCrossedTransition] = useState<'melting' | 'boiling' | null>(null);
   const [previousState, setPreviousState] = useState<MatterState | null>(null);
 
-  // Spoken-narration gating (see the phase-change effect below). The tutor should
-  // illuminate a phase change, not narrate every scrub of the slider:
-  //   - settle timer: only speak once the student has LANDED in the new state and
-  //     held it, so dragging back and forth across a threshold stays silent.
-  //   - witnessed set: speak each (substance, transition) at most once — the first
-  //     melt is illuminating, the fifth is nagging.
-  // The tutor still tracks live temperature/state the whole time via the silent
-  // context-update channel, so quiet ≠ unaware.
+  // Spoken-narration gating: settle timer + witnessed set, so dragging back and
+  // forth across a threshold stays silent and the first melt is illuminating
+  // where the fifth would be nagging.
   const speakTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const witnessedTransitionsRef = useRef<Set<string>>(new Set());
   const prevSubstanceNameRef = useRef(initialSubstance.name);
 
-  // Refs
   const stableInstanceIdRef = useRef(instanceId || `states-of-matter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  // -------------------------------------------------------------------------
-  // Derived State
-  // -------------------------------------------------------------------------
 
   const currentState: MatterState = useMemo(() => {
     if (temperature < substance.meltingPoint) return 'solid';
@@ -509,9 +945,7 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
     return 'gas';
   }, [temperature, substance.meltingPoint, substance.boilingPoint]);
 
-  const currentColor = useMemo(() => {
-    return substance.color[currentState];
-  }, [substance.color, currentState]);
+  const currentColor = substance.color[currentState];
 
   const tempRange = useMemo(() => {
     const range = substance.boilingPoint - substance.meltingPoint;
@@ -522,58 +956,15 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
     };
   }, [substance.meltingPoint, substance.boilingPoint]);
 
-  // Particle speed as percentage
   const particleSpeed = useMemo(() => {
     const range = tempRange.max - tempRange.min;
     return Math.max(0, Math.min(100, ((temperature - tempRange.min) / range) * 100));
   }, [temperature, tempRange]);
 
-  const currentChallenge = challenges[currentChallengeIndex] || null;
-  const allChallengesComplete = challenges.length > 0 &&
-    challengeResults.filter(r => r.correct).length >= challenges.length;
-  const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct
-  );
-
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<StatesOfMatterMetrics>({
-    primitiveType: 'states-of-matter',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
-  });
-
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    substanceName: substance.name,
-    substanceFormula: substance.formula,
-    meltingPoint: substance.meltingPoint,
-    boilingPoint: substance.boilingPoint,
-    currentTemperature: temperature,
-    currentState,
-    particleSpeed: Math.round(particleSpeed),
-    substancesExplored: substancesExplored.size,
-    currentChallengeIndex,
-    totalChallenges: challenges.length,
-    challengeType: currentChallenge?.type ?? 'identify_state',
-    instruction: currentChallenge?.instruction ?? title,
-    attemptNumber: currentAttempts + 1,
-  }), [
-    gradeBand, substance, temperature, currentState, particleSpeed,
-    substancesExplored.size, currentChallengeIndex, challenges.length,
-    currentChallenge, currentAttempts, title,
-  ]);
+    challengeType: 'free_explore',
+    stimulus: `${substance.name} in a beaker with its particle view, temperature under the learner's hand`,
+  }), [substance.name]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'states-of-matter',
@@ -582,30 +973,19 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
     gradeLevel: gradeBand === 'K-2' ? 'Kindergarten' : 'Grade 3-5',
   });
 
-  // Activity introduction
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current) return;
     hasIntroducedRef.current = true;
-
     sendText(
-      `[ACTIVITY_START] States of Matter activity for ${gradeBand}. `
-      + `Substance: ${substance.name}${substance.formula ? ` (${substance.formula})` : ''}. `
-      + `Melting point: ${substance.meltingPoint}°C, Boiling point: ${substance.boilingPoint}°C. `
-      + `Starting at ${temperature}°C (${currentState}). `
-      + `${challenges.length} challenges. `
-      + `Introduce warmly: "Let's explore what happens to ${substance.name} when we change the temperature! Right now it's a ${currentState}. What do you think the tiny particles inside are doing?"`,
-      { silent: true }
+      `[ACTIVITY_START] Free states-of-matter exploration for ${gradeBand}. `
+      + `The learner controls the temperature of ${substance.name} and watches the particles respond. `
+      + `Greet them warmly and invite them to try heating it up.`,
+      { silent: true },
     );
-  }, [isConnected, substance, temperature, currentState, gradeBand, challenges.length, sendText]);
+  }, [isConnected, substance.name, gradeBand, sendText]);
 
-  // -------------------------------------------------------------------------
-  // Phase change detection
-  // -------------------------------------------------------------------------
   useEffect(() => {
-    // Switching substances re-seeds currentState from a new preset (e.g. liquid
-    // water → solid nitrogen). That is not a student-driven phase change, so
-    // resync the baseline silently — never narrate it as "you froze it."
     if (prevSubstanceNameRef.current !== substance.name) {
       prevSubstanceNameRef.current = substance.name;
       if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
@@ -618,11 +998,8 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
         : (previousState === 'liquid' && currentState === 'gas') ? 'boiling'
         : null;
 
-      // Immediate, local reward — the tight visual feedback loop + the mastery
-      // metric. Cheap and self-clearing, so it may fire on every genuine crossing.
       if (transition) {
         setLastCrossedTransition(transition);
-        setPhaseChangeIdentified(true);
         setTimeout(() => setLastCrossedTransition(null), 2000);
       }
 
@@ -630,9 +1007,6 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
         : (previousState === 'gas' && currentState === 'liquid') ? 'condensing'
         : null;
 
-      // Spoken narration is settle-gated + once-per-transition. Capture the
-      // crossing values now; if the student keeps scrubbing, this timer is
-      // cleared and replaced before it ever speaks.
       if (transition || reverseTransition) {
         if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
         const fromState = previousState;
@@ -642,43 +1016,25 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
           const key = `${substance.name}:${fromState}->${toState}`;
           if (witnessedTransitionsRef.current.has(key)) return;
           witnessedTransitionsRef.current.add(key);
-
-          if (transition) {
-            sendText(
-              `[PHASE_CHANGE] ${substance.name} changed from ${fromState} to ${toState} at ${crossingTemp}°C! `
-              + `${transition === 'melting' ? 'The particles broke free from their fixed positions and started sliding!' : 'The particles escaped completely and are flying freely!'} `
-              + `Celebrate and explain: "Did you see that? The ${substance.name} just ${transition === 'melting' ? 'melted' : 'boiled'}! The particles ${transition === 'melting' ? 'got enough energy to slide past each other' : 'got so much energy they flew apart'}!"`,
-              { silent: true }
-            );
-          } else if (reverseTransition) {
-            sendText(
-              `[REVERSE_CHANGE] ${substance.name} changed back from ${fromState} to ${toState} at ${crossingTemp}°C. `
-              + `The student cooled it down! Narrate: "You reversed it! When we take away heat, the particles slow down and ${toState === 'solid' ? 'lock back into place' : 'come closer together'}."`,
-              { silent: true }
-            );
-          }
+          sendText(
+            `[PHASE_CHANGE] ${substance.name} went from ${fromState} to ${toState} at ${crossingTemp} degrees. `
+            + `Celebrate what the particles just did, in one short sentence.`,
+            { silent: true },
+          );
         }, 1200);
       }
     }
     setPreviousState(currentState);
   }, [currentState, previousState, substance.name, temperature, sendText]);
 
-  // Clear any pending narration timer on unmount.
-  useEffect(() => {
-    return () => {
-      if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
-    };
+  useEffect(() => () => {
+    if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
   }, []);
 
-  // -------------------------------------------------------------------------
-  // Handlers
-  // -------------------------------------------------------------------------
-
   const handleTemperatureChange = useCallback((newTemp: number) => {
-    if (hasSubmittedEvaluation) return;
     SoundManager.tick();
     setTemperature(newTemp);
-  }, [hasSubmittedEvaluation]);
+  }, []);
 
   const handleSwitchSubstance = useCallback((key: string) => {
     const preset = PRESET_SUBSTANCES[key];
@@ -687,197 +1043,14 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
     setSubstance(preset);
     setTemperature(preset.currentTemp);
     setSubstancesExplored(prev => { const next = new Set(prev); next.add(preset.name); return next; });
-
     sendText(
-      `[SUBSTANCE_CHANGED] Student switched to ${preset.name}. `
-      + `Melting: ${preset.meltingPoint}°C, Boiling: ${preset.boilingPoint}°C. Starting at ${preset.currentTemp}°C. `
-      + `Introduce: "Now let's look at ${preset.name}! Its melting point is ${preset.meltingPoint}°C. How is that different from what we just explored?"`,
-      { silent: true }
+      `[SUBSTANCE_CHANGED] The learner switched to ${preset.name}. Invite them to explore it.`,
+      { silent: true },
     );
   }, [sendText]);
 
-  // -------------------------------------------------------------------------
-  // Challenge checking
-  // -------------------------------------------------------------------------
-
-  const handleCheckChallenge = useCallback(() => {
-    if (!currentChallenge) return;
-
-    setCurrentAttempts(a => a + 1);
-    const answer = challengeAnswer.trim().toLowerCase();
-    const target = currentChallenge.targetAnswer.toLowerCase();
-    let isCorrect = false;
-
-    // ── True/False check ──
-    if (currentChallenge.isTrueFalse && currentChallenge.correctBoolean !== undefined) {
-      const studentBool = answer === 'true';
-      isCorrect = studentBool === currentChallenge.correctBoolean;
-
-      // Still update type-specific metrics
-      if (currentChallenge.type === 'reversibility' && isCorrect) setReversibilityUnderstood(true);
-
-    // ── Multiple choice check ──
-    } else if (currentChallenge.options && currentChallenge.correctOptionId) {
-      isCorrect = answer === currentChallenge.correctOptionId.toLowerCase();
-
-      // Update type-specific metrics
-      if (currentChallenge.type === 'explain_particles' && isCorrect) setParticleModelExplained(true);
-      if (currentChallenge.type === 'heating_curve' && isCorrect) setHeatingCurveRead(true);
-      if (currentChallenge.type === 'predict_change' && currentChallenge.targetTemp !== null) {
-        const precision = Math.abs(temperature - currentChallenge.targetTemp);
-        setTempPrecisionSum(prev => prev + precision);
-        setTempPrecisionCount(prev => prev + 1);
-      }
-      if (currentChallenge.type === 'identify_state') {
-        setStateIdTotal(prev => prev + 1);
-        if (isCorrect) setStateIdCorrect(prev => prev + 1);
-      }
-
-    // ── Legacy text-based check (fallback for open-ended / compare) ──
-    } else {
-      switch (currentChallenge.type) {
-        case 'identify_state': {
-          isCorrect = answer.includes(target);
-          setStateIdTotal(prev => prev + 1);
-          if (isCorrect) setStateIdCorrect(prev => prev + 1);
-          break;
-        }
-        case 'predict_change': {
-          isCorrect = answer.includes(target);
-          if (currentChallenge.targetTemp !== null) {
-            const precision = Math.abs(temperature - currentChallenge.targetTemp);
-            setTempPrecisionSum(prev => prev + precision);
-            setTempPrecisionCount(prev => prev + 1);
-          }
-          break;
-        }
-        case 'explain_particles': {
-          isCorrect = answer.length >= 15 && (
-            answer.includes('particle') || answer.includes('atom') || answer.includes('molecule') ||
-            answer.includes('vibrat') || answer.includes('move') || answer.includes('slide') ||
-            answer.includes('fly') || answer.includes('energy') || answer.includes('fast') ||
-            answer.includes('slow') || answer.includes('close') || answer.includes('apart')
-          );
-          if (isCorrect) setParticleModelExplained(true);
-          break;
-        }
-        case 'heating_curve': {
-          isCorrect = answer.includes(target) || answer.includes('plateau') || answer.includes('flat');
-          if (isCorrect) setHeatingCurveRead(true);
-          break;
-        }
-        case 'reversibility': {
-          isCorrect = answer.includes(target) || answer.includes('yes') || answer.includes('revers');
-          if (isCorrect) setReversibilityUnderstood(true);
-          break;
-        }
-        case 'compare_substances': {
-          isCorrect = answer.includes(target) || answer.length >= 15;
-          break;
-        }
-        default: {
-          isCorrect = answer.includes(target);
-        }
-      }
-    }
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setFeedback(currentChallenge.narration || 'Excellent!');
-      setFeedbackType('success');
-      setChallengeResults(prev => [...prev, {
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      }]);
-      sendText(
-        `[ANSWER_CORRECT] Student answered "${challengeAnswer}" for "${currentChallenge.instruction}". `
-        + `Celebrate: "${currentChallenge.narration}"`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(currentAttempts >= 1 ? currentChallenge.hint : 'Not quite — try again!');
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered "${challengeAnswer}" but target is "${target}". `
-        + `Attempt ${currentAttempts + 1}. Hint: "${currentChallenge.hint}"`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, challengeAnswer, currentAttempts, temperature, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Navigation
-  // -------------------------------------------------------------------------
-
-  const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
-
-    if (nextIndex >= challenges.length) {
-      sendText(
-        `[ALL_COMPLETE] Student completed all ${challenges.length} challenges! `
-        + `They explored ${substancesExplored.size} substance(s). `
-        + `Celebrate: "Amazing! You really understand how particles behave in solids, liquids, and gases!"`,
-        { silent: true }
-      );
-
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
-        const correctCount = challengeResults.filter(r => r.correct).length;
-        const score = challenges.length > 0
-          ? Math.round((correctCount / challenges.length) * 100) : 0;
-
-        const metrics: StatesOfMatterMetrics = {
-          type: 'states-of-matter',
-          stateIdentificationCorrect: stateIdCorrect,
-          stateTotal: stateIdTotal,
-          phaseChangeIdentified,
-          particleModelExplained,
-          heatingCurveRead,
-          reversibilityUnderstood,
-          substancesExplored: substancesExplored.size,
-          temperatureControlPrecision: tempPrecisionCount > 0
-            ? Math.round(tempPrecisionSum / tempPrecisionCount)
-            : 0,
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-
-        submitEvaluation(
-          correctCount === challenges.length,
-          score,
-          metrics,
-          { challengeResults, substancesExplored: Array.from(substancesExplored) }
-        );
-      }
-      return;
-    }
-
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
-    setFeedback('');
-    setFeedbackType('');
-    setChallengeAnswer('');
-
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
-      + `"${challenges[nextIndex]?.instruction}". Introduce it.`,
-      { silent: true }
-    );
-  }, [
-    currentChallengeIndex, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, stateIdCorrect, stateIdTotal, phaseChangeIdentified,
-    particleModelExplained, heatingCurveRead, reversibilityUnderstood,
-    substancesExplored, tempPrecisionSum, tempPrecisionCount, submitEvaluation,
-  ]);
-
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
-
   const stateConf = STATE_CONFIG[currentState];
 
-  // Slider gradient
   const sliderBackground = useMemo(() => {
     const meltPct = ((substance.meltingPoint - tempRange.min) / (tempRange.max - tempRange.min)) * 100;
     const boilPct = ((substance.boilingPoint - tempRange.min) / (tempRange.max - tempRange.min)) * 100;
@@ -885,27 +1058,23 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
   }, [substance.meltingPoint, substance.boilingPoint, tempRange]);
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
+            <LuminaBadge accent="blue" className="text-xs">
               {gradeBand === 'K-2' ? 'Kindergarten' : 'Grades 3-5'}
-            </Badge>
-            <Badge className={`text-xs ${stateConf.bgClass} ${stateConf.textClass}`}>
+            </LuminaBadge>
+            <LuminaBadge accent="emerald" className={`text-xs ${stateConf.textClass}`}>
               {stateConf.emoji} {stateConf.label}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
-        {description && (
-          <p className="text-slate-400 text-sm mt-1">{description}</p>
-        )}
-      </CardHeader>
+        {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
-
-        {/* Phase change celebration */}
+      <LuminaCardContent className="space-y-4">
         {lastCrossedTransition && (
           <div className="text-center animate-bounce">
             <span className="text-2xl">{lastCrossedTransition === 'melting' ? '🫠' : '☁️'}</span>
@@ -915,9 +1084,7 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Split View: Substance + Particles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Left: Substance Container */}
           <div>
             <span className="text-slate-500 text-[10px] uppercase tracking-wider block text-center mb-1">
               {substance.name} — Real View
@@ -925,11 +1092,10 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
             <SubstanceBeaker
               state={currentState}
               color={currentColor}
-              substanceName={`${substance.name} at ${temperature}°C`}
+              caption={`${substance.name} at ${temperature}°C`}
             />
           </div>
 
-          {/* Right: Particle View */}
           {showParticleView && (
             <div>
               <span className="text-slate-500 text-[10px] uppercase tracking-wider block text-center mb-1">
@@ -937,7 +1103,7 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
               </span>
               <ParticleSimulation
                 state={currentState}
-                config={particleConfig}
+                config={particleConfig ?? DEFAULT_PARTICLES}
                 color={currentColor}
                 temperature={temperature}
                 meltingPoint={substance.meltingPoint}
@@ -950,7 +1116,6 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
           )}
         </div>
 
-        {/* Temperature Slider */}
         {showTemperatureSlider && (
           <div className="bg-slate-800/20 rounded-xl p-3 border border-white/5 space-y-2">
             <div className="flex items-center justify-between">
@@ -960,40 +1125,34 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
               </span>
             </div>
 
-            {/* Slider */}
             <input
               type="range"
               min={tempRange.min}
               max={tempRange.max}
               value={temperature}
-              onChange={e => handleTemperatureChange(parseInt(e.target.value))}
+              onChange={e => handleTemperatureChange(parseInt(e.target.value, 10))}
               className="w-full h-2.5 rounded-lg appearance-none cursor-pointer"
               style={{ background: sliderBackground }}
+              aria-label="Temperature"
             />
 
-            {/* State labels & phase markers */}
-            {showStateLabels && (
+            {showStateLabels && showPhaseMarkers && (
               <div className="relative h-5">
-                {showPhaseMarkers && (
-                  <>
-                    <div
-                      className="absolute text-[9px] text-blue-400 font-mono -translate-x-1/2"
-                      style={{ left: `${((substance.meltingPoint - tempRange.min) / (tempRange.max - tempRange.min)) * 100}%` }}
-                    >
-                      {substance.meltingPoint}° MP
-                    </div>
-                    <div
-                      className="absolute text-[9px] text-orange-400 font-mono -translate-x-1/2"
-                      style={{ left: `${((substance.boilingPoint - tempRange.min) / (tempRange.max - tempRange.min)) * 100}%` }}
-                    >
-                      {substance.boilingPoint}° BP
-                    </div>
-                  </>
-                )}
+                <div
+                  className="absolute text-[9px] text-blue-400 font-mono -translate-x-1/2"
+                  style={{ left: `${((substance.meltingPoint - tempRange.min) / (tempRange.max - tempRange.min)) * 100}%` }}
+                >
+                  {substance.meltingPoint}° MP
+                </div>
+                <div
+                  className="absolute text-[9px] text-orange-400 font-mono -translate-x-1/2"
+                  style={{ left: `${((substance.boilingPoint - tempRange.min) / (tempRange.max - tempRange.min)) * 100}%` }}
+                >
+                  {substance.boilingPoint}° BP
+                </div>
               </div>
             )}
 
-            {/* Particle speed indicator */}
             {showParticleSpeed && (
               <div className="flex items-center gap-2">
                 <span className="text-slate-600 text-[10px]">Particle Energy</span>
@@ -1012,7 +1171,6 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Energy Graph (heating curve) */}
         {showEnergyGraph && (
           <EnergyGraph
             temperature={temperature}
@@ -1023,7 +1181,6 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
           />
         )}
 
-        {/* Substance Switcher */}
         {availableSubstances && availableSubstances.length > 1 && (
           <div className="flex flex-wrap gap-1.5">
             <span className="text-slate-500 text-[10px] uppercase tracking-wider self-center mr-1">Substance:</span>
@@ -1032,199 +1189,57 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
               if (!preset) return null;
               const isActive = substance.name === preset.name;
               return (
-                <Button
+                <LuminaButton
                   key={key}
-                  variant="ghost"
-                  className={`h-auto py-1 px-2 text-xs ${
-                    isActive
-                      ? 'bg-cyan-500/15 border border-cyan-400/30 text-cyan-300'
-                      : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-                  }`}
+                  tone={isActive ? 'primary' : 'ghost'}
+                  className="h-auto py-1 px-2 text-xs"
                   onClick={() => handleSwitchSubstance(key)}
                 >
                   {preset.name}
-                </Button>
+                </LuminaButton>
               );
             })}
           </div>
         )}
 
-        {/* Challenge Progress */}
-        {challenges.length > 0 && (
-          <div className="flex items-center gap-2">
-            {challenges.map((c, i) => (
-              <div
-                key={c.id}
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                  challengeResults.some(r => r.challengeId === c.id && r.correct)
-                    ? 'bg-emerald-400'
-                    : i === currentChallengeIndex
-                      ? 'bg-cyan-400 scale-125'
-                      : 'bg-slate-600'
-                }`}
-              />
-            ))}
-            <span className="text-slate-500 text-xs ml-auto">
-              {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
-            </span>
-          </div>
-        )}
-
-        {/* Current Challenge */}
-        {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5 space-y-3">
-            <div className="flex items-center gap-2">
-              <Badge className="text-[10px] bg-slate-700/50 text-slate-300 border-slate-600/50">
-                {currentChallenge.type.replace('_', ' ')}
-              </Badge>
-              <p className="text-slate-200 text-sm font-medium">
-                {currentChallenge.instruction}
-              </p>
-            </div>
-
-            {!isCurrentChallengeComplete && (
-              <>
-                {/* Identify state: dedicated solid/liquid/gas buttons */}
-                {currentChallenge.type === 'identify_state' ? (
-                  <div className="flex gap-2">
-                    {(['solid', 'liquid', 'gas'] as MatterState[]).map(state => (
-                      <Button
-                        key={state}
-                        variant="ghost"
-                        className={`flex-1 ${
-                          challengeAnswer === state
-                            ? `${STATE_CONFIG[state].bgClass} ${STATE_CONFIG[state].textClass}`
-                            : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-                        }`}
-                        onClick={() => setChallengeAnswer(state)}
-                      >
-                        {STATE_CONFIG[state].emoji} {STATE_CONFIG[state].label}
-                      </Button>
-                    ))}
-                  </div>
-                ) : currentChallenge.isTrueFalse ? (
-                  /* True/False buttons */
-                  <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
-                    {([
-                      { value: 'true', label: 'True', icon: '✓' },
-                      { value: 'false', label: 'False', icon: '✗' },
-                    ] as const).map(({ value, label, icon }) => (
-                      <button
-                        key={value}
-                        onClick={() => setChallengeAnswer(value)}
-                        className={`relative p-5 rounded-xl border transition-all duration-300 ${
-                          challengeAnswer === value
-                            ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                        }`}
-                      >
-                        <div className="flex flex-col items-center gap-2">
-                          <span className={`text-2xl ${challengeAnswer === value ? 'text-white' : 'text-slate-400'}`}>
-                            {icon}
-                          </span>
-                          <span className="text-sm font-bold text-slate-200">{label}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : currentChallenge.options && currentChallenge.options.length > 0 ? (
-                  /* Multiple choice options */
-                  <div className="grid grid-cols-1 gap-2">
-                    {currentChallenge.options.map((option) => (
-                      <Button
-                        key={option.id}
-                        variant="ghost"
-                        className={`h-auto text-left p-3 border transition-all duration-300 ${
-                          challengeAnswer === option.id
-                            ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                        }`}
-                        onClick={() => setChallengeAnswer(option.id)}
-                      >
-                        <div className="flex items-center gap-3 w-full">
-                          <Badge
-                            className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border flex-shrink-0 ${
-                              challengeAnswer === option.id
-                                ? 'bg-white text-slate-900 border-white'
-                                : 'bg-black/30 text-slate-400 border-white/10'
-                            }`}
-                          >
-                            {option.id}
-                          </Badge>
-                          <span className="text-sm text-slate-200">{option.text}</span>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                ) : (
-                  /* Fallback: open-ended textarea */
-                  <textarea
-                    value={challengeAnswer}
-                    onChange={e => setChallengeAnswer(e.target.value)}
-                    placeholder="Type your answer..."
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-cyan-400/50 placeholder:text-slate-600 resize-none"
-                    rows={2}
-                  />
-                )}
-
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleCheckChallenge}
-                  disabled={!challengeAnswer.trim() || hasSubmittedEvaluation}
-                >
-                  Check Answer
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* All Complete */}
-        {allChallengesComplete && (
-          <div className="text-center py-4">
-            <p className="text-emerald-400 text-sm font-medium mb-2">
-              All challenges complete!
-            </p>
-            <p className="text-slate-400 text-xs">
-              {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-            </p>
-          </div>
-        )}
-
-        {/* Feedback */}
-        {feedback && (
-          <div className={`text-center text-sm font-medium transition-all duration-300 ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            'text-slate-300'
-          }`}>
-            {feedback}
-          </div>
-        )}
-
-        {/* Next Challenge Button */}
-        {isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-              onClick={advanceToNextChallenge}
-            >
-              Next Challenge
-            </Button>
-          </div>
-        )}
-
-        {/* Hint after 2 attempts */}
-        {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
-            <p className="text-slate-400 text-xs italic">💡 {currentChallenge.hint}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        <p className="text-slate-600 text-[10px] text-center">
+          Explored {substancesExplored.size} substance{substancesExplored.size === 1 ? '' : 's'}
+        </p>
+      </LuminaCardContent>
+    </LuminaCard>
   );
+};
+
+// ============================================================================
+// Component — the fork
+// ============================================================================
+
+const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
+  const band: StatesBand = data.gradeBand ?? '3-5';
+  const judgedItems = useMemo(
+    () => itemsFromChallenges(data.challenges ?? [], {
+      band,
+      tier: data.supportTier ?? 'medium',
+    }),
+    [data.challenges, band, data.supportTier],
+  );
+
+  // A payload whose challenges ALL dropped degrades to exploration rather than
+  // to an empty judged session — the build gates never repair, they drop, and
+  // the free sim is a real surface rather than a placeholder.
+  if (judgedItems.length === 0) {
+    const explorerData: StatesOfMatterData = {
+      ...data,
+      substance: data.substance ?? PRESET_SUBSTANCES.water,
+      particleConfig: data.particleConfig ?? DEFAULT_PARTICLES,
+      substances: data.substances ?? Object.keys(PRESET_SUBSTANCES).filter(
+        (k) => (substanceFactsOf(k)?.bands ?? []).includes(band),
+      ),
+    };
+    return <StatesOfMatterExplorer data={explorerData} className={className} />;
+  }
+
+  return <StatesOfMatterJudged data={data} className={className} />;
 };
 
 export default StatesOfMatter;

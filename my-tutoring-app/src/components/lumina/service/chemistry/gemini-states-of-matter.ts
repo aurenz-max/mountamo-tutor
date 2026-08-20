@@ -6,8 +6,11 @@ import {
   SubstanceConfig,
   ParticleConfig,
   StatesOfMatterChallenge,
-  ChallengeOption,
 } from "../../primitives/visual-primitives/chemistry/StatesOfMatter";
+import {
+  bandPool,
+  carriesAnswerVocabulary,
+} from "../../primitives/visual-primitives/chemistry/statesOfMatterScript";
 
 // Re-export types for convenience (no redefinition — sourced from the component)
 export type {
@@ -15,7 +18,6 @@ export type {
   SubstanceConfig,
   ParticleConfig,
   StatesOfMatterChallenge,
-  ChallengeOption,
 };
 
 /**
@@ -24,7 +26,9 @@ export type {
  * Describes the JSON structure Gemini must return:
  * - substance: starting substance with melting/boiling points and colors per state
  * - particleConfig: particle simulation settings (count, size, trails, bonds)
- * - challenges: sequenced interactive tasks (identify, predict, explain, compare)
+ * NOTE: challenges are NOT here. Every judged challenge is CODE-DRAWN from the
+ * substance table (`states-of-matter-challenges.ts`) and every answer key is
+ * computed, so no LLM ever writes the science this primitive grades.
  * - showOptions: UI toggles for particle view, slider, labels, graph, speed
  * - substances: list of available substance keys for the switcher
  * - imagePrompt: prompt for generating a real-life phase-change image
@@ -125,106 +129,6 @@ const statesOfMatterSchema: Schema = {
       },
       required: ["count", "size", "showTrails", "showBonds"],
     },
-    challenges: {
-      type: Type.ARRAY,
-      description:
-        "3-5 sequenced challenges: identify → predict → explain → compare. " +
-        "Use multiple-choice options for explain_particles, predict_change, and heating_curve challenges. " +
-        "Use isTrueFalse for reversibility challenges. " +
-        "Only use open-ended textarea (no options, no isTrueFalse) for compare_substances.",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique challenge identifier",
-          },
-          type: {
-            type: Type.STRING,
-            enum: [
-              "identify_state",
-              "predict_change",
-              "explain_particles",
-              "heating_curve",
-              "compare_substances",
-              "reversibility",
-            ],
-            description: "Type of challenge task",
-          },
-          instruction: {
-            type: Type.STRING,
-            description: "Kid-friendly instruction for this challenge",
-          },
-          targetAnswer: {
-            type: Type.STRING,
-            description: "Expected correct answer or key answer word(s)",
-          },
-          targetTemp: {
-            type: Type.NUMBER,
-            description:
-              "Target temperature the student should reach (for predict_change), or null",
-            nullable: true,
-          },
-          hint: {
-            type: Type.STRING,
-            description: "Gentle hint if the student is stuck",
-          },
-          narration: {
-            type: Type.STRING,
-            description:
-              "Wonder-driven narration text to spark curiosity and celebrate success",
-          },
-          options: {
-            type: Type.ARRAY,
-            description:
-              "Multiple-choice options (3-4 choices). Required for explain_particles, predict_change, and heating_curve challenges. " +
-              "Omit for identify_state (has built-in solid/liquid/gas buttons), reversibility (use isTrueFalse), and compare_substances (open-ended).",
-            nullable: true,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: {
-                  type: Type.STRING,
-                  description: "Option identifier (A, B, C, D)",
-                },
-                text: {
-                  type: Type.STRING,
-                  description: "The option text the student sees",
-                },
-              },
-              required: ["id", "text"],
-            },
-          },
-          correctOptionId: {
-            type: Type.STRING,
-            description:
-              "The id of the correct option (e.g. 'B'). Required when options are provided.",
-            nullable: true,
-          },
-          isTrueFalse: {
-            type: Type.BOOLEAN,
-            description:
-              "Set to true for reversibility challenges to render True/False buttons instead of textarea.",
-            nullable: true,
-          },
-          correctBoolean: {
-            type: Type.BOOLEAN,
-            description:
-              "The correct True/False answer. Required when isTrueFalse is true.",
-            nullable: true,
-          },
-        },
-        required: [
-          "id",
-          "type",
-          "instruction",
-          "targetAnswer",
-          "targetTemp",
-          "hint",
-          "narration",
-        ],
-      },
-    },
     showOptions: {
       type: Type.OBJECT,
       description: "Which UI panels to enable for this activity",
@@ -284,7 +188,6 @@ const statesOfMatterSchema: Schema = {
     "description",
     "substance",
     "particleConfig",
-    "challenges",
     "showOptions",
     "substances",
     "gradeBand",
@@ -336,7 +239,7 @@ export function statesOfMatterGradeBandFromGrade(grade?: string): "K-2" | "3-5" 
  *
  * Grade-appropriate content:
  * - K-2: Water focus, simple observations, no formulas, small particle count
- * - 3-5: Multiple substances, heating curve, particle speed, compare challenges
+ * - 3-5: Multiple substances, heating curve, particle speed
  *
  * @param topic - The topic or theme (e.g. "states of matter", "ice and water")
  * @param gradeLevel - Grade level context string
@@ -359,8 +262,7 @@ export const generateStatesOfMatter = async (ctx: GenerationContext): Promise<St
       "Particle count: 20-30. Size: large (easier to see). " +
       "showEnergyGraph: false. showParticleSpeed: false. " +
       "Focus on simple observations: 'What state is this?' and 'What happens when we heat it up?' " +
-      "Challenges should be identify_state and predict_change types only. " +
-      "Substances list should be just ['water']. " +
+      "Substances list: everyday, above-freezing things — water, wax, chocolate, butter, coconutOil. " +
       "Use familiar everyday examples: ice cubes melting, puddles drying up, steam from a kettle.",
     "3-5":
       "3rd to 5th grade. Include MULTIPLE substances with different melting/boiling points. " +
@@ -368,12 +270,10 @@ export const generateStatesOfMatter = async (ctx: GenerationContext): Promise<St
       "Formulas are optional for well-known substances (H₂O, N₂, Fe). " +
       "Particle count: 30-50. Size: medium. Show trails and bonds. " +
       "showEnergyGraph: true. showParticleSpeed: true. " +
-      "Include compare_substances challenges — ask students to compare melting points or " +
-      "explain why chocolate melts in your hand but iron doesn't. " +
-      "Include explain_particles challenges — ask what particles are doing in each state. " +
-      "Substances list should include 3-4 options from: water, wax, iron, chocolate, nitrogen, butter. " +
-      "Include a reversibility challenge — can we turn steam back into water?",
+      "Substances list should include 3-4 keys from the allowed set below.",
   };
+
+  const allowedKeys = bandPool(gradeBand).map((sub) => sub.key);
 
   const generationPrompt = `Create a States of Matter particle simulation activity about "${topic}" for ${gradeBand} students.
 ${intent ? `\nTeaching intent: ${intent}` : ""}
@@ -386,39 +286,23 @@ GENERAL REQUIREMENTS:
 2. Melting and boiling points must be scientifically accurate.
 3. Provide 3 colors (hex) for each substance state (solid, liquid, gas) that look visually distinct.
 4. currentTemp should start the substance in its most familiar state (e.g. water at 25°C = liquid).
-5. Provide 3-5 challenges sequenced by difficulty:
-   - Start with an "identify_state" challenge (what state is this substance in right now?)
-   - Follow with "predict_change" (what will happen if we heat/cool it?)
-   - Progress to harder challenges: "explain_particles", "heating_curve", "compare_substances", "reversibility"
-6. Every narration field should be wonder-driven (e.g. "You discovered something amazing — the tiny particles sped up so much they broke free and became a gas!").
-7. For predict_change challenges, set targetTemp to the temperature the student should try to reach.
-8. Always include an imagePrompt describing a daily-life phase change scene:
+5. Always include an imagePrompt describing a daily-life phase change scene:
    - e.g. "A child watching an ice cream cone melt on a hot summer day" or "Steam rising from a pot of boiling soup on the stove"
-9. Set showOptions appropriately:
+6. Set showOptions appropriately:
    - showParticleView: always true
    - showTemperatureSlider: always true
    - showStateLabels: always true
    - showEnergyGraph: false for K-2, true for 3-5
    - showPhaseMarkers: always true
    - showParticleSpeed: false for K-2, true for 3-5
-10. The substances array must only include keys from: water, wax, iron, chocolate, nitrogen, butter.
-11. For K-2: formula should be null. Only use ['water'] for substances.
-    For 3-5: formula is optional. Use 3-4 substances from the available set.
+7. The substances array must only include keys from: ${allowedKeys.join(", ")}.
+8. For K-2: formula should be null.
 
-CHALLENGE SCAFFOLDING (IMPORTANT):
-Use the right answer format for each challenge type:
-- identify_state: No options needed (the UI has built-in solid/liquid/gas buttons). Set targetAnswer to the correct state.
-- explain_particles: Provide "options" with 3-4 multiple-choice descriptions of particle behavior.
-  Example options: [{id:"A", text:"Vibrating in place, tightly packed"}, {id:"B", text:"Sliding past each other freely"}, {id:"C", text:"Flying apart in all directions"}, {id:"D", text:"Not moving at all"}].
-  Set correctOptionId to the correct option id. Still set targetAnswer for fallback.
-- predict_change: Provide "options" with 3-4 choices about what will happen.
-  Example: [{id:"A", text:"It will melt into a liquid"}, {id:"B", text:"It will freeze into a solid"}, {id:"C", text:"Nothing will happen"}].
-  Set correctOptionId to the correct option id.
-- heating_curve: Provide "options" with 3-4 choices about what happens on the heating curve.
-  Set correctOptionId to the correct option id.
-- reversibility: Set "isTrueFalse" to true and "correctBoolean" to the correct answer (true/false).
-  Frame the instruction as a true/false statement (e.g. "Melting ice into water can be reversed by cooling it back down.").
-- compare_substances: No options — this stays as open-ended textarea for creative answers.`;
+TITLE RULE (IMPORTANT): the title is READ ALOUD to the child and printed over
+the beaker, so it must NOT contain a state or a change word — no "solid",
+"liquid", "gas", "ice", "steam", "melt", "freeze", "boil" or "condense". A title
+that names the answer answers the question before it is asked. Use the topic or
+the substance instead: "Wax on the Hot Plate", "What Heat Does".`;
 
   try {
     const response = await ai.models.generateContent({
@@ -432,8 +316,7 @@ Use the right answer format for each challenge type:
           "Design engaging explorations where students discover how temperature affects the state of matter. " +
           "Use accurate science — melting points, boiling points, and particle behavior must be correct. " +
           "Language should be age-appropriate: simple wonder-filled phrasing for young children, more precise scientific vocabulary for older students. " +
-          "Every activity should connect to real-world examples so students see phase changes in their daily lives. " +
-          "Always sequence challenges from easiest (identify) to hardest (compare/explain).",
+          "Every activity should connect to real-world examples so students see phase changes in their daily lives.",
       },
     });
 
@@ -517,54 +400,29 @@ Use the right answer format for each challenge type:
       };
     }
 
-    // Ensure every challenge has required fields
-    if (result.challenges) {
-      result.challenges = result.challenges.map((ch, idx) => {
-        const challenge = {
-          ...ch,
-          id: ch.id || `challenge-${idx}`,
-          type: ch.type || "identify_state",
-          instruction:
-            ch.instruction || "What state of matter is this substance in?",
-          targetAnswer: ch.targetAnswer || "",
-          targetTemp: ch.targetTemp ?? null,
-          hint: ch.hint || "Look at the particles — are they moving fast or slow?",
-          narration:
-            ch.narration ||
-            ch.instruction ||
-            "Great observation!",
-        };
-
-        // Ensure correctOptionId is set when options are present
-        if (challenge.options && challenge.options.length > 0 && !challenge.correctOptionId) {
-          const target = challenge.targetAnswer.toLowerCase();
-          const match = challenge.options.find(
-            (o) => o.text.toLowerCase().includes(target) || target.includes(o.text.toLowerCase())
-          );
-          if (match) {
-            challenge.correctOptionId = match.id;
-          } else {
-            // Default to first option — generator gave us no usable signal
-            challenge.correctOptionId = challenge.options[0].id;
-          }
-        }
-
-        // Ensure correctBoolean is set when isTrueFalse is present
-        if (challenge.isTrueFalse && challenge.correctBoolean === undefined) {
-          const target = challenge.targetAnswer.toLowerCase();
-          challenge.correctBoolean = target === "true" || target === "yes";
-        }
-
-        return challenge;
-      });
+    // Substance list: keep only keys the CODE TABLE knows, so exploration
+    // never offers a substance a judged session could not ask about.
+    const allowed = new Set(allowedKeys);
+    result.substances = (result.substances ?? []).filter((k) => allowed.has(k));
+    if (result.substances.length === 0) {
+      result.substances = allowedKeys.slice(0, gradeBand === "K-2" ? 3 : 4);
     }
 
-    // Ensure substances list defaults
-    if (!result.substances || result.substances.length === 0) {
-      result.substances =
-        gradeBand === "K-2"
-          ? ["water"]
-          : ["water", "wax", "chocolate", "butter"];
+    // Defect 11, generator-side half: the TITLE is read aloud and printed over
+    // the beaker, so a title carrying a state or change word answers an observe
+    // item before the tutor finishes asking. Gated on BOTH sides of the wire
+    // (`StatesOfMatter.tsx` re-checks whatever actually arrives).
+    if (!result.title || carriesAnswerVocabulary(result.title)) {
+      // ⚠️ THE FALLBACK NEEDS THE SAME GATE. The first live probe drew the
+      // topic "ice cubes on a warm day", and a fallback built from the topic
+      // reproduced the leak word verbatim — the guard has to hold on every
+      // string it can emit, not only on the one the model wrote.
+      const candidates = [
+        topic ? `Heat and ${topic}` : "",
+        `${result.substance.name} on the Hot Plate`,
+      ];
+      result.title = candidates.find((c) => c && !carriesAnswerVocabulary(c))
+        ?? "What Heat Does";
     }
 
     // Ensure imagePrompt
@@ -582,7 +440,6 @@ Use the right answer format for each challenge type:
       meltingPoint: result.substance.meltingPoint,
       boilingPoint: result.substance.boilingPoint,
       particleCount: result.particleConfig.count,
-      challengeCount: result.challenges?.length ?? 0,
       substancesAvailable: result.substances?.length ?? 0,
     });
 
