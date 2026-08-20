@@ -110,10 +110,44 @@ about**.
 phoneme-explorer truncated at `maxOutputTokens: 4096` — the widest schema in the family died
 mid-object, `JSON.parse` failed, and a hardcoded fallback **shipped silently, graded as
 success**. ⚠️ **Then word-builder proved the fix is not a constant: 8192 is a NON-THINKING
-number** — on `gemini-3-flash-preview` it is shared with the reasoning budget and truncated
+number** — on `gemini-flash-latest` it is shared with the reasoning budget and truncated
 the payload at ~850 chars, killing two of four eval modes while the other two came back
 clean. **Bound the schema ARRAYS first**, then pick the ceiling from the model actually
 configured. A per-mode fan-out lets a ceiling be invisible in three modes and fatal in one.
+
+**11. THE STIMULUS'S OWN LABEL CAN BE THE ANSWER — and only reading the live draw
+aloud finds it.** (compare-objects, port 21.) Its first live `order_three` draw returned
+*"small green bush" / "tall oak tree" / "high kitchen chair" / "miniature coffee mug"*.
+Every machine gate passed: the key was right, the drawing agreed with it, the menu was
+clean. The fault was in the **noun** — the tutor says *"Put the small green bush, the
+tall oak tree and the garden flower in order, from tallest to shortest"* and the child
+never has to look at the screen. **A label on a button is scenery; a label the tutor
+READS ALOUD is the question.** Any port whose stimulus carries GENERATED labels (object
+names, character names, category names) owes a refuse-list gate on words that name the
+answer's dimension, prompt-side AND build-side. ⚠️ **And re-draw the exemption you are
+about to grant:** the first version of that gate exempted the mode whose answer was a
+CATEGORY rather than a magnitude, and the very next draw refuted it (*"heavy backpack"*
+names the attribute, which was that mode's whole answer). Related: the leak scan is
+`leakExemptSpan`-blind here, because the leak is a legal part of the ask.
+
+**12. DEFECT 6 HAS A SECOND HALF, AND IT IS WHERE `{{stimulus}}` SITS.** (states-of-matter,
+port 22.) Solar-system's fix — the stimulus stating its own non-speakability — took an
+observe mode from **3 of 6** asks reading the `[CURRENT STATE]` preamble aloud (its own
+*"never read it aloud"* sentence included) to **2 of 6**, and no further. What closed it to
+**0 of 6** was the catalog placement: **`{{stimulus}}` goes LAST in `taskDescription`, with
+the never-read-aloud clause IMMEDIATELY before it** (*"The question side of what is on
+screen, described for you alone and never read aloud: {{stimulus}}."*). Split that clause
+into its own sentence higher up and the block stops identifying itself as not-content at
+the point it arrives. Copy the whole shape, not just the stimulus half.
+
+**13. THE DRAW IS A THIRD RECITATION CHANNEL, and no gate can see it.** (states-of-matter.)
+The runner re-speaks the how-to-play on every ACTION change, so a draw that ALTERNATES two
+facets of one mode per item makes every item an action change and re-recites ~14s of
+protocol every round — the 2026-08-13 recitation ruling arriving through the generator
+instead of through `leadInFor`. `findRepeatedConsecutiveAsks` is structurally blind to it:
+consecutive items have different actions by construction. Fix is one constant in the draw
+(group each facet into RUNS of ~2), and the tell is in the drive transcript, never in a
+test — read consecutive asks of the same MODE and count how many open with the protocol.
 
 ## Step 1 — the answer-material fork (the creative core)
 

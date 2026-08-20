@@ -4,10 +4,11 @@ Confirm that a primitive's tutoring scaffold actually reaches the AI tutor intac
 
 **Why this exists:** the backend renders any unresolvable `{{key}}` as the literal string `(not set)` — no error, no log (`interpolate_template`, `lumina_tutor.py`). A broken scaffold degrades invisibly into a vague, context-blind tutor. Type checks catch none of it.
 
-**Arguments:** `/tutor-test <primitive-id> [--probe] [--di]`
+**Arguments:** `/tutor-test <primitive-id> [--probe] [--di] [--di-bench]`
 - Omit the id to sweep every catalog entry with a `tutoring:` block
 - `--probe` adds Tier 2 (real generated content + assembled prompt preview)
 - `--di` runs Tier 3-DI on a judged-loop port (see below) — the only tier that exercises the JUDGE
+- `--di-bench` scores the judge against a hand-authored key — the gate a NEW response class clears
 
 ## The tiers
 
@@ -69,6 +70,46 @@ this class reads as one defect, not a 12-row wall.
 exported cue surface (`<primitive>PackBase`) and its answer material. It must never re-declare
 cues. If a port has no exported cue surface yet, extract one — the component spreads it, which
 is what makes the harness honest.
+
+### Tier 3-BENCH: score the JUDGE against a key (`--di-bench`)
+
+```bash
+python run_tutor_live.py --component rhyme-studio --di-bench --grade "Grade 1"
+python run_tutor_live.py --component rhyme-studio --di-bench --di-bench-item bench-ake-cake
+```
+
+**This is the gate a NEW RESPONSE CLASS clears before any pack may wire it** (standing gate 1).
+It used to mean a mic sitting; it is now machine-driven.
+
+A `--di` drive answers each item wrong once and right once, which is enough for a **closed**
+class — the judge is handed the exact target and asked to classify against it. An **open** class
+hands it a RULE, and a rule fails in ways two answers cannot see: accepting a nonword, accepting
+the stimulus echoed straight back, accepting a word that only shares the onset, or quietly
+re-closing the set around the first words it thought of and refusing a valid rarer one. So a
+bench walks ~11 scored probes per stimulus across buckets and compares each verdict to the one
+the contract owes it.
+
+**Three things make it a bench rather than a longer drive:**
+
+1. **It answers a hand-authored FIXTURE, not a generation** (`DiPortAdapter.benchBuild`). The
+   judge is what is under test, so the key must be known-correct before the run starts — and
+   generated content cannot supply one. Our own rhyme generator emitted the nonword `NAKE` into
+   an acceptable-answer list; a bench keyed off that would score a correct refusal as a failure.
+2. **The gate is ASYMMETRIC and is not an accuracy number.** Zero false affirmations in the hard
+   REFUSE buckets, full stop. A missed valid answer costs the child a turn; an affirmed wrong one
+   teaches the error. 95% with one affirmed nonword is a FAILING run.
+3. **`packGateIssues` is expected to be non-empty** while the class under test is still `blocked`
+   — `validateJudgedScriptPack` refuses it by design. That line is the honest label on a bench
+   run, and it is what disappears when the class clears.
+
+Probes with **no classifiable verdict are never counted as agreement** — a mute session must not
+clear a class. The bench's own key is unit-tested (`openSetWordBench.test.ts`): a probe filed in
+the wrong bucket would block a class on our error, or clear one that teaches a child something
+false.
+
+**Adding a bench** = a `benchBuild` on the port's adapter plus a fixture module beside it. Probes
+are HAND-AUTHORED per stimulus, never derived by rule — rime `ip` plus onset `z` is `zip`, a real
+word, and a derived "nonword" bucket lies silently.
 
 #### DI oracles
 

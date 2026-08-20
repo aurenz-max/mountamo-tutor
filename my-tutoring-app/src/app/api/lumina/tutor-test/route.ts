@@ -145,10 +145,15 @@ export async function GET(request: NextRequest) {
         // Tier-3 DI (&di=1): the judged loop itself, serialized. The REAL script
         // module builds the REAL cues from this generated content, so the headless
         // student replays production strings instead of a Python replica of them.
+        // `&bench=1` swaps the generated payload for the port's hand-authored
+        // bench fixture — the judge, not the loop, is what a bench measures, and
+        // that needs a key known-correct before the run starts.
         ...(searchParams.get('di') === '1'
           ? {
               diPlan: isDiPort(componentId)
-                ? buildDiDrivePlan(componentId, generated, gradeLevel)
+                ? buildDiDrivePlan(componentId, generated, gradeLevel, {
+                    bench: searchParams.get('bench') === '1',
+                  })
                 : {
                     error:
                       `"${componentId}" has no DI drive adapter — it is either not a `

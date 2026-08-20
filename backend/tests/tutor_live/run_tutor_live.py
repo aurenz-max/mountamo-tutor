@@ -26,6 +26,16 @@ import json
 import os
 import re
 import sys
+
+# Windows consoles default to cp1252, and print() of anything outside it raises
+# UnicodeEncodeError mid-run — which kills the session AFTER the Live turns have
+# been spent. It is not hypothetical: the "⚠ pack gates" line crashed the first
+# open-set bench at the last print before the socket opened. Every cue this
+# harness echoes is pedagogy text full of em-dashes, so the fix belongs at the
+# STREAM, not on the handful of lines that happen to carry a marker today.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
 import time
 from dataclasses import dataclass, field
 from datetime import date
@@ -66,7 +76,8 @@ def get_id_token() -> str:
 
 
 def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str,
-                       eval_mode: Optional[str] = None, di: bool = False) -> Dict[str, Any]:
+                       eval_mode: Optional[str] = None, di: bool = False,
+                       bench: bool = False) -> Dict[str, Any]:
     """Tier-2 probe with &live=1: real generated content + the raw tutoring block.
 
     Retries: the Next dev server intermittently answers mid-recompile, and
@@ -86,6 +97,11 @@ def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str,
                 # gates, real cues, and the answer material a right and a wrong
                 # child produce. Nothing here is authored in Python.
                 params["di"] = "1"
+            if bench:
+                # A BENCH answers the port's hand-authored fixture instead of the
+                # generation. The generation still runs (the route builds the
+                # tutoring block from it) — only the drive items are swapped.
+                params["bench"] = "1"
             r = requests.get(
                 f"{frontend}/api/lumina/tutor-test",
                 params=params,
@@ -2059,6 +2075,7 @@ def build_di_journey(live: Dict[str, Any], grade: str,
     # then the runner's move-on cue — which carries the NEXT item's ask, so that
     # cue REPLACES the next ask beat exactly as it does in production.
     capped_id = None
+    undrivable: List[str] = []
     if cap_item:
         # --di-cap-item: pin the drill to a NAMED item instead of the first
         # spoken one. A pack whose move-on cue differs by item KIND cannot be
@@ -2202,8 +2219,19 @@ def build_di_journey(live: Dict[str, Any], grade: str,
 
         beats.append(answer_beat(item, wrong_said, "correct", "wrong", wrong_why,
                                  is_last_item=is_last_item))
-        beats.append(answer_beat(item, answers["correct"], "affirm", "right",
-                                 is_last_item=is_last_item))
+        if answers["correct"]:
+            beats.append(answer_beat(item, answers["correct"], "affirm", "right",
+                                     is_last_item=is_last_item))
+        else:
+            # NO CORRECT ANSWER MEANS NO BEAT. An OPEN-set item has no answer of
+            # its own to carry, so a port either supplies one from a
+            # hand-checked source or supplies nothing. Sending the empty string
+            # as a student turn made the tutor sit through a 60s silence and
+            # filed a `di-silent-turn` HIGH against it - 4x in the first
+            # rhyme-studio pilot drive, on the rimes the bench fixture does not
+            # cover. Skipping is honest; the ids are printed so it is never a
+            # silent hole in coverage.
+            undrivable.append(item["id"])
 
     beats.append(Beat(
         "complete",
@@ -2238,7 +2266,319 @@ def build_di_journey(live: Dict[str, Any], grade: str,
             "cap_drill": bool(capped_id),
             "capped_item": capped_id,
             "grade": grade,
+            # Voice items with no answer material - never silently dropped.
+            "undrivable_items": undrivable,
         },
+    }
+
+
+SPOKEN_SPAN_RE = re.compile(
+    r'(?:(?:Say|Speak) exactly:|Say ONLY this[^:"]{0,40}:|then wait:)\s*"([\s\S]*?)"',
+    re.I)
+
+
+def spoken_span_of(cue: str) -> str:
+    """The first line the tutor is told to SPEAK. Mirrors judgedScriptContract's
+    `spokenSpanOf` - the four anchors and the same non-greedy span - because the
+    bench compares an improvised turn to the scripted one and a mis-parsed span
+    would flag a clean cue."""
+    m = SPOKEN_SPAN_RE.search(cue or "")
+    return m.group(1) if m else ""
+
+
+def build_di_bench_journey(live: Dict[str, Any], grade: str,
+                           only_item: Optional[str] = None) -> Dict[str, Any]:
+    """A BENCH, not a drive: score the JUDGE against a hand-authored key.
+
+    An ordinary --di run answers each item wrong once and right once, which is
+    enough for a CLOSED class - the judge is handed the exact target and asked
+    to classify against it. An OPEN class hands it a RULE, and a rule fails in
+    ways two answers cannot see: accepting a nonword, accepting the stimulus
+    echoed straight back, accepting a word that only shares the onset, or
+    quietly re-closing the set around the first few words it thought of and
+    refusing a valid rarer one. So this walks ~11 scored probes per stimulus,
+    weighted toward the wrong answers, and compares each verdict to the one the
+    contract owes it (openSetWordBench.ts carries the key and the argument).
+
+    TRIAL INDEPENDENCE, AND WHERE IT COMES FROM.
+    An AFFIRM probe ends the item - in production the runner would advance - so
+    the item is re-opened after one. A REFUSE probe does not need that: the
+    tutor's correction re-asks the question by contract, so the next probe
+    lands on a freshly stated ask. But only up to the CAP - see the
+    `consecutive_refusals` reset below, which is F3 and the reason this
+    docstring's old turn estimate no longer holds. The re-anchor is placed on
+    the EXPECTED verdict rather than the observed one because beats are built
+    before the session opens; when the judge disagrees, the consequence is a
+    redundant re-ask (harmless) or a probe arriving mid-correction (the natural
+    flow), and the disagreement is already recorded either way.
+
+    SIZING, AND WHY IT IS NOW TIGHTER. Honoring the cap ADDS a re-anchor beat
+    for every `maxCorrections` refusals, and a key weighted toward the wrong
+    answers is mostly refusals - the 13-probe rime stimulus went from 18 beats
+    to 21. Budget ~1.7 beats per probe, not ~1.4. If a Live session limit bites
+    (1008), --di-bench-item narrows the run to one stimulus and the sweep
+    becomes N invocations whose records aggregate by hand.
+    """
+    plan = live.get("diPlan")
+    if not plan:
+        raise RuntimeError(
+            "no diPlan in the probe response - --di-bench needs &di=1&bench=1 "
+            "and a port whose adapter carries a benchBuild fixture"
+        )
+    if "error" in plan:
+        raise RuntimeError(plan["error"])
+    if not plan.get("isBench"):
+        raise RuntimeError(
+            "the route returned an ORDINARY drive plan, not a bench plan. The "
+            "&bench=1 param did not reach buildDiDrivePlan - check the route."
+        )
+
+    items = plan["items"]
+    if only_item:
+        items = [i for i in items if i["id"] == only_item]
+        if not items:
+            raise RuntimeError(
+                '--di-bench-item "%s" is not in this fixture. Stimuli: %s'
+                % (only_item, ", ".join(i["id"] for i in plan["items"]))
+            )
+
+    keyed = [i for i in items if (i["answers"].get("probes") or [])]
+    unkeyed = [i["id"] for i in items if not (i["answers"].get("probes") or [])]
+    if not keyed:
+        raise RuntimeError(
+            "no item in this plan carries a scored probe key - a bench without "
+            "a key measures nothing"
+        )
+
+    # Production's correction cap. The bench honors it (see the reset below);
+    # a plan without one is read as the family default rather than as "no cap",
+    # because "no cap" is the defect this fixes.
+    max_corrections = int(plan.get("maxCorrections") or 2)
+
+    beats: List[Beat] = []
+    total_probes = 0
+    for item in keyed:
+        beats.append(Beat(
+            "ask:%s" % item["id"],
+            sends=[ctx_msg({"activity": plan["activityLine"], **item["context"]}),
+                   text_msg(item["cue"], scripted=True)],
+            expect="turn",
+            note="open-set ask - %s" % item["id"],
+            di={
+                "role": "ask", "item": item["id"], "answer_kind": item["answerKind"],
+                "expected_line": item["askLine"],
+                "leak_tokens": item["answers"].get("leakTokens") or [],
+                "leak_exempt_span": "",
+                "is_last_item": False,
+            },
+        ))
+
+        probes = item["answers"]["probes"]
+        # F3 (carried from item 24): CONSECUTIVE REFUSALS ARE CAPPED, because
+        # production caps them. The bench used to send every REFUSE probe back
+        # to back on the theory that "the correction re-asks by contract, so
+        # the next probe lands on a freshly stated ask" - true of ONE
+        # correction, false of eight. A stimulus whose key is weighted toward
+        # the wrong answers (which is the whole design) drove up to 8
+        # consecutive corrections where the runner would have moved the item on
+        # after `maxCorrections`. That MANUFACTURES contract decay: by the
+        # fifth identical re-ask the tutor is being measured under a pressure
+        # no child ever applies, and the run's severity numbers stop meaning
+        # anything about production.
+        #
+        # So the counter resets the way the runner resets it. After
+        # `maxCorrections` refusals in a row the item is RE-ANCHORED - the same
+        # steady-state re-open an AFFIRM already triggers - and the next probe
+        # arrives on a fresh item with the correction count at zero. The bench
+        # deliberately re-anchors rather than driving the cap itself: the
+        # move-on cue ENDS the item, and there would be nothing left to probe.
+        # Exercising the cap is `--di`'s cap drill, a different question.
+        consecutive_refusals = 0
+        for n, probe in enumerate(probes):
+            total_probes += 1
+            beats.append(Beat(
+                "probe:%s:%s:%s" % (item["id"], probe["bucket"], probe["text"]),
+                sends=[text_msg(probe["text"])],
+                expect="turn",
+                note='student says "%s" (%s) - %s' % (probe["text"], probe["bucket"], probe["why"]),
+                di={
+                    "role": "bench-probe",
+                    "item": item["id"],
+                    # `expect` stays in the family's own vocabulary ("affirm" /
+                    # "correct") so classify_di_verdict's output compares
+                    # directly; the bucket table renames "correct" to REFUSE for
+                    # the reader, where it is the clearer word.
+                    "expect": "affirm" if probe["expect"] == "affirm" else "correct",
+                    "said": probe["text"],
+                    "why": probe["why"],
+                    "bucket": probe["bucket"],
+                    "soft": bool(probe.get("soft")),
+                    "answer_kind": "voice",
+                    "expected_line": item.get("affirmLine") if probe["expect"] == "affirm"
+                                     else item.get("correctionLine"),
+                    "final_attempt": False,
+                    "is_last_item": False,
+                },
+            ))
+            # Re-open the item after a verdict that ENDS it (an affirm), or
+            # after `maxCorrections` refusals, which is where production would
+            # have withdrawn the item. Skipped on the last probe of an item -
+            # the next ask beat re-anchors anyway.
+            if probe["expect"] == "affirm":
+                consecutive_refusals = 0
+                needs_reanchor = True
+            else:
+                consecutive_refusals += 1
+                needs_reanchor = consecutive_refusals >= max_corrections
+                if needs_reanchor:
+                    consecutive_refusals = 0
+            if needs_reanchor and n < len(probes) - 1:
+                beats.append(Beat(
+                    "reanchor:%s:%d" % (item["id"], n),
+                    # reanchorCue, NOT cue: `cue` on item 0 carries the greeting,
+                    # the how-to-play and the rule model, so re-sending it would
+                    # re-teach "words rhyme when they end the same way" before
+                    # every trial - benching the judge under support production
+                    # never gives it. Found in the first bench run, where the
+                    # tutor re-read the whole opening between probes.
+                    sends=[text_msg(item["reanchorCue"], scripted=True)],
+                    expect="turn",
+                    note="re-open the same item for the next probe"
+                         + ("" if probe["expect"] == "affirm"
+                            else " (correction cap reached)"),
+                    di={
+                        "role": "ask", "item": item["id"], "answer_kind": "voice",
+                        # The steady-state ask is what the tutor owes here, so
+                        # the off-script oracle must compare against THAT.
+                        "expected_line": spoken_span_of(item["reanchorCue"]),
+                        "leak_tokens": item["answers"].get("leakTokens") or [],
+                        "leak_exempt_span": "",
+                        "is_last_item": False,
+                    },
+                ))
+
+    first = keyed[0]
+    return {
+        "beats": beats,
+        "primitive_type": plan["primitiveType"],
+        "instance_id": "di-bench-%s-%d" % (plan["componentId"], int(time.time())),
+        "initial_bag": {"activity": plan["activityLine"], **first["context"]},
+        "audio_input": plan["audioInput"],
+        "owns_opening": True,
+        "grade_level": plan["gradeLevel"],
+        "di_plan": plan,
+        "meta": {
+            "journey": "di-bench",
+            "component": plan["componentId"],
+            "items": len(keyed),
+            "voice_items": len(keyed),
+            "gesture_items": 0,
+            "dropped_challenges": plan["droppedChallenges"],
+            # On a bench this is EXPECTED to be non-empty while the class is
+            # blocked: validateJudgedScriptPack refuses the very class under
+            # test. It is the honest label on the run, not a defect.
+            "pack_gate_issues": plan["packGateIssues"],
+            "wrong_kind": "bench-key",
+            "cap_drill": False,
+            "capped_item": None,
+            "grade": grade,
+            "probes": total_probes,
+            "unkeyed_items": unkeyed,
+            # Recorded because it CHANGES THE MEASUREMENT: the same key run at a
+            # different cap is a different amount of pressure on the judge, and
+            # a reader comparing two run records has to be able to see that.
+            "max_corrections": max_corrections,
+        },
+    }
+
+
+def report_di_bench(results: List[BeatResult], sentinels: Dict[str, Any]) -> Dict[str, Any]:
+    """Score the probe verdicts against the key and print the bucket table.
+
+    THE GATE IS ASYMMETRIC AND DELIBERATELY NOT AN ACCURACY NUMBER. A false
+    affirmation teaches a five-year-old something false - that "nake" is a word,
+    or that a word rhymes with itself. A missed valid rhyme costs a turn and the
+    correction re-teaches the rime. 95% with one affirmed nonword is a failing
+    run; the false-affirmation list is the whole verdict.
+    """
+    rows: List[Dict[str, Any]] = []
+    for r in results:
+        di = r.beat.di
+        if not di or di.get("role") != "bench-probe":
+            continue
+        spoken = (r.transcript or r.ai_text).strip()
+        got = classify_di_verdict(spoken, sentinels) if spoken else None
+        rows.append({
+            "item": di["item"],
+            "bucket": di["bucket"],
+            "said": di["said"],
+            "why": di["why"],
+            "soft": di["soft"],
+            "expect": di["expect"],
+            "observed": got,
+            "agreed": got == di["expect"],
+            "spoken": spoken,
+        })
+
+    false_affirms = [r for r in rows
+                     if r["expect"] == "correct" and not r["soft"] and r["observed"] == "affirm"]
+    missed_valid = [r for r in rows if r["expect"] == "affirm" and r["observed"] != "affirm"]
+    soft_disagree = [r for r in rows if r["soft"] and not r["agreed"]]
+    no_verdict = [r for r in rows if r["observed"] is None]
+
+    by_bucket: Dict[str, Dict[str, int]] = {}
+    for r in rows:
+        b = by_bucket.setdefault(r["bucket"], {"n": 0, "agreed": 0})
+        b["n"] += 1
+        b["agreed"] += 1 if r["agreed"] else 0
+
+    label = {"affirm": "AFFIRM", "correct": "REFUSE"}
+    print("\n" + "=" * 78)
+    print("OPEN-SET BENCH - verdicts vs the hand-authored key")
+    print("=" * 78)
+    for bucket in sorted(by_bucket):
+        tally = by_bucket[bucket]
+        print("  %-18s %2d/%-2d agreed" % (bucket, tally["agreed"], tally["n"]))
+    print("-" * 78)
+    if no_verdict:
+        print("  ! %d probe(s) drew NO VERDICT - the tutor said nothing the reducer"
+              % len(no_verdict))
+        print("    could classify. These are LOOP failures, not judge failures, and they")
+        print("    make the probes they cover vacuous:")
+        for r in no_verdict:
+            print('      %s/%s: "%s" -> %s'
+                  % (r["item"], r["bucket"], r["said"], r["spoken"][:80] or "(silence)"))
+    if false_affirms:
+        print("\n  X %d FALSE AFFIRMATION(S) - the gate fails on any:" % len(false_affirms))
+        for r in false_affirms:
+            print('      %s/%s: said "%s" -> tutor AFFIRMED' % (r["item"], r["bucket"], r["said"]))
+            print("        why this is wrong: %s" % r["why"])
+            print('        tutor: "%s"' % r["spoken"][:150])
+    else:
+        print("\n  OK - ZERO false affirmations in the hard REFUSE buckets.")
+    if missed_valid:
+        print("\n  . %d missed valid rhyme(s) - reported, does NOT block:" % len(missed_valid))
+        for r in missed_valid:
+            print('      %s: "%s" (%s) -> %s'
+                  % (r["item"], r["said"], r["bucket"],
+                     label.get(r["observed"] or "", "NO VERDICT")))
+    if soft_disagree:
+        print("\n  . %d slant-rhyme disagreement(s) - recorded, does NOT block:" % len(soft_disagree))
+        for r in soft_disagree:
+            print('      %s: "%s" -> %s'
+                  % (r["item"], r["said"], label.get(r["observed"] or "", "NO VERDICT")))
+    passed = bool(rows) and not false_affirms
+    print("\n  VERDICT: " + ("PASS - the class may move off `blocked` on this evidence."
+                             if passed else
+                             "FAIL - `open_set_word` stays blocked."))
+    print("=" * 78 + "\n")
+    return {
+        "rows": rows,
+        "passed": passed,
+        "false_affirmations": len(false_affirms),
+        "missed_valid": len(missed_valid),
+        "soft_disagreements": len(soft_disagree),
+        "no_verdict": len(no_verdict),
     }
 
 
@@ -2334,7 +2674,14 @@ def run_di_oracles(results: List[BeatResult], events: List[str],
                     f'SCRIPT: "{(di.get("expected_line") or "")[:110]}" '
                     f'SPOKE: "{spoken[:110]}"')
 
-        elif role in ("answer", "verdict"):
+        elif role in ("answer", "verdict", "bench-probe"):
+            # A BENCH PROBE is an answer beat: the bench scores whether the judge
+            # was RIGHT, and these oracles score whether it stayed ON CONTRACT
+            # while being right. Both halves are needed - a verdict reached by an
+            # improvised line that leaked a valid answer is not evidence the
+            # contract works. (This branch originally handled only the two drive
+            # roles, so the first open-set bench measured verdicts with the
+            # compliance half silently switched off.)
             want = di["expect"]
             got = classify_di_verdict(spoken, sentinels)
             said = di.get("said") or "the described placement"
@@ -2342,6 +2689,12 @@ def run_di_oracles(results: List[BeatResult], events: List[str],
                 add("HIGH", "di-no-verdict", b,
                     f'answered "{said}" and the tutor opened with neither sentinel — '
                     f'the loop stalls here: "{spoken[:160]}"')
+            elif got != want and di.get("soft"):
+                # The bench's own asymmetric gate deliberately does NOT count a
+                # slant-rhyme disagreement ("hack" for "hat"): whether it rhymes
+                # is defensible either way. Filing a HIGH here would contradict
+                # the gate that owns the decision.
+                pass
             elif got != want:
                 if want == "correct":
                     add("HIGH", "di-false-affirm", b,
@@ -2968,7 +3321,23 @@ async def amain() -> int:
                          "one of its three that names the answer, and a decode session "
                          "always opens on a read line. Voice items only; the error message "
                          "lists the session's item ids.")
+    ap.add_argument("--di-bench", action="store_true",
+                    help="BENCH the judge instead of driving the loop: build from the "
+                         "port's hand-authored fixture and score ~11 probes per stimulus "
+                         "against a key (openSetWordBench.ts). This is the gate a new "
+                         "response class has to clear before a pack may wire it — the "
+                         "bar is ZERO false affirmations in the REFUSE buckets, not an "
+                         "accuracy percentage. Implies --di.")
+    ap.add_argument("--di-bench-item", default=None, metavar="STIMULUS_ID",
+                    help="narrow a bench to ONE stimulus (e.g. bench-ake-cake). Use when "
+                         "a Live session limit bites on the full sweep; the six records "
+                         "then aggregate by hand.")
     args = ap.parse_args()
+    # A bench IS a DI run — it replays the same judged cues through the same
+    # transport. The only difference is what the items are built from and how
+    # the turns are scored, so --di-bench never has to be paired with --di.
+    if args.di_bench:
+        args.di = True
 
     print(f"[1/4] Firebase sign-in…")
     token = get_id_token()
@@ -2978,10 +3347,24 @@ async def amain() -> int:
         live = {"status": "static-journey", "tutoring": None, "generatedData": {}}
     else:
         live = fetch_live_context(args.frontend, args.component, args.topic, args.grade,
-                                  args.eval_mode, di=args.di)
+                                  args.eval_mode, di=args.di, bench=args.di_bench)
     print(f"      tier-1 status: {live.get('status')}; scaffold keys: {list((live.get('tutoring') or {}).keys())}")
 
-    if args.di:
+    if args.di_bench:
+        journey = build_di_bench_journey(live, args.grade, args.di_bench_item)
+        meta = journey["meta"]
+        print(f"      BENCH: {meta['items']} stimulus/stimuli, {meta['probes']} scored probes")
+        if meta["unkeyed_items"]:
+            # Never a silent skip: an item with no key is a coverage hole, and a
+            # bench that quietly dropped one would read as full coverage.
+            print(f"      · {len(meta['unkeyed_items'])} item(s) carry NO key and are NOT "
+                  f"scored: {meta['unkeyed_items']}")
+        if meta["pack_gate_issues"]:
+            # EXPECTED while the class under test is still `blocked` — the
+            # validator refuses it by design, and that line is the honest label
+            # on the run rather than a defect in it.
+            print(f"      ⚠ pack gates: {meta['pack_gate_issues']}")
+    elif args.di:
         journey = build_di_journey(live, args.grade, args.di_wrong, args.di_cap,
                                    args.di_cap_item)
         meta = journey["meta"]
@@ -2990,6 +3373,9 @@ async def amain() -> int:
               f"{meta['dropped_challenges']} challenge(s) dropped by the build gates, "
               f"wrong-answer mode: {meta['wrong_kind']}"
               + (f", cap drill ON ({meta['capped_item']})" if meta['cap_drill'] else ''))
+        if meta.get("undrivable_items"):
+            print(f"      · {len(meta['undrivable_items'])} item(s) have NO answer material — "
+                  f"their 'right' beat was SKIPPED: {meta['undrivable_items']}")
         if meta["pack_gate_issues"]:
             print(f"      ⚠ pack gates over LIVE content: {meta['pack_gate_issues']}")
     else:
@@ -3003,6 +3389,7 @@ async def amain() -> int:
     runs = 1 if args.plumbing else max(1, args.runs)
     run_results: List[List[BeatResult]] = []
     per_run_findings: List[List[Dict[str, str]]] = []
+    bench_reports: List[Dict[str, Any]] = []
     all_events: List[str] = []
 
     for i in range(1, runs + 1):
@@ -3052,6 +3439,29 @@ async def amain() -> int:
             # an IMPROVISING tutor, and on a judged loop every line is scripted
             # (a question per turn is the method, not interrogation cadence).
             findings = run_di_oracles(results, client.events, journey["di_plan"]["sentinels"])
+            if args.di_bench:
+                # The bench's own scoring runs ON TOP of the DI oracles rather
+                # than instead of them: a probe verdict is only meaningful if the
+                # tutor stayed on script, kept the tag syntax out of its mouth
+                # and did not leak. The DI oracles check that half; this checks
+                # whether the judge was RIGHT.
+                report = report_di_bench(results, journey["di_plan"]["sentinels"])
+                bench_reports.append(report)
+                if report["false_affirmations"]:
+                    findings.append({
+                        "severity": "HIGH", "check": "open-set-false-affirmation", "beat": "*",
+                        "detail": f"{report['false_affirmations']} probe(s) in a REFUSE "
+                                  f"bucket were AFFIRMED — the response class stays blocked. "
+                                  f"An affirmed wrong answer teaches the error; this is the "
+                                  f"one failure the gate does not trade against coverage.",
+                    })
+                if report["no_verdict"]:
+                    findings.append({
+                        "severity": "HIGH", "check": "open-set-probe-vacuous", "beat": "*",
+                        "detail": f"{report['no_verdict']} probe(s) drew no classifiable "
+                                  f"verdict — those trials measured nothing and the bench "
+                                  f"cannot be read as covering them.",
+                    })
         else:
             findings = run_oracles(results, client.events)
             findings.extend(judge_beats(results))
