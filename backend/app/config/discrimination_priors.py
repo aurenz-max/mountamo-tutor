@@ -87,6 +87,14 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "find-feature":    PATTERN_DIRECT_MANIPULATION,   # a=1.8
         "read-focus-word": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
     },
+    "word-flip": {
+        "plural_s":   PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+        "plural_es":  PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+        "past_ed":    PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+        "plural_y":   PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+        "irregulars": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+        "past_irregular": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+    },
     # --- Single-mode / multi-mode math primitives ---
     "balance-scale": {
         "equality":  PATTERN_DIRECT_MANIPULATION,
