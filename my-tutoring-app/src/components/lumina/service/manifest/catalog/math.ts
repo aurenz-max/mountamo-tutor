@@ -4246,11 +4246,87 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
   },
-    {
-      id: 'compare-objects',
-      misconceptionScope: 'primitive',
-    description: 'Interactive measurement comparison activity where students describe and compare measurable attributes (length, height, weight, capacity) of real-world objects. Supports identifying attributes, direct comparison of two objects, ordering three objects, and measuring with non-standard units (paperclips, blocks). Builds foundational measurement vocabulary and comparative reasoning. ESSENTIAL for K-1 measurement and data (K.MD.1-2).',
-    constraints: 'Best for grades K-1. Requires objects with measurable attributes. K: compare 2 objects directly. Grade 1: order 3 objects and use non-standard units.',
+  {
+    id: 'compare-objects',
+    misconceptionScope: 'primitive',
+    description: 'Live tutor-judged measurement comparison (DI modality) on drawings of real-world objects. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY OUT LOUD what the picture lets us measure — how long, how tall, how heavy, or how much it holds (identify-attribute, both grades); they SAY THE NAME of the object that is longer, taller, heavier or holds more (compare-two, both grades); they SAY THE COUNT of non-standard units laid along an object (non-standard, Grade 1); and they answer WITH THEIR HANDS by touching three objects in order (order-three, Grade 1) — there the arrangement IS the answer. Builds the measurement vocabulary K.MD.1 asks children to SPEAK. ESSENTIAL for Kindergarten and Grade 1 measurement and data (K.MD.1-2).',
+    constraints: 'Best for grades K-1. Requires a microphone: three of the four answers are spoken and judged by the Live tutor, and there is no Check button, no attribute chips, no object buttons and no typed number anywhere. Kindergarten uses identify-attribute and compare-two only; order-three and non-standard are Grade 1. Unit counts run 1-20, so every spoken number is a single word. A comparison whose drawing disagrees with its answer, whose two object names cannot be told apart by ear, or whose attribute menu offers both length and height is discarded before the child ever sees it.',
+    tutoring: {
+      taskDescription: 'LIVE-JUDGED measurement comparison practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the screen, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // ⚠️ 18d, applied at BIRTH: no level of this ladder may OFFER a speakable
+      // line of its own. A quoted hint here is a sanctioned-sounding
+      // replacement for the scripted correction at exactly the moment 18c
+      // makes the model want one — it opens with neither sentinel, so the
+      // engine sees no verdict and the correction counter stalls. The ladder
+      // commands script fidelity; it never supplies an alternative.
+      scaffoldingLevels: {
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never compare the objects aloud and never name any part of the answer.',
+        level2: 'A wrong answer is never met with a hint of your own — speak the cue\'s scripted "My turn:" correction again, exactly as written, even if you just said it.',
+        level3: 'If the child stays stuck, stay with the script: the correction line models the comparison and re-asks for you. Never invent encouragement, a new question, or a softer hint.',
+      },
+      commonStruggles: [
+        { pattern: 'Long silence', response: 'Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
+        { pattern: 'Names the object that is the other way round (says the longer one when asked which is shorter)', response: 'The scripted correction handles this AFTER the attempt is judged: it models how to compare and re-asks. Never interrupt mid-attempt.' },
+        { pattern: 'Answers with a pointing word instead of a name ("that one", "the first one")', response: 'That does not answer the question, so it is wrong: speak the scripted correction, which asks for the name again.' },
+        { pattern: 'Counts the object\'s starting edge as a unit and lands one too many', response: 'The scripted correction counts the units with the child and re-asks. Speak only that line.' },
+        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
+          instruction:
+            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
+          instruction:
+            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
+            + 'On identify-attribute the answer is what the picture lets us measure, in the child\'s words or the grown-up word — both are right. '
+            + 'On compare-two the answer is ONE object name and nothing else; a pointing word with no name does not answer the question. '
+            + 'On non-standard the answer is ONE number word, and counting out loud on the way to it is the child working, not answering. '
+            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
+            + 'On a HANDS item (order-three) the child answers by touching the objects in order, and you are told what order they made and whether it matches. '
+            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
+        },
+        {
+          title: 'THE VERDICT ENDS THE TURN',
+          instruction:
+            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another object, or the next item, '
+            + 'even one you can see on the screen. The next ask always arrives as its own cue.',
+        },
+        {
+          title: 'ORDERING ITEMS ARE SILENT',
+          instruction:
+            'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no naming which one comes first. '
+            + 'You will be told what order they made and whether it matches; only then do you speak the line the cue gives you.',
+        },
+        {
+          title: 'THE CHILD IS THINKING — WAIT',
+          instruction:
+            'Think time is unbounded. Never fill a silence, never compare the objects out loud, and never prompt while the child is looking. The silence is theirs.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'HEAR-THE-QUESTION ON DEMAND',
+          instruction:
+            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
+            + 'treat nothing you just heard as an answer, and never say the answer.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
+        },
+      ],
+    },
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'identify_attribute',
@@ -4258,7 +4334,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.0,
         scaffoldingMode: 1,
         challengeTypes: ['identify_attribute'],
-        description: 'Identify measurable attributes of objects.',
+        // β HELD. The chips are gone, but the tutor still NAMES the closed menu
+        // aloud — it has to, or the question is ambiguous rather than harder —
+        // so the guess floor is unchanged at 1-in-N. What changed is that the
+        // vocabulary now leaves the child's mouth, which is what K.MD.1 asks
+        // for and not a difficulty tier.
+        description: 'Say what the picture lets us measure — how long, how tall, how heavy, or how much it holds. The tutor names the choices and judges the spoken answer; the child\'s words and the grown-up word both count.',
       },
       {
         evalMode: 'compare_two',
@@ -4266,7 +4347,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['compare_two'],
-        description: 'Direct comparison of 2 objects on a named attribute.',
+        // β HELD on the number-bond / ASS precedent: a two-button tap became
+        // unaided speech, a structural change, but a 1-of-2 menu is the weakest
+        // there is and the ask still names both objects, so the guess floor it
+        // removed is small and β is per MODE.
+        description: 'Say the NAME of the object that is longer, taller, heavier or holds more. Spoken production, judged by the Live tutor; no buttons.',
       },
       {
         evalMode: 'order_three',
@@ -4274,7 +4359,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['order_three'],
-        description: 'Order 3 objects by a measurable attribute.',
+        // β HELD — the same touch-in-order surface; only the Check button
+        // became a stillness close, and an incomplete order now commits (and is
+        // corrected) where it used to be refused with a nudge.
+        description: 'Put 3 objects in order by a measurable attribute, touching them one at a time; the tutor judges the committed order. The arrangement IS the answer, so this one is answered with hands. Grade 1.',
       },
       {
         evalMode: 'non_standard',
@@ -4282,40 +4370,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['non_standard'],
-        description: 'Measure using non-standard units (paperclips, blocks).',
+        // β HELD — the keypad was already unaided production, so replacing it
+        // with the mouth changes the CHANNEL, not the task. The count-along
+        // numbering on the unit boxes is now a post-answer reveal rather than a
+        // permanent aid, which is an answer-leak fix, not a difficulty lever.
+        description: 'Count non-standard units (paper clips, cubes) laid along an object and SAY how many. Spoken number word, 1-20. Grade 1.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is comparing {{attribute}} of objects. They need to determine which object is {{comparisonWord}}.',
-      contextKeys: ['attribute', 'objects', 'comparisonWord', 'instruction', 'challengeType', 'currentChallengeIndex', 'attemptNumber', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Look at the two objects carefully. Which one looks {{comparisonWord}}? Point to it!"',
-        level2: '"Think about {{attribute}}. Put the objects side by side — which one is {{comparisonWord}}? How can you tell?"',
-        level3: '"Let\'s compare step by step: line up the objects at one end. Now look at the other end — which one goes further? That one is {{comparisonWord}}."',
-      },
-      commonStruggles: [
-        { pattern: 'Confuses attributes (e.g., says taller when asked about heavier)', response: '"We are comparing {{attribute}} right now, not how they look. Think about {{attribute}} — which one has more {{attribute}}?"' },
-        { pattern: 'Compares using wrong direction (picks shorter when asked for taller)', response: '"{{comparisonWord}} means it has MORE {{attribute}}. Look again — which object has MORE {{attribute}}?"' },
-        { pattern: 'Cannot order three objects (only compares two at a time)', response: '"Start by finding the one with the MOST {{attribute}}. Now find the one with the LEAST. The last one goes in the middle!"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MEASUREMENT VOCABULARY COACHING',
-          instruction:
-            'Model precise measurement comparison language: "longer/shorter," "taller/shorter," "heavier/lighter," "holds more/holds less." '
-            + 'For K students, use concrete comparisons: "Put them next to each other. Which one goes past the other?" '
-            + 'For Grade 1, introduce transitivity: "If A is longer than B, and B is longer than C, then A is the longest." '
-            + 'Never accept vague language like "bigger" — always redirect to the specific attribute being compared.',
-        },
-        {
-          title: 'NON-STANDARD UNITS COACHING',
-          instruction:
-            'For non-standard measurement challenges, emphasize consistent unit placement: "Line up the paperclips end to end with no gaps and no overlaps." '
-            + 'Help students understand why the same object can have different measurements with different units: "It took 5 paperclips but only 3 blocks — the blocks are bigger!" '
-            + 'Connect to the idea that measurement means covering the whole length.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {

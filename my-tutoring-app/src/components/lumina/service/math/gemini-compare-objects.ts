@@ -4,6 +4,27 @@ import type {
   CompareObjectsChallenge,
   CompareObject,
 } from "../../primitives/visual-primitives/math/CompareObjects";
+/**
+ * THE JUDGED-LOOP CONTENT GATES, IMPORTED — never re-stated (skill step 4).
+ * compare-objects is a DI port: every ask is SPOKEN, so a relation the click
+ * era never had to justify can be false out loud. These are the same
+ * predicates `compareObjectsScript` DROPS against; the generator repairs or
+ * rejects against them so the two sides of the wire cannot disagree the way
+ * letter-spotter's hand-synced copies did live.
+ */
+import {
+  askableAttributeOptions,
+  comparisonMatchesAttribute,
+  isGreaterComparison,
+  isSayableName,
+  isSayableUnitCount,
+  nameCarriesTheAnswer,
+  namesEarSeparable,
+  visualRankAgrees,
+  VALID_ATTRIBUTES,
+  type ComparisonWord,
+  type MeasurableAttribute,
+} from "../../primitives/visual-primitives/math/compareObjectsScript";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
@@ -409,20 +430,40 @@ function reconstructIdentifyAttribute(raw: RawIdentifyAttribute, index: number):
     { name: raw.obj1Name, visualSize: clampVisualSize(raw.obj1VisualSize), actualValue: raw.obj1ActualValue },
   ];
 
-  const attributeOptions = [raw.attrOption0, raw.attrOption1, raw.attrOption2];
-  if (raw.attrOption3) attributeOptions.push(raw.attrOption3);
-
-  // Ensure correctAttribute is in the options
-  const correctAttribute = raw.correctAttribute;
-  if (!attributeOptions.includes(correctAttribute)) {
-    console.log(`[CompareObjects] REJECT identify_attribute #${index} — correctAttribute "${correctAttribute}" not in options [${attributeOptions.join(', ')}]`);
+  if (!namesEarSeparable(objects.map(o => o.name))) {
+    console.log(`[CompareObjects] REJECT identify_attribute #${index} — object names are not separable by ear: [${objects.map(o => o.name).join(', ')}]`);
+    return null;
+  }
+  // "heavy backpack" names the ATTRIBUTE, which is this mode's whole answer.
+  if (objects.some(o => nameCarriesTheAnswer(o.name))) {
+    console.log(`[CompareObjects] REJECT identify_attribute #${index} — an object name carries the answer: [${objects.map(o => o.name).join(', ')}]`);
     return null;
   }
 
-  const validAttributes = ['length', 'height', 'weight', 'capacity'];
-  const attribute = validAttributes.includes(raw.attribute)
-    ? raw.attribute as CompareObjectsChallenge['attribute']
-    : 'length' as CompareObjectsChallenge['attribute'];
+  // The DRAWING is built from `attribute`; a key naming anything else answers a
+  // question the screen is not asking. Rule 4 of the prompt has always said so
+  // and nothing enforced it — invisible under a Check button, a wrong spoken
+  // ask the moment the tutor reads it out.
+  const attribute = VALID_ATTRIBUTES.find(a => a === raw.attribute);
+  if (!attribute) {
+    console.log(`[CompareObjects] REJECT identify_attribute #${index} — invalid attribute "${raw.attribute}"`);
+    return null;
+  }
+  if (raw.correctAttribute !== attribute) {
+    console.log(`[CompareObjects] REJECT identify_attribute #${index} — correctAttribute "${raw.correctAttribute}" disagrees with the drawn attribute "${attribute}"`);
+    return null;
+  }
+
+  // The spoken menu: real attributes only, and never length+height together —
+  // one drawing cannot defensibly be about only one of those two.
+  const rawOptions = [raw.attrOption0, raw.attrOption1, raw.attrOption2, raw.attrOption3]
+    .filter((o): o is string => typeof o === 'string' && o.trim().length > 0)
+    .map(o => o.trim().toLowerCase());
+  const attributeOptions = askableAttributeOptions(rawOptions, attribute);
+  if (!attributeOptions) {
+    console.log(`[CompareObjects] REJECT identify_attribute #${index} — attribute menu is not defensibly answerable: [${rawOptions.join(', ')}] for "${attribute}"`);
+    return null;
+  }
 
   return {
     id: raw.id,
@@ -430,11 +471,11 @@ function reconstructIdentifyAttribute(raw: RawIdentifyAttribute, index: number):
     instruction: raw.instruction,
     attribute,
     objects,
-    correctAnswer: correctAttribute, // component reads correctAttribute for this type
+    correctAnswer: attribute, // component reads correctAttribute for this type
     comparisonWord: 'longer', // not used for identify_attribute but required by interface
     hint: raw.hint,
     attributeOptions,
-    correctAttribute,
+    correctAttribute: attribute,
   };
 }
 
@@ -467,6 +508,24 @@ function reconstructCompareTwo(raw: RawCompareTwo, index: number): CompareObject
     return null;
   }
 
+  // Both names are SPOKEN now — by the tutor in the ask and by the child in the
+  // answer — so they must be sayable and separable by ear ("block" against
+  // "small block" is one utterance fitting two options).
+  if (!isSayableName(raw.obj0Name) || !isSayableName(raw.obj1Name)) {
+    console.log(`[CompareObjects] REJECT compare_two #${index} — unsayable object name ("${raw.obj0Name}", "${raw.obj1Name}")`);
+    return null;
+  }
+  if (!namesEarSeparable([raw.obj0Name, raw.obj1Name])) {
+    console.log(`[CompareObjects] REJECT compare_two #${index} — object names are not separable by ear ("${raw.obj0Name}", "${raw.obj1Name}")`);
+    return null;
+  }
+  // A name that states the magnitude ("the long skipping rope") answers the
+  // spoken ask before the child looks at the screen.
+  if ([raw.obj0Name, raw.obj1Name].some(nameCarriesTheAnswer)) {
+    console.log(`[CompareObjects] REJECT compare_two #${index} — an object name carries the answer ("${raw.obj0Name}", "${raw.obj1Name}")`);
+    return null;
+  }
+
   // Validate comparisonWord
   const validComparisonWords = ['longer', 'shorter', 'taller', 'shorter_height', 'heavier', 'lighter', 'holds_more', 'holds_less'];
   if (!validComparisonWords.includes(raw.comparisonWord)) {
@@ -477,7 +536,7 @@ function reconstructCompareTwo(raw: RawCompareTwo, index: number): CompareObject
   // Verify correctAnswer is logically correct based on comparisonWord and actualValues
   const correctObj = objects.find(o => o.name === raw.correctAnswer)!;
   const otherObj = objects.find(o => o.name !== raw.correctAnswer)!;
-  const isGreaterWord = ['longer', 'taller', 'heavier', 'holds_more'].includes(raw.comparisonWord);
+  const isGreaterWord = isGreaterComparison(raw.comparisonWord as ComparisonWord);
   if (isGreaterWord && correctObj.actualValue <= otherObj.actualValue) {
     console.log(`[CompareObjects] REJECT compare_two #${index} — correctAnswer "${raw.correctAnswer}" (value=${correctObj.actualValue}) should be greater for "${raw.comparisonWord}" but isn't`);
     return null;
@@ -487,10 +546,29 @@ function reconstructCompareTwo(raw: RawCompareTwo, index: number): CompareObject
     return null;
   }
 
-  const validAttributes = ['length', 'height', 'weight', 'capacity'];
-  const attribute = validAttributes.includes(raw.attribute)
-    ? raw.attribute as CompareObjectsChallenge['attribute']
-    : 'length' as CompareObjectsChallenge['attribute'];
+  const attribute = VALID_ATTRIBUTES.find(a => a === raw.attribute);
+  if (!attribute) {
+    console.log(`[CompareObjects] REJECT compare_two #${index} — invalid attribute "${raw.attribute}"`);
+    return null;
+  }
+  // A `heavier` ask over a LENGTH drawing is a question about a picture that is
+  // not on the screen. Never checked before: the buttons only said the names.
+  if (!comparisonMatchesAttribute(attribute, raw.comparisonWord as ComparisonWord)) {
+    console.log(`[CompareObjects] REJECT compare_two #${index} — comparisonWord "${raw.comparisonWord}" is not about the drawn attribute "${attribute}"`);
+    return null;
+  }
+
+  // ⭐ THE PICTURE MUST RANK THEM THE WAY THE KEY DOES. `visualSize` paints the
+  // bars, `actualValue` decides the answer, and only order_three ever
+  // reconciled the two — so a child could name the visibly-longer object and be
+  // refused. Repaired here on order_three's own precedent (a DISPLAY fix, not
+  // an answer backfill); the script DROPS anything that still disagrees.
+  if (!visualRankAgrees(objects)) {
+    console.log(`[CompareObjects] compare_two #${index} — repairing visualSize to match the actualValue ranking`);
+    const [small, large] = [...objects].sort((a, b) => a.actualValue - b.actualValue);
+    small.visualSize = 35;
+    large.visualSize = 75;
+  }
 
   return {
     id: raw.id,
@@ -538,11 +616,31 @@ function reconstructOrderThree(raw: RawOrderThree, index: number): CompareObject
     return null;
   }
 
+  // Every name is spoken in the ask, so all three must be sayable and mutually
+  // separable by ear.
+  const orderNames = objects.map(o => o.name);
+  if (!orderNames.every(isSayableName) || !namesEarSeparable(orderNames)) {
+    console.log(`[CompareObjects] REJECT order_three #${index} — object names are unsayable or not separable by ear: [${orderNames.join(', ')}]`);
+    return null;
+  }
+  if (orderNames.some(nameCarriesTheAnswer)) {
+    console.log(`[CompareObjects] REJECT order_three #${index} — an object name carries the answer: [${orderNames.join(', ')}]`);
+    return null;
+  }
+
   // Validate comparisonWord
   const validComparisonWords = ['longer', 'shorter', 'taller', 'shorter_height', 'heavier', 'lighter', 'holds_more', 'holds_less'];
   if (!validComparisonWords.includes(raw.comparisonWord)) {
     console.log(`[CompareObjects] REJECT order_three #${index} — invalid comparisonWord "${raw.comparisonWord}"`);
     return null;
+  }
+  {
+    const declaredAttribute = VALID_ATTRIBUTES.find(a => a === raw.attribute);
+    if (!declaredAttribute
+      || !comparisonMatchesAttribute(declaredAttribute, raw.comparisonWord as ComparisonWord)) {
+      console.log(`[CompareObjects] REJECT order_three #${index} — comparisonWord "${raw.comparisonWord}" is not about the drawn attribute "${raw.attribute}"`);
+      return null;
+    }
   }
 
   // Verify visualSize ranks consistent with actualValue. If they disagree the
@@ -622,10 +720,16 @@ function reconstructNonStandard(raw: RawNonStandard, index: number): CompareObje
     return null;
   }
 
-  // Verify unitCount is a positive integer
+  // The count is SPOKEN, so it must sit inside the benched number-word window
+  // (zero is unbenched; 20 is the ceiling and #63 is the gate above it).
   const unitCount = Math.round(raw.unitCount);
-  if (unitCount < 1 || unitCount > 20) {
-    console.log(`[CompareObjects] REJECT non_standard #${index} — unitCount ${raw.unitCount} out of range [1,20]`);
+  if (!isSayableUnitCount(unitCount)) {
+    console.log(`[CompareObjects] REJECT non_standard #${index} — unitCount ${raw.unitCount} is outside the benched spoken window [1,20]`);
+    return null;
+  }
+  // The unit name and the object name are both spoken in the ask.
+  if (!isSayableName(raw.unitName) || !isSayableName(raw.obj0Name)) {
+    console.log(`[CompareObjects] REJECT non_standard #${index} — unsayable unit "${raw.unitName}" or object "${raw.obj0Name}"`);
     return null;
   }
 
@@ -723,12 +827,28 @@ RULES:
 1. Vary the attribute across challenges (cover all 4 — length, height, weight, capacity — across the set)
 2. Objects must be concrete, kid-friendly items (pencil, book, water bottle, box, backpack, etc.)
 3. The two objects should differ clearly in the target attribute
-4. correctAttribute MUST equal the attribute field
-5. attributeOptions (attrOption0-3) should include the correct one plus 2-3 plausible distractors
-6. Use warm, simple language for young children
-7. obj0VisualSize and obj1VisualSize should be between 10 and 90, reflecting the relative difference
-8. obj0ActualValue and obj1ActualValue should be realistic measurements (different from each other)
-9. Vary the objects across challenges — don't reuse the same pair
+4. correctAttribute MUST equal the attribute field — the picture is drawn from
+   the attribute field, so a key naming anything else answers a question the
+   screen is not asking, and the challenge is thrown away
+5. attributeOptions (attrOption0-3) must be drawn ONLY from these four words:
+   length, height, weight, capacity. No other word is allowed ("size", "color",
+   "big" are all rejected). Include the correct one plus 1-3 distractors.
+6. NEVER offer "length" and "height" together in the same challenge — one
+   drawing cannot defensibly be about only one of those two, and an ambiguous
+   question is a broken question
+7. NAMES MUST BE PLAIN NOUNS WITH NO SIZE OR MEASUREMENT ADJECTIVE. "heavy
+   textbook", "tall lamp", "large bowl", "small cup" are all REJECTED — the
+   tutor reads the name aloud and the adjective names the attribute, which is
+   the answer. Use "textbook", "lamp", "bowl", "cup". Colours and materials are
+   fine ("red crayon", "metal spoon")
+8. Use warm, simple language for young children
+9. obj0VisualSize and obj1VisualSize should be between 10 and 90, reflecting the relative difference
+9. obj0ActualValue and obj1ActualValue should be realistic measurements (different from each other)
+10. Object names are READ ALOUD to the child by a live tutor and the child says
+    one back, so each name must be a real word of 3+ letters, at most 4 words
+    long, and the two names must not share their distinguishing word ("block"
+    vs "small block" is rejected; "pencil" vs "crayon" is fine)
+11. Vary the objects across challenges — don't reuse the same pair
 
 Return exactly ${count} challenges.
 `;
@@ -791,8 +911,20 @@ RULES:
    - capacity → 'holds_more' or 'holds_less'
 6. The correct object MUST have a higher actualValue for "more" words (longer, taller, heavier, holds_more) or lower actualValue for "less" words (shorter, shorter_height, lighter, holds_less)
 7. actualValues must differ by at least 20% so the comparison is clear
-8. visualSize values (10-90) should reflect the actual difference
-9. Use warm, encouraging language
+8. visualSize values (10-90) must RANK the same way actualValue does — the
+   object with the larger actualValue MUST get the larger visualSize. A live
+   tutor asks this question out loud and judges the spoken answer, so a picture
+   that disagrees with the key refuses a child who read the screen correctly
+9. Object names are READ ALOUD by the tutor and one is SAID BACK by the child:
+   each must be a real word of 3+ letters, at most 4 words long, and the two
+   names must not share their distinguishing word ("block" vs "small block" is
+   rejected; "pencil" vs "crayon" is fine)
+10. NAMES MUST BE PLAIN NOUNS WITH NO SIZE OR MEASUREMENT ADJECTIVE. "tall oak
+    tree", "long skipping rope", "small green bush", "heavy dictionary" are all
+    REJECTED — the tutor reads the name aloud, so an adjective in it answers the
+    question before the child looks. Use "oak tree", "skipping rope", "bush",
+    "dictionary". Colours and materials are fine ("red crayon", "metal spoon")
+10. Use warm, encouraging language
 
 Return exactly ${count} challenges.
 `;
@@ -855,7 +987,14 @@ RULES:
    - weight → 'heavier' or 'lighter'
    - capacity → 'holds_more' or 'holds_less'
 5. visualSize values (10-90) must reflect relative differences between the three objects AND must rank consistently with actualValue (the object with the largest actualValue MUST have the largest visualSize, etc.)
-6. Objects should be concrete, kid-friendly items
+6. Objects should be concrete, kid-friendly items, and all three names are READ
+   ALOUD by a live tutor: each must be a real word of 3+ letters, at most 4
+   words long, and no name may share its distinguishing word with another.
+   NAMES MUST BE PLAIN NOUNS WITH NO SIZE OR MEASUREMENT ADJECTIVE — "tall oak
+   tree", "high kitchen chair", "miniature coffee mug" are all REJECTED,
+   because the tutor reads the name aloud and the adjective ranks the objects
+   for the child. Use "oak tree", "kitchen chair", "coffee mug". Colours and
+   materials are fine ("red crayon", "wooden block")
 7. actualValues should be clearly separated (not too close together)
 8. For weight challenges (attribute='weight'), include weightUnit: a kid-friendly unit shown on the scale readout. Use 'lbs' for US-style (default), or 'kg' for metric, or 'oz' for very light things (feather, pencil). Choose the unit that fits the objects being compared. Omit weightUnit for non-weight challenges.
 
@@ -916,7 +1055,10 @@ RULES:
 4. obj0VisualSize should be roughly unitCount * 10 (so the visual matches the unit count)
 5. obj0ActualValue should equal unitCount (the measurement in non-standard units)
 6. instruction should ask "How many [units] long is the [object]?" — do NOT reveal the answer
-7. Use warm, encouraging language for young children
+7. The unit name and the object name are READ ALOUD by a live tutor and the
+   child SAYS THE COUNT back: both names must be real words of 3+ letters and
+   at most 4 words long
+8. Use warm, encouraging language for young children
 8. Vary the unitCount across challenges (don't use the same number twice unless the count requires it)
 
 Return exactly ${count} challenges.
@@ -1105,9 +1247,12 @@ function buildFallbackChallenge(type: string): CompareObjectsChallenge {
         type: 'order_three',
         instruction: 'Put these in order from tallest to shortest!',
         attribute: 'height',
+        // DISPLAY order is deliberately not the answer order: a board already
+        // sitting in the right order is not an ordering task, and the judged
+        // build gate drops one that is.
         objects: [
-          { name: 'sunflower', visualSize: 80, actualValue: 150 },
           { name: 'tulip', visualSize: 50, actualValue: 60 },
+          { name: 'sunflower', visualSize: 80, actualValue: 150 },
           { name: 'daisy', visualSize: 30, actualValue: 30 },
         ],
         correctAnswer: 'sunflower, tulip, daisy',
