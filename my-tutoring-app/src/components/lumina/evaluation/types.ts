@@ -3044,6 +3044,8 @@ export interface VehicleComparisonLabMetrics extends BasePrimitiveMetrics {
   chartTypesUsed: string[];        // Which visualization modes explored
   surprisingFactsDiscovered: number;
   surprisingFactsTotal: number;
+  predictionsMade: number;
+  predictionsCorrect: number;
   attemptsCount: number;
 }
 

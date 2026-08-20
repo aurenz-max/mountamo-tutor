@@ -38,13 +38,13 @@ import VehicleComparisonLab, {
 
 const metric = (value: number, unit: string) => ({ value, unit, display: `${value} ${unit}` });
 
-const vehicle = (id: string, name: string, category: ComparisonVehicle['category']): ComparisonVehicle => ({
+const vehicle = (id: string, name: string, category: ComparisonVehicle['category'], speed = 90): ComparisonVehicle => ({
   id,
   name,
   category,
   imagePrompt: `${name} photo`,
   metrics: {
-    topSpeed: metric(90, 'km/h'),
+    topSpeed: metric(speed, 'km/h'),
     weight: metric(10000, 'kg'),
     passengerCapacity: metric(50, 'pax'),
     range: metric(450, 'km'),
@@ -63,19 +63,25 @@ const EXPLANATION = 'The school bus is best because it can fit all 50 friends at
 const data = (): VehicleComparisonLabData => ({
   title: 'Super Cool Vehicle Races',
   instructions: INSTRUCTIONS,
+  topicFocus: 'Ways to travel to school',
   vehicles: [
     vehicle('bus', 'School Bus', 'land'),
-    vehicle('bike', 'Bicycle', 'land'),
+    vehicle('bike', 'Bicycle', 'land', 25),
   ],
   comparisonMetrics: ['topSpeed', 'passengerCapacity', 'weight'],
   chartType: 'bar',
+  challengeType: 'evidence_choice',
   challenges: [
     {
+      id: 'school-trip',
+      type: 'evidence_choice',
       scenario: SCENARIO,
       constraints: { passengers: 50, distance: 5, maxTime: null },
       bestVehicleId: 'bus',
       explanation: EXPLANATION,
       acceptableAlternatives: [],
+      bestEvidenceMetric: 'passengerCapacity',
+      acceptableEvidenceMetrics: [],
     },
   ],
   surprisingFacts: [{ fact: 'A bicycle is the most efficient vehicle ever!', vehicleIds: ['bike'] }],
@@ -90,6 +96,20 @@ beforeEach(() => {
 });
 
 describe('VehicleComparisonLab reader-fit (young-learner read-aloud)', () => {
+  it('gates the comparison values behind a prediction and reveals the animated evidence on run', () => {
+    render(<VehicleComparisonLab data={data()} />);
+    expect(screen.queryByText('90 km/h')).toBeNull();
+    const run = screen.getByRole('button', { name: /run the comparison/i });
+    expect(run.hasAttribute('disabled')).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: /^school bus$/i }));
+    expect(run.hasAttribute('disabled')).toBe(false);
+    fireEvent.click(run);
+
+    expect(screen.getByText('90 km/h')).toBeTruthy();
+    expect(screen.getByText(/school bus leads this test/i)).toBeTruthy();
+  });
+
   it('the instructions 🔊 button is present in the header and reads the instructions verbatim', () => {
     render(<VehicleComparisonLab data={data()} />);
     const btn = screen.getByRole('button', { name: /read the instructions to me/i });
@@ -100,13 +120,13 @@ describe('VehicleComparisonLab reader-fit (young-learner read-aloud)', () => {
 
   it('the challenge scenario 🔊 reads the scenario verbatim and states the constraint ask (answer-free)', () => {
     render(<VehicleComparisonLab data={data()} />);
-    fireEvent.click(screen.getByRole('button', { name: /3\. challenge/i })); // to challenge phase
+    fireEvent.click(screen.getByRole('button', { name: /2\. evidence missions/i }));
     const btn = screen.getByRole('button', { name: /read the challenge to me/i });
     fireEvent.click(btn);
     const msg = sentMessages().find((m) => m.includes(SCENARIO));
     expect(msg).toBeTruthy();
-    // States the ask (carry 50 friends, 5 km) so a non-reader knows what to do…
-    expect(msg).toMatch(/50 friends/);
+    // States the ask (carry 50 passengers, 5 km) so a non-reader knows what to do…
+    expect(msg).toMatch(/50 passengers/);
     expect(msg).toMatch(/5 kilometers/);
     // …but never names the answer vehicle.
     expect(msg).not.toMatch(/school bus/i);
@@ -114,13 +134,71 @@ describe('VehicleComparisonLab reader-fit (young-learner read-aloud)', () => {
 
   it('after answering, the explanation 🔊 button appears and reads the explanation verbatim', () => {
     render(<VehicleComparisonLab data={data()} />);
-    fireEvent.click(screen.getByRole('button', { name: /3\. challenge/i }));
-    // Answer the challenge (tap a vehicle) to reveal the feedback card.
+    fireEvent.click(screen.getByRole('button', { name: /2\. evidence missions/i }));
+    // The redesigned mission requires both a vehicle and the visible evidence.
     fireEvent.click(screen.getByRole('button', { name: /school bus/i }));
+    fireEvent.click(screen.getByRole('button', { name: /passenger capacity/i }));
+    fireEvent.click(screen.getByRole('button', { name: /check vehicle \+ evidence/i }));
     const btn = screen.getByRole('button', { name: /^read this to me$/i });
     expect(btn).toBeTruthy();
     sendTextSpy.mockClear();
     fireEvent.click(btn);
     expect(sentMessages().some((m) => m.includes(EXPLANATION) && /\[READ_EXPLANATION\]/.test(m))).toBe(true);
+  });
+
+  it('metric-leader mode shows the named values and grades a vehicle choice without a separate evidence pick', () => {
+    const base = data();
+    const metricLeaderData: VehicleComparisonLabData = {
+      ...base,
+      challengeType: 'metric_leader',
+      challenges: [{
+        ...base.challenges[0],
+        type: 'metric_leader',
+        scenario: 'Which vehicle has the greatest top speed?',
+        bestVehicleId: 'bus',
+        bestEvidenceMetric: 'topSpeed',
+      }],
+    };
+
+    render(<VehicleComparisonLab data={metricLeaderData} />);
+    fireEvent.click(screen.getByRole('button', { name: /2\. evidence missions/i }));
+
+    expect(screen.getByText('90 km/h')).toBeTruthy();
+    expect(screen.getByText('25 km/h')).toBeTruthy();
+    expect(screen.queryByText(/which evidence best supports/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /school bus/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^check vehicle$/i }));
+    expect(screen.getByText(/you found the metric leader/i)).toBeTruthy();
+  });
+
+  it('renders specific land vehicle identities instead of one category-level car', () => {
+    const visualData = data();
+    visualData.vehicles = [
+      vehicle('bus', 'School Bus', 'land'),
+      vehicle('bike', 'Bicycle', 'land', 25),
+      vehicle('car', 'Family Car', 'land', 70),
+      vehicle('train', 'Metro Train', 'land', 80),
+    ];
+
+    const { container } = render(<VehicleComparisonLab data={visualData} />);
+    for (const kind of ['bus', 'bicycle', 'car', 'train']) {
+      expect(container.querySelector(`[data-vehicle-visual-kind="${kind}"]`)).toBeTruthy();
+    }
+  });
+
+  it('replaces an incorrect route hero with the best vehicle after correction', () => {
+    render(<VehicleComparisonLab data={data()} />);
+    fireEvent.click(screen.getByRole('button', { name: /2\. evidence missions/i }));
+    fireEvent.click(screen.getByRole('button', { name: /bicycle/i }));
+
+    expect(screen.getByTestId('mission-route-vehicle').getAttribute('data-vehicle-id')).toBe('bike');
+    expect(screen.getByTestId('mission-route-vehicle').textContent).toMatch(/your pick/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /passenger capacity/i }));
+    fireEvent.click(screen.getByRole('button', { name: /check vehicle \+ evidence/i }));
+
+    expect(screen.getByTestId('mission-route-vehicle').getAttribute('data-vehicle-id')).toBe('bus');
+    expect(screen.getByTestId('mission-route-vehicle').textContent).toMatch(/best fit.*school bus/i);
   });
 });
