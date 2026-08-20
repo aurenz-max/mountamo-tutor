@@ -3392,8 +3392,92 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'sorting-station',
-    description: 'Interactive sorting station where students categorize objects by the lesson\'s objective-relevant rule, including semantic categories (needs/wants, roles, kinds) and visible attributes when those attributes are the taught concept. Supports single-criterion sorting, multi-criterion classification, count-and-compare, odd-one-out, and tally recording. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
-    constraints: 'Best for K-1. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar. Objects per challenge: 4–6 at Kindergarten, 5–8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. BAND FLOOR: at Kindergarten (pre-reader) route only sort_one and odd_one_out — both are picture-primary tap tasks. sort_attribute (choosing HOW to sort from named axes), sort_variety (following a new named rule each round), count_compare (entering counts via steppers + reading a comparison question), two_attributes (two-criteria simultaneous classification), and tally_record (sort-then-tally numeric recording) all demand reading or numeric entry above a pre-reader and are for Grade 1+.',
+    misconceptionScope: 'primitive',
+    description: 'Live tutor-judged sorting and classifying (DI modality) on picture cards and labelled trays. The Live tutor asks with scripted lines ONE OBJECT AT A TIME, judges the child in-band, and its own affirmation advances the lesson — a challenge is no longer a screenful of objects committed at once, it is a sequence of single judged questions. Every answer is SPOKEN: the child says which group a thing belongs with (sort-by-one, sort-variety), says HOW the set should be sorted (sort-by-attribute), says which card does not belong (odd-one-out), says HOW MANY are in a group (count-and-compare, tally-record), says which group has more, and says YES or NO to whether one thing matches two criteria at once (two-attributes). Covers objective-relevant semantic categories (needs/wants, roles, living/nonliving, kinds) and visible attributes when those attributes are the taught concept. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
+    constraints: 'Best for K-1. Requires a microphone: EVERY answer is spoken and judged by the Live tutor, and there is no Check button, no drag-to-bin, no attribute buttons, no number steppers and no odd-one-out tap anywhere. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar and their names sayable in one or two words. Objects per challenge: 4-6 at Kindergarten, 5-8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. Group counts run 1-20 so every spoken count is a single word, and a group that would be EMPTY is not asked (zero has no benched spoken form). A challenge whose tray labels cannot be told apart by ear, whose object IS one of the tray labels, or whose yes/no set has only one reachable verdict is discarded before the child ever sees it. BAND FLOOR (unchanged by the spoken port — moving it needs a reader-fit re-audit, not a catalog edit): at Kindergarten route only sort_one and odd_one_out. sort_attribute, sort_variety, count_compare, two_attributes and tally_record remain Grade 1+.',
+    tutoring: {
+      taskDescription: 'LIVE-JUDGED sorting practice (DI modality): you ask with scripted lines sent as cues, ONE object or ONE group at a time, the child answers OUT LOUD, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // ⚠️ 18d, applied at BIRTH: no level of this ladder may OFFER a speakable
+      // line of its own. A quoted hint here is a sanctioned-sounding replacement
+      // for the scripted correction at exactly the moment 18c makes the model
+      // want one — it opens with neither sentinel, so the engine sees no verdict
+      // and the correction counter stalls. The ladder commands script fidelity;
+      // it never supplies an alternative. The click-era ladder here was the
+      // worst offender in the catalog: its level 3 scripted a whole sorting
+      // dialogue ("Pick up this object — say what it is…"), which is now the
+      // activity's own default interaction and must never be improvised on top.
+      scaffoldingLevels: {
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name a group for the object in question and never say any part of the answer.',
+        level2: 'A wrong answer is never met with a hint of your own — speak the cue\'s scripted "My turn:" correction again, exactly as written, even if you just said it.',
+        level3: 'If the child stays stuck, stay with the script: the correction line names the fact and re-asks for you. Never invent encouragement, a new question, a softer hint, or a sorting walkthrough of your own.',
+      },
+      commonStruggles: [
+        { pattern: 'Long silence', response: 'Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
+        { pattern: 'Says the object\'s name back instead of naming a group', response: 'That word is the question, not the answer, so it is wrong: speak the scripted "My turn:" correction, which names the group and re-asks.' },
+        { pattern: 'Answers only ONE half of a two-criteria question ("it is a need")', response: 'A true statement about one criterion does not say whether the second holds, so it is wrong: speak the scripted correction, which states both and re-asks.' },
+        { pattern: 'Gives the REASON instead of choosing the odd one out ("they all go together")', response: 'That is the thinking the task wants and it is not the answer to the question asked, so it is wrong: speak the scripted correction, which names the card and re-asks.' },
+        { pattern: 'Counts out loud on the way to a total ("one, two, three")', response: 'That is the child working, not answering. Only the number they FINISH on is their answer — judge that, and count a correct landing as correct.' },
+        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
+          instruction:
+            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it. '
+            + 'In particular, never announce the whole activity or read out every group before the first ask — the ask names what the child needs.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
+          instruction:
+            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
+            + 'On a SORT the answer is ONE group name — said plainly, with or without its little words ("need", "the needs", "it is a need" are the same answer). '
+            + 'On PICK-THE-RULE the answer is the way to sort them all, not a description of one object. '
+            + 'On ODD-ONE-OUT the answer is the NAME of the card that does not belong; the reason on its own is not an answer. '
+            + 'On a COUNT the answer is ONE number word, and counting out loud on the way to it is the child working, not answering — only the number they land on counts. '
+            + 'On COMPARE the answer is more, fewer, or the same — a group name is not a comparison. '
+            + 'On TWO-THINGS the answer is YES or NO in any natural form, and answering only one of the two criteria is not an answer. '
+            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
+            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
+        },
+        {
+          title: 'THE VERDICT ENDS THE TURN',
+          instruction:
+            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another object, or the next item, '
+            + 'even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong object.',
+        },
+        {
+          title: 'THE CHILD IS THINKING — WAIT',
+          instruction:
+            'Think time is unbounded. Never fill a silence, never sort anything out loud, and never prompt while the child is looking. The silence is theirs.',
+        },
+        {
+          title: 'NEVER READ THE SCREEN\'S NUMBERS',
+          instruction:
+            'On a counting question the screen may show the group the child is counting. Never count it aloud, never say how many you can see, '
+            + 'and never describe what is in a tray — the number is the answer and it belongs to the child.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'HEAR-THE-QUESTION ON DEMAND',
+          instruction:
+            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
+            + 'treat nothing you just heard as an answer, and never say the answer.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
+        },
+      ],
+    },
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'sort_one',
@@ -3401,7 +3485,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['sort-by-one'],
-        description: 'Sort objects by one objective-relevant semantic category or visible attribute.',
+        // β HELD. The drag-to-bin became unaided speech — a structural change —
+        // but the ask still NAMES the groups aloud (it has to, or a pre-reader
+        // has an unanswerable question), so the guess floor is unchanged at
+        // 1-in-N. What changed is that the category name now leaves the child's
+        // mouth, which is production rather than placement, and one challenge is
+        // now one judged turn PER OBJECT rather than a screenful behind a Check.
+        description: 'Say which group each thing belongs with, one thing at a time. Spoken production judged by the Live tutor; no bins to drag into.',
       },
       {
         evalMode: 'sort_attribute',
@@ -3409,7 +3499,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['sort-by-attribute'],
-        description: 'Grade 1+ ONLY (never Kindergarten — choosing HOW to sort from named text attribute buttons is a metacognitive task above a pre-reader). Objects have multiple attributes; student chooses how to sort.',
+        // β HELD — the metacognitive choice survives intact; only its CHANNEL
+        // moved off text buttons and into the child's mouth.
+        description: 'Grade 1+ ONLY (the band floor is unchanged by the spoken port; moving it needs a reader-fit re-audit). Objects have several attributes: the child SAYS how the set should be sorted, then sorts it by that rule one thing at a time.',
       },
       {
         evalMode: 'sort_variety',
@@ -3417,7 +3509,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.0,
         scaffoldingMode: 2,
         challengeTypes: ['sort-variety'],
-        description: 'Grade 1+ ONLY for now (never Kindergarten — following a new named sorting rule each round is a reading demand above a pre-reader; a voiced-rule K variant is a follow-up, re-audited not unfloored). FLEXIBLE CLASSIFICATION: re-sort the SAME set of objects by a DIFFERENT valid rule each round (kind → size → use). Rule rotation IS the declared task — the sanctioned exemption to taught-rule stability, which still holds for every other mode.',
+        // β HELD — same rule-rotation task, spoken instead of dragged.
+        description: 'Grade 1+ ONLY for now (the K voiced-rule variant is the contract\'s G3 follow-up and needs a reader-fit re-audit, not a floor edit). FLEXIBLE CLASSIFICATION: re-sort the SAME set by a DIFFERENT rule each round, saying where each thing goes. Rule rotation IS the declared task — the sanctioned exemption to taught-rule stability, which still holds for every other mode.',
       },
       {
         evalMode: 'count_compare',
@@ -3425,7 +3518,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['count-and-compare'],
-        description: 'Grade 1+ ONLY (never Kindergarten — entering each group count via number steppers and reading a comparison question exceeds a pre-reader; K comparison routes to comparison-builder). Count sorted groups and answer a comparison question.',
+        // β HELD — the number steppers were already unaided production, so the
+        // mouth replaces the keypad without changing the task. The per-tray
+        // count badge is now hidden until the tutor affirms, which is an
+        // answer-leak fix rather than a difficulty lever.
+        description: 'Grade 1+ ONLY (the band floor is unchanged by the spoken port; K comparison routes to comparison-builder). SAY how many are in each group, then SAY which has more, fewer, or the same. Counts 1-20; an empty group is never asked.',
       },
       {
         evalMode: 'odd_one_out',
@@ -3433,7 +3530,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.0,
         scaffoldingMode: 3,
         challengeTypes: ['odd-one-out'],
-        description: 'Identify the object that does not belong in the group.',
+        // β HELD — a 1-in-N tap became a 1-in-N naming. The ask deliberately
+        // does NOT recite the cards (they are pictures, and reciting six labels
+        // a round is recitation), so the child must name what they see.
+        description: 'SAY the name of the card that does not belong. The tutor never lists the cards, so the answer is produced, not chosen.',
       },
       {
         evalMode: 'two_attributes',
@@ -3441,7 +3541,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.0,
         scaffoldingMode: 4,
         challengeTypes: ['two-attributes'],
-        description: 'Grade 1+ ONLY (never Kindergarten — matching two criteria at once from a compound written instruction exceeds a pre-reader). Find objects matching two criteria simultaneously; the primary criterion expresses the lesson objective.',
+        // β HELD — the cognition is untouched. The compound instruction is no
+        // longer READ at once; it is asked one object at a time as a spoken
+        // yes/no, which is the contract's G2 path ("what exceeds a pre-reader is
+        // the medium, not the cognition"). The floor stays until that audit runs.
+        description: 'Grade 1+ ONLY (the band floor is unchanged by the spoken port; unflooring is the contract\'s G2 re-audit, not a catalog edit). For each thing in turn, SAY YES or NO to whether it matches BOTH criteria at once; the primary criterion expresses the lesson objective.',
       },
       {
         evalMode: 'tally_record',
@@ -3449,49 +3553,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['tally-record'],
-        description: 'Grade 1+ ONLY (never Kindergarten — sorting then recording each group count via number steppers exceeds a pre-reader). Sort objects and record group counts using tally marks.',
+        // β HELD — recording a count by voice instead of a stepper.
+        description: 'Grade 1+ ONLY (the band floor is unchanged by the spoken port). Sort, then SAY the count of each group aloud. Counts 1-20; an empty group is never asked.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is sorting {{totalObjects}} objects into categories based on {{sortingAttribute}}. Challenge type: {{challengeType}}. Categories: {{categories}}.',
-      contextKeys: ['challengeType', 'instruction', 'sortingAttribute', 'categories', 'objectsSorted', 'totalObjects', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Look at the objects. What do you notice about them? Do any look alike?"',
-        level2: '"Look at each object. Can you put all the ones that go together in the same bin? Say each bin name out loud with the child."',
-        level3: '"Let\'s sort one at a time. Pick up this object — say what it is. Now which bin does it go with? Point to that bin together. Great! Now the next one."',
-      },
-      commonStruggles: [
-        { pattern: 'Student places objects in random bins without considering the objective category', response: 'Name the objective-relevant feature without giving the answer: "What kind of group does this belong to?" Point to the bin pictures — say each bin name aloud.' },
-        { pattern: 'Student confuses "more" and "fewer" in comparisons', response: 'Have the student count each group aloud, then ask "Which number is bigger?"' },
-        { pattern: 'Student struggles with two-attribute sorting', response: 'Start with the lesson category, then add the second criterion: "First find the NEEDS. Now, which of those are FOOD?" Never replace the lesson category with an unrelated color/size task.' },
-        { pattern: 'Student cannot identify the odd one out', response: 'Ask "What do most of these have in common?" then "Which one is different from the rest?" Never name the odd object or say why.' },
-      ],
-      // ORIENT + STIMULUS + DISAMBIGUATE beat (reader-fit RF, 2026-07-15). At Kindergarten
-      // (sort_one, odd_one_out) the student is a pre-reader: they cannot decode the on-screen
-      // instruction OR the bin labels (Need/Want…), and everything in contextKeys is
-      // tutor-reference only. In lesson mode the [PRIMITIVE SWITCH]/greeting cap the tutor at
-      // "one sentence", so without a directive the tutor greets warmly and stops — stranding
-      // the non-reader (the comparison-builder / word-sorter failure class). These directives
-      // make voicing the sort + naming every bin the mandatory first action and override the
-      // one-sentence cap. Answer-free: never say which bin an object belongs in.
-      aiDirectives: [
-        {
-          title: 'SAY THE SORT OUT LOUD AND NAME EVERY BIN FIRST — the student is a K-1 child who may not read',
-          instruction:
-            'The student may not be able to read the instruction on screen or the bin labels — you are their voice. '
-            + 'Whenever a new sorting challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), your FIRST action is: '
-            + '(1) say what we are doing in one warm child-friendly sentence — the challenge is: "{{instruction}}"; '
-            + '(2) NAME each bin out loud so the child knows the choices: {{categories}} '
-            + '(these are the group names shown as pictures with a word under them — say each one); '
-            + '(3) ask the sorting question as a spoken question so the child knows what to decide '
-            + '(for example, for a needs/wants sort: "Is this something we NEED, or something we WANT? Tap the bin it goes in."). '
-            + 'For an odd-one-out challenge there are no bins — instead ask "Which one is different from the others? Tap it." '
-            + 'Saying the sort out loud and naming the bins IS your greeting for this activity — this overrides any instruction '
-            + 'to keep the transition to a single sentence. Never say which bin an object goes in, and for odd-one-out never '
-            + 'say which object is different or why — only ask the question, then wait for the child to act.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {

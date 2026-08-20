@@ -12,6 +12,21 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+/**
+ * BUILD GATES, IMPORTED — NEVER COPIED.
+ *
+ * The judged pack drops a challenge it cannot ask out loud; this side drops the
+ * same content before it is ever stored, so a session does not silently shrink.
+ * Both sides must agree on what "sayable" means, and hand-synced copies drift —
+ * letter-spotter's two sides of the wire disagreed live on sentence length
+ * (90 vs 100 chars) until the copies were deleted. One address, both consumers.
+ */
+import {
+  isSayableLabel,
+  isSayableObject,
+  optionsEarSeparable,
+  opensWithSentinel,
+} from '../../primitives/visual-primitives/math/sortingStationScript';
 
 // ============================================================================
 // Eval Mode Docs — one entry per challenge type (kept for eval mode resolution)
@@ -629,7 +644,7 @@ ${tierSection}
 Generate exactly ${count} challenges. Each challenge needs:
 - A warm, encouraging instruction for young children
 - A sortingAttribute (one of: category, color, shape, size, type)
-- 4-8 objects with a label, emoji, and only the objective-relevant attributes
+- 4-8 objects with a label, emoji, and the attributes the TASK TYPE above asks for (that section is authoritative — where it asks for two sortable attributes per object, give two; otherwise give only the objective-relevant one)
 - Objects MUST have at least 2 distinct values for the sortingAttribute so there are 2+ groups
 - categoryEmojis: one entry per distinct sortingAttribute value (one per bin) giving a single emoji that stands for that WHOLE group, so a pre-reader can tell the bins apart. Pick a general symbol for the group, NEVER reuse an object's own emoji (e.g. 'need' → 🏠, 'want' → 🎁, 'living' → 🌱, 'non-living' → 🪨).
 - Use familiar kid-friendly emojis and examples that belong to the objective; do not introduce an unrelated theme just for variety
@@ -856,6 +871,13 @@ The objective category is the MAIN modality. Never make color/size the knowledge
         instruction: ch.instruction,
         sortingAttribute: `category + ${secondaryAttribute}`,
         objects,
+        // The judged ask SAYS both criteria ("is it a need, and is it food?"),
+        // so they ship as words on the challenge. The rule map below keys them
+        // by attribute name, which is what the component matches on but not
+        // something a tutor can read aloud.
+        targetCategory: ch.targetCategory,
+        secondaryAttribute,
+        secondaryValue: ch.secondaryValue,
         categories: [
           { label: ch.categoryLabel || `${ch.targetCategory} ${ch.secondaryValue}`, rule: targetRule },
           { label: 'Others', rule: {} }, // component uses "doesn't match first rule" logic
@@ -1256,6 +1278,17 @@ export const generateSortingStation = async (
         enforceCompareGap(ch, shape.compareGap, gradeBand);
       }
 
+      // ── SPOKEN lever: at `hard` the ask stops naming the groups aloud ──
+      // The tier-conditional exemption (letter-sound-link's pattern, consumed via
+      // word-sorter): at hard for a READER the trays are printed and legible, so
+      // the ask names nothing and the pack's leak oracle goes flat — which is the
+      // rung's whole point. At Kindergarten the band floor beats the tier inside
+      // the script (`isPreReader` forces naming), because a pre-reader cannot
+      // read a tray and an unnamed group is an unanswerable question.
+      if (supportTier === 'hard' && gradeBand !== 'K') {
+        ch.namesSortCriterion = false;
+      }
+
       // NOTE: odd-one-out shared-attribute count and two-attributes near-miss ratio are
       // prompt-shaped (the LLM authors the attribute set); we do not post-hoc rewrite the
       // odd item or its reason — that would risk corrupting oddOneOut / leaking the answer.
@@ -1268,17 +1301,72 @@ export const generateSortingStation = async (
     );
   }
 
+  // ── KEEP-OR-DROP: every challenge must be ASKABLE OUT LOUD ────────────────
+  // Belt and suspenders on both sides of the wire. The judged pack applies these
+  // same gates at build time; running them here means an unaskable challenge is
+  // never stored, so a session does not silently shrink between generation and
+  // render. Validation is keep-or-drop, NEVER backfill — a repaired placeholder
+  // in a judged loop becomes a spoken ask the tutor has to stand behind.
+  const faults = allChallenges.map(ch => ({ ch, fault: speakabilityFault(ch) }));
+  const speakableChallenges = faults.filter(f => !f.fault).map(f => f.ch);
+  if (speakableChallenges.length < allChallenges.length) {
+    console.warn(
+      `[SortingStation] dropped ${allChallenges.length - speakableChallenges.length} of `
+      + `${allChallenges.length} challenge(s) that could not be asked aloud: `
+      + faults.filter(f => f.fault).map(f => `${f.ch.type}: ${f.fault}`).join(' | '),
+    );
+  }
+
   return {
     title: title || 'Sorting Station',
     description: description || 'Sort objects into groups!',
-    challenges: allChallenges,
+    challenges: speakableChallenges,
     maxCategories: Math.min(maxCategories, gradeBand === 'K' ? 3 : 4),
     showCounts: resolvedShowCounts,
-    showTallyChart: allChallenges.some(ch => ch.type === 'tally-record'),
+    showTallyChart: speakableChallenges.some(ch => ch.type === 'tally-record'),
     gradeBand,
     ...(supportTier ? { supportTier } : {}),
   };
 };
+
+/**
+ * Can this challenge become a spoken ask at all?
+ *
+ * Mirrors the pack's build gates using the SAME imported predicates, so the two
+ * sides of the wire cannot disagree. What each clause closes:
+ *  - object names and tray labels the tutor cannot say (punctuation, digits, a
+ *    phrase too long to hold in a five-year-old's working memory);
+ *  - two labels the JUDGE cannot tell apart by ear — an utterance that fits two
+ *    options has no honest verdict, so the ask is dropped, never judged leniently;
+ *  - anything that opens a sentence with a verdict sentinel, which would make a
+ *    generated word read as the tutor's own affirmation.
+ */
+function speakabilityFault(ch: SortingStationChallenge): string | null {
+  const objects = ch.objects ?? [];
+  if (!objects.length) return 'no objects';
+  const badObject = objects.find(o => !isSayableObject(o.label ?? ''));
+  if (badObject) return `object name not sayable: "${badObject.label}"`;
+
+  // odd-one-out has no trays; its options ARE the cards on screen.
+  if (ch.type === 'odd-one-out') {
+    if (objects.length < 3) return 'fewer than 3 cards';
+    return optionsEarSeparable(objects.map(o => o.label))
+      ? null
+      : 'card names collide by ear';
+  }
+
+  if (ch.type === 'two-attributes') {
+    const criteria = [ch.targetCategory, ch.secondaryValue];
+    const bad = criteria.find(v => !v || !isSayableLabel(v) || opensWithSentinel(v));
+    return bad === undefined ? null : `criterion not sayable: "${bad ?? '(missing)'}"`;
+  }
+
+  const labels = (ch.categories ?? []).map(c => c.label ?? '');
+  if (labels.length < 2) return 'fewer than 2 groups';
+  const badLabel = labels.find(l => !isSayableLabel(l) || opensWithSentinel(l));
+  if (badLabel !== undefined) return `group label not sayable: "${badLabel}"`;
+  return optionsEarSeparable(labels) ? null : `group labels collide by ear: ${labels.join(' / ')}`;
+}
 
 // ============================================================================
 // Local helpers for tier application
