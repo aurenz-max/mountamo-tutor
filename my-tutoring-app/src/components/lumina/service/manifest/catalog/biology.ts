@@ -287,27 +287,28 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'habitat-diorama',
-    description: 'A scene-based interactive ecosystem explorer presenting a habitat with clickable organisms and environmental features. The PRIMARY ecosystem primitive for biology. Students explore relationships (who eats whom, where things live, how they interact). Bridges observation (K-2: "What animals live here?") into ecology concepts (3-5: food chains) and ecosystem dynamics (6-8: trophic cascades). PERFECT for teaching food webs, ecological relationships (predation, symbiosis, competition), producer-consumer roles, and systems thinking. Features interactive organisms with detailed info cards, relationship visualization showing food web connections, environmental features (water, sunlight, shelter), and optional disruption scenarios for critical thinking. Connection mode draws arrows between organisms showing relationships. ESSENTIAL for K-8 ecology, environmental science, and habitats units. Students click organisms to learn about adaptations and roles, toggle relationships to see food webs, explore environmental features, and predict cascade effects from ecosystem disruptions.',
-    constraints: 'Use for K-8 students learning about ecosystems, habitats, food chains/webs, ecological relationships, or environmental science. K-2: Simple observation with 4-5 recognizable organisms (rabbit, owl, plants), basic predator-prey relationships only, 2-3 environmental features, NO disruption scenario (too complex). Focus on "What lives here? What do they eat?" 3-5: More complex with 6-8 organisms showing full food chain (producers → primary consumers → secondary consumers), introduce symbiotic relationships (mutualism, commensalism), 3-4 environmental features, INCLUDE simple disruption scenario with 3-4 predictable effects. Students trace energy through food chain. 6-8: Complex food webs with 8-10 organisms across ALL trophic levels including decomposers, full range of relationships (predation, mutualism, commensalism, parasitism, competition), 4-5 environmental features showing abiotic-biotic interactions, REQUIRED complex disruption scenario with 4-5 cascade effects demonstrating systems thinking (trophic cascade, competitive release, population dynamics). Perfect for any ecosystem/habitat: coral reef, rainforest, desert, tundra, grassland, forest, wetland, ocean, pond. Use for teaching producers/consumers/decomposers, food chains/webs, energy flow, ecological niches, adaptations, interdependence, keystone species, and ecosystem disruption.',
+    description: 'A living ecosystem field lab for grades K-8. Students observe organisms from ecological clues, connect living things through relationships, predict population changes, restore a disrupted habitat, and defend a claim with visible evidence. Observe, Predict, and Defend use short spoken responses; Connect and Restore use direct scene-building gestures. Broad objectives may blend these five missions over one coherent habitat, while payloads without challenges remain a free-exploration diorama.',
+    constraints: 'Use for K-8 ecology, habitats, food chains and webs, interdependence, or environmental change. K-2: 4-5 familiar organisms, everyday language, simple eating relationships, and observable evidence; do not require trophic-level vocabulary or multi-step cascades. Grades 3-5: 6-8 organisms, producer-consumer-decomposer roles, simple symbiosis, and one-step population effects. Grades 6-8: 8-10 organisms, complete food webs, competition and symbiosis, and evidence-based cascade reasoning. Every challenge must be answerable from the visible habitat. Spoken prompts must not contain the answer. The tutor owns pacing and judgment: do not add Check, Next, submit, push-to-talk, countdown, or timer controls.',
+    evalModes: [
+      { evalMode: 'observe', label: 'Observe', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['observe'], description: 'Identify a living thing from an observable ecological clue.' },
+      { evalMode: 'connect', label: 'Connect', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['connect'], description: 'Complete one valid ecological relationship by selecting its destination.' },
+      { evalMode: 'predict', label: 'Predict', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['predict'], description: 'Predict whether a population rises, falls, or stays stable after a change.' },
+      { evalMode: 'restore', label: 'Restore', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['restore'], description: 'Place a missing organism or habitat feature in the zone that restores a relationship.' },
+      { evalMode: 'defend', label: 'Defend', beta: 8.0, scaffoldingMode: 6, challengeTypes: ['defend'], description: 'Choose the strongest visible evidence for an ecosystem claim.' },
+    ],
+    audioInput: { manual_activity: true },
     tutoring: {
       taskDescription:
-        'Student is exploring a {{habitatName}} habitat scene. Living things in it: {{organismNames}} '
-        + '({{organismCount}} of them). They are looking at: {{selectedOrganismName}}. '
-        + 'Relationships shown: {{relationshipMode}}. '
-        + 'They tap animals and plants in the scene to find out who lives here and who eats whom.',
+        'Student is working in Habitat Diorama mode {{challengeType}}. '
+        + 'The current script stimulus is {{stimulus}}. The tutor judges the response and owns all pacing.',
       contextKeys: [
-        'habitatName',
-        'organismNames',
-        'organismCount',
-        'selectedOrganismName',
-        'selectedOrganismRole',
-        'relationshipMode',
-        'gradeBand',
+        'challengeType',
+        'stimulus',
       ],
       scaffoldingLevels: {
-        level1: '"Tap one of the animals or plants in the picture. Who do you think lives here?"',
-        level2: '"You found {{selectedOrganismName}}. Think about what it might eat, and what might try to eat IT."',
-        level3: '"Every living thing here needs food. Plants make their own from sunlight. Animals have to eat something else. Tap two of them and think about which one might be a meal for the other."',
+        level1: 'Follow the script exactly. Read the prompt, wait for the student response, then judge it.',
+        level2: 'If the first attempt is wrong, use the script retry line and wait. Do not reveal the answer early.',
+        level3: 'After the retry, use the configured reveal and explanation, then move on without asking permission.',
       },
       commonStruggles: [
         {
@@ -332,6 +333,22 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         },
       ],
       aiDirectives: [
+        {
+          title: 'DIRECT-INSTRUCTION SCRIPT CONTRACT',
+          instruction:
+            'When challengeType is observe, connect, predict, restore, or defend, follow stimulus as a closed script. '
+            + 'Deliver the opening and item prompt, then WAIT. Judge only after the student speaks or completes the visible gesture. '
+            + 'A verdict ends the current turn: after the configured affirmative sentinel, stop; after the configured retry sentinel, stop. '
+            + 'When the runner advances, speak the next prompt immediately. Do not ask whether the student is ready. '
+            + 'For spoken items, the microphone is already managed by the activity; never instruct the learner to press, hold, or tap a microphone. '
+            + 'For gesture items, describe only the visible relationship or zone task. Never invent a Check, Next, or submit step.',
+        },
+        {
+          title: 'FREE EXPLORATION MODE',
+          instruction:
+            'When challengeType is free_explore, preserve the tagged read-aloud behavior in stimulus. '
+            + 'Invite tapping, name a selected living thing, and explain its role without turning exploration into a scored quiz.',
+        },
         {
           title: 'PRE-READER READ-ALOUD (kindergarten to grade 2)',
           instruction:

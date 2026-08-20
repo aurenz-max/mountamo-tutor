@@ -1508,6 +1508,17 @@ export interface GravityDropTowerMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface HabitatDioramaMetrics extends BasePrimitiveMetrics {
+  type: 'habitat-diorama';
+  totalChallenges: number;
+  correctChallenges: number;
+  totalAttempts: number;
+  accuracy: number;
+  spokenChallenges: number;
+  modelChallenges: number;
+  durationMs: number;
+}
+
 // -----------------------------------------------------------------------------
 // Biology Primitives
 // -----------------------------------------------------------------------------
@@ -3579,6 +3590,7 @@ export type PrimitiveMetrics =
   | ImagePanelMetrics
   // Media
   | MediaPlayerMetrics
+  | HabitatDioramaMetrics
   // Biology
   | ClassificationSorterMetrics
   | LifeCycleSequencerMetrics

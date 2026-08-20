@@ -1,36 +1,67 @@
+'use client';
+
 /**
- * Habitat Diorama - Interactive Ecosystem Explorer
+ * Habitat Diorama — Living Ecosystem.
  *
- * A scene-based primitive that presents an ecosystem with interactive organisms
- * and environmental features. Students explore relationships (who eats whom,
- * where things live, how they interact). Bridges observation (K-2) into
- * ecology concepts (3-8).
- *
- * Features:
- * - Interactive organisms with info cards
- * - Relationship visualization (food web, symbiosis, competition)
- * - Environmental features (water, shelter, sunlight)
- * - Disruption scenarios for systems thinking
- * - Grade-appropriate complexity (K-2: observation, 3-5: food chains, 6-8: ecosystem dynamics)
+ * Exploration remains available when no valid challenges exist. In assessment
+ * sessions the Live tutor owns the clock: Observe, Predict, and Defend are
+ * spoken; Connect and Restore are committed model-building turns.
  */
 
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Info, Zap, Eye, Link2 } from 'lucide-react';
-import { usePrimitiveEvaluation } from '../../../evaluation';
-import { SoundManager } from '../../../utils/SoundManager';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Ear, Leaf, Link2, Sprout, Waves, Zap } from 'lucide-react';
+import {
+  usePrimitiveEvaluation,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
+import type { HabitatDioramaMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { LuminaReadAloud } from '../../../ui';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaBadge,
+  LuminaButton,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardDescription,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaChallengeCounter,
+  LuminaModeTabs,
+  LuminaPanel,
+  LuminaProgress,
+  LuminaPrompt,
+  LuminaReadAloud,
+  LuminaScoreRing,
+  accentBorder,
+  accentGlow,
+  answerStateClasses,
+  dropZoneStateClasses,
+  motion,
+} from '../../../ui';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import {
+  askFor,
+  gestureVerdictCue,
+  habitatDioramaPackBase,
+  itemsFromChallenges,
+  revealTextFor,
+  type HabitatItem,
+} from './habitatDioramaScript';
 
-// ============================================================================
-// Data Types (Single Source of Truth)
-// ============================================================================
+export type HabitatChallengeType = 'observe' | 'connect' | 'predict' | 'restore' | 'defend';
+export type HabitatZone = 'canopy' | 'open-land' | 'water' | 'shoreline' | 'ground' | 'underground';
 
 export interface Organism {
   id: string;
   commonName: string;
   role: 'producer' | 'primary-consumer' | 'secondary-consumer' | 'tertiary-consumer' | 'decomposer';
   imagePrompt: string;
-  position: { x: string; y: string }; // Percentage positions
+  position: { x: string | number; y: string | number };
   description: string;
   adaptations: string[];
 }
@@ -46,7 +77,7 @@ export interface EnvironmentalFeature {
   id: string;
   name: string;
   description: string;
-  position: { x: string; y: string }; // Percentage positions
+  position: { x: string | number; y: string | number };
 }
 
 export interface DisruptionScenario {
@@ -55,30 +86,52 @@ export interface DisruptionScenario {
   question: string;
 }
 
+export interface HabitatEvidenceChoice { id: string; text: string }
+
+export interface HabitatChallenge {
+  id: string;
+  type: HabitatChallengeType;
+  prompt: string;
+  explanation: string;
+  focusOrganismId?: string;
+  optionOrganismIds?: string[];
+  fromId?: string;
+  toId?: string;
+  disruptionEvent?: string;
+  affectedOrganismId?: string;
+  expectedTrend?: 'increase' | 'decrease' | 'stay-similar';
+  restorationEntityId?: string;
+  restorationZone?: HabitatZone;
+  evidenceChoices?: HabitatEvidenceChoice[];
+  correctEvidenceId?: string;
+}
+
 export interface HabitatDioramaData {
   primitiveType: 'habitat-diorama';
-  habitat: {
-    name: string;
-    biome: string;
-    climate: string;
-    description: string;
-  };
+  habitat: { name: string; biome: string; climate: string; description: string };
   organisms: Organism[];
   relationships: Relationship[];
   environmentalFeatures: EnvironmentalFeature[];
   disruptionScenario?: DisruptionScenario;
   gradeBand: 'K-2' | '3-5' | '6-8';
+  challengeType?: HabitatChallengeType;
+  challengeTypes?: HabitatChallengeType[];
+  challenges?: HabitatChallenge[];
+  supportTier?: 'easy' | 'medium' | 'hard';
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<HabitatDioramaMetrics>) => void;
 }
-
-// ============================================================================
-// Props Interface
-// ============================================================================
 
 export interface HabitatDioramaProps {
   data: HabitatDioramaData;
   instanceId?: string;
   skillId?: string;
   exhibitId?: string;
+  className?: string;
   onInteraction?: (interaction: {
     type: string;
     organismId?: string;
@@ -88,519 +141,218 @@ export interface HabitatDioramaProps {
   }) => void;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
+const MODE_TABS = [
+  { value: 'observe', label: 'Observe' }, { value: 'connect', label: 'Connect' },
+  { value: 'predict', label: 'Predict' }, { value: 'restore', label: 'Restore' },
+  { value: 'defend', label: 'Defend' },
+];
 
-const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
-  data,
-  instanceId,
-  skillId,
-  exhibitId,
-  onInteraction
-}) => {
+const ZONE_LABELS: Record<HabitatZone, string> = {
+  canopy: 'Canopy', 'open-land': 'Open land', water: 'Open water',
+  shoreline: 'Shoreline', ground: 'Ground layer', underground: 'Underground',
+};
+
+const ROLE_LABELS: Record<Organism['role'], string> = {
+  producer: 'Producer', 'primary-consumer': 'Primary Consumer',
+  'secondary-consumer': 'Secondary Consumer', 'tertiary-consumer': 'Tertiary Consumer',
+  decomposer: 'Decomposer',
+};
+
+const roleAccent = (role: Organism['role']): 'emerald' | 'amber' | 'orange' | 'rose' | 'purple' => ({
+  producer: 'emerald', 'primary-consumer': 'amber', 'secondary-consumer': 'orange',
+  'tertiary-consumer': 'rose', decomposer: 'purple',
+} as const)[role];
+
+const organismEmoji = (organism: Organism): string => {
+  const name = `${organism.commonName} ${organism.imagePrompt}`.toLowerCase();
+  if (organism.role === 'producer' || /tree|plant|grass|flower|algae/.test(name)) return '🌿';
+  if (organism.role === 'decomposer' || /fung|mushroom|worm|bacter/.test(name)) return '🍄';
+  if (/fish|shark|salmon|trout/.test(name)) return '🐟';
+  if (/bird|owl|eagle|robin|raven/.test(name)) return '🦉';
+  if (/bee|insect|butterfly|ant/.test(name)) return '🐝';
+  if (/frog|toad/.test(name)) return '🐸';
+  if (/bear/.test(name)) return '🐻';
+  if (/wolf|fox|coyote/.test(name)) return '🦊';
+  if (/deer|elk|antelope/.test(name)) return '🦌';
+  if (/rabbit|hare/.test(name)) return '🐇';
+  return organism.role === 'tertiary-consumer' ? '🦁' : '🐾';
+};
+
+const featureEmoji = (feature: EnvironmentalFeature): string => {
+  const name = feature.name.toLowerCase();
+  if (/water|stream|river|pond|ocean/.test(name)) return '💧';
+  if (/sun|light/.test(name)) return '☀️';
+  if (/rock|cliff|outcrop/.test(name)) return '🪨';
+  if (/soil|ground/.test(name)) return '🟫';
+  return '✨';
+};
+
+const pct = (value: string | number): string => typeof value === 'number' ? `${value}%` : value;
+
+interface SceneProps {
+  data: HabitatDioramaData;
+  isPreReader: boolean;
+  selectedId?: string | null;
+  activeIds?: string[];
+  rewardIds?: string[];
+  showRelationships?: boolean;
+  hideOrganismId?: string;
+  onOrganismTap: (id: string) => void;
+  onFeatureTap?: (id: string) => void;
+}
+
+const HabitatScene: React.FC<SceneProps> = ({
+  data, isPreReader, selectedId, activeIds = [], rewardIds = [],
+  showRelationships = false, hideOrganismId, onOrganismTap, onFeatureTap,
+}) => (
+  <div className="relative min-h-[430px] overflow-hidden rounded-3xl border border-emerald-300/15 bg-gradient-to-b from-cyan-950/70 via-emerald-950/65 to-amber-950/50 shadow-inner" aria-label={`${data.habitat.name} living ecosystem`}>
+    <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-cyan-300/10 to-transparent" />
+    <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-emerald-950/90 to-transparent" />
+    <div className="absolute left-8 top-8 h-20 w-20 rounded-full bg-amber-300/15 blur-xl" />
+    <div className="absolute bottom-8 right-8 h-24 w-56 rounded-full bg-cyan-400/10 blur-2xl" />
+    {showRelationships && (
+      <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true">
+        <defs><marker id="habitat-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="rgb(34 211 238 / .7)" /></marker></defs>
+        {data.relationships.map((relationship) => {
+          const from = data.organisms.find((organism) => organism.id === relationship.fromId);
+          const to = data.organisms.find((organism) => organism.id === relationship.toId);
+          if (!from || !to) return null;
+          return <line key={`${relationship.fromId}-${relationship.toId}-${relationship.type}`} x1={pct(from.position.x)} y1={pct(from.position.y)} x2={pct(to.position.x)} y2={pct(to.position.y)} stroke="rgb(34 211 238 / .65)" strokeWidth="2" strokeDasharray={relationship.type.startsWith('symbiosis') ? '5 5' : undefined} markerEnd="url(#habitat-arrow)" />;
+        })}
+      </svg>
+    )}
+    {data.environmentalFeatures.map((feature) => (
+      <button key={feature.id} type="button" aria-label={feature.name} onClick={() => onFeatureTap?.(feature.id)} className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-black/20 p-2 text-2xl transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300" style={{ left: pct(feature.position.x), top: pct(feature.position.y) }}>
+        {featureEmoji(feature)}
+      </button>
+    ))}
+    {data.organisms.filter((organism) => organism.id !== hideOrganismId).map((organism) => {
+      const active = activeIds.includes(organism.id);
+      const rewarded = rewardIds.includes(organism.id);
+      const selected = selectedId === organism.id;
+      return (
+        <button key={organism.id} type="button" aria-label={organism.commonName} onClick={() => onOrganismTap(organism.id)} className={`group absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${rewarded ? `border-emerald-300 bg-emerald-400/25 scale-110 ${motion.pop}` : active ? 'border-cyan-300 bg-cyan-400/20 scale-105 shadow-[0_0_24px_rgba(34,211,238,.35)]' : selected ? 'border-amber-300 bg-amber-400/20 scale-105' : 'border-white/15 bg-slate-950/55 hover:bg-slate-900/75 hover:scale-105'}`} style={{ left: pct(organism.position.x), top: pct(organism.position.y) }}>
+          <span className="block text-3xl" aria-hidden="true">{organismEmoji(organism)}</span>
+          <span className="mt-1 block max-w-24 truncate text-[10px] font-semibold text-slate-100">{organism.commonName}</span>
+          {!isPreReader && selected && <span className="mt-1 block text-[9px] uppercase tracking-wide text-slate-400">{ROLE_LABELS[organism.role]}</span>}
+        </button>
+      );
+    })}
+    <div className="pointer-events-none absolute bottom-3 left-4 z-30 text-[10px] uppercase tracking-[0.22em] text-emerald-200/60">living model · tap to inspect</div>
+  </div>
+);
+
+interface ExploreFaceProps { data: HabitatDioramaData; resolvedInstanceId: string; onInteraction?: HabitatDioramaProps['onInteraction'] }
+
+const ExploreFace: React.FC<ExploreFaceProps> = ({ data, resolvedInstanceId, onInteraction }) => {
   const [selectedOrganism, setSelectedOrganism] = useState<string | null>(null);
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [showRelationships, setShowRelationships] = useState(false);
-  const [viewedOrganisms, setViewedOrganisms] = useState<Set<string>>(new Set());
-  const [studentPredictions, setStudentPredictions] = useState<string[]>([]);
-  const [showDisruption, setShowDisruption] = useState(false);
-
-  const resolvedInstanceId = useMemo(
-    () => instanceId || `habitat-diorama-${Date.now()}`,
-    [instanceId],
-  );
-
-  // Evaluation hook for tracking progress
-  const { submitResult, hasSubmitted } = usePrimitiveEvaluation({
-    primitiveType: 'habitat-diorama',
-    instanceId: resolvedInstanceId,
-    skillId,
-    exhibitId,
-  });
-
-  // ============================================================================
-  // Reading band
-  // ============================================================================
-  // NOTE: this component was already written band-aware — it carries five
-  // `gradeBand !== 'K-2'` gates. Every one of them was DEAD CODE, because the
-  // generator resolved its band from a map keyed on grade tokens but indexed
-  // with prose, so 'K-2' was never emitted. Fixing the generator is what turns
-  // the author's original intent back on; this slice adds only what was missing.
   const isPreReader = data.gradeBand === 'K-2';
-
-  const selectedForAI = useMemo(
-    () => data.organisms.find(o => o.id === selectedOrganism) ?? null,
-    [data.organisms, selectedOrganism],
-  );
-
-  // Kept as a flat object literal so `/tutor-test`'s static analyzer can see the
-  // keys — a bag assembled behind local statements reports every contextKey as
-  // "dynamic, verify at runtime", which turns a real check into a shrug.
+  const selected = data.organisms.find((organism) => organism.id === selectedOrganism) ?? null;
+  const feature = data.environmentalFeatures.find((item) => item.id === selectedFeature) ?? null;
   const aiPrimitiveData = useMemo(() => ({
-    habitatName: data.habitat?.name ?? 'this habitat',
-    organismNames: data.organisms.map(o => o.commonName).join(', '),
-    organismCount: data.organisms.length,
-    selectedOrganismName: selectedForAI?.commonName ?? 'nothing yet',
-    selectedOrganismRole: selectedForAI?.role ?? 'none',
-    relationshipMode: showRelationships ? 'shown' : 'hidden',
-    gradeBand: data.gradeBand,
-  }), [data.habitat, data.organisms, data.gradeBand, selectedForAI, showRelationships]);
-
-  const { sendText, isAudioPlaying } = useLuminaAI({
-    primitiveType: 'habitat-diorama',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
-  });
-
-  // Read-aloud: silent like every system trigger — `silent` suppresses only the
-  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
-  const readAloud = useCallback((text: string) => {
-    if (!text) return;
-    SoundManager.tap();
-    sendText(
-      `[HABITAT_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
-      { silent: true },
-    );
-  }, [sendText]);
-
-  // ORIENT — fires once so a non-reader learns the task without asking.
-  const hasOrientedRef = useRef(false);
+    challengeType: 'free_explore',
+    stimulus: `Explore the ${data.habitat.name} habitat by tapping its living things and features.`,
+    habitatName: data.habitat.name, organismNames: data.organisms.map((organism) => organism.commonName).join(', '),
+    organismCount: data.organisms.length, selectedOrganismName: selected?.commonName ?? 'nothing yet',
+    selectedOrganismRole: selected?.role ?? 'none', relationshipMode: showRelationships ? 'shown' : 'hidden', gradeBand: data.gradeBand,
+  }), [data, selected, showRelationships]);
+  const { sendText, isAudioPlaying } = useLuminaAI({ primitiveType: 'habitat-diorama', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData, gradeLevel: isPreReader ? 'kindergarten' : 'elementary' });
+  const orientedRef = useRef(false);
   useEffect(() => {
-    if (hasOrientedRef.current) return;
-    hasOrientedRef.current = true;
-    sendText(
-      `[HABITAT_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
-      + `a ${data.habitat?.name ?? 'habitat'} scene with these living things: `
-      + `${data.organisms.map(o => o.commonName).join(', ')}. `
-      + `They tap an animal or plant to find out about it. Tell them what to do in child words.`
-      + `${isPreReader
-        ? ' NEVER use the words producer, consumer, decomposer, herbivore or carnivore with them.'
-        : ''}`,
-      { silent: true },
-    );
-  }, [sendText, isPreReader, data.habitat, data.organisms]);
-
-  // Handle organism click
-  const handleOrganismClick = (organismId: string) => {
+    if (orientedRef.current) return;
+    orientedRef.current = true;
+    sendText(`[HABITAT_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened a ${data.habitat.name} scene with these living things: ${data.organisms.map((organism) => organism.commonName).join(', ')}. They tap an animal or plant to find out about it. Tell them what to do in child words.${isPreReader ? ' NEVER use the words producer, consumer, decomposer, herbivore or carnivore with them.' : ''}`, { silent: true });
+  }, [data, isPreReader, sendText]);
+  const handleOrganismTap = (id: string) => {
     SoundManager.tap();
-    const isOpening = organismId !== selectedOrganism;
-    setSelectedOrganism(isOpening ? organismId : null);
-    setSelectedFeature(null);
-
-    const newViewed = new Set(viewedOrganisms);
-    newViewed.add(organismId);
-    setViewedOrganisms(newViewed);
-
-    // The tutor's voice IS the info card for a non-reader.
-    const organism = data.organisms.find(o => o.id === organismId);
-    if (organism && isOpening) {
-      sendText(
-        `[HABITAT_ORGANISM_SELECTED] The student tapped ${organism.commonName}. `
-        + `Say its name and ONE short child-sized thing about it — what it eats or where it lives. `
-        + `No question, no extra fact.`
-        + `${isPreReader ? ' Never say producer, consumer, decomposer, herbivore or carnivore.' : ''}`,
-        { silent: true },
-      );
-    }
-
-    const interaction = {
-      type: 'organism_viewed',
-      organismId,
-      timestamp: Date.now()
-    };
-
-    onInteraction?.(interaction);
+    const organism = data.organisms.find((item) => item.id === id);
+    const opening = id !== selectedOrganism;
+    setSelectedOrganism(opening ? id : null); setSelectedFeature(null);
+    if (organism && opening) sendText(`[HABITAT_ORGANISM_SELECTED] The student tapped ${organism.commonName}. Say its name and ONE short child-sized thing about it — what it eats or where it lives. No question, no extra fact.${isPreReader ? ' Never say producer, consumer, decomposer, herbivore or carnivore.' : ''}`, { silent: true });
+    onInteraction?.({ type: 'organism_viewed', organismId: id, timestamp: Date.now() });
   };
-
-  // Handle feature click
-  const handleFeatureClick = (featureId: string) => {
-    setSelectedFeature(featureId === selectedFeature ? null : featureId);
-    setSelectedOrganism(null);
-
-    const interaction = {
-      type: 'feature_viewed',
-      featureId,
-      timestamp: Date.now()
-    };
-
-    onInteraction?.(interaction);
+  const readAloud = (text: string) => {
+    SoundManager.tap();
+    sendText(`[HABITAT_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`, { silent: true });
   };
-
-  // Toggle relationship view
-  const handleToggleRelationships = () => {
-    const newState = !showRelationships;
-    SoundManager.toggle(newState);
-    setShowRelationships(newState);
-
-    const interaction = {
-      type: 'relationships_toggled',
-      timestamp: Date.now()
-    };
-
-    onInteraction?.(interaction);
-  };
-
-  // Get organism by ID
-  const getOrganism = (id: string) => data.organisms.find(o => o.id === id);
-
-  // Get role color
-  const getRoleColor = (role: Organism['role']) => {
-    const colors = {
-      'producer': 'bg-green-500/20 border-green-500/50 text-green-300',
-      'primary-consumer': 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300',
-      'secondary-consumer': 'bg-orange-500/20 border-orange-500/50 text-orange-300',
-      'tertiary-consumer': 'bg-red-500/20 border-red-500/50 text-red-300',
-      'decomposer': 'bg-purple-500/20 border-purple-500/50 text-purple-300',
-    };
-    return colors[role];
-  };
-
-  // Get relationship type info
-  const getRelationshipInfo = (type: Relationship['type']) => {
-    const info = {
-      'predation': { color: 'stroke-red-500', label: 'Eats', icon: '🍴' },
-      'symbiosis-mutualism': { color: 'stroke-green-500', label: 'Helps (Both)', icon: '🤝' },
-      'symbiosis-commensalism': { color: 'stroke-blue-500', label: 'Helps (One)', icon: '➡️' },
-      'symbiosis-parasitism': { color: 'stroke-orange-500', label: 'Harms', icon: '🦠' },
-      'competition': { color: 'stroke-yellow-500', label: 'Competes', icon: '⚔️' },
-    };
-    return info[type];
-  };
-
-  // Selected organism data
-  const selectedOrganismData = selectedOrganism ? getOrganism(selectedOrganism) : null;
-  const selectedFeatureData = selectedFeature
-    ? data.environmentalFeatures.find(f => f.id === selectedFeature)
-    : null;
-
   return (
-    <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-2xl font-bold text-white mb-2">{data.habitat.name}</h3>
-          <div className="flex items-center gap-4 text-sm text-slate-400 mb-3">
-            <span className="px-3 py-1 bg-slate-800/50 rounded-full border border-slate-700">
-              {data.habitat.biome}
-            </span>
-            <span className="px-3 py-1 bg-slate-800/50 rounded-full border border-slate-700">
-              {data.habitat.climate}
-            </span>
-          </div>
-          <p className="text-slate-300 leading-relaxed max-w-3xl">
-            {data.habitat.description}
-          </p>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={handleToggleRelationships}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-            showRelationships
-              ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-              : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600'
-          } border`}
-        >
-          {showRelationships ? <Eye className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-          {showRelationships ? 'Hide Connections' : 'Show Connections'}
-        </button>
-
-        {data.disruptionScenario && data.gradeBand !== 'K-2' && (
-          <button
-            onClick={() => setShowDisruption(!showDisruption)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-              showDisruption
-                ? 'bg-orange-500/20 border-orange-500/50 text-orange-300'
-                : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600'
-            } border`}
-          >
-            <Zap className="w-4 h-4" />
-            {showDisruption ? 'Hide Disruption' : 'What If...?'}
-          </button>
-        )}
-
-        <div className="ml-auto text-sm text-slate-400">
-          Explored: {viewedOrganisms.size} / {data.organisms.length} organisms
-        </div>
-      </div>
-
-      {/* Main Diorama Scene */}
-      <div className="relative w-full h-[600px] bg-gradient-to-b from-slate-900 to-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-        {/* SVG for relationship arrows */}
-        {showRelationships && (
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 10 }}>
-            <defs>
-              <marker
-                id="arrowhead"
-                markerWidth="10"
-                markerHeight="10"
-                refX="9"
-                refY="3"
-                orient="auto"
-              >
-                <polygon points="0 0, 10 3, 0 6" fill="currentColor" />
-              </marker>
-            </defs>
-            {data.relationships.map((rel, idx) => {
-              const fromOrg = getOrganism(rel.fromId);
-              const toOrg = getOrganism(rel.toId);
-              if (!fromOrg || !toOrg) return null;
-
-              const x1 = parseFloat(fromOrg.position.x);
-              const y1 = parseFloat(fromOrg.position.y);
-              const x2 = parseFloat(toOrg.position.x);
-              const y2 = parseFloat(toOrg.position.y);
-
-              const info = getRelationshipInfo(rel.type);
-
-              return (
-                <g key={idx}>
-                  <line
-                    x1={`${x1}%`}
-                    y1={`${y1}%`}
-                    x2={`${x2}%`}
-                    y2={`${y2}%`}
-                    className={info.color}
-                    strokeWidth="2"
-                    strokeDasharray={rel.type.startsWith('symbiosis') ? '5,5' : undefined}
-                    markerEnd="url(#arrowhead)"
-                  />
-                </g>
-              );
-            })}
-          </svg>
-        )}
-
-        {/* Organisms */}
-        {data.organisms.map((organism) => (
-          <button
-            key={organism.id}
-            onClick={() => handleOrganismClick(organism.id)}
-            // The scene is emoji-only by design (picture-primary, which is right
-            // at PRE) — but that left these buttons with NO accessible name at
-            // all, so assistive tech announced nothing. The name belongs here,
-            // not on screen.
-            aria-label={organism.commonName}
-            className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all ${
-              selectedOrganism === organism.id
-                ? 'scale-110 z-20'
-                : 'hover:scale-105 z-10'
-            }`}
-            style={{
-              left: organism.position.x,
-              top: organism.position.y,
-            }}
-          >
-            <div className={`w-16 h-16 rounded-full border-2 ${getRoleColor(organism.role)} backdrop-blur-sm flex items-center justify-center text-2xl shadow-lg`}>
-              {organism.imagePrompt.includes('plant') || organism.role === 'producer' ? '🌿' :
-               organism.role === 'decomposer' ? '🍄' :
-               organism.imagePrompt.includes('bird') ? '🦅' :
-               organism.imagePrompt.includes('fish') ? '🐟' :
-               organism.imagePrompt.includes('insect') || organism.imagePrompt.includes('bee') ? '🐝' :
-               organism.imagePrompt.includes('predator') || organism.role === 'tertiary-consumer' ? '🦁' :
-               organism.role === 'secondary-consumer' ? '🦊' : '🐰'}
-            </div>
-            {viewedOrganisms.has(organism.id) && (
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-slate-900" />
-            )}
-          </button>
-        ))}
-
-        {/* Environmental Features */}
-        {data.environmentalFeatures.map((feature) => (
-          <button
-            key={feature.id}
-            onClick={() => handleFeatureClick(feature.id)}
-            aria-label={feature.name}
-            className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all ${
-              selectedFeature === feature.id
-                ? 'scale-110 z-20'
-                : 'hover:scale-105 z-10'
-            }`}
-            style={{
-              left: feature.position.x,
-              top: feature.position.y,
-            }}
-          >
-            <div className="w-12 h-12 rounded-lg bg-slate-700/50 border border-slate-600 backdrop-blur-sm flex items-center justify-center text-xl shadow-lg">
-              {feature.name.toLowerCase().includes('water') ? '💧' :
-               feature.name.toLowerCase().includes('sun') ? '☀️' :
-               feature.name.toLowerCase().includes('shelter') || feature.name.toLowerCase().includes('tree') ? '🏠' :
-               feature.name.toLowerCase().includes('rock') ? '🪨' : '🌍'}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Info Panel */}
-      {(selectedOrganismData || selectedFeatureData) && (
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
-          {selectedOrganismData && (
-            <>
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h4 className="text-xl font-bold text-white mb-1">
-                    {selectedOrganismData.commonName}
-                  </h4>
-                  {/* "primary consumer" / "decomposer" is technical vocabulary a
-                      K-2 child cannot read or use — the scaffold forbids the
-                      tutor from saying these words, so the screen should not
-                      show them either (PRE rule 7). */}
-                  {!isPreReader && (
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getRoleColor(selectedOrganismData.role)}`}>
-                      {selectedOrganismData.role.replace('-', ' ')}
-                    </span>
-                  )}
-                </div>
-                <LuminaReadAloud
-                  iconOnly
-                  size={isPreReader ? 'lg' : 'sm'}
-                  accent="cyan"
-                  speaking={isAudioPlaying}
-                  aria-label={`Tell me about the ${selectedOrganismData.commonName}`}
-                  className="flex-shrink-0"
-                  onClick={() => readAloud(
-                    `${selectedOrganismData.commonName}. ${selectedOrganismData.description}`,
-                  )}
-                />
-              </div>
-
-              <p className="text-slate-300 mb-4 leading-relaxed">
-                {selectedOrganismData.description}
-              </p>
-
-              {selectedOrganismData.adaptations.length > 0 && (
-                <div>
-                  <h5 className="text-sm font-semibold text-slate-400 mb-2">Adaptations:</h5>
-                  <ul className="space-y-2">
-                    {selectedOrganismData.adaptations.map((adaptation, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-slate-300">
-                        <span className="text-blue-400 mt-0.5">•</span>
-                        <span>{adaptation}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Show relationships for this organism */}
-              {data.gradeBand !== 'K-2' && (
-                <div className="mt-4 pt-4 border-t border-slate-700">
-                  <h5 className="text-sm font-semibold text-slate-400 mb-2">Relationships:</h5>
-                  <div className="space-y-2">
-                    {data.relationships
-                      .filter(rel => rel.fromId === selectedOrganismData.id || rel.toId === selectedOrganismData.id)
-                      .map((rel, idx) => {
-                        const info = getRelationshipInfo(rel.type);
-                        const otherOrg = rel.fromId === selectedOrganismData.id
-                          ? getOrganism(rel.toId)
-                          : getOrganism(rel.fromId);
-
-                        return (
-                          <div key={idx} className="flex items-start gap-2 text-sm text-slate-300">
-                            <span>{info.icon}</span>
-                            <span>
-                              <span className="font-medium text-white">{info.label}</span> {otherOrg?.commonName}
-                              {data.gradeBand === '6-8' && ` — ${rel.description}`}
-                            </span>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {selectedFeatureData && (
-            <>
-              <h4 className="text-xl font-bold text-white mb-2">
-                {selectedFeatureData.name}
-              </h4>
-              <p className="text-slate-300 leading-relaxed">
-                {selectedFeatureData.description}
-              </p>
-            </>
-          )}
-        </div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2"><LuminaButton onClick={() => setShowRelationships((shown) => !shown)}><Link2 className="mr-2 h-4 w-4" />{showRelationships ? 'Hide connections' : 'Reveal connections'}</LuminaButton><LuminaBadge accent="emerald">Explore freely</LuminaBadge></div>
+      <HabitatScene data={data} isPreReader={isPreReader} selectedId={selectedOrganism} showRelationships={showRelationships} onOrganismTap={handleOrganismTap} onFeatureTap={(id) => { SoundManager.tap(); setSelectedFeature(id); setSelectedOrganism(null); onInteraction?.({ type: 'feature_viewed', featureId: id, timestamp: Date.now() }); }} />
+      {selected && (
+        <LuminaPanel accent={roleAccent(selected.role)}>
+          <div className="flex items-start justify-between gap-4"><div><div className="flex flex-wrap items-center gap-2"><h4 className="text-lg font-bold text-slate-100">{selected.commonName}</h4>{!isPreReader && <LuminaBadge accent={roleAccent(selected.role)}>{ROLE_LABELS[selected.role]}</LuminaBadge>}</div><p className="mt-2 text-sm leading-relaxed text-slate-300">{selected.description}</p></div><LuminaReadAloud iconOnly size={isPreReader ? 'lg' : 'sm'} accent="cyan" speaking={isAudioPlaying} aria-label={`Tell me about the ${selected.commonName}`} onClick={() => readAloud(`${selected.commonName}. ${selected.description}`)} /></div>
+          {selected.adaptations.length > 0 && <div className="mt-4"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Adaptations:</p><ul className="mt-2 space-y-1 text-sm text-slate-300">{selected.adaptations.map((adaptation) => <li key={adaptation}>• {adaptation}</li>)}</ul></div>}
+          {!isPreReader && <div className="mt-4 border-t border-white/10 pt-4"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Relationships:</p><ul className="mt-2 space-y-1 text-sm text-slate-300">{data.relationships.filter((relationship) => relationship.fromId === selected.id || relationship.toId === selected.id).map((relationship) => <li key={`${relationship.fromId}-${relationship.toId}`}>• {relationship.description}</li>)}</ul></div>}
+        </LuminaPanel>
       )}
-
-      {/* Disruption Scenario (Grades 3-8) */}
-      {showDisruption && data.disruptionScenario && (
-        <div className="bg-orange-500/10 backdrop-blur-sm border border-orange-500/30 rounded-xl p-6">
-          <div className="flex items-start gap-3 mb-4">
-            <Zap className="w-6 h-6 text-orange-400 flex-shrink-0 mt-1" />
-            <div>
-              <h4 className="text-lg font-bold text-white mb-2">
-                Ecosystem Disruption Scenario
-              </h4>
-              <p className="text-orange-200 mb-4 leading-relaxed">
-                {data.disruptionScenario.event}
-              </p>
-              <p className="text-slate-300 font-medium mb-3">
-                {data.disruptionScenario.question}
-              </p>
-            </div>
-          </div>
-
-          {data.gradeBand === '6-8' && (
-            <div className="mt-4 pt-4 border-t border-orange-500/30">
-              <h5 className="text-sm font-semibold text-orange-300 mb-3">
-                Cascade Effects:
-              </h5>
-              <div className="space-y-2">
-                {data.disruptionScenario.cascadeEffects.map((effect, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-sm text-slate-300">
-                    <span className="text-orange-400 font-bold">{idx + 1}.</span>
-                    <span>{effect}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-4 flex items-start gap-2 text-xs text-orange-300/80">
-            <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <p>
-              Think about how removing or changing one part of an ecosystem can affect many other organisms and processes.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Legend — the existing K-2 gate hid each role's DESCRIPTION but left the
-          five technical terms standing, which is strictly worse: undecodable
-          vocabulary (Producer, Primary Consumer, Decomposer…) with its
-          explanation removed. At K-2 the whole legend goes; the tutor names what
-          each creature eats in child words instead (PRE rule 7). */}
-      {!isPreReader && (
-      <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700 rounded-xl p-4">
-        <h5 className="text-sm font-semibold text-slate-400 mb-3">Organism Roles:</h5>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {[
-            { role: 'producer', label: 'Producer', desc: 'Makes own food' },
-            { role: 'primary-consumer', label: 'Primary Consumer', desc: 'Eats producers' },
-            { role: 'secondary-consumer', label: 'Secondary Consumer', desc: 'Eats primary consumers' },
-            { role: 'tertiary-consumer', label: 'Tertiary Consumer', desc: 'Top predator' },
-            { role: 'decomposer', label: 'Decomposer', desc: 'Breaks down dead matter' },
-          ].map((item) => (
-            <div key={item.role} className="flex items-start gap-2">
-              <div className={`w-3 h-3 rounded-full border flex-shrink-0 mt-1 ${getRoleColor(item.role as Organism['role'])}`} />
-              <div>
-                <div className="text-xs font-medium text-white">{item.label}</div>
-                <div className="text-xs text-slate-400">{item.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      )}
+      {feature && <LuminaPanel accent="cyan"><h4 className="font-bold text-slate-100">{feature.name}</h4><p className="mt-1 text-sm text-slate-300">{feature.description}</p></LuminaPanel>}
+      {!isPreReader && <LuminaPanel><p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Organism Roles:</p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{(Object.keys(ROLE_LABELS) as Organism['role'][]).map((role) => <div key={role}><LuminaBadge accent={roleAccent(role)}>{ROLE_LABELS[role]}</LuminaBadge><p className="mt-1 text-xs text-slate-400">{{ producer: 'Makes own food', 'primary-consumer': 'Eats producers', 'secondary-consumer': 'Eats primary consumers', 'tertiary-consumer': 'Top predator', decomposer: 'Breaks down dead matter' }[role]}</p></div>)}</div></LuminaPanel>}
     </div>
+  );
+};
+
+interface JudgedFaceProps { data: HabitatDioramaData; items: HabitatItem[]; resolvedInstanceId: string; skillId?: string; exhibitId?: string; onInteraction?: HabitatDioramaProps['onInteraction'] }
+
+const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId, skillId, exhibitId, onInteraction }) => {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [reward, setReward] = useState<{ text: string; ids: string[] } | null>(null);
+  const isPreReader = data.gradeBand === 'K-2';
+  const evaluation = usePrimitiveEvaluation<HabitatDioramaMetrics>({ primitiveType: 'habitat-diorama', instanceId: resolvedInstanceId, skillId: data.skillId ?? skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId ?? exhibitId, onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined });
+  const pack = useMemo<JudgedScriptPack<HabitatItem>>(() => ({
+    ...habitatDioramaPackBase(items), passThreshold: 70,
+    statusLines: { ready: (item) => item.answerKind === 'voice' ? 'Listen, study the ecosystem, then say your answer.' : 'Listen, then show your thinking on the ecosystem.', retry: (item) => item.answerKind === 'voice' ? 'Try once more — say the evidence or living thing.' : 'Try once more on the habitat model.', done: 'The ecosystem is still alive — and now you can read its story.' },
+    diagnosisObservation: (item, { lastHeard }) => ({ challenge: `${item.kind}: ${askFor(item)}`, expected: item.answerText, observed: item.answerKind === 'voice' ? (lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the spoken choice wrong.') : 'The committed ecosystem model did not match the relationship key.' }),
+  }), [items]);
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const modeCounts = items.reduce<Record<string, number>>((counts, item) => ({ ...counts, [item.kind]: (counts[item.kind] ?? 0) + 1 }), {});
+    const dominantMode = Object.entries(modeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    evaluation.submitResult(summary.passed, summary.accuracy, { type: 'habitat-diorama', evalMode: dominantMode, totalChallenges: items.length, correctChallenges: summary.solvedCount, totalAttempts: summary.attemptsCount, accuracy: summary.accuracy, spokenChallenges: items.filter((item) => item.answerKind === 'voice').length, modelChallenges: items.filter((item) => item.answerKind === 'gesture').length, durationMs: evaluation.elapsedMs }, { challengeResults: summary.outcomes }, undefined, summary.diagnosisEvidence);
+  }, [evaluation, items]);
+  const runner = useJudgedScriptRunner<HabitatItem>({
+    pack, instanceId: resolvedInstanceId, gradeLevel: data.gradeBand, exhibitId: data.exhibitId ?? exhibitId, onFinished: handleFinished,
+    onItemOpened: () => setSelectedId(null), onCorrectionRetry: () => setSelectedId(null),
+    onAffirmed: (item) => { const ids = item.kind === 'connect' ? [item.fromId, item.toId].filter(Boolean) as string[] : [item.focusOrganismId ?? item.restorationEntityId].filter(Boolean) as string[]; setReward({ text: revealTextFor(item), ids }); },
+  });
+  const current = runner.currentItem;
+  const activeIds = current?.kind === 'connect' && current.fromId ? [current.fromId] : current?.optionOrganismIds ?? [];
+  const rewardIds = runner.revealHeld && reward ? reward.ids : [];
+  const handleOrganismTap = (id: string) => {
+    SoundManager.tap(); setSelectedId(id); onInteraction?.({ type: 'organism_inspected', organismId: id, timestamp: Date.now() });
+    if (!current || !runner.canAttempt || current.kind !== 'connect' || id === current.fromId) return;
+    runner.submitGestureAttempt(gestureVerdictCue(current, { fromId: current.fromId, toId: id }));
+    onInteraction?.({ type: 'relationship_committed', organismId: id, relationshipType: current.relationshipType, timestamp: Date.now() });
+  };
+  if (evaluation.hasSubmitted && runner.summary) return <LuminaPanel accent="emerald" className="py-8 text-center"><LuminaScoreRing score={runner.summary.accuracy} size={128} showTier /><h4 className="mt-4 text-xl font-bold text-slate-100">Ecosystem field report complete</h4><p className="mt-2 text-sm text-slate-300">You observed evidence, traced relationships, and reasoned about change.</p></LuminaPanel>;
+  return (
+    <div className="space-y-4">
+      {current && <div className="flex flex-wrap items-center justify-between gap-3"><LuminaModeTabs tabs={MODE_TABS} active={current.kind} accent="emerald" /><LuminaChallengeCounter current={runner.currentIndex + 1} total={items.length} variant="dots" accent="emerald" /></div>}
+      <LuminaProgress value={items.length ? ((runner.currentIndex + 1) / items.length) * 100 : 0} accent="emerald" />
+      {current && <LuminaPrompt accent={current.answerKind === 'voice' ? 'cyan' : 'emerald'}>{askFor(current)}</LuminaPrompt>}
+      {current?.kind === 'predict' && <LuminaPanel accent="orange" className={`${accentGlow.orange} ${accentBorder.orange}`}><div className="flex items-start gap-3"><Zap className="mt-0.5 h-5 w-5 text-orange-300" /><div><p className="text-xs font-semibold uppercase tracking-wider text-orange-300">Ecosystem change</p><p className="mt-1 text-sm text-slate-200">{current.disruptionEvent}</p></div></div></LuminaPanel>}
+      <HabitatScene data={data} isPreReader={isPreReader} selectedId={selectedId} activeIds={activeIds} rewardIds={rewardIds} hideOrganismId={current?.kind === 'restore' ? current.restorationEntityId : undefined} onOrganismTap={handleOrganismTap} />
+      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); runner.submitGestureAttempt(gestureVerdictCue(current, { zone })); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
+      {current?.kind === 'defend' && current.evidenceChoices && <div className="grid gap-2 md:grid-cols-3" aria-label="Evidence choices">{current.evidenceChoices.map((choice, index) => <div key={choice.id} className={`rounded-xl border p-4 ${answerStateClasses.idle}`}><p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300">Evidence {index + 1}</p><p className="mt-2 text-sm leading-relaxed text-slate-100">{choice.text}</p></div>)}</div>}
+      {current?.answerKind === 'voice' && current.kind !== 'defend' && <div className="flex flex-wrap justify-center gap-2" aria-label="Answer choices">{current.optionTexts.map((option) => <LuminaBadge key={option} accent="cyan" className="px-3 py-2 text-sm">{option}</LuminaBadge>)}</div>}
+      {reward && runner.revealHeld && <LuminaPanel accent="emerald" className={`${motion.reveal} text-center`}><Sprout className="mx-auto h-6 w-6 text-emerald-300" /><p className="mt-2 font-semibold text-emerald-100">{reward.text}</p></LuminaPanel>}
+      <JudgedMicPanel run={runner} gestureLabel={current?.kind === 'connect' ? 'Build the connection' : 'Place it in the habitat'} voiceLabel="I’m listening"><LuminaButton tone="subtle" size="sm" onClick={runner.hearStimulus}><Ear className="mr-2 h-4 w-4" /> Hear the question again</LuminaButton></JudgedMicPanel>
+    </div>
+  );
+};
+
+const HabitatDiorama: React.FC<HabitatDioramaProps> = ({ data, instanceId, skillId, exhibitId, className = '', onInteraction }) => {
+  const stableInstanceId = useRef(data.instanceId ?? instanceId ?? `habitat-diorama-${Math.round(performance.now())}`);
+  const resolvedInstanceId = data.instanceId ?? instanceId ?? stableInstanceId.current;
+  const built = useMemo(() => itemsFromChallenges(data.challenges ?? [], data), [data]);
+  const isJudged = built.items.length > 0;
+  useEffect(() => { if ((data.challenges?.length ?? 0) > 0 && !isJudged) console.warn(`[HabitatDiorama] all ${data.challenges?.length} generated challenges failed the spoken/build gates; degrading to exploration`); }, [data.challenges, isJudged]);
+  return (
+    <LuminaCard topAccent="emerald" className={`w-full ${className}`}>
+      <LuminaCardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="mb-2 flex items-center gap-2"><Leaf className="h-5 w-5 text-emerald-300" /><LuminaBadge accent="emerald">{isJudged ? 'Living ecosystem mission' : 'Open ecosystem'}</LuminaBadge><LuminaBadge accent="cyan">{data.habitat.biome}</LuminaBadge></div><LuminaCardTitle className="text-2xl">{data.habitat.name}</LuminaCardTitle><LuminaCardDescription className="mt-2 max-w-3xl">{data.habitat.description}</LuminaCardDescription></div><div className="flex items-center gap-2 text-xs text-slate-400"><Waves className="h-4 w-4" /> {data.habitat.climate}</div></div></LuminaCardHeader>
+      <LuminaCardContent>{isJudged ? <JudgedFace data={data} items={built.items} resolvedInstanceId={resolvedInstanceId} skillId={skillId} exhibitId={exhibitId} onInteraction={onInteraction} /> : <ExploreFace data={data} resolvedInstanceId={resolvedInstanceId} onInteraction={onInteraction} />}</LuminaCardContent>
+    </LuminaCard>
   );
 };
 
