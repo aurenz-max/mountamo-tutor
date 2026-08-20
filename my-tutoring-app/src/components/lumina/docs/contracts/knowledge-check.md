@@ -206,3 +206,10 @@ problem needs a picture.
 - 2026-08-02 — reader-fit 14f implemented. G1/G2 built; `/primitive-contract --check`
   **COMPATIBLE**. Real-Gemini `analyze` G1, map `mixed`, and K regression passed; both failing
   census topics replayed clean. G3 remains open and out of scope.
+- 2026-08-18 — categorization surface: drag-batch → MICROSTEP (one item at a time, tap the
+  group, per-item verdict; one tap per item, missed items land in the correct group marked ✗).
+  Aggregate submission byte-compatible (`CategorizationActivityMetrics`, single submit), so
+  R1/R7/R8 hold unchanged; R4's completability improves (no HTML5 drag → works on touch).
+  Manual R-sweep only, no `--check` run; jsdom pins in
+  `CategorizationActivityProblem.microstep.test.tsx`, browser walk = HUMAN-CHECKS #109.
+  Plan of record incl. the slice-2 judged-loop port: `qa/di/BACKLOG.md` item 23.
