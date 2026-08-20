@@ -100,10 +100,9 @@ interface RhymeChallenge {
   comparisonWordEmoji?: string;
   doesRhyme?: boolean;
   options?: RhymeOption[];
+  /** Identification only. Production is OPEN and enumerates nothing — see the
+   *  bank-deletion note in rhymeStudioScript.ts. */
   acceptableAnswers?: string[];
-  /** Production only: the non-rhyming bank tiles, generated on topic. Replaces
-   *  the component's old hardcoded DISTRACTOR_POOL. */
-  bankDistractors?: string[];
   remediationMove?: 'contrast_rime' | 'diagnostic_option' | 'constrained_production';
 
   // ── Within-mode support-tier scaffolds (stamped by the generator from
@@ -117,8 +116,8 @@ interface RhymeChallenge {
   /** #2 instruction — may the tutor enumerate the choices aloud? Default: yes.
    *  FORCED true at PRE — a non-reader cannot read the set off the screen. */
   tutorNamesOptions?: boolean;
-  /** #5 answer-form — correct tiles in the 4-tile production bank. Default: 2. */
-  productionCorrectCount?: number;
+  // #5 answer-form (`productionCorrectCount`) RETIRED 2026-08-19: it tuned how
+  // many of the four production bank tiles rhymed, and the bank is deleted.
 }
 
 export interface RhymeStudioData {
@@ -149,7 +148,10 @@ interface RhymeStudioProps {
 const MODE_META: Record<RhymeMode, { badge: string; icon: string; accent: LuminaAccent; prompt: string }> = {
   recognition: { badge: 'Do They Rhyme?', icon: '👂', accent: 'blue', prompt: 'Listen… then say yes or no!' },
   identification: { badge: 'Find the Rhyme', icon: '🔍', accent: 'purple', prompt: 'Say the one that rhymes!' },
-  production: { badge: 'Say a Rhyme', icon: '🎙️', accent: 'emerald', prompt: 'Say a card that rhymes!' },
+  // Production is OPEN since 2026-08-19 (the word bank is deleted). No card, no
+  // menu — the prompt must not point at a surface the child cannot answer from,
+  // and "Think of" is the honest verb for what the mode now asks.
+  production: { badge: 'Think of a Rhyme', icon: '💭', accent: 'emerald', prompt: 'Think of a word that rhymes!' },
 };
 
 // ============================================================================
@@ -287,8 +289,13 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         : {
             challenge: item.mode === 'identification'
               ? `Say the word that rhymes with "${item.targetWord}".`
-              : `Say a word card that rhymes with "${item.targetWord}".`,
-            expected: `A word ending in "${item.rime}" — for example "${item.answer}".`,
+              : `Say any word that rhymes with "${item.targetWord}".`,
+            // Production names NO example: it has no code-owned answer since the
+            // bank was deleted, and `item.answer` is empty there. An "for example
+            // ''" string would have shipped straight into the misconception record.
+            expected: item.mode === 'identification'
+              ? `A word ending in "${item.rime}" — for example "${item.answer}".`
+              : `Any real word ending in "${item.rime}".`,
             observed: lastHeard
               ? `Heard "${lastHeard}".`
               : 'The tutor judged the answer wrong from the audio.',
@@ -471,7 +478,13 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         <p className="text-center text-base text-slate-300 font-medium">
           {meta.icon} {meta.prompt}
         </p>
-        {renderChoiceCards(item)}
+        {/* PRODUCTION RENDERS NO CARDS — the word bank was deleted when
+            `open_set_word` cleared its bench (2026-08-19). The screen shows the
+            STIMULUS and nothing else, which is the whole difference between
+            reading four words and saying one, and thinking of a rhyme.
+            `item.choices` is empty there by construction, so this is a guard on
+            intent rather than on data. */}
+        {item.mode === 'identification' && renderChoiceCards(item)}
       </div>
     );
   };

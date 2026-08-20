@@ -179,11 +179,38 @@ describe('validateJudgedScriptPack', () => {
     expect(record.notes).toContain('b c d e g p t v z');
   });
 
-  it('refuses open-set production (the rhyme-studio block)', () => {
+  it('ADMITS open-set production — the last blocked class, benched 2026-08-19', () => {
+    // This asserted the BLOCK from the day the class was written until the bench
+    // cleared it (qa/di-bench/run-2026-08-19-open-set-word.md): 72 probes over
+    // six rimes, and the judge's affirm set was exactly the 17 planted valid
+    // rhymes. The family now has NO blocked response class.
     const issues = validateJudgedScriptPack(makePack({}, [
       { id: 'a', answerKind: 'voice', responseClass: 'open_set_word', word: 'rhyme' },
     ]));
-    expect(issues.some((i) => i.includes('BLOCKED'))).toBe(true);
+    expect(issues).toEqual([]);
+
+    const record = RESPONSE_CLASSES.open_set_word;
+    expect(record.status).toBe('benched');
+    // The four guards a pack owes, and the correction the run forced. These are
+    // load-bearing prose: a pack author reads them instead of the run record.
+    expect(record.notes).toContain('ECHO');
+    expect(record.notes).toContain('NONWORD');
+    expect(record.notes).toContain('ONSET-ONLY');
+    expect(record.notes).toContain('OFF-TASK');
+    expect(record.notes).toContain('NAMES COUNT');
+    // The cap is doing more work for this class than any other — a pack that
+    // raised maxCorrections would walk into the decay this bench measured.
+    expect(record.notes).toContain('maxCorrections');
+  });
+
+  it('has no BLOCKED response class left', () => {
+    // The modality's ceiling, asserted. If a future class ships blocked this
+    // fails, which is the moment to ask whether it can be benched instead —
+    // `--di-bench` exists now and a class bench is no longer a mic sitting.
+    const blocked = Object.entries(RESPONSE_CLASSES)
+      .filter(([, record]) => record.status === 'blocked')
+      .map(([id]) => id);
+    expect(blocked).toEqual([]);
   });
 
   it('requires gesture items to declare the manipulation class', () => {

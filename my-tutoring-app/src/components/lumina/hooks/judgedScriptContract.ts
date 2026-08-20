@@ -197,10 +197,47 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
       + 'leniently.',
   },
   open_set_word: {
-    status: 'blocked',
+    status: 'benched',
     evidence:
-      'Open-set production (rhyme generation etc.) has no bench; qa/di/BACKLOG.md item 16 '
-      + 'keeps rhyme-studio behind a sitting for exactly this.',
+      'BENCHED 2026-08-19 — qa/di-bench/run-2026-08-19-open-set-word.md (item 24), the family\'s '
+      + 'first MACHINE-SCORED class bench (`/tutor-test --di-bench`). 72 probes over 6 rimes '
+      + 'through the real rhyme-studio contract (`open_production`), plus a 26-probe confirmation '
+      + 'run of the amended contract. Gate = ZERO false affirmations in the hard REFUSE buckets, '
+      + 'and the headline is the discrimination: across all 72 probes the judge gave exactly 18 '
+      + 'affirmations — the 17 planted valid rhymes, and one surname (see the naming note below). '
+      + 'It affirmed no echo, no onset match, no semantic neighbour, no slant rhyme, no off-task '
+      + 'turn, and none of the ten genuine nonwords, INCLUDING "nake" — the exact string our own '
+      + 'generator once emitted into an acceptable-answer list.',
+    notes:
+      'WHAT A PACK MUST DO THAT THIS CLASS CANNOT — four guards, all in the wrong clause, all '
+      + 'scored buckets in the bench (see rhymeStudioScript.ts `openWrongClause` for the shipped '
+      + 'wording):\n'
+      + '(1) ECHO — the stimulus said straight back. A child told "Yes!" here learns that a word '
+      + 'rhymes with itself.\n'
+      + '(2) NONWORD — the failure a word bank prevented structurally and a rule cannot. Our own '
+      + 'generator has emitted one into an answer list, so a pack must never source a spoken word '
+      + 'from generated content in this class.\n'
+      + '(3) ONSET-ONLY — rhyme/alliteration confusion, and the miss a judge grading "sounds '
+      + 'similar" waves through.\n'
+      + '(4) OFF-TASK — a turn that is not an answer. Without a scripted branch the judge invents '
+      + 'one.\n'
+      + '⭐ NAMES COUNT, AND THE BENCH FOUND THAT THE HARD WAY. The run\'s only apparent false '
+      + 'affirmation was "zell" for "bell", filed by the bench as a nonword. Zell is a SURNAME — '
+      + 'the judge was defensible and the KEY was wrong, an error the bench\'s own test file warns '
+      + 'about. Following it through changed the CONTRACT rather than the key: a child who answers '
+      + '"Bill" for "hill" or "Matt" for "hat" HAS DONE THE SKILL, and a clause that refuses names '
+      + 'to be safe about nonwords fails real answers to catch invented ones. The amended clause '
+      + 'names names as acceptable; the confirmation run affirmed "Matt" for "hat" while still '
+      + 'refusing "zat"/"glat"/"drell"/"plell", so the capability was gained without opening a '
+      + 'nonword hole.\n'
+      + '⚠ THE CORRECTION CAP IS LOAD-BEARING HERE IN A WAY IT IS NOT ELSEWHERE. An open item has '
+      + 'no menu bounding its wrong answers, so it reaches long correction runs far more often '
+      + 'than any closed item — and the say-exactly grip decays across consecutive corrections '
+      + '(verbatim, then embellished, then off-script, then bracket tags read aloud and a new '
+      + 'stimulus invented — the port-8 defect under a new trigger). Production caps at 2 and only '
+      + 'ever sees the mild end; the bench drove past the cap and that is where its 11 no-verdict '
+      + 'turns came from. A pack shipping this class must not raise `maxCorrections`, and the '
+      + 'bench owes a fix to honor the cap before the next class is measured on it.',
   },
 };
 

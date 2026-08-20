@@ -960,29 +960,36 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       'Live Direct Instruction rhyme practice with a spoken tutor. The tutor asks, waits, judges the child’s '
       + 'answer from the audio in-band, and its own verdict moves the lesson on. ALL THREE MODES ARE ANSWERED '
       + 'ALOUD — the child says yes or no to whether two spoken words rhyme (Do They Rhyme?), says the word that '
-      + 'rhymes (Find the Rhyme), or says a word card that rhymes (Say a Rhyme). The choices stay on screen as '
-      + 'the closed set the child speaks from; nothing anywhere is tapped to answer. Tap-to-hear repeats the '
-      + 'question. Requires a microphone. ESSENTIAL for K-2 phonological awareness.',
+      + 'rhymes from a small set (Find the Rhyme), or THINKS OF A RHYME with nothing on screen but the target '
+      + 'word (Think of a Rhyme). Only identification shows choices, and they are the closed set the child '
+      + 'speaks from; nothing anywhere is tapped to answer. Tap-to-hear repeats the question. Requires a '
+      + 'microphone. ESSENTIAL for K-2 phonological awareness — and Think of a Rhyme is rhyme GENERATION, the '
+      + 'Bloom tier above recognising one.',
     constraints:
       'Requires 8-10 challenges. Recognition needs doesRhyme boolean. Identification needs 2-3 options with one '
-      + 'onset-sharing distractor (cat → cap). Production needs acceptableAnswers AND bankDistractors. '
-      + 'Every answer is spoken — do not route FREE rhyme generation ("tell me any word '
-      + 'that rhymes") here: an open spoken answer set has no bench and the word bank is what keeps this mode '
-      + 'judgeable. Requires the live tutor and a microphone. '
-      + 'PRE-READER (K): the K routes are recognition + identification; each word (target, comparison, every '
-      + 'option) carries a single depicting emoji so a non-reader can tell the words apart. Production is Grade 1+ '
-      + '(its word-bank distractors cannot be pictured) — do not route production at K.',
+      + 'onset-sharing distractor (cat → cap). PRODUCTION IS OPEN — it needs ONLY a targetWord and its '
+      + 'rhymeFamily, and the target must have many common rhymes a young child knows (cat, sun, bed — never '
+      + 'orange or month). Route FREE rhyme generation ("tell me a word that rhymes with cat") HERE: it is what '
+      + 'this mode now is. Every answer is spoken; requires the live tutor and a microphone. '
+      + 'PRE-READER (K): all three modes route at K. Each word in recognition and identification (target, '
+      + 'comparison, every option) carries a single depicting emoji so a non-reader can tell the words apart; '
+      + 'production needs no such surface because nothing but the target is on screen.',
     // ── DI MODALITY (2026-08-12) — eighth literacy port. The tutor owns the
     // clock in every mode; there is no advance timer, no push-to-talk mic, no
     // Next button and no Start gate anywhere in the path.
-    // THE BENCH IS ANSWERED BY THE BANK, not cleared: `open_set_word` is a
-    // BLOCKED response class and free rhyme production is its canonical case,
-    // which is why this primitive sat behind a sitting longer than any other
-    // literacy surface. The shipped `production` mode was never open — it
-    // renders a four-tile word bank — so the child produces a rhyme ALOUD from
-    // a closed, code-enumerable set (`short_spoken_word`, benched). The bank
-    // looked like scaffolding to delete on the way to DI; it is the thing that
-    // makes the mode sayable at all. FREE production still waits for its bench.
+    // ⭐ THE BENCH IS CLEARED AND THE BANK IS DELETED (2026-08-19).
+    // `open_set_word` was the family's last BLOCKED response class and free
+    // rhyme production its canonical case, which is why this primitive sat
+    // behind a sitting longer than any other literacy surface. The bench ran
+    // 72 probes over six rimes against this exact contract
+    // (`qa/di-bench/run-2026-08-19-open-set-word.md`) and the judge's affirm
+    // set was EXACTLY the 17 planted valid rhymes — every echo, onset match,
+    // semantic neighbour, off-task turn and nonword refused. So `production` is
+    // now genuinely open: no bank, no menu, the tutor judges against a rule.
+    // USER RULING 2026-08-18: "we shouldnt need an answer bank for synthesis,
+    // trust the model."
+    // The K gate went with the bank — it existed because bank distractors
+    // could not be pictured, and an oral-only mode needs no pictures.
     // RECOGNITION IS SPOKEN, and it took a user drive to get there. It shipped
     // for one day with a 👍/👎 tap, on the argument that a yes/no verdict is
     // not made of language. USER RULING 2026-08-12: "we should just be able to
@@ -1022,14 +1029,15 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'production',
-        label: 'Say a Rhyme (Tier 4)',
+        label: 'Think of a Rhyme (Tier 4)',
         beta: 5.0,
         scaffoldingMode: 4,
         challengeTypes: ['production'],
         description:
-          'Constrained rhyme production — see a bank of word cards, say one that rhymes with the target. Spoken '
-          + 'from a closed set: a rhyme said from the whole language has no bench, and the cards close the set '
-          + 'while hearing the family stays the skill. Grade 1+.',
+          'OPEN rhyme production — hear one word, think of any real word that rhymes with it, and say it. There '
+          + 'is no word bank, no menu and nothing on screen but the target: the tutor judges the answer against '
+          + 'a RULE, not a list. This is generation, not recognition — the child supplies the word. Purely oral, '
+          + 'so it works at K (K.RF.2.a) as well as any later grade.',
       },
     ],
     tutoring: {

@@ -98,13 +98,21 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'identification' (say the rhyming word)",
   },
   production: {
+    // OPEN since 2026-08-19: the word bank is deleted and the child THINKS OF a
+    // rhyme rather than reading four and saying one. The generator therefore
+    // supplies no answer material at all — the tutor judges against a rule, and
+    // the only thing it speaks is the target. This is also why the prompt no
+    // longer asks for `acceptableAnswers`: that list once contained "NAKE" for
+    // the target "cake", and anything it emits here would be an invented word
+    // the judge had been told to accept.
     promptDoc:
-      `"production": Show a target word and a bank of word cards; student SAYS a card that rhymes. `
-      + `Provide 3-5 common acceptable answers (do NOT include the target word itself) AND 3 bankDistractors — `
-      + `words that clearly do NOT rhyme with the target, drawn from the same topic and the same reading level. `
-      + `REQUIRED fields: acceptableAnswers (array of strings), bankDistractors (array of strings). `
-      + `Do NOT include comparisonWord, doesRhyme, or options. 2-3 challenges per session.`,
-    schemaDescription: "'production' (say a rhyming word from the card bank)",
+      `"production": Show ONE target word; the student thinks of any real rhyming word and SAYS it. `
+      + `There is no word bank and no options — the answer set is open and the tutor judges it. `
+      + `REQUIRED fields: targetWord and rhymeFamily only. `
+      + `Do NOT include comparisonWord, doesRhyme, options, acceptableAnswers or bankDistractors. `
+      + `Choose targets with MANY common rhymes a young child would know (cat, sun, bed) — never a `
+      + `rhyme-poor word (orange, month). 2-3 challenges per session.`,
+    schemaDescription: "'production' (think of a rhyming word and say it — open answer)",
   },
 };
 
@@ -124,10 +132,10 @@ const sentinelSafe = (words: unknown): string[] =>
     .map((w) => String(w ?? '').trim())
     .filter((w) => w.length > 0 && isSentinelSafeWord(w));
 
-/** Non-rhyming bank fillers, used only when the model omitted bankDistractors.
- *  Deliberately generic and topic-free: this is a LAST RESORT so the bank is
- *  never short, not a content source (no DEFAULT_ITEMS ships in a primitive). */
-const FALLBACK_BANK_DISTRACTORS = ['book', 'star', 'milk', 'jump', 'green', 'hand'];
+// ⛔ `FALLBACK_BANK_DISTRACTORS` lived here — generic non-rhyming fillers that
+// topped up a short word bank. The bank is deleted (2026-08-19) and nothing
+// fills anything, so the pool went with it rather than lingering as an unused
+// content source.
 
 // ---------------------------------------------------------------------------
 // Rhyme integrity — the answer key, checked in code
@@ -180,11 +188,24 @@ export function holdsRhymeIntegrity(ch: Record<string, unknown>): boolean {
   }
 
   if (ch.mode === 'production') {
-    const accepted = (ch.acceptableAnswers as string[] ?? []).filter(
-      (w) => endsWithRime(w, rime) && w.trim().toLowerCase() !== target,
-    );
-    if (accepted.length === 0) return false;
-    ch.acceptableAnswers = accepted;
+    /**
+     * ⭐ AN OPEN ITEM HAS NO ANSWER KEY TO CHECK, SO THE GATE MOVED TO THE
+     * STIMULUS — and this branch is the one place the bank deletion could have
+     * silently emptied the mode.
+     *
+     * It used to require at least one `acceptableAnswers` entry that genuinely
+     * rhymed, dropping the item otherwise. With the bank gone the generator no
+     * longer emits that list at all, so the old gate would have dropped EVERY
+     * production challenge and the mode would have shipped as an empty
+     * activity.
+     *
+     * What is still checkable, and what actually matters now: the rhymeFamily
+     * must really be the ending of the target. The tutor SPEAKS the rime in its
+     * correction ("listen to the end of hat — at"), so a target/rime mismatch
+     * puts a false phonics claim in a five-year-old's ear. Whether the target
+     * has plenty of rhymes is a content-quality question, handled in the prompt.
+     */
+    if (!endsWithRime(String(ch.targetWord ?? ''), rime)) return false;
   }
   return true;
 }
@@ -218,10 +239,13 @@ export function holdsRhymeIntegrity(ch: Record<string, unknown>): boolean {
 // tutor's scripted ask IS the instruction channel at every tier and every band.
 // The DISTAR lead-in ladder in `rhymeStudioScript.ts` (model + guide → model →
 // nothing) is where tier #2 now does its work.
-//   #5 answer-form  productionCorrectCount   — how many of the production word
-//                     bank's 4 tiles are correct rhymes: 2 (easy/medium) → 1 (hard).
-//                     The bank size and the acceptableAnswers data are unchanged and
-//                     a correct tile is ALWAYS present — only the hit rate drops.
+//   #5 answer-form  RETIRED BY THE BANK DELETION (2026-08-19). `productionCorrectCount`
+//                     tuned how many of the four word-bank tiles were correct rhymes;
+//                     with production OPEN there are no tiles and no hit rate. The
+//                     mode's real support ladder is the DISTAR lead-in in
+//                     `rhymeStudioScript.ts` (model + guide → model → nothing), which
+//                     is a scaffolding lever intrinsic to the interaction rather than
+//                     a property of a menu that no longer exists.
 // ---------------------------------------------------------------------------
 
 export type RhymeSupportTier = 'easy' | 'medium' | 'hard';
@@ -230,7 +254,6 @@ export interface RhymeSupportScaffold {
   showRhymeFamilyHighlight: boolean;
   tutorNamesOptions: boolean;
   showWordImage: boolean;
-  productionCorrectCount: number;
 }
 
 /** The scaffolding ladder. easy = every help shown. */
@@ -243,7 +266,6 @@ export function resolveRhymeSupportScaffold(tier: RhymeSupportTier): RhymeSuppor
     // The tutor's enumeration survives to medium; hard is the "read the set
     // yourself, then say it" rung.
     tutorNamesOptions: tier !== 'hard',
-    productionCorrectCount: tier === 'hard' ? 1 : 2,
   };
 }
 
@@ -268,8 +290,6 @@ export function applyRhymeSupportTier(
     // ── Band floor (K = pre-reader) ──
     ch.showWordImage = isPreReaderBand ? true : sc.showWordImage;
     ch.tutorNamesOptions = isPreReaderBand ? true : sc.tutorNamesOptions;
-    // Answer-form lever only exists where there is a word bank.
-    if (ch.mode === 'production') ch.productionCorrectCount = sc.productionCorrectCount;
   }
 }
 
@@ -353,18 +373,6 @@ const rhymeStudioSchema: Schema = {
               required: ["word", "image", "isCorrect"],
             },
             description: "Identification mode: 2-3 word options (exactly one correct)",
-          },
-          acceptableAnswers: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "Production mode: 3-5 acceptable rhyming words",
-          },
-          bankDistractors: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description:
-              "Production mode: exactly 3 words that clearly do NOT rhyme with the target, "
-              + "on the same topic and reading level. These fill the word-card bank.",
           },
         },
         required: ["id", "mode", "targetWord", "targetWordImage", "rhymeFamily"],
@@ -486,7 +494,7 @@ ${remediationSection}
 MODE-SPECIFIC FIELD RULES:
 - recognition: set comparisonWord, comparisonWordImage, doesRhyme. Do NOT set options or acceptableAnswers.
 - identification: set options (array of {word, image, isCorrect}). Do NOT set comparisonWord, doesRhyme, or acceptableAnswers.
-- production: set acceptableAnswers (array of strings) AND bankDistractors (exactly 3 non-rhyming words on the same topic). Do NOT set comparisonWord, doesRhyme, or options.
+- production: set ONLY targetWord + rhymeFamily. The answer is OPEN — the child says any real rhyme and the tutor judges it. Do NOT set comparisonWord, doesRhyme, options, acceptableAnswers or bankDistractors.
 
 CRITICAL RULES:
 ${ctx.remediationFocus ? '- REMEDIATION TRACE: recognition uses "contrast_rime", identification uses "diagnostic_option", production uses "constrained_production". Make a non-rhyme or distractor encode the diagnosed confusion.' : ''}
@@ -499,7 +507,7 @@ ${ctx.remediationFocus ? '- REMEDIATION TRACE: recognition uses "contrast_rime",
 - For recognition challenges, NEVER use irregular-spelling words: ${IRREGULAR_RHYME_WORDS.join(', ')}. Stick to words with regular phonetic spelling.
 - For recognition with doesRhyme: true, BOTH words MUST end with the rhymeFamily spelling (e.g., rhymeFamily "-at" → "cat" and "hat", NOT "eight" and "kite")
 - For recognition with doesRhyme: false, words must have clearly different endings
-- For production acceptableAnswers, EVERY word must genuinely rhyme with the targetWord — same ending sound
+- For production, the targetWord MUST end with its rhymeFamily and MUST have many common rhymes a young child would know (cat, sun, bed, top). Never a rhyme-poor word (orange, month, silver).
 - All words should relate to the topic "${topic}" when possible, but prioritize real rhymes
 - Use simple, common, age-appropriate words
 - NEVER use the word "yes" as a target, comparison, option, acceptable answer or distractor — the live tutor says every one of these words out loud, and "yes" is how it signals a correct answer
@@ -591,32 +599,19 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
             if (real) real.isCorrect = true;
           }
         } else if (ch.mode === "production") {
-          // The word-card bank IS the answer set: under the DI modality the
-          // child SAYS a card, and a closed, code-enumerable set is what keeps
-          // that a benched response class (free production is `open_set_word`,
-          // BLOCKED). So both halves of the bank are guaranteed here rather
-          // than left to the model, and both are sentinel-filtered before they
-          // can reach a line the tutor speaks.
-          const accepted = sentinelSafe(ch.acceptableAnswers).filter(
-            (w) => w.toLowerCase() !== String(ch.targetWord ?? '').toLowerCase(),
-          );
-          // No backfill: an item with no real rhyme is cut, not padded.
-          ch.acceptableAnswers = accepted;
-
-          const target = String(ch.targetWord ?? '').toLowerCase();
-          const suffix = String(ch.rhymeFamily ?? '').replace(/^-+/, '').toLowerCase();
-          const emitted = sentinelSafe(ch.bankDistractors).filter(
-            // A "distractor" that actually rhymes is a wrong answer key, not a
-            // distractor — drop it rather than ship a bank with two truths.
-            (w) => w.toLowerCase() !== target && !(suffix && w.toLowerCase().endsWith(suffix)),
-          );
-          const filled = [...emitted];
-          for (const filler of FALLBACK_BANK_DISTRACTORS) {
-            if (filled.length >= 3) break;
-            if (filler === target || (suffix && filler.endsWith(suffix))) continue;
-            if (!filled.includes(filler)) filled.push(filler);
-          }
-          ch.bankDistractors = filled.slice(0, 3);
+          // ⛔ THE BANK-BUILDING BRANCH USED TO LIVE HERE and its deletion is
+          // the point (rhymeStudioScript.ts header). It guaranteed both halves
+          // of a four-tile word bank because that closed set was what kept
+          // spoken production a benched response class while `open_set_word`
+          // was blocked. The class cleared its bench on 2026-08-19, so the mode
+          // is open and there is nothing to assemble.
+          //
+          // Both fields are STRIPPED rather than ignored: an `acceptableAnswers`
+          // list riding along would eventually be read into a judge's accept
+          // clause by some later change, and that list has demonstrably
+          // contained the nonword "NAKE" for the target "cake".
+          delete ch.acceptableAnswers;
+          delete ch.bankDistractors;
         }
 
         return ch;
@@ -634,18 +629,26 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       );
     }
 
-    // Band floor (K = pre-reader): production's word-bank distractors cannot be
-    // pictured, so it is a Grade 1+ mode — drop production challenges at K unless
-    // the eval mode is EXPLICITLY constrained to production (an advanced-student
-    // curator/IRT choice we honor rather than emptying the activity).
-    const forcesProductionOnly =
-      evalConstraint?.allowedTypes?.length === 1 &&
-      evalConstraint.allowedTypes[0] === 'production';
-    if (gradeLevelKey === 'K' && !forcesProductionOnly) {
-      result.challenges = result.challenges.filter(
-        (ch: Record<string, unknown>) => ch.mode !== 'production',
-      );
-    }
+    /**
+     * ⭐ THE K BAND GATE ON PRODUCTION IS GONE, BECAUSE THE BANK WAS ITS ONLY
+     * REASON.
+     *
+     * The rule here used to be: *"production's word-bank distractors cannot be
+     * pictured, so it is a Grade 1+ mode"* — drop production at K. That was a
+     * true statement about the BANK, not about the skill. A non-reader could
+     * not use four printed word cards, and the distractors had no depictable
+     * emoji, so the mode was unreachable at the exact band that needs it most.
+     *
+     * With the bank deleted (2026-08-19) production requires no reading and no
+     * pictures at all: the tutor SAYS a word and the child SAYS a rhyme. That
+     * is a purely oral exchange, and producing rhymes is a core kindergarten
+     * standard (K.RF.2.a — "recognize and produce rhyming words"). Keeping the
+     * gate would have shipped a cap whose justification had been deleted, and
+     * would have withheld the one rhyme mode a pre-reader can fully do.
+     *
+     * The K emoji pass below still attaches a picture to the TARGET, so the
+     * stimulus stays depictable; there is simply no answer surface to picture.
+     */
 
     // Picture-primary attach (K): the model produced only WORDS (no emojis — that
     // is unreliable on flash-lite inside nested arrays). Attach the depicting emoji
@@ -724,11 +727,9 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
               ],
             }
           : fallbackMode === 'production'
-            ? {
-                ...base,
-                acceptableAnswers: ['hat', 'bat', 'mat'],
-                bankDistractors: ['dog', 'cup', 'pen'],
-              }
+            // Open production carries no answer material: the target and its
+            // rime ARE the whole item.
+            ? { ...base }
             : {
                 ...base,
                 comparisonWord: 'hat',

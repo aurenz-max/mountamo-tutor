@@ -40,13 +40,17 @@ describe('rhyme integrity — the answer key, checked in code', () => {
     expect((ch.options as Array<{ word: string }>).map((o) => o.word)).toEqual(['grab', 'coral']);
   });
 
-  it('DROPS an acceptable answer that does not rhyme (live: jump / "lamp")', () => {
-    const ch: Record<string, unknown> = {
-      id: 'c3', mode: 'production', targetWord: 'jump', rhymeFamily: '-ump',
-      acceptableAnswers: ['bump', 'lamp', 'pump', 'dump'],
-    };
-    expect(holdsRhymeIntegrity(ch)).toBe(true);
-    expect(ch.acceptableAnswers).toEqual(['bump', 'pump', 'dump']);
+  it('production is gated on its STIMULUS now, not on an answer key', () => {
+    // REPLACED 2026-08-19. This used to filter `acceptableAnswers` down to the
+    // words that really rhymed (the live "jump"/"lamp" miss) and drop the item
+    // if none survived. Production is OPEN — the generator emits no answer list
+    // — so the old gate would have dropped every production challenge and
+    // shipped an empty activity. What is still checkable is the one thing the
+    // tutor SPEAKS: the rime must really be the target's ending, or the
+    // correction ("listen to the end of jump — ump") teaches false phonics.
+    expect(holdsRhymeIntegrity({
+      mode: 'production', targetWord: 'jump', rhymeFamily: '-ump',
+    })).toBe(true);
   });
 
   it('recomputes doesRhyme from the words — the boolean is a claim, the words are the truth', () => {
@@ -70,10 +74,10 @@ describe('rhyme integrity — the answer key, checked in code', () => {
     })).toBe(false);   // "bat" rhymes too — nothing wrong is left to choose between
   });
 
-  it('drops a production item with no surviving rhyme', () => {
+  it('drops a production item whose rime is not the target ending', () => {
+    // The mismatch that would put a false phonics claim in a child's ear.
     expect(holdsRhymeIntegrity({
-      mode: 'production', targetWord: 'jump', rhymeFamily: '-ump',
-      acceptableAnswers: ['lamp', 'ramp'],
+      mode: 'production', targetWord: 'jump', rhymeFamily: '-at',
     })).toBe(false);
   });
 
@@ -104,7 +108,6 @@ describe('RhymeStudio support-tier ladder', () => {
       showRhymeFamilyHighlight: true,
       showWordImage: true,
       tutorNamesOptions: true,
-      productionCorrectCount: 2,
     });
   });
 
@@ -113,15 +116,19 @@ describe('RhymeStudio support-tier ladder', () => {
     expect(sc.showRhymeFamilyHighlight).toBe(false);
     expect(sc.showWordImage).toBe(false);
     expect(sc.tutorNamesOptions).toBe(true);
-    expect(sc.productionCorrectCount).toBe(2);
   });
 
-  it('hard withdraws every scaffold and thins the production bank to 1 correct', () => {
+  it('hard withdraws every scaffold', () => {
+    // `productionCorrectCount` was the fourth lever — how many of the four word
+    // bank tiles rhymed (2 → 1 at hard). The bank was deleted 2026-08-19 when
+    // `open_set_word` cleared its bench, so the lever went with it: there are no
+    // tiles and no hit rate. Production's support ladder is now the DISTAR
+    // lead-in in rhymeStudioScript.ts, which is intrinsic to the interaction
+    // rather than a property of a menu that no longer exists.
     expect(resolveRhymeSupportScaffold('hard')).toEqual({
       showRhymeFamilyHighlight: false,
       showWordImage: false,
       tutorNamesOptions: false,
-      productionCorrectCount: 1,
     });
   });
 
@@ -144,17 +151,17 @@ describe('applyRhymeSupportTier stamping', () => {
     { id: 'c3', mode: 'production', targetWord: 'cat' },
   ] as Array<Record<string, unknown>>);
 
-  it('stamps every challenge at hard and only bank-bearing modes get the answer-form lever', () => {
+  it('stamps every challenge at hard — and no mode gets an answer-form lever any more', () => {
     const chs = challenges();
     applyRhymeSupportTier(chs, 'hard', false);
     for (const ch of chs) {
       expect(ch.showRhymeFamilyHighlight).toBe(false);
       expect(ch.showWordImage).toBe(false);
       expect(ch.tutorNamesOptions).toBe(false);
+      // `productionCorrectCount` tuned how many of the four bank tiles rhymed.
+      // The bank was deleted 2026-08-19, so the lever has nothing to move.
+      expect(ch.productionCorrectCount).toBeUndefined();
     }
-    expect(chs[0].productionCorrectCount).toBeUndefined();
-    expect(chs[1].productionCorrectCount).toBeUndefined();
-    expect(chs[2].productionCorrectCount).toBe(1);
   });
 
   it('PRE band floor WINS over a hard tier: picture + tutor enumeration stay on', () => {

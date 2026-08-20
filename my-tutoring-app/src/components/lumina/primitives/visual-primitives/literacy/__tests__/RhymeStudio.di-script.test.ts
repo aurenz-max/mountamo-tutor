@@ -15,6 +15,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   spokenSpanOf,
+  spokenSpansOf,
   validateJudgedScriptPack,
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
@@ -25,7 +26,6 @@ import {
 import { LITERACY_CATALOG } from '../../../../service/manifest/catalog/literacy';
 import { DI_SENTINELS } from '../../../../hooks/judgedLoopModel';
 import {
-  buildProductionBank,
   completeCue,
   isSentinelSafeWord,
   itemCue,
@@ -66,13 +66,14 @@ const identificationCh = (over: Partial<RhymeChallengeLike> = {}): RhymeChalleng
   ...over,
 });
 
+/** Production is OPEN: it reads a target and a rime and nothing else.
+ *  `acceptableAnswers` is accepted and deliberately IGNORED, which is itself
+ *  asserted below — the word bank was deleted on 2026-08-19. */
 const productionCh = (over: Partial<RhymeChallengeLike> = {}): RhymeChallengeLike => ({
   id: 'p1',
   mode: 'production',
-  targetWord: 'sun',
-  rhymeFamily: '-un',
-  acceptableAnswers: ['bun', 'run', 'fun'],
-  bankDistractors: ['dog', 'book', 'milk'],
+  targetWord: 'hat',
+  rhymeFamily: '-at',
   ...over,
 });
 
@@ -143,10 +144,155 @@ describe('the family gates', () => {
     expect(checkPackGates(packFor(pair))).toEqual([]);
   });
 
-  it('would REFUSE a free-production item — open_set_word is still blocked', () => {
-    const blocked = { ...itemFromChallenge(productionCh()), responseClass: 'open_set_word' as const };
-    const issues = validateJudgedScriptPack(packFor([blocked]));
-    expect(issues.join(' ')).toMatch(/open_set_word.*BLOCKED/);
+  /**
+   * ⭐ THIS TEST USED TO ASSERT THE BLOCK, AND IT STILL DOES — from the other
+   * side of the fork.
+   *
+   * Its old form built a production item, hand-stamped `open_set_word` onto it,
+   * and checked that the validator refused it. `open_production` now produces
+   * that item honestly, so the assertion is made against the REAL mode rather
+   * than a synthetic one: the class is under bench (item 24) and the validator
+   * must keep refusing it until a recorded sitting clears it.
+   *
+   * WHEN THE BENCH PASSES, this expectation inverts — `toEqual([])` — and the
+   * guards below are what stay. Do not delete it in either direction: a mode
+   * that can be built but not validated is exactly the state a bench needs, and
+   * an unasserted one drifts into a lesson.
+   */
+  /**
+   * ⭐ THIS TEST HAS NOW ASSERTED THE BLOCK FROM BOTH SIDES, AND THIS IS THE
+   * THIRD SHAPE — the one that says the class CLEARED.
+   *
+   * v1 stamped `open_set_word` onto a production item and checked the validator
+   * refused it. v2 built the refusal honestly from `open_production` while the
+   * bench ran. v3 is this: the bench passed (2026-08-19, 72 probes over 6 rimes,
+   * zero false affirmations), the class is `benched`, and the mode must now
+   * validate CLEAN. Keep it — a class that can be built but not validated, or
+   * validated but never asserted, is how a blocked shape drifts into a lesson.
+   */
+  it('an open_production item now VALIDATES — open_set_word is benched', () => {
+    expect(checkPackGates(packFor([itemFromChallenge(productionCh())]))).toEqual([]);
+  });
+
+  it('two open items in a row do not recite a byte-identical ask', () => {
+    // The ask names its own stimulus, so this holds by construction — but the
+    // mode's ask is the shortest in the pack and the repeat gate is calibrated
+    // at 12 words, so it is worth pinning.
+    const pair = [
+      productionCh(),
+      productionCh({ id: 'o2', targetWord: 'cake', rhymeFamily: '-ake' }),
+    ].map((c) => itemFromChallenge(c, 'medium'));
+    expect(checkPackGates(packFor(pair))).toEqual([]);
+  });
+});
+
+// ── The open-set contract — the four guards, asserted ───────────────────────
+
+/**
+ * The bench (`service/qa/di/openSetWordBench.ts`) scores the judge's BEHAVIOUR
+ * against these clauses. These tests assert the clauses are actually IN the
+ * contract the judge receives — a bench run against a contract missing its
+ * nonword guard would score a false affirmation as the judge's fault when it
+ * was ours. Machine gate first, Live session second.
+ */
+describe('open_production — the rule, and the four guards', () => {
+  const cueFor = (over: Partial<RhymeChallengeLike> = {}) =>
+    itemCue(itemFromChallenge(productionCh(over)), {});
+
+  it('hands the judge a RULE, not a list of acceptable answers', () => {
+    const item = itemFromChallenge(productionCh());
+    // The mode's defining property: nothing is enumerated.
+    expect(item.acceptedWords).toEqual([]);
+    expect(item.choices).toEqual([]);
+    expect(item.responseClass).toBe('open_set_word');
+    expect(item.answerKind).toBe('voice');
+
+    const cue = cueFor();
+    expect(cue).toContain('has to say a REAL word that ends with the same sound as hat');
+    // …and explicitly authorises what the judge did not think of, which is the
+    // difference between an open set and a closed one the judge is holding.
+    expect(cue).toContain('including one you did not think of yourself');
+    // Sound, not spelling — otherwise the judge refuses "ache" for "cake".
+    expect(cue).toContain('Judge the SOUND you heard, not the spelling');
+  });
+
+  it('carries the ECHO guard — the stimulus said back is refused', () => {
+    expect(cueFor()).toContain('The word hat said back is NOT correct');
+  });
+
+  it('carries the NONWORD guard — the failure the word bank made impossible', () => {
+    expect(cueFor()).toContain('A made-up word is NOT correct');
+  });
+
+  it('the NONWORD guard does not sweep up names — "Bill" rhymes with "hill"', () => {
+    // The first bench run blocked this class on "zell" for "bell", filed as a
+    // nonword. Zell is a surname; the judge was defensible and the key was
+    // wrong. Following that through changed the CONTRACT: a child who answers
+    // with a name has done the skill, and the guard belongs on strings that are
+    // not words at all.
+    expect(cueFor()).toContain("A person's NAME is a real word here and counts");
+    expect(cueFor()).toContain('Refuse invented nonsense, never a name.');
+  });
+
+  it('carries the ONSET guard — rhyme is not alliteration', () => {
+    expect(cueFor()).toContain('only STARTS like hat is NOT correct');
+  });
+
+  it('carries the OFF-TASK guard — a non-answer is not an answer', () => {
+    expect(cueFor()).toContain('the learner says they do not know, that is not an answer');
+  });
+
+  /**
+   * ⭐ THE INVARIANT THAT MAKES THIS MODE SAFE TO SPEAK AT ALL.
+   *
+   * Every other mode reads generated words aloud — the choices, the bank, the
+   * comparison word — and defends that with `isSentinelSafeWord`. This one
+   * cannot rely on generated content at all: the live probe put "NAKE" in an
+   * acceptable-answer list for the target `cake`, and there is no filter that
+   * catches a well-formed invented word. So the mode simply never speaks one.
+   */
+  it('speaks NO generated word except the stimulus — not in the ask, correction or affirm', () => {
+    const ch = productionCh({
+      // Everything a generator could hand us, including the observed nonword.
+      acceptableAnswers: ['bake', 'lake', 'nake'],
+    });
+    const item = itemFromChallenge(ch);
+    const spokenEverywhere = [
+      itemCue(item, { opening: true, howToPlay: true }),
+      itemCue(item, {}),
+      moveOnCue(item, null, {}),
+      pronounceCue(item),
+    ].flatMap((cue) => spokenSpansOf(cue)).join(' ').toLowerCase();
+
+    for (const word of ['bake', 'lake', 'nake']) {
+      expect(spokenEverywhere).not.toContain(word);
+    }
+    // The stimulus and the rime are the only content words, and both are the
+    // question rather than the answer.
+    expect(spokenEverywhere).toContain('hat');
+  });
+
+  it('corrects by re-modelling the RIME, never a word', () => {
+    const cue = cueFor();
+    expect(cue).toContain('My turn: listen to the end of hat — at.');
+    expect(cue).toContain('Your turn. Tell me a word that ends with at.');
+  });
+
+  it('affirms with a byte-fixed line — no template, so the exact-line oracles hold', () => {
+    // The child's word is unknown before they speak, so the affirmation uses
+    // deixis rather than echoing it. Two different items differ only by their
+    // own stimulus, never by anything the child said.
+    expect(cueFor()).toContain('Yes, that rhymes with hat — both end with at.');
+    expect(cueFor({ targetWord: 'cake', rhymeFamily: '-ake' }))
+      .toContain('Yes, that rhymes with cake — both end with ake.');
+  });
+
+  it('the ask cannot leak an answer, because it does not know one', () => {
+    const ask = spokenSpanOf(cueFor());
+    expect(ask).toBe('Listen to this word: hat. Your turn. Tell me a word that rhymes with hat.');
+    // No menu, no card, no screen — naming a surface the child cannot answer
+    // from is how a tutor starts telling them to pick from nothing.
+    expect(ask.toLowerCase()).not.toMatch(/card|choice|screen|option/);
   });
 });
 
@@ -194,25 +340,37 @@ describe('the split — what the answer is MADE of', () => {
     expect(no).toMatch(/"nope", "uh uh"/);
   });
 
-  it.each(['identification', 'production'] as const)('%s speaks a word from a closed set', (mode) => {
-    const item = itemFromChallenge(mode === 'identification' ? identificationCh() : productionCh());
+  it('identification speaks a word from a CLOSED set', () => {
+    const item = itemFromChallenge(identificationCh());
     expect(item.answerKind).toBe('voice');
     expect(item.responseClass).toBe('short_spoken_word');
     expect(item.acceptedWords.length).toBeGreaterThan(0);
   });
 
-  it('the accepted set is EXACTLY what is on screen, never the wider word list', () => {
-    // The live probe's finding: for the target "cake" the model produced
-    // "bake, lake, rake, NAKE, take". An off-screen word is one nothing
-    // verified, and widening the set would read it into the judge's accept
-    // clause. On-screen words survive the bank's checks; that is the set.
+  it('production speaks a word from NO set — open_set_word', () => {
+    // Inverted 2026-08-19. `production` shared the closed-set assertion above
+    // for as long as the word bank existed — the bank was what made the mode a
+    // closed class. The bench cleared `open_set_word`, the bank is deleted, and
+    // the mode is now what it always should have been.
+    const item = itemFromChallenge(productionCh());
+    expect(item.answerKind).toBe('voice');
+    expect(item.responseClass).toBe('open_set_word');
+    expect(item.acceptedWords).toEqual([]);
+    expect(item.choices).toEqual([]);
+  });
+
+  it('production accepts NOTHING by name — the generated list is ignored entirely', () => {
+    // This test used to assert the opposite: that the accepted set was exactly
+    // the four on-screen bank tiles, because an off-screen word was one nothing
+    // had verified. Deleting the bank makes the honest set EMPTY — the judge is
+    // handed the rule and no candidates at all, and the generator's list (which
+    // has demonstrably contained the nonword "NAKE") reaches nothing.
     const item = itemFromChallenge(productionCh({
-      productionCorrectCount: 2,
       acceptableAnswers: ['bun', 'run', 'nun'],
     }));
-    expect(item.choices.filter((c) => c.isCorrect)).toHaveLength(2);
-    expect(item.acceptedWords).toEqual(['bun', 'run']);
-    expect(item.acceptedWords).not.toContain('nun');
+    expect(item.choices).toEqual([]);
+    expect(item.acceptedWords).toEqual([]);
+    expect(item.answer).toBe('');
   });
 
   it('identification accepts only the correct option (its set is what is on screen)', () => {
@@ -237,11 +395,6 @@ describe('sentinel safety', () => {
     // Regression anchor: 'yes' shipped in RhymeStudio's DISTRACTOR_POOL for
     // months. Silent under a tap surface; a verdict under a spoken one.
     expect(isSentinelSafeWord('yes')).toBe(false);
-  });
-
-  it('drops a colliding word from the production bank rather than speaking it', () => {
-    const bank = buildProductionBank(productionCh({ bankDistractors: ['yes', 'dog', 'book'] }));
-    expect(bank.map((c) => c.word)).not.toContain('yes');
   });
 
   it.each(['easy', 'medium', 'hard'] as const)(
@@ -273,15 +426,40 @@ describe('sentinel safety', () => {
     const opensWith = (line: string, opener: string[]) =>
       sentencesOf(line).filter((t) => opener.every((w, i) => t[i] === w)).length;
 
+    // Parsed with the SHARED span parser rather than by splitting on the
+    // contract's prose. The old form split on the literal 'If it is wrong, say
+    // exactly: "' and broke the moment open production added a second
+    // correction branch ('…for any other reason') — a gate that fails when a
+    // pack gains a line is a gate that discourages adding one. Spans also cover
+    // EVERY branch, which is what actually matters: the echo correction was
+    // added because an unscripted refusal carries no sentinel and stalls the loop.
     for (const item of items()) {
-      const cue = itemCue(item);
-      const affirm = cue.split('If the answer is right, say exactly: "')[1].split('"')[0];
-      const correction = cue.split('If it is wrong, say exactly: "')[1].split('"')[0];
+      const [ask, affirm, ...corrections] = spokenSpansOf(itemCue(item));
+      expect(ask).toBeTruthy();
       expect(opensWith(affirm, DI_SENTINELS.affirm[0])).toBe(1);
       expect(opensWith(affirm, DI_SENTINELS.correct[0])).toBe(0);
-      expect(opensWith(correction, DI_SENTINELS.correct[0])).toBe(1);
-      expect(opensWith(correction, DI_SENTINELS.affirm[0])).toBe(0);
+      // Open production scripts TWO corrections (echo, then general); the
+      // closed modes script one. Every one of them must be classifiable.
+      expect(corrections.length).toBeGreaterThanOrEqual(1);
+      for (const correction of corrections) {
+        expect(opensWith(correction, DI_SENTINELS.correct[0])).toBe(1);
+        expect(opensWith(correction, DI_SENTINELS.affirm[0])).toBe(0);
+      }
     }
+  });
+
+  it('open production scripts a DEDICATED echo correction — the stall the pilot drive found', () => {
+    // 5 of 9 items in the first pilot drive: the child said the target back,
+    // the generic "listen to the end of dog — og" was a non-sequitur, the tutor
+    // improvised something correct but sentinel-less, and the loop went deaf.
+    const cue = itemCue(itemFromChallenge(productionCh()));
+    expect(cue).toContain('If the learner said "hat" back to you, say exactly:');
+    expect(cue).toContain('My turn: a word cannot rhyme with itself.');
+    expect(cue).toContain('Tell me a different word that ends with at.');
+    // The specific branch must come BEFORE the catch-all, or the model answers
+    // "is it wrong?" first and never reaches it.
+    expect(cue.indexOf('back to you')).toBeLessThan(cue.indexOf('for any other reason'));
+    expect(spokenSpansOf(cue)).toHaveLength(4);
   });
 
   it('no ITEM ask opens a sentence with a verdict sentinel — an ask is not a judgment', () => {
@@ -323,19 +501,21 @@ describe('answer leak', () => {
     expect(moveOnCue(item, null)).toMatch(/cat and hat do rhyme/);
   });
 
-  it('a spoken ask offers the whole set without singling out the answer', () => {
-    for (const ch of [identificationCh(), productionCh()]) {
-      const item = itemFromChallenge(ch);
-      const spoken = spokenLine(itemCue(item));
-      // Enumerating the closed set IS the ask — it is what keeps the response
-      // class benched — so every choice is spoken, correct and wrong alike.
-      for (const choice of item.choices) expect(spoken).toContain(choice.word);
-      // What must never be spoken pre-verdict is the RELATION that names one.
-      expect(spoken).not.toContain(`${item.answer} rhymes with`);
-      expect(spoken).not.toContain(`end with ${item.rime}`);
-      // The answer is earned in the correction, and only there.
-      expect(itemCue(item)).toContain(`My turn: ${item.answer} rhymes with ${item.targetWord}`);
-    }
+  it('a spoken IDENTIFICATION ask offers the whole set without singling out the answer', () => {
+    // Scoped to identification 2026-08-19: it is the only mode left with a set
+    // to offer. Production names nothing but its stimulus — asserted in the
+    // open-set suite, where the point is that it CANNOT leak an answer because
+    // it does not know one.
+    const item = itemFromChallenge(identificationCh());
+    const spoken = spokenLine(itemCue(item));
+    // Enumerating the closed set IS the ask — it is what keeps the response
+    // class benched — so every choice is spoken, correct and wrong alike.
+    for (const choice of item.choices) expect(spoken).toContain(choice.word);
+    // What must never be spoken pre-verdict is the RELATION that names one.
+    expect(spoken).not.toContain(`${item.answer} rhymes with`);
+    expect(spoken).not.toContain(`end with ${item.rime}`);
+    // The answer is earned in the correction, and only there.
+    expect(itemCue(item)).toContain(`My turn: ${item.answer} rhymes with ${item.targetWord}`);
   });
 
   it('tap-to-hear re-speaks the question and never the answer', () => {
@@ -456,33 +636,11 @@ describe('pickModelRhymePair', () => {
   });
 });
 
-// ── The production bank ─────────────────────────────────────────────────────
-
-describe('buildProductionBank', () => {
-  it('fills four tiles with the tier’s correct count, and never clusters them first', () => {
-    const bank = buildProductionBank(productionCh({ productionCorrectCount: 2 }));
-    expect(bank).toHaveLength(4);
-    expect(bank.filter((c) => c.isCorrect)).toHaveLength(2);
-    expect(bank[0].isCorrect).toBe(false);
-  });
-
-  it('hard thins the bank to one correct tile — and it is ALWAYS present', () => {
-    const bank = buildProductionBank(productionCh({ productionCorrectCount: 1 }));
-    expect(bank).toHaveLength(4);
-    expect(bank.filter((c) => c.isCorrect)).toHaveLength(1);
-  });
-
-  it('refuses a "distractor" equal to the target', () => {
-    const bank = buildProductionBank(productionCh({ bankDistractors: ['sun', 'dog', 'book'] }));
-    expect(bank.map((c) => c.word)).not.toContain('sun');
-  });
-
-  it('is deterministic — a re-render must not desync the tutor’s enumerated ask', () => {
-    const a = buildProductionBank(productionCh()).map((c) => c.word);
-    const b = buildProductionBank(productionCh()).map((c) => c.word);
-    expect(a).toEqual(b);
-  });
-});
+// ⛔ `describe('buildProductionBank')` LIVED HERE — four tests for tile counts,
+// distractor filtering and render determinism. The bank was deleted on
+// 2026-08-19 when `open_set_word` cleared its bench, so they are gone rather
+// than skipped. What replaced them is the open-set contract suite above: the
+// four guards, and the assertion that production speaks no generated word.
 
 // ── The catalog entry ───────────────────────────────────────────────────────
 

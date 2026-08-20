@@ -132,7 +132,6 @@ const production = (): RhymeStudioData => ({
     targetWordImage: 'a bright sun',
     rhymeFamily: '-un',
     acceptableAnswers: ['bun', 'run', 'fun'],
-    bankDistractors: ['dog', 'book', 'milk'],
   }],
 });
 
@@ -193,12 +192,19 @@ describe('RhymeStudio · the choices are a closed set, not a tap surface', () =>
     expect(screen.queryByRole('button', { name: /^dog$/ })).toBeNull();
   });
 
-  it('production shows the four-tile bank — the bank is what makes the mode sayable', () => {
+  it('production shows NO bank — the screen carries the stimulus and nothing else', () => {
+    // INVERTED 2026-08-19. This asserted the four tiles were on screen, because
+    // the bank was what made the mode a closed (and therefore benched) class.
+    // `open_set_word` cleared its bench and the bank is deleted: the child now
+    // THINKS OF a rhyme instead of reading four words and saying one. Any word
+    // rendered here would be a candidate answer, which is the whole thing this
+    // mode no longer has.
     render(<RhymeStudio data={production()} />);
     for (const word of ['bun', 'run', 'dog', 'book']) {
-      expect(screen.getByText(word)).toBeTruthy();
+      expect(screen.queryByText(word)).toBeNull();
     }
-    expect(screen.queryByRole('button', { name: /^bun$/ })).toBeNull();
+    // The target IS the question and stays on screen.
+    expect(screen.getByText(/sun/i)).toBeTruthy();
   });
 });
 
