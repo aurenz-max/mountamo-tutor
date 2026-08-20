@@ -3126,23 +3126,100 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'ordinal-line',
-    description: 'Interactive ordinal positions activity with a horizontal queue of characters. Students identify positions (1st-10th), match ordinal words to symbols, answer relative position questions, solve story-based word problems, and build sequences from clues. Perfect for teaching ordinal numbers in context. ESSENTIAL for K-1 number sense.',
-    constraints: 'maxPosition 5 for Kindergarten, 10 for Grade 1. Characters array must have distinct emoji. Each challenge needs correctAnswer matching the expected response.',
+    misconceptionScope: 'primitive',
+    description: 'Live tutor-judged ordinal positions (DI modality) on a line of characters in a race, parade, lunch line, train or bookshelf. The Live tutor names which end is the FRONT, asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill and the grade: at Kindergarten they SAY THE NAME of the one in the place the tutor asks for, and at Grade 1 the tutor names a character and they SAY ITS PLACE (identify — one eval mode, band-split, because naming the place is the harder rung and is the vocabulary the standard is about); they READ ONE PLACE SYMBOL ALOUD, one card at a time (match); they SAY THE NAME of the one right before or right after a marked place (relative-position); they LISTEN to a spoken story and SAY the place one character has in it (sequence-story); and they answer WITH THEIR HANDS by putting pictures into places from spoken clues (build-sequence) — there the arrangement IS the answer. Builds the ordinal vocabulary first through tenth by SAYING it. ESSENTIAL for Kindergarten and Grade 1 number sense.',
+    constraints: 'Best for grades K-1. Requires a microphone: four of the five answers are spoken and judged by the Live tutor, and there is no Check button, no Next button, no multiple-choice row, no matching grid and no tap-on-the-line anywhere. Positions run 1-10 so every spoken place word is a single benched word (first..tenth); maxPosition 5 for Kindergarten, up to 10 for Grade 1, and a line shorter than 3 has no ordinal work in it. Character names are read aloud and said back, so they must be plain sayable names, tellable apart by ear, and must never contain a position or a number — a character called First-Place Freddie or Number Three answers the question out loud. Story challenges are HEARD, not read: at most 5 characters, under 60 words, no quotation marks. Build challenges give at most 4 spoken clues, which is what a child can hold from speech. A challenge whose answer key disagrees with its target position, whose printed word and printed symbol are different ordinals, or whose clues leave a gap in the line is discarded before the child ever sees it.',
     tutoring: {
-      taskDescription: 'The student is working through {{totalChallenges}} ordinal-position challenges in a {{context}} context. They are on challenge {{currentChallengeIndex}} ({{challengeType}}): "{{instruction}}". The line has {{characters}} in positions up to {{maxPosition}}.',
-      contextKeys: ['challengeType', 'totalChallenges', 'currentChallengeIndex', 'targetPosition', 'targetOrdinalWord', 'characters', 'context', 'storyText', 'attemptNumber', 'correctAnswer', 'instruction', 'maxPosition', 'gradeBand', 'supportTier'],
+      taskDescription: 'LIVE-JUDGED ordinal position practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the screen, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // ⚠️ 18d, applied at BIRTH: no level of this ladder may OFFER a speakable
+      // line of its own. A quoted hint here is a sanctioned-sounding
+      // replacement for the scripted correction at exactly the moment 18c makes
+      // the model want one — it opens with neither sentinel, so the engine sees
+      // no verdict and the correction counter stalls. The ladder commands script
+      // fidelity; it never supplies an alternative. The click-era ladder here
+      // was a three-rung reveal that ended by counting the answer out for the
+      // child, which is now the CORRECTION's job and must never be improvised
+      // on top of it.
       scaffoldingLevels: {
-        level1: '"Count from the front of the line: first, second, third... Which one is in the spot we need?"',
-        level2: '"Point to each character and count: 1st, 2nd, 3rd. Which one is in the {{targetOrdinalWord}} spot? Remember, {{targetOrdinalWord}} means position number {{targetPosition}} from the front."',
-        level3: '"The {{targetOrdinalWord}} position is number {{targetPosition}} from the front. Start at the first character and count forward: 1st, 2nd, 3rd... stop at {{targetPosition}}. That\'s the one we need!"',
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count the line aloud and never name any part of the answer.',
+        level2: 'A wrong answer is never met with a hint of your own — speak the scripted "My turn:" correction from the cue again, exactly as written, even if you just said it.',
+        level3: 'If the child stays stuck, stay with the script: the correction line counts the line from the front and re-asks for you. Never invent encouragement, a new question, a softer hint, or a counting walk of your own.',
       },
       commonStruggles: [
-        { pattern: 'Student counts from the wrong end of the line', response: 'Remind student that ordinal positions start from the front/left: "We always start counting from the front of the line. Who is first in line?"' },
-        { pattern: 'Student confuses ordinal word with cardinal number', response: 'Connect ordinal to cardinal: "Third means the 3rd one. Count 1, 2, 3 and stop! That\'s the third one."' },
-        { pattern: 'Student selects adjacent position (off by one)', response: 'Guide careful recount: "You are very close! Let\'s count together one more time, touching each character as we go."' },
-        { pattern: 'Student struggles with relative position questions', response: 'Anchor from known position: "You found the 3rd one. Now, what is right before it? Count: 1st, 2nd... that is the one just before 3rd."' },
+        { pattern: 'Long silence', response: 'Silence is the child looking and counting — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
+        { pattern: 'Counts from the wrong end of the line and names the mirror-image one', response: 'This is the mistake the activity is for, and the scripted correction handles it AFTER the attempt is judged: it counts from the front and re-asks. Speak only that line, and never interrupt mid-count.' },
+        { pattern: 'Says the counting number instead of the place word (three for third)', response: 'That says how many, not which one, so it is WRONG however close it sounds: speak the scripted "My turn:" correction, which is where the difference between the two words gets taught.' },
+        { pattern: 'Names the character the question POINTS AT instead of its neighbour', response: 'That is the anchor, not the answer, so it is wrong: speak the scripted correction, which counts to the anchor and then names the one beside it.' },
+        { pattern: 'Answers with a pointing word instead of a name (that one, the next one)', response: 'That does not answer the question, so it is wrong: speak the scripted correction, which asks for the name again.' },
+        { pattern: 'Counts out loud on the way to a place (first, second, third)', response: 'That is the child working, not answering. Only the word they FINISH on is their answer — judge that, and count a correct landing as correct.' },
+        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
+          instruction:
+            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it. '
+            + 'In particular, never count the line out loud before the first ask and never say which end is which beyond what the cue says.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE AND BY GRADE',
+          instruction:
+            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants — this activity asks for two different kinds and you must never assume which. '
+            + 'On identify the answer is EITHER one character name OR one place word, and the cue says which: at Kindergarten the child names the one in the place you asked for, at Grade 1 you name a character and the child says its place. '
+            + 'On match the answer is the PLACE WORD the card shows — first, second, third and so on. '
+            + 'On relative-position the answer is ONE character name, and a pointing word with no name does not answer the question. '
+            + 'On sequence-story the answer is the PLACE WORD one character has in the story you just read. '
+            + 'Wherever the answer is a place word, the plain counting number said on its own — three for third — is WRONG, not close: it says how many rather than which one, and that is the confusion this activity exists to undo. '
+            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
+            + 'On a HANDS item (build-sequence) the child answers by putting the pictures into places, and you are told what line they made and whether it matches. '
+            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
+        },
+        {
+          title: 'THE VERDICT ENDS THE TURN',
+          instruction:
+            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another place, or the next item, '
+            + 'even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong place.',
+        },
+        {
+          title: 'NEVER COUNT THE LINE ALOUD',
+          instruction:
+            'Counting the characters from the front is the one thing this activity trains, so it belongs to the child. '
+            + 'Never count out loud during their turn, never read the place labels off the screen, and never say how many are in the line. '
+            + 'The scripted correction counts it with them, and that is the only time it is ever said.',
+        },
+        {
+          title: 'BUILDING ITEMS ARE SILENT',
+          instruction:
+            'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no naming which picture goes where. '
+            + 'You will be told what line they made and whether it matches; only then do you speak the line the cue gives you.',
+        },
+        {
+          title: 'THE CHILD IS THINKING — WAIT',
+          instruction:
+            'Think time is unbounded. Never fill a silence, never count for them, and never prompt while the child is looking at the line. The silence is theirs.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'HEAR-THE-QUESTION ON DEMAND',
+          instruction:
+            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
+            + 'treat nothing you just heard as an answer, and never say the answer. On a story item that means reading the whole story again, because it is never printed.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
+        },
       ],
     },
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'identify',
@@ -3150,23 +3227,40 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['identify'],
-        description: 'Name ordinal position',
+        // β HELD. The tap became speech, but the answer SET did not change size:
+        // the line is on screen either way, so a child guessing an animal has the
+        // same 1-in-N floor a child tapping one had. What changed is that the
+        // vocabulary now leaves the child's mouth, which is what the mode's own
+        // label always claimed and is not a difficulty tier.
+        description: 'BAND-SPLIT, one eval mode. Kindergarten: the tutor names a place and the child SAYS THE NAME of who is there. Grade 1: the tutor names a character and the child SAYS ITS PLACE — first through tenth, the ordinal vocabulary this mode is named for. Spoken production judged by the Live tutor; nothing on the line is tappable.',
       },
       {
         evalMode: 'match',
         label: 'Match (Scaffold 2)',
-        beta: 2.5,
+        beta: 3.0,
         scaffoldingMode: 2,
         challengeTypes: ['match'],
-        description: 'Connect ordinal to position',
+        // β RAISED 2.5 → 3.0 — a real STRUCTURAL change, not a channel swap.
+        // The word column is deleted, so there is no longer a menu of place
+        // words to match a symbol against; the child must read the symbol and
+        // PRODUCE the word. The click-era column also CONSUMED its entries, so
+        // the last pair of every grid had one option left and needed no reading
+        // at all — that guess floor is gone with it. One judged ask per symbol,
+        // so a correct response now costs one unaided read rather than a
+        // process of elimination across a grid.
+        description: 'Read a place symbol OUT LOUD, one card at a time — 3rd says "third". Unaided production: there is no word column to match against and no grid, so nothing can be reached by elimination.',
       },
       {
         evalMode: 'relative_position',
         label: 'Relative Position (Scaffold 3)',
-        beta: 3.5,
+        beta: 4.0,
         scaffoldingMode: 3,
         challengeTypes: ['relative-position'],
-        description: 'Compare positions (before/after)',
+        // β RAISED 3.5 → 4.0 on the story-talk / letter-spotter precedent: a
+        // 1-of-4 MENU was deleted outright, so the guess floor went with it and
+        // the child must produce the name unaided. The marked reference place
+        // survives as the support-tier lever it always was, withdrawn at hard.
+        description: 'SAY THE NAME of the one right before or right after a marked place. Spoken production judged by the Live tutor; the multiple-choice names are deleted.',
       },
       {
         evalMode: 'sequence_story',
@@ -3174,7 +3268,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['sequence-story'],
-        description: 'Apply ordinals in context',
+        // β HELD, and the mode's IDENTITY is what actually changed. It used to
+        // be the same drag-into-slots interaction as build_sequence with the
+        // clues written as prose — two eval modes measuring one interaction. It
+        // is a LISTENING task now: the tutor reads the story, nothing prints,
+        // and the child says a place. The demand moved channel rather than
+        // level — narrower ask, no text to re-read — so the tier stands.
+        description: 'LISTEN to a spoken story about who is where, then SAY the place one character has in it. The story is never printed — a pre-reader could not use it and a reader who re-reads it is not listening — and tap-to-hear reads the whole story again. Applying ordinals in context, by ear.',
       },
       {
         evalMode: 'build_sequence',
@@ -3182,7 +3282,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['build-sequence'],
-        description: 'Construct ordering from scratch',
+        // β HELD — the same put-them-in-places surface; only the Check button
+        // became a stillness close, and a part-filled line now commits (and is
+        // corrected) where it used to be refused with a nudge. The clues are
+        // SPOKEN rather than printed, which is why at most four of them ship.
+        description: 'Put the pictures into their places from clues the tutor SAYS — at most four, which is what a child can hold from speech. The arrangement IS the answer, so this one is answered with hands; the tutor judges the committed line.',
       },
     ],
     supportsEvaluation: true,

@@ -7,6 +7,42 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import {
+  isSpeakableStory,
+  isUsableCharacterName,
+  MAX_POSITION,
+  MAX_SPOKEN_CLUES,
+  MIN_LINE_LENGTH,
+  ordinalSymbolFor,
+  ordinalWordFor,
+  positionOfSymbol,
+  ORDINAL_WORDS,
+  ORDINAL_SYMBOLS,
+} from "../../primitives/visual-primitives/math/ordinalLineScript";
+import { namesEarSeparable } from "../../primitives/visual-primitives/math/spokenNameGates";
+
+// ---------------------------------------------------------------------------
+// ⭐ THE GATES ARE IMPORTED, NEVER COPIED (add-di-loop step 4).
+// ---------------------------------------------------------------------------
+// Every predicate this file uses to keep or drop content is the SAME function
+// the judged pack runs on the other side of the wire. letter-spotter is why:
+// its two hand-synced copies of a sayability rule disagreed LIVE (90 chars
+// against 100) and neither side could be trusted to describe the other.
+//
+// The rules that bite hardest here, and what each one stops reaching a child:
+//   isUsableCharacterName  a name that STATES A POSITION ("First-Place Freddie",
+//                          "Number Three") answers the spoken ask out loud - and
+//                          on the Grade 1 direction it IS the answer, verbatim.
+//   namesEarSeparable      two names the judge cannot tell apart have no honest
+//                          verdict between them.
+//   isSpeakableStory       the story is the one generated string the tutor reads
+//                          VERBATIM: a double quote in it closes the
+//                          `Say exactly: "..."` span, and a sentence opening
+//                          "Yes," is read by the engine as a verdict.
+//   MAX_SPOKEN_CLUES       printed clues could run to one per character; SPOKEN,
+//                          four is the ceiling a child can hold.
+//   MAX_STORY_CAST         a listening task over ten characters is not a harder
+//                          task, it is an unanswerable one.
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -431,6 +467,13 @@ ${config?.maxPosition ? `Max position: ${config.maxPosition}` : ''}
 
 Use unique animal characters with fun emojis. Title should be engaging for young children.
 showOrdinalLabels should be true.
+
+CHARACTER NAMES ARE READ ALOUD BY A TUTOR AND SAID BACK BY A CHILD, so:
+- Use a plain animal name only ("Rabbit", "Turtle", "Red Fox"). One to three words.
+- NEVER put a position or a number in a name: no "First-Place Freddie", no "Number Three",
+  no "Winner Wanda", no digits. The name would say the answer out loud.
+- No two names may sound alike or share their only distinctive word ("Fox" and "Red Fox"
+  cannot both be on the line).
 `;
 
   const result = await ai.models.generateContent({
@@ -450,7 +493,12 @@ showOrdinalLabels should be true.
     data.maxPosition = data.gradeBand === 'K' ? 5 : 10;
   }
   if (data.gradeBand === 'K' && data.maxPosition > 5) data.maxPosition = 5;
-  if (data.maxPosition > 10) data.maxPosition = 10;
+  // MAX_POSITION is the BENCHED spoken window (first..tenth) and MIN_LINE_LENGTH
+  // is the shortest line with ordinal work in it. Both are the judged pack's
+  // constants, imported so a capacity change here cannot launder an unbenched
+  // response class into a spoken ask.
+  if (data.maxPosition > MAX_POSITION) data.maxPosition = MAX_POSITION;
+  if (data.maxPosition < MIN_LINE_LENGTH) data.maxPosition = MIN_LINE_LENGTH;
 
   // Position window (topic/intent): the line must be long enough to contain the
   // window's last position — a "6th through 10th" lesson needs a 10-long lineup so
@@ -487,16 +535,44 @@ showOrdinalLabels should be true.
   if (!Array.isArray(data.characters) || data.characters.length === 0) {
     data.characters = defaultCharacters.slice(0, data.maxPosition);
   }
-  // Pad if LLM returned fewer than maxPosition
-  while (data.characters.length < data.maxPosition && data.characters.length < defaultCharacters.length) {
-    const next = defaultCharacters.find(d => !data.characters.some((c: { name: string }) => c.name === d.name));
-    if (next) data.characters.push(next);
-    else break;
+
+  // ⭐ THE LINE IS A SPOKEN CLOSED SET NOW. Every name here is said by the
+  // tutor and said back by the child, so a name that states a position answers
+  // the ask out loud and a name the judge cannot separate by ear has no honest
+  // verdict against its neighbour. Both predicates are the judged pack's own,
+  // imported — a name refused here is exactly a name the build gate would drop.
+  //
+  // Refused names are REPLACED from the default cast rather than dropped: the
+  // characters are the SETTING, not the answer key, and a five-long lineup with
+  // two gaps in it is a broken picture. Keep-or-drop governs ITEMS, and every
+  // item still faces the same gates on the other side of the wire.
+  const keptCharacters: Array<{ name: string; emoji: string }> = [];
+  const admit = (c: { name?: unknown; emoji?: unknown }): boolean => {
+    if (!isUsableCharacterName(c?.name) || typeof c?.emoji !== 'string' || !c.emoji) return false;
+    const name = (c.name as string).trim();
+    if (!namesEarSeparable([...keptCharacters.map(k => k.name), name])) return false;
+    keptCharacters.push({ name, emoji: c.emoji });
+    return true;
+  };
+  const refused: string[] = [];
+  for (const c of data.characters as Array<{ name?: unknown; emoji?: unknown }>) {
+    if (keptCharacters.length >= data.maxPosition) break;
+    if (!admit(c)) refused.push(String(c?.name ?? '?'));
   }
-  // Trim if too many
-  if (data.characters.length > data.maxPosition) {
-    data.characters = data.characters.slice(0, data.maxPosition);
+  for (const d of defaultCharacters) {
+    if (keptCharacters.length >= data.maxPosition) break;
+    admit(d);
   }
+  if (refused.length > 0) {
+    console.log(
+      `[OrdinalLine] refused ${refused.length} character name(s) as unsayable, `
+      + `position-carrying or ear-confusable: ${refused.join(', ')}`,
+    );
+  }
+  data.characters = keptCharacters;
+  // The line can only shrink if the default cast ran out too; a line below the
+  // minimum has no ordinal work in it and the pack would drop every challenge.
+  if (data.characters.length < data.maxPosition) data.maxPosition = data.characters.length;
 
   return data as SetupResult;
 }
@@ -529,7 +605,7 @@ async function generateIdentify(setup: SetupResult, topic: string, gradeLevel: s
 Create an IDENTIFY challenge for an ordinal positions activity about "${topic}".
 ${sharedContext(setup, gradeLevel, window)}
 
-The student sees the character lineup and must tap the character at a specific ordinal position.
+The student sees the character lineup and SAYS the answer out loud — there is no tapping.
 - Pick a position between ${lo} and ${hi}
 - Write a fun instruction like "Tap the third animal!"
 - correctAnswer is the position number as a string (e.g., "3")
@@ -547,10 +623,16 @@ The student sees the character lineup and must tap the character at a specific o
   // Validate — clamp into the question window (falls back to a mid-window default).
   if (!data.targetPosition || data.targetPosition < lo || data.targetPosition > hi) {
     data.targetPosition = Math.min(Math.max(lo, Math.min(3, hi)), hi);
-    data.targetOrdinalWord = ORDINAL_WORDS[data.targetPosition - 1];
-    data.targetOrdinalSymbol = ORDINAL_SYMBOLS[data.targetPosition - 1];
   }
-  if (!data.correctAnswer) data.correctAnswer = String(data.targetPosition);
+  // ⭐ THE KEY AND THE TARGET POSITION ARE ONE FACT, DERIVED ONCE. The click
+  // era only filled `correctAnswer` when it was MISSING, so a model that emitted
+  // both could disagree with itself: the checker graded against the key and the
+  // line was drawn from the target. Under a spoken ask that is the tutor
+  // refusing a child who counted correctly, so the judged build gate DROPS the
+  // disagreement — which means nothing may reach it disagreeing.
+  data.targetOrdinalWord = ordinalWordFor(data.targetPosition);
+  data.targetOrdinalSymbol = ordinalSymbolFor(data.targetPosition);
+  data.correctAnswer = String(data.targetPosition);
 
   return data;
 }
@@ -563,7 +645,7 @@ async function generateMatch(setup: SetupResult, topic: string, gradeLevel: stri
 Create a MATCH challenge for an ordinal positions activity about "${topic}".
 ${sharedContext(setup, gradeLevel, window)}
 
-The student matches ordinal words to their symbols (e.g., "first" → "1st").
+The student is shown ONE place symbol at a time and reads it out loud (e.g. "3rd" → "third").
 - Provide ${pairCount} matchPairs
 - Only use ordinals between ${lo}th and ${hi}th
 - Instruction should be encouraging
@@ -578,10 +660,22 @@ The student matches ordinal words to their symbols (e.g., "first" → "1st").
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data) return fallbackMatch(setup);
 
-  // Validate matchPairs
+  // ⭐ THE PRINTED WORD AND THE PRINTED SYMBOL MUST BE THE SAME ORDINAL.
+  // The child now READS the symbol aloud, so a pair like { word: "third",
+  // symbol: "4th" } instructs the tutor to refuse the right answer. The click
+  // era only ever compared the two strings the model emitted against each
+  // other; nothing checked either against the ordinal sequence. Bad pairs are
+  // dropped, and a grid with none left degrades to the canonical fallback.
   if (!Array.isArray(data.matchPairs) || data.matchPairs.length === 0) {
     return fallbackMatch(setup);
   }
+  data.matchPairs = data.matchPairs.filter((pair: { word?: unknown; symbol?: unknown }) => {
+    const pos = positionOfSymbol(pair?.symbol);
+    if (!pos || pos > setup.maxPosition) return false;
+    return typeof pair?.word === 'string'
+      && pair.word.trim().toLowerCase() === ordinalWordFor(pos);
+  });
+  if (data.matchPairs.length === 0) return fallbackMatch(setup);
 
   return data;
 }
@@ -595,7 +689,7 @@ async function generateRelative(setup: SetupResult, topic: string, gradeLevel: s
 Create a RELATIVE-POSITION challenge for an ordinal positions activity about "${topic}".
 ${sharedContext(setup, gradeLevel, window)}
 
-Ask "Who is BEFORE/AFTER the Nth character?" The student picks from multiple-choice options.
+Ask "Who is BEFORE/AFTER the Nth character?" The student SAYS the name out loud.
 - Pick relativeQuery: "before" or "after"
 - Pick a targetPosition between ${refLo} and ${refHi} (so before/after exists on the line)
 - Provide 3-4 options (character names from the lineup)
@@ -644,20 +738,25 @@ Ask "Who is BEFORE/AFTER the Nth character?" The student picks from multiple-cho
 }
 
 async function generateStory(setup: SetupResult, topic: string, gradeLevel: string) {
-  const charNames = setup.characters.map(c => c.name).join(', ');
+  // The story is HEARD, not read (twice: the ask and the correction), so its
+  // cast is capped well below the visible line.
+  const storyCast = setup.characters.slice(0, MAX_STORY_CAST);
+  const charNames = storyCast.map(c => c.name).join(', ');
   const prompt = `
 Create a SEQUENCE-STORY challenge for an ordinal positions activity about "${topic}".
 ${sharedContext(setup, gradeLevel)}
 
-Write a fun 2-3 sentence story about ALL the characters (${charNames}) in the "${setup.context}".
-The story MUST mention every character and clearly state their ordinal position (first, second, third, etc.).
-The student will read the story, then drag each character emoji into the correct position.
+Write a fun 2-3 sentence story about these characters (${charNames}) in the "${setup.context}".
+The story MUST mention every one of them and clearly state their ordinal position (first, second, third, etc.).
+A TUTOR READS THIS STORY ALOUD to a five-year-old, who then answers a question about it out loud.
+So: no quotation marks anywhere, no brackets, plain sentences, and never begin a sentence with "Yes" or "My turn".
+Keep it under 60 words.
 
-- instruction: a warm instruction like "Read the story and drag each animal to their correct spot!"
-- storyText: the 2-3 sentence story with ALL characters in ordinal positions
-- clues: an array mapping EVERY character to their position as described in the story
+- instruction: a warm instruction like "Listen to the story, then say the place I ask about."
+- storyText: the 2-3 sentence story with every character in an ordinal position
+- clues: an array mapping EVERY character above to their position as described in the story
   e.g. [{"character": "Lion", "position": 1}, {"character": "Monkey", "position": 2}, ...]
-  Every character from the lineup MUST appear exactly once. Positions 1 through ${setup.maxPosition}.
+  Each of those characters MUST appear exactly once, at positions 1 through ${storyCast.length}.
 `;
 
   const result = await ai.models.generateContent({
@@ -669,22 +768,29 @@ The student will read the story, then drag each character emoji into the correct
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data) return fallbackStory(setup);
 
-  if (!data.storyText) return fallbackStory(setup);
+  // ⭐ THE STORY IS SPOKEN VERBATIM, so it faces the pack's own speech gate
+  // rather than a truthiness check: a double quote in it CLOSES the
+  // `Say exactly: "..."` span and turns the rest of the cue into judge-side
+  // prose, and a sentence opening "Yes," is read by the engine as a verdict.
+  if (!isSpeakableStory(data.storyText)) return fallbackStory(setup);
 
   // Validate clues reference real characters and valid positions
-  const charNameSet = new Set(setup.characters.map(c => c.name));
+  const charNameSet = new Set(storyCast.map(c => c.name));
   if (!Array.isArray(data.clues) || data.clues.length === 0) return fallbackStory(setup);
   data.clues = data.clues.filter(
     (clue: { character: string; position: number }) =>
-      charNameSet.has(clue.character) && clue.position >= 1 && clue.position <= setup.maxPosition
+      charNameSet.has(clue.character) && clue.position >= 1 && clue.position <= storyCast.length
   );
-  if (data.clues.length < setup.characters.length) return fallbackStory(setup);
+  if (data.clues.length < storyCast.length) return fallbackStory(setup);
 
   return data;
 }
 
 async function generateBuild(setup: SetupResult, topic: string, gradeLevel: string) {
-  const clueCount = setup.gradeBand === 'K' ? '3-4' : '4-6';
+  // The clues are SPOKEN now, not printed, so the ceiling is what a child can
+  // hold in their head rather than what fits on a card.
+  const maxClues = Math.min(MAX_SPOKEN_CLUES, setup.characters.length);
+  const clueCount = setup.gradeBand === 'K' ? `3-${Math.min(3, maxClues)}` : `3-${maxClues}`;
   const charNames = setup.characters.map(c => c.name).join(', ');
   const prompt = `
 Create a BUILD-SEQUENCE challenge for an ordinal positions activity about "${topic}".
@@ -714,6 +820,15 @@ Write an encouraging instruction.
       charNameSet.has(clue.character) && clue.position >= 1 && clue.position <= setup.maxPosition
   );
   if (data.clues.length === 0) return fallbackBuild(setup);
+  // The judged pack needs a CONTIGUOUS arrangement (positions exactly 1..n) and
+  // no more clues than a child can hold from speech. A model that emits
+  // "second and fourth" has left slots nobody is told about, which under a Check
+  // button was merely odd and out loud is unanswerable — so we rebuild the
+  // arrangement from the model's chosen CAST rather than shipping a gappy one.
+  const cast = data.clues
+    .slice(0, MAX_SPOKEN_CLUES)
+    .map((clue: { character: string }) => clue.character);
+  data.clues = cast.map((character: string, i: number) => ({ character, position: i + 1 }));
 
   return data;
 }
@@ -721,29 +836,43 @@ Write an encouraging instruction.
 // ============================================================================
 // Fallback Defaults (per-type)
 // ============================================================================
+//
+// ⚠️ A FALLBACK THAT FAILS THE BUILD GATES SHIPS AN EMPTY SESSION, NOT A
+// DEGRADED ONE (add-di-loop §7). This generator is on the 33-generator
+// silent-fallback list and every one of these paths runs when a Gemini call
+// returns nothing — under a Check button a slightly-off fallback was still a
+// playable challenge; under a judged loop the pack DROPS it and the child gets
+// a blank card. compare-objects hit exactly this (its `order_three` fallback was
+// pre-sorted into the answer order and the gate dropped it), so every fallback
+// below is built to pass: canonical word/symbol pairs, a key that agrees with
+// its target position, a capped clue list, and a story short enough to speak.
+
+/** The story cast ceiling. A five-item auditory sequence is already at the
+ *  ceiling of K-1 working memory, and it is also what keeps the spoken story
+ *  inside `isSpeakableStory`'s word budget — the story is heard twice (the ask
+ *  and the correction), never read. */
+const MAX_STORY_CAST = 5;
 
 function fallbackIdentify(setup: SetupResult) {
   const pos = Math.min(3, setup.maxPosition);
-  const ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
-  const ORDINAL_SYMBOLS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
   return {
-    instruction: `Tap the ${ORDINAL_WORDS[pos - 1]} animal in the ${setup.context}!`,
+    instruction: `Say who is ${ordinalWordFor(pos)} in the ${setup.context}.`,
     targetPosition: pos,
-    targetOrdinalWord: ORDINAL_WORDS[pos - 1],
-    targetOrdinalSymbol: ORDINAL_SYMBOLS[pos - 1],
+    targetOrdinalWord: ordinalWordFor(pos),
+    targetOrdinalSymbol: ordinalSymbolFor(pos),
+    // The key and the target position are ONE fact. The judged build gate drops
+    // an item where they disagree, so they are derived from one source here.
     correctAnswer: String(pos),
   };
 }
 
 function fallbackMatch(setup: SetupResult) {
-  const ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth'];
-  const ORDINAL_SYMBOLS = ['1st', '2nd', '3rd', '4th', '5th'];
   const count = Math.min(setup.gradeBand === 'K' ? 3 : 5, setup.maxPosition);
   return {
-    instruction: 'Match each ordinal word to its symbol!',
+    instruction: 'Read each place symbol out loud.',
     matchPairs: Array.from({ length: count }, (_, i) => ({
-      word: ORDINAL_WORDS[i],
-      symbol: ORDINAL_SYMBOLS[i],
+      word: ordinalWordFor(i + 1),
+      symbol: ordinalSymbolFor(i + 1),
     })),
   };
 }
@@ -756,43 +885,41 @@ function fallbackRelative(setup: SetupResult) {
     if (c.name !== afterChar.name && options.length < 3) options.push(c.name);
   }
   return {
-    instruction: `Who is right AFTER the second animal?`,
+    instruction: `Say who is right after the second one.`,
     targetPosition: pos,
     targetOrdinalWord: 'second',
     targetOrdinalSymbol: '2nd',
     relativeQuery: 'after' as const,
+    // Legacy multiple-choice payload. The DI stage never renders it and the
+    // judged item never carries it — kept only so a cached challenge from the
+    // click era still deserialises.
     options,
     correctAnswer: afterChar.name,
   };
 }
 
 function fallbackStory(setup: SetupResult) {
-  const chars = setup.characters;
-  const ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
-
-  // Build a story mentioning every character in order
+  const chars = setup.characters.slice(0, MAX_STORY_CAST);
   const storyParts = chars.map((c, i) =>
-    `${c.name} ${i === 0 ? 'leads the way in' : 'is in'} ${ORDINAL_WORDS[i]} place`
+    `${c.name} ${i === 0 ? 'leads the way in' : 'is in'} ${ordinalWordFor(i + 1)} place`,
   );
-  const storyText = `The animals are lining up for the ${setup.context}! ${storyParts.join('. ')}.`;
-
   return {
-    instruction: 'Read the story and drag each animal to their correct spot!',
-    storyText,
+    instruction: 'Listen to the story, then say the place I ask about.',
+    storyText: `The animals are lining up for the ${setup.context}! ${storyParts.join('. ')}.`,
     clues: chars.map((c, i) => ({ character: c.name, position: i + 1 })),
   };
 }
 
 function fallbackBuild(setup: SetupResult) {
-  const chars = setup.characters;
-  const clueCount = Math.min(setup.gradeBand === 'K' ? 3 : 4, chars.length);
-  const clues = [];
-  for (let i = 0; i < clueCount; i++) {
-    clues.push({ character: chars[i].name, position: i + 1 });
-  }
+  // Capped at what a child can hold FROM SPEECH — the clues are no longer
+  // printed, so the click era's "one clue per character" is unanswerable.
+  const clueCount = Math.min(setup.gradeBand === 'K' ? 3 : 4, MAX_SPOKEN_CLUES, setup.characters.length);
   return {
-    instruction: 'Place the animals in the correct order using the clues!',
-    clues,
+    instruction: 'Put the animals in their places.',
+    clues: setup.characters.slice(0, clueCount).map((c, i) => ({
+      character: c.name,
+      position: i + 1,
+    })),
   };
 }
 
@@ -836,15 +963,6 @@ function resolveCount(type: string): number {
     Math.min(MAX_INSTANCE_COUNT, fromTable ?? DEFAULT_INSTANCE_COUNT),
   );
 }
-
-const ORDINAL_WORDS = [
-  'first', 'second', 'third', 'fourth', 'fifth',
-  'sixth', 'seventh', 'eighth', 'ninth', 'tenth',
-];
-const ORDINAL_SYMBOLS = [
-  '1st', '2nd', '3rd', '4th', '5th',
-  '6th', '7th', '8th', '9th', '10th',
-];
 
 function shuffleInPlace<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -1081,7 +1199,9 @@ function buildIdentifyChallenges(
     id: `c${i + 1}`,
     type: 'identify' as const,
     characters: setup.characters,
-    instruction: `Tap the ${ORDINAL_WORDS[pos - 1]} ${noun} in the ${setup.context}!`,
+    // Not rendered — the tutor speaks the ask. Kept honest so the tester and
+    // any future reader see the real task rather than the click era's.
+    instruction: `Say who is ${ORDINAL_WORDS[pos - 1]} in the ${setup.context}.`,
     targetPosition: pos,
     targetOrdinalWord: ORDINAL_WORDS[pos - 1],
     targetOrdinalSymbol: ORDINAL_SYMBOLS[pos - 1],
@@ -1122,7 +1242,7 @@ function buildMatchChallenges(
       id: `c${challenges.length + 1}`,
       type: 'match' as const,
       characters: setup.characters,
-      instruction: 'Match each ordinal word to its symbol!',
+      instruction: 'Read each place symbol out loud.',
       matchPairs: positions.map((p) => ({
         word: ORDINAL_WORDS[p - 1],
         symbol: ORDINAL_SYMBOLS[p - 1],
@@ -1190,7 +1310,7 @@ function buildRelativeChallenges(
       id: `c${i + 1}`,
       type: 'relative-position' as const,
       characters: setup.characters,
-      instruction: `Who is right ${t.query === 'before' ? 'BEFORE' : 'AFTER'} the ${ORDINAL_WORDS[t.pos - 1]} character?`,
+      instruction: `Say who is right ${t.query} the ${ORDINAL_WORDS[t.pos - 1]} one.`,
       targetPosition: t.pos,
       targetOrdinalWord: ORDINAL_WORDS[t.pos - 1],
       targetOrdinalSymbol: ORDINAL_SYMBOLS[t.pos - 1],
@@ -1211,8 +1331,14 @@ function buildBuildSequenceChallenges(
   // floor = the grade base clue count (never drops below it → stays a real
   // ordering task); cap = the full character set. countByTier maps the
   // clueCountBias (easy=min, medium=mid, hard=max) onto [minClues, maxClues].
-  const minClues = Math.min(setup.gradeBand === 'K' ? 3 : 4, setup.characters.length);
-  const maxClues = setup.characters.length;
+  // ⭐ THE CEILING MOVED WHEN THE CLUES STOPPED BEING PRINTED. `hard` used to
+  // mean one clue per character — up to ten — which is fine to READ and
+  // impossible to HOLD from speech. The tier lever survives intact (easy = the
+  // grade base, hard = the most a child can carry) with a spoken ceiling on it,
+  // and `scrambleClues` is what actually makes hard hard now: the same four
+  // clues, said out of order.
+  const minClues = Math.min(setup.gradeBand === 'K' ? 3 : 4, setup.characters.length, MAX_SPOKEN_CLUES);
+  const maxClues = Math.min(setup.characters.length, MAX_SPOKEN_CLUES);
   const shape = tier ? resolveProblemShape('build-sequence', tier) : null;
   const clueCount = tier
     ? Math.min(countByTier(minClues, maxClues, tier), setup.characters.length)
@@ -1240,7 +1366,7 @@ function buildBuildSequenceChallenges(
       id: `c${challenges.length + 1}`,
       type: 'build-sequence' as const,
       characters: setup.characters,
-      instruction: 'Place the animals in the correct order using the clues!',
+      instruction: 'Put the animals in their places.',
       clues: displayClues,
       correctAnswer: 'sequence_complete',
     });
@@ -1278,7 +1404,10 @@ Write a fun 2-3 sentence story in the "${setup.context}" using this EXACT charac
 ${orderingHint}.
 
 Every character must be mentioned with their ordinal position word (first, second, third, etc.).
-Vary the wording — do not just say "X is first, Y is second."${tierPromptSection}
+Vary the wording, and do not simply list them in the same frame each time.
+A TUTOR READS THIS ALOUD to a five-year-old, who then answers out loud: no quotation marks
+anywhere, no brackets, plain sentences, under 60 words, and never begin a sentence with
+Yes or with My turn.${tierPromptSection}
 Return only:
 - instruction: a warm, brief instruction
 - storyText: the 2-3 sentence story matching the ordering above
@@ -1291,9 +1420,11 @@ Return only:
       config: { responseMimeType: 'application/json', responseSchema: storySchema },
     });
     const data = result.text ? JSON.parse(result.text) : null;
-    if (!data?.storyText) return fallbackStoryWithOrdering(setup, sorted);
+    // The pack's own speech gate, not a truthiness check — this string is read
+    // out VERBATIM by the tutor (see the import docblock).
+    if (!isSpeakableStory(data?.storyText)) return fallbackStoryWithOrdering(setup, sorted);
     return {
-      instruction: data.instruction || 'Read the story and drag each animal to their correct spot!',
+      instruction: data.instruction || 'Listen to the story, then say the place I ask about.',
       storyText: data.storyText,
     };
   } catch {
@@ -1309,7 +1440,7 @@ function fallbackStoryWithOrdering(
     `${c.character} ${i === 0 ? 'leads the way in' : 'is in'} ${ORDINAL_WORDS[c.position - 1]} place`,
   );
   return {
-    instruction: 'Read the story and drag each animal to their correct spot!',
+    instruction: 'Listen to the story, then say the place I ask about.',
     storyText: `The animals are lining up for the ${setup.context}! ${parts.join('. ')}.`,
   };
 }
@@ -1325,12 +1456,16 @@ async function buildStoryChallenges(
   // Structured-output Gemini converges per call (PRD §6a #2), so variance
   // must come from pre-randomized clues, not from prompt phrasing.
   const seenKeys = new Set<string>();
-  const natural = setup.characters.map((c, i) => ({ character: c.name, position: i + 1 }));
+  // The cast is capped: the story is HEARD (in the ask and again in the
+  // correction), never read, so a ten-character narrative is not a harder
+  // listening task, it is an unanswerable one.
+  const storyCast = setup.characters.slice(0, MAX_STORY_CAST);
+  const natural = storyCast.map((c, i) => ({ character: c.name, position: i + 1 }));
 
   // structural lever: how scrambled the story order is vs. the lineup. easy favours
   // near-sorted orderings (story tracks the line), hard favours high-inversion ones.
   // Measured as inversions of each character's story-position in lineup order.
-  const lineupIndex = new Map(setup.characters.map((c, i) => [c.name, i]));
+  const lineupIndex = new Map(storyCast.map((c, i) => [c.name, i]));
   const inversionsOf = (ord: Array<{ character: string; position: number }>): number => {
     const vec = [...ord]
       .sort((a, b) => (lineupIndex.get(a.character) ?? 0) - (lineupIndex.get(b.character) ?? 0))
@@ -1347,7 +1482,7 @@ async function buildStoryChallenges(
     let safety = 0;
     while (orderings.length < count && safety < count * 30) {
       safety++;
-      const shuffled = shuffleInPlace([...setup.characters]);
+      const shuffled = shuffleInPlace([...storyCast]);
       const clues = shuffled.map((c, i) => ({ character: c.name, position: i + 1 }));
       const key = clues.map((c) => c.character).join('|');
       if (seenKeys.has(key)) continue;
@@ -1361,7 +1496,7 @@ async function buildStoryChallenges(
     let safety = 0;
     while (pool.length < count * 4 && safety < count * 60) {
       safety++;
-      const shuffled = shuffleInPlace([...setup.characters]);
+      const shuffled = shuffleInPlace([...storyCast]);
       const clues = shuffled.map((c, i) => ({ character: c.name, position: i + 1 }));
       const key = clues.map((c) => c.character).join('|');
       if (seenKeys.has(key)) continue;
