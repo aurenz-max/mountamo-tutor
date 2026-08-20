@@ -75,8 +75,8 @@ const makeData = (gradeLevel: string): WordFlipData => ({
   challengeType: 'plural_s',
   gradeLevel,
   challenges: [
-    { id: 'wf1', type: 'plural_s', singular: 'dog', answer: 'dogs', emoji: '🐕', count: 3 },
-    { id: 'wf2', type: 'plural_s', singular: 'cat', answer: 'cats', emoji: '🐈', count: 2 },
+    { id: 'wf1', type: 'plural_s', sourceWord: 'dog', answer: 'dogs', emoji: '🐕', count: 3 },
+    { id: 'wf2', type: 'plural_s', sourceWord: 'cat', answer: 'cats', emoji: '🐈', count: 2 },
   ],
 });
 

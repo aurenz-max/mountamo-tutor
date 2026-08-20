@@ -2458,7 +2458,7 @@ export interface StoryTalkMetrics extends BasePrimitiveMetrics {
 
 export interface WordFlipMetrics extends BasePrimitiveMetrics {
   type: 'word-flip';
-  challengeType: 'plural_s'; // union widens when /add-eval-modes builds the ladder
+  challengeType: 'plural_s' | 'plural_es' | 'plural_y' | 'irregulars' | 'past_ed' | 'past_irregular' | 'mixed';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total tries across all challenges

@@ -2958,17 +2958,17 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'word-flip',
     description:
-      'Spoken "one → many" plural practice with a live Direct Instruction tutor. GRAMMAR / oral language for K-1 '
-      + '(regular -s plurals) — NOT a phonics or decoding primitive (never select for CVC-decoding, letter-sound, '
+      'Spoken word-transformation practice with a live Direct Instruction tutor. GRAMMAR / oral language for K-2 '
+      + '(plural nouns and past-tense verbs) — NOT a phonics or decoding primitive (never select for CVC-decoding, letter-sound, '
       + 'blending, or spelling objectives; route those to cvc-speller / word-workout / phonics-blender). A '
-      + 'counted-picture frame shows one object then several ("one dog 🐕 → three 🐕🐕🐕 ___?"); the tutor names the '
-      + 'one thing, says how many there are now, waits, and the child SAYS THE NEW WORD ALOUD ("dogs"). The tutor '
+      + 'before/after frame shows either one→many ("dog → dogs") or today→yesterday ("jump → jumped"); the tutor '
+      + 'names the source frame, waits, and the child SAYS THE CHANGED WORD ALOUD. The tutor '
       + 'judges the answer from the audio and its own affirmation moves the lesson on. The one-thing word is on '
       + 'screen and tappable to hear; there are no answer chips and nothing to click to advance. Requires a '
-      + 'microphone. Teaches regular -s plural formation (singular/plural nouns, "more than one"). ESSENTIAL for '
-      + 'Kindergarten Language Arts grammar.',
+      + 'microphone. Teaches regular and irregular noun plurals plus regular -ed and common irregular past forms. '
+      + 'ESSENTIAL for early-elementary Language Arts grammar.',
     constraints:
-      'GRAMMAR objectives only (plural / "more than one" / singular-vs-plural). Do NOT route decoding/CVC/phonics/spelling objectives here — the noun pool is chosen for clean -s plural formation, not for a target vowel or decodability, so it cannot honor a decoding scope. Covers ONLY regular -s plurals at birth (no -es, no irregular plurals — those modes come later). Nouns must be concrete, picturable words with a clear emoji so pre-readers can play. The manifest must NOT supply specific per-challenge words — the generator authors the noun pool and code assembles the plural_s challenges deterministically. Spoken answers — requires the live tutor and a microphone.',
+      'GRAMMAR objectives only (plural nouns or past-tense verbs). Do NOT route decoding/CVC/phonics/spelling objectives here — the pool is chosen for honest morphology, not decodability. Modes cover regular -s, regular -es, consonant-y → -ies, common irregular plurals, add-only -ed verbs, and code-owned irregular past forms. The -ies and past modes are Grade 1-2 extensions; keep K objectives on -s/-es and familiar irregular plurals. Every noun or action must be concrete and picturable. The manifest must NOT supply per-challenge words — the generator authors typed candidates and code validates and derives every answer deterministically. Spoken answers require the live tutor and a microphone.',
     // ── DI MODALITY, PURELY VERBAL (2026-08-09) — third literacy port after
     // phonics-blender and sound-swap, same two user rulings. The tutor owns the
     // clock and the task is spoken end to end: it models the rule on a noun this
@@ -2987,28 +2987,89 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // sentence begins with "Yes" or with "My turn", or the engine's
     // sentence-scoped verdict scan would classify a phantom verdict.
     audioInput: { manual_activity: true },
+    evalModes: [
+      {
+        evalMode: 'plural_s',
+        label: 'Add -s (Tier 1)',
+        beta: 1.5,
+        discrimination: 1.6,
+        scaffoldingMode: 1,
+        challengeTypes: ['plural_s'],
+        description:
+          'Produce regular plurals formed by adding only -s to a familiar pictured noun (dog → dogs).',
+      },
+      {
+        evalMode: 'plural_es',
+        label: 'Add -es (Tier 3)',
+        beta: 3.0,
+        discrimination: 1.6,
+        scaffoldingMode: 3,
+        challengeTypes: ['plural_es'],
+        description:
+          'Produce regular plurals for nouns ending in s, x, ch, or sh by adding -es (bus → buses; dish → dishes).',
+      },
+      {
+        evalMode: 'past_ed',
+        label: 'Add -ed (Tier 3)',
+        beta: 3.5,
+        discrimination: 1.6,
+        scaffoldingMode: 3,
+        challengeTypes: ['past_ed'],
+        description:
+          'Produce the past form of familiar action words by adding only -ed (jump → jumped; walk → walked).',
+      },
+      {
+        evalMode: 'plural_y',
+        label: 'Change -y to -ies (Tier 4)',
+        beta: 4.0,
+        discrimination: 1.6,
+        scaffoldingMode: 4,
+        challengeTypes: ['plural_y'],
+        description:
+          'Produce plurals of consonant-y nouns by changing y to -ies (baby → babies; puppy → puppies).',
+      },
+      {
+        evalMode: 'irregulars',
+        label: 'Irregular Plurals (Tier 4)',
+        beta: 5.0,
+        discrimination: 1.6,
+        scaffoldingMode: 4,
+        challengeTypes: ['irregulars'],
+        description:
+          'Recall and produce common irregular plural forms that cannot be made by appending -s or -es (mouse → mice).',
+      },
+      {
+        evalMode: 'past_irregular',
+        label: 'Irregular Past (Tier 5)',
+        beta: 5.5,
+        discrimination: 1.6,
+        scaffoldingMode: 5,
+        challengeTypes: ['past_irregular'],
+        description:
+          'Recall and produce common irregular past forms that cannot be made by appending -ed (run → ran; go → went).',
+      },
+    ],
     tutoring: {
       taskDescription:
-        'Live-judged Direct Instruction plural practice for a young child. The frame shows ONE of a thing and then '
-        + 'several of it, and the child SAYS the more-than-one word aloud. Right now the one-thing word is '
-        + '"{{singular}}", the many-side shows {{countWord}} of them, and the word the child has to produce is '
+        'Live-judged Direct Instruction word-transformation practice for a young child. The frame is '
+        + '"{{transformationFrame}}": the source word is "{{sourceWord}}", and the child SAYS its changed form '
         + '"{{answer}}". You speak the exact scripted lines from each bracketed application message, you say the '
-        + 'one-thing word when the child taps it, and you judge each spoken attempt from the audio you heard using '
-        + 'only the two allowed reply branches. Turning a word for one thing into the word for many is the entire '
-        + 'skill being practiced, so the child produces it — never picks it.',
+        + 'source word when the child taps it, and you judge each spoken attempt from the audio you heard using '
+        + 'only the two allowed reply branches. Producing the grammatical transformation is the entire skill, '
+        + 'so the child says it — never picks it.',
       // Trimmed to exactly what the component pushes through updateContext (and
       // that the connect-time primitive_data also carries). An unpushed key
       // renders the literal string "(not set)" into the prompt, which the tutor
       // then reads aloud as content — the challenge-index/attempts/voiceMode
       // keys the click-driven version carried went with the clicks.
-      contextKeys: ['singular', 'countWord', 'answer'],
+      contextKeys: ['sourceWord', 'transformationFrame', 'answer'],
       // Correction territory, not answer territory: every level here describes
       // what happens AFTER an attempt, and re-modeling at every tier is the DI
       // rule (standing gate 3 — remediation is not scaffolding).
       scaffoldingLevels: {
-        level1: 'Say the one-thing word once more, then hand the question back to them.',
-        level2: 'Show the pattern on a DIFFERENT noun — one of it, then two of it — and then ask for theirs again.',
-        level3: 'Say the pattern for the word on screen, then ask them for the more-than-one word once more.',
+        level1: 'Say the source word once more, then hand the transformation back to them.',
+        level2: 'Model the same transformation on a DIFFERENT word, then ask for theirs again.',
+        level3: 'Say the source-and-answer contrast for the word on screen, then ask them to produce the answer once more.',
       },
       // Observable behaviours only. The first is this activity's signature error
       // class, and it is the one most likely to be mistaken for success: it is
@@ -3017,6 +3078,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         {
           pattern: 'Says the ONE-thing word back with nothing added — "dog" when asked what three of them are',
           response: 'Treat an unchanged word as not yet answered: say the one-and-many pair for that word, then ask again.',
+        },
+        {
+          pattern: 'Says the TODAY action back unchanged — "jump" when the frame asks what happened yesterday',
+          response: 'Treat the unchanged verb as not yet transformed: contrast today with yesterday, then ask again.',
+        },
+        {
+          pattern: 'Regularizes an irregular past form — "runned" instead of "ran"',
+          response: 'Say the today-and-yesterday contrast once, then hand the yesterday frame straight back.',
         },
         {
           pattern: 'Adds too much ending — "dogses" for "dogs"',
@@ -3047,8 +3116,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
             + 'invent it. Each [DI_FLIP_ITEM] carries a two-branch judging rule: affirmations must begin with '
             + '"Yes" and corrections must begin with "My turn", using the exact quoted lines. Never begin any '
-            + 'other sentence with those words. Judge honestly from the audio: affirm the more-than-one word, '
-            + 'correct a wrong, missing, or unchanged one. EVERY correction says the one-and-many pair for that '
+            + 'other sentence with those words. Judge honestly from the audio: affirm the transformed answer word, '
+            + 'correct a wrong, missing, or unchanged one. EVERY correction says the source-and-answer contrast for that '
             + 'word before handing it back. Do not praise to be kind. The application decides which item comes '
             + 'next; never introduce one yourself.',
         },
@@ -3058,22 +3127,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             'The FIRST [DI_FLIP_ITEM] of a session carries the greeting, how to play, and the first question '
             + 'INSIDE its quoted line. Speak that quote exactly and add nothing of your own — no separate '
             + 'greeting, no how-to-play of your own wording, no rephrased question. It already models the rule '
-            + 'on a noun this session never asks about, which is the whole introduction the child needs. This '
+            + 'on a word this session never asks about, which is the whole introduction the child needs. This '
             + 'holds at every grade, and it OVERRIDES any "keep it to one sentence" cap from a lesson switch: '
             + 'the quoted line is the length it is meant to be.',
         },
         {
-          title: 'PLURALS (what counts as the answer)',
+          title: 'WORD TRANSFORMATIONS (what counts as the answer)',
           instruction:
-            'The target is the MORE-THAN-ONE word said aloud. It counts whether it arrives on its own ("dogs") '
-            + 'or inside the natural phrase a child actually says ("three dogs") — the ending is what is being '
-            + 'measured, not whether the word arrived alone. Three things look like answers and are not: saying '
-            + 'the ONE-thing word back with nothing added (fluent, confident, and completely unchanged — this is '
-            + 'the signature error of this skill), adding too much ending ("dogses", which is the rule applied '
-            + 'twice and a real error at this age), and saying only the number. All three take the correction '
-            + 'branch, warmly. LAW: never say the more-than-one form of the word on screen until a quoted lesson '
+            'The target is the CHANGED word said aloud. It counts alone or inside the short phrase named by the '
+            + 'item contract. Plausible forms can still be wrong: the source word unchanged, an -s form where -es '
+            + 'or -ies is required ("dishs", "babys"), a regularized irregular ("mouses", "runned"), or an '
+            + 'overbuilt ending ("dogses", "jumpeded"). All take the correction branch warmly. LAW: never say '
+            + 'the answer form of the word on screen until a quoted lesson '
             + 'line tells you to — the microphone is open the whole time, so saying it first hands the answer '
-            + 'over. Saying the one-thing word ("dog") is always safe; the plural ("dogs") is a leak. Never '
+            + 'over. Saying the source word is safe; saying its transformed answer is a leak. Never '
             + 'preview an item that is still coming.',
         },
         {
@@ -3089,9 +3156,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           instruction:
             'When you receive a message starting with [SAY_WORD], you MUST immediately and clearly say ONLY the '
             + 'one word it quotes, twice, and nothing else. Do NOT add commentary, questions, encouragement, or '
-            + 'extra words; do NOT add the ending that means more than one; and do NOT treat it as an attempt to '
-            + 'judge. This is the child tapping the picture to hear what the thing is called, which is how a '
-            + 'pre-reader recovers the stimulus, and it is answered at every grade — including while you are '
+            + 'extra words; do NOT transform it into the answer form; and do NOT treat it as an attempt to '
+            + 'judge. This is the child tapping the source card to hear its word, which is how a '
+            + 'learner recovers the stimulus, and it is answered at every grade — including while you are '
             + 'waiting for their answer.',
         },
       ],

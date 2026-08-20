@@ -28,20 +28,72 @@ import {
   judgingContract,
   moveOnCue,
   pairModel,
+  pickModelPair,
   pickModelNoun,
   pronounceCue,
   ruleModel,
   type FlipItem,
 } from '../wordFlipScript';
+
 import {
   findPerformedStageDirections,
   spokenSpanOf,
 } from '../../../../hooks/judgedScriptContract';
 
-const DOG: FlipItem = { id: 'wf1', singular: 'dog', plural: 'dogs', count: 3 };
-const CAT: FlipItem = { id: 'wf2', singular: 'cat', plural: 'cats', count: 2 };
+describe('word-flip script · eval-mode contracts', () => {
+  const ES: FlipItem = {
+    id: 'wf-es', type: 'plural_es', singular: 'dish', plural: 'dishes', count: 3,
+  };
+  const IRREGULAR: FlipItem = {
+    id: 'wf-irregular', type: 'irregulars', singular: 'mouse', plural: 'mice', count: 2,
+  };
+  const Y_TO_IES: FlipItem = {
+    id: 'wf-y', type: 'plural_y', singular: 'baby', plural: 'babies', count: 2,
+  };
+  const PAST_ED: FlipItem = {
+    id: 'wf-past-ed', type: 'past_ed', sourceWord: 'jump', answer: 'jumped',
+  };
+  const PAST_IRREGULAR: FlipItem = {
+    id: 'wf-past-irregular', type: 'past_irregular', sourceWord: 'run', answer: 'ran',
+  };
+
+  it('models each transformation on a different word without leaking the item answer', () => {
+    const esModel = pickModelPair('plural_es', [ES]);
+    const yModel = pickModelPair('plural_y', [Y_TO_IES]);
+    const irregularModel = pickModelPair('irregulars', [IRREGULAR]);
+    expect(ruleModel(esModel.singular, esModel.plural)).not.toContain('dishes');
+    expect(ruleModel(yModel.singular, yModel.plural)).not.toContain('babies');
+    expect(ruleModel(irregularModel.singular, irregularModel.plural)).not.toContain('mice');
+  });
+
+  it('uses a today/yesterday frame for past-tense production', () => {
+    expect(askLine(PAST_ED)).toBe(
+      'Listen: today I jump. It already happened yesterday. Your turn. Yesterday I...',
+    );
+    expect(pairModel(PAST_IRREGULAR)).toBe('today I run, yesterday I ran.');
+    expect(judgingContract(PAST_ED)).toContain('jumpeded');
+    expect(judgingContract(PAST_IRREGULAR)).toContain('runned');
+    expect(judgingContract(PAST_IRREGULAR)).toContain('Yes, ran.');
+  });
+
+  it('names the signature near-miss for -es and irregular modes', () => {
+    expect(judgingContract(ES)).toContain('dishs');
+    expect(judgingContract(Y_TO_IES)).toContain('babys');
+    expect(judgingContract(IRREGULAR)).toContain('mouses');
+    expect(judgingContract(IRREGULAR)).toContain('Yes, mice.');
+  });
+});
+
+/** The plural fixtures always carry the legacy trio, which `FlipItem` leaves
+ *  optional because the past-tense modes answer with `sourceWord`/`answer`
+ *  instead. Narrowing here keeps the assertions below reading `item.singular`
+ *  directly rather than defaulting undefined away and proving less. */
+type PluralFixture = FlipItem & { singular: string; plural: string; count: number };
+
+const DOG: PluralFixture = { id: 'wf1', singular: 'dog', plural: 'dogs', count: 3 };
+const CAT: PluralFixture = { id: 'wf2', singular: 'cat', plural: 'cats', count: 2 };
 /** A five-count item — the other end of the generator's 2-5 range. */
-const STAR: FlipItem = { id: 'wf3', singular: 'star', plural: 'stars', count: 5 };
+const STAR: PluralFixture = { id: 'wf3', singular: 'star', plural: 'stars', count: 5 };
 
 /** The line the tutor is told to SPEAK — the shared parser, which knows this
  *  port's di-bench-era `Speak exactly:` anchor as well as the runner-era one.
@@ -172,7 +224,7 @@ describe('word-flip script · the judging contract (what counts as the answer)',
     for (const item of [DOG, CAT, STAR]) {
       const contract = judgingContract(item);
       expect(contract).toContain(`saying "${item.singular}" back with no ending added`);
-      expect(contract).toContain('Saying the one-thing word back is not the answer');
+      expect(contract).toContain('Saying the source word back is not the answer');
     }
   });
 
@@ -183,7 +235,7 @@ describe('word-flip script · the judging contract (what counts as the answer)',
   });
 
   it('the NUMBER alone is not an answer', () => {
-    expect(judgingContract(DOG)).toContain('saying only the number');
+    expect(judgingContract(DOG)).toContain('saying only a frame word');
   });
 
   it('the correction always carries the pair THROUGH to the answer (gate 3)', () => {
@@ -257,7 +309,7 @@ describe('word-flip script · tap-to-hear never leaks the answer', () => {
     expect(cue.startsWith('[SAY_WORD]')).toBe(true);
     expect(cue).toContain('"dog"');
     expect(cue).not.toMatch(/\bdogs\b/);
-    expect(cue).toContain('Do NOT add the ending that means more than one');
+    expect(cue).toContain('Do NOT transform it into the answer form');
   });
 
   it('is never routed through the judge', () => {

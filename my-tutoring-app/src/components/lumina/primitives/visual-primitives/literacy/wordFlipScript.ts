@@ -3,7 +3,7 @@
  * THIRD literacy port of the DI modality (`phonicsBlenderScript.ts` is port 1,
  * `soundSwapScript.ts` port 2). The exact wording IS the pedagogy (DISTAR
  * discipline), so these lines are authored, never generated. Item CONTENT
- * (which nouns, which emoji, how many on the many-side) stays generator-scoped
+ * (which words, which emoji, and which transformation frame) stays generator-scoped
  * to the objective; this module owns only the cue SHAPE, the judging contract,
  * and the correction wording.
  *
@@ -22,11 +22,10 @@
  * a THIRD answer here. In phonics-blender the model IS the answer (blending is
  * reproduction). In sound-swap it must not be, and nothing is modeled before
  * the ask at all. Here the rule is modeled and the answer is not: the opening
- * line teaches "one hat, two hats" with a noun that is NOT in this session, and
- * then asks about the child's noun. Plural formation is a RULE, and a rule
- * shown on a different word is taught rather than given away. The catalog's own
- * law survives verbatim into every line below: *saying the singular ("dog") is
- * safe, the plural ("dogs") is a leak.*
+ * line teaches the active transformation with a word that is NOT in this
+ * session, and then asks about the child's word. A rule shown on a different
+ * word is taught rather than given away. The same answer-leak law holds across
+ * modes: saying the source word is safe; saying its transformed form is a leak.
  *
  * ⚠️ THE OPENING LINE CARRIES ITS OWN HOW-TO-PLAY, AND THAT IS A FIX, NOT A
  * STYLE CHOICE (residual SWAP-1, observed live 2026-08-09 on sound-swap). Ports
@@ -40,8 +39,8 @@
  * other turn has — speak this exactly. Nothing here asks the tutor to compose.
  *
  * ANSWER-LEAK RULE (di-word-reading's, inherited through both earlier ports).
- * The one-thing word and its picture ARE the stimulus and are shown. The
- * many-side word is the answer: it must not be printed, spoken, or offered as a
+ * The source word, its picture, and frame ARE the stimulus and are shown. The
+ * transformed word is the answer: it must not be printed, spoken, or offered as a
  * chip before the child says it. The first moment it may appear is the tutor's
  * own affirmation.
  *
@@ -65,15 +64,32 @@
  */
 
 /** One "one → many" item. Mirrors the generator's derived shape. */
+import type { WordFlipChallengeType } from './WordFlip';
+
 export interface FlipItem {
   id: string;
-  /** The one-thing word shown in the frame — the STIMULUS ("dog"). Safe to say. */
-  singular: string;
-  /** The word the child must PRODUCE ("dogs"). Code-derived, never spoken early. */
-  plural: string;
-  /** How many on the many-side (2-5). */
-  count: number;
+  type?: WordFlipChallengeType;
+  /** Production contract used by the generalized stage. */
+  sourceWord?: string;
+  answer?: string;
+  /** Legacy aliases retained only for the original pure script fixtures. */
+  singular?: string;
+  plural?: string;
+  /** How many on the many-side (2-5); plural modes only. */
+  count?: number;
 }
+
+const sourceWordOf = (item: FlipItem): string => item.sourceWord ?? item.singular ?? '';
+const answerOf = (item: FlipItem): string => item.answer ?? item.plural ?? '';
+const countOf = (item: FlipItem): number => item.count ?? 2;
+const isPluralType = (type: WordFlipChallengeType | undefined): boolean =>
+  type !== 'past_ed' && type !== 'past_irregular';
+const regularizedPastOf = (word: string): string => {
+  if (/[^aeiou]y$/.test(word)) return `${word.slice(0, -1)}ied`;
+  if (/e$/.test(word)) return `${word}d`;
+  if (/^[^aeiou]*[aeiou][^aeiouwxy]$/.test(word)) return `${word}${word.at(-1)}ed`;
+  return `${word}ed`;
+};
 
 /**
  * Number words for the many-side. Spoken AND printed from here, so the tutor's
@@ -96,20 +112,85 @@ export const countWordCapitalized = (count: number): string => {
  * two dogs" is repeating, not applying a rule. Eight entries against a maximum
  * of five challenges guarantees `pickModelNoun` always finds a free one.
  */
-const MODEL_NOUNS = ['hat', 'cup', 'bug', 'pen', 'mug', 'bed', 'van', 'rug'] as const;
+export interface FlipModelPair { singular: string; plural: string }
+
+const MODEL_PAIRS: Record<WordFlipChallengeType, readonly FlipModelPair[]> = {
+  plural_s: [
+    { singular: 'hat', plural: 'hats' },
+    { singular: 'cup', plural: 'cups' },
+    { singular: 'bug', plural: 'bugs' },
+    { singular: 'pen', plural: 'pens' },
+    { singular: 'mug', plural: 'mugs' },
+    { singular: 'bed', plural: 'beds' },
+    { singular: 'van', plural: 'vans' },
+    { singular: 'rug', plural: 'rugs' },
+  ],
+  plural_es: [
+    { singular: 'bus', plural: 'buses' },
+    { singular: 'box', plural: 'boxes' },
+    { singular: 'dish', plural: 'dishes' },
+    { singular: 'brush', plural: 'brushes' },
+    { singular: 'watch', plural: 'watches' },
+    { singular: 'peach', plural: 'peaches' },
+  ],
+  plural_y: [
+    { singular: 'baby', plural: 'babies' },
+    { singular: 'puppy', plural: 'puppies' },
+    { singular: 'bunny', plural: 'bunnies' },
+    { singular: 'pony', plural: 'ponies' },
+    { singular: 'cherry', plural: 'cherries' },
+    { singular: 'fly', plural: 'flies' },
+  ],
+  irregulars: [
+    { singular: 'mouse', plural: 'mice' },
+    { singular: 'child', plural: 'children' },
+    { singular: 'foot', plural: 'feet' },
+    { singular: 'tooth', plural: 'teeth' },
+    { singular: 'goose', plural: 'geese' },
+    { singular: 'person', plural: 'people' },
+  ],
+  past_ed: [
+    { singular: 'jump', plural: 'jumped' },
+    { singular: 'walk', plural: 'walked' },
+    { singular: 'play', plural: 'played' },
+    { singular: 'help', plural: 'helped' },
+    { singular: 'look', plural: 'looked' },
+    { singular: 'wash', plural: 'washed' },
+  ],
+  past_irregular: [
+    { singular: 'go', plural: 'went' },
+    { singular: 'run', plural: 'ran' },
+    { singular: 'eat', plural: 'ate' },
+    { singular: 'see', plural: 'saw' },
+    { singular: 'come', plural: 'came' },
+    { singular: 'sit', plural: 'sat' },
+  ],
+};
+
+export const pickModelPair = (
+  type: WordFlipChallengeType,
+  items: FlipItem[],
+): FlipModelPair => {
+  const taken = new Set(items.map(item => sourceWordOf(item).trim().toLowerCase()));
+  return MODEL_PAIRS[type].find(pair => !taken.has(pair.singular)) ?? MODEL_PAIRS[type][0];
+};
 
 /** A model noun that appears nowhere in this session's items. */
 export const pickModelNoun = (items: FlipItem[]): string => {
-  const taken = new Set(items.map((item) => item.singular.trim().toLowerCase()));
-  return MODEL_NOUNS.find((noun) => !taken.has(noun)) ?? MODEL_NOUNS[0];
+  return pickModelPair('plural_s', items).singular;
 };
 
 /**
  * The rule, modeled on a noun that is NOT the answer — the teaching half of the
  * opening line, and the same move the correction makes on the child's own word.
  */
-export const ruleModel = (modelNoun: string): string =>
-  `One ${modelNoun}, two ${modelNoun}s — when there is more than one, you say the new word.`;
+export const ruleModel = (
+  modelNoun: string,
+  modelAnswer = `${modelNoun}s`,
+  type: WordFlipChallengeType = 'plural_s',
+): string => isPluralType(type)
+  ? `One ${modelNoun}, two ${modelAnswer} — when there is more than one, you say the new word.`
+  : `Today I ${modelNoun}. Yesterday I ${modelAnswer} — when an action already happened, you say the changed action word.`;
 
 /**
  * The one→many pair for the CHILD'S word, carried through to the answer. This
@@ -118,7 +199,9 @@ export const ruleModel = (modelNoun: string): string =>
  * spoken at all.
  */
 export const pairModel = (item: FlipItem): string =>
-  `one ${item.singular}, ${countWord(item.count)} ${item.plural}.`;
+  isPluralType(item.type)
+    ? `one ${sourceWordOf(item)}, ${countWord(countOf(item))} ${answerOf(item)}.`
+    : `today I ${sourceWordOf(item)}, yesterday I ${answerOf(item)}.`;
 
 /**
  * The spoken ask — THREE BEATS: name the one thing, say how many there are now,
@@ -131,8 +214,9 @@ export const pairModel = (item: FlipItem): string =>
  * completion and it is the plural. An ambiguous ask is not a harder task, it is
  * a broken one (the sound-swap `nameTargetSound` ruling, applied a second time).
  */
-export const askLine = (item: FlipItem): string =>
-  `Listen: one ${item.singular}. Now there are ${countWord(item.count)}. Your turn. ${countWordCapitalized(item.count)} what?`;
+export const askLine = (item: FlipItem): string => isPluralType(item.type)
+  ? `Listen: one ${sourceWordOf(item)}. Now there are ${countWord(countOf(item))}. Your turn. ${countWordCapitalized(countOf(item))} what?`
+  : `Listen: today I ${sourceWordOf(item)}. It already happened yesterday. Your turn. Yesterday I...`;
 
 /**
  * The in-band judging contract for one item. The Live tutor hears the raw audio
@@ -153,11 +237,30 @@ export const askLine = (item: FlipItem): string =>
  *    the correction branch — warmly, and without dwelling.
  */
 export function judgingContract(item: FlipItem) {
+  const sourceWord = sourceWordOf(item);
+  const answer = answerOf(item);
+  const signatureErrors = item.type === 'plural_es'
+    ? `saying "${sourceWord}" back unchanged, adding only -s like "${sourceWord}s", or adding too much ending like "${sourceWord}ses"`
+    : item.type === 'plural_y'
+      ? `saying "${sourceWord}" back unchanged, adding only -s like "${sourceWord}s", or adding -ies without changing the y like "${sourceWord}ies"`
+      : item.type === 'irregulars'
+        ? `saying "${sourceWord}" back unchanged or regularizing it as "${sourceWord}s"`
+        : item.type === 'past_ed'
+          ? `saying "${sourceWord}" back unchanged or adding the ending twice like "${sourceWord}eded"`
+          : item.type === 'past_irregular'
+            ? `saying "${sourceWord}" back unchanged or regularizing it as "${regularizedPastOf(sourceWord)}"`
+            : `saying "${sourceWord}" back with no ending added, adding too much ending like "${sourceWord}ses"`;
+  const acceptedPhrase = isPluralType(item.type)
+    ? `${countWord(countOf(item))} ${answer}`
+    : `yesterday I ${answer}`;
+  const handBack = isPluralType(item.type)
+    ? `${countWordCapitalized(countOf(item))} what?`
+    : 'Yesterday I...';
   return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner answers.
-Each time the learner responds, judge the audio you heard against the word "${item.plural}":
-- The learner said ${item.plural} — on its own, or inside a short phrase like "${countWord(item.count)} ${item.plural}": say exactly "Yes, ${item.plural}." and stop.
-- Anything else — saying "${item.singular}" back with no ending added, adding too much ending like "${item.singular}ses", saying only the number, or a different word: say exactly "My turn: ${pairModel(item)} Your turn. ${countWordCapitalized(item.count)} what?" and stop — the learner tries again while you stay silent.
-Judge on the ENDING: the answer is "${item.singular}" with the ending sound added and nothing more. Saying the one-thing word back is not the answer — changing it is the whole task. An extra syllable on the end is not the answer either.
+Each time the learner responds, judge the audio you heard against the word "${answer}":
+- The learner said ${answer} — on its own, or inside a short phrase like "${acceptedPhrase}": say exactly "Yes, ${answer}." and stop.
+- Anything else — ${signatureErrors}, saying only a frame word, or a different word: say exactly "My turn: ${pairModel(item)} Your turn. ${handBack}" and stop — the learner tries again while you stay silent.
+Judge the WHOLE transformed word, including its ending. Saying the source word back is not the answer — changing it is the whole task. An extra syllable on the end is not the answer either. A plausible rule-based form is still wrong when the target is irregular.
 Never begin any other sentence with the word "Yes" or the words "My turn".
 Speak nothing beyond these exact lines. After you affirm, you stay silent until the application's next instruction.`;
 }
@@ -173,16 +276,20 @@ Speak nothing beyond these exact lines. After you affirm, you stay silent until 
  */
 export const itemCue = (
   item: FlipItem,
-  opts: { opening?: boolean; modelNoun?: string } = {},
+  opts: { opening?: boolean; modelNoun?: string; modelPair?: FlipModelPair } = {},
 ) =>
   `[DI_FLIP_ITEM]${opts.opening
-    ? ' You are running a short, brisk one-and-many word game for a young child.'
+    ? ' You are running a short, brisk word-changing game for a young child.'
       + ' Never say, reproduce, or invent text inside square brackets; those labels are'
       + ' private application metadata. Speak the quoted line below and nothing else —'
       + ' it already contains the greeting and how to play, so do not add your own.'
     : ''}
 Speak exactly:
-"${opts.opening && opts.modelNoun ? `${ruleModel(opts.modelNoun)} ` : ''}${askLine(item)}"
+"${opts.modelPair
+    ? `${ruleModel(opts.modelPair.singular, opts.modelPair.plural, item.type)} `
+    : opts.opening && opts.modelNoun
+      ? `${ruleModel(opts.modelNoun)} `
+      : ''}${askLine(item)}"
 ${judgingContract(item)}`;
 
 /**
@@ -190,9 +297,13 @@ ${judgingContract(item)}`;
  * through distributed review, not by drilling a frustrated five-year-old in
  * place.
  */
-export const moveOnCue = (item: FlipItem, next: FlipItem | null) => next
+export const moveOnCue = (
+  item: FlipItem,
+  next: FlipItem | null,
+  opts: { modelPair?: FlipModelPair } = {},
+) => next
   ? `[DI_FLIP_MOVE_ON] Stop correcting "${item.id}". Speak exactly:
-"Good try. We'll play that one again later. ${askLine(next)}"
+"Good try. We'll play that one again later. ${opts.modelPair ? `${ruleModel(opts.modelPair.singular, opts.modelPair.plural, next.type)} ` : ''}${askLine(next)}"
 ${judgingContract(next)}`
   : `[DI_FLIP_MOVE_ON] Stop correcting "${item.id}". Speak exactly:
 "Good try. We'll play that one again later. That's the end of our word game."`;
@@ -211,7 +322,7 @@ export const completeCue = () =>
  * It speaks the SINGULAR and says so twice over: the plural is the answer, and
  * the model most likely to be "helpful" here is one that volunteers it.
  */
-export const pronounceCue = (singular: string) =>
-  `[SAY_WORD] Say this word clearly, twice, and nothing else: "${singular}". `
-  + `Do NOT add the ending that means more than one, do not say any other word, `
+export const pronounceCue = (sourceWord: string) =>
+  `[SAY_WORD] Say this source word clearly, twice, and nothing else: "${sourceWord}". `
+  + `Do NOT transform it into the answer form, do not say any other word, `
   + `and do not treat this as an attempt to judge.`;

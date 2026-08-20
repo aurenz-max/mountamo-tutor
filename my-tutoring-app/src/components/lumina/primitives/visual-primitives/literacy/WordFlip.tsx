@@ -24,14 +24,14 @@
  * `voiceMode` toggle, `Next` / `Finish`, and every advance timer. There is no
  * `setTimeout`-to-advance in this file.
  *
- * ANSWER-LEAK RULE. The one-thing word, its emoji, and the counted pictures ARE
- * the stimulus and are shown. The many-side word is the answer: nothing prints
+ * ANSWER-LEAK RULE. The source word, its emoji, and transformation frame ARE
+ * the stimulus and are shown. The transformed word is the answer: nothing prints
  * it, offers it, or speaks it until the tutor has affirmed it. The blank stays
  * a blank; the reward reveal is the first moment it may appear.
  *
  * THE SPOKEN ASK IS THREE BEATS — "Listen: one dog. Now there are three. Your
  * turn. Three what?" — and the opening turn additionally carries the rule
- * modeled on a noun this session never asks about. See `wordFlipScript.ts`,
+ * modeled on a word this session never asks about. See `wordFlipScript.ts`,
  * including why the hand-over is "Three what?" and not the family's usual
  * "What word?".
  *
@@ -69,7 +69,7 @@ import {
   countWordCapitalized,
   itemCue,
   moveOnCue,
-  pickModelNoun,
+  pickModelPair,
   pronounceCue,
   type FlipItem,
 } from './wordFlipScript';
@@ -78,33 +78,37 @@ import {
 // Data Types (Single Source of Truth)
 // ============================================================================
 
-// Grammar-transformation task identities. plural_s = regular -s plurals, the
-// birth mode. The ladder the design implies (plural_es, pronoun_swap,
-// verb_past, irregulars) widens this union via /add-eval-modes — do not add
-// rungs here by hand. `article_choice` is NOT on that ladder any more: it was a
-// tap-only mode, and tapping is gone.
-export type WordFlipChallengeType = 'plural_s';
+// Grammar-transformation task identities. These four preserve the same honest
+// counted one-to-many surface. Pronoun and tense flips require a different
+// visual/script contract; article_choice remains off the spoken ladder.
+export type WordFlipChallengeType =
+  | 'plural_s'
+  | 'plural_es'
+  | 'plural_y'
+  | 'irregulars'
+  | 'past_ed'
+  | 'past_irregular';
 
 export interface WordFlipChallenge {
   id: string;
   type: WordFlipChallengeType;
-  /** The one-thing word shown in the frame — the stimulus ("dog"). */
-  singular: string;
+  /** The source word shown in the frame — "dog" or "jump". */
+  sourceWord: string;
   /**
    * The transformed word the student must PRODUCE ("dogs"). Derived by code
-   * (singular + 's' for plural_s) so it can never desync from the stimulus.
+   * by code so it can never desync from the stimulus.
    */
   answer: string;
-  /** Emoji picture of the noun (🐕). Repeated `count` times on the many-side. */
+  /** Emoji picture of the noun/action. Repeated only on plural challenges. */
   emoji: string;
-  /** How many on the many-side (2-5) — the counted-picture stimulus. */
-  count: number;
+  /** How many on the many-side (2-5); present only for plural challenges. */
+  count?: number;
 }
 
 export interface WordFlipData {
   title: string;
-  /** Session-level mode. Single value at birth; /add-eval-modes widens it. */
-  challengeType: WordFlipChallengeType;
+  /** Session-level mode; mixed means the per-challenge type is authoritative. */
+  challengeType: WordFlipChallengeType | 'mixed';
   /** 4-6 challenges. REQUIRED — assembled by the generator from Gemini's noun pool. */
   challenges: WordFlipChallenge[];
   gradeLevel?: string;
@@ -152,6 +156,9 @@ interface ChallengeOutcome {
 
 const scoreForCorrections = (corrections: number): number =>
   corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
+
+const isPluralChallengeType = (type: WordFlipChallengeType): boolean =>
+  type !== 'past_ed' && type !== 'past_irregular';
 
 // ============================================================================
 // Component
@@ -230,8 +237,9 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
       if (!challenge) return null;
       return {
         id: challenge.id,
-        singular: challenge.singular,
-        plural: challenge.answer,
+        type: challenge.type,
+        sourceWord: challenge.sourceWord,
+        answer: challenge.answer,
         count: challenge.count,
       };
     },
@@ -239,22 +247,33 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
   );
   const currentItem = useCallback(() => itemOf(idxRef.current), [itemOf]);
 
+  const flipItems = useMemo<FlipItem[]>(() => challenges.map(c => ({
+    id: c.id,
+    type: c.type,
+    sourceWord: c.sourceWord,
+    answer: c.answer,
+    count: c.count,
+  })), [challenges]);
+
+  const modelPairFor = useCallback(
+    (type: WordFlipChallengeType) => pickModelPair(type, flipItems),
+    [flipItems],
+  );
+
   /** The noun the OPENING line models the rule on. Chosen once per session and
    *  guaranteed absent from this session's items — a child handed "one dog, two
    *  dogs" would be repeating rather than applying a rule. */
-  const modelNoun = useMemo(
-    () => pickModelNoun(challenges.map(c => ({
-      id: c.id, singular: c.singular, plural: c.answer, count: c.count,
-    }))),
-    [challenges],
-  );
+  const modelPair = useMemo(() => {
+    const firstType = challenges[0]?.type ?? 'plural_s';
+    return modelPairFor(firstType);
+  }, [challenges, modelPairFor]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
     // This port drives the loop itself, so its ledger is the ref, not a
     // runner summary — the row shape is the family's either way.
     return phaseResultsFromSummary(challenges, { outcomes: outcomesRef.current }, (challenge) => ({
-      label: `${challenge.singular} → ${challenge.answer}`,
+      label: `${challenge.sourceWord} → ${challenge.answer}`,
       icon: challenge.emoji || '🔁',
     }));
   }, [evaluation.hasSubmitted, challenges]);
@@ -339,7 +358,10 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
         // Capped: acknowledge and move the lesson forward.
         closeChallenge(item, false);
         const next = itemOf(idxRef.current + 1);
-        loop.queueCue(moveOnCue(item, next));
+        const nextModel = next && next.type !== item.type
+          ? modelPairFor(next.type ?? 'plural_s')
+          : undefined;
+        loop.queueCue(moveOnCue(item, next, { modelPair: nextModel }));
         if (openNext()) {
           setStage('asking');
           setStatusLine('Good try — here comes the next one.');
@@ -354,11 +376,14 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
       SoundManager.playCorrect();
       closeChallenge(item, true);
       setStage('affirmed');
-      setReward(item.plural);
+      setReward(item.answer ?? '');
       const next = itemOf(idxRef.current + 1);
       if (next) {
         setStatusLine('Yes! You flipped the word.');
-        loop.queueCue(itemCue(next));
+        const nextModel = next.type !== item.type
+          ? modelPairFor(next.type ?? 'plural_s')
+          : undefined;
+        loop.queueCue(itemCue(next, { modelPair: nextModel }));
         openNext();
       } else {
         setStatusLine('You did it!');
@@ -366,7 +391,7 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
         finishAndSubmit();
       }
     },
-    [closeChallenge, currentItem, finishAndSubmit, itemOf, openNext],
+    [closeChallenge, currentItem, finishAndSubmit, itemOf, modelPairFor, openNext],
   );
 
   const handleEmission = useCallback(
@@ -421,8 +446,10 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
   useEffect(() => {
     if (!ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
-      singular: currentChallenge.singular,
-      countWord: countWord(currentChallenge.count),
+      sourceWord: currentChallenge.sourceWord,
+      transformationFrame: isPluralChallengeType(currentChallenge.type)
+        ? `one to ${countWord(currentChallenge.count ?? 2)}`
+        : 'today to yesterday',
       answer: currentChallenge.answer,
     });
     // Context methods are stable; keyed on the current challenge + connection.
@@ -436,7 +463,7 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
     if (!currentChallenge) return;
     SoundManager.tap();
     setWordTapped(true);
-    ctx.sendText(pronounceCue(currentChallenge.singular), { silent: true });
+    ctx.sendText(pronounceCue(currentChallenge.sourceWord), { silent: true });
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     tapTimerRef.current = setTimeout(() => setWordTapped(false), 1200);
   }, [ctx, currentChallenge]);
@@ -464,9 +491,9 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
     // line rather than a directive telling the tutor to compose one — residual
     // SWAP-1, where a two-job opening turn improvised its own ask and item 1
     // ran without its model.
-    activeLoop.sendCueNow(itemCue(first, { opening: true, modelNoun }));
+    activeLoop.sendCueNow(itemCue(first, { opening: true, modelPair }));
     activeLoop.arm();
-  }, [itemOf, modelNoun]);
+  }, [itemOf, modelPair]);
 
   const startRunRef = useRef(startRun);
   startRunRef.current = startRun;
@@ -482,9 +509,11 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
           primitive_type: 'word-flip',
           instance_id: resolvedInstanceId,
           primitive_data: {
-            activity: 'live direct instruction one-and-many plural practice',
-            singular: challenges[0]?.singular ?? '',
-            countWord: countWord(challenges[0]?.count ?? 2),
+            activity: 'live direct instruction spoken word transformations',
+            sourceWord: challenges[0]?.sourceWord ?? '',
+            transformationFrame: challenges[0] && isPluralChallengeType(challenges[0].type)
+              ? `one to ${countWord(challenges[0].count ?? 2)}`
+              : 'today to yesterday',
             answer: challenges[0]?.answer ?? '',
           },
           grade_level: gradeLevel || 'kindergarten',
@@ -544,10 +573,13 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
   // INSTEAD of the tap-to-start button, leaving the run unstartable and the
   // board dead. See the same gate in useJudgedScriptRunner (19b drive, 08-14).
   const micState = preparing ? 'opening' : running && ctx.isListening ? 'armed' : 'idle';
+  const currentIsPlural = isPluralChallengeType(currentChallenge.type);
   const stageWord = stage === 'affirmed'
     ? 'yes!'
     : stage === 'asking'
-      ? `${countWord(currentChallenge.count)} what?`
+      ? currentIsPlural
+        ? `${countWord(currentChallenge.count ?? 2)} what?`
+        : 'yesterday I...'
       : 'get ready';
 
   return (
@@ -560,7 +592,9 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
             {!isPreReader && (
               <div className="flex items-center gap-2">
                 <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
-                <LuminaBadge accent="emerald" className="text-xs">🔁 One &amp; Many</LuminaBadge>
+                <LuminaBadge accent="emerald" className="text-xs">
+                  {currentIsPlural ? '🔁 One & Many' : '⏪ Today & Yesterday'}
+                </LuminaBadge>
               </div>
             )}
           </div>
@@ -577,13 +611,13 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
               </div>
             )}
 
-            {/* The counted-picture frame — the whole stimulus. The one-thing
-                word is shown and tappable; the many-side word is the ANSWER and
-                stays a blank until the tutor has affirmed it. */}
+            {/* The transformation frame. Plurals use one/many; past tense uses
+                today/yesterday. The source is tappable, while the transformed
+                answer stays blank until the tutor affirms it. */}
             <div className="flex items-stretch justify-center gap-3">
               <button
                 onClick={handleSayWord}
-                aria-label={`word ${currentChallenge.singular}`}
+                aria-label={`word ${currentChallenge.sourceWord}`}
                 className={`
                   rounded-2xl border-2 px-5 py-4 text-center flex-1 max-w-[180px]
                   transition-all duration-200 cursor-pointer select-none
@@ -593,19 +627,23 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
                   }
                 `}
               >
-                <div className="text-xs uppercase tracking-wide text-slate-500 font-mono mb-1">One</div>
+                <div className="text-xs uppercase tracking-wide text-slate-500 font-mono mb-1">
+                  {currentIsPlural ? 'One' : 'Today'}
+                </div>
                 <div className="text-5xl leading-tight">{currentChallenge.emoji}</div>
-                <div className="text-xl font-black text-slate-100 mt-2">{currentChallenge.singular}</div>
+                <div className="text-xl font-black text-slate-100 mt-2">{currentChallenge.sourceWord}</div>
               </button>
 
               <div className="flex items-center text-2xl text-slate-500" aria-hidden>→</div>
 
               <div className="rounded-2xl bg-emerald-500/10 border-2 border-emerald-500/30 px-5 py-4 text-center flex-1 max-w-[220px]">
                 <div className="text-xs uppercase tracking-wide text-emerald-300/80 font-mono mb-1">
-                  {countWordCapitalized(currentChallenge.count)}
+                  {currentIsPlural ? countWordCapitalized(currentChallenge.count ?? 2) : 'Yesterday'}
                 </div>
                 <div className="text-4xl leading-tight break-words">
-                  {currentChallenge.emoji.repeat(currentChallenge.count)}
+                  {currentIsPlural
+                    ? currentChallenge.emoji.repeat(currentChallenge.count ?? 2)
+                    : currentChallenge.emoji}
                 </div>
                 <div className="text-xl font-black mt-2">
                   {reward && stage === 'affirmed' ? (

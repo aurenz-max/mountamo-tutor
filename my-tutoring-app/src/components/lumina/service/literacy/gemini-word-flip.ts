@@ -1,199 +1,278 @@
-import { Type, Schema } from "@google/genai";
-import { ai } from "../geminiClient";
-import type { GenerationContext } from "../generation/generationContext";
+import { Type, Schema } from '@google/genai';
+import { ai } from '../geminiClient';
+import type { GenerationContext } from '../generation/generationContext';
 import type {
-  WordFlipData,
   WordFlipChallenge,
-} from "../../primitives/visual-primitives/literacy/WordFlip";
+  WordFlipChallengeType,
+  WordFlipData,
+} from '../../primitives/visual-primitives/literacy/WordFlip';
+import {
+  buildModeConstraintSection,
+  constrainChallengeTypeEnum,
+  resolveEvalModes,
+  type ChallengeTypeDoc,
+} from '../evalMode';
 
 // ---------------------------------------------------------------------------
-// WORD FLIP generator (L0 birth: plural_s only).
+// WORD FLIP generator (K-2: spoken morphology transformations).
 //
-// K-1 spoken grammar transformations. The child sees a counted-picture frame
-// ("One dog 🐕 · Three ___?") and SAYS the regular -s plural ("dogs") to a live
-// Direct Instruction tutor, which judges the audio in-band.
+// Gemini authors only typed, picturable noun/action candidates. Code validates
+// each word against its declared transformation and derives every answer. The model
+// never authors an answer key, so the counted-picture stimulus and spoken
+// target cannot desynchronize.
 //
-// DESIGN SPLIT (the load-bearing decision): Gemini authors ONLY the noun pool
-// — { word, emoji } pairs themed to the topic. Code derives EVERYTHING else
-// deterministically: answer = word + 's', and the many-side count. The
-// transformation rule IS the answer key, so stimulus and answer can never
-// desync. This mirrors the "LLM emits scope-bound content, code builds
-// structure + answer" doctrine.
-//
-// ⚠️ THE CHIPS ARE GONE (DI port, qa/di/BACKLOG.md item 16). This generator
-// used to build 3 tap chips per challenge — the answer, the bare singular, and
-// the over-regularized "-ses" form. Tapping the right one out of three printed
-// words is READING, which a child who cannot form a plural does correctly every
-// time, and the chip PRINTED THE ANSWER on screen. Both error shapes survive
-// where they belong: named inside the judging contract in `wordFlipScript.ts`,
-// as things that look like an answer and are not.
-//
-// L0 NOTE: no resolveEvalModes / constrainChallengeTypeEnum here — the single
-// mode is 'plural_s'. /add-eval-modes widens the ladder (plural_es, verb_past,
-// irregulars) later. `article_choice` is off that ladder: it was tap-only.
+// The DI port removed answer chips. The child sees either one -> many or
+// today -> yesterday and says the transformed word into the same live judged
+// loop. Every mode below has its own validated word pool and response contract.
 // ---------------------------------------------------------------------------
 
 const MODEL = 'gemini-flash-lite-latest';
 
-// ---------------------------------------------------------------------------
-// Seed nouns — the entropy injection. Structured-output Gemini is convergent
-// on values (same nouns every call otherwise), so we shuffle ~8 of these into
-// every prompt as suggestions (the skip-counting entropy pattern: entropy
-// belongs in the prompt). EVERY seed must pass validateNounPool's own guards
-// — no s/x/z/ch/sh/o endings, no f/fe endings, no consonant+y, no irregulars.
-// ---------------------------------------------------------------------------
+const ALL_CHALLENGE_TYPES: WordFlipChallengeType[] = [
+  'plural_s',
+  'plural_es',
+  'past_ed',
+  'plural_y',
+  'irregulars',
+  'past_irregular',
+];
 
-const SEED_NOUNS: ReadonlyArray<{ word: string; emoji: string }> = [
-  { word: 'dog', emoji: '🐕' },
-  { word: 'cat', emoji: '🐈' },
-  { word: 'bird', emoji: '🐦' },
-  { word: 'tree', emoji: '🌳' },
-  { word: 'star', emoji: '⭐' },
-  { word: 'book', emoji: '📖' },
-  { word: 'hat', emoji: '🎩' },
-  { word: 'car', emoji: '🚗' },
-  { word: 'boat', emoji: '⛵' },
-  { word: 'bear', emoji: '🐻' },
-  { word: 'duck', emoji: '🦆' },
-  { word: 'frog', emoji: '🐸' },
-  { word: 'crab', emoji: '🦀' },
-  { word: 'cloud', emoji: '☁️' },
-  { word: 'flower', emoji: '🌸' },
-  { word: 'apple', emoji: '🍎' },
-  { word: 'shell', emoji: '🐚' },
-  { word: 'sock', emoji: '🧦' },
-  { word: 'shoe', emoji: '👟' },
-  { word: 'ball', emoji: '⚽' },
-  { word: 'kite', emoji: '🪁' },
-  { word: 'drum', emoji: '🥁' },
-  { word: 'bell', emoji: '🔔' },
-  { word: 'crayon', emoji: '🖍️' },
-  { word: 'spoon', emoji: '🥄' },
-  { word: 'chair', emoji: '🪑' },
-  { word: 'door', emoji: '🚪' },
-  { word: 'truck', emoji: '🚚' },
-  { word: 'plane', emoji: '✈️' },
-  { word: 'snail', emoji: '🐌' },
-  { word: 'turtle', emoji: '🐢' },
-  { word: 'rock', emoji: '🪨' },
-  { word: 'moon', emoji: '🌙' },
-  { word: 'cup', emoji: '🥤' },
-  { word: 'pig', emoji: '🐷' },
+const CHALLENGE_TYPE_DOCS: Record<WordFlipChallengeType, ChallengeTypeDoc> = {
+  plural_s: {
+    promptDoc:
+      `"plural_s": regular one-to-many nouns formed by adding only -s (dog -> dogs). `
+      + `Use common concrete K-1 nouns; exclude -es, y->ies, f/fe->ves, and irregular forms.`,
+    schemaDescription: "'plural_s' (add -s)",
+  },
+  plural_es: {
+    promptDoc:
+      `"plural_es": regular one-to-many nouns ending in s, x, ch, or sh and formed by adding -es `
+      + `(bus -> buses, fox -> foxes, dish -> dishes). Exclude z and o endings because their spelling is not uniform.`,
+    schemaDescription: "'plural_es' (add -es)",
+  },
+  plural_y: {
+    promptDoc:
+      `"plural_y": regular one-to-many nouns ending in consonant+y and formed by changing y to -ies `
+      + `(baby -> babies, puppy -> puppies). Exclude vowel+y nouns such as toy and key.`,
+    schemaDescription: "'plural_y' (change consonant+y to -ies)",
+  },
+  irregulars: {
+    promptDoc:
+      `"irregulars": common one-to-many nouns whose plural is code-owned and recalled rather than built `
+      + `(mouse -> mice, child -> children, foot -> feet). Use only the supplied irregular candidates.`,
+    schemaDescription: "'irregulars' (recall an irregular plural)",
+  },
+  past_ed: {
+    promptDoc:
+      `"past_ed": familiar action verbs whose past form is made by adding only -ed `
+      + `(jump -> jumped, walk -> walked). Use only the supplied regular-verb candidates.`,
+    schemaDescription: "'past_ed' (add -ed to an action word)",
+  },
+  past_irregular: {
+    promptDoc:
+      `"past_irregular": familiar action verbs with a code-owned irregular past form `
+      + `(run -> ran, go -> went). Use only the supplied irregular-verb candidates.`,
+    schemaDescription: "'past_irregular' (recall an irregular past form)",
+  },
+};
+
+type SeedNoun = { word: string; emoji: string };
+
+const PLURAL_S_SEEDS: readonly SeedNoun[] = [
+  { word: 'dog', emoji: '🐕' }, { word: 'cat', emoji: '🐈' },
+  { word: 'bird', emoji: '🐦' }, { word: 'tree', emoji: '🌳' },
+  { word: 'star', emoji: '⭐' }, { word: 'book', emoji: '📖' },
+  { word: 'hat', emoji: '🎩' }, { word: 'car', emoji: '🚗' },
+  { word: 'boat', emoji: '⛵' }, { word: 'bear', emoji: '🐻' },
+  { word: 'duck', emoji: '🦆' }, { word: 'frog', emoji: '🐸' },
+  { word: 'crab', emoji: '🦀' }, { word: 'cloud', emoji: '☁️' },
+  { word: 'flower', emoji: '🌸' }, { word: 'apple', emoji: '🍎' },
+  { word: 'shell', emoji: '🐚' }, { word: 'sock', emoji: '🧦' },
+  { word: 'shoe', emoji: '👟' }, { word: 'ball', emoji: '⚽' },
+  { word: 'kite', emoji: '🪁' }, { word: 'drum', emoji: '🥁' },
+  { word: 'bell', emoji: '🔔' }, { word: 'spoon', emoji: '🥄' },
+  { word: 'chair', emoji: '🪑' }, { word: 'door', emoji: '🚪' },
+  { word: 'truck', emoji: '🚚' }, { word: 'plane', emoji: '✈️' },
+  { word: 'snail', emoji: '🐌' }, { word: 'turtle', emoji: '🐢' },
+  { word: 'rock', emoji: '🪨' }, { word: 'moon', emoji: '🌙' },
+  { word: 'cup', emoji: '🥤' }, { word: 'pig', emoji: '🐷' },
   { word: 'cow', emoji: '🐮' },
 ];
 
-// Irregular plurals a K child might meet — reject even if the ending regexes
-// wouldn't catch them (some, like leaf/wolf/knife, are also caught by f/fe).
-const IRREGULARS = new Set([
-  'man', 'woman', 'child', 'foot', 'tooth', 'goose', 'mouse', 'person',
-  'sheep', 'fish', 'deer', 'ox', 'die', 'leaf', 'wolf', 'knife', 'life',
-]);
+const PLURAL_ES_SEEDS: readonly SeedNoun[] = [
+  { word: 'bus', emoji: '🚌' }, { word: 'box', emoji: '📦' },
+  { word: 'fox', emoji: '🦊' }, { word: 'dish', emoji: '🍽️' },
+  { word: 'brush', emoji: '🪥' }, { word: 'watch', emoji: '⌚' },
+  { word: 'bench', emoji: '🪑' }, { word: 'peach', emoji: '🍑' },
+  { word: 'dress', emoji: '👗' }, { word: 'glass', emoji: '🥛' },
+  { word: 'sandwich', emoji: '🥪' }, { word: 'church', emoji: '⛪' },
+];
 
-// ---------------------------------------------------------------------------
-// Schema — tiny, flat, bounded: { title, nouns: [{word, emoji}] }.
-// No answers, no distractors, no counts — code derives all of those. There is
-// no `description` any more: the start screen that rendered it went with the
-// DI port, and how to play now arrives by VOICE from a hand-authored line
-// (`wordFlipScript.ts`), never from a generated sentence.
-// ---------------------------------------------------------------------------
+const PLURAL_Y_SEEDS: readonly SeedNoun[] = [
+  { word: 'baby', emoji: '👶' }, { word: 'puppy', emoji: '🐶' },
+  { word: 'bunny', emoji: '🐰' }, { word: 'pony', emoji: '🐴' },
+  { word: 'cherry', emoji: '🍒' }, { word: 'fly', emoji: '🪰' },
+  { word: 'butterfly', emoji: '🦋' }, { word: 'lady', emoji: '👩' },
+  { word: 'city', emoji: '🏙️' }, { word: 'berry', emoji: '🫐' },
+  { word: 'family', emoji: '👪' }, { word: 'candy', emoji: '🍬' },
+];
+
+/** Code-owned irregular answer key. Gemini may select these nouns, but it
+ * cannot invent an irregular transformation. */
+const IRREGULAR_PLURALS: Readonly<Record<string, string>> = {
+  man: 'men', woman: 'women', child: 'children', foot: 'feet',
+  tooth: 'teeth', goose: 'geese', mouse: 'mice', person: 'people',
+  ox: 'oxen',
+};
+
+const IRREGULAR_SEEDS: readonly SeedNoun[] = [
+  { word: 'man', emoji: '👨' }, { word: 'woman', emoji: '👩' },
+  { word: 'child', emoji: '🧒' }, { word: 'foot', emoji: '🦶' },
+  { word: 'tooth', emoji: '🦷' }, { word: 'goose', emoji: '🪿' },
+  { word: 'mouse', emoji: '🐁' }, { word: 'person', emoji: '🧍' },
+  { word: 'ox', emoji: '🐂' },
+];
+
+const PAST_ED_SEEDS: readonly SeedNoun[] = [
+  { word: 'jump', emoji: '🤾' }, { word: 'walk', emoji: '🚶' },
+  { word: 'play', emoji: '🤸' }, { word: 'help', emoji: '🤝' },
+  { word: 'look', emoji: '👀' }, { word: 'wash', emoji: '🧼' },
+  { word: 'kick', emoji: '🦵' }, { word: 'cook', emoji: '🧑‍🍳' },
+  { word: 'paint', emoji: '🎨' }, { word: 'clean', emoji: '🧹' },
+  { word: 'open', emoji: '🚪' }, { word: 'laugh', emoji: '😂' },
+];
+
+const IRREGULAR_PAST: Readonly<Record<string, string>> = {
+  go: 'went', run: 'ran', eat: 'ate', see: 'saw', come: 'came',
+  sit: 'sat', get: 'got', make: 'made', take: 'took', give: 'gave',
+  have: 'had', do: 'did', say: 'said', sleep: 'slept',
+};
+
+const PAST_IRREGULAR_SEEDS: readonly SeedNoun[] = [
+  { word: 'go', emoji: '🚶' }, { word: 'run', emoji: '🏃' },
+  { word: 'eat', emoji: '🍽️' }, { word: 'see', emoji: '👀' },
+  { word: 'come', emoji: '👋' }, { word: 'sit', emoji: '🪑' },
+  { word: 'get', emoji: '🎁' }, { word: 'make', emoji: '🛠️' },
+  { word: 'take', emoji: '🤲' }, { word: 'give', emoji: '🎁' },
+  { word: 'have', emoji: '🤲' }, { word: 'do', emoji: '✅' },
+  { word: 'say', emoji: '💬' }, { word: 'sleep', emoji: '😴' },
+];
+
+const SEEDS_BY_TYPE: Record<WordFlipChallengeType, readonly SeedNoun[]> = {
+  plural_s: PLURAL_S_SEEDS,
+  plural_es: PLURAL_ES_SEEDS,
+  plural_y: PLURAL_Y_SEEDS,
+  irregulars: IRREGULAR_SEEDS,
+  past_ed: PAST_ED_SEEDS,
+  past_irregular: PAST_IRREGULAR_SEEDS,
+};
+
+// Includes invariant plurals that this production task deliberately excludes:
+// "one sheep -> two sheep" has no audible transformation to judge.
+const IRREGULAR_WORDS = new Set([
+  ...Object.keys(IRREGULAR_PLURALS),
+  'sheep', 'fish', 'deer',
+]);
 
 const buildNounPoolSchema = (): Schema => ({
   type: Type.OBJECT,
   properties: {
     title: {
       type: Type.STRING,
-      description: "Engaging, kid-friendly session title including the topic (e.g., 'One and Many at the Farm!').",
+      description: "Engaging, kid-friendly session title including the topic (for example, 'One and Many at the Farm!').",
     },
     nouns: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
+          type: {
+            type: Type.STRING,
+            enum: ALL_CHALLENGE_TYPES,
+            description: 'Word transformation type: plural or past-tense production.',
+          },
           word: {
             type: Type.STRING,
-            description: "One lowercase concrete noun a 5-year-old knows (letters only, 2-12 chars) whose plural is formed by JUST ADDING -s (dog → dogs).",
+            description: 'One lowercase concrete noun or action word a young child knows, letters only, 2-12 characters.',
           },
           emoji: {
             type: Type.STRING,
-            description: "Exactly one emoji that clearly IS this noun (dog → 🐕).",
+            description: 'Exactly one emoji that clearly depicts the noun or action.',
           },
         },
-        required: ["word", "emoji"],
+        required: ['type', 'word', 'emoji'],
       },
-      description: "12-16 distinct concrete, picturable Kindergarten nouns whose plural is formed by JUST ADDING -s.",
+      description: '12-18 distinct, concrete, picturable nouns or action words obeying their declared transformation.',
     },
   },
-  required: ["title", "nouns"],
+  required: ['title', 'nouns'],
 });
 
-// ---------------------------------------------------------------------------
-// Raw shapes (everything optional — Gemini may drop or malform any field).
-// ---------------------------------------------------------------------------
-
-interface RawNoun {
-  word?: string;
-  emoji?: string;
-}
-
-interface RawNounPool {
-  title?: string;
-  nouns?: RawNoun[];
-}
-
-/** A noun that survived validation — safe to build a challenge from. */
+interface RawNoun { type?: string; word?: string; emoji?: string }
+interface RawNounPool { title?: string; nouns?: RawNoun[] }
 interface ValidNoun {
+  type: WordFlipChallengeType;
   word: string;
   emoji: string;
+  answer: string;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const shuffle = <T,>(arr: readonly T[]): T[] => {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+    [copy[i], copy[j]] = [copy[j], copy[i]];
   }
-  return a;
+  return copy;
 };
 
-// ---------------------------------------------------------------------------
-// Validation — REJECT, never fabricate. The regular-plural guard is the
-// load-bearing check: it is what makes `word + 's'` a TRUE answer key.
-// ---------------------------------------------------------------------------
+const isChallengeType = (value: string): value is WordFlipChallengeType =>
+  ALL_CHALLENGE_TYPES.includes(value as WordFlipChallengeType);
+
+/** Deterministic transformation oracle. null means the noun does not belong to
+ * the declared mode and must be rejected rather than repaired. */
+export const deriveWordFlipAnswer = (
+  type: WordFlipChallengeType,
+  word: string,
+): string | null => {
+  if (type === 'plural_s') {
+    if (
+      /(s|x|z|ch|sh|o)$/.test(word)
+      || /(f|fe)$/.test(word)
+      || /[^aeiou]y$/.test(word)
+      || IRREGULAR_WORDS.has(word)
+    ) return null;
+    return `${word}s`;
+  }
+  if (type === 'plural_es') {
+    return /(s|x|ch|sh)$/.test(word) ? `${word}es` : null;
+  }
+  if (type === 'plural_y') {
+    return /[^aeiou]y$/.test(word) ? `${word.slice(0, -1)}ies` : null;
+  }
+  if (type === 'irregulars') return IRREGULAR_PLURALS[word] ?? null;
+  if (type === 'past_ed') {
+    return PAST_ED_SEEDS.some(seed => seed.word === word) ? `${word}ed` : null;
+  }
+  return IRREGULAR_PAST[word] ?? null;
+};
 
 const validateNounPool = (raw: RawNounPool): ValidNoun[] => {
   const survivors: ValidNoun[] = [];
   const seenWords = new Set<string>();
   let rejected = 0;
 
-  for (const n of raw.nouns ?? []) {
-    const word = n.word?.trim().toLowerCase() ?? '';
-    const emoji = n.emoji?.trim() ?? '';
-
-    // 1. Word shape: lowercase letters only, 2-12 chars.
-    if (!/^[a-z]{2,12}$/.test(word)) { rejected += 1; continue; }
-
-    // 2. REGULAR-PLURAL GUARD (code-enforced): the plural must be formed by
-    //    adding ONLY -s. Reject -es takers (s/x/z/ch/sh/o endings), f/fe → -ves
-    //    words, consonant+y → -ies words, and known irregulars.
-    if (
-      /(s|x|z|ch|sh|o)$/.test(word)
-      || /(f|fe)$/.test(word)
-      || /[^aeiou]y$/.test(word)
-      || IRREGULARS.has(word)
-    ) { rejected += 1; continue; }
-
-    // 3. Emoji: non-empty and actually an emoji (contains non-ASCII).
+  for (const candidate of raw.nouns ?? []) {
+    const type = candidate.type?.trim() ?? '';
+    const word = candidate.word?.trim().toLowerCase() ?? '';
+    const emoji = candidate.emoji?.trim() ?? '';
+    if (!isChallengeType(type) || !/^[a-z]{2,12}$/.test(word)) { rejected += 1; continue; }
+    const answer = deriveWordFlipAnswer(type, word);
+    if (!answer) { rejected += 1; continue; }
     if (!emoji || /^[a-z0-9\s]*$/i.test(emoji)) { rejected += 1; continue; }
-
-    // 4. Dedupe words across the pool.
     if (seenWords.has(word)) { rejected += 1; continue; }
     seenWords.add(word);
-
-    survivors.push({ word, emoji });
+    survivors.push({ type, word, emoji, answer });
   }
 
   if (rejected > 0) {
@@ -202,18 +281,11 @@ const validateNounPool = (raw: RawNounPool): ValidNoun[] => {
   return survivors;
 };
 
-// ---------------------------------------------------------------------------
-// Gemini call — throws on empty/unparseable output (never fabricates).
-// ---------------------------------------------------------------------------
-
 const SYSTEM_INSTRUCTION =
-  `You are an expert early-childhood language specialist. You supply pools of concrete, picturable `
-  + `nouns for a Kindergarten "one → many" plural game. Every noun you give MUST form its plural by `
-  + `JUST ADDING -s (dog → dogs). NEVER give: words ending in s, x, z, ch, or sh (they take -es); `
-  + `words ending in o (potato); words ending in f or fe (leaf → leaves); words ending in a consonant + y `
-  + `(puppy → puppies); or ANY irregular plural (man, child, foot, tooth, mouse, goose, person, sheep, `
-  + `fish, deer). Every noun is a real common word a 5-year-old knows, lowercase, letters only, and comes `
-  + `with EXACTLY ONE emoji that clearly depicts it. All nouns in a pool are distinct.`;
+  `You are an expert early-childhood language specialist. Supply typed pools of concrete, picturable nouns or `
+  + `action words for a K-2 spoken grammar-transformation game. Follow each requested challenge-type rule exactly. `
+  + `Every word is familiar, lowercase, letters only, and has exactly one clear emoji. All words are distinct. `
+  + `Never author transformed answers.`;
 
 const callGemini = async (schema: Schema, prompt: string, corrective?: string): Promise<RawNounPool> => {
   const response = await ai.models.generateContent({
@@ -225,9 +297,8 @@ const callGemini = async (schema: Schema, prompt: string, corrective?: string): 
       systemInstruction: SYSTEM_INSTRUCTION,
     },
   });
-  const text = response.text;
-  if (!text) throw new Error('No data returned from Gemini API');
-  return JSON.parse(text) as RawNounPool;
+  if (!response.text) throw new Error('No data returned from Gemini API');
+  return JSON.parse(response.text) as RawNounPool;
 };
 
 const buildPrompt = (
@@ -235,101 +306,125 @@ const buildPrompt = (
   intent: string | undefined,
   grade: string,
   seedHint: string,
-): string =>
-  `Give a pool of concrete Kindergarten nouns for a "one → many" plural game. The child sees ONE of a
-thing ("one dog 🐕"), then several of it, and says the new word ("dogs"). Theme the nouns to the topic
-where it fits naturally; a plain everyday noun is always better than a forced on-topic one.
-Topic: "${topic}".${intent ? `\nSPECIFIC FOCUS: lean noun choices toward "${intent}" when possible — but ALWAYS prioritize simple, picturable, Kindergarten-known nouns over this focus.` : ''}
+  modeSection: string,
+): string => `Give a typed pool of concrete K-2 words for a spoken grammar-transformation game. Plural items show
+one thing and then several; past-tense items show an action today and ask how to say it when it happened yesterday.
+Theme words to the topic where natural; a familiar everyday word is better than a forced topical one.
+Topic: "${topic}".${intent ? `\nSPECIFIC FOCUS: "${intent}". Keep the grammar skill and picturability primary.` : ''}
 TARGET GRADE LEVEL: ${grade}
 
-Produce 12-16 distinct nouns, each with exactly one emoji.
+${modeSection}
 
-HARD RULES for every word (any violation makes the word unusable):
-- lowercase, letters only, 2-12 characters, a real common noun a 5-year-old knows.
-- the plural MUST be formed by adding ONLY -s (dog → dogs).
-- FORBIDDEN: words ending in s, x, z, ch, or sh (they take -es); words ending in o (potato);
-  words ending in f or fe (leaf → leaves); words ending in a consonant + y (puppy → puppies);
-  ALL irregular plurals (man, child, foot, tooth, mouse, goose, person, sheep, fish, deer).
-- each noun gets EXACTLY ONE emoji that clearly depicts it.
-- all nouns distinct.
+Produce 12-18 distinct typed words. For a blended or mixed session, use every listed type at least twice.
 
-Good candidates if they fit the topic (feel free to use others that fit better): ${seedHint}.
+HARD RULES:
+- Every word is lowercase letters only, 2-12 characters, concrete, familiar, and has exactly one clear emoji.
+- plural_s: add only -s. No s/x/z/ch/sh/o, f/fe, consonant+y, or irregular nouns.
+- plural_es: the noun ends in s, x, ch, or sh and adds only -es. No z or o endings.
+- plural_y: the noun ends in consonant+y and changes y to -ies. No vowel+y nouns such as toy or key.
+- irregulars: use only man, woman, child, foot, tooth, goose, mouse, person, ox. Every answer must sound different from its singular.
+- past_ed: use only jump, walk, play, help, look, wash, kick, cook, paint, clean, open, laugh; add only -ed.
+- past_irregular: use only go, run, eat, see, come, sit, get, make, take, give, have, do, say, sleep.
+- Never provide a transformed answer; code owns it.
+- All words are distinct.
 
-Also provide:
-- title: a fun, kid-friendly session title including the topic.`;
+Good candidates if they fit: ${seedHint}.
 
-// ---------------------------------------------------------------------------
-// Orchestrator
-// ---------------------------------------------------------------------------
+Also provide a fun session title including the topic.`;
+
+const coverageScore = (pool: ValidNoun[], types: WordFlipChallengeType[]): number =>
+  types.filter(type => pool.some(noun => noun.type === type)).length * 100 + pool.length;
+
+const selectSessionNouns = (
+  pool: ValidNoun[],
+  activeTypes: WordFlipChallengeType[],
+  sessionSize: number,
+): ValidNoun[] => {
+  const selected: ValidNoun[] = [];
+  for (const type of activeTypes) {
+    const candidate = shuffle(pool.filter(noun => noun.type === type))[0];
+    if (candidate) selected.push(candidate);
+  }
+  const used = new Set(selected.map(noun => noun.word));
+  selected.push(...shuffle(pool.filter(noun => !used.has(noun.word))).slice(0, sessionSize - selected.length));
+  return selected.sort(
+    (a, b) => ALL_CHALLENGE_TYPES.indexOf(a.type) - ALL_CHALLENGE_TYPES.indexOf(b.type),
+  );
+};
 
 export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlipData> => {
-  const { topic } = ctx;
-  const intent = ctx.intent;
-  const grade = ctx.gradeContext;
-
-  const schema = buildNounPoolSchema();
-  const seedHint = shuffle(SEED_NOUNS)
-    .slice(0, 8)
-    .map(s => `${s.word} ${s.emoji}`)
+  const resolution = await resolveEvalModes(
+    'word-flip',
+    {
+      targetEvalMode: ctx.targetEvalMode,
+      intent: ctx.intent,
+      objectiveText: ctx.objective?.text,
+    },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const activeTypes = (resolution?.allowedTypes ?? ALL_CHALLENGE_TYPES) as WordFlipChallengeType[];
+  const sessionSize = Math.max(5, activeTypes.length);
+  const baseSchema = buildNounPoolSchema();
+  const activeSchema = resolution
+    ? constrainChallengeTypeEnum(baseSchema, activeTypes, CHALLENGE_TYPE_DOCS, { arrayName: 'nouns' })
+    : baseSchema;
+  const modeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
+  const seedHint = shuffle(activeTypes.flatMap(type => SEEDS_BY_TYPE[type]))
+    .slice(0, 12)
+    .map(seed => `${seed.word} ${seed.emoji}`)
     .join(', ');
 
+  console.log(
+    `[WordFlip] modes: ${resolution ? `${resolution.modes.map(mode => mode.evalMode).join('+')} (${resolution.source})` : 'mixed'} -> types [${activeTypes.join(', ')}]`,
+  );
+
   try {
-    const prompt = buildPrompt(topic, intent, grade, seedHint);
-
-    // First pass.
-    let raw = await callGemini(schema, prompt);
+    const prompt = buildPrompt(ctx.topic, ctx.intent, ctx.gradeContext, seedHint, modeSection);
+    let raw = await callGemini(activeSchema, prompt);
     let pool = validateNounPool(raw);
+    const missingTypes = () => activeTypes.filter(type => !pool.some(noun => noun.type === type));
 
-    // One corrective retry if the pool can't fill a 5-challenge session (never fabricate).
-    if (pool.length < 5) {
-      console.warn(`[WordFlip] only ${pool.length}/5 usable nouns — retrying once`);
-      raw = await callGemini(schema, prompt,
-        `PREVIOUS ATTEMPT REJECTED: too few usable nouns. Regenerate 16 nouns. For EACH noun: `
-        + `(1) lowercase letters only, 2-12 chars, a real noun a 5-year-old knows; `
-        + `(2) the plural MUST be formed by adding ONLY -s — NO words ending in s, x, z, ch, sh, or o, `
-        + `NO words ending in f or fe, NO words ending in a consonant + y, NO irregular plurals `
-        + `(man, child, foot, tooth, mouse, goose, person, sheep, fish, deer); `
-        + `(3) exactly one emoji that clearly depicts the noun; `
-        + `(4) all nouns distinct.`);
-      const retryPool = validateNounPool(raw);
-      // Keep whichever attempt yielded more usable nouns.
-      if (retryPool.length > pool.length) pool = retryPool;
+    if (pool.length < sessionSize || missingTypes().length > 0) {
+      console.warn(`[WordFlip] usable pool ${pool.length}/${sessionSize}; missing [${missingTypes().join(', ')}] - retrying once`);
+      const retryRaw = await callGemini(
+        activeSchema,
+        prompt,
+        `PREVIOUS ATTEMPT REJECTED: regenerate 16 nouns and use every allowed type at least twice. `
+        + `plural_s adds only -s; plural_es ends in s/x/ch/sh and adds only -es; plural_y changes consonant+y `
+        + `to -ies; irregulars uses only the `
+        + `supplied irregular list. Every entry needs lowercase letters, exactly one clear emoji, and a distinct word.`,
+      );
+      const retryPool = validateNounPool(retryRaw);
+      if (coverageScore(retryPool, activeTypes) > coverageScore(pool, activeTypes)) {
+        raw = retryRaw;
+        pool = retryPool;
+      }
     }
 
-    const title = raw.title?.trim() || '';
-
-    if (pool.length < 5) {
-      throw new Error(`[WordFlip] Noun pool too small after retry: ${pool.length}/5 usable nouns`);
+    const missing = activeTypes.filter(type => !pool.some(noun => noun.type === type));
+    if (pool.length < sessionSize || missing.length > 0) {
+      throw new Error(`[WordFlip] pool unusable after retry: ${pool.length}/${sessionSize} words; missing [${missing.join(', ')}]`);
     }
-    if (!title) {
-      throw new Error('[WordFlip] Gemini pool missing title');
-    }
+    const title = raw.title?.trim() ?? '';
+    if (!title) throw new Error('[WordFlip] Gemini pool missing title');
 
-    // Counts 2-5 with guaranteed variety: one of each, plus one random repeat,
-    // shuffled — the 5 challenges can never share a single count monoculture.
-    const COUNT_CHOICES = [2, 3, 4, 5];
-    const counts = shuffle([
-      ...COUNT_CHOICES,
-      COUNT_CHOICES[Math.floor(Math.random() * COUNT_CHOICES.length)],
-    ]);
-
-    // Assemble 5 challenges — code derives the answer from the rule. The two
-    // authentic K error shapes (the bare singular and the over-regularized
-    // "-ses" form) are no longer built as chips; they are named in the judging
-    // contract as answers that look right and are not.
-    const selected = shuffle(pool).slice(0, 5);
-    const challenges: WordFlipChallenge[] = selected.map((n, i) => ({
-      id: `word-flip-${i + 1}`,
-      type: 'plural_s',
-      singular: n.word,
-      answer: `${n.word}s`,
-      emoji: n.emoji,
-      count: counts[i],
+    const countChoices = [2, 3, 4, 5];
+    const counts = shuffle(Array.from(
+      { length: sessionSize },
+      (_, index) => countChoices[index % countChoices.length],
+    ));
+    const challenges: WordFlipChallenge[] = selectSessionNouns(pool, activeTypes, sessionSize).map((noun, index) => ({
+      id: `word-flip-${index + 1}`,
+      type: noun.type,
+      sourceWord: noun.word,
+      answer: noun.answer,
+      emoji: noun.emoji,
+      count: noun.type.startsWith('plural_') || noun.type === 'irregulars' ? counts[index] : undefined,
     }));
 
     const data: WordFlipData = {
       title,
-      challengeType: 'plural_s',
+      challengeType: activeTypes.length === 1 ? activeTypes[0] : 'mixed',
       challenges,
       gradeLevel: ctx.gradeContext,
     };
@@ -338,10 +433,10 @@ export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlip
       title: data.title,
       poolSize: pool.length,
       challengeCount: challenges.length,
-      words: challenges.map(c => c.singular),
-      counts: challenges.map(c => c.count),
+      words: challenges.map(challenge => challenge.sourceWord),
+      types: challenges.map(challenge => challenge.type),
+      counts: challenges.map(challenge => challenge.count),
     });
-
     return data;
   } catch (error) {
     console.error('Error generating word flip:', error);

@@ -628,18 +628,18 @@ registerContextGenerator('story-talk', async (ctx) => ({
 // ============================================================================
 
 /**
- * Word Flip - K-1 spoken grammar transformations (regular -s plurals at birth).
+ * Word Flip - K-2 spoken grammar transformations (plural and past tense).
  * Counted-picture frame ("One dog 🐕 · Three ___?"); the child SAYS the plural
- * ("dogs"); tap chips are the receptive fallback.
+ * ("dogs"); the live tutor judges the open-mic response in band.
  *
  * Perfect for:
- * - K-1 regular plural formation (L.K.1c territory)
- * - Spoken production practice with a tap-chip support net
+ * - K-2 regular and common irregular plural and past-tense formation
+ * - Spoken production practice with a tap-to-hear stimulus
  * - One → many counting-frame vocabulary
  *
  * Grade Scaling:
  * - K: everyday concrete nouns, counts 2-5
- * - Grade 1: same frame; /add-eval-modes widens the transformation ladder
+ * - Grades 1-2: same frame with -es, -ies, and common irregular modes
  */
 registerContextGenerator('word-flip', async (ctx) => ({
   type: 'word-flip',
