@@ -1,27 +1,91 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+/**
+ * ShapeSorter — the judged-loop stage (fifth math DI port; qa/di/BACKLOG.md
+ * item 18). The tutor asks, the child answers OUT LOUD, the tutor's verdict
+ * moves the lesson, and this file only draws what she is talking about.
+ *
+ * NOTHING ON THIS SURFACE IS TAPPABLE except the mic and tap-to-hear. Deleted
+ * with the click era: the select-all identify grid with its per-tap green/red
+ * ring, the −/+ side and corner steppers, the "Side 1 / Side 2 / Side 3" tap
+ * row, the "Show corners" toggle, the shape tray + bin buttons, Check, Next
+ * Challenge, the ≥3-attempt hint panel, every feedback string that named the
+ * answer, and the old improvised-tutor hook with all six of its pushed turns.
+ *
+ * ⭐ THE LEAK THAT WAS PIXELS, NOT STRINGS — and there were three of them, all
+ * live in the click era and all harmless only for as long as a button graded
+ * the answer:
+ *
+ *  1. THE "Side 1 … Side N" BUTTON ROW. It printed one labelled, NUMBERED
+ *     control per side of the shape, directly under a question asking how many
+ *     sides the shape has. Counting the buttons was the answer; the highest
+ *     number printed on them WAS the answer. Deleted outright.
+ *  2. THE CURVED-SHAPE NOTE. `CountView` rendered *"This shape has curved sides
+ *     — no straight sides or corners!"* — the answer to its own question, and
+ *     an assertion of one of the two arguable answers the script now refuses to
+ *     ask at all (see `isCountable`). Deleted with the ask.
+ *  3. THE "Find N" BADGE. `showMatchCount` printed how many shapes matched the
+ *     rule — the select-all answer, as a number, at the easy tier. The mode
+ *     names shapes now, so the badge has nothing to count and is gone.
+ *
+ * What SURVIVES is the paper on the table: the drawn shapes, the highlight ring
+ * that says which one "this shape" means, the corner dots (a perception aid —
+ * it marks what to count without ever stating how many, which is the line the
+ * numbered buttons crossed), and the labelled mats. The mats are labelled at
+ * EVERY tier now: the click era blanked them at `hard`, which was legal while
+ * the answer was a position you could tap, and is an unanswerable question the
+ * moment the answer is the label said aloud. That withdrawal moved into the ASK
+ * (`namesChoices`) — see the script header.
+ *
+ * Cue lines, judging contracts, the geometry table and the build gates live in
+ * `shapeSorterScript.ts` (hand-authored, DISTAR). Nothing in this file writes a
+ * spoken line, and nothing in it decides an answer.
+ *
+ * NO TIMED STIMULUS, so no `onPresentStimulus`: every shape this pack asks
+ * about is on screen for the whole item, and the ask refers to a highlight that
+ * is already painted. `tutor-owns-the-clock` still binds progression — the
+ * runner owns that — there is simply no presentation beat to gate.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  LuminaBadge,
   LuminaCard,
+  LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
-  LuminaCardContent,
-  LuminaBadge,
-  LuminaPanel,
-  LuminaActionButton,
+  LuminaChallengeCounter,
+  LuminaDropZone,
+  LuminaReadAloudGlyph,
+  type DropZoneState,
 } from '../../../ui';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ShapeSorterMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import { SoundManager } from '../../../utils/SoundManager';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import {
+  SHAPE_PROPERTIES,
+  itemsFromChallenges,
+  shapeSorterPackBase,
+  type ShapeSorterItem,
+  type ShapeSorterMode,
+  type ShapeSorterTier,
+} from './shapeSorterScript';
+
+// Re-exported: the geometry table used to live here and the generator kept a
+// hand-synced copy of it. It has one home now (the script module, which is not
+// a client module, so the server side can import it); this alias keeps existing
+// importers of `ShapeSorter`'s table working.
+export { SHAPE_PROPERTIES };
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -36,29 +100,28 @@ export interface ShapeSorterShape {
 
 export interface ShapeSorterChallenge {
   id: string;
-  type: 'identify' | 'count' | 'sort';
+  type: ShapeSorterMode;
   instruction: string;
-  /** The attribute being tested: shape name, color, side count, or curved vs straight */
+  /** The attribute being tested: shape name, color, side count, or curved.
+   *  Under the judged loop this is the SORT dimension (sort) or the pool
+   *  composition lever (identify/count) — never an answer surface. */
   ruleAttribute: 'shape' | 'color' | 'sides' | 'curved';
-  /** For identify: the target value to match (e.g. "triangle", "red", "3", "true").
-   *  For count: the shape name to examine (e.g. "hexagon"). */
+  /** identify: the value the pool was composed around. count: the shape to
+   *  examine. Never rendered — the tutor's ask is the instruction now. */
   targetValue?: string;
-  /** Pool of shapes — all challenge types use this unified array */
+  /** Pool of shapes — all challenge types use this unified array. */
   shapes: ShapeSorterShape[];
 
-  // ── Within-mode support tier (config.difficulty) — display-only scaffolds.
-  //    Set by the generator per challenge; absent = no tier (defaults stand).
-  //    The checker NEVER reads these; they only withdraw on-screen self-check cues.
+  // ── Within-mode support tier (config.difficulty) ────────────────────────
   /** Tier this challenge was generated at ('easy' | 'medium' | 'hard'). */
-  supportTier?: 'easy' | 'medium' | 'hard';
-  /** sort: label each bin with its attribute value. hard → blank bins (recall criterion). */
-  showBinLabels?: boolean;
-  /** sort: show each bin's live "N shapes" count badge (self-check). easy only. */
-  showBinCounts?: boolean;
-  /** count: pre-reveal the corner dots so the student counts them directly. easy only. */
+  supportTier?: ShapeSorterTier;
+  /** count: pre-reveal the corner dots so the student counts them directly.
+   *  A perception aid, never a readout — it marks what to count and states no
+   *  number. easy only. */
   showCornerHints?: boolean;
-  /** identify: show a "find N" badge of how many shapes match (self-check). easy only. */
-  showMatchCount?: boolean;
+  /** sort: show each mat's live count of AFFIRMED shapes (progress, not a
+   *  self-check — nothing lands on a mat until the tutor says so). */
+  showBinCounts?: boolean;
 }
 
 export interface ShapeSorterData {
@@ -77,29 +140,13 @@ export interface ShapeSorterData {
 }
 
 // ============================================================================
-// Shape Property Reference — the single source of geometric truth
-// ============================================================================
-
-export const SHAPE_PROPERTIES: Record<string, { sides: number; corners: number; curved: boolean }> = {
-  circle:    { sides: 0, corners: 0, curved: true },
-  oval:      { sides: 0, corners: 0, curved: true },
-  triangle:  { sides: 3, corners: 3, curved: false },
-  square:    { sides: 4, corners: 4, curved: false },
-  rectangle: { sides: 4, corners: 4, curved: false },
-  diamond:   { sides: 4, corners: 4, curved: false },
-  rhombus:   { sides: 4, corners: 4, curved: false },
-  pentagon:  { sides: 5, corners: 5, curved: false },
-  hexagon:   { sides: 6, corners: 6, curved: false },
-};
-
-// ============================================================================
 // Constants
 // ============================================================================
 
-const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  identify: { label: 'Identify', icon: '👆', accentColor: 'purple' },
-  count:    { label: 'Count',    icon: '🔢', accentColor: 'emerald' },
-  sort:     { label: 'Sort',     icon: '📦', accentColor: 'cyan' },
+const MODE_META: Record<ShapeSorterMode, { label: string; icon: string; accent: 'purple' | 'emerald' | 'cyan' }> = {
+  identify: { label: 'Name It', icon: '🔷', accent: 'purple' },
+  count: { label: 'Count', icon: '🔢', accent: 'emerald' },
+  sort: { label: 'Sort', icon: '📦', accent: 'cyan' },
 };
 
 const SHAPE_COLORS: Record<string, string> = {
@@ -109,122 +156,84 @@ const SHAPE_COLORS: Record<string, string> = {
 
 const SIZE_SCALE: Record<string, number> = { small: 0.6, medium: 1.0, large: 1.4 };
 
-// ============================================================================
-// Code-Derived Truth Helpers
-// ============================================================================
-
-/** Check whether a shape matches the rule for an identify challenge */
-function isTargetShape(s: ShapeSorterShape, ruleAttribute: string, targetValue?: string): boolean {
-  if (!targetValue) return false;
-  const tv = targetValue.trim().toLowerCase();
-  const props = SHAPE_PROPERTIES[s.shape];
-  switch (ruleAttribute) {
-    case 'shape':  return s.shape === tv;
-    case 'color':  return s.color === tv;
-    case 'sides':  return String(props?.sides ?? -1) === tv;
-    case 'curved': return String(props?.curved ?? false) === tv;
-    default:       return false;
-  }
-}
-
-/** Derive the bin label a shape belongs to for a sort challenge */
-function getShapeBinLabel(s: ShapeSorterShape, ruleAttribute: string): string {
-  const props = SHAPE_PROPERTIES[s.shape];
-  switch (ruleAttribute) {
-    case 'sides':  return `${props?.sides ?? 0} sides`;
-    case 'color':  return s.color.charAt(0).toUpperCase() + s.color.slice(1);
-    case 'shape':  return s.shape.charAt(0).toUpperCase() + s.shape.slice(1);
-    case 'curved': return (props?.curved ?? false) ? 'Curved' : 'Straight';
-    default:       return 'Unknown';
-  }
-}
+const MAT_COLORS = ['text-cyan-300', 'text-purple-300', 'text-amber-300', 'text-emerald-300'];
 
 // ============================================================================
-// SVG Shape Rendering
+// SVG Shape Rendering — drawing only; it decides nothing
 // ============================================================================
 
 function renderShapeSVG(
   shape: string, cx: number, cy: number, baseSize: number,
   color: string, rotation: number,
-  opts?: { highlighted?: boolean; dimmed?: boolean; showSides?: Set<number>; showCorners?: boolean },
+  opts?: { dimmed?: boolean; showCorners?: boolean },
 ): React.ReactNode {
   const fill = SHAPE_COLORS[color] || color || '#94a3b8';
-  const opacity = opts?.dimmed ? 0.3 : 1;
-  const strokeWidth = opts?.highlighted ? 3 : 1.5;
-  const stroke = opts?.highlighted ? '#fbbf24' : 'rgba(255,255,255,0.3)';
+  const opacity = opts?.dimmed ? 0.25 : 1;
+  const stroke = 'rgba(255,255,255,0.3)';
   const s = baseSize;
   const transform = `rotate(${rotation} ${cx} ${cy})`;
 
   let shapeEl: React.ReactNode = null;
-  const sideLines: React.ReactNode[] = [];
   const cornerDots: React.ReactNode[] = [];
 
-  // Helper to add side highlights + corner dots for a polygon
-  const addPolygonOverlays = (corners: number[][]) => {
-    if (opts?.showCorners) {
-      corners.forEach(([x, y], i) => {
-        cornerDots.push(
-          <circle key={`corner-${i}`} cx={x} cy={y} r={4} fill="#fbbf24"
-            stroke="#000" strokeWidth={1} transform={transform} />
-        );
-      });
-    }
-    if (opts?.showSides) {
-      for (let i = 0; i < corners.length; i++) {
-        const next = (i + 1) % corners.length;
-        if (opts.showSides.has(i)) {
-          sideLines.push(
-            <line key={`side-${i}`} x1={corners[i][0]} y1={corners[i][1]}
-              x2={corners[next][0]} y2={corners[next][1]}
-              stroke="#fbbf24" strokeWidth={4} transform={transform} />
-          );
-        }
-      }
-    }
+  /** Corner dots mark WHERE to count, never HOW MANY — no number is printed,
+   *  and the child still has to enumerate them out loud. */
+  const addCornerDots = (corners: number[][]) => {
+    if (!opts?.showCorners) return;
+    corners.forEach(([x, y], i) => {
+      cornerDots.push(
+        <circle key={`corner-${i}`} cx={x} cy={y} r={4} fill="#fbbf24"
+          stroke="#000" strokeWidth={1} transform={transform} />
+      );
+    });
   };
 
   switch (shape) {
     case 'circle': {
       shapeEl = <circle cx={cx} cy={cy} r={s / 2} fill={fill} stroke={stroke}
-        strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
+        strokeWidth={1.5} opacity={opacity} transform={transform} />;
       break;
     }
     case 'oval': {
       shapeEl = <ellipse cx={cx} cy={cy} rx={s * 0.65} ry={s * 0.4} fill={fill}
-        stroke={stroke} strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
+        stroke={stroke} strokeWidth={1.5} opacity={opacity} transform={transform} />;
       break;
     }
     case 'square': {
       const half = s / 2;
       const c = [[cx - half, cy - half], [cx + half, cy - half], [cx + half, cy + half], [cx - half, cy + half]];
       shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
-      addPolygonOverlays(c);
+        strokeWidth={1.5} opacity={opacity} transform={transform} />;
+      addCornerDots(c);
       break;
     }
     case 'triangle': {
       const h = s * 0.866;
       const c = [[cx, cy - h / 2], [cx - s / 2, cy + h / 2], [cx + s / 2, cy + h / 2]];
       shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
-      addPolygonOverlays(c);
+        strokeWidth={1.5} opacity={opacity} transform={transform} />;
+      addCornerDots(c);
       break;
     }
     case 'rectangle': {
+      // Drawn 2:1 on purpose — a rectangle and a square must never both be
+      // defensible names for one drawing (the K convention di-shapes states).
       const w = s * 1.4, h = s * 0.7;
       const c = [[cx - w / 2, cy - h / 2], [cx + w / 2, cy - h / 2], [cx + w / 2, cy + h / 2], [cx - w / 2, cy + h / 2]];
       shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
-      addPolygonOverlays(c);
+        strokeWidth={1.5} opacity={opacity} transform={transform} />;
+      addCornerDots(c);
       break;
     }
     case 'diamond':
     case 'rhombus': {
+      // ONE branch, so these are the SAME drawing — which is why the script
+      // accepts either name for either item rather than judging one wrong.
       const half = s / 2;
       const c = [[cx, cy - half * 1.2], [cx + half, cy], [cx, cy + half * 1.2], [cx - half, cy]];
       shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
-      addPolygonOverlays(c);
+        strokeWidth={1.5} opacity={opacity} transform={transform} />;
+      addCornerDots(c);
       break;
     }
     case 'hexagon': {
@@ -234,8 +243,8 @@ function renderShapeSVG(
         return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
       });
       shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
-      addPolygonOverlays(c);
+        strokeWidth={1.5} opacity={opacity} transform={transform} />;
+      addCornerDots(c);
       break;
     }
     case 'pentagon': {
@@ -245,279 +254,18 @@ function renderShapeSVG(
         return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
       });
       shapeEl = <polygon points={c.map(p => p.join(',')).join(' ')} fill={fill} stroke={stroke}
-        strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
-      addPolygonOverlays(c);
+        strokeWidth={1.5} opacity={opacity} transform={transform} />;
+      addCornerDots(c);
       break;
     }
     default: {
       shapeEl = <circle cx={cx} cy={cy} r={s / 2} fill={fill} stroke={stroke}
-        strokeWidth={strokeWidth} opacity={opacity} transform={transform} />;
+        strokeWidth={1.5} opacity={opacity} transform={transform} />;
     }
   }
 
-  return <g>{shapeEl}{sideLines}{cornerDots}</g>;
+  return <g>{shapeEl}{cornerDots}</g>;
 }
-
-// ============================================================================
-// Sub-Components
-// ============================================================================
-
-// --- IDENTIFY: Tap all shapes matching the rule ---
-interface IdentifyViewProps {
-  shapes: ShapeSorterShape[];
-  targetIndices: Set<number>;
-  selectedIndices: Set<number>;
-  onToggle: (index: number) => void;
-  /** easy-tier scaffold: show a "find N" self-check badge of how many match. */
-  showMatchCount?: boolean;
-}
-
-const IdentifyView: React.FC<IdentifyViewProps> = ({ shapes, targetIndices, selectedIndices, onToggle, showMatchCount }) => {
-  const cols = Math.min(shapes.length, 4);
-  const cellSize = 90;
-  const svgWidth = cols * cellSize;
-  const rows = Math.ceil(shapes.length / cols);
-  const svgHeight = rows * cellSize;
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      {showMatchCount && targetIndices.size > 0 && (
-        <Badge className="bg-emerald-500/15 border-emerald-400/30 text-emerald-300 text-xs">
-          Find {targetIndices.size} shape{targetIndices.size !== 1 ? 's' : ''}
-        </Badge>
-      )}
-      <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-        className="max-w-full h-auto">
-        {shapes.map((s, i) => {
-          const col = i % cols;
-          const row = Math.floor(i / cols);
-          const cx = col * cellSize + cellSize / 2;
-          const cy = row * cellSize + cellSize / 2;
-          const scale = SIZE_SCALE[s.size] || 1;
-          const baseSize = 36 * scale;
-          const isSelected = selectedIndices.has(i);
-          const isTarget = targetIndices.has(i);
-
-          return (
-            <g key={i} className="cursor-pointer" onClick={() => onToggle(i)}>
-              {isSelected && (
-                <circle cx={cx} cy={cy} r={baseSize / 2 + 8} fill="none"
-                  stroke={isTarget ? '#22c55e' : '#ef4444'} strokeWidth={3}
-                  strokeDasharray={isTarget ? 'none' : '6 3'} />
-              )}
-              {renderShapeSVG(s.shape, cx, cy, baseSize, s.color, s.rotation,
-                { highlighted: isSelected && isTarget })}
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-};
-
-// --- COUNT: Examine a shape, count sides and corners ---
-interface CountViewProps {
-  shape: ShapeSorterShape;
-  tappedSides: Set<number>;
-  showCorners: boolean;
-  sidesAnswer: string;
-  cornersAnswer: string;
-  /** easy-tier scaffold: pre-reveal the corner dots regardless of the user toggle. */
-  cornerHint?: boolean;
-  onTapSide: (idx: number) => void;
-  onToggleCorners: () => void;
-  onSidesChange: (v: string) => void;
-  onCornersChange: (v: string) => void;
-}
-
-const CountView: React.FC<CountViewProps> = ({
-  shape, tappedSides, showCorners, sidesAnswer, cornersAnswer, cornerHint,
-  onTapSide, onToggleCorners, onSidesChange, onCornersChange,
-}) => {
-  const props = SHAPE_PROPERTIES[shape.shape];
-  const totalSides = props?.sides ?? 0;
-  const isCurved = props?.curved ?? false;
-  // Corner dots are a perception aid only — the student still types the count, so
-  // pre-revealing them at easy never auto-fills the answer.
-  const cornersVisible = showCorners || (cornerHint ?? false);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-center">
-        <svg width={200} height={200} viewBox="0 0 200 200">
-          {renderShapeSVG(shape.shape, 100, 100, 100, shape.color, 0, {
-            showSides: tappedSides,
-            showCorners: cornersVisible,
-          })}
-        </svg>
-      </div>
-
-      {/* Side tap buttons */}
-      {!isCurved && totalSides > 0 && (
-        <div className="flex justify-center gap-2 flex-wrap">
-          {Array.from({ length: totalSides }, (_, i) => (
-            <Button key={i} variant="ghost" size="sm"
-              className={`text-xs ${tappedSides.has(i)
-                ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
-                : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'}`}
-              onClick={() => onTapSide(i)}>
-              Side {i + 1} {tappedSides.has(i) ? '✓' : ''}
-            </Button>
-          ))}
-        </div>
-      )}
-
-      {/* Corner toggle */}
-      {!isCurved && (
-        <div className="flex justify-center">
-          <Button variant="ghost" size="sm"
-            className={`text-xs ${cornersVisible
-              ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
-              : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'}`}
-            onClick={onToggleCorners}>
-            {cornersVisible ? 'Corners shown ✓' : 'Show corners'}
-          </Button>
-        </div>
-      )}
-
-      {/* Curved shape note */}
-      {isCurved && (
-        <p className="text-center text-slate-400 text-xs">
-          This shape has curved sides — no straight sides or corners!
-        </p>
-      )}
-
-      {/* Answer inputs */}
-      <div className="flex justify-center gap-6">
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-sm text-slate-300">How many sides?</span>
-          <div className="flex items-center gap-0 rounded-lg border border-white/20 overflow-hidden">
-            <Button variant="ghost" size="sm"
-              className="h-9 w-9 rounded-none bg-white/5 hover:bg-white/10 text-slate-300 border-r border-white/10 p-0"
-              onClick={() => onSidesChange(String(Math.max(0, (parseInt(sidesAnswer) || 0) - 1)))}>
-              −
-            </Button>
-            <span className="h-9 w-10 flex items-center justify-center bg-slate-800/50 text-slate-100 text-sm font-medium tabular-nums">
-              {sidesAnswer || '0'}
-            </span>
-            <Button variant="ghost" size="sm"
-              className="h-9 w-9 rounded-none bg-white/5 hover:bg-white/10 text-slate-300 border-l border-white/10 p-0"
-              onClick={() => onSidesChange(String(Math.min(20, (parseInt(sidesAnswer) || 0) + 1)))}>
-              +
-            </Button>
-          </div>
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-sm text-slate-300">How many corners?</span>
-          <div className="flex items-center gap-0 rounded-lg border border-white/20 overflow-hidden">
-            <Button variant="ghost" size="sm"
-              className="h-9 w-9 rounded-none bg-white/5 hover:bg-white/10 text-slate-300 border-r border-white/10 p-0"
-              onClick={() => onCornersChange(String(Math.max(0, (parseInt(cornersAnswer) || 0) - 1)))}>
-              −
-            </Button>
-            <span className="h-9 w-10 flex items-center justify-center bg-slate-800/50 text-slate-100 text-sm font-medium tabular-nums">
-              {cornersAnswer || '0'}
-            </span>
-            <Button variant="ghost" size="sm"
-              className="h-9 w-9 rounded-none bg-white/5 hover:bg-white/10 text-slate-300 border-l border-white/10 p-0"
-              onClick={() => onCornersChange(String(Math.min(20, (parseInt(cornersAnswer) || 0) + 1)))}>
-              +
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- SORT: Assign shapes to code-derived bins ---
-interface SortViewProps {
-  shapes: ShapeSorterShape[];
-  bins: string[];
-  ruleAttribute: string;
-  binAssignments: Map<number, string>;
-  selectedShapeIdx: number | null;
-  onSelectShape: (idx: number) => void;
-  onSelectBin: (binLabel: string) => void;
-  /** Tier scaffolds — default ON when undefined (no-tier path unchanged). */
-  showBinLabels?: boolean;
-  showBinCounts?: boolean;
-}
-
-const SortView: React.FC<SortViewProps> = ({
-  shapes, bins, ruleAttribute, binAssignments, selectedShapeIdx,
-  onSelectShape, onSelectBin,
-  showBinLabels, showBinCounts,
-}) => {
-  // Default ON so a no-tier (undefined) generation renders exactly as before.
-  const labelsVisible = showBinLabels ?? true;
-  const countsVisible = showBinCounts ?? true;
-  return (
-    <div className="space-y-4">
-      {/* Rule badge — always shown: it names the sort DIMENSION, not the per-bin
-          membership, so it never trivializes which bin a given shape belongs to. */}
-      <div className="flex justify-center">
-        <Badge className="bg-cyan-500/20 border-cyan-400/30 text-cyan-300 text-xs capitalize">
-          Sort by: {ruleAttribute}
-        </Badge>
-      </div>
-
-      {/* Shapes tray */}
-      <div className="flex justify-center gap-2 flex-wrap">
-        {shapes.map((s, i) => {
-          const isAssigned = binAssignments.has(i);
-          const isActive = selectedShapeIdx === i;
-          return (
-            <button key={i} onClick={() => !isAssigned && onSelectShape(i)}
-              className={`w-16 h-16 rounded-lg border-2 flex items-center justify-center transition-all ${
-                isAssigned ? 'border-emerald-400/30 bg-emerald-400/5 opacity-40' :
-                isActive ? 'border-amber-400 bg-amber-400/10 scale-110' :
-                'border-white/20 bg-white/5 hover:bg-white/10'
-              }`}
-              disabled={isAssigned}>
-              <svg width={40} height={40} viewBox="0 0 40 40">
-                {renderShapeSVG(s.shape, 20, 20, 20, s.color, s.rotation, { dimmed: isAssigned })}
-              </svg>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Bins — derived from shapes + ruleAttribute. binLabel is ALWAYS the
-          assignment key (passed to onSelectBin); only its DISPLAY is withdrawn at
-          harder tiers, so the checker — which compares against the derived label —
-          is unaffected. */}
-      <div className="flex justify-center gap-3 flex-wrap">
-        {bins.map((binLabel, i) => {
-          const count = Array.from(binAssignments.values()).filter(b => b === binLabel).length;
-          return (
-            <button key={i} onClick={() => selectedShapeIdx !== null && onSelectBin(binLabel)}
-              className={`px-4 py-3 rounded-xl border-2 min-w-[100px] transition-all ${
-                selectedShapeIdx !== null
-                  ? 'border-amber-400/50 bg-amber-400/5 hover:bg-amber-400/10 cursor-pointer'
-                  : 'border-white/20 bg-white/5 cursor-default'
-              }`}>
-              <div className="text-sm font-medium text-slate-200">
-                {labelsVisible ? binLabel : `Bin ${i + 1}`}
-              </div>
-              {countsVisible ? (
-                <LuminaBadge className="mt-1 text-xs">
-                  {count} shape{count !== 1 ? 's' : ''}
-                </LuminaBadge>
-              ) : (
-                count > 0 && (
-                  <div className="mt-1 text-xs text-slate-500">
-                    {'•'.repeat(Math.min(count, 8))}
-                  </div>
-                )
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 // ============================================================================
 // Main Component
@@ -531,7 +279,6 @@ interface ShapeSorterProps {
 const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
   const {
     title,
-    description,
     challenges = [],
     gradeBand = 'K',
     instanceId,
@@ -542,49 +289,35 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ── Shared challenge progress ──────────────────────────────────
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  const isPreReader = gradeBand === 'K';
+  const gradeLevel = isPreReader ? 'Kindergarten' : 'Grade 1';
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: CHALLENGE_TYPE_CONFIG,
-  });
-
-  const currentChallenge = challenges[currentChallengeIndex] || null;
-
-  // ── Per-challenge state ────────────────────────────────────────
-  const [identifySelected, setIdentifySelected] = useState<Set<number>>(new Set());
-  const [tappedSides, setTappedSides] = useState<Set<number>>(new Set());
-  const [showCorners, setShowCorners] = useState(false);
-  const [sidesAnswer, setSidesAnswer] = useState('');
-  const [cornersAnswer, setCornersAnswer] = useState('');
-  const [binAssignments, setBinAssignments] = useState<Map<number, string>>(new Map());
-  const [sortSelectedShape, setSortSelectedShape] = useState<number | null>(null);
-
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-
-  // ── Refs & evaluation ──────────────────────────────────────────
   const stableInstanceIdRef = useRef(instanceId || `shape-sorter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<ShapeSorterMetrics>({
+  /** Build gates drop what cannot be asked — a placeholder in a judged loop
+   *  becomes a spoken ask the tutor has to stand behind. */
+  const items = useMemo<ShapeSorterItem[]>(
+    () => itemsFromChallenges(challenges, { isPreReader }),
+    [challenges, isPreReader],
+  );
+
+  /**
+   * The affirmed item's reveal payload. Set on the affirm and rendered behind
+   * `runner.revealHeld` — NOT `currentSolved` and NOT `stage`, and deliberately
+   * never cleared in `onItemOpened` (18b): the runner opens the next item in the
+   * SAME dispatch as the affirmation, so both of the obvious gates are already
+   * false by render time and a payload cleared there paints on the last item
+   * and nowhere else.
+   */
+  const [reveal, setReveal] = useState<{
+    itemId: string;
+    challengeId: string;
+    answer: string;
+  } | null>(null);
+
+  // ── Evaluation ─────────────────────────────────────────────────────────────
+  const evaluation = usePrimitiveEvaluation<ShapeSorterMetrics>({
     primitiveType: 'shape-sorter',
     instanceId: resolvedInstanceId,
     skillId,
@@ -594,466 +327,314 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Code-derived computed values ───────────────────────────────
-
-  /** Target indices for identify challenges — derived from ruleAttribute + targetValue */
-  const targetIndices = useMemo(() => {
-    if (!currentChallenge || currentChallenge.type !== 'identify') return new Set<number>();
-    return new Set(
-      currentChallenge.shapes
-        .map((s, i) => isTargetShape(s, currentChallenge.ruleAttribute, currentChallenge.targetValue) ? i : -1)
-        .filter(i => i >= 0)
+  /** Per-mode accuracy off the runner's own outcome ledger — the only record of
+   *  what the child actually produced. */
+  const accuracyFor = useCallback((summary: JudgedRunSummary, mode: ShapeSorterMode): number => {
+    const ofMode = items.filter((i) => i.mode === mode);
+    if (ofMode.length === 0) return 100;
+    const total = ofMode.reduce(
+      (sum, i) => sum + (summary.outcomes.find((o) => o.id === i.id)?.score ?? 0),
+      0,
     );
-  }, [currentChallenge]);
+    return Math.round(total / ofMode.length);
+  }, [items]);
 
-  /** Bin labels for sort challenges — derived from shapes + ruleAttribute */
-  const sortBins = useMemo(() => {
-    if (!currentChallenge || currentChallenge.type !== 'sort') return [] as string[];
-    const unique = new Set<string>();
-    currentChallenge.shapes.forEach(s => unique.add(getShapeBinLabel(s, currentChallenge.ruleAttribute)));
-    return Array.from(unique).sort();
-  }, [currentChallenge]);
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const metrics: ShapeSorterMetrics = {
+      type: 'shape-sorter',
+      identifyAccuracy: accuracyFor(summary, 'identify'),
+      countAccuracy: accuracyFor(summary, 'count'),
+      sortAccuracy: accuracyFor(summary, 'sort'),
+      attemptsCount: summary.attemptsCount,
+    };
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      undefined,
+      summary.diagnosisEvidence,
+    );
+  }, [accuracyFor, evaluation]);
 
-  /** Shape properties for count challenges */
-  const countShape = currentChallenge?.type === 'count' ? currentChallenge.shapes[0] : null;
-  const countProps = countShape ? SHAPE_PROPERTIES[countShape.shape] : null;
+  // ── The pack — wording lives in shapeSorterScript.ts ───────────────────────
+  const pack = useMemo<JudgedScriptPack<ShapeSorterItem>>(() => ({
+    ...shapeSorterPackBase(items),
+    statusLines: {
+      idle: 'Tap the microphone to start.',
+      ready: () => 'Look at the shape — then say your answer out loud.',
+      retry: () => 'Have another go — say your answer out loud.',
+      noVerdict: () => 'One more time — say your answer out loud.',
+      done: 'Great shape work today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      const heard = lastHeard?.trim() ?? '';
+      const challenge = item.mode === 'identify'
+        ? 'Look at a drawn shape and say its name out loud'
+        : item.mode === 'count'
+          ? `Look at a drawn shape and say how many ${item.countNoun ?? 'sides'} it has`
+          : 'Look at a drawn shape and say which group it belongs with';
+      return {
+        challenge,
+        expected: `"${item.answer}" said out loud.`,
+        observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+      };
+    },
+  }), [items]);
 
-  // ── AI Tutoring ────────────────────────────────────────────────
-  // Tier-aware reveal policy. RECOGNITION RULE: for identify/sort the assessed
-  // answer IS which shapes match / which bin each shape belongs to, so the tutor
-  // never names that at ANY tier. The tier only modulates how much PROCESS help
-  // (strategy naming, step prompts) the tutor offers.
-  const tier = currentChallenge?.supportTier;
-  const tutorRevealClause = useMemo(() => {
-    if (!currentChallenge) return '';
-    const t = tier ?? 'medium';
-    const recall = t === 'hard'
-      ? 'HARD tier: the student works unaided. Do NOT name the strategy or which feature to use — ask what they notice ("How many straight sides does this one have?"). '
-      : t === 'easy'
-        ? 'EASY tier: name the strategy and walk the first step ("Count the straight sides one at a time — tap each side"). '
-        : 'MEDIUM tier: nudge the next step only, do not name the full strategy. ';
-    const guard = currentChallenge.type === 'count'
-      ? 'NEVER state the side/corner count — let the student count it.'
-      : 'NEVER say which shapes match or which bin a shape belongs to — that IS the answer the student must produce.';
-    return recall + guard;
-  }, [currentChallenge, tier]);
-
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: currentChallenge?.type ?? '',
-    ruleAttribute: currentChallenge?.ruleAttribute ?? '',
-    targetValue: currentChallenge?.targetValue ?? '',
-    shapeName: countShape?.shape,
-    expectedSides: countProps?.sides,
-    expectedCorners: countProps?.corners,
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    instruction: currentChallenge?.instruction ?? '',
-    attemptNumber: currentAttempts + 1,
-    supportTier: tier ?? '',
-    tutorRevealClause,
-  }), [currentChallenge, countShape, countProps, gradeBand, challenges.length, currentChallengeIndex, currentAttempts, tier, tutorRevealClause]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'shape-sorter',
+  const runner = useJudgedScriptRunner<ShapeSorterItem>({
+    pack,
     instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+    gradeLevel,
+    exhibitId,
+    onFinished: handleFinished,
+    onAffirmed: (item) => setReveal({
+      itemId: item.id,
+      challengeId: item.challengeId,
+      answer: item.answer,
+    }),
   });
 
-  // Activity intro
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Shape Sorter activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges covering shape identification, property counting, and attribute-based sorting. `
-      + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's explore shapes together!"`,
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
-
-  // ── Interaction handlers ───────────────────────────────────────
-
-  const handleIdentifyToggle = useCallback((idx: number) => {
-    if (hasSubmittedEvaluation) return;
-    SoundManager.tap();
-    setIdentifySelected(prev => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx); else next.add(idx);
-      return next;
-    });
-  }, [hasSubmittedEvaluation]);
-
-  const handleTapSide = useCallback((idx: number) => {
-    SoundManager.tap();
-    setTappedSides(prev => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx); else next.add(idx);
-      return next;
-    });
-  }, []);
-
-  const handleSortSelectShape = useCallback((idx: number) => {
-    if (hasSubmittedEvaluation) return;
-    SoundManager.select();
-    setSortSelectedShape(idx);
-  }, [hasSubmittedEvaluation]);
-
-  const handleSortSelectBin = useCallback((binLabel: string) => {
-    if (sortSelectedShape === null) return;
-    SoundManager.snap();
-    setBinAssignments(prev => {
-      const next = new Map(prev);
-      next.set(sortSelectedShape, binLabel);
-      return next;
-    });
-    setSortSelectedShape(null);
-  }, [sortSelectedShape]);
-
-  // ── Check answer — all truth derived from SHAPE_PROPERTIES ────
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-    let correct = false;
-
-    switch (currentChallenge.type) {
-      case 'identify': {
-        const selectedAll = Array.from(targetIndices).every(i => identifySelected.has(i));
-        const noExtras = Array.from(identifySelected).every(i => targetIndices.has(i));
-        correct = selectedAll && noExtras && targetIndices.size > 0;
-
-        if (correct) {
-          setFeedback(`Great! You found all the right shapes!`);
-          setFeedbackType('success');
-          sendText(`[ANSWER_CORRECT] Student correctly identified all shapes matching ${currentChallenge.ruleAttribute}=${currentChallenge.targetValue}. Congratulate briefly.`, { silent: true });
-        } else {
-          const missed = Array.from(targetIndices).filter(i => !identifySelected.has(i)).length;
-          const extra = Array.from(identifySelected).filter(i => !targetIndices.has(i)).length;
-          setFeedback(
-            missed > 0
-              ? `You missed ${missed} shape${missed > 1 ? 's' : ''}. Look more carefully!`
-              : `${extra} shape${extra > 1 ? 's don\'t' : ' doesn\'t'} match. Try again!`
-          );
-          setFeedbackType('error');
-          sendText(`[ANSWER_INCORRECT] Missed ${missed}, ${extra} extras. Rule: ${currentChallenge.ruleAttribute}=${currentChallenge.targetValue}. Attempt ${currentAttempts + 1}. ${tutorRevealClause} Give a hint.`, { silent: true });
-        }
-        break;
-      }
-
-      case 'count': {
-        const expSides = countProps?.sides ?? 0;
-        const expCorners = countProps?.corners ?? 0;
-        const sidesCorrect = parseInt(sidesAnswer) === expSides;
-        const cornersCorrect = parseInt(cornersAnswer) === expCorners;
-        correct = sidesCorrect && cornersCorrect;
-
-        const shapeName = countShape?.shape ?? 'shape';
-        if (correct) {
-          setFeedback(`Yes! A ${shapeName} has ${expSides} sides and ${expCorners} corners!`);
-          setFeedbackType('success');
-          sendText(`[ANSWER_CORRECT] Student correctly counted ${expSides} sides and ${expCorners} corners for ${shapeName}. Reinforce the shape-property connection.`, { silent: true });
-        } else {
-          const hint = !sidesCorrect
-            ? 'Check the sides again — try tapping each one.'
-            : 'Check the corners again — look where the sides meet.';
-          setFeedback(hint);
-          setFeedbackType('error');
-          sendText(`[ANSWER_INCORRECT] Student said ${sidesAnswer} sides, ${cornersAnswer} corners for ${shapeName} (expected ${expSides}/${expCorners}). Attempt ${currentAttempts + 1}. ${tutorRevealClause} ${hint}`, { silent: true });
-        }
-        break;
-      }
-
-      case 'sort': {
-        const shapes = currentChallenge.shapes;
-        if (binAssignments.size < shapes.length) {
-          setFeedback('Sort all shapes into bins first!');
-          setFeedbackType('error');
-          return;
-        }
-        const wrongCount = shapes.filter((s, i) =>
-          binAssignments.get(i) !== getShapeBinLabel(s, currentChallenge.ruleAttribute)
-        ).length;
-        correct = wrongCount === 0;
-
-        if (correct) {
-          setFeedback('Amazing! You sorted all shapes correctly!');
-          setFeedbackType('success');
-          sendText(`[ANSWER_CORRECT] Student sorted all shapes correctly by ${currentChallenge.ruleAttribute}. Congratulate.`, { silent: true });
-        } else {
-          setFeedback(`${wrongCount} shape${wrongCount > 1 ? 's are' : ' is'} in the wrong bin. Try again!`);
-          setFeedbackType('error');
-          sendText(`[ANSWER_INCORRECT] ${wrongCount} shapes sorted incorrectly by ${currentChallenge.ruleAttribute}. Attempt ${currentAttempts + 1}. ${tutorRevealClause} Hint about the sorting rule.`, { silent: true });
-          setBinAssignments(new Map());
-          setSortSelectedShape(null);
-        }
-        break;
-      }
-    }
-
-    if (correct) {
-      SoundManager.playCorrect();
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        challengeType: currentChallenge.type,
-      });
-    } else {
-      SoundManager.playIncorrect();
-    }
-  }, [
-    currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText,
-    identifySelected, targetIndices, sidesAnswer, cornersAnswer, countProps, countShape,
-    binAssignments, tutorRevealClause,
-  ]);
-
-  // ── Advance to next challenge ──────────────────────────────────
-  const resetChallengeState = useCallback(() => {
-    setIdentifySelected(new Set());
-    setTappedSides(new Set());
-    setShowCorners(false);
-    setSidesAnswer('');
-    setCornersAnswer('');
-    setBinAssignments(new Map());
-    setSortSelectedShape(null);
-    setFeedback('');
-    setFeedbackType('');
-  }, []);
-
-  // Helper to calculate accuracy per challenge type
-  const calcTypeAccuracy = useCallback((type: string): number => {
-    const ofType = challenges.filter(c => c.type === type);
-    if (ofType.length === 0) return 100;
-    const correctCount = ofType.filter(c =>
-      challengeResults.find(r => r.challengeId === c.id && r.correct)
-    ).length;
-    return Math.round((correctCount / ofType.length) * 100);
-  }, [challenges, challengeResults]);
-
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All complete
-      const phaseScoreStr = phaseResults
-        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter(r => r.correct).length / challenges.length) * 100
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their geometry skills!`,
-        { silent: true }
-      );
-
-      if (!hasSubmittedEvaluation) {
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-        const metrics: ShapeSorterMetrics = {
-          type: 'shape-sorter',
-          identifyAccuracy: calcTypeAccuracy('identify'),
-          countAccuracy: calcTypeAccuracy('count'),
-          sortAccuracy: calcTypeAccuracy('sort'),
-          attemptsCount: totalAttempts,
-        };
-
-        submitEvaluation(overallPct >= 80, overallPct, metrics, { challengeResults });
-      }
-      return;
-    }
-
-    resetChallengeState();
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Introduce it briefly.`,
-      { silent: true }
-    );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, resetChallengeState,
-    calcTypeAccuracy,
-  ]);
-
-  // Auto-submit when complete
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
-
-  // ── Computed ───────────────────────────────────────────────────
-  const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct
+  const currentItem = runner.currentItem;
+  const modeMeta = MODE_META[currentItem?.mode ?? 'identify'];
+  const currentChallenge = useMemo(
+    () => challenges.find((c) => c.id === currentItem?.challengeId) ?? null,
+    [challenges, currentItem],
   );
 
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    return Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
+  /**
+   * The mat the tutor is affirming right now, for the reveal ring. Guarded on
+   * the challenge as well as the hold: by render time the surface may already
+   * point at the next challenge's mats, and lighting one of those would be
+   * wrong.
+   */
+  const revealedChoice =
+    runner.revealHeld && reveal && reveal.challengeId === currentItem?.challengeId
+      ? reveal.answer
+      : null;
 
-  const canCheck = useMemo(() => {
-    if (!currentChallenge || isCurrentChallengeComplete || hasSubmittedEvaluation) return false;
-    switch (currentChallenge.type) {
-      case 'identify': return identifySelected.size > 0;
-      case 'count': return sidesAnswer !== '' && cornersAnswer !== '';
-      case 'sort': return binAssignments.size === currentChallenge.shapes.length;
-      default: return false;
+  /** The answer, printed — but only while the tutor is saying it. The first
+   *  moment it may appear on screen is the affirmation (answer-leak rule). */
+  const revealedAnswer = runner.revealHeld && reveal ? reveal.answer : null;
+
+  /**
+   * Which shapes of this challenge have already been placed, read off the
+   * runner's solved ledger rather than a local map — so the only thing that can
+   * put a shape on a mat is a tutor affirmation.
+   */
+  const placedByChoice = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!currentItem) return map;
+    for (const item of items) {
+      if (item.challengeId !== currentItem.challengeId || item.mode !== 'sort') continue;
+      if (!runner.solvedIds.has(item.id)) continue;
+      map.set(item.answer, (map.get(item.answer) ?? 0) + 1);
     }
-  }, [currentChallenge, isCurrentChallengeComplete, hasSubmittedEvaluation,
-      identifySelected, sidesAnswer, cornersAnswer, binAssignments]);
+    return map;
+  }, [items, currentItem, runner.solvedIds]);
 
-  // ── Render ─────────────────────────────────────────────────────
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => ({
+      label: MODE_META[item.mode].label,
+      icon: MODE_META[item.mode].icon,
+      accentColor: MODE_META[item.mode].accent,
+    }));
+  }, [evaluation.hasSubmitted, runner.summary, items]);
+
+  // ============================================================================
+  // Render
+  // ============================================================================
+
+  if (items.length === 0) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-8 text-center text-slate-400">
+          These shape challenges are still being drawn. Try generating them again.
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  /**
+   * The pool — printed material, never an answer surface. The current shape is
+   * ringed and the rest are dimmed, because the ask says "this shape" and
+   * exactly one drawing on screen has to be the one meant.
+   */
+  const renderPool = (item: ShapeSorterItem, shapes: ShapeSorterShape[]) => {
+    const cols = Math.min(Math.max(shapes.length, 1), 4);
+    const cellSize = 96;
+    const rows = Math.ceil(shapes.length / cols);
+    const svgWidth = cols * cellSize;
+    const svgHeight = rows * cellSize;
+
+    return (
+      <div className="flex justify-center">
+        <svg
+          width={svgWidth}
+          height={svgHeight}
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          className="max-w-full h-auto"
+          role="img"
+          aria-label="Shapes to look at"
+        >
+          {shapes.map((s, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const cx = col * cellSize + cellSize / 2;
+            const cy = row * cellSize + cellSize / 2;
+            const baseSize = 40 * (SIZE_SCALE[s.size] || 1);
+            const isCurrent = i === item.shapeIndex;
+            return (
+              <g key={`${s.shape}-${i}`}>
+                {isCurrent && (
+                  <circle
+                    cx={cx} cy={cy} r={cellSize / 2 - 6}
+                    fill="none"
+                    stroke={revealedAnswer ? '#34d399' : '#fbbf24'}
+                    strokeWidth={3}
+                  />
+                )}
+                {renderShapeSVG(s.shape, cx, cy, baseSize, s.color, s.rotation, {
+                  dimmed: !isCurrent,
+                })}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  };
+
+  /** The single shape a counting item examines, drawn large. */
+  const renderCountStage = (item: ShapeSorterItem, shape: ShapeSorterShape) => (
+    <div className="flex justify-center">
+      <svg width={220} height={220} viewBox="0 0 220 220" role="img" aria-label="Shape to count">
+        {renderShapeSVG(shape.shape, 110, 110, 110, shape.color, shape.rotation, {
+          showCorners: item.showCornerHints,
+        })}
+      </svg>
+    </div>
+  );
+
+  /**
+   * The mats — printed, LABELLED AT EVERY TIER, and nothing here is clickable:
+   * the child says the group out loud. The click era blanked these labels at
+   * `hard`; under a spoken answer that is an unanswerable question, so the
+   * tier's withdrawal lives in the ask instead (`namesChoices`).
+   */
+  const renderMats = (item: ShapeSorterItem) => (
+    <div className={`grid gap-4 ${item.choices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+      {item.choices.map((label, idx) => {
+        const placed = placedByChoice.get(label) ?? 0;
+        const isRevealed = revealedChoice === label;
+        const zoneState: DropZoneState = isRevealed ? 'correct' : placed > 0 ? 'filled' : 'idle';
+        return (
+          <div key={label} className="w-full">
+            <h3
+              className={`mb-2 text-center font-bold ${MAT_COLORS[idx] ?? MAT_COLORS[0]} ${
+                isPreReader ? 'text-lg' : 'text-sm'
+              }`}
+            >
+              {label}
+            </h3>
+            <LuminaDropZone
+              state={zoneState}
+              className="min-h-[76px] pointer-events-none content-center justify-center"
+            >
+              {item.showBinCounts && placed > 0 && (
+                <LuminaBadge
+                  aria-label={`${placed} shapes placed here`}
+                  className="bg-white/10 border-white/10 text-slate-200 text-xs"
+                >
+                  {placed}
+                </LuminaBadge>
+              )}
+            </LuminaDropZone>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const poolShapes = currentChallenge?.shapes ?? [];
+  const countShape = currentItem ? poolShapes[currentItem.shapeIndex] : undefined;
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            <LuminaBadge accent="purple" className="text-xs">
-              {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
+          {!evaluation.hasSubmitted && !isPreReader && (
+            <LuminaBadge accent={modeMeta.accent} className="text-xs">
+              {modeMeta.icon} {modeMeta.label}
             </LuminaBadge>
-            {currentChallenge && (
-              <LuminaBadge accent="cyan" className="text-xs capitalize">
-                {currentChallenge.type}
-              </LuminaBadge>
-            )}
-          </div>
+          )}
         </div>
-        {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
       </LuminaCardHeader>
 
-      <LuminaCardContent className="space-y-4">
-        {/* Challenge progress badges */}
-        {challenges.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(CHALLENGE_TYPE_CONFIG).map(([type, config]) => {
-              if (!challenges.some(c => c.type === type)) return null;
-              const isCurrent = currentChallenge?.type === type;
-              return (
-                <Badge key={type}
-                  className={`text-xs ${isCurrent
-                    ? 'bg-purple-500/20 border-purple-400/50 text-purple-300'
-                    : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                  }`}>
-                  {config.icon} {config.label}
-                </Badge>
-              );
-            })}
-            <span className="text-slate-500 text-xs ml-auto">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
-            </span>
-          </div>
-        )}
-
-        {/* Instruction */}
-        {currentChallenge && !allChallengesComplete && (
-          <LuminaPanel className="p-3">
-            <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-          </LuminaPanel>
-        )}
-
-        {/* Challenge content */}
-        {currentChallenge && !allChallengesComplete && (
+      <LuminaCardContent className="space-y-5">
+        {!evaluation.hasSubmitted && (
           <>
-            {currentChallenge.type === 'identify' && (
-              <IdentifyView
-                shapes={currentChallenge.shapes}
-                targetIndices={targetIndices}
-                selectedIndices={identifySelected}
-                onToggle={handleIdentifyToggle}
-                showMatchCount={currentChallenge.showMatchCount}
+            <div className="flex items-center justify-center gap-4">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
               />
+              {/* Tap-to-hear — the question again, never a hint ladder, and
+                  never withdrawn by band or tier. */}
+              <button
+                type="button"
+                onClick={runner.hearStimulus}
+                className={`
+                  flex h-11 w-11 items-center justify-center rounded-full
+                  bg-amber-500/15 border-2 border-amber-500/30
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
+                `}
+                aria-label="Hear the question again"
+              >
+                <span className="text-xl">🔁</span>
+              </button>
+            </div>
+
+            {currentItem && (
+              <>
+                {currentItem.mode === 'count' && countShape
+                  ? renderCountStage(currentItem, countShape)
+                  : renderPool(currentItem, poolShapes)}
+
+                <div className="flex justify-center">
+                  <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
+                </div>
+
+                {currentItem.mode === 'sort' && renderMats(currentItem)}
+
+                {/* The answer, on screen for exactly as long as she is saying
+                    it. `revealHeld` opens on the affirmation and closes when her
+                    cue for the next item is SENT — no tuned constant. */}
+                {revealedAnswer && (
+                  <p className="text-center text-emerald-300 text-lg font-semibold">
+                    {revealedAnswer}
+                  </p>
+                )}
+              </>
             )}
-            {currentChallenge.type === 'count' && countShape && (
-              <CountView
-                shape={countShape}
-                tappedSides={tappedSides}
-                showCorners={showCorners}
-                cornerHint={currentChallenge.showCornerHints}
-                sidesAnswer={sidesAnswer}
-                cornersAnswer={cornersAnswer}
-                onTapSide={handleTapSide}
-                onToggleCorners={() => { SoundManager.toggle(!showCorners); setShowCorners(p => !p); }}
-                onSidesChange={(v) => { SoundManager.tick(); setSidesAnswer(v); }}
-                onCornersChange={(v) => { SoundManager.tick(); setCornersAnswer(v); }}
-              />
-            )}
-            {currentChallenge.type === 'sort' && (
-              <SortView
-                shapes={currentChallenge.shapes}
-                bins={sortBins}
-                ruleAttribute={currentChallenge.ruleAttribute}
-                binAssignments={binAssignments}
-                selectedShapeIdx={sortSelectedShape}
-                onSelectShape={handleSortSelectShape}
-                onSelectBin={handleSortSelectBin}
-                showBinLabels={currentChallenge.showBinLabels}
-                showBinCounts={currentChallenge.showBinCounts}
-              />
-            )}
+
+            {/* Open for the whole run — no tutor-busy gate, no push-to-talk. */}
+            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {/* Feedback */}
-        {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' : 'text-slate-300'
-          }`}>
-            {feedback}
-          </div>
-        )}
-
-        {/* Action buttons */}
-        {challenges.length > 0 && (
-          <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton action="check"
-                onClick={handleCheckAnswer} disabled={!canCheck} />
-            )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
-                Next Challenge
-              </LuminaActionButton>
-            )}
-            {allChallengesComplete && (
-              <div className="text-center">
-                <p className="text-emerald-400 text-sm font-medium mb-2">All challenges complete!</p>
-                <p className="text-slate-400 text-xs">
-                  {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Hint on repeated failure */}
-        {currentChallenge && feedbackType === 'error' && currentAttempts >= 3 && (
-          <LuminaPanel className="p-2 text-center">
-            <p className="text-slate-400 text-xs italic">
-              {currentChallenge.type === 'count'
-                ? 'Try tapping each side one at a time, then count the corners where sides meet.'
-                : currentChallenge.type === 'identify'
-                ? 'Look carefully at each shape. Does it match the rule?'
-                : 'Take your time and think about what makes each shape different.'}
-            </p>
-          </LuminaPanel>
-        )}
-
-        {/* Phase Summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Shape Sorting Complete!"
-            celebrationMessage={`You completed all ${challenges.length} shape challenges!`}
-            className="mt-4"
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
+            heading="Shape Work Complete!"
+            celebrationMessage="Great shape work — you told me every answer out loud!"
           />
         )}
       </LuminaCardContent>

@@ -4,19 +4,24 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from "../scopeContext";
 
-// Local copy of shape properties — duplicated from ShapeSorter.tsx to avoid
-// importing a 'use client' module into server-side eval-test routes (SS-1).
-const SHAPE_PROPERTIES: Record<string, { sides: number; corners: number; curved: boolean }> = {
-  circle:    { sides: 0, corners: 0, curved: true },
-  oval:      { sides: 0, corners: 0, curved: true },
-  triangle:  { sides: 3, corners: 3, curved: false },
-  square:    { sides: 4, corners: 4, curved: false },
-  rectangle: { sides: 4, corners: 4, curved: false },
-  diamond:   { sides: 4, corners: 4, curved: false },
-  rhombus:   { sides: 4, corners: 4, curved: false },
-  hexagon:   { sides: 6, corners: 6, curved: false },
-  pentagon:  { sides: 5, corners: 5, curved: false },
-};
+// The geometry table and every build gate come from the SCRIPT module — the one
+// address both sides of the wire share. It carried a local copy until the DI
+// port (SS-1: it could not import the `'use client'` component); `shapeSorterScript`
+// is not a client module, so the copy is deleted rather than re-synced. A
+// hand-synced pair drifts, and letter-spotter's 90-vs-100 disagreement is why
+// that is a rule and not a preference.
+import {
+  SHAPE_PROPERTIES,
+  VALID_SHAPES,
+  isCountable,
+  isNameable,
+  isSayableLabel,
+  isSortable,
+  binLabelFor,
+  normalizeSortRule,
+  opensWithSentinel,
+  optionsEarSeparable,
+} from "../../primitives/visual-primitives/math/shapeSorterScript";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -29,30 +34,44 @@ import {
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
+/**
+ * ⚠️ THESE DOCS DESCRIBE A SPOKEN ACTIVITY. The tutor asks and the child answers
+ * OUT LOUD; nothing on the screen is tappable. Prose here reaches the model, and
+ * "tap each one" prose is what routed this primitive's content toward a
+ * select-all surface for as long as it had one.
+ */
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   identify: {
     promptDoc:
-      `"identify": Student finds all shapes matching a rule (e.g., "Find all the triangles"). `
-      + `Set ruleAttribute to shape/color/sides/curved. Set targetValue to the matching value. `
-      + `Include 2-3 matching shapes mixed with distractors (4-8 shapes total). `
+      `"identify": The tutor points to ONE shape at a time and the student SAYS ITS NAME out loud. `
+      + `Every DISTINCT shape kind in the pool becomes its own spoken question, so variety of KINDS matters `
+      + `more than repeats: 4-8 shapes with at least 3 different kinds. `
+      + `Set ruleAttribute to the attribute the pool is built around and targetValue to its value. `
+      + `Keep every SQUARE close to upright (rotation within 20 degrees of 0, 90, 180 or 270) — a square `
+      + `turned 45 degrees reads as a diamond and then the question has two right answers. `
+      + `Other shapes may take any rotation; that is what teaches shape constancy. `
       + `K: circle, square, triangle, rectangle. Grade 1: add hexagon, pentagon, diamond, oval.`,
-    schemaDescription: "'identify' (find matching shapes)",
+    schemaDescription: "'identify' (say the shape's name aloud)",
   },
   count: {
     promptDoc:
-      `"count": Student counts the sides and corners of a single shape. `
-      + `Set ruleAttribute to "shape". Set targetValue to the shape name (e.g., "hexagon"). `
-      + `Include exactly 1 shape to examine — pick shapes with interesting properties. `
-      + `Use warm language ("How many sides and corners does this shape have?").`,
-    schemaDescription: "'count' (count sides/corners)",
+      `"count": The student SAYS OUT LOUD how many sides (or corners) one shape has. `
+      + `Set ruleAttribute to "shape" and targetValue to the shape name. Include exactly 1 shape. `
+      + `IT MUST BE A POLYGON — triangle, square, rectangle, diamond, rhombus, pentagon or hexagon. `
+      + `NEVER a circle or an oval: "how many sides does a circle have?" is arguable at zero and at one, `
+      + `so it has no single right answer a tutor can judge.`,
+    schemaDescription: "'count' (say the side or corner count aloud)",
   },
   sort: {
     promptDoc:
-      `"sort": Student groups shapes by a geometric attribute (sides or curved). `
-      + `Set ruleAttribute to "sides" or "curved". No targetValue needed. `
-      + `Include 4-6 shapes from at least 2 different categories. `
+      `"sort": The tutor points to ONE shape at a time and the student SAYS WHICH GROUP it belongs with. `
+      + `Set ruleAttribute to "sides", "curved" or "color" — NOT "shape" (the groups would just be the shape `
+      + `names, which is the identify question with the answer printed on a label). No targetValue needed. `
+      + `Include 4-6 shapes reaching at least 2 groups, with more than one shape in at least one group. `
+      + `Under ruleAttribute "sides" use POLYGONS ONLY — a curved shape has no defensible side count, so it `
+      + `has no defensible "N sides" group either. Curved shapes belong under ruleAttribute "curved". `
       + `Example: sort by sides → mix triangles (3), squares (4), hexagons (6).`,
-    schemaDescription: "'sort' (classify by attribute)",
+    schemaDescription: "'sort' (say the group's name aloud)",
   },
 };
 
@@ -85,21 +104,34 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 
 const TIER_GUARDRAIL =
   'Keep the SAME shapes and the SAME sort attribute in scope — this tier changes '
-  + 'on-screen SCAFFOLDS (bin labels, count badges, pre-revealed corners) and '
-  + 'distractor TIGHTNESS, NOT which attribute is sorted and NOT the shape set.';
+  + 'on-screen perception aids and distractor TIGHTNESS, NOT which attribute is '
+  + 'sorted and NOT the shape set.';
 
-/** Scaffolding levers — self-check cues withdrawn at harder tiers. */
+/**
+ * Scaffolding levers — perception aids withdrawn at harder tiers.
+ *
+ * ⭐ TWO OF THE CLICK ERA'S FOUR ARE GONE, AND BOTH FOR THE SAME REASON: they
+ * were levers over a TAP.
+ *
+ *   `showBinLabels: false` blanked the mats at `hard`. That is legal while the
+ *   answer is a POSITION you can tap; once the answer is the label SAID ALOUD,
+ *   an unlabelled mat is an unanswerable question. The withdrawal moved into
+ *   the ASK — `shapeSorterScript`'s `namesChoices` stops SPEAKING the groups at
+ *   `hard` for a reader while they stay printed (letter-sound-link's
+ *   tier-conditional exemption). It rides `supportTier`, stamped below.
+ *
+ *   `showMatchCount` printed a "find N" badge — the select-all answer, as a
+ *   number. The mode names one shape at a time now; there is nothing to count.
+ *
+ * The two that survive are true perception aids: corner DOTS mark what to count
+ * without stating how many, and the mat count reports AFFIRMED progress.
+ */
 interface SupportScaffold {
-  /** sort: show each bin's attribute-name label (e.g. "3 sides", "Curved").
-   *  hard → blank bins; student recalls the criterion from the "Sort by: X" badge. */
-  showBinLabels?: boolean;
-  /** sort: show each bin's running "N shapes" count badge (self-check aid). */
+  /** sort: show each mat's running count of affirmed shapes (progress). */
   showBinCounts?: boolean;
   /** count: pre-reveal the corner dots so the student can count them directly.
-   *  hard → off; the student must find the corners unaided. */
+   *  hard → off; the student finds the corners unaided. */
   showCornerHints?: boolean;
-  /** identify: show a "find N" badge of how many shapes match (self-check count). */
-  showMatchCount?: boolean;
   promptLines: string[];
 }
 
@@ -107,29 +139,28 @@ function resolveSupportStructure(mode: ChallengeType, tier: SupportTier): Suppor
   const lines: string[] = [TIER_GUARDRAIL];
   switch (mode) {
     case 'sort': {
-      const showBinLabels = tier !== 'hard';
       const showBinCounts = tier === 'easy';
-      lines.push(showBinLabels
-        ? 'Each bin is LABELLED with its attribute value so the student can match against the name.'
-        : 'Bins are UNLABELLED — the student must recall the sort criterion (shown only as "Sort by: X") and infer each bin from the shapes they place.');
+      lines.push(
+        'The groups are LABELLED on screen at every tier — the student says a group name out loud, '
+        + 'so an unlabelled group would be an unanswerable question.',
+      );
       lines.push(showBinCounts
-        ? 'Each bin shows a live "N shapes" count so the student can self-check the balance.'
-        : 'Bins hide the running count — the student tracks placement unaided.');
-      return { showBinLabels, showBinCounts, promptLines: lines };
+        ? 'Each group shows a live count of the shapes already placed there, so the student can self-check the balance.'
+        : 'Groups hide the running count — the student tracks placement unaided.');
+      return { showBinCounts, promptLines: lines };
     }
     case 'count': {
       const showCornerHints = tier === 'easy';
       lines.push(showCornerHints
-        ? 'Corner dots are pre-revealed on the shape so the student can count them directly.'
+        ? 'Corner dots are pre-revealed on the shape so the student can count them directly. The dots mark WHERE the corners are and never state how many.'
         : 'No corner dots are pre-shown — the student finds the sides and corners unaided.');
       return { showCornerHints, promptLines: lines };
     }
     case 'identify': {
-      const showMatchCount = tier === 'easy';
-      lines.push(showMatchCount
-        ? 'A "find N" badge tells the student how many shapes match (self-check count).'
-        : 'No match-count hint — the student must decide which shapes match without a target number.');
-      return { showMatchCount, promptLines: lines };
+      lines.push(tier === 'easy'
+        ? 'Use clearly different shape kinds so each name is easy to retrieve.'
+        : 'Mix in shape kinds that look alike so the student must look carefully before naming.');
+      return { promptLines: lines };
     }
     default:
       lines.push('Same task; difficulty rides the structural axis below.');
@@ -252,10 +283,8 @@ const shapeSorterSchema: Schema = {
 
 // ── Validation constants ─────────────────────────────────────────
 
-const VALID_SHAPES = [
-  'circle', 'oval', 'triangle', 'square', 'rectangle',
-  'diamond', 'rhombus', 'hexagon', 'pentagon',
-];
+// VALID_SHAPES comes from the script module's geometry table — one list, both
+// sides of the wire.
 const VALID_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
 const VALID_SIZES = ['small', 'medium', 'large'];
 const VALID_TYPES = ['identify', 'count', 'sort'];
@@ -322,13 +351,18 @@ VALID COLORS: red, blue, green, yellow, purple, orange, pink, cyan
 
 ${challengeTypeSection}
 ${tierSection}
+THIS IS A SPOKEN ACTIVITY. A live tutor asks one question at a time and the student
+ANSWERS OUT LOUD — they say a shape's name, a number, or a group's name. Nothing on
+the screen is tapped or dragged, so never write an instruction telling the student to
+tap, click, drag or press anything.
+
 ${!evalConstraint ? `
 CHALLENGE PROGRESSION (generate 4-5 challenges):
-1. "identify" with ruleAttribute "color" — "Find all the blue shapes" (targetValue: "blue")
-2. "identify" with ruleAttribute "shape" — "Find all the triangles" (targetValue: "triangle")
-3. "count" with ruleAttribute "shape" — "How many sides and corners?" (targetValue: shape name, e.g. "hexagon")
-4. "sort" with ruleAttribute "sides" — "Sort by number of sides" (no targetValue needed)
-5. "sort" with ruleAttribute "curved" — "Sort: curved or straight?" (no targetValue needed)
+1. "identify" with ruleAttribute "shape" — a pool the student names one shape at a time (targetValue: "triangle")
+2. "identify" with ruleAttribute "color" — a differently-composed pool (targetValue: "blue")
+3. "count" with ruleAttribute "shape" — ONE polygon whose sides the student counts aloud (targetValue: e.g. "hexagon")
+4. "sort" with ruleAttribute "sides" — polygons only (no targetValue needed)
+5. "sort" with ruleAttribute "curved" — curved and straight shapes (no targetValue needed)
 
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten ("K"): use circle, square, triangle, rectangle. Simple language.
@@ -336,11 +370,15 @@ GUIDELINES FOR GRADE LEVELS:
 ` : ''}
 
 RULES:
-- For EVERY challenge, generate a "shapes" array of 4-8 shapes with varied colors, sizes, and rotations.
-- For "identify": include 2-3 shapes matching the target mixed with distractors.
-- For "count": include 1 shape (the one to examine). Use a shape with interesting properties.
-- For "sort": include 4-6 shapes from at least 2 different categories based on the rule.
-- Vary rotation (0-360) to test that students recognize rotated shapes.
+- For EVERY challenge, generate a "shapes" array of 4-8 shapes with varied colors and sizes.
+- For "identify": at least 3 DIFFERENT shape kinds — each distinct kind becomes one spoken question,
+  and a repeated kind is not asked twice.
+- For "count": exactly 1 shape, and it MUST be a polygon (never a circle or an oval).
+- For "sort": 4-6 shapes reaching at least 2 groups. Under ruleAttribute "sides", polygons only.
+- Vary rotation (0-360) so students recognise rotated shapes — EXCEPT squares, which must stay
+  within 20 degrees of 0, 90, 180 or 270. A square turned 45 degrees is a diamond to a young
+  child, and then "what shape is this?" has two right answers.
+- Every instruction is written for a READER LOOKING ON, not as a command to touch the screen.
 ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
 `;
 
@@ -371,127 +409,151 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
     (c: { type: string }) => VALID_TYPES.includes(c.type),
   );
 
+  /**
+   * KEEP-OR-DROP, NEVER BACKFILL — the judged-loop rule, and this generator is
+   * where the click era's habit was most expensive. It used to coerce an
+   * unknown shape to a circle, invent a four-shape pool out of nothing, and
+   * rewrite a broken instruction into "Can you find all the … ? Tap each one!".
+   * Under the judged loop a repaired item becomes a SPOKEN ASK the tutor has to
+   * stand behind, and a coerced circle in a sides-sort is an ask with no
+   * defensible answer.
+   *
+   * Every gate below is IMPORTED from `shapeSorterScript`, so the build side and
+   * the generator side cannot disagree about what is askable.
+   */
+  const kept: ShapeSorterChallengeDraft[] = [];
+  const dropReasons: string[] = [];
   const seenIds = new Set<string>();
-  for (let i = 0; i < data.challenges.length; i++) {
-    const ch = data.challenges[i];
 
-    // Unique ID
+  for (let i = 0; i < data.challenges.length; i++) {
+    const ch = data.challenges[i] as ShapeSorterChallengeDraft;
+
     if (!ch.id || seenIds.has(ch.id)) ch.id = `c${i + 1}`;
     seenIds.add(ch.id);
 
-    // Validate ruleAttribute
     if (!VALID_RULES.includes(ch.ruleAttribute)) ch.ruleAttribute = 'shape';
 
-    // Validate shapes
-    if (!Array.isArray(ch.shapes) || ch.shapes.length === 0) {
-      ch.shapes = [
-        { shape: 'circle', color: 'red', size: 'medium', rotation: 0 },
-        { shape: 'square', color: 'blue', size: 'medium', rotation: 0 },
-        { shape: 'triangle', color: 'green', size: 'large', rotation: 45 },
-        { shape: 'rectangle', color: 'yellow', size: 'small', rotation: 0 },
-      ];
-    }
-
-    for (const s of ch.shapes) {
-      if (!VALID_SHAPES.includes(s.shape)) s.shape = 'circle';
-      if (!VALID_COLORS.includes(s.color)) s.color = 'blue';
+    // Shapes whose ENUM fields are unusable are dropped, never coerced: the
+    // colour is a group label under a colour sort and the kind decides every
+    // answer, so a substituted value is a substituted answer.
+    const pool = (Array.isArray(ch.shapes) ? ch.shapes : []).filter(
+      (s: ShapeDraft) =>
+        VALID_SHAPES.includes(s?.shape) && VALID_COLORS.includes(s?.color),
+    );
+    for (const s of pool) {
       if (!VALID_SIZES.includes(s.size)) s.size = 'medium';
-      if (typeof s.rotation !== 'number') s.rotation = 0;
+      if (typeof s.rotation !== 'number' || !Number.isFinite(s.rotation)) s.rotation = 0;
     }
+    if (pool.length === 0) {
+      dropReasons.push(`${ch.id}: no usable shapes`);
+      continue;
+    }
+    ch.shapes = pool;
 
-    // For count challenges, ensure exactly 1 shape matching targetValue
     if (ch.type === 'count') {
-      if (!ch.targetValue || !VALID_SHAPES.includes(ch.targetValue)) {
-        ch.targetValue = ch.shapes[0].shape;
+      // A COUNTING ASK NEEDS A POLYGON. "How many sides does a circle have?" is
+      // arguable at zero and at one, so it is dropped rather than asked.
+      const target = typeof ch.targetValue === 'string' ? ch.targetValue.toLowerCase() : '';
+      const shape = pool.find((s) => s.shape === target && isCountable(s.shape))
+        ?? pool.find((s) => isCountable(s.shape));
+      if (!shape) {
+        dropReasons.push(`${ch.id}: count challenge has no polygon to count`);
+        continue;
       }
-      // Keep only the first shape matching targetValue (or just shapes[0])
-      const match = ch.shapes.find((s: { shape: string }) => s.shape === ch.targetValue);
-      ch.shapes = [match || ch.shapes[0]];
+      ch.shapes = [shape];
+      ch.targetValue = shape.shape;
+      ch.instruction = 'Look at this shape and listen for the question.';
+      kept.push(ch);
+      continue;
     }
 
-    // For identify, ensure targetValue is valid for the ruleAttribute.
     if (ch.type === 'identify') {
-      const tv = (ch.targetValue ?? '').toString().trim().toLowerCase();
-
-      switch (ch.ruleAttribute) {
-        case 'shape':
-          ch.targetValue = VALID_SHAPES.includes(tv) ? tv : ch.shapes[0].shape;
-          break;
-        case 'color':
-          ch.targetValue = VALID_COLORS.includes(tv) ? tv : ch.shapes[0].color;
-          break;
-        case 'sides': {
-          // Accept "3", "three", "3 sides" → extract the digit
-          const digitMatch = tv.match(/\d+/);
-          const wordMap: Record<string, string> = {
-            zero: '0', three: '3', four: '4', five: '5', six: '6',
-          };
-          ch.targetValue = digitMatch?.[0]
-            ?? wordMap[tv]
-            ?? String(SHAPE_PROPERTIES[ch.shapes[0].shape]?.sides ?? 3);
-          break;
-        }
-        case 'curved':
-          ch.targetValue = String(['true', 'yes', 'curved'].includes(tv));
-          break;
-        default:
-          ch.targetValue = ch.shapes[0].shape;
+      // A NAMING ASK NEEDS ONE DEFENSIBLE NAME: a square rotated toward 45° is
+      // a diamond to a young child, so it is dropped from the pool rather than
+      // straightened (straightening would silently discard the shape-constancy
+      // variation the rest of the pool is generated for).
+      const nameable = pool.filter((s) => isNameable(s.shape, s.rotation ?? 0));
+      const kinds = new Set(nameable.map((s) => s.shape));
+      if (kinds.size === 0) {
+        dropReasons.push(`${ch.id}: no shape in the pool has one defensible name`);
+        continue;
       }
-
-      // Guarantee at least one shape actually matches the resolved target
-      const hasMatch = ch.shapes.some((s: { shape: string; color: string }) => {
-        const props = SHAPE_PROPERTIES[s.shape];
-        switch (ch.ruleAttribute) {
-          case 'shape':  return s.shape === ch.targetValue;
-          case 'color':  return s.color === ch.targetValue;
-          case 'sides':  return String(props?.sides ?? -1) === ch.targetValue;
-          case 'curved': return String(props?.curved ?? false) === ch.targetValue;
-          default:       return false;
-        }
-      });
-      if (!hasMatch) {
-        // Derive targetValue from the first shape so instruction ↔ target stay coherent
-        const first = ch.shapes[0];
-        const firstProps = SHAPE_PROPERTIES[first.shape];
-        switch (ch.ruleAttribute) {
-          case 'shape':  ch.targetValue = first.shape; break;
-          case 'color':  ch.targetValue = first.color; break;
-          case 'sides':  ch.targetValue = String(firstProps?.sides ?? 3); break;
-          case 'curved': ch.targetValue = String(firstProps?.curved ?? false); break;
-        }
-        // Rewrite instruction to match the corrected target
-        const friendlyTarget = ch.ruleAttribute === 'sides'
-          ? `shapes with ${ch.targetValue} sides`
-          : ch.ruleAttribute === 'curved'
-            ? (ch.targetValue === 'true' ? 'curved shapes' : 'straight shapes')
-            : `${ch.targetValue} shapes`;
-        ch.instruction = `Can you find all the ${friendlyTarget}? Tap each one!`;
-      }
+      ch.shapes = nameable;
+      if (!VALID_SHAPES.includes(String(ch.targetValue))) ch.targetValue = nameable[0].shape;
+      ch.instruction = 'Look at the shape that is marked and listen for the question.';
+      kept.push(ch);
+      continue;
     }
+
+    // SORT. The rule must be one a sort can carry, the groups must be sayable
+    // and separable by ear, and at least two of them must actually be reached.
+    const rule = normalizeSortRule(ch.ruleAttribute);
+    if (!rule) {
+      dropReasons.push(`${ch.id}: "${ch.ruleAttribute}" cannot carry a sort`);
+      continue;
+    }
+    const sortable = pool.filter((s) => isSortable(s.shape, rule));
+    const labels = Array.from(
+      new Set(sortable.map((s) => binLabelFor(s.shape, s.color, rule))),
+    );
+    if (sortable.length < 2 || labels.length < 2) {
+      dropReasons.push(`${ch.id}: sort by ${rule} reaches fewer than two groups`);
+      continue;
+    }
+    if (!labels.every(isSayableLabel) || !optionsEarSeparable(labels)) {
+      dropReasons.push(`${ch.id}: sort groups are not separable by ear`);
+      continue;
+    }
+    if (labels.some((l) => opensWithSentinel(l))) {
+      dropReasons.push(`${ch.id}: a sort group opens with a verdict sentinel`);
+      continue;
+    }
+    ch.shapes = sortable;
+    ch.ruleAttribute = rule;
+    delete ch.targetValue;
+    ch.instruction = 'Look at the shape that is marked and listen for the question.';
+    kept.push(ch);
   }
 
-  // Ensure at least one challenge
+  if (dropReasons.length > 0) {
+    console.log(`[ShapeSorter] dropped ${dropReasons.length} unaskable challenge(s): ${dropReasons.join(' | ')}`);
+  }
+  data.challenges = kept;
+
+  /**
+   * The hardcoded fallback, which every gate above can now empty into.
+   *
+   * ⚠️ IT WARNS RATHER THAN LOGS, and that is this slice's answer to the
+   * "silent generator fallbacks" finding (33 generators, 32 of them math): a
+   * fallback that ships at `console.log` level reads as a successful generation
+   * in every downstream report, which is how phoneme-explorer's truncation ran
+   * invisibly. The topic is genuinely LOST here — this is a canned shape set,
+   * not content about what the lesson asked for — so it says so at warn level.
+   *
+   * All three payloads are judged-loop VALID by construction: the identify pool
+   * carries four distinct kinds with no 45° square, the count shape is a
+   * polygon, and the sort reaches exactly two groups with two shapes in each.
+   */
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'identify';
-    const fallbacks: Record<string, { id: string; type: string; instruction: string; ruleAttribute: string; targetValue?: string; shapes: Array<{ shape: string; color: string; size: string; rotation: number }> }> = {
+    const fallbacks: Record<string, ShapeSorterChallengeDraft> = {
       identify: {
         id: 'c1',
         type: 'identify',
-        instruction: 'Can you find all the circles? Tap each one!',
+        instruction: 'Look at the shape that is marked and listen for the question.',
         ruleAttribute: 'shape',
         targetValue: 'circle',
         shapes: [
           { shape: 'circle', color: 'red', size: 'medium', rotation: 0 },
           { shape: 'square', color: 'blue', size: 'medium', rotation: 0 },
-          { shape: 'circle', color: 'green', size: 'small', rotation: 0 },
           { shape: 'triangle', color: 'yellow', size: 'large', rotation: 45 },
-          { shape: 'circle', color: 'purple', size: 'large', rotation: 0 },
+          { shape: 'rectangle', color: 'purple', size: 'large', rotation: 0 },
         ],
       },
       count: {
         id: 'c1',
         type: 'count',
-        instruction: 'How many sides and corners does this shape have?',
+        instruction: 'Look at this shape and listen for the question.',
         ruleAttribute: 'shape',
         targetValue: 'hexagon',
         shapes: [
@@ -501,17 +563,20 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
       sort: {
         id: 'c1',
         type: 'sort',
-        instruction: 'Sort these shapes by the number of sides!',
+        instruction: 'Look at the shape that is marked and listen for the question.',
         ruleAttribute: 'sides',
         shapes: [
           { shape: 'triangle', color: 'red', size: 'medium', rotation: 0 },
-          { shape: 'square', color: 'blue', size: 'medium', rotation: 30 },
-          { shape: 'hexagon', color: 'green', size: 'large', rotation: 0 },
-          { shape: 'pentagon', color: 'yellow', size: 'small', rotation: 15 },
+          { shape: 'square', color: 'blue', size: 'medium', rotation: 0 },
+          { shape: 'triangle', color: 'green', size: 'large', rotation: 120 },
+          { shape: 'rectangle', color: 'yellow', size: 'small', rotation: 0 },
         ],
       },
     };
-    console.log(`[ShapeSorter] No valid challenges — using ${fallbackType} fallback`);
+    console.warn(
+      `[ShapeSorter] NO GENERATED CHALLENGE SURVIVED THE BUILD GATES — shipping the canned `
+      + `${fallbackType} fallback. The lesson's topic is NOT reflected in this content.`,
+    );
     data.challenges = [fallbacks[fallbackType] ?? fallbacks.identify];
   }
 
@@ -525,25 +590,20 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
   // ── Apply the support tier deterministically, per challenge from its OWN mode ──
   // Difficulty is a STUDENT property: a blended/auto session gets it too (single
   // mode just happens to give every challenge the same tier). Gate on supportTier
-  // ONLY — never on pinnedType — so blends aren't silently dropped. Runs AFTER all
-  // structural fixups so the tier's display flags win. No-tier path is byte-identical
-  // (every field guarded). These flags are DISPLAY-ONLY — the component's checker
-  // derives correctness from SHAPE_PROPERTIES, never from any show* flag, so a
-  // withdrawn label/badge can neither leak nor invalidate the answer.
+  // ONLY — never on pinnedType — so blends aren't silently dropped.
+  //
+  // ⭐ `supportTier` IS NOW A SPOKEN LEVER, NOT ONLY A DISPLAY ONE. The script
+  // reads it off the challenge to compose the DISTAR lead-in (easy = model +
+  // guide, medium = model, hard = nothing) and, for a reader, to decide whether
+  // a sort ask NAMES its groups aloud. The two surviving `show*` flags stay
+  // display-only, and correctness is still derived from the geometry table, so
+  // no flag can leak or invalidate an answer.
   if (supportTier) {
     for (const ch of data.challenges as ShapeSorterChallengeWithTier[]) {
       const scaffold = resolveSupportStructure(ch.type as ChallengeType, supportTier);
       ch.supportTier = supportTier;
-      if (ch.type === 'sort') {
-        ch.showBinLabels = scaffold.showBinLabels;
-        ch.showBinCounts = scaffold.showBinCounts;
-      }
-      if (ch.type === 'count') {
-        ch.showCornerHints = scaffold.showCornerHints;
-      }
-      if (ch.type === 'identify') {
-        ch.showMatchCount = scaffold.showMatchCount;
-      }
+      if (ch.type === 'sort') ch.showBinCounts = scaffold.showBinCounts;
+      if (ch.type === 'count') ch.showCornerHints = scaffold.showCornerHints;
     }
     console.log(`[ShapeSorter] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
   }
@@ -551,12 +611,21 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
   return data;
 };
 
-/** Local view of a challenge augmented with the tier display flags the
- *  component reads. Mirrors the optional fields added to ShapeSorterChallenge. */
+/** A challenge as it arrives from the model and is narrowed in place. */
+type ShapeDraft = { shape: string; color: string; size: string; rotation: number };
+type ShapeSorterChallengeDraft = {
+  id: string;
+  type: string;
+  instruction: string;
+  ruleAttribute: string;
+  targetValue?: string;
+  shapes: ShapeDraft[];
+};
+
+/** Local view of a challenge augmented with the tier fields the script and the
+ *  component read. Mirrors the optional fields on ShapeSorterChallenge. */
 type ShapeSorterChallengeWithTier = ShapeSorterData['challenges'][number] & {
   supportTier?: SupportTier;
-  showBinLabels?: boolean;
   showBinCounts?: boolean;
   showCornerHints?: boolean;
-  showMatchCount?: boolean;
 };

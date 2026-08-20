@@ -3496,21 +3496,155 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'shape-sorter',
-    description: 'Attribute-focused geometry primitive with 3 challenge types: identify (find shapes matching a rule), count (count sides and corners), and sort (group by attribute). Teaches Defining vs Non-Defining Attributes through a unified shape pool — correctness derived in code. Perfect for K-1 geometry foundations. ESSENTIAL for Kindergarten and Grade 1 geometry.',
-    constraints: 'Shapes limited to: circle, square, triangle, rectangle, diamond, rhombus, hexagon, pentagon, oval. Grade K-1 only. Rules: shape, color, sides, curved.',
+    description:
+      'LIVE-JUDGED SPOKEN 2D geometry (Direct Instruction). The tutor points to one shape at a time and the '
+      + 'student ANSWERS OUT LOUD — naming the shape, saying how many sides or corners it has, or naming the '
+      + 'group it belongs with. The tutor judges the spoken answer from the audio, corrects by re-modelling, and '
+      + 'its own affirmation advances the lesson. Nothing is tapped, dragged or typed. REQUIRES A MICROPHONE. '
+      + 'Teaches Defining vs Non-Defining Attributes; correctness is derived in code from the geometry, never '
+      + 'from the model. ESSENTIAL for Kindergarten and Grade 1 geometry.',
+    constraints:
+      'REQUIRES A MICROPHONE — every answer is spoken; there is no tap, drag, stepper or button path. '
+      + 'Shapes limited to: circle, square, triangle, rectangle, diamond, rhombus, hexagon, pentagon, oval. '
+      + 'Grade K-1 only. NAMING items need one defensible name per drawing, so a square must be drawn close to '
+      + 'upright (a square turned 45 degrees is a diamond), and diamond and rhombus are the same drawing so '
+      + 'either name is accepted for either. COUNTING items are POLYGONS ONLY — a circle has no defensible side '
+      + 'count, being arguable at zero and at one. SORTING is by sides, curved or color (never by shape, whose '
+      + 'groups would just be the shape names) into 2-3 groups, and a sides sort holds polygons only.',
+    // ── DI MODALITY (2026-08-18) — FIFTH math port, item 18. The tutor owns the
+    // clock: it asks once, waits, judges the spoken answer in-band, and its own
+    // affirmation is the advance. No advance timer, no Next button, no Check,
+    // no push-to-talk mic.
+    // THE FORK HAS NO SPLIT — a shape's name, a count and a group name are all
+    // things a five-year-old says across a table, so all three modes are SPOKEN
+    // and every tap is deleted. Three benched response classes, no new sitting.
+    // WHAT THE COSTUME TEST DELETED: the select-all identify grid (a child who
+    // cannot identify a triangle can tap, read the red ring, and re-tap until it
+    // lands), the side/corner steppers, and the shape-tray-into-bin drag.
+    // WHAT IS NOT A COSTUME AND STAYS: the drawn shapes and the labelled mats.
+    // The screen is the PAGE; it was the ACTION that was the costume.
+    // AND THE MATS ARE LABELLED AT EVERY TIER NOW: blanking them at `hard` was
+    // legal while the answer was a position you could tap, and is an
+    // unanswerable question once the answer is the label said aloud — so that
+    // withdrawal moved into the ASK (the hard tier stops SPEAKING the groups to
+    // a reader; the K band floor always speaks them).
+    // Cue lines, the judging contracts, the geometry table and the build gates
+    // live in `shapeSorterScript.ts` (hand-authored, DISTAR); this block is the
+    // session-level frame. SENTINEL DISCIPLINE (standing gate 2) re-checked on
+    // every line below: no sentence begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'Student is working on a {{challengeType}} challenge. Rule attribute: {{ruleAttribute}}. Instruction: "{{instruction}}".',
-      contextKeys: ['challengeType', 'ruleAttribute', 'targetValue', 'shapeName', 'expectedSides', 'expectedCorners', 'instruction', 'attemptNumber', 'gradeBand'],
+      taskDescription:
+        'Live-judged Direct Instruction shape work for a young child. You ask one question out loud and the '
+        + 'child answers OUT LOUD. Right now the task identity is "{{challengeType}}" and what is in front of '
+        + 'them is {{stimulus}}. Under "identify" the child SAYS the name of the shape; under "count" the child '
+        + 'SAYS how many sides or corners it has; under "sort" the child SAYS which group it belongs with. You '
+        + 'speak the exact scripted lines from each bracketed application message, you re-ask when the child '
+        + 'asks to hear the question again, and you judge each spoken attempt from the audio you heard using '
+        + 'only the two allowed reply branches. Naming, counting and grouping ARE the skills being practised, '
+        + 'so the child produces every answer — there is nothing to tap, drag, or point at.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // Correction territory, not answer territory, and every level is a
+      // BEHAVIOUR rather than a line you may say. A ladder that quotes speakable
+      // hints is a no-verdict stall: on a repeated wrong answer the model
+      // reaches for the sanctioned-sounding alternative and says something that
+      // opens with neither sentinel, so the loop records no verdict at all and
+      // the correction counter freezes (18d, found on number-bond).
       scaffoldingLevels: {
-        level1: '"Look at the shapes. Which ones look alike? What do you notice about them?"',
-        level2: '"Count the sides. How many sides does this one have? Remember, shapes keep their name no matter how big, small, or rotated they are."',
-        level3: '"This shape has {{expectedSides}} straight sides and {{expectedCorners}} corners. Even when it is turned sideways, it is still the same shape!"',
+        level1: 'Use the scripted correction line for this shape, then hand the question back and wait.',
+        level2: 'Use that same scripted correction line again, unchanged, and give them longer in silence.',
+        level3: 'Use that same scripted correction line again — the wording is fixed, the patience is what changes.',
       },
+      // Observable behaviours only, and every response is a PERFORMABLE script
+      // move: meta-commentary in this field gets recited verbatim to a child.
+      // The first entries are the SIGNATURE errors — the wrong answers that
+      // arrive fluent, confident, and most likely to be affirmed by mistake.
       commonStruggles: [
-        { pattern: 'Student confuses rotated shapes with different shape types', response: 'Emphasize that shapes keep their identity regardless of orientation. A triangle turned on its side is still a triangle — count the sides together.' },
-        { pattern: 'Student counts sides incorrectly for shapes with many sides', response: 'Guide the student to tap each side one at a time. Use the sequential highlighting to make each side visible.' },
-        { pattern: 'Student confuses similar shapes like square/rectangle or diamond/rhombus', response: 'Compare the shapes side by side. Point out specific differences: "A square has 4 equal sides, but a rectangle has 2 long sides and 2 short sides."' },
-        { pattern: 'Student sorts by non-defining attribute when asked about defining attribute', response: 'Redirect: "Color and size can change, but the number of sides stays the same. Count the sides to decide which group it belongs in."' },
+        {
+          pattern: 'Says a near shape name — "rectangle" at a square, "circle" at an oval, "pentagon" at a hexagon',
+          response: 'A different shape name is wrong however close it sounds, and it is the exact error this practice exists to catch. Run the scripted correction, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Says a count that is one more or one less than the true one',
+          response: 'A miscount by one is still a wrong count. Run the scripted correction, then ask once more and wait.',
+        },
+        {
+          pattern: 'Names the SHAPE when asked which group it belongs with — "square" instead of the group',
+          response: 'That is a true thing to say about the drawing and it is still not a group. Run the scripted correction, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Counts out loud on the way to the answer — one, two, three, and then three',
+          response: 'That is a correct answer at this age, not a hesitation: wait for them to finish, judge the number they land on, and affirm it with the scripted line.',
+        },
+        {
+          pattern: 'Says a shape name with young-child pronunciation, or with or without a little word in front',
+          response: 'Those are all the same correct answer — affirm with the scripted line. Naming is what is measured, not diction.',
+        },
+        {
+          pattern: 'Goes quiet after the question, or asks to hear it again',
+          response: 'Silence is a five-year-old looking carefully at a drawing — wait. If they ask, the application sends the re-ask; never volunteer one.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [SHS_ITEM], [SHS_MOVE], [SHS_HEAR] or [SHS_COMPLETE] contain the only lesson words '
+            + 'you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket label '
+            + 'is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" and '
+            + 'corrections begin with "My turn" — never begin any other sentence with those words. Judge honestly '
+            + 'from the audio and do not praise to be kind. YOUR VERDICT LINE IS THE END OF YOUR TURN: you never '
+            + 'continue into another question, never ask about another shape, and never announce what is coming. '
+            + 'The application decides which shape comes next and sends it to you when the screen is ready — a '
+            + 'question you ask early is about the wrong shape, and the child then hears it twice.',
+        },
+        {
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
+          instruction:
+            'The first [SHS_ITEM] carries the greeting, how the game works and the whole first question inside '
+            + 'one quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity '
+            + 'in your own words, and do not add a warm-up question — the quoted line is the whole opening.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER (it depends on the identity)',
+          instruction:
+            'Every answer here is SPOKEN, and the [SHS_ITEM] message names the one that is correct. Under '
+            + '"identify" it is the NAME OF THE SHAPE — young-child pronunciation counts, a little word in front '
+            + 'is optional, and where the message says another name is also accepted, it is the same drawing and '
+            + 'you affirm it. Under "count" it is a NUMBER WORD, and counting out loud on the way to it is a '
+            + 'correct route: wait until they stop and judge only the number they finish on. Under "sort" it is '
+            + 'a GROUP NAME: the label alone, with its ending changed, inside a little phrase, or — for a group '
+            + 'like "4 sides" — just the number, are all the same answer. THE LAW: you never say the answer '
+            + 'before the child does, in any identity, at any support level. There is nothing on screen for them '
+            + 'to tap, so never suggest picking, pointing, dragging or showing you anything.',
+        },
+        {
+          title: 'NEVER NAME THE SHAPE BEFORE THEY ANSWER — IT IS THE ANSWER TWICE OVER',
+          instruction:
+            'Under "identify" the name of the shape IS the answer. Under "count" it hands the answer over just '
+            + 'as completely — a child who hears "triangle" knows the count without looking. So before the child '
+            + 'answers, never name the shape and never describe the drawing (how many points it has, whether it '
+            + 'is round), under any identity. When the quoted line names the GROUPS ("Curved, or Straight?"), '
+            + 'that IS the question — a sort whose groups are unknowable cannot be answered at all, so naming '
+            + 'them is never a leak. When the quoted line does NOT name them, they are printed and the student '
+            + 'is expected to read them: say only what is quoted and do not helpfully list them.',
+        },
+        {
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not name the '
+            + 'choices again to nudge them. A long pause is a five-year-old looking hard at a drawing or counting '
+            + 'its corners under their breath, and that work IS the activity. Think time is unbounded and the '
+            + 'application, not the clock, decides when to move on.',
+        },
+        {
+          title: 'HEAR IT AGAIN ON DEMAND',
+          instruction:
+            'When you receive [SHS_HEAR], the child asked to hear the question again. Say ONLY the quoted line, '
+            + 'warmly and slowly, then go back to waiting. Add nothing, judge nothing you just heard, and never '
+            + 'let the repeat carry more help than the first asking did: no extra stress on any word, no clue '
+            + 'about the name, the count or the group. This channel is answered at every grade and support tier.',
+        },
       ],
     },
     supportsEvaluation: true,
@@ -3518,26 +3652,44 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'identify',
         label: 'Identify (Concrete)',
-        beta: 1.5,
+        // β 1.5 → 2.0. STRUCTURAL: the click era was select-all over a printed
+        // pool with a green/red ring painted on every tap, so a child could hunt
+        // until the rings were green. The answer is now PRODUCED from the
+        // child's own vocabulary with no menu on screen at all — the guess floor
+        // went from "re-tap until it lands" to one unaided attempt plus two
+        // judged corrections. Same lever story-talk and letter-spotter recorded
+        // when a menu was deleted outright.
+        beta: 2.0,
         scaffoldingMode: 1,
         challengeTypes: ['identify'],
-        description: 'Name 2D shapes by visual recognition.',
+        description: 'Say the name of a 2D shape out loud from its drawing.',
       },
       {
         evalMode: 'count',
         label: 'Count (Pictorial)',
-        beta: 2.5,
+        // β 2.5 → 3.0. STRUCTURAL, and not merely stepper-to-mouth (ten-frame
+        // held β on that alone, correctly — operating a stepper still required
+        // producing the number). What changed here is that the click era printed
+        // a numbered "Side 1 / Side 2 / Side 3" button per side directly under
+        // the question, so the answer was countable off the UI, and Check could
+        // be pressed without limit. Both are gone.
+        beta: 3.0,
         scaffoldingMode: 2,
         challengeTypes: ['count'],
-        description: 'Count sides and corners of a given shape.',
+        description: 'Say how many sides or corners a polygon has. One feature per question, alternated.',
       },
       {
         evalMode: 'sort',
         label: 'Sort (Pictorial–)',
+        // β HELD at 3.5, deliberately — word-sorter's reasoning, and it applies
+        // unchanged: the tap became speech, but the answer SET is the same size,
+        // the ask re-states the choices, and the mats never shrank, so the
+        // discrimination demand is identical. What the modality added is that a
+        // wrong answer is now corrected rather than re-tapped.
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['sort'],
-        description: 'Classify shapes by geometric property.',
+        description: 'Say which group a shape belongs with, by sides, curve or color.',
       },
     ],
   },
