@@ -1,47 +1,54 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { CellBuilderMetrics, CellZone, QuantityLevel } from '../../../evaluation/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { SoundManager } from '../../../utils/SoundManager';
-import { LuminaDropZone, type DropZoneState } from '../../../ui';
 import {
+  LuminaActionButton,
+  LuminaBadge,
+  LuminaButton,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardDescription,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaChoiceChip,
+  LuminaDropZone,
+  LuminaFeedbackCard,
+  LuminaModeTabs,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  answerStateClass,
+  type DropZoneState,
+} from '../../../ui';
+import { SoundManager } from '../../../utils/SoundManager';
+import {
+  Activity,
   CheckCircle2,
-  XCircle,
-  RotateCcw,
-  Sparkles,
   Eye,
   EyeOff,
   FlaskConical,
-  ArrowRight,
-  ThumbsUp,
-  ThumbsDown,
-  HelpCircle,
+  GripVertical,
+  Lightbulb,
+  RotateCcw,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 
 /**
- * Cell Structure Builder - Three-Phase Interactive Cell Biology Primitive
- *
- * Phase 1 (Sort): Students classify which organelles belong in this cell type
- *   and which are distractors that don't belong.
- * Phase 2 (Place + Quantity): Students drag valid organelles into biological
- *   zones and answer quantity reasoning questions for specialized cells.
- * Phase 3 (Match Functions): Students match organelles to their function
- *   descriptions in a click-to-match interface.
- *
- * Supports specialized cell contexts (muscle, nerve, leaf, root) that drive
- * quantity reasoning ("Muscle cells need lots of mitochondria for energy").
- *
- * Grade Band: 4-8
- * Cognitive Operation: Classification, spatial reasoning, structure-function mapping
+ * A routable set of cell-biology missions, not a mandatory three-page
+ * worksheet. Pinned eval modes present one task identity; broad objectives may
+ * blend missions. Placement uses discrete model relationships because real
+ * organelles move in 3D and overlapping pixel rectangles are neither honest
+ * biology nor discriminating evidence.
  */
 
-// ============================================================================
-// Type Definitions (Single Source of Truth)
-// ============================================================================
-
 export type { CellZone } from '../../../evaluation/types';
+
+export type CellBuilderChallengeType =
+  | 'cell_inventory'
+  | 'organelle_placement'
+  | 'structure_function'
+  | 'cell_specialization';
 
 export interface OrganelleInfo {
   id: string;
@@ -82,8 +89,8 @@ export interface CellBuilderData {
   cellMembrane: CellMembraneInfo;
   cellWall: CellWallInfo;
   gradeBand: '4-5' | '6-8';
-
-  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  challengeType?: CellBuilderChallengeType;
+  challengeTypes?: CellBuilderChallengeType[];
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -92,139 +99,114 @@ export interface CellBuilderData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<CellBuilderMetrics>) => void;
 }
 
-// ============================================================================
-// Component Props
-// ============================================================================
-
 interface CellBuilderProps {
   data: CellBuilderData;
   className?: string;
 }
 
-// ============================================================================
-// Phase Types
-// ============================================================================
+type Phase = CellBuilderChallengeType;
 
-type Phase = 'sort' | 'place' | 'match-functions';
+const ALL_PHASES: Phase[] = [
+  'cell_inventory',
+  'organelle_placement',
+  'structure_function',
+  'cell_specialization',
+];
 
-// ============================================================================
-// Zone Mapping
-// ============================================================================
-
-const ZONE_BOUNDS: Record<CellZone, { xMin: number; xMax: number; yMin: number; yMax: number }> = {
-  'center':              { xMin: 30, xMax: 70, yMin: 25, yMax: 70 },
-  'near-nucleus':        { xMin: 45, xMax: 80, yMin: 20, yMax: 65 },
-  'large-central':       { xMin: 25, xMax: 75, yMin: 25, yMax: 75 },
-  'peripheral':          { xMin: 10, xMax: 90, yMin: 10, yMax: 90 },
-  'scattered':           { xMin: 10, xMax: 90, yMin: 10, yMax: 90 },
-  'membrane-associated': { xMin: 0, xMax: 100, yMin: 0, yMax: 100 },
+const PHASE_LABELS: Record<Phase, string> = {
+  cell_inventory: 'Stock the cell',
+  organelle_placement: 'Build the model',
+  structure_function: 'Wire the jobs',
+  cell_specialization: 'Tune the cell',
 };
 
-function isInZone(position: { x: number; y: number }, zone: CellZone): boolean {
-  if (zone === 'membrane-associated') {
-    return position.x < 18 || position.x > 82 || position.y < 18 || position.y > 82;
-  }
-  const bounds = ZONE_BOUNDS[zone];
-  return (
-    position.x >= bounds.xMin && position.x <= bounds.xMax &&
-    position.y >= bounds.yMin && position.y <= bounds.yMax
-  );
-}
-
-function getZoneFromPosition(position: { x: number; y: number }): CellZone {
-  if (position.x < 18 || position.x > 82 || position.y < 18 || position.y > 82) return 'membrane-associated';
-  if (position.x >= 30 && position.x <= 70 && position.y >= 25 && position.y <= 70) {
-    if (position.x >= 45 && position.x <= 80 && position.y >= 20 && position.y <= 65) return 'near-nucleus';
-    return 'center';
-  }
-  return 'peripheral';
-}
+const PHASE_PROMPTS: Record<Phase, string> = {
+  cell_inventory: 'Choose the structures this cell actually needs. Reject the impostors.',
+  organelle_placement: 'Move each organelle to the best-fit region in this simplified cell model.',
+  structure_function: 'Connect each organelle to the job it performs.',
+  cell_specialization: 'Tune organelle abundance so this cell can carry out its specialized mission.',
+};
 
 const ZONE_LABELS: Record<CellZone, string> = {
-  'center': 'Center',
-  'near-nucleus': 'Near Nucleus',
-  'large-central': 'Large Central',
-  'peripheral': 'Throughout Cytoplasm',
-  'scattered': 'Scattered',
-  'membrane-associated': 'Cell Edge',
+  center: 'Control center',
+  'near-nucleus': 'Inner membrane network',
+  'large-central': 'Central storage',
+  peripheral: 'Cytoplasm',
+  scattered: 'Distributed throughout',
+  'membrane-associated': 'Cell boundary',
 };
 
+const ZONE_NOTES: Record<CellZone, string> = {
+  center: 'The information-holding core of the model',
+  'near-nucleus': 'Structures that work closely with the nucleus',
+  'large-central': 'A dominant storage compartment',
+  peripheral: 'In the fluid interior, away from the core',
+  scattered: 'Many copies spread across the interior',
+  'membrane-associated': 'Attached to or acting at the outer boundary',
+};
+
+const ZONE_ORDER: CellZone[] = [
+  'membrane-associated',
+  'peripheral',
+  'center',
+  'near-nucleus',
+  'large-central',
+  'scattered',
+];
+
 const QUANTITY_LABELS: Record<QuantityLevel, string> = {
-  'few': 'Few (1-2)',
-  'some': 'Some (3-5)',
-  'many': 'Many (6-10)',
-  'lots': 'Lots (10+)',
+  few: 'Few',
+  some: 'Some',
+  many: 'Many',
+  lots: 'Abundant',
 };
 
 const QUANTITY_OPTIONS: QuantityLevel[] = ['few', 'some', 'many', 'lots'];
 
-// ============================================================================
-// Cell Shape SVG Paths (reused from original)
-// ============================================================================
-
-function getCellOutline(cellType: string): { path: string; viewBox: string; hasWall: boolean } {
-  switch (cellType) {
-    case 'plant':
-      return {
-        path: 'M 20 10 L 380 10 Q 390 10 390 20 L 390 280 Q 390 290 380 290 L 20 290 Q 10 290 10 280 L 10 20 Q 10 10 20 10 Z',
-        viewBox: '0 0 400 300',
-        hasWall: true,
-      };
-    case 'prokaryotic':
-      return {
-        path: 'M 100 50 Q 300 20 350 150 Q 300 280 100 250 Q 50 200 50 150 Q 50 80 100 50 Z',
-        viewBox: '0 0 400 300',
-        hasWall: false,
-      };
-    case 'fungal':
-      return {
-        path: 'M 200 20 Q 350 20 370 150 Q 350 280 200 280 Q 50 280 30 150 Q 50 20 200 20 Z',
-        viewBox: '0 0 400 300',
-        hasWall: true,
-      };
-    default: // animal
-      return {
-        path: 'M 200 20 C 320 20 380 100 380 150 C 380 220 320 280 200 280 C 80 280 20 220 20 150 C 20 100 80 20 200 20 Z',
-        viewBox: '0 0 400 300',
-        hasWall: false,
-      };
-  }
+function organelleColor(name: string): string {
+  const value = name.toLowerCase();
+  if (value.includes('nucleus')) return '#818cf8';
+  if (value.includes('mitochond')) return '#fb7185';
+  if (value.includes('chloroplast')) return '#4ade80';
+  if (value.includes('ribosome')) return '#c084fc';
+  if (value.includes('golgi')) return '#fbbf24';
+  if (value.includes('reticulum')) return '#60a5fa';
+  if (value.includes('lysosome')) return '#f472b6';
+  if (value.includes('vacuole')) return '#22d3ee';
+  if (value.includes('wall')) return '#a3e635';
+  if (value.includes('membrane')) return '#2dd4bf';
+  return '#94a3b8';
 }
 
-// ============================================================================
-// Organelle Visuals
-// ============================================================================
-
-function getOrganelleColor(name: string): string {
-  const n = name.toLowerCase();
-  if (n.includes('nucleus')) return '#6366f1';
-  if (n.includes('mitochond')) return '#ef4444';
-  if (n.includes('chloroplast')) return '#22c55e';
-  if (n.includes('ribosome')) return '#a855f7';
-  if (n.includes('golgi') || n.includes('apparatus')) return '#f59e0b';
-  if (n.includes('endoplasmic') || n.includes('reticulum')) return '#3b82f6';
-  if (n.includes('lysosome')) return '#ec4899';
-  if (n.includes('vacuole')) return '#06b6d4';
-  if (n.includes('centrosome') || n.includes('centriole')) return '#f97316';
-  if (n.includes('cell wall')) return '#84cc16';
-  if (n.includes('cell membrane') || n.includes('plasma')) return '#14b8a6';
-  if (n.includes('cytoplasm')) return '#94a3b8';
-  if (n.includes('flagell') || n.includes('cilia')) return '#78716c';
-  if (n.includes('plasmid')) return '#e879f9';
-  return '#64748b';
+function score(correct: number, total: number): number {
+  return total === 0 ? 100 : Math.round((correct / total) * 100);
 }
 
-function getOrganelleSize(size: 'small' | 'medium' | 'large'): number {
-  switch (size) {
-    case 'small': return 16;
-    case 'medium': return 24;
-    case 'large': return 32;
-  }
+function OrganelleGlyph({ organelle, small = false }: { organelle: OrganelleInfo; small?: boolean }) {
+  const color = organelleColor(organelle.name);
+  const elongated = /mitochond|golgi|reticulum|flagell/i.test(organelle.name);
+  return (
+    <span
+      aria-hidden="true"
+      className={`relative inline-flex shrink-0 items-center justify-center border-2 ${elongated ? 'rounded-[55%_35%_55%_35%]' : 'rounded-full'} ${small ? 'h-7 w-7' : 'h-10 w-10'}`}
+      style={{ borderColor: color, backgroundColor: `${color}24`, boxShadow: `0 0 14px ${color}35` }}
+    >
+      <span
+        className={elongated ? 'h-1.5 w-4 rounded-full' : 'h-2.5 w-2.5 rounded-full'}
+        style={{ backgroundColor: `${color}b8` }}
+      />
+    </span>
+  );
 }
 
-// ============================================================================
-// Component
-// ============================================================================
+export function resolveCellBuilderPhases(data: Pick<CellBuilderData, 'challengeType' | 'challengeTypes'>): Phase[] {
+  const requested = data.challengeTypes?.length
+    ? data.challengeTypes
+    : data.challengeType
+      ? [data.challengeType]
+      : ALL_PHASES;
+  return ALL_PHASES.filter((phase) => requested.includes(phase));
+}
 
 const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
   const {
@@ -244,59 +226,20 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ---- Derived data ----
-  const validOrganelles = useMemo(() => organelles.filter(o => o.belongsInCell), [organelles]);
-  const distractorOrganelles = useMemo(() => organelles.filter(o => !o.belongsInCell), [organelles]);
+  const phases = useMemo(() => resolveCellBuilderPhases(data), [data.challengeType, data.challengeTypes]);
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const currentPhase = phases[Math.min(phaseIndex, phases.length - 1)] ?? 'cell_inventory';
+  const validOrganelles = useMemo(() => organelles.filter((item) => item.belongsInCell), [organelles]);
+  const distractors = useMemo(() => organelles.filter((item) => !item.belongsInCell), [organelles]);
   const quantityOrganelles = useMemo(
-    () => validOrganelles.filter(o => o.expectedQuantity && (o.expectedQuantity === 'many' || o.expectedQuantity === 'lots')),
-    [validOrganelles]
+    () => validOrganelles.filter((item) => item.expectedQuantity != null),
+    [validOrganelles],
   );
 
-  // ---- Phase state ----
-  const [currentPhase, setCurrentPhase] = useState<Phase>('sort');
-
-  // ---- Phase 1: Sort state ----
-  const [sortDecisions, setSortDecisions] = useState<Record<string, boolean>>({});
-  const [sortChecked, setSortChecked] = useState(false);
-  const [sortFeedback, setSortFeedback] = useState<Record<string, { correct: boolean; explanation: string }>>({});
-
-  // ---- Phase 2: Place state ----
-  const [placedOrganelles, setPlacedOrganelles] = useState<Record<string, { x: number; y: number }>>({});
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [selectedOrganelle, setSelectedOrganelle] = useState<string | null>(null);
-  const [placeChecked, setPlaceChecked] = useState(false);
-  const [placeFeedback, setPlaceFeedback] = useState<Record<string, boolean>>({});
-  const [quantityAnswers, setQuantityAnswers] = useState<Record<string, QuantityLevel>>({});
-  const [showLabels, setShowLabels] = useState(true);
-  const cellAreaRef = useRef<HTMLDivElement>(null);
-  const [cellDragOver, setCellDragOver] = useState(false);
-  const [showPlaceFlash, setShowPlaceFlash] = useState(false);
-  const placeFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (placeFlashTimer.current) clearTimeout(placeFlashTimer.current);
-    },
-    []
-  );
-
-  // ---- Phase 3: Match state ----
-  const [selectedMatchOrganelle, setSelectedMatchOrganelle] = useState<string | null>(null);
-  const [matchConnections, setMatchConnections] = useState<Record<string, string>>({});
-  const [matchChecked, setMatchChecked] = useState(false);
-  const [matchFeedback, setMatchFeedback] = useState<Record<string, boolean>>({});
-
-  // ---- General ----
-  const [feedback, setFeedback] = useState<string | null>(null);
-
-  // ---- Evaluation hook ----
-  const {
-    submitResult,
-    hasSubmitted,
-    resetAttempt,
-  } = usePrimitiveEvaluation<CellBuilderMetrics>({
+  const stableInstanceId = useRef(instanceId ?? `cell-builder-${Date.now()}`);
+  const { submitResult, hasSubmitted, resetAttempt } = usePrimitiveEvaluation<CellBuilderMetrics>({
     primitiveType: 'cell-builder',
-    instanceId: instanceId || `cell-builder-${Date.now()}`,
+    instanceId: stableInstanceId.current,
     skillId,
     subskillId,
     objectiveId,
@@ -304,930 +247,461 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as any,
   });
 
-  const cellOutline = getCellOutline(cellType);
-  const cellTypeLabel = cellType.charAt(0).toUpperCase() + cellType.slice(1);
+  const [sortDecisions, setSortDecisions] = useState<Record<string, boolean>>({});
+  const [sortChecked, setSortChecked] = useState(false);
+  const [placements, setPlacements] = useState<Record<string, CellZone>>({});
+  const [selectedOrganelle, setSelectedOrganelle] = useState<string | null>(null);
+  const [dragOverZone, setDragOverZone] = useState<CellZone | null>(null);
+  const [placeChecked, setPlaceChecked] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
+  const [selectedMatchOrganelle, setSelectedMatchOrganelle] = useState<string | null>(null);
+  const [matchConnections, setMatchConnections] = useState<Record<string, string>>({});
+  const [matchChecked, setMatchChecked] = useState(false);
+  const [quantityAnswers, setQuantityAnswers] = useState<Record<string, QuantityLevel>>({});
+  const [quantityChecked, setQuantityChecked] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Shuffled function descriptions for matching
   const shuffledFunctions = useMemo(() => {
-    const fns = [...functionMatches];
-    for (let i = fns.length - 1; i > 0; i--) {
+    const values = [...functionMatches];
+    for (let i = values.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
-      [fns[i], fns[j]] = [fns[j], fns[i]];
+      [values[i], values[j]] = [values[j], values[i]];
     }
-    return fns;
+    return values;
   }, [functionMatches]);
 
-  // ==========================================================================
-  // Phase 1: Sort Logic
-  // ==========================================================================
+  const phaseChecked: Record<Phase, boolean> = {
+    cell_inventory: sortChecked,
+    organelle_placement: placeChecked,
+    structure_function: matchChecked,
+    cell_specialization: quantityChecked,
+  };
 
-  const allSorted = Object.keys(sortDecisions).length === organelles.length;
-
-  const handleCheckSort = useCallback(() => {
-    const fb: Record<string, { correct: boolean; explanation: string }> = {};
-    organelles.forEach(o => {
-      const studentSaysBelongs = sortDecisions[o.id] ?? false;
-      const correct = studentSaysBelongs === o.belongsInCell;
-      fb[o.id] = {
-        correct,
-        explanation: correct
-          ? (o.belongsInCell ? `${o.name} belongs in this cell.` : `Correct! ${o.name} doesn't belong here.`)
-          : (o.belongsInCell
-            ? `${o.name} actually belongs in this cell type.`
-            : (o.distractorExplanation || `${o.name} doesn't belong in a ${cellContext}.`)),
-      };
-    });
-    setSortFeedback(fb);
-    setSortChecked(true);
-
-    const correctCount = Object.values(fb).filter(f => f.correct).length;
-    const total = organelles.length;
-    if (correctCount === total) {
-      SoundManager.playCorrect();
-      setFeedback('All organelles correctly classified! Moving to placement phase...');
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`${correctCount} of ${total} correct. Review the feedback, then continue.`);
-    }
-  }, [organelles, sortDecisions, cellContext]);
-
-  const handleAdvanceToPlace = useCallback(() => {
-    setCurrentPhase('place');
-    setFeedback(null);
-  }, []);
-
-  // ==========================================================================
-  // Phase 2: Place Logic
-  // ==========================================================================
-
-  const organellesToPlace = validOrganelles;
-
-  const unplacedOrganellesList = organellesToPlace.filter(
-    o => !placedOrganelles[o.id]
-  );
-
-  const handleDragStart = useCallback((organelleId: string) => {
-    setDraggingId(organelleId);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
-    setCellDragOver(false);
-    const activeId = draggingId || selectedOrganelle;
-    if (!activeId) return;
-
-    const cellArea = cellAreaRef.current;
-    if (!cellArea) return;
-
-    const rect = cellArea.getBoundingClientRect();
-    const clientX = 'clientX' in e ? e.clientX : 0;
-    const clientY = 'clientY' in e ? e.clientY : 0;
-
-    const x = Math.max(5, Math.min(95, ((clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(5, Math.min(95, ((clientY - rect.top) / rect.height) * 100));
-
-    setPlacedOrganelles(prev => ({ ...prev, [activeId]: { x, y } }));
-    SoundManager.snap();
-    setDraggingId(null);
+  const placeOrganelle = useCallback((organelleId: string, zone: CellZone) => {
+    if (placeChecked) return;
+    setPlacements((previous) => ({ ...previous, [organelleId]: zone }));
     setSelectedOrganelle(null);
-    setPlaceChecked(false);
+    setDragOverZone(null);
     setFeedback(null);
-  }, [draggingId, selectedOrganelle]);
+    SoundManager.snap();
+  }, [placeChecked]);
 
-  const handleRemoveOrganelle = useCallback((organelleId: string) => {
-    setPlacedOrganelles(prev => {
-      const next = { ...prev };
-      delete next[organelleId];
-      return next;
-    });
-    setPlaceChecked(false);
-    setFeedback(null);
-  }, []);
+  const handleZoneDrop = useCallback((event: React.DragEvent<HTMLDivElement>, zone: CellZone) => {
+    event.preventDefault();
+    const organelleId = event.dataTransfer.getData('text/plain') || selectedOrganelle;
+    if (organelleId) placeOrganelle(organelleId, zone);
+  }, [placeOrganelle, selectedOrganelle]);
 
-  const allPlaced = Object.keys(placedOrganelles).length === organellesToPlace.length;
+  const checkCurrentPhase = useCallback(() => {
+    let message = '';
+    let isPerfect = false;
 
-  const handleCheckPlace = useCallback(() => {
-    const fb: Record<string, boolean> = {};
-    organellesToPlace.forEach(o => {
-      const pos = placedOrganelles[o.id];
-      if (!pos || !o.correctZone) {
-        fb[o.id] = false;
-        return;
-      }
-      fb[o.id] = isInZone(pos, o.correctZone);
-    });
-    setPlaceFeedback(fb);
-    setPlaceChecked(true);
-    if (placeFlashTimer.current) clearTimeout(placeFlashTimer.current);
-    setShowPlaceFlash(true);
-    placeFlashTimer.current = setTimeout(() => setShowPlaceFlash(false), 900);
-
-    const correctCount = Object.values(fb).filter(Boolean).length;
-    const total = organellesToPlace.length;
-    if (correctCount === total) {
-      SoundManager.playCorrect();
-      setFeedback('All organelles correctly placed!');
+    if (currentPhase === 'cell_inventory') {
+      const correct = organelles.filter((item) => sortDecisions[item.id] === item.belongsInCell).length;
+      setSortChecked(true);
+      isPerfect = correct === organelles.length;
+      message = `${correct} of ${organelles.length} structures correctly identified.`;
+    } else if (currentPhase === 'organelle_placement') {
+      const correct = validOrganelles.filter((item) => item.correctZone && placements[item.id] === item.correctZone).length;
+      setPlaceChecked(true);
+      isPerfect = correct === validOrganelles.length;
+      message = `${correct} of ${validOrganelles.length} organelles placed in their best-fit model region.`;
+    } else if (currentPhase === 'structure_function') {
+      const correct = validOrganelles.filter((item) => matchConnections[item.id] === item.id).length;
+      setMatchChecked(true);
+      isPerfect = correct === validOrganelles.length;
+      message = `${correct} of ${validOrganelles.length} organelle jobs correctly connected.`;
     } else {
-      SoundManager.playIncorrect();
-      setFeedback(`${correctCount} of ${total} in the correct zone. Drag incorrect ones to new positions.`);
+      const correct = quantityOrganelles.filter((item) => quantityAnswers[item.id] === item.expectedQuantity).length;
+      setQuantityChecked(true);
+      isPerfect = correct === quantityOrganelles.length;
+      message = `${correct} of ${quantityOrganelles.length} abundance choices fit this cell's mission.`;
     }
-  }, [organellesToPlace, placedOrganelles]);
 
-  const cellZoneState: DropZoneState = cellDragOver
-    ? 'dragOver'
-    : showPlaceFlash
-      ? Object.values(placeFeedback).every(Boolean)
-        ? 'correct'
-        : 'incorrect'
-      : Object.keys(placedOrganelles).length > 0
-        ? 'filled'
-        : 'idle';
-
-  const handleAdvanceToMatch = useCallback(() => {
-    setCurrentPhase('match-functions');
-    setFeedback(null);
-  }, []);
-
-  // ==========================================================================
-  // Phase 3: Match Logic
-  // ==========================================================================
-
-  const handleMatchClick = useCallback((organelleId: string) => {
-    if (matchChecked) return;
-    setSelectedMatchOrganelle(prev => prev === organelleId ? null : organelleId);
-  }, [matchChecked]);
-
-  const handleFunctionClick = useCallback((functionOrganelleId: string) => {
-    if (matchChecked || !selectedMatchOrganelle) return;
-
-    // Check if this function is already assigned to another organelle
-    const existingOrganelle = Object.entries(matchConnections).find(([, fId]) => fId === functionOrganelleId)?.[0];
-    if (existingOrganelle && existingOrganelle !== selectedMatchOrganelle) {
-      // Unassign the previous connection
-      setMatchConnections(prev => {
-        const next = { ...prev };
-        delete next[existingOrganelle];
-        next[selectedMatchOrganelle!] = functionOrganelleId;
-        return next;
-      });
-    } else {
-      setMatchConnections(prev => ({ ...prev, [selectedMatchOrganelle!]: functionOrganelleId }));
-    }
-    setSelectedMatchOrganelle(null);
-  }, [matchChecked, selectedMatchOrganelle, matchConnections]);
-
-  const allMatched = validOrganelles.every(o => matchConnections[o.id]);
-
-  const handleCheckMatch = useCallback(() => {
-    const fb: Record<string, boolean> = {};
-    validOrganelles.forEach(o => {
-      const selectedFnOrganelleId = matchConnections[o.id];
-      fb[o.id] = selectedFnOrganelleId === o.id;
-    });
-    setMatchFeedback(fb);
-    setMatchChecked(true);
-
-    const correctCount = Object.values(fb).filter(Boolean).length;
-    const total = validOrganelles.length;
-    if (correctCount === total) {
-      SoundManager.playCorrect();
-      setFeedback('Perfect! All functions correctly matched!');
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`${correctCount} of ${total} functions matched correctly.`);
-    }
-  }, [validOrganelles, matchConnections]);
-
-  // ==========================================================================
-  // Final Submit
-  // ==========================================================================
+    setFeedback(message);
+    if (isPerfect) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
+  }, [currentPhase, matchConnections, organelles, placements, quantityAnswers, quantityOrganelles, sortDecisions, validOrganelles]);
 
   const handleSubmit = useCallback(() => {
     if (hasSubmitted) return;
 
-    // Phase 1 metrics
-    const sortResults = organelles.map(o => ({
-      organelleId: o.id,
-      belongsInCell: o.belongsInCell,
-      studentSaidBelongs: sortDecisions[o.id] ?? false,
-      isCorrect: (sortDecisions[o.id] ?? false) === o.belongsInCell,
+    const sortResults = organelles.map((item) => ({
+      organelleId: item.id,
+      belongsInCell: item.belongsInCell,
+      studentSaidBelongs: sortDecisions[item.id] ?? false,
+      isCorrect: sortDecisions[item.id] === item.belongsInCell,
     }));
-    const correctlySorted = sortResults.filter(r => r.isCorrect).length;
-    const sortAccuracy = Math.round((correctlySorted / organelles.length) * 100);
+    const correctlySorted = sortResults.filter((item) => item.isCorrect).length;
+    const sortAccuracy = score(correctlySorted, organelles.length);
 
-    // Phase 2 metrics
-    const zonePlacements = organellesToPlace.map(o => {
-      const pos = placedOrganelles[o.id];
-      const placedZone = pos ? getZoneFromPosition(pos) : null;
-      return {
-        organelleId: o.id,
-        correctZone: o.correctZone!,
-        placedZone,
-        isCorrect: pos && o.correctZone ? isInZone(pos, o.correctZone) : false,
-      };
-    });
-    const correctZonePlacements = zonePlacements.filter(z => z.isCorrect).length;
-    const zoneAccuracy = organellesToPlace.length > 0
-      ? Math.round((correctZonePlacements / organellesToPlace.length) * 100)
-      : 100;
-
-    // Quantity metrics
-    const quantityResults = quantityOrganelles.map(o => ({
-      organelleId: o.id,
-      expectedQuantity: o.expectedQuantity!,
-      studentQuantity: quantityAnswers[o.id] || null,
-      isCorrect: quantityAnswers[o.id] === o.expectedQuantity,
+    const zonePlacements = validOrganelles.map((item) => ({
+      organelleId: item.id,
+      correctZone: item.correctZone!,
+      placedZone: placements[item.id] ?? null,
+      isCorrect: placements[item.id] === item.correctZone,
     }));
-    const quantityCorrect = quantityResults.filter(q => q.isCorrect).length;
-    const quantityAccuracy = quantityOrganelles.length > 0
-      ? Math.round((quantityCorrect / quantityOrganelles.length) * 100)
-      : 100;
+    const correctZonePlacements = zonePlacements.filter((item) => item.isCorrect).length;
+    const zoneAccuracy = score(correctZonePlacements, validOrganelles.length);
 
-    // Blend quantity into place score
-    const placeScore = quantityOrganelles.length > 0
-      ? Math.round(zoneAccuracy * 0.7 + quantityAccuracy * 0.3)
-      : zoneAccuracy;
-
-    // Phase 3 metrics
-    const functionMatchResults = validOrganelles.map(o => ({
-      organelleId: o.id,
-      selectedFunctionId: matchConnections[o.id] || null,
-      correctFunctionId: o.id,
-      isCorrect: matchConnections[o.id] === o.id,
+    const quantityResults = quantityOrganelles.map((item) => ({
+      organelleId: item.id,
+      expectedQuantity: item.expectedQuantity!,
+      studentQuantity: quantityAnswers[item.id] ?? null,
+      isCorrect: quantityAnswers[item.id] === item.expectedQuantity,
     }));
-    const correctFunctionMatches = functionMatchResults.filter(f => f.isCorrect).length;
-    const functionMatchAccuracy = validOrganelles.length > 0
-      ? Math.round((correctFunctionMatches / validOrganelles.length) * 100)
-      : 100;
+    const quantityQuestionsCorrect = quantityResults.filter((item) => item.isCorrect).length;
+    const quantityAccuracy = score(quantityQuestionsCorrect, quantityOrganelles.length);
 
-    // Weighted overall
-    const overallAccuracy = Math.round(sortAccuracy * 0.3 + placeScore * 0.4 + functionMatchAccuracy * 0.3);
-    const allCorrect = sortAccuracy === 100 && zoneAccuracy === 100 && quantityAccuracy === 100 && functionMatchAccuracy === 100;
-    const success = overallAccuracy >= 75;
+    const functionMatchResults = validOrganelles.map((item) => ({
+      organelleId: item.id,
+      selectedFunctionId: matchConnections[item.id] ?? null,
+      correctFunctionId: item.id,
+      isCorrect: matchConnections[item.id] === item.id,
+    }));
+    const correctFunctionMatches = functionMatchResults.filter((item) => item.isCorrect).length;
+    const functionMatchAccuracy = score(correctFunctionMatches, validOrganelles.length);
+
+    const phaseScores: Record<Phase, number> = {
+      cell_inventory: sortAccuracy,
+      organelle_placement: zoneAccuracy,
+      structure_function: functionMatchAccuracy,
+      cell_specialization: quantityAccuracy,
+    };
+    const overallAccuracy = Math.round(
+      phases.reduce((sum, phase) => sum + phaseScores[phase], 0) / Math.max(phases.length, 1),
+    );
+    const allCorrect = phases.every((phase) => phaseScores[phase] === 100);
 
     const metrics: CellBuilderMetrics = {
       type: 'cell-builder',
       cellType,
       cellContext,
       gradeBand: data.gradeBand,
-
-      phase1Completed: sortChecked,
-      phase2Completed: placeChecked,
-      phase3Completed: matchChecked,
-      allPhasesCompleted: sortChecked && placeChecked && matchChecked,
-
+      phase1Completed: phases.includes('cell_inventory') ? sortChecked : false,
+      phase2Completed: phases.includes('organelle_placement') ? placeChecked : quantityChecked,
+      phase3Completed: phases.includes('structure_function') ? matchChecked : false,
+      allPhasesCompleted: phases.every((phase) => phaseChecked[phase]),
       totalOrganelles: organelles.length,
       validOrganelles: validOrganelles.length,
-      distractorOrganelles: distractorOrganelles.length,
+      distractorOrganelles: distractors.length,
       correctlySorted,
       sortAccuracy,
       sortResults,
-
-      totalToPlace: organellesToPlace.length,
+      totalToPlace: validOrganelles.length,
       correctZonePlacements,
-      incorrectZonePlacements: organellesToPlace.length - correctZonePlacements,
-      unplacedOrganelles: organellesToPlace.length - Object.keys(placedOrganelles).length,
+      incorrectZonePlacements: validOrganelles.length - correctZonePlacements,
+      unplacedOrganelles: validOrganelles.length - Object.keys(placements).length,
       zoneAccuracy,
       zonePlacements,
-
       quantityQuestionsTotal: quantityOrganelles.length,
-      quantityQuestionsCorrect: quantityCorrect,
+      quantityQuestionsCorrect,
       quantityAccuracy,
       quantityResults,
-
       totalFunctionMatches: validOrganelles.length,
       correctFunctionMatches,
       functionMatchAccuracy,
       functionMatchResults,
-
       allCorrect,
       accuracy: overallAccuracy,
     };
 
-    submitResult(success, overallAccuracy, metrics, {
-      studentWork: { sortDecisions, placedOrganelles, quantityAnswers, matchConnections },
+    submitResult(overallAccuracy >= 75, overallAccuracy, metrics, {
+      studentWork: { activeMissions: phases, sortDecisions, placements, matchConnections, quantityAnswers },
     });
-
-    setFeedback(
-      allCorrect
-        ? 'Outstanding! You demonstrated excellent understanding of cell biology!'
-        : `Score: ${overallAccuracy}% — Sort: ${sortAccuracy}%, Placement: ${placeScore}%, Functions: ${functionMatchAccuracy}%`
-    );
-  }, [
-    hasSubmitted, organelles, organellesToPlace, validOrganelles, distractorOrganelles,
-    quantityOrganelles, sortDecisions, placedOrganelles, quantityAnswers, matchConnections,
-    cellType, cellContext, data.gradeBand, sortChecked, placeChecked, matchChecked, submitResult,
-  ]);
-
-  // ==========================================================================
-  // Reset
-  // ==========================================================================
+    setFeedback(allCorrect ? 'Mission complete. This cell is ready to work.' : `Mission score: ${overallAccuracy}%.`);
+  }, [cellContext, cellType, data.gradeBand, distractors.length, hasSubmitted, matchChecked, matchConnections, organelles, phaseChecked, phases, placeChecked, placements, quantityAnswers, quantityChecked, quantityOrganelles, sortChecked, sortDecisions, submitResult, validOrganelles]);
 
   const handleReset = useCallback(() => {
-    setCurrentPhase('sort');
+    setPhaseIndex(0);
     setSortDecisions({});
     setSortChecked(false);
-    setSortFeedback({});
-    setPlacedOrganelles({});
+    setPlacements({});
+    setSelectedOrganelle(null);
+    setDragOverZone(null);
     setPlaceChecked(false);
-    setPlaceFeedback({});
-    setQuantityAnswers({});
     setSelectedMatchOrganelle(null);
     setMatchConnections({});
     setMatchChecked(false);
-    setMatchFeedback({});
+    setQuantityAnswers({});
+    setQuantityChecked(false);
     setFeedback(null);
-    setDraggingId(null);
-    setSelectedOrganelle(null);
-    setCellDragOver(false);
-    setShowPlaceFlash(false);
-    if (placeFlashTimer.current) clearTimeout(placeFlashTimer.current);
     resetAttempt();
   }, [resetAttempt]);
 
-  // ==========================================================================
-  // Render
-  // ==========================================================================
+  const advance = () => {
+    setFeedback(null);
+    setPhaseIndex((value) => Math.min(value + 1, phases.length - 1));
+  };
 
-  const phases: { key: Phase; label: string }[] = [
-    { key: 'sort', label: 'Sort' },
-    { key: 'place', label: 'Place' },
-    { key: 'match-functions', label: 'Match Functions' },
-  ];
-  const currentPhaseIndex = phases.findIndex(p => p.key === currentPhase);
+  const currentComplete = phaseChecked[currentPhase];
+  const isFinalPhase = phaseIndex === phases.length - 1;
+  const canCheck = currentPhase === 'cell_inventory'
+    ? Object.keys(sortDecisions).length === organelles.length
+    : currentPhase === 'organelle_placement'
+      ? Object.keys(placements).length === validOrganelles.length
+      : currentPhase === 'structure_function'
+        ? validOrganelles.every((item) => matchConnections[item.id])
+        : quantityOrganelles.length > 0 && quantityOrganelles.every((item) => quantityAnswers[item.id]);
+
+  const modeTabs = phases.map((phase) => ({ value: phase, label: PHASE_LABELS[phase] }));
+  const cellTypeLabel = `${cellType.charAt(0).toUpperCase()}${cellType.slice(1)} cell`;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <LuminaCard className={['overflow-hidden shadow-2xl', className].filter(Boolean).join(' ')}>
+      <LuminaCardHeader className="relative overflow-hidden border-b border-white/5">
+        <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl" />
+        <div className="relative flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-slate-100 text-xl flex items-center gap-2">
-              <FlaskConical className="w-5 h-5 text-emerald-400" />
+            <LuminaCardTitle className="flex items-center gap-2 text-xl">
+              <FlaskConical className="h-5 w-5 text-emerald-400" />
               {title}
-            </CardTitle>
-            <CardDescription className="text-slate-400 mt-1">{description}</CardDescription>
+            </LuminaCardTitle>
+            <LuminaCardDescription className="mt-1 max-w-3xl">{description}</LuminaCardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-300">
-              {cellContext || `${cellTypeLabel} Cell`}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-300">
-              Grade {data.gradeBand}
-            </Badge>
+          <div className="flex flex-wrap gap-2">
+            <LuminaBadge accent="emerald">{cellContext || cellTypeLabel}</LuminaBadge>
+            <LuminaBadge accent="cyan">Grade {data.gradeBand}</LuminaBadge>
           </div>
         </div>
+        <LuminaModeTabs tabs={modeTabs} active={currentPhase} accent="emerald" className="relative mt-4" />
+      </LuminaCardHeader>
 
-        {/* Phase Progress */}
-        <div className="flex items-center gap-2 mt-4">
-          {phases.map((phase, idx) => (
-            <React.Fragment key={phase.key}>
-              {idx > 0 && <ArrowRight className="w-4 h-4 text-slate-600 flex-shrink-0" />}
-              <div
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  idx < currentPhaseIndex
-                    ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
-                    : idx === currentPhaseIndex
-                      ? 'bg-white/10 border border-white/20 text-white'
-                      : 'bg-slate-800/30 border border-white/5 text-slate-600'
-                }`}
-              >
-                {idx < currentPhaseIndex && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
-                {phase.label}
+      <LuminaCardContent className="space-y-5 pt-6">
+        <LuminaPrompt accent="emerald">
+          <div className="flex items-start gap-3">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
+            <div>
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
+                Mission {phaseIndex + 1} of {phases.length}
               </div>
-            </React.Fragment>
-          ))}
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* ================================================================ */}
-        {/* PHASE 1: SORT                                                    */}
-        {/* ================================================================ */}
-        {currentPhase === 'sort' && (
-          <div className="space-y-4">
-            <div className="text-sm text-slate-300">
-              Which organelles belong in a <span className="text-emerald-300 font-medium">{cellContext}</span>?
-              Mark each organelle as belonging or not belonging.
+              <div className="mt-1">{PHASE_PROMPTS[currentPhase]}</div>
             </div>
+          </div>
+        </LuminaPrompt>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {organelles.map(organelle => {
-                const color = getOrganelleColor(organelle.name);
-                const decision = sortDecisions[organelle.id];
-                const fb = sortFeedback[organelle.id];
-
-                return (
-                  <div
-                    key={organelle.id}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all ${
-                      fb
-                        ? fb.correct
-                          ? 'bg-green-500/10 border-green-500/30'
-                          : 'bg-red-500/10 border-red-500/30'
-                        : decision === true
-                          ? 'bg-emerald-600/20 border-emerald-500/40'
-                          : decision === false
-                            ? 'bg-red-500/10 border-red-500/30'
-                            : 'bg-slate-800/50 border-white/10 hover:border-white/20'
-                    }`}
-                  >
-                    {/* Organelle dot */}
-                    <div
-                      className="w-6 h-6 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: `${color}66`, border: `2px solid ${color}` }}
-                    />
-
-                    {/* Name & info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-slate-200 font-medium">{organelle.name}</div>
-                      {fb && !fb.correct && (
-                        <div className="text-[11px] text-amber-300/80 mt-0.5">{fb.explanation}</div>
-                      )}
+        {currentPhase === 'cell_inventory' && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {organelles.map((organelle) => {
+              const decision = sortDecisions[organelle.id];
+              const correct = decision === organelle.belongsInCell;
+              const state = !sortChecked ? decision == null ? 'idle' : 'selected' : correct ? 'correct' : 'incorrect';
+              return (
+                <div key={organelle.id} className={`rounded-xl border p-3 ${answerStateClass(state)}`}>
+                  <div className="flex items-center gap-3">
+                    <OrganelleGlyph organelle={organelle} />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-slate-100">{organelle.name}</div>
+                      <div className="mt-0.5 text-xs text-slate-400">{organelle.analogy}</div>
                     </div>
-
-                    {/* Toggle buttons */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => {
-                          if (sortChecked) return;
-                          setSortDecisions(prev => ({ ...prev, [organelle.id]: true }));
-                        }}
-                        className={`p-1.5 rounded-md transition-all ${
-                          decision === true
-                            ? 'bg-emerald-500/30 text-emerald-300'
-                            : 'bg-white/5 text-slate-500 hover:text-slate-300 hover:bg-white/10'
-                        }`}
-                        title="Belongs in this cell"
-                      >
-                        <ThumbsUp className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (sortChecked) return;
-                          setSortDecisions(prev => ({ ...prev, [organelle.id]: false }));
-                        }}
-                        className={`p-1.5 rounded-md transition-all ${
-                          decision === false
-                            ? 'bg-red-500/30 text-red-300'
-                            : 'bg-white/5 text-slate-500 hover:text-slate-300 hover:bg-white/10'
-                        }`}
-                        title="Does NOT belong in this cell"
-                      >
-                        <ThumbsDown className="w-4 h-4" />
-                      </button>
+                    <div className="flex gap-1">
+                      <LuminaButton size="sm" tone={decision === true ? 'primary' : 'subtle'} disabled={sortChecked} onClick={() => setSortDecisions((previous) => ({ ...previous, [organelle.id]: true }))}>Keep</LuminaButton>
+                      <LuminaButton size="sm" tone={decision === false ? 'danger' : 'subtle'} disabled={sortChecked} onClick={() => setSortDecisions((previous) => ({ ...previous, [organelle.id]: false }))}>Reject</LuminaButton>
                     </div>
-
-                    {/* Result indicator */}
-                    {fb && (
-                      <div className="flex-shrink-0">
-                        {fb.correct
-                          ? <CheckCircle2 className="w-4 h-4 text-green-400" />
-                          : <XCircle className="w-4 h-4 text-red-400" />}
-                      </div>
-                    )}
                   </div>
-                );
-              })}
-            </div>
-
-            {/* Sort actions */}
-            <div className="flex items-center gap-2 pt-2">
-              {!sortChecked ? (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                  onClick={handleCheckSort}
-                  disabled={!allSorted}
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-1" />
-                  Check Classification
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30 text-emerald-300"
-                  onClick={handleAdvanceToPlace}
-                >
-                  <ArrowRight className="w-4 h-4 mr-1" />
-                  Continue to Placement
-                </Button>
-              )}
-              <div className="ml-auto text-xs text-slate-500">
-                {Object.keys(sortDecisions).length} / {organelles.length} classified
-              </div>
-            </div>
+                  {sortChecked && !correct && (
+                    <p className="mt-2 border-t border-white/10 pt-2 text-xs text-amber-200">
+                      {organelle.belongsInCell ? `${organelle.name} belongs in this cell.` : organelle.distractorExplanation ?? `${organelle.name} does not belong in a ${cellContext}.`}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* ================================================================ */}
-        {/* PHASE 2: PLACE + QUANTITY                                        */}
-        {/* ================================================================ */}
-        {currentPhase === 'place' && (
+        {currentPhase === 'organelle_placement' && (
           <div className="space-y-4">
-            {/* Controls */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                onClick={() => setShowLabels(!showLabels)}
-              >
-                {showLabels ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
-                {showLabels ? 'Hide Labels' : 'Show Labels'}
-              </Button>
-              <div className="ml-auto text-xs text-slate-500">
-                <span className="text-slate-400">Membrane:</span> {cellMembrane.function}
-                {cellWall.present && (
-                  <span className="ml-2"><span className="text-slate-400">Wall:</span> {cellWall.description}</span>
-                )}
-              </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="max-w-2xl text-xs text-slate-400">This is a relationship map, not a literal floor plan: organelles move, cells are 3D, and “distributed” means many copies.</p>
+              <LuminaButton size="sm" tone="subtle" onClick={() => setShowLabels((value) => !value)}>
+                {showLabels ? <EyeOff className="mr-1 h-4 w-4" /> : <Eye className="mr-1 h-4 w-4" />}
+                {showLabels ? 'Hide notes' : 'Show notes'}
+              </LuminaButton>
             </div>
 
-            {/* Main Layout: Cell Diagram + Palette */}
-            <div className="flex gap-4">
-              {/* Cell Diagram Area */}
-              <LuminaDropZone
-                ref={cellAreaRef}
-                state={cellZoneState}
-                emptyPrompt="Drop organelles into the cell"
-                className="relative block min-h-[400px] flex-1 overflow-hidden p-0 cursor-crosshair"
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setCellDragOver(true);
-                }}
-                onDragLeave={() => setCellDragOver(false)}
-                onDrop={handleDrop}
-                onClick={(e) => {
-                  if (selectedOrganelle) handleDrop(e);
-                }}
-              >
-                {/* Cell outline SVG */}
-                <svg
-                  viewBox={cellOutline.viewBox}
-                  className="absolute inset-0 w-full h-full"
-                  style={{ pointerEvents: 'none' }}
-                >
-                  {cellOutline.hasWall && (
-                    <path
-                      d={cellOutline.path}
-                      fill="none"
-                      stroke="rgba(132, 204, 22, 0.4)"
-                      strokeWidth="6"
-                      strokeDasharray="8 4"
-                    />
-                  )}
-                  <path
-                    d={cellOutline.path}
-                    fill="rgba(20, 184, 166, 0.05)"
-                    stroke="rgba(20, 184, 166, 0.4)"
-                    strokeWidth="2"
-                  />
-                </svg>
-
-                {/* Cell type label */}
-                <div className="absolute top-2 left-3 text-xs text-slate-500 font-mono uppercase tracking-wider">
-                  {cellContext || `${cellTypeLabel} Cell`}
-                </div>
-
-                {/* Placed organelles */}
-                {Object.entries(placedOrganelles).map(([organelleId, pos]) => {
-                  const organelle = validOrganelles.find(o => o.id === organelleId);
-                  if (!organelle) return null;
-
-                  const color = getOrganelleColor(organelle.name);
-                  const size = getOrganelleSize(organelle.sizeRelative);
-                  const zoneCorrect = placeFeedback[organelleId];
-                  const borderColor = placeChecked
-                    ? zoneCorrect ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'
-                    : 'rgba(255, 255, 255, 0.3)';
-
-                  return (
-                    <div
-                      key={organelleId}
-                      className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
-                      style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-                      draggable
-                      onDragStart={() => handleDragStart(organelleId)}
-                      onDoubleClick={() => handleRemoveOrganelle(organelleId)}
-                      title="Drag to reposition, double-click to remove"
-                    >
-                      <div
-                        className="rounded-full flex items-center justify-center transition-all"
-                        style={{
-                          width: size + 12,
-                          height: size + 12,
-                          backgroundColor: `${color}33`,
-                          border: `2px solid ${borderColor}`,
-                          boxShadow: `0 0 8px ${color}44`,
-                        }}
-                      >
-                        <div
-                          className="rounded-full"
-                          style={{ width: size, height: size, backgroundColor: `${color}88` }}
-                        />
-                      </div>
-                      {showLabels && (
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 text-[10px] text-slate-300 whitespace-nowrap bg-slate-900/80 px-1.5 py-0.5 rounded">
-                          {organelle.name}
-                        </div>
-                      )}
-                      {/* Corrective reveal: where it SHOULD have gone. Only after the
-                          student commits a placement, and only when it was wrong. */}
-                      {placeChecked && !zoneCorrect && organelle.correctZone && (
-                        <div
-                          className={`absolute left-1/2 transform -translate-x-1/2 text-[10px] text-amber-300 whitespace-nowrap bg-slate-900/90 px-1.5 py-0.5 rounded ${
-                            showLabels ? 'top-[calc(100%+1.375rem)]' : 'top-full mt-1'
-                          }`}
-                        >
-                          → {ZONE_LABELS[organelle.correctZone]}
-                        </div>
-                      )}
-                      {placeChecked && (
-                        <div className="absolute -top-1 -right-1">
-                          {zoneCorrect
-                            ? <CheckCircle2 className="w-4 h-4 text-green-400" />
-                            : <XCircle className="w-4 h-4 text-red-400" />}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Empty state */}
-                {Object.keys(placedOrganelles).length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center text-slate-600 text-sm pointer-events-none">
-                    Drag organelles from the palette or click to select, then click to place
-                  </div>
-                )}
-              </LuminaDropZone>
-
-              {/* Organelle Palette + Quantity */}
-              <div className="w-56 flex-shrink-0 space-y-3">
-                <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Organelles ({unplacedOrganellesList.length} remaining)
-                </div>
-                <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1">
-                  {unplacedOrganellesList.map(organelle => {
-                    const color = getOrganelleColor(organelle.name);
-                    const isSelected = selectedOrganelle === organelle.id;
-
-                    return (
-                      <div
-                        key={organelle.id}
-                        draggable
-                        onDragStart={() => handleDragStart(organelle.id)}
-                        onClick={() => setSelectedOrganelle(isSelected ? null : organelle.id)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-grab active:cursor-grabbing transition-all ${
-                          isSelected
-                            ? 'bg-emerald-600/30 border border-emerald-500/40 ring-1 ring-emerald-500/30'
-                            : 'bg-slate-800/50 border border-white/10 hover:bg-slate-800/80 hover:border-white/20'
-                        }`}
-                      >
-                        <div
-                          className="w-5 h-5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: `${color}66`, border: `2px solid ${color}` }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          {/* Name only. `correctZone` is the answer key for this phase —
-                              grading is isInZone(pos, o.correctZone) — so it must never
-                              appear on an unplaced organelle. Revealed after Check
-                              Placement, on the placed organelle, when the student got it
-                              wrong. */}
-                          <div className="text-xs text-slate-200 font-medium truncate">{organelle.name}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {unplacedOrganellesList.length === 0 && (
-                    <div className="text-xs text-emerald-400/50 text-center py-3">All organelles placed!</div>
-                  )}
-                </div>
-
-                {/* Quantity Reasoning */}
-                {quantityOrganelles.length > 0 && (
-                  <div className="pt-3 border-t border-white/10 space-y-2">
-                    <div className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                      <HelpCircle className="w-3 h-3" />
-                      Quantity Reasoning
-                    </div>
-                    {quantityOrganelles.map(organelle => (
-                      <div key={organelle.id} className="bg-black/20 rounded-lg p-2 space-y-1.5">
-                        <div className="text-[11px] text-slate-300">
-                          How many <span className="text-emerald-300 font-medium">{organelle.name}</span> would
-                          a {cellContext} have?
-                        </div>
-                        <div className="flex gap-1">
-                          {QUANTITY_OPTIONS.map(q => (
-                            <button
-                              key={q}
-                              onClick={() => setQuantityAnswers(prev => ({ ...prev, [organelle.id]: q }))}
-                              className={`flex-1 text-[10px] py-1 px-1 rounded transition-all ${
-                                quantityAnswers[organelle.id] === q
-                                  ? 'bg-emerald-500/30 border border-emerald-500/40 text-emerald-200'
-                                  : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-                              }`}
-                            >
-                              {QUANTITY_LABELS[q].split(' ')[0]}
-                            </button>
-                          ))}
-                        </div>
-                        {quantityAnswers[organelle.id] && organelle.quantityReasoning && placeChecked && (
-                          <div className={`text-[10px] p-1.5 rounded ${
-                            quantityAnswers[organelle.id] === organelle.expectedQuantity
-                              ? 'bg-green-500/10 text-green-300'
-                              : 'bg-amber-500/10 text-amber-300'
-                          }`}>
-                            {quantityAnswers[organelle.id] === organelle.expectedQuantity
-                              ? `Correct! ${organelle.quantityReasoning}`
-                              : `Expected: ${QUANTITY_LABELS[organelle.expectedQuantity!]}. ${organelle.quantityReasoning}`}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Place actions */}
-            <div className="flex items-center gap-2 pt-2">
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                onClick={handleCheckPlace}
-                disabled={!allPlaced}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1" />
-                Check Placement
-              </Button>
-              {placeChecked && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30 text-emerald-300"
-                  onClick={handleAdvanceToMatch}
-                >
-                  <ArrowRight className="w-4 h-4 mr-1" />
-                  Continue to Function Matching
-                </Button>
-              )}
-              <div className="ml-auto text-xs text-slate-500">
-                {Object.keys(placedOrganelles).length} / {organellesToPlace.length} placed
-                {quantityOrganelles.length > 0 && (
-                  <span className="ml-2">
-                    | {Object.keys(quantityAnswers).length} / {quantityOrganelles.length} quantity answered
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================================================================ */}
-        {/* PHASE 3: MATCH FUNCTIONS                                         */}
-        {/* ================================================================ */}
-        {currentPhase === 'match-functions' && (
-          <div className="space-y-4">
-            <div className="text-sm text-slate-300">
-              Match each organelle to its function. Click an organelle, then click its matching function.
-            </div>
-
-            <div className="flex gap-4">
-              {/* Left column: Organelle names */}
-              <div className="flex-1 space-y-1.5">
-                <div className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Organelles</div>
-                {validOrganelles.map(organelle => {
-                  const color = getOrganelleColor(organelle.name);
-                  const isSelected = selectedMatchOrganelle === organelle.id;
-                  const isMatched = !!matchConnections[organelle.id];
-                  const fb = matchFeedback[organelle.id];
-
+            <div className="grid gap-4 lg:grid-cols-[minmax(220px,0.7fr)_minmax(0,1.5fr)]">
+              <LuminaPanel className="space-y-2">
+                <LuminaSectionLabel accent="cyan">Organelle bay</LuminaSectionLabel>
+                {validOrganelles.map((organelle) => {
+                  const placed = placements[organelle.id];
+                  const selected = selectedOrganelle === organelle.id;
                   return (
                     <button
                       key={organelle.id}
-                      onClick={() => handleMatchClick(organelle.id)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${
-                        fb !== undefined
-                          ? fb
-                            ? 'bg-green-500/10 border border-green-500/30'
-                            : 'bg-red-500/10 border border-red-500/30'
-                          : isSelected
-                            ? 'bg-emerald-600/30 border border-emerald-500/40 ring-1 ring-emerald-500/30'
-                            : isMatched
-                              ? 'bg-blue-500/10 border border-blue-500/30'
-                              : 'bg-slate-800/50 border border-white/10 hover:border-white/20'
-                      }`}
+                      type="button"
+                      draggable={!placeChecked}
+                      disabled={placeChecked}
+                      onDragStart={(event) => { event.dataTransfer.setData('text/plain', organelle.id); setSelectedOrganelle(organelle.id); }}
+                      onClick={() => setSelectedOrganelle(selected ? null : organelle.id)}
+                      className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${selected ? 'border-cyan-400/60 bg-cyan-500/15 text-cyan-100' : placed ? 'border-white/10 bg-white/[0.03] text-slate-500' : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/10'}`}
                     >
-                      <div
-                        className="w-4 h-4 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: `${color}66`, border: `2px solid ${color}` }}
-                      />
-                      <span className="text-xs text-slate-200 font-medium">{organelle.name}</span>
-                      {isMatched && !matchChecked && (
-                        <span className="ml-auto text-[10px] text-blue-400">matched</span>
-                      )}
-                      {fb !== undefined && (
-                        <span className="ml-auto">
-                          {fb ? <CheckCircle2 className="w-3.5 h-3.5 text-green-400" /> : <XCircle className="w-3.5 h-3.5 text-red-400" />}
-                        </span>
-                      )}
+                      <GripVertical className="h-4 w-4 shrink-0" />
+                      <OrganelleGlyph organelle={organelle} small />
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{organelle.name}</span>
+                      {placed && <span className="text-[10px] uppercase tracking-wider">{ZONE_LABELS[placed]}</span>}
                     </button>
                   );
                 })}
-              </div>
+              </LuminaPanel>
 
-              {/* Right column: Function descriptions */}
-              <div className="flex-1 space-y-1.5">
-                <div className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Functions</div>
-                {shuffledFunctions.map(fm => {
-                  const isAssigned = Object.values(matchConnections).includes(fm.organelleId);
-                  const assignedBy = Object.entries(matchConnections).find(([, fId]) => fId === fm.organelleId)?.[0];
-                  const assignedOrganelle = assignedBy ? validOrganelles.find(o => o.id === assignedBy) : null;
-                  const fbCorrect = assignedBy ? matchFeedback[assignedBy] : undefined;
-
-                  return (
-                    <button
-                      key={fm.organelleId}
-                      onClick={() => handleFunctionClick(fm.organelleId)}
-                      className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
-                        fbCorrect !== undefined
-                          ? fbCorrect
-                            ? 'bg-green-500/10 border border-green-500/30'
-                            : 'bg-red-500/10 border border-red-500/30'
-                          : isAssigned
-                            ? 'bg-blue-500/10 border border-blue-500/30'
-                            : selectedMatchOrganelle
-                              ? 'bg-slate-800/50 border border-white/10 hover:border-emerald-500/40 hover:bg-emerald-600/10 cursor-pointer'
-                              : 'bg-slate-800/50 border border-white/10'
-                      }`}
-                    >
-                      <div className="text-[11px] text-slate-300">{fm.functionDescription}</div>
-                      {assignedOrganelle && (
-                        <div className="text-[10px] text-blue-400 mt-1">
-                          ← {assignedOrganelle.name}
+              <div className={`relative overflow-hidden rounded-[2.5rem] border p-4 ${cellWall.present ? 'border-lime-400/40' : 'border-teal-400/30'} bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.13),rgba(15,23,42,0.35)_68%)]`}>
+                <div className="pointer-events-none absolute inset-3 rounded-[2rem] border border-teal-300/20" />
+                <div className="relative grid min-h-[470px] grid-cols-2 gap-3 sm:grid-cols-3">
+                  {ZONE_ORDER.map((zone) => {
+                    const zoneOrganelles = validOrganelles.filter((item) => placements[item.id] === zone);
+                    const zoneCorrect = placeChecked && zoneOrganelles.every((item) => item.correctZone === zone);
+                    const containsIncorrect = placeChecked && zoneOrganelles.some((item) => item.correctZone !== zone);
+                    const state: DropZoneState = dragOverZone === zone ? 'dragOver' : containsIncorrect ? 'incorrect' : zoneCorrect && zoneOrganelles.length > 0 ? 'correct' : zoneOrganelles.length > 0 ? 'filled' : 'idle';
+                    return (
+                      <LuminaDropZone
+                        key={zone}
+                        state={state}
+                        className="min-h-[138px] content-start p-3"
+                        onDragOver={(event) => { event.preventDefault(); if (!placeChecked) setDragOverZone(zone); }}
+                        onDragLeave={() => setDragOverZone(null)}
+                        onDrop={(event) => handleZoneDrop(event, zone)}
+                        onClick={() => selectedOrganelle && placeOrganelle(selectedOrganelle, zone)}
+                      >
+                        <div className="w-full">
+                          <div className="mb-2 flex items-start justify-between gap-2">
+                            <div>
+                              <div className="text-xs font-bold uppercase tracking-wider text-slate-200">{ZONE_LABELS[zone]}</div>
+                              {showLabels && <div className="mt-0.5 text-[10px] font-normal leading-tight text-slate-500">{ZONE_NOTES[zone]}</div>}
+                            </div>
+                            <span className="text-[10px] text-slate-500">{zoneOrganelles.length}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {zoneOrganelles.map((organelle) => {
+                              const correct = organelle.correctZone === zone;
+                              return (
+                                <button
+                                  key={organelle.id}
+                                  type="button"
+                                  disabled={placeChecked}
+                                  onClick={(event) => { event.stopPropagation(); setPlacements((previous) => { const next = { ...previous }; delete next[organelle.id]; return next; }); }}
+                                  className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] ${placeChecked ? correct ? answerStateClass('correct') : answerStateClass('incorrect') : 'border-white/15 bg-slate-950/50 text-slate-200'}`}
+                                >
+                                  <OrganelleGlyph organelle={organelle} small />
+                                  {organelle.name}
+                                  {placeChecked && !correct && organelle.correctZone && <span className="text-amber-200">→ {ZONE_LABELS[organelle.correctZone]}</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Match actions */}
-            <div className="flex items-center gap-2 pt-2">
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                onClick={handleCheckMatch}
-                disabled={!allMatched}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1" />
-                Check Matches
-              </Button>
-              {matchChecked && !hasSubmitted && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30 text-emerald-300"
-                  onClick={handleSubmit}
-                >
-                  <Sparkles className="w-4 h-4 mr-1" />
-                  Submit Answer
-                </Button>
-              )}
-              <div className="ml-auto text-xs text-slate-500">
-                {Object.keys(matchConnections).length} / {validOrganelles.length} matched
+                      </LuminaDropZone>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ================================================================ */}
-        {/* FEEDBACK + GLOBAL ACTIONS                                        */}
-        {/* ================================================================ */}
+        {currentPhase === 'structure_function' && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <LuminaPanel className="space-y-2">
+              <LuminaSectionLabel accent="purple">Structures</LuminaSectionLabel>
+              {validOrganelles.map((organelle) => {
+                const selected = selectedMatchOrganelle === organelle.id;
+                const connected = matchConnections[organelle.id];
+                const correct = connected === organelle.id;
+                return (
+                  <button key={organelle.id} type="button" disabled={matchChecked} onClick={() => setSelectedMatchOrganelle(selected ? null : organelle.id)} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${matchChecked ? correct ? answerStateClass('correct') : answerStateClass('incorrect') : selected ? answerStateClass('selected') : connected ? 'border-purple-400/30 bg-purple-500/10 text-slate-100' : answerStateClass('idle')}`}>
+                    <OrganelleGlyph organelle={organelle} small />
+                    <span className="flex-1 text-sm font-semibold">{organelle.name}</span>
+                    {connected && <CheckCircle2 className="h-4 w-4 text-purple-300" />}
+                  </button>
+                );
+              })}
+            </LuminaPanel>
+
+            <LuminaPanel className="space-y-2">
+              <LuminaSectionLabel accent="amber">Cell jobs</LuminaSectionLabel>
+              {shuffledFunctions.map((match) => {
+                const owner = Object.entries(matchConnections).find(([, functionId]) => functionId === match.organelleId)?.[0];
+                const ownerCorrect = owner === match.organelleId;
+                return (
+                  <button
+                    key={match.organelleId}
+                    type="button"
+                    disabled={matchChecked || !selectedMatchOrganelle}
+                    onClick={() => {
+                      if (!selectedMatchOrganelle) return;
+                      setMatchConnections((previous) => { const next = { ...previous }; if (owner) delete next[owner]; next[selectedMatchOrganelle] = match.organelleId; return next; });
+                      setSelectedMatchOrganelle(null);
+                      SoundManager.snap();
+                    }}
+                    className={`w-full rounded-xl border p-3 text-left text-sm leading-relaxed ${matchChecked ? ownerCorrect ? answerStateClass('correct') : owner ? answerStateClass('incorrect') : answerStateClass('dimmed') : owner ? 'border-amber-400/30 bg-amber-500/10 text-slate-100' : answerStateClass('idle')}`}
+                  >
+                    {match.functionDescription}
+                    {owner && <span className="mt-2 block text-[10px] font-bold uppercase tracking-wider text-amber-300">Connected to {validOrganelles.find((item) => item.id === owner)?.name}</span>}
+                  </button>
+                );
+              })}
+            </LuminaPanel>
+          </div>
+        )}
+
+        {currentPhase === 'cell_specialization' && (
+          <div className="space-y-4">
+            <LuminaPanel accent="amber" className="flex items-start gap-3">
+              <Zap className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+              <div>
+                <LuminaSectionLabel accent="amber">Design brief</LuminaSectionLabel>
+                <p className="mt-1 text-sm text-slate-300">A <strong className="text-white">{cellContext}</strong> has a specific job. Decide how heavily it should invest in each organelle.</p>
+              </div>
+            </LuminaPanel>
+
+            <div className="grid gap-3 lg:grid-cols-2">
+              {quantityOrganelles.map((organelle) => {
+                const answer = quantityAnswers[organelle.id];
+                const correct = answer === organelle.expectedQuantity;
+                return (
+                  <LuminaPanel key={organelle.id} className={quantityChecked ? correct ? 'border-emerald-500/30' : 'border-rose-500/30' : ''}>
+                    <div className="flex items-start gap-3">
+                      <OrganelleGlyph organelle={organelle} />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-slate-100">{organelle.name}</div>
+                        <div className="mt-0.5 text-xs text-slate-400">{organelle.function}</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {QUANTITY_OPTIONS.map((quantity) => <LuminaChoiceChip key={quantity} label={QUANTITY_LABELS[quantity]} accent="amber" selected={answer === quantity} disabled={quantityChecked} onClick={() => setQuantityAnswers((previous) => ({ ...previous, [organelle.id]: quantity }))} className="px-3 py-2 text-xs" />)}
+                    </div>
+                    {quantityChecked && (
+                      <div className={`mt-3 rounded-lg border p-2 text-xs ${correct ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-200' : 'border-amber-500/20 bg-amber-500/5 text-amber-100'}`}>
+                        <Lightbulb className="mr-1 inline h-3.5 w-3.5" />
+                        {organelle.quantityReasoning ?? `${organelle.name} supports this cell by ${organelle.function.toLowerCase()}`}
+                      </div>
+                    )}
+                  </LuminaPanel>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {feedback && (
-          <div className={`p-3 rounded-lg border text-sm ${
-            hasSubmitted
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-              : sortChecked && Object.values(sortFeedback).every(f => f.correct) && currentPhase === 'sort'
-                ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-          }`}>
+          <LuminaFeedbackCard status="insight" label={hasSubmitted ? 'Cell report' : 'Mission checked'} teachingNote={currentComplete && !hasSubmitted ? 'Your first committed answer is what counts; the reveal is for learning, not rescoring.' : undefined}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
-        {hasSubmitted && (
-          <div className="flex items-center gap-2 pt-2">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-              onClick={handleReset}
-            >
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Try Again
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        <div className="flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
+          {!currentComplete && !hasSubmitted && <LuminaActionButton action="check" disabled={!canCheck} onClick={checkCurrentPhase}>Check mission</LuminaActionButton>}
+          {currentComplete && !isFinalPhase && !hasSubmitted && <LuminaActionButton action="next" onClick={advance}>Next mission</LuminaActionButton>}
+          {currentComplete && isFinalPhase && !hasSubmitted && <LuminaActionButton action="check" onClick={handleSubmit}><Activity className="mr-2 h-4 w-4" />Run cell report</LuminaActionButton>}
+          <LuminaButton tone="subtle" onClick={handleReset} className="ml-auto"><RotateCcw className="mr-1 h-4 w-4" />Reset</LuminaButton>
+        </div>
+
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+          <span><span className="text-slate-400">Membrane:</span> {cellMembrane.function}</span>
+          {cellWall.present && <span><span className="text-slate-400">Cell wall:</span> {cellWall.description}</span>}
+        </div>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

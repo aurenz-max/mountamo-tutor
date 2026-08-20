@@ -1,9 +1,48 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import {
+  buildModeConstraintSection,
+  constrainChallengeTypeEnum,
+  resolveEvalModes,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
 // Import the data type from the component (single source of truth)
-import { CellBuilderData } from "../../primitives/visual-primitives/biology/CellBuilder";
+import {
+  type CellBuilderChallengeType,
+  type CellBuilderData,
+} from "../../primitives/visual-primitives/biology/CellBuilder";
+
+const ALL_CHALLENGE_TYPES: CellBuilderChallengeType[] = [
+  "cell_inventory",
+  "organelle_placement",
+  "structure_function",
+  "cell_specialization",
+];
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  cell_inventory: {
+    promptDoc:
+      '"cell_inventory": The student decides which structures belong in the target cell and rejects biologically plausible distractors. Generate strong cell-type contrasts and concise corrective explanations.',
+    schemaDescription: "'cell_inventory' (cell-type structure discrimination)",
+  },
+  organelle_placement: {
+    promptDoc:
+      '"organelle_placement": The student assigns each valid organelle to one best-fit relationship region in a simplified cell model. Every valid organelle needs one defensible, non-null correctZone.',
+    schemaDescription: "'organelle_placement' (best-fit spatial relationship)",
+  },
+  structure_function: {
+    promptDoc:
+      '"structure_function": The student matches each organelle to a function description written without name giveaways or copied wording. Generate one functionMatch per valid organelle.',
+    schemaDescription: "'structure_function' (organelle-to-function mapping)",
+  },
+  cell_specialization: {
+    promptDoc:
+      '"cell_specialization": The student tunes relative organelle abundance for the target cell mission. Every valid organelle needs expectedQuantity and causal quantityReasoning tied to the specialized cell job.',
+    schemaDescription: "'cell_specialization' (structure-abundance-function reasoning)",
+  },
+};
 
 /**
  * Schema definition for Cell Builder Data
@@ -22,6 +61,11 @@ import { CellBuilderData } from "../../primitives/visual-primitives/biology/Cell
 const cellBuilderSchema: Schema = {
   type: Type.OBJECT,
   properties: {
+    challengeType: {
+      type: Type.STRING,
+      enum: ALL_CHALLENGE_TYPES,
+      description: "Representative cell-builder task identity for this generated activity"
+    },
     title: {
       type: Type.STRING,
       description: "Engaging title for the cell building activity"
@@ -148,7 +192,7 @@ const cellBuilderSchema: Schema = {
       description: "Target grade band - determines complexity and terminology"
     }
   },
-  required: ["title", "description", "cellType", "cellContext", "organelles", "functionMatches", "cellMembrane", "cellWall", "gradeBand"]
+  required: ["challengeType", "title", "description", "cellType", "cellContext", "organelles", "functionMatches", "cellMembrane", "cellWall", "gradeBand"]
 };
 
 /**
@@ -172,6 +216,29 @@ export const generateCellBuilder = async (
 ): Promise<CellBuilderData> => {
   const { topic } = ctx;
   const config = ctx.raw as Partial<CellBuilderData>;
+
+  const resolution = await resolveEvalModes(
+    "cell-builder",
+    {
+      targetEvalMode: ctx.targetEvalMode,
+      intent: ctx.intent,
+      objectiveText: ctx.objective.text,
+    },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const challengeTypeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
+  const activeSchema = resolution
+    ? constrainChallengeTypeEnum(
+        cellBuilderSchema,
+        resolution.allowedTypes,
+        CHALLENGE_TYPE_DOCS,
+        { fieldName: "challengeType", rootLevel: true },
+      )
+    : cellBuilderSchema;
+
+  console.log(
+    `[CellBuilder] modes: ${resolution ? `${resolution.modes.map((mode) => mode.evalMode).join("+")} (${resolution.source})` : "mixed"} -> types [${(resolution?.allowedTypes ?? ALL_CHALLENGE_TYPES).join(", ")}]`,
+  );
 
   // Map grade context to grade band
   const gradeBandMap: Record<string, '4-5' | '6-8'> = {
@@ -227,17 +294,18 @@ GRADE 6-8 GUIDELINES:
 `
   };
 
-  const generationPrompt = `Create a three-phase cell biology activity for: "${topic}".
+  const generationPrompt = `Create an interactive cell-engineering activity for: "${topic}".
 
 TARGET GRADE BAND: ${gradeBand}
 
 ${gradeContext[gradeBand]}
 
+${challengeTypeSection}
+
 ACTIVITY STRUCTURE:
-This is a three-phase activity testing biological understanding:
-1. SORT PHASE: Students classify which organelles belong in this cell and which don't
-2. PLACE PHASE: Students place organelles in the correct biological zone of the cell + answer quantity questions
-3. MATCH PHASE: Students match organelles to their function descriptions
+The organelle set is a reusable cell model. A pinned activity may present one mission;
+a broad objective may blend several missions over the SAME coherent model. Keep every
+field mutually consistent even when one task identity is emphasized.
 
 REQUIREMENTS:
 
@@ -264,19 +332,14 @@ REQUIREMENTS:
    - correctZone: null (omit)
    - expectedQuantity: null (omit)
 
-   ZONE ASSIGNMENT RULES:
-   - Nucleus/nucleolus → "center"
-   - Mitochondria → "peripheral" (scattered through cytoplasm)
-   - Endoplasmic Reticulum → "near-nucleus"
-   - Golgi Apparatus → "near-nucleus"
-   - Ribosomes → "scattered"
-   - Lysosomes → "scattered"
-   - Centrioles → "near-nucleus"
-   - Large central vacuole (plant) → "large-central"
-   - Small vacuoles → "peripheral"
-   - Chloroplasts → "scattered"
-   - Flagella/cilia → "membrane-associated"
-   - Cell membrane proteins → "membrane-associated"
+   MODEL-REGION RULES (best-fit relationships, not exact coordinates):
+   - "center" = information-holding control center: nucleus/nucleoid
+   - "near-nucleus" = inner membrane network: ER, Golgi, centrioles
+   - "large-central" = one dominant storage compartment: plant central vacuole only
+   - "peripheral" = individual structures in cytoplasm away from the core: small vacuoles/lysosomes
+   - "scattered" = many copies distributed throughout: ribosomes, mitochondria, chloroplasts
+   - "membrane-associated" = attached to or acting at the boundary: membrane proteins, cilia, flagella
+   Choose exactly ONE best-fit region for each valid structure. Never use "peripheral" as a synonym for "scattered".
 
 3. **Quantity Reasoning (CRITICAL for specialized cells)**:
    For specialized cell contexts, set expectedQuantity based on the cell's function:
@@ -287,7 +350,8 @@ REQUIREMENTS:
    - Red blood cell: NO nucleus, NO mitochondria (special case - make these distractors!)
    - Generic cells: use "some" for most organelles, "few" for specialized ones
 
-   ALWAYS include quantityReasoning for any organelle with expectedQuantity "many" or "lots".
+   Give EVERY valid organelle an expectedQuantity and one-sentence quantityReasoning.
+   Quantity means RELATIVE investment by this cell, not a literal organelle count.
 
 4. **Function Matches**: For EACH valid (belongsInCell=true) organelle, provide a detailed function description
    that uses DIFFERENT wording than the brief "function" field. This is for the Phase 3 matching quiz.
@@ -312,7 +376,7 @@ Now generate the activity for "${topic}" at grade level ${gradeBand}.`;
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: cellBuilderSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert cell biology educator specializing in K-8 life sciences. You understand how students develop understanding of cell structure and function. You create engaging, accurate cell biology activities with age-appropriate vocabulary and helpful analogies. You know the correct organelles for each cell type, their biological zones within the cell, and how specialized cells differ in organelle composition and quantity. You always include distractor organelles that students commonly confuse with valid ones.`,
       }
     });
@@ -328,6 +392,8 @@ Now generate the activity for "${topic}" at grade level ${gradeBand}.`;
     const finalData: CellBuilderData = {
       ...result,
       ...config,
+      challengeType: (resolution?.allowedTypes[0] ?? result.challengeType ?? "cell_inventory") as CellBuilderChallengeType,
+      challengeTypes: (resolution?.allowedTypes ?? ALL_CHALLENGE_TYPES) as CellBuilderChallengeType[],
     };
 
     const validCount = finalData.organelles.filter(o => o.belongsInCell).length;
