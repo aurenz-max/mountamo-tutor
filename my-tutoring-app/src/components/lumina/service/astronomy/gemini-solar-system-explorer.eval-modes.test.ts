@@ -1,17 +1,21 @@
 /**
- * Eval-mode surface for solar-system-explorer — L0→L1, 2026-08-08.
+ * Eval-mode surface for solar-system-explorer — L0→L1 2026-08-08, re-based to
+ * the DI judged loop 2026-08-18.
  *
- * This primitive had NO evaluation hook at all while advertising
- * `supportsEvaluation: true` (the portfolio decision WORKSTREAMS kept
- * re-raising). It now measures by DIRECT MANIPULATION — the student taps the
- * body that answers the question — and the items are built in CODE from the
- * same `bodies` array the component renders (Fork A, SP-21).
+ * The items are built in CODE from the same `bodies` array the component
+ * renders (Fork A, SP-21), and since the DI port the builder emits STRUCTURED
+ * challenges (`facet` + `position` / `optionBodyIds`) that are filtered by the
+ * judged script's own `itemsFromChallenges` — the identical gates the
+ * component runs, so nothing shipped here can build an item the stage drops.
  *
  * What that buys, and what these tests hold to it:
  *   - the key CANNOT contradict the screen, because it is derived from it;
- *   - a prompt CANNOT name its own answer, because it is generated from it;
+ *   - a spoken ask CANNOT name its own answer (pair menus excepted, by
+ *     construction), because it is generated from the answer;
  *   - a tie is dropped rather than shipped as a coin flip;
- *   - K-1 never gets an item whose only evidence is a stat grid it cannot see.
+ *   - K-1 never gets an item whose only evidence is a stat grid it cannot see;
+ *   - an answered BODY never stars twice in one session (answer-once, defect
+ *     class 2 — every affirm names its answer aloud).
  */
 import { describe, it, expect } from 'vitest';
 import { buildSolarChallenges } from './gemini-solar-system-explorer';
@@ -53,51 +57,69 @@ describe('solar-system-explorer eval modes — the key is derived, not written',
   it('gets the answers RIGHT against the real astronomical data', () => {
     const answerFor = (fragment: RegExp) => {
       const all = ALL_KINDS.flatMap((k) => kindItems(k));
-      const item = all.find((c) => fragment.test(c.prompt));
+      const item = all.find((c) => fragment.test(c.prompt ?? ''));
       expect(item, `no item matched ${fragment}`).toBeDefined();
       return item!.answerBodyIds;
     };
 
     expect(answerFor(/closest to the Sun/i)).toEqual(['mercury']);
     expect(answerFor(/farthest from the Sun/i)).toEqual(['neptune']);
-    expect(answerFor(/biggest planet/i)).toEqual(['jupiter']);
-    expect(answerFor(/smallest planet/i)).toEqual(['mercury']);
+    expect(answerFor(/Which planet is the biggest/i)).toEqual(['jupiter']);
+    expect(answerFor(/Which planet is the smallest/i)).toEqual(['mercury']);
     expect(answerFor(/most moons/i)).toEqual(['saturn']);
     // The trap that makes this mode worth measuring: the CLOSEST planet is not
     // the hottest. A hand-written key gets this wrong; a derived one cannot.
-    expect(answerFor(/hottest planet/i)).toEqual(['venus']);
-    expect(answerFor(/longest year/i)).toEqual(['neptune']);
-    expect(answerFor(/shortest year/i)).toEqual(['mercury']);
+    expect(answerFor(/Which planet is the hottest/i)).toEqual(['venus']);
+    expect(answerFor(/takes the longest to go all the way around/i)).toEqual(['neptune']);
+    expect(answerFor(/goes around the Sun the quickest/i)).toEqual(['mercury']);
   });
 
-  it('never names the answer inside its own question', () => {
+  it('emits a STRUCTURED facet on every challenge — the script never parses prose', () => {
     for (const kind of ALL_KINDS) {
       for (const c of kindItems(kind)) {
+        expect(c.facet, `${c.id} has no facet`).toBeTruthy();
+        if (c.facet === 'position') expect(c.position).toBeGreaterThanOrEqual(2);
+        if (c.facet === 'pair_bigger' || c.facet === 'pair_faster') {
+          expect(c.optionBodyIds).toHaveLength(2);
+        }
+      }
+    }
+  });
+
+  it('never names the answer inside its own spoken ask (pair menus excepted by construction)', () => {
+    for (const kind of ALL_KINDS) {
+      for (const c of kindItems(kind)) {
+        // A pair ask MUST name both options — that clause is the leak-exempt
+        // menu span, pinned in the di-script suite.
+        if (c.facet === 'pair_bigger' || c.facet === 'pair_faster') continue;
         const names = c.answerBodyIds.map(
           (id) => SOLAR_SYSTEM.find((x) => x.id === id)!.name,
         );
-        // `identify` is the one mode whose question IS the name — that is the
-        // skill (name↔body recognition), not a leak.
-        if (c.type === 'identify') continue;
         for (const n of names) {
-          expect(c.prompt, `${c.type} leaks "${n}"`).not.toMatch(new RegExp(`\\b${n}\\b`, 'i'));
+          expect(c.prompt ?? '', `${c.type}/${c.facet} leaks "${n}"`).not.toMatch(new RegExp(`\\b${n}\\b`, 'i'));
         }
       }
     }
   });
 
-  it('never names the answer inside the pre-answer HINT either', () => {
+  it('identify asks name NOTHING — the spotlight is the question and the name is the answer', () => {
+    for (const c of kindItems('identify')) {
+      expect(c.prompt).toBe('Look at the planet glowing bright. What planet is that?');
+    }
+  });
+
+  it('every ask elicits SPEECH — a tap is only ever invited as research', () => {
     for (const kind of ALL_KINDS) {
       for (const c of kindItems(kind)) {
-        const names = c.answerBodyIds.map((id) => SOLAR_SYSTEM.find((x) => x.id === id)!.name);
-        for (const n of names) {
-          expect(c.hint ?? '', `${c.type} hint leaks "${n}"`).not.toMatch(new RegExp(`\\b${n}\\b`, 'i'));
-        }
+        // The click era's "Tap the biggest planet." had neither a question nor
+        // a spoken elicitation; every judged ask has one or both.
+        expect(c.prompt ?? '', `${c.type}/${c.facet} does not elicit speech`).toMatch(/\?|Say the name/);
+        expect(c.prompt ?? '').not.toMatch(/\bTap (the )?[A-Z]/); // never "Tap Mars"
       }
     }
   });
 
-  it('drops a tie instead of scoring a defensible tap wrong', () => {
+  it('drops a tie instead of judging a defensible answer wrong', () => {
     const tied = [
       b('sun', 'Sun', 696000, 0, 0, 0, 5500, 'star'),
       b('a', 'Alpha', 5000, 1, 300, 3, 20),
@@ -108,10 +130,18 @@ describe('solar-system-explorer eval modes — the key is derived, not written',
   });
 
   it('classify accepts EVERY member of the category, not one blessed planet', () => {
-    const giants = kindItems('classify').find((c) => /gas giant/i.test(c.prompt))!;
+    const giants = kindItems('classify').find((c) => /gas giant/i.test(c.prompt ?? ''))!;
     expect(giants.answerBodyIds.sort()).toEqual(['jupiter', 'neptune', 'saturn', 'uranus']);
-    const rocky = kindItems('classify').find((c) => /rocky/i.test(c.prompt))!;
+    const rocky = kindItems('classify').find((c) => /rocky/i.test(c.prompt ?? ''))!;
     expect(rocky.answerBodyIds.sort()).toEqual(['earth', 'mars', 'mercury', 'venus']);
+  });
+
+  it('⭐ answer-once: no body stars as a single answer twice in one session (defect class 2)', () => {
+    for (const kinds of [[...ALL_KINDS], ['compare_attribute', 'orbital_reasoning'] as const]) {
+      const items = buildSolarChallenges(SOLAR_SYSTEM, '5', [...kinds], 8);
+      const singles = items.filter((c) => c.type !== 'classify').map((c) => c.answerBodyIds[0]);
+      expect(new Set(singles).size, `duplicate single answers in [${singles.join(',')}]`).toBe(singles.length);
+    }
   });
 });
 
@@ -122,19 +152,9 @@ describe('solar-system-explorer eval modes — band fit', () => {
     for (const rung of ['K', '1'] as const) {
       const items = buildSolarChallenges(SOLAR_SYSTEM, rung, ['compare_attribute'], 50);
       const prompts = items.map((c) => c.prompt).join(' ');
-      expect(prompts).not.toMatch(/moons|hottest|temperature/i);
+      expect(prompts).not.toMatch(/moons|hottest|how hot/i);
       // Size is still fair game — it is visible in the picture.
-      expect(prompts).toMatch(/biggest|smallest/i);
-    }
-  });
-
-  it('gives a pre-reader a way to find a planet without reading its label', () => {
-    const items = buildSolarChallenges(SOLAR_SYSTEM, 'K', ['identify'], 50);
-    const mars = items.find((c) => c.answerBodyIds[0] === 'mars')!;
-    expect(mars.prompt).toMatch(/the red one/i);
-    // ...and the cue must not double as another mode's answer.
-    for (const c of items) {
-      expect(c.prompt).not.toMatch(/biggest|smallest|closest|farthest|nearest/i);
+      expect(prompts).toMatch(/biggest|smallest|bigger/i);
     }
   });
 

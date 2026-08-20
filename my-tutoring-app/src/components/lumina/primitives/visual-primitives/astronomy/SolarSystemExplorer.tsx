@@ -1,15 +1,59 @@
 'use client';
 
+/**
+ * SolarSystemExplorer — a living orrery with TWO faces:
+ *
+ *   EXPLORE (no judgeable challenges): the original free-exploration surface.
+ *   Tap a body, hear about it, zoom and pan; the tutor narrates via the
+ *   ORIENT / BODY_SELECTED / READ_ALOUD beats. Unchanged on purpose — the
+ *   reader-fit suite pins this face.
+ *
+ *   JUDGED (challenges present): the DI modality. The tutor asks about the sky
+ *   OUT LOUD, the child answers OUT LOUD with a planet's name, and the tutor's
+ *   own affirmation advances the lesson (`useJudgedScriptRunner`). The click
+ *   era's answer path — tap-to-select, confirm button, the three-tries reveal
+ *   ladder, Next button, improvised [SOLAR_*] answer choreography — is gone.
+ *   Tapping SURVIVES as what it honestly is: LOOKING. A tap opens a body's
+ *   research card (the compare modes' own instrument); it never answers.
+ *
+ * Judged-stage rules carried from the family (see solarSystemScript.ts):
+ *   - The identify SPOTLIGHT is a runner-gated stimulus (19c): it paints only
+ *     after the tutor's ask for THIS item is spoken — declared via
+ *     `onPresentStimulus` + `stimulus.when`, never a hand-rolled timer.
+ *   - While an identify item is open, body LABELS are withheld — a printed
+ *     name under the spotlit planet is the answer in pixels (defect 11).
+ *   - The reveal renders behind `runner.revealHeld`, and its payload is NOT
+ *     cleared in `onItemOpened` (18b — the same-dispatch advance).
+ *   - Interaction gates ride `runner.canAttempt` / `runner.currentSolved`,
+ *     never `runner.stage`.
+ */
+
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { LuminaReadAloud } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { SolarSystemExplorerMetrics } from '../../../evaluation/types';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import { SoundManager } from '../../../utils/SoundManager';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  itemsFromChallenges,
+  solarSystemPackBase,
+  askFor,
+  revealTextFor,
+  isPairFacet,
+  type SolarItem,
+  type SolarChallengeType,
+  type SolarBand,
+} from './solarSystemScript';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
+
+export type { SolarChallengeType };
 
 // Export data interface - single source of truth
 export interface CelestialBody {
@@ -28,38 +72,26 @@ export interface CelestialBody {
   funFact?: string;
 }
 
-// ============================================================================
-// Evaluation surface
-// ============================================================================
-// Until now this primitive had NO evaluation hook at all: it produced a model
-// and nothing else, while `supportsEvaluation: true` let the manifest route
-// assessment demand at it. The measurable act here is the one the explorer is
-// already built around — TAP A BODY — so a challenge asks a question whose
-// answer IS a body, and the student answers by touching it in the live model
-// rather than by picking a lettered option next to it
-// ([[feedback_direct-manipulation-first]]).
-//
-// The five types are SKILLS, not difficulty steps (see the catalog `evalModes`).
-// The answer key is a SET (`answerBodyIds`) because `classify` genuinely has
-// several right answers — "tap a gas giant" is satisfied by any of four.
-
-export type SolarChallengeType =
-  | 'identify'
-  | 'order_from_sun'
-  | 'classify'
-  | 'compare_attribute'
-  | 'orbital_reasoning';
-
+/**
+ * A graded ask. `facet` (plus `position` / `optionBodyIds`) is the STRUCTURED
+ * identity the judged script builds from — prose fields are legacy and are
+ * never parsed ([[feedback_schema-over-regex-and-prompt]]). A challenge
+ * without a facet cannot be asked honestly and is dropped by the build gates.
+ */
 export interface SolarChallenge {
   id: string;
   type: SolarChallengeType;
-  /** Student-facing question. NEVER names a body that answers it. */
-  prompt: string;
-  /** Every body that satisfies the prompt. Length > 1 for `classify`. */
+  /** Structured ask identity — see SolarFacet in solarSystemScript. */
+  facet?: string;
+  /** order_from_sun 'position' facet: 1-based position among the planets. */
+  position?: number;
+  /** pair facets: the two compared body ids. */
+  optionBodyIds?: string[];
+  /** Every body that satisfies the ask. Length > 1 for `classify`. */
   answerBodyIds: string[];
-  /** Shown after a miss. Teaches the STRATEGY; never narrows to the answer. */
+  /** Legacy click-era prose. Kept for logs and old cached payloads only. */
+  prompt?: string;
   hint?: string;
-  /** Shown once the answer is settled. May name the body — it is over by then. */
   explanation?: string;
 }
 
@@ -79,7 +111,7 @@ export interface SolarSystemExplorerData {
   compareMode?: boolean;
   gradeLevel?: 'K' | '1' | '2' | '3' | '4' | '5';
 
-  /** Graded tap-the-body questions. Absent/empty → pure exploration, as before. */
+  /** Graded spoken questions. Absent/empty → pure exploration, as before. */
   challenges?: SolarChallenge[];
 
   /** Within-mode support tier — present only when the manifest emitted difficulty. */
@@ -107,135 +139,555 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   orbital_reasoning: { label: 'Orbits',   icon: '🌀', accentColor: 'amber' },
 };
 
-/** Attempts allowed before the answer is revealed and the item scored wrong. */
-const MAX_ATTEMPTS = 3;
+// Base scale: 1 AU = pixels
+const AU_TO_PIXELS = 180;
 
-const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, className = '' }) => {
+// ============================================================================
+// The canvas — the living sky both faces share
+// ============================================================================
+
+interface SolarCanvasProps {
+  bodies: CelestialBody[];
+  isPreReader: boolean;
+  initialZoom?: SolarSystemExplorerData['initialZoom'];
+  initialTimeScale: number;
+  initialShowOrbits: boolean;
+  initialShowLabels: boolean;
+  initialShowDistances: boolean;
+  initialScaleMode: 'size_accurate' | 'distance_accurate' | 'hybrid';
+  showHabitableZone?: boolean;
+  dateTime?: string;
+  selectedBodyId: string | null;
+  onBodyTap: (id: string) => void;
+  /** Judged identify items: a printed name under the spotlit planet would be
+   *  the answer in pixels, so every label is withheld while one is open. */
+  suppressLabels?: boolean;
+  /** Pulsing halo — the runner-gated stimulus (identify target, or a pair). */
+  spotlightBodyIds?: string[];
+  /** Post-affirm only: emerald ring + forced label on the answer body/bodies. */
+  revealBodyIds?: string[];
+}
+
+const SolarCanvas: React.FC<SolarCanvasProps> = ({
+  bodies,
+  isPreReader,
+  initialZoom,
+  initialTimeScale,
+  initialShowOrbits,
+  initialShowLabels,
+  initialShowDistances,
+  initialScaleMode,
+  showHabitableZone,
+  dateTime,
+  selectedBodyId,
+  onBodyTap,
+  suppressLabels = false,
+  spotlightBodyIds = [],
+  revealBodyIds = [],
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
-
-  const challenges = useMemo(() => data.challenges ?? [], [data.challenges]);
-  const hasChallenges = challenges.length > 0;
-
-  // In challenge mode nothing starts selected. `focusBody` is a curator hint for
-  // free exploration, and pre-selecting it would hand over question 1's answer
-  // whenever the two happen to coincide.
-  const [selectedBodyId, setSelectedBodyId] = useState<string | null>(
-    hasChallenges ? null : (data.focusBody || null),
-  );
   const [hoveredBodyId, setHoveredBodyId] = useState<string | null>(null);
-  const [timeScale, setTimeScale] = useState(data.timeScale || 5000);
-  const [showOrbits, setShowOrbits] = useState(data.showOrbits !== false);
-  const [showLabels, setShowLabels] = useState(data.showLabels !== false);
-  const [showDistances, setShowDistances] = useState(data.showDistances || false);
-  const [scaleMode, setScaleMode] = useState<'size_accurate' | 'distance_accurate' | 'hybrid'>(
-    data.scaleMode || 'hybrid'
-  );
+  const [timeScale, setTimeScale] = useState(initialTimeScale);
+  const [showOrbits, setShowOrbits] = useState(initialShowOrbits);
+  const [showLabels, setShowLabels] = useState(initialShowLabels);
+  const [showDistances, setShowDistances] = useState(initialShowDistances);
+  const [scaleMode, setScaleMode] = useState(initialScaleMode);
   const [paused, setPaused] = useState(false);
 
-  // Animation state - use refs to avoid re-renders during animation
-  const simulationDateRef = useRef(data.dateTime ? new Date(data.dateTime) : new Date());
-  const [displayDate, setDisplayDate] = useState(simulationDateRef.current);
+  // Animation state - refs to avoid re-renders during animation
+  const simulationDateRef = useRef(dateTime ? new Date(dateTime) : new Date());
+  const [displayDate] = useState(simulationDateRef.current);
   const requestRef = useRef<number>();
   const previousTimeRef = useRef<number>();
   const bodyGroupRefs = useRef<Map<string, SVGGElement>>(new Map());
   const dateDisplayRef = useRef<HTMLDivElement>(null);
 
-  // Base scale: 1 AU = pixels
-  const AU_TO_PIXELS = 180;
+  const spotlightSet = useMemo(() => new Set(spotlightBodyIds), [spotlightBodyIds]);
+  const revealSet = useMemo(() => new Set(revealBodyIds), [revealBodyIds]);
+  const dimOthers = spotlightSet.size > 0;
 
-  // ============================================================================
-  // Reading band
-  // ============================================================================
-  // At K-1 the instrument panel (three toggles, a scale <select>, a speed
-  // slider, a calendar date) and the six-cell stat grid (AU, km, days, hours,
-  // °C, moon count) are all undecodable adult chrome. The interaction that IS
-  // K-fit — tap a planet, watch it go round — survives on its own
-  // (reader-fit PRE contract rules 1, 4, 7).
-  const isPreReader = data.gradeLevel === 'K' || data.gradeLevel === '1';
+  // Window resize listener (more performant than ResizeObserver for this case)
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const updateSize = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
+      }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
-  const resolvedInstanceId = useMemo(
-    () => data.instanceId || `solar-system-explorer-${Date.now()}`,
-    [data.instanceId],
+  // D3 Zoom Behavior
+  useEffect(() => {
+    if (!svgRef.current || dimensions.width === 0) return;
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.05, 100])
+      .on('zoom', (event) => {
+        setTransform(event.transform);
+      });
+    const svg = d3.select(svgRef.current);
+    svg.call(zoom);
+
+    let initialScale = 0.3;
+    if (initialZoom === 'inner') initialScale = 0.8;
+    else if (initialZoom === 'outer') initialScale = 0.15;
+    else if (initialZoom === 'planet') initialScale = 2;
+
+    const initialTransform = d3.zoomIdentity
+      .translate(dimensions.width / 2, dimensions.height / 2)
+      .scale(initialScale);
+    svg.call(zoom.transform, initialTransform);
+  }, [dimensions.width, dimensions.height, initialZoom]);
+
+  // Animation loop - direct DOM manipulation for smooth 60fps orbital motion
+  useEffect(() => {
+    let frameCount = 0;
+    const animate = (time: number) => {
+      if (previousTimeRef.current !== undefined && !paused) {
+        const deltaTime = time - previousTimeRef.current;
+        const timeToAdd = timeScale * deltaTime * 100;
+        simulationDateRef.current = new Date(simulationDateRef.current.getTime() + timeToAdd);
+
+        bodyGroupRefs.current.forEach((element, bodyId) => {
+          const body = bodies.find((b) => b.id === bodyId);
+          if (body && body.distanceAu > 0) {
+            const periodMs = body.orbitalPeriodDays * 24 * 60 * 60 * 1000;
+            const currentTime = simulationDateRef.current.getTime();
+            const angle = ((currentTime % periodMs) / periodMs) * 2 * Math.PI;
+            const r = body.distanceAu * AU_TO_PIXELS;
+            const x = r * Math.cos(angle);
+            const y = r * Math.sin(angle);
+            element.setAttribute('transform', `translate(${x}, ${y})`);
+          }
+        });
+
+        frameCount++;
+        if (frameCount % 30 === 0 && dateDisplayRef.current) {
+          dateDisplayRef.current.textContent = simulationDateRef.current.toLocaleDateString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric',
+          });
+        }
+      }
+      previousTimeRef.current = time;
+      requestRef.current = requestAnimationFrame(animate);
+    };
+    requestRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [paused, timeScale, bodies]);
+
+  const getInitialPosition = useCallback((body: CelestialBody) => {
+    if (body.distanceAu === 0) return { x: 0, y: 0 };
+    const periodMs = body.orbitalPeriodDays * 24 * 60 * 60 * 1000;
+    const time = simulationDateRef.current.getTime();
+    const angle = ((time % periodMs) / periodMs) * 2 * Math.PI;
+    const r = body.distanceAu * AU_TO_PIXELS;
+    return { x: r * Math.cos(angle), y: r * Math.sin(angle) };
+  }, []);
+
+  const setBodyRef = useCallback((bodyId: string, element: SVGGElement | null) => {
+    if (element) bodyGroupRefs.current.set(bodyId, element);
+    else bodyGroupRefs.current.delete(bodyId);
+  }, []);
+
+  const getVisualRadius = (body: CelestialBody) => {
+    if (body.type === 'star') return scaleMode === 'size_accurate' ? 30 : 35;
+    if (scaleMode === 'size_accurate') return Math.max(3, Math.log(body.radiusKm) * 1.8);
+    if (scaleMode === 'distance_accurate') return Math.max(2, body.radiusKm * 0.0003);
+    return Math.max(4, Math.log(body.radiusKm) * 1.5);
+  };
+
+  const habitableZoneInner = 0.95 * AU_TO_PIXELS;
+  const habitableZoneOuter = 1.37 * AU_TO_PIXELS;
+  const labelsOn = showLabels && !suppressLabels;
+
+  return (
+    <div className="relative glass-panel rounded-2xl border border-white/10 overflow-hidden" style={{ height: '600px' }}>
+      <div ref={containerRef} className="w-full h-full relative overflow-hidden cursor-grab active:cursor-grabbing bg-black/40">
+        <StarBackground width={dimensions.width} height={dimensions.height} transform={transform} />
+
+        <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="absolute top-0 left-0">
+          <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
+            {showHabitableZone && (
+              <g opacity={0.2}>
+                <circle cx={0} cy={0} r={habitableZoneOuter} fill="none" stroke="#22c55e" strokeWidth={20 / transform.k} />
+                <circle cx={0} cy={0} r={habitableZoneInner} fill="none" stroke="#22c55e" strokeWidth={20 / transform.k} />
+                <circle cx={0} cy={0} r={(habitableZoneInner + habitableZoneOuter) / 2} fill="none" stroke="#22c55e" strokeWidth={1 / transform.k} strokeDasharray="4 4" />
+              </g>
+            )}
+
+            {showOrbits &&
+              bodies.map((body) => {
+                if (body.distanceAu === 0) return null;
+                return (
+                  <circle
+                    key={`orbit-${body.id}`}
+                    cx={0}
+                    cy={0}
+                    r={body.distanceAu * AU_TO_PIXELS}
+                    fill="none"
+                    stroke="rgba(255, 255, 255, 0.15)"
+                    strokeWidth={1 / transform.k}
+                  />
+                );
+              })}
+
+            {bodies.map((body) => {
+              const pos = getInitialPosition(body);
+              const r = getVisualRadius(body);
+              const isSelected = selectedBodyId === body.id;
+              const isHovered = hoveredBodyId === body.id;
+              const isSpotlit = spotlightSet.has(body.id);
+              const isRevealed = revealSet.has(body.id);
+
+              return (
+                <g
+                  key={body.id}
+                  data-body-id={body.id}
+                  ref={(el) => setBodyRef(body.id, el)}
+                  transform={`translate(${pos.x}, ${pos.y})`}
+                  opacity={dimOthers && !isSpotlit && !isRevealed ? 0.35 : 1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBodyTap(body.id);
+                  }}
+                  onMouseEnter={() => setHoveredBodyId(body.id)}
+                  onMouseLeave={() => setHoveredBodyId(null)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {/* Glow for Sun */}
+                  {body.type === 'star' && <circle r={r * 3} fill="url(#sunGlow)" opacity={0.6} />}
+
+                  {/* Transparent hit target — the drawn planet can be a handful
+                      of pixels at system zoom, and it is moving. Without this,
+                      tapping is a dexterity test rather than an astronomy one. */}
+                  <circle r={Math.max(r * 2.2, 14 / transform.k)} fill="transparent" />
+
+                  {/* The judged stimulus: a pulsing halo the tutor's ask refers
+                      to. It follows the body because it lives inside its <g>. */}
+                  {isSpotlit && (
+                    <>
+                      <circle r={r * 2.6} fill={body.color} opacity={0.3} className="animate-pulse" />
+                      <circle
+                        r={r * 1.8 + 6}
+                        fill="none"
+                        stroke="white"
+                        strokeWidth={2.5 / transform.k}
+                        strokeDasharray="6 3"
+                        className="animate-pulse"
+                      />
+                    </>
+                  )}
+
+                  {isHovered && !isSelected && (
+                    <circle r={r * 2} fill={body.color} opacity={0.3} />
+                  )}
+
+                  {isSelected && (
+                    <>
+                      <circle r={r * 2.5} fill={body.color} opacity={0.2} />
+                      <circle
+                        r={r * 1.5 + 5}
+                        fill="none"
+                        stroke="white"
+                        strokeWidth={2 / transform.k}
+                        strokeDasharray="4 2"
+                      />
+                    </>
+                  )}
+
+                  {/* Revealed answer — only ever set AFTER the tutor affirms,
+                      never before (answer-leak rule, in pixels). */}
+                  {isRevealed && (
+                    <circle
+                      r={r * 1.5 + 9}
+                      fill="none"
+                      stroke="#34d399"
+                      strokeWidth={3 / transform.k}
+                    />
+                  )}
+
+                  <circle
+                    r={r}
+                    fill={body.color}
+                    stroke={isSelected ? 'white' : isHovered ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)'}
+                    strokeWidth={isHovered || isSelected ? 2 / transform.k : 1 / transform.k}
+                  />
+                  <circle r={r} fill={`url(#planetGradient-${body.id})`} opacity={0.7} />
+
+                  {/* Label — withheld wholesale during identify items; a reveal
+                      forces the answer's label back on while the tutor names it. */}
+                  {((labelsOn && (transform.k > 0.4 || isSelected || isHovered)) || isRevealed) && (
+                    <text
+                      y={r + 14 / transform.k}
+                      textAnchor="middle"
+                      fill={isRevealed ? '#6ee7b7' : 'white'}
+                      fontSize={(isHovered || isSelected || isRevealed ? 12 : 11) / transform.k}
+                      className="select-none pointer-events-none font-medium"
+                      style={{
+                        textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+                        fontWeight: isHovered || isSelected || isRevealed ? 600 : 500,
+                      }}
+                    >
+                      {body.name}
+                    </text>
+                  )}
+
+                  {showDistances && body.distanceAu > 0 && transform.k > 0.5 && (
+                    <text
+                      y={r + 26 / transform.k}
+                      textAnchor="middle"
+                      fill="#94a3b8"
+                      fontSize={9 / transform.k}
+                      className="select-none pointer-events-none"
+                      style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9)' }}
+                    >
+                      {body.distanceAu.toFixed(2)} AU
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </g>
+
+          <defs>
+            <radialGradient id="sunGlow">
+              <stop offset="0%" stopColor="#FDB813" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#FDB813" stopOpacity="0" />
+            </radialGradient>
+            {bodies.map((body) => (
+              <radialGradient id={`planetGradient-${body.id}`} key={`grad-${body.id}`} cx="30%" cy="30%">
+                <stop offset="0%" stopColor="white" stopOpacity="0.2" />
+                <stop offset="70%" stopColor="black" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="black" stopOpacity="0.6" />
+              </radialGradient>
+            ))}
+          </defs>
+        </svg>
+
+        {/* Help Text — a three-clause protocol instruction in 12px is the one
+            string a non-reader most needs and least can read. */}
+        {!isPreReader && (
+          <div className="absolute top-4 right-4 glass-panel backdrop-blur-md px-3 py-2 rounded-lg border border-white/20 text-xs text-slate-300 pointer-events-none">
+            Scroll to Zoom • Drag to Pan • Click Planets
+          </div>
+        )}
+      </div>
+
+      {/* Controls Overlay */}
+      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4">
+        <div className="glass-panel backdrop-blur-md rounded-xl border border-white/20 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPaused(!paused)}
+              aria-label={paused ? 'Play' : 'Pause'}
+              className={`bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/30 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105 ${
+                isPreReader ? 'px-4 py-3 text-2xl leading-none' : 'px-3 py-1.5 text-sm'
+              }`}
+            >
+              {isPreReader ? (paused ? '▶' : '⏸') : (paused ? '▶ Play' : '⏸ Pause')}
+            </button>
+            {/* A raw speed multiplier is a number a five-year-old cannot use. */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <span className="font-mono">Speed:</span>
+                <input
+                  type="range"
+                  min="100"
+                  max="20000"
+                  step="100"
+                  value={timeScale}
+                  onChange={(e) => setTimeScale(Number(e.target.value))}
+                  className="w-24"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Display toggles and the scale selector are adult chrome — hidden
+              for pre-readers (reader-fit rule 7). */}
+          {!isPreReader && (
+            <>
+              <div className="flex items-center gap-3 text-xs">
+                <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
+                  <input type="checkbox" checked={showOrbits} onChange={(e) => setShowOrbits(e.target.checked)} className="rounded" />
+                  Orbits
+                </label>
+                <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
+                  <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} className="rounded" />
+                  Labels
+                </label>
+                <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
+                  <input type="checkbox" checked={showDistances} onChange={(e) => setShowDistances(e.target.checked)} className="rounded" />
+                  Distances
+                </label>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <span className="font-mono">Scale:</span>
+                <select
+                  value={scaleMode}
+                  onChange={(e) => setScaleMode(e.target.value as 'size_accurate' | 'distance_accurate' | 'hybrid')}
+                  className="bg-white/5 hover:bg-white/10 text-white rounded-lg px-2 py-1 text-xs border border-white/20 transition-colors"
+                >
+                  <option value="hybrid">Hybrid</option>
+                  <option value="size_accurate">Size Accurate</option>
+                  <option value="distance_accurate">Distance Accurate</option>
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Date Display — a calendar date carries no meaning at K-1. */}
+        {!isPreReader && (
+          <div
+            ref={dateDisplayRef}
+            className="glass-panel backdrop-blur-md rounded-xl border border-white/20 px-4 py-2 text-sm text-slate-300 font-mono"
+          >
+            {displayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+          </div>
+        )}
+      </div>
+    </div>
   );
+};
 
-  // ── Evaluation ────────────────────────────────────────────────────
-  const { submitResult, elapsedMs } = usePrimitiveEvaluation<SolarSystemExplorerMetrics>({
-    primitiveType: 'solar-system-explorer',
-    instanceId: resolvedInstanceId,
-    skillId: data.skillId,
-    subskillId: data.subskillId,
-    objectiveId: data.objectiveId,
-    exhibitId: data.exhibitId,
-  });
+// ============================================================================
+// The research card — a tapped body's story and stats
+// ============================================================================
 
-  // ── Challenge progress ────────────────────────────────────────────
-  const {
-    currentIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+interface BodyCardProps {
+  body: CelestialBody;
+  isPreReader: boolean;
+  onClose: () => void;
+  /** Explore face only: the tutor reads the card aloud. The judged face passes
+   *  nothing — an improvised read-aloud send mid-item is deleted choreography. */
+  onReadAloud?: (text: string) => void;
+  readAloudSpeaking?: boolean;
+}
 
-  const allChallengesComplete = hasChallenges && isComplete;
-  const currentChallenge = hasChallenges
-    ? challenges[Math.min(currentIndex, challenges.length - 1)]
-    : null;
-  // Session score, set once at submit. The challenge strip lives until THIS is
-  // set — NOT until `allChallengesComplete`, which the hook flips the instant
-  // the last result is recorded, i.e. before the student has read the final
-  // feedback or pressed Finish. Gating on that would unmount the Finish button
-  // and the session would never be submitted at all.
-  const [submittedScore, setSubmittedScore] = useState<number | null>(null);
-  const isChallengeActive = hasChallenges && submittedScore === null;
+const BodyCard: React.FC<BodyCardProps> = ({ body, isPreReader, onClose, onReadAloud, readAloudSpeaking }) => (
+  <div className="mt-6 glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden">
+    <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: body.color }} />
+    <div className="relative z-10 pt-2">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h4 className="text-2xl font-light text-white mb-2">{body.name}</h4>
+          <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-[10px] font-mono tracking-widest uppercase">
+            {body.type.replace('-', ' ')}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-slate-400 hover:text-white transition-colors text-xl leading-none"
+        >
+          ✕
+        </button>
+      </div>
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
+      <div className="flex items-start gap-3 mb-4">
+        <p className="text-slate-300 leading-relaxed flex-1">{body.description}</p>
+        {onReadAloud && (
+          <LuminaReadAloud
+            iconOnly
+            size={isPreReader ? 'lg' : 'sm'}
+            accent="cyan"
+            speaking={!!readAloudSpeaking}
+            aria-label={`Tell me about ${body.name}`}
+            className="flex-shrink-0"
+            onClick={() => onReadAloud(
+              `${body.name}. ${body.description}`
+              + `${body.funFact ? ` Here is a fun fact. ${body.funFact}` : ''}`,
+            )}
+          />
+        )}
+      </div>
 
-  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [revealedAnswerId, setRevealedAnswerId] = useState<string | null>(null);
-  const exploredBodiesRef = useRef<Set<string>>(new Set());
-  const challengeStartRef = useRef<number>(Date.now());
+      {body.funFact && (
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+          <div className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-2">💡 Fun Fact</div>
+          <div className="text-white text-sm font-light">{body.funFact}</div>
+        </div>
+      )}
 
-  // The item is SETTLED once it is right, or once the tries are gone. A wrong
-  // answer with tries left is not settled — the student keeps working on it.
-  const isSettled = Boolean(feedback?.correct) || revealedAnswerId !== null;
+      {/* Six numeric stats are the densest adult chrome here and mean nothing
+          to a K-1 child; NOT rendered rather than CSS-hidden. This grid is ALSO
+          the research instrument for the most-moons and hottest facets, which
+          is why those items are never built at K-1. */}
+      {!isPreReader && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {body.distanceAu > 0 && (
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
+              <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Distance from Sun</div>
+              <div className="text-white font-light text-lg">{body.distanceAu.toFixed(2)} AU</div>
+            </div>
+          )}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
+            <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Radius</div>
+            <div className="text-white font-light text-lg">{body.radiusKm.toLocaleString()} km</div>
+          </div>
+          {body.orbitalPeriodDays > 0 && (
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
+              <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Year (Orbit)</div>
+              <div className="text-white font-light text-lg">{body.orbitalPeriodDays.toFixed(0)} days</div>
+            </div>
+          )}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
+            <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Day (Rotation)</div>
+            <div className="text-white font-light text-lg">{body.rotationPeriodHours.toFixed(1)} hrs</div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
+            <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Temperature</div>
+            <div className="text-white font-light text-lg">{body.temperatureC}°C</div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
+            <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Moons</div>
+            <div className="text-white font-light text-lg">{body.moons}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+);
 
-  const selectedBodyForAI = useMemo(
+// ============================================================================
+// EXPLORE face — the original free-exploration surface, unchanged behaviour
+// ============================================================================
+
+interface ExploreFaceProps {
+  data: SolarSystemExplorerData;
+  isPreReader: boolean;
+  resolvedInstanceId: string;
+}
+
+const ExploreFace: React.FC<ExploreFaceProps> = ({ data, isPreReader, resolvedInstanceId }) => {
+  const [selectedBodyId, setSelectedBodyId] = useState<string | null>(data.focusBody || null);
+
+  const selectedBody = useMemo(
     () => data.bodies.find((b) => b.id === selectedBodyId) ?? null,
     [data.bodies, selectedBodyId],
   );
 
   const aiPrimitiveData = useMemo(() => ({
+    // The catalog's tutoring block interpolates challengeType + stimulus only;
+    // free exploration fills both so no template key ever reads "(not set)".
+    challengeType: 'free_explore',
+    stimulus: `a live model of the solar system showing ${data.bodies.map((b) => b.name).join(', ')}; `
+      + 'the learner taps a body to hear about it',
     title: data.title,
-    initialZoom: data.initialZoom ?? 'system',
-    gradeLevel: data.gradeLevel ?? 'unspecified',
-    bodyNames: data.bodies.map((b) => b.name).join(', '),
-    bodyCount: data.bodies.length,
-    selectedBodyName: selectedBodyForAI?.name ?? 'nothing yet',
-    selectedBodyDescription: selectedBodyForAI?.description ?? '',
-    motionState: paused ? 'paused' : 'orbiting',
-    // The question text is safe to send — it never names its own answer. The
-    // answer key itself is deliberately NOT in this payload.
-    challengePrompt: isChallengeActive ? (currentChallenge?.prompt ?? '') : '',
-    challengeNumber: hasChallenges ? Math.min(currentIndex + 1, challenges.length) : 0,
-    challengeCount: challenges.length,
+    selectedBodyName: selectedBody?.name ?? 'nothing yet',
     ...(data.supportTier ? { supportTier: data.supportTier } : {}),
-  }), [
-    data.title, data.initialZoom, data.gradeLevel, data.bodies, data.supportTier,
-    selectedBodyForAI, paused, isChallengeActive, currentChallenge, currentIndex,
-    challenges.length, hasChallenges,
-  ]);
+  }), [data.title, data.bodies, data.supportTier, selectedBody]);
 
   const { sendText, isAudioPlaying } = useLuminaAI({
     primitiveType: 'solar-system-explorer',
@@ -263,833 +715,377 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
     sendText(
       `[SOLAR_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
       + `a solar system model showing: ${data.bodies.map((b) => b.name).join(', ')}. `
-      + (hasChallenges
-        ? `They will be asked questions they answer by TAPPING a planet and then pressing the big tick button. `
-          + `Tell them that in child words, warmly. Do not ask the first question yourself — it is coming.`
-        : `They tap a planet to learn about it. Tell them what to do in child words, warmly.`)
+      + `They tap a planet to learn about it. Tell them what to do in child words, warmly.`
       + `${isPreReader ? ' Never speak a measurement to them — no kilometres, AU, degrees or day counts.' : ''}`,
       { silent: true },
     );
-  }, [sendText, isPreReader, data.bodies, hasChallenges]);
+  }, [sendText, isPreReader, data.bodies]);
 
-  // The tutor speaks each question, because at K the student cannot read it.
-  const spokenPromptRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isChallengeActive || !currentChallenge) return;
-    if (spokenPromptRef.current === currentChallenge.id) return;
-    spokenPromptRef.current = currentChallenge.id;
-    sendText(
-      `[SOLAR_CHALLENGE] Question ${currentIndex + 1} of ${challenges.length}. `
-      + `Say this aloud in warm child words, then wait: "${currentChallenge.prompt}". `
-      + `You do NOT know which planet is correct and you must never name it, point at it, `
-      + `or rule any planet out — not even to be encouraging.`,
-      { silent: true },
-    );
-  }, [isChallengeActive, currentChallenge, currentIndex, challenges.length, sendText]);
-
-  // Tapping a body. During a question this is INSPECTION, so the tutor names it
-  // and stops — volunteering "it's the biggest one" here would answer a
-  // compare_attribute question outright.
+  // Tapping a body: the tutor names it and says one child-sized thing.
   const lastAnnouncedBodyRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!selectedBodyForAI) return;
-    if (lastAnnouncedBodyRef.current === selectedBodyForAI.id) return;
-    lastAnnouncedBodyRef.current = selectedBodyForAI.id;
-    exploredBodiesRef.current.add(selectedBodyForAI.id);
-
-    if (isChallengeActive) {
-      sendText(
-        `[SOLAR_BODY_INSPECTED] While working on the question, the student is looking at `
-        + `${selectedBodyForAI.name}. Say ONLY its name, warmly and briefly. `
-        + `Say NOTHING about it and give NO sign of whether it answers the question.`,
-        { silent: true },
-      );
-      return;
-    }
-
+    if (!selectedBody) return;
+    if (lastAnnouncedBodyRef.current === selectedBody.id) return;
+    lastAnnouncedBodyRef.current = selectedBody.id;
     sendText(
-      `[SOLAR_BODY_SELECTED] The student tapped ${selectedBodyForAI.name}. `
+      `[SOLAR_BODY_SELECTED] The student tapped ${selectedBody.name}. `
       + `Say its name and ONE short child-sized thing about it. `
       + `Do not ask a question and do not list numbers.`,
       { silent: true },
     );
-  }, [selectedBodyForAI, sendText, isChallengeActive]);
+  }, [selectedBody, sendText]);
 
-  // Per-challenge reset. Every per-challenge latch is cleared HERE, including
-  // `lastAnnouncedBodyRef` — otherwise re-inspecting the same planet on the next
-  // question is silent ([[feedback_spoken-auto-advance-footguns]]).
-  useEffect(() => {
-    if (!hasChallenges) return;
-    setSelectedBodyId(null);
-    setFeedback(null);
-    setRevealedAnswerId(null);
-    lastAnnouncedBodyRef.current = null;
-    challengeStartRef.current = Date.now();
-  }, [currentIndex, hasChallenges]);
+  return (
+    <>
+      <SolarCanvas
+        bodies={data.bodies}
+        isPreReader={isPreReader}
+        initialZoom={data.initialZoom}
+        initialTimeScale={data.timeScale || 5000}
+        initialShowOrbits={data.showOrbits !== false}
+        initialShowLabels={data.showLabels !== false}
+        initialShowDistances={data.showDistances || false}
+        initialScaleMode={data.scaleMode || 'hybrid'}
+        showHabitableZone={data.showHabitableZone}
+        dateTime={data.dateTime}
+        selectedBodyId={selectedBodyId}
+        onBodyTap={setSelectedBodyId}
+      />
+      {selectedBody && (
+        <BodyCard
+          body={selectedBody}
+          isPreReader={isPreReader}
+          onClose={() => setSelectedBodyId(null)}
+          onReadAloud={readAloud}
+          readAloudSpeaking={isAudioPlaying}
+        />
+      )}
+    </>
+  );
+};
 
-  // Window resize listener (more performant than ResizeObserver for this case)
-  useEffect(() => {
-    if (!containerRef.current) return;
+// ============================================================================
+// JUDGED face — the DI modality
+// ============================================================================
 
-    const updateSize = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
-      }
-    };
+interface JudgedFaceProps {
+  data: SolarSystemExplorerData;
+  items: SolarItem[];
+  rung: SolarBand;
+  isPreReader: boolean;
+  resolvedInstanceId: string;
+}
 
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
+const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, rung, isPreReader, resolvedInstanceId }) => {
+  // ── Stage-payload state (the runner owns progression; this is the sky) ────
+  const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
+  /** The runner-gated stimulus: which item's spotlight is on screen. */
+  const [presentedItemId, setPresentedItemId] = useState<string | null>(null);
+  /** Post-affirm only. NOT cleared when the next item opens — that clear and
+   *  the `onAffirmed` that set it land in one React batch (18b).
+   *  `runner.revealHeld` is the render gate. */
+  const [reward, setReward] = useState<{ text: string; bodyIds: string[] } | null>(null);
+  const exploredBodiesRef = useRef<Set<string>>(new Set());
 
-  // D3 Zoom Behavior
-  useEffect(() => {
-    if (!svgRef.current || dimensions.width === 0) return;
+  const evaluation = usePrimitiveEvaluation<SolarSystemExplorerMetrics>({
+    primitiveType: 'solar-system-explorer',
+    instanceId: resolvedInstanceId,
+    skillId: data.skillId,
+    subskillId: data.subskillId,
+    objectiveId: data.objectiveId,
+    exhibitId: data.exhibitId,
+    onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
-    const zoom = d3
-      .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.05, 100])
-      .on('zoom', (event) => {
-        setTransform(event.transform);
-      });
+  const pack = useMemo<JudgedScriptPack<SolarItem>>(() => ({
+    ...solarSystemPackBase(items),
+    passThreshold: 70,
+    statusLines: {
+      ready: () => 'Listen, then say the planet\'s name out loud.',
+      retry: () => 'Have another go — say the planet\'s name.',
+      done: 'Great sky-watching today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => ({
+      challenge: `${item.kind}/${item.facet}: ${askFor(item)}`,
+      expected: item.answerNames.join(' / '),
+      observed: lastHeard
+        ? `Heard "${lastHeard}".`
+        : 'The tutor judged the answer wrong from the audio.',
+    }),
+  }), [items]);
 
-    const svg = d3.select(svgRef.current);
-    svg.call(zoom);
-
-    // Initial transform based on initialZoom
-    let initialScale = 0.3;
-    if (data.initialZoom === 'inner') initialScale = 0.8;
-    else if (data.initialZoom === 'outer') initialScale = 0.15;
-    else if (data.initialZoom === 'planet') initialScale = 2;
-
-    const initialTransform = d3.zoomIdentity
-      .translate(dimensions.width / 2, dimensions.height / 2)
-      .scale(initialScale);
-
-    svg.call(zoom.transform, initialTransform);
-  }, [dimensions.width, dimensions.height, data.initialZoom]);
-
-  // Animation loop - uses direct DOM manipulation for smooth 60fps animation
-  useEffect(() => {
-    let frameCount = 0;
-
-    const animate = (time: number) => {
-      if (previousTimeRef.current !== undefined && !paused) {
-        const deltaTime = time - previousTimeRef.current;
-        const timeToAdd = timeScale * deltaTime * 100;
-
-        // Update the simulation date (ref only, no React re-render)
-        simulationDateRef.current = new Date(simulationDateRef.current.getTime() + timeToAdd);
-
-        // Direct DOM manipulation for planet positions - bypasses React reconciliation
-        bodyGroupRefs.current.forEach((element, bodyId) => {
-          const body = data.bodies.find(b => b.id === bodyId);
-          if (body && body.distanceAu > 0) {
-            const periodMs = body.orbitalPeriodDays * 24 * 60 * 60 * 1000;
-            const currentTime = simulationDateRef.current.getTime();
-            const angle = ((currentTime % periodMs) / periodMs) * 2 * Math.PI;
-            const r = body.distanceAu * AU_TO_PIXELS;
-            const x = r * Math.cos(angle);
-            const y = r * Math.sin(angle);
-            element.setAttribute('transform', `translate(${x}, ${y})`);
-          }
-        });
-
-        // Update date display every 30 frames (~500ms) to avoid layout thrashing
-        frameCount++;
-        if (frameCount % 30 === 0 && dateDisplayRef.current) {
-          dateDisplayRef.current.textContent = simulationDateRef.current.toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric'
-          });
-        }
-      }
-      previousTimeRef.current = time;
-      requestRef.current = requestAnimationFrame(animate);
-    };
-
-    requestRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    };
-  }, [paused, timeScale, data.bodies]);
-
-  // Calculate initial position based on orbital period
-  const getInitialPosition = useCallback((body: CelestialBody) => {
-    if (body.distanceAu === 0) return { x: 0, y: 0 }; // Sun at center
-
-    const periodMs = body.orbitalPeriodDays * 24 * 60 * 60 * 1000;
-    const time = simulationDateRef.current.getTime();
-    const angle = ((time % periodMs) / periodMs) * 2 * Math.PI;
-
-    const r = body.distanceAu * AU_TO_PIXELS;
-    return {
-      x: r * Math.cos(angle),
-      y: r * Math.sin(angle),
-    };
-  }, []);
-
-  // Callback to register body group refs for direct DOM manipulation
-  const setBodyRef = useCallback((bodyId: string, element: SVGGElement | null) => {
-    if (element) {
-      bodyGroupRefs.current.set(bodyId, element);
-    } else {
-      bodyGroupRefs.current.delete(bodyId);
-    }
-  }, []);
-
-  // Visual radius based on scale mode
-  const getVisualRadius = (body: CelestialBody) => {
-    if (body.type === 'star') {
-      return scaleMode === 'size_accurate' ? 30 : 35;
-    }
-
-    if (scaleMode === 'size_accurate') {
-      // Logarithmic scale for visibility
-      return Math.max(3, Math.log(body.radiusKm) * 1.8);
-    } else if (scaleMode === 'distance_accurate') {
-      // Very small but proportional
-      return Math.max(2, body.radiusKm * 0.0003);
-    } else {
-      // Hybrid: balanced visibility
-      return Math.max(4, Math.log(body.radiusKm) * 1.5);
-    }
-  };
-
-  const selectedBody = data.bodies.find((b) => b.id === selectedBodyId);
-
-  // Habitable zone calculation (simplified: 0.95 AU to 1.37 AU for Sun-like star)
-  const habitableZoneInner = 0.95 * AU_TO_PIXELS;
-  const habitableZoneOuter = 1.37 * AU_TO_PIXELS;
-
-  // ── Answer handling ───────────────────────────────────────────────
-  // A tap SELECTS; a second, deliberate press ANSWERS. Two steps because these
-  // targets are small circles in continuous orbital motion — a tap-is-the-answer
-  // loop would score mis-taps on a moving object as misconceptions.
-  const handleBodyTap = useCallback((bodyId: string) => {
-    if (isSettled) return; // locked once the item is over, until Next
-    setSelectedBodyId(bodyId);
-    // A new pick retires the previous miss's hint, which also brings the
-    // confirm button back — that IS the retry affordance.
-    setFeedback(null);
-  }, [isSettled]);
-
-  const handleConfirmAnswer = useCallback(() => {
-    if (!currentChallenge || !selectedBodyId || isSettled) return;
-
-    incrementAttempts();
-    const attempts = currentAttempts + 1;
-    const correct = currentChallenge.answerBodyIds.includes(selectedBodyId);
-    const chosen = data.bodies.find((b) => b.id === selectedBodyId);
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback({
-        correct: true,
-        message: currentChallenge.explanation ?? `Yes — ${chosen?.name ?? 'that one'}!`,
-      });
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts,
-        timeMs: Date.now() - challengeStartRef.current,
-      });
-      sendText(
-        `[SOLAR_ANSWER_CORRECT] The student answered "${currentChallenge.prompt}" with `
-        + `${chosen?.name} on attempt ${attempts} — that is RIGHT. Say so warmly in one short `
-        + `sentence and give ONE child-sized reason why it is right.`,
-        { silent: true },
-      );
-      return;
-    }
-
-    SoundManager.playIncorrect();
-
-    if (attempts >= MAX_ATTEMPTS) {
-      const answer = data.bodies.find((b) => b.id === currentChallenge.answerBodyIds[0]);
-      setRevealedAnswerId(answer?.id ?? null);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: false,
-        attempts,
-        timeMs: Date.now() - challengeStartRef.current,
-      });
-      setFeedback({
-        correct: false,
-        message: currentChallenge.explanation ?? `The answer was ${answer?.name ?? 'another one'}.`,
-      });
-      sendText(
-        `[SOLAR_ANSWER_REVEAL] The student ran out of tries on "${currentChallenge.prompt}". `
-        + `The answer is ${answer?.name}. Tell them kindly, show them how to see it for `
-        + `themselves in the picture, and keep it short. Do not make them feel bad.`,
-        { silent: true },
-      );
-      return;
-    }
-
-    // Wrong, with tries left. The item stays open: `revealedAnswerId` is left
-    // null, so `isSettled` is false and the next tap clears this hint.
-    setFeedback({
-      correct: false,
-      message: currentChallenge.hint ?? 'Not that one — have another look and try again.',
-    });
-    sendText(
-      `[SOLAR_ANSWER_WRONG] The student picked ${chosen?.name} for "${currentChallenge.prompt}" `
-      + `and it is NOT right. Attempt ${attempts} of ${MAX_ATTEMPTS}. Encourage them to look again `
-      + `and give a way to LOOK, not the answer. Never name the correct planet and never rule one out.`,
-      { silent: true },
-    );
-  }, [
-    currentChallenge, selectedBodyId, isSettled, currentAttempts, data.bodies,
-    incrementAttempts, recordResult, sendText,
-  ]);
-
-  const handleNext = useCallback(() => {
-    if (!currentChallenge) return;
-    const advanced = advanceProgress();
-    if (advanced) {
-      sendText(
-        `[SOLAR_NEXT] Moving to question ${currentIndex + 2} of ${challenges.length}.`,
-        { silent: true },
-      );
-      return;
-    }
-
-    // Last item — score the session.
-    const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const accuracy = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-
-    // One session = one skill in the pinned case, so the dominant type is the
-    // eval mode the evidence belongs to.
-    const typeCounts = challenges.reduce<Record<string, number>>((acc, ch) => {
-      acc[ch.type] = (acc[ch.type] ?? 0) + 1;
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const kindCounts = items.reduce<Record<string, number>>((acc, item) => {
+      acc[item.kind] = (acc[item.kind] ?? 0) + 1;
       return acc;
     }, {});
-    const dominantMode = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const dominantMode = Object.entries(kindCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
 
     const metrics: SolarSystemExplorerMetrics = {
       type: 'solar-system-explorer',
       evalMode: dominantMode,
-      totalChallenges: total,
-      correctChallenges: correctCount,
-      totalAttempts,
-      accuracy,
+      totalChallenges: items.length,
+      correctChallenges: summary.solvedCount,
+      totalAttempts: summary.attemptsCount,
+      accuracy: summary.accuracy,
       bodiesExplored: exploredBodiesRef.current.size,
-      durationMs: elapsedMs,
+      durationMs: evaluation.elapsedMs,
     };
-
-    submitResult(accuracy >= 70, accuracy, metrics);
-    setSubmittedScore(accuracy);
-    SoundManager.playStreak();
-
-    const phaseScoreStr = phaseResults.map((p) => `${p.label} ${p.score}%`).join(', ');
-    sendText(
-      `[SOLAR_ALL_COMPLETE] The student finished all ${total} questions. `
-      + `${phaseScoreStr || `Overall ${accuracy}%`}. Overall ${accuracy}%. `
-      + `Celebrate briefly and name one thing they now know about the solar system.`,
-      { silent: true },
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes },
+      undefined,
+      summary.diagnosisEvidence,
     );
-  }, [
-    currentChallenge, advanceProgress, sendText, currentIndex, challenges,
-    challengeResults, elapsedMs, submitResult, phaseResults,
-  ]);
+  }, [items, evaluation]);
 
-  const selectedName = selectedBody?.name ?? '';
-  const promptTextClass = isPreReader ? 'text-2xl' : 'text-lg';
+  const runner = useJudgedScriptRunner<SolarItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel: rung === 'K' ? 'Kindergarten' : `Grade ${rung}`,
+    exhibitId: data.exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: () => {
+      setSelectedBodyId(null);
+      setPresentedItemId(null);
+    },
+    onAffirmed: (item) => {
+      // The first moment the answer may appear on screen.
+      setReward({ text: revealTextFor(item), bodyIds: item.answerBodyIds });
+    },
+    // The spotlight waits on HER voice: it paints only after the ask for this
+    // item has been spoken (and re-paints after a correction, on the same gate).
+    onPresentStimulus: (item) => setPresentedItemId(item.id),
+    stimulus: {
+      when: (item) => item.kind === 'identify' || isPairFacet(item.facet),
+    },
+  });
+
+  const currentItem = runner.currentItem;
+
+  // A tap is LOOKING: it opens the research card (where the band allows one)
+  // and counts as exploration. It never commits anything.
+  const handleBodyTap = useCallback((bodyId: string) => {
+    exploredBodiesRef.current.add(bodyId);
+    setSelectedBodyId((prev) => (prev === bodyId ? null : bodyId));
+  }, []);
+
+  const spotlightBodyIds = useMemo(() => {
+    if (!currentItem || presentedItemId !== currentItem.id) return [];
+    if (currentItem.kind === 'identify') return [currentItem.targetBodyId];
+    return currentItem.pairBodyIds;
+  }, [currentItem, presentedItemId]);
+
+  const revealBodyIds = runner.revealHeld && reward ? reward.bodyIds : [];
+
+  // The identify label withhold (defect 11, in pixels): while an identify item
+  // is on screen, no body may wear its printed name — except the reveal.
+  const suppressLabels = currentItem?.kind === 'identify';
+
+  // The research card would answer an identify item outright (it prints the
+  // body's name); on other kinds it is the model's own reference material,
+  // exactly as tappable as it was in the click era.
+  const selectedBody = useMemo(
+    () => data.bodies.find((b) => b.id === selectedBodyId) ?? null,
+    [data.bodies, selectedBodyId],
+  );
+  const showCard = !!selectedBody && !isPreReader && currentItem?.kind !== 'identify'
+    && !evaluation.hasSubmitted;
+
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => (
+      PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🪐' }
+    ));
+  }, [evaluation.hasSubmitted, runner.summary, items]);
+
+  const stageWord = runner.stage === 'judging'
+    ? 'let\'s see…'
+    : runner.currentSolved
+      ? 'yes!'
+      : runner.running
+        ? 'say it out loud'
+        : 'get ready';
 
   return (
-    <div className={`w-full ${className}`}>
-      <div className="max-w-7xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
-        {/* Ambient background glow */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[180px] opacity-10 bg-blue-500" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[150px] opacity-10 bg-purple-500" />
-
-        <div className="relative z-10">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Astronomy:</span>
-              <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-blue-500/20 text-blue-300 border-blue-500/30">
-                {hasChallenges ? 'CHALLENGE' : 'EXPLORE'}
-              </span>
-            </div>
-            <h3 className="text-3xl font-light text-white mb-2">{data.title}</h3>
-            <p className="text-slate-300 leading-relaxed">{data.description}</p>
-          </div>
-
-          {/* Challenge strip — the question, the confirm, the feedback */}
-          {isChallengeActive && currentChallenge && (
-            <div className="mb-4 glass-panel rounded-2xl border border-white/10 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                {challenges.map((ch, i) => {
-                  const done = challengeResults.find((r) => r.challengeId === ch.id);
+    <>
+      {!evaluation.hasSubmitted && (
+        <>
+          <div className="mb-3 flex items-center gap-2">
+            {/* Progress dots — adult chrome at K-1, where the tutor's voice is
+                the whole frame. */}
+            {!isPreReader && (
+              <>
+                {items.map((item, i) => {
+                  const done = runner.solvedIds.has(item.id);
                   return (
                     <span
-                      key={ch.id}
+                      key={item.id}
                       className={`h-2.5 rounded-full transition-all duration-300 ${
-                        i === currentIndex ? 'w-8 bg-blue-400'
-                          : done?.correct ? 'w-2.5 bg-emerald-400'
-                          : done ? 'w-2.5 bg-rose-400/70'
+                        i === runner.currentIndex ? 'w-8 bg-blue-400'
+                          : done ? 'w-2.5 bg-emerald-400'
                           : 'w-2.5 bg-white/20'
                       }`}
                     />
                   );
                 })}
-                {!isPreReader && (
-                  <span className="ml-2 text-[10px] font-mono uppercase tracking-widest text-slate-400">
-                    {currentIndex + 1} / {challenges.length}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-start gap-3">
-                <p className={`text-white font-light leading-snug flex-1 ${promptTextClass}`}>
-                  {currentChallenge.prompt}
-                </p>
-                <LuminaReadAloud
-                  iconOnly
-                  size={isPreReader ? 'lg' : 'sm'}
-                  accent="cyan"
-                  speaking={isAudioPlaying}
-                  aria-label="Read the question to me"
-                  className="flex-shrink-0"
-                  onClick={() => readAloud(currentChallenge.prompt)}
-                />
-              </div>
-
-              {/* Answer commit. Never shown until something is selected, so the
-                  strip cannot hint at what to pick. */}
-              {!feedback && (
-                <div className="mt-4 flex items-center gap-3">
-                  {selectedBody ? (
-                    <button
-                      onClick={handleConfirmAnswer}
-                      className={`flex items-center gap-3 rounded-xl font-medium text-white transition-all duration-300 hover:scale-105 bg-emerald-500/30 hover:bg-emerald-500/40 border border-emerald-400/40 ${
-                        isPreReader ? 'px-6 py-4 text-xl' : 'px-5 py-2.5 text-sm'
-                      }`}
-                    >
-                      <span
-                        className="inline-block rounded-full flex-shrink-0"
-                        style={{
-                          backgroundColor: selectedBody.color,
-                          width: isPreReader ? 22 : 16,
-                          height: isPreReader ? 22 : 16,
-                        }}
-                      />
-                      <span>{isPreReader ? `✓ ${selectedName}!` : `Answer: ${selectedName}`}</span>
-                    </button>
-                  ) : (
-                    <p className={`text-slate-400 ${isPreReader ? 'text-lg' : 'text-sm'}`}>
-                      {isPreReader ? 'Tap a planet 👆' : 'Tap a body in the model to choose it.'}
-                    </p>
-                  )}
-                  {currentAttempts > 0 && !isPreReader && (
-                    <span className="text-xs text-slate-500 font-mono">
-                      try {currentAttempts + 1} of {MAX_ATTEMPTS}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {feedback && (
-                <div
-                  className={`mt-4 rounded-xl border p-4 flex items-start gap-3 ${
-                    feedback.correct
-                      ? 'bg-emerald-500/15 border-emerald-400/30'
-                      : 'bg-amber-500/15 border-amber-400/30'
-                  }`}
-                >
-                  <span className={isPreReader ? 'text-3xl' : 'text-xl'}>
-                    {feedback.correct ? '🎉' : '🤔'}
-                  </span>
-                  <p className={`flex-1 text-white font-light ${isPreReader ? 'text-xl' : 'text-base'}`}>
-                    {feedback.message}
-                  </p>
-                  <LuminaReadAloud
-                    iconOnly
-                    size={isPreReader ? 'lg' : 'sm'}
-                    accent="emerald"
-                    speaking={isAudioPlaying}
-                    aria-label="Read this to me"
-                    className="flex-shrink-0"
-                    onClick={() => readAloud(feedback.message)}
-                  />
-                  {/* Settled = correct, or out of tries. A wrong answer with
-                      tries left clears itself on the next tap instead. */}
-                  {(feedback.correct || revealedAnswerId) && (
-                    <button
-                      onClick={handleNext}
-                      className={`flex-shrink-0 rounded-xl font-medium text-white bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/30 transition-all duration-300 hover:scale-105 ${
-                        isPreReader ? 'px-6 py-4 text-xl' : 'px-5 py-2.5 text-sm'
-                      }`}
-                    >
-                      {currentIndex + 1 >= challenges.length ? (isPreReader ? '🏁' : 'Finish') : (isPreReader ? '▶' : 'Next')}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Main Viewer */}
-          <div className="relative glass-panel rounded-2xl border border-white/10 overflow-hidden" style={{ height: '600px' }}>
-            <div ref={containerRef} className="w-full h-full relative overflow-hidden cursor-grab active:cursor-grabbing bg-black/40">
-              <StarBackground width={dimensions.width} height={dimensions.height} transform={transform} />
-
-              <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="absolute top-0 left-0">
-                <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
-                  {/* Habitable Zone */}
-                  {data.showHabitableZone && (
-                    <g opacity={0.2}>
-                      <circle cx={0} cy={0} r={habitableZoneOuter} fill="none" stroke="#22c55e" strokeWidth={20 / transform.k} />
-                      <circle cx={0} cy={0} r={habitableZoneInner} fill="none" stroke="#22c55e" strokeWidth={20 / transform.k} />
-                      <circle cx={0} cy={0} r={(habitableZoneInner + habitableZoneOuter) / 2} fill="none" stroke="#22c55e" strokeWidth={1 / transform.k} strokeDasharray="4 4" />
-                    </g>
-                  )}
-
-                  {/* Orbits */}
-                  {showOrbits &&
-                    data.bodies.map((body) => {
-                      if (body.distanceAu === 0) return null;
-                      return (
-                        <circle
-                          key={`orbit-${body.id}`}
-                          cx={0}
-                          cy={0}
-                          r={body.distanceAu * AU_TO_PIXELS}
-                          fill="none"
-                          stroke="rgba(255, 255, 255, 0.15)"
-                          strokeWidth={1 / transform.k}
-                        />
-                      );
-                    })}
-
-                  {/* Bodies */}
-                  {data.bodies.map((body) => {
-                    const pos = getInitialPosition(body);
-                    const r = getVisualRadius(body);
-                    const isSelected = selectedBodyId === body.id;
-                    const isHovered = hoveredBodyId === body.id;
-                    const isRevealed = revealedAnswerId === body.id;
-
-                    return (
-                      <g
-                        key={body.id}
-                        data-body-id={body.id}
-                        ref={(el) => setBodyRef(body.id, el)}
-                        transform={`translate(${pos.x}, ${pos.y})`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBodyTap(body.id);
-                        }}
-                        onMouseEnter={() => setHoveredBodyId(body.id)}
-                        onMouseLeave={() => setHoveredBodyId(null)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {/* Glow for Sun */}
-                        {body.type === 'star' && <circle r={r * 3} fill="url(#sunGlow)" opacity={0.6} />}
-
-                        {/* Transparent hit target — the drawn planet can be a
-                            handful of pixels at system zoom, and it is moving.
-                            Without this, tapping is a dexterity test rather than
-                            an astronomy one. */}
-                        <circle r={Math.max(r * 2.2, 14 / transform.k)} fill="transparent" />
-
-                        {/* Hover Glow */}
-                        {isHovered && !isSelected && (
-                          <circle
-                            r={r * 2}
-                            fill={body.color}
-                            opacity={0.3}
-                          />
-                        )}
-
-                        {/* Selection Indicator */}
-                        {isSelected && (
-                          <>
-                            <circle
-                              r={r * 2.5}
-                              fill={body.color}
-                              opacity={0.2}
-                            />
-                            <circle
-                              r={r * 1.5 + 5}
-                              fill="none"
-                              stroke="white"
-                              strokeWidth={2 / transform.k}
-                              strokeDasharray="4 2"
-                            />
-                          </>
-                        )}
-
-                        {/* Revealed answer — only ever set AFTER the item is
-                            scored wrong, never before. */}
-                        {isRevealed && (
-                          <circle
-                            r={r * 1.5 + 9}
-                            fill="none"
-                            stroke="#34d399"
-                            strokeWidth={3 / transform.k}
-                          />
-                        )}
-
-                        {/* The Body */}
-                        <circle
-                          r={r}
-                          fill={body.color}
-                          stroke={isSelected ? 'white' : isHovered ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)'}
-                          strokeWidth={isHovered || isSelected ? 2 / transform.k : 1 / transform.k}
-                        />
-
-                        {/* Gradient Overlay */}
-                        <circle r={r} fill={`url(#planetGradient-${body.id})`} opacity={0.7} />
-
-                        {/* Label */}
-                        {showLabels && (transform.k > 0.4 || isSelected || isHovered) && (
-                          <text
-                            y={r + 14 / transform.k}
-                            textAnchor="middle"
-                            fill="white"
-                            fontSize={(isHovered || isSelected ? 12 : 11) / transform.k}
-                            className="select-none pointer-events-none font-medium"
-                            style={{
-                              textShadow: '0 2px 4px rgba(0,0,0,0.9)',
-                              fontWeight: isHovered || isSelected ? 600 : 500
-                            }}
-                          >
-                            {body.name}
-                          </text>
-                        )}
-
-                        {/* Distance Label */}
-                        {showDistances && body.distanceAu > 0 && transform.k > 0.5 && (
-                          <text
-                            y={r + 26 / transform.k}
-                            textAnchor="middle"
-                            fill="#94a3b8"
-                            fontSize={9 / transform.k}
-                            className="select-none pointer-events-none"
-                            style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9)' }}
-                          >
-                            {body.distanceAu.toFixed(2)} AU
-                          </text>
-                        )}
-                      </g>
-                    );
-                  })}
-                </g>
-
-                {/* Gradients */}
-                <defs>
-                  <radialGradient id="sunGlow">
-                    <stop offset="0%" stopColor="#FDB813" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#FDB813" stopOpacity="0" />
-                  </radialGradient>
-                  {data.bodies.map((body) => (
-                    <radialGradient id={`planetGradient-${body.id}`} key={`grad-${body.id}`} cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="white" stopOpacity="0.2" />
-                      <stop offset="70%" stopColor="black" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="black" stopOpacity="0.6" />
-                    </radialGradient>
-                  ))}
-                </defs>
-              </svg>
-
-              {/* Help Text — a three-clause protocol instruction in 12px is the
-                  one string a non-reader most needs and least can read. At K-1
-                  the tutor's ORIENT beat carries it instead. */}
-              {!isPreReader && (
-                <div className="absolute top-4 right-4 glass-panel backdrop-blur-md px-3 py-2 rounded-lg border border-white/20 text-xs text-slate-300 pointer-events-none">
-                  Scroll to Zoom • Drag to Pan • Click Planets
-                </div>
-              )}
-            </div>
-
-            {/* Controls Overlay */}
-            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4">
-              {/* Left Controls */}
-              <div className="glass-panel backdrop-blur-md rounded-xl border border-white/20 p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPaused(!paused)}
-                    aria-label={paused ? 'Play' : 'Pause'}
-                    className={`bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/30 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105 ${
-                      isPreReader ? 'px-4 py-3 text-2xl leading-none' : 'px-3 py-1.5 text-sm'
-                    }`}
-                  >
-                    {isPreReader ? (paused ? '▶' : '⏸') : (paused ? '▶ Play' : '⏸ Pause')}
-                  </button>
-                  {/* A raw speed multiplier is a number a five-year-old cannot use. */}
-                  {!isPreReader && (
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <span className="font-mono">Speed:</span>
-                      <input
-                        type="range"
-                        min="100"
-                        max="20000"
-                        step="100"
-                        value={timeScale}
-                        onChange={(e) => setTimeScale(Number(e.target.value))}
-                        className="w-24"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Three display toggles and a scale mode selector are exactly the
-                    "adult chrome in the child's field" rule 7 forbids — and at K
-                    the generator already picks the right defaults for all four. */}
-                {!isPreReader && (
-                  <>
-                    <div className="flex items-center gap-3 text-xs">
-                      <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
-                        <input type="checkbox" checked={showOrbits} onChange={(e) => setShowOrbits(e.target.checked)} className="rounded" />
-                        Orbits
-                      </label>
-                      <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
-                        <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} className="rounded" />
-                        Labels
-                      </label>
-                      <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
-                        <input type="checkbox" checked={showDistances} onChange={(e) => setShowDistances(e.target.checked)} className="rounded" />
-                        Distances
-                      </label>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <span className="font-mono">Scale:</span>
-                      <select
-                        value={scaleMode}
-                        onChange={(e) => setScaleMode(e.target.value as any)}
-                        className="bg-white/5 hover:bg-white/10 text-white rounded-lg px-2 py-1 text-xs border border-white/20 transition-colors"
-                      >
-                        <option value="hybrid">Hybrid</option>
-                        <option value="size_accurate">Size Accurate</option>
-                        <option value="distance_accurate">Distance Accurate</option>
-                      </select>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Date Display — a calendar date carries no meaning at K-1. */}
-              {!isPreReader && (
-                <div
-                  ref={dateDisplayRef}
-                  className="glass-panel backdrop-blur-md rounded-xl border border-white/20 px-4 py-2 text-sm text-slate-300 font-mono"
-                >
-                  {displayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                </div>
-              )}
-            </div>
+                <span className="ml-2 text-[10px] font-mono uppercase tracking-widest text-slate-400">
+                  {Math.min(runner.currentIndex + 1, items.length)} / {items.length}
+                </span>
+              </>
+            )}
+            {/* Tap-to-hear — the QUESTION again, never a hint ladder. Never
+                withdrawn by band or tier. */}
+            <button
+              type="button"
+              onClick={runner.hearStimulus}
+              className={`ml-auto flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all ${
+                runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
+              }`}
+              aria-label="Hear the question again"
+            >
+              <span className="text-xl">🔁</span>
+            </button>
           </div>
 
-          {/* Session results */}
-          {allChallengesComplete && submittedScore !== null && (
-            <PhaseSummaryPanel
-              className="mt-6"
-              phases={phaseResults}
-              overallScore={submittedScore}
-              durationMs={elapsedMs}
-              heading="Your Space Journey"
-            />
+          <SolarCanvas
+            bodies={data.bodies}
+            isPreReader={isPreReader}
+            initialZoom={data.initialZoom}
+            initialTimeScale={data.timeScale || 5000}
+            initialShowOrbits={data.showOrbits !== false}
+            initialShowLabels={data.showLabels !== false}
+            initialShowDistances={data.showDistances || false}
+            initialScaleMode={data.scaleMode || 'hybrid'}
+            showHabitableZone={data.showHabitableZone}
+            dateTime={data.dateTime}
+            selectedBodyId={selectedBodyId}
+            onBodyTap={handleBodyTap}
+            suppressLabels={suppressLabels}
+            spotlightBodyIds={spotlightBodyIds}
+            revealBodyIds={revealBodyIds}
+          />
+
+          {/* The reveal — the first moment an answer may appear. Gated on
+              `revealHeld`, never on `currentSolved` (18b). */}
+          {reward && runner.revealHeld && (
+            <div className="mt-4 glass-panel rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 text-center">
+              <span className="text-emerald-300 text-2xl font-black animate-bounce inline-block">
+                {reward.text}
+              </span>
+            </div>
           )}
 
-          {/* Detail Panel */}
-          {selectedBody && (
-            <div className="mt-6 glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden">
-              {/* Accent bar */}
-              <div
-                className="absolute top-0 left-0 w-full h-1"
-                style={{ backgroundColor: selectedBody.color }}
-              />
+          <div className="mt-4 text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
 
-              <div className="relative z-10 pt-2">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h4 className="text-2xl font-light text-white mb-2">{selectedBody.name}</h4>
-                    <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-[10px] font-mono tracking-widest uppercase">
-                      {selectedBody.type.replace('-', ' ')}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setSelectedBodyId(null)}
-                    className="text-slate-400 hover:text-white transition-colors text-xl leading-none"
-                  >
-                    ✕
-                  </button>
-                </div>
+          {!isPreReader && (
+            <p className="mt-1 text-center text-xs text-slate-500">
+              Look at the sky, zoom and tap around — then say your answer out loud.
+            </p>
+          )}
 
-                <div className="flex items-start gap-3 mb-4">
-                  <p className="text-slate-300 leading-relaxed flex-1">{selectedBody.description}</p>
-                  <LuminaReadAloud
-                    iconOnly
-                    size={isPreReader ? 'lg' : 'sm'}
-                    accent="cyan"
-                    speaking={isAudioPlaying}
-                    aria-label={`Tell me about ${selectedBody.name}`}
-                    className="flex-shrink-0"
-                    onClick={() => readAloud(
-                      `${selectedBody.name}. ${selectedBody.description}`
-                      + `${selectedBody.funFact ? ` Here is a fun fact. ${selectedBody.funFact}` : ''}`,
-                    )}
-                  />
-                </div>
+          {/* The orb tells the truth: every item in this pack is spoken. */}
+          <div className="mt-3">
+            <JudgedMicPanel run={runner} />
+          </div>
 
-                {selectedBody.funFact && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
-                    <div className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-2">💡 Fun Fact</div>
-                    <div className="text-white text-sm font-light">{selectedBody.funFact}</div>
-                  </div>
-                )}
+          {showCard && selectedBody && (
+            <BodyCard
+              body={selectedBody}
+              isPreReader={isPreReader}
+              onClose={() => setSelectedBodyId(null)}
+            />
+          )}
+        </>
+      )}
 
-                {/* Six numeric stats — AU, kilometres, orbital days, rotation
-                    hours, °C and a moon count — are the densest adult chrome in
-                    this primitive and mean nothing to a K-1 child. The scaffold
-                    forbids the tutor from speaking them too. NOT rendered rather
-                    than CSS-hidden: `hidden` leaves the text in the DOM and
-                    reachable by assistive tech, which is not "gone".
-                    This panel is ALSO the research instrument for the
-                    compare_attribute and orbital_reasoning modes, which is why
-                    the generator never builds those items on hidden data at K-1. */}
-                {!isPreReader && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {selectedBody.distanceAu > 0 && (
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
-                      <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Distance from Sun</div>
-                      <div className="text-white font-light text-lg">{selectedBody.distanceAu.toFixed(2)} AU</div>
-                    </div>
-                  )}
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
-                    <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Radius</div>
-                    <div className="text-white font-light text-lg">{selectedBody.radiusKm.toLocaleString()} km</div>
-                  </div>
-                  {selectedBody.orbitalPeriodDays > 0 && (
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
-                      <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Year (Orbit)</div>
-                      <div className="text-white font-light text-lg">{selectedBody.orbitalPeriodDays.toFixed(0)} days</div>
-                    </div>
-                  )}
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
-                    <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Day (Rotation)</div>
-                    <div className="text-white font-light text-lg">{selectedBody.rotationPeriodHours.toFixed(1)} hrs</div>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
-                    <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Temperature</div>
-                    <div className="text-white font-light text-lg">{selectedBody.temperatureC}°C</div>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
-                    <div className="text-slate-400 text-[10px] mb-1 uppercase tracking-widest font-mono">Moons</div>
-                    <div className="text-white font-light text-lg">{selectedBody.moons}</div>
-                  </div>
-                </div>
-                )}
-              </div>
+      {evaluation.hasSubmitted && phaseResults.length > 0 && (
+        <PhaseSummaryPanel
+          className="mt-4"
+          phases={phaseResults}
+          overallScore={evaluation.submittedResult?.score}
+          durationMs={evaluation.elapsedMs}
+          heading="Your Space Journey"
+          celebrationMessage="You called the planets by name — out loud, like a real astronomer!"
+        />
+      )}
+    </>
+  );
+};
+
+// ============================================================================
+// Component
+// ============================================================================
+
+const VALID_RUNGS: readonly SolarBand[] = ['K', '1', '2', '3', '4', '5'];
+
+const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, className = '' }) => {
+  const rung: SolarBand = VALID_RUNGS.includes(data.gradeLevel as SolarBand)
+    ? (data.gradeLevel as SolarBand)
+    : '3';
+  const isPreReader = rung === 'K' || rung === '1';
+
+  const stableInstanceIdRef = useRef(
+    data.instanceId || `solar-system-explorer-${Math.round(performance.now())}`,
+  );
+  const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
+
+  // The judged items — challenges that survive the build gates. All-dropped is
+  // an honest degrade to exploration: shipping a broken ask would put a wrong
+  // line in the tutor's mouth, and free exploration is this primitive's floor.
+  const built = useMemo(
+    () => itemsFromChallenges(data.challenges ?? [], { bodies: data.bodies, rung }),
+    [data.challenges, data.bodies, rung],
+  );
+  const isJudged = built.items.length > 0;
+
+  useEffect(() => {
+    if ((data.challenges?.length ?? 0) > 0 && !isJudged) {
+      console.warn(
+        `[SolarSystemExplorer] all ${data.challenges?.length} challenges dropped by the build gates — running as free exploration`,
+      );
+    }
+  }, [data.challenges, isJudged]);
+
+  return (
+    <div className={`w-full ${className}`}>
+      <div className="max-w-7xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[180px] opacity-10 bg-blue-500" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[150px] opacity-10 bg-purple-500" />
+
+        <div className="relative z-10">
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Astronomy:</span>
+              <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-blue-500/20 text-blue-300 border-blue-500/30">
+                {isJudged ? 'CHALLENGE' : 'EXPLORE'}
+              </span>
+              {isJudged && (
+                <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                  Say it out loud
+                </span>
+              )}
             </div>
+            <h3 className="text-3xl font-light text-white mb-2">{data.title}</h3>
+            <p className="text-slate-300 leading-relaxed">{data.description}</p>
+          </div>
+
+          {isJudged ? (
+            <JudgedFace
+              data={data}
+              items={built.items}
+              rung={rung}
+              isPreReader={isPreReader}
+              resolvedInstanceId={resolvedInstanceId}
+            />
+          ) : (
+            <ExploreFace
+              data={data}
+              isPreReader={isPreReader}
+              resolvedInstanceId={resolvedInstanceId}
+            />
           )}
         </div>
       </div>
@@ -1132,5 +1128,6 @@ const StarBackground = React.memo(({
     </svg>
   );
 });
+StarBackground.displayName = 'StarBackground';
 
 export default SolarSystemExplorer;

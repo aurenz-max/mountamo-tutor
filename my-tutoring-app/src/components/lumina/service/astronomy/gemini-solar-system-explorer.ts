@@ -10,6 +10,17 @@ import type {
   SolarChallenge,
   SolarChallengeType,
 } from '../../primitives/visual-primitives/astronomy/SolarSystemExplorer';
+// The judged script's build gates ARE the generator's validators — one
+// predicate per rule on both sides of the wire, imported never copied
+// (the letter-spotter hand-sync drift lesson).
+import {
+  itemsFromChallenges,
+  askFor,
+  categoryMembers,
+  type SolarItem,
+  type SolarChallengeLike,
+  type SolarFacet,
+} from '../../primitives/visual-primitives/astronomy/solarSystemScript';
 
 // Re-export for convenience if needed elsewhere
 export type { SolarSystemExplorerData, CelestialBody };
@@ -219,33 +230,35 @@ const solarSystemGradeFromProse = (prose?: string): SolarSystemGrade => {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   identify: {
     promptDoc:
-      '"identify": the student is asked for a body BY NAME and taps it in the live model. '
-      + 'Tests name↔body recognition — the Kindergarten objective.',
-    schemaDescription: "'identify' (tap the named body)",
+      '"identify": the model spotlights one planet and the student SAYS its name out loud '
+      + '(judged by the Live tutor). Tests planet-name production — the Kindergarten objective.',
+    schemaDescription: "'identify' (say the spotlighted planet's name)",
   },
   order_from_sun: {
     promptDoc:
-      '"order_from_sun": the student taps a planet by its POSITION in the sequence out from the Sun '
+      '"order_from_sun": the student SAYS the name of the planet at a POSITION out from the Sun '
       + '(closest, farthest, or the Nth). Tests solar-system order.',
-    schemaDescription: "'order_from_sun' (tap by position from the Sun)",
+    schemaDescription: "'order_from_sun' (say the planet at a position from the Sun)",
   },
   classify: {
     promptDoc:
-      '"classify": the student taps ANY member of a category — rocky planet, gas giant, dwarf planet. '
-      + 'Tests the category rule rather than one memorised fact.',
-    schemaDescription: "'classify' (tap any member of a category)",
+      '"classify": the student SAYS the name of ANY member of a category — rocky planet, gas '
+      + 'giant, dwarf planet. Tests the category rule rather than one memorised fact.',
+    schemaDescription: "'classify' (say any member of a category)",
   },
   compare_attribute: {
     promptDoc:
-      '"compare_attribute": the student taps the extreme on one attribute — biggest, smallest, '
-      + 'most moons, hottest. Requires comparing across bodies, not recalling one.',
-    schemaDescription: "'compare_attribute' (tap the extreme on an attribute)",
+      '"compare_attribute": the student SAYS the name of the extreme on one attribute — biggest, '
+      + 'smallest, most moons, hottest — or the bigger of a named pair. Requires comparing across '
+      + 'bodies, not recalling one.',
+    schemaDescription: "'compare_attribute' (say the extreme on an attribute)",
   },
   orbital_reasoning: {
     promptDoc:
-      '"orbital_reasoning": the student taps by ORBITAL PERIOD — longest year, fastest mover. '
-      + 'Tests the distance↔period relationship (Kepler\'s third law, informally).',
-    schemaDescription: "'orbital_reasoning' (tap by orbital period)",
+      '"orbital_reasoning": the student SAYS the planet with the longest year, the quickest trip, '
+      + 'or the faster of a named pair. Tests the distance↔period relationship (Kepler\'s third '
+      + 'law, informally).',
+    schemaDescription: "'orbital_reasoning' (say the planet by its orbital period)",
   },
 };
 
@@ -263,9 +276,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 //   2. Answer leak. There is no round trip in which a prompt string can name
 //      its own answer, because the prompt is generated from the answer.
 //
-// This is the SP-21 Fork A shape, so the unconstrained ("mixed") path is built
-// explicitly — by rotating every in-band kind — rather than letting one tier
-// stand in for a mix.
+// DI port note: a challenge now carries a STRUCTURED `facet` (plus `position` /
+// `optionBodyIds` where the facet needs them) and the judged script derives the
+// spoken ask, the answer and the judging contract from facet + bodies. The
+// final filter below IS the script's own `itemsFromChallenges` — the same
+// gates the component runs, so nothing the generator emits can build an item
+// the stage would drop.
 
 const TIER_ORDER: SolarChallengeType[] = [
   'identify', 'order_from_sun', 'classify', 'compare_attribute', 'orbital_reasoning',
@@ -291,37 +307,21 @@ const CHALLENGE_COUNT_BY_RUNG: Record<SolarSystemGrade, number> = {
   K: 4, '1': 5, '2': 5, '3': 6, '4': 6, '5': 6,
 };
 
-const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth'];
-
 /**
- * Colour-and-appearance cues for the `identify` items at K-1.
- *
- * A pre-reader cannot read the name labels under the planets, so "Tap Mars" has
- * no channel at all unless the body is also described by how it LOOKS. Cues are
- * deliberately colour-only: no "biggest", no "nearest the Sun", because those
- * would answer a compare_attribute or order_from_sun item elsewhere in the
- * same session.
+ * A structured candidate — no prose. The spoken ask, the answer key and the
+ * judging contract are all derived downstream by the judged script; the
+ * candidate only names WHICH ask this is. (The click-era appearance cues moved
+ * into the script as SOLAR_APPEARANCE, where they season the affirm and the
+ * correction instead of the ask.)
  */
-const APPEARANCE_CUE: Record<string, string> = {
-  mercury: 'the small grey one',
-  venus:   'the pale yellow one',
-  earth:   'the blue one, our home',
-  mars:    'the red one',
-  jupiter: 'the one with orange stripes',
-  saturn:  'the pale gold one with rings',
-  uranus:  'the light blue-green one',
-  neptune: 'the deep blue one',
-  pluto:   'the small brown one',
-};
-
 interface ChallengeCandidate {
   type: SolarChallengeType;
+  facet: SolarFacet;
   /** Canonical identity for de-duplication within a session. */
   key: string;
-  prompt: string;
-  answerBodyIds: string[];
-  hint: string;
-  explanation: string;
+  position?: number;
+  optionBodyIds?: string[];
+  answerBodyIds?: string[];
   /** In-kind ordering, easy → hard. */
   rank: number;
 }
@@ -335,230 +335,107 @@ function shuffled<T>(items: T[]): T[] {
   return out;
 }
 
-/**
- * The single body that wins on `value`, or null when the top two TIE.
- * A tie makes the item unanswerable — two defensible taps, one scored wrong —
- * so the variant is dropped rather than shipped as a coin flip.
- */
-function strictExtreme(
-  bodies: CelestialBody[],
-  value: (b: CelestialBody) => number,
-  dir: 'max' | 'min',
-): CelestialBody | null {
-  if (bodies.length < 2) return null;
-  const sorted = [...bodies].sort((a, b) => (dir === 'max' ? value(b) - value(a) : value(a) - value(b)));
-  if (value(sorted[0]) === value(sorted[1])) return null;
-  return sorted[0];
+/** Planet pairs a young eye (or a watching eye) can honestly compare — the
+ *  same ratio floors the script's build gate enforces. */
+const SIZE_PAIR_RATIO = 1.4;
+const PERIOD_PAIR_RATIO = 1.5;
+const MAX_PAIR_CANDIDATES = 4;
+
+function pairCandidates(
+  planets: CelestialBody[],
+  facet: 'pair_bigger' | 'pair_faster',
+  baseRank: number,
+): ChallengeCandidate[] {
+  const value = facet === 'pair_bigger'
+    ? (b: CelestialBody) => b.radiusKm
+    : (b: CelestialBody) => b.orbitalPeriodDays;
+  const ratio = facet === 'pair_bigger' ? SIZE_PAIR_RATIO : PERIOD_PAIR_RATIO;
+  const pairs: ChallengeCandidate[] = [];
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i + 1; j < planets.length; j++) {
+      const a = planets[i];
+      const b = planets[j];
+      const [lo, hi] = value(a) < value(b) ? [a, b] : [b, a];
+      if (value(lo) <= 0 || value(hi) / value(lo) < ratio) continue;
+      pairs.push({
+        type: facet === 'pair_bigger' ? 'compare_attribute' : 'orbital_reasoning',
+        facet,
+        key: `${facet}:${[a.id, b.id].sort().join('+')}`,
+        optionBodyIds: [a.id, b.id],
+        rank: baseRank + pairs.length,
+      });
+    }
+  }
+  return shuffled(pairs).slice(0, MAX_PAIR_CANDIDATES);
 }
 
 function collectCandidates(
   bodies: CelestialBody[],
   rung: SolarSystemGrade,
 ): ChallengeCandidate[] {
-  const isPreReader = rung === 'K' || rung === '1';
-  // The six-cell stat grid is NOT RENDERED at K-1, so any item whose evidence
-  // lives only in that grid (moon counts, temperatures) has no channel there.
-  const statsHidden = isPreReader;
-
   const planets = bodies
     .filter((b) => b.type === 'planet')
     .sort((a, b) => a.distanceAu - b.distanceAu);
   const out: ChallengeCandidate[] = [];
   if (planets.length < 2) return out;
 
-  // ── identify ───────────────────────────────────────────────────
+  // ── identify — the spotlight names each planet once ────────────
   planets.forEach((p, i) => {
-    const cue = isPreReader ? APPEARANCE_CUE[p.id] : undefined;
     out.push({
       type: 'identify',
+      facet: 'name',
       key: `identify:${p.id}`,
-      prompt: cue ? `Tap ${p.name} — ${cue}.` : `Tap ${p.name}.`,
       answerBodyIds: [p.id],
-      hint: isPreReader
-        ? 'Look at the colours. Ask me to say it again if you need to.'
-        : 'Each body has its name written just below it.',
-      explanation: `That's ${p.name}.`,
       rank: i,
     });
   });
 
   // ── order_from_sun ─────────────────────────────────────────────
-  const orderHint = 'Start at the Sun in the middle and move outwards, one ring at a time.';
-  out.push({
-    type: 'order_from_sun',
-    key: 'order:closest',
-    prompt: 'Tap the planet closest to the Sun.',
-    answerBodyIds: [planets[0].id],
-    hint: orderHint,
-    explanation: `${planets[0].name} orbits closest to the Sun.`,
-    rank: 0,
+  out.push({ type: 'order_from_sun', facet: 'closest', key: 'order:closest', rank: 0 });
+  out.push({ type: 'order_from_sun', facet: 'farthest', key: 'order:farthest', rank: 1 });
+  // Ordinal positions ask the student to COUNT a sequence — the script's build
+  // gate drops them at K-1; emitting them there would only inflate `dropped`.
+  planets.slice(1, -1).forEach((_, idx) => {
+    const position = idx + 2; // 1-based; first and last belong to closest/farthest
+    out.push({
+      type: 'order_from_sun',
+      facet: 'position',
+      key: `order:${position}`,
+      position,
+      rank: 2 + idx,
+    });
   });
-  const outermost = planets[planets.length - 1];
-  out.push({
-    type: 'order_from_sun',
-    key: 'order:farthest',
-    prompt: 'Tap the planet farthest from the Sun.',
-    answerBodyIds: [outermost.id],
-    hint: orderHint,
-    explanation: `${outermost.name} is the farthest planet from the Sun here.`,
-    rank: 1,
+
+  // ── classify — one candidate per category the sky supports ─────
+  (['rocky', 'giant', 'dwarf'] as const).forEach((facet, i) => {
+    if (categoryMembers(bodies, facet).length === 0) return;
+    out.push({ type: 'classify', facet, key: `classify:${facet}`, rank: i });
   });
-  // Ordinal positions ask the student to COUNT a sequence — not a K-1 move.
-  if (!isPreReader) {
-    planets.slice(1, -1).forEach((p, idx) => {
-      const position = idx + 1; // slice starts at index 1
-      out.push({
-        type: 'order_from_sun',
-        key: `order:${position}`,
-        prompt: `Tap the ${ORDINALS[position]} planet from the Sun.`,
-        answerBodyIds: [p.id],
-        hint: orderHint,
-        explanation: `${p.name} is the ${ORDINALS[position]} planet from the Sun.`,
-        rank: 2 + idx,
-      });
-    });
-  }
 
-  // ── classify ───────────────────────────────────────────────────
-  const classifyHint = 'Think about what the whole group has in common — how big they are and what they are made of.';
-  const rocky = planets.filter((p) => p.radiusKm < 20000 && p.distanceAu < 3);
-  const giants = planets.filter((p) => p.radiusKm >= 20000);
-  const dwarfs = bodies.filter((b) => b.type === 'dwarf-planet');
+  // ── compare_attribute — extremes, research facets, and pairs ───
+  out.push({ type: 'compare_attribute', facet: 'biggest', key: 'compare:biggest', rank: 0 });
+  out.push({ type: 'compare_attribute', facet: 'smallest', key: 'compare:smallest', rank: 1 });
+  out.push({ type: 'compare_attribute', facet: 'most_moons', key: 'compare:moons', rank: 2 });
+  out.push({ type: 'compare_attribute', facet: 'hottest', key: 'compare:hottest', rank: 3 });
+  out.push(...pairCandidates(planets, 'pair_bigger', 4));
 
-  if (rocky.length > 0 && rocky.length < planets.length) {
-    out.push({
-      type: 'classify',
-      key: 'classify:rocky',
-      prompt: isPreReader || rung === '2'
-        ? 'Tap a rocky planet. Rocky planets are the smaller ones made of rock.'
-        : 'Tap one of the rocky planets.',
-      answerBodyIds: rocky.map((p) => p.id),
-      hint: classifyHint,
-      explanation: `The rocky planets are ${rocky.map((p) => p.name).join(', ')}.`,
-      rank: 0,
-    });
-  }
-  if (giants.length > 0 && giants.length < planets.length) {
-    out.push({
-      type: 'classify',
-      key: 'classify:giant',
-      prompt: isPreReader || rung === '2'
-        ? 'Tap a gas giant. Gas giants are the huge ones made of gas.'
-        : 'Tap one of the gas giants.',
-      answerBodyIds: giants.map((p) => p.id),
-      hint: classifyHint,
-      explanation: `The gas giants are ${giants.map((p) => p.name).join(', ')}.`,
-      rank: 1,
-    });
-  }
-  if (dwarfs.length > 0) {
-    out.push({
-      type: 'classify',
-      key: 'classify:dwarf',
-      prompt: 'Tap a dwarf planet.',
-      answerBodyIds: dwarfs.map((b) => b.id),
-      hint: 'A dwarf planet is much smaller than a planet, and it shares its orbit with other things.',
-      explanation: `${dwarfs.map((b) => b.name).join(', ')} ${dwarfs.length > 1 ? 'are' : 'is a'} dwarf planet${dwarfs.length > 1 ? 's' : ''}.`,
-      rank: 2,
-    });
-  }
-
-  // ── compare_attribute ──────────────────────────────────────────
-  const biggest = strictExtreme(planets, (b) => b.radiusKm, 'max');
-  if (biggest) {
-    out.push({
-      type: 'compare_attribute',
-      key: 'compare:biggest',
-      prompt: 'Tap the biggest planet.',
-      answerBodyIds: [biggest.id],
-      hint: 'Look at how much room each circle takes up next to the others.',
-      explanation: `${biggest.name} is the biggest planet here.`,
-      rank: 0,
-    });
-  }
-  const smallest = strictExtreme(planets, (b) => b.radiusKm, 'min');
-  if (smallest) {
-    out.push({
-      type: 'compare_attribute',
-      key: 'compare:smallest',
-      prompt: 'Tap the smallest planet.',
-      answerBodyIds: [smallest.id],
-      hint: 'Look at how much room each circle takes up next to the others.',
-      explanation: `${smallest.name} is the smallest planet here.`,
-      rank: 1,
-    });
-  }
-  if (!statsHidden) {
-    const mostMoons = strictExtreme(planets, (b) => b.moons, 'max');
-    if (mostMoons && mostMoons.moons > 0) {
-      out.push({
-        type: 'compare_attribute',
-        key: 'compare:moons',
-        prompt: 'Tap the planet with the most moons.',
-        answerBodyIds: [mostMoons.id],
-        hint: 'Tap the planets one at a time and read the moon count on each card.',
-        explanation: `${mostMoons.name} has ${mostMoons.moons} known moons — more than any other planet here.`,
-        rank: 2,
-      });
-    }
-    const hottest = strictExtreme(planets, (b) => b.temperatureC, 'max');
-    if (hottest) {
-      out.push({
-        type: 'compare_attribute',
-        key: 'compare:hottest',
-        prompt: 'Tap the hottest planet.',
-        answerBodyIds: [hottest.id],
-        // The trap is worth naming: the closest planet is NOT the hottest.
-        hint: 'Check the temperature on each planet\'s card. It may not be the one you expect.',
-        explanation: `${hottest.name} is the hottest planet at about ${hottest.temperatureC}°C.`,
-        rank: 3,
-      });
-    }
-  }
-
-  // ── orbital_reasoning ──────────────────────────────────────────
-  const orbitHint = 'Watch them move. The ones far out crawl around; the ones close in race.';
-  const orbiting = planets.filter((p) => p.orbitalPeriodDays > 0);
-  const slowest = strictExtreme(orbiting, (b) => b.orbitalPeriodDays, 'max');
-  if (slowest) {
-    out.push({
-      type: 'orbital_reasoning',
-      key: 'orbit:slowest',
-      prompt: isPreReader
-        ? 'Tap the planet that goes around the Sun the slowest.'
-        : 'Tap the planet with the longest year — the one that takes longest to travel all the way around the Sun.',
-      answerBodyIds: [slowest.id],
-      hint: orbitHint,
-      explanation: isPreReader
-        ? `${slowest.name} is the slowest — it is very far away, so its trip round the Sun is huge.`
-        : `${slowest.name} takes about ${Math.round(slowest.orbitalPeriodDays)} Earth days for one orbit. The farther out a planet is, the longer its year.`,
-      rank: 0,
-    });
-  }
-  const fastest = strictExtreme(orbiting, (b) => b.orbitalPeriodDays, 'min');
-  if (fastest) {
-    out.push({
-      type: 'orbital_reasoning',
-      key: 'orbit:fastest',
-      prompt: isPreReader
-        ? 'Tap the planet that races around the Sun the fastest.'
-        : 'Tap the planet with the shortest year — the fastest one around the Sun.',
-      answerBodyIds: [fastest.id],
-      hint: orbitHint,
-      explanation: isPreReader
-        ? `${fastest.name} is the quickest — it is closest in, so it has the shortest way to go.`
-        : `${fastest.name} completes an orbit in about ${Math.round(fastest.orbitalPeriodDays)} Earth days.`,
-      rank: 1,
-    });
-  }
+  // ── orbital_reasoning — the two ends of Kepler, and pairs ──────
+  out.push({ type: 'orbital_reasoning', facet: 'longest_year', key: 'orbit:slowest', rank: 0 });
+  out.push({ type: 'orbital_reasoning', facet: 'shortest_year', key: 'orbit:fastest', rank: 1 });
+  out.push(...pairCandidates(planets, 'pair_faster', 2));
 
   return out;
 }
 
 /**
- * Build the session's items by rotating the allowed kinds, so a five-item
- * mixed session never collapses into five of the easiest thing. Ordered easy →
- * hard by tier, then by in-kind rank.
+ * Build the session's challenges by rotating the allowed kinds, so a five-item
+ * mixed session never collapses into five of the easiest thing.
+ *
+ * The rotation order — NOT a tier-sorted order — is what feeds the script's
+ * session gate, on purpose: `itemsFromChallenges` enforces answer-once dedupe
+ * in sequence (defect class 2), and a tier-sorted feed would let the identify
+ * items consume every planet before order/compare ever drew one. The surviving
+ * items are tier-sorted afterwards, for presentation only.
  */
 export function buildSolarChallenges(
   bodies: CelestialBody[],
@@ -570,37 +447,63 @@ export function buildSolarChallenges(
   if (kinds.length === 0) return [];
 
   const all = collectCandidates(bodies, rung);
+  // compare/orbital pools keep RANK order (extremes before pairs): the script's
+  // answer-once dedupe consumes bodies in feed order, and a pair that draws
+  // Jupiter first would eat "biggest planet"'s answer — the canonical item —
+  // leaving the session all filler. Variety still comes from pairCandidates'
+  // own shuffle (WHICH pairs exist). The other kinds shuffle freely: their
+  // candidates never collide on an answer body.
+  const RANKED_KINDS: SolarChallengeType[] = ['compare_attribute', 'orbital_reasoning'];
   const pools = new Map<SolarChallengeType, ChallengeCandidate[]>(
-    kinds.map((k) => [k, shuffled(all.filter((c) => c.type === k))]),
+    kinds.map((k) => [
+      k,
+      RANKED_KINDS.includes(k)
+        ? [...all.filter((c) => c.type === k)].sort((a, b) => a.rank - b.rank)
+        : shuffled(all.filter((c) => c.type === k)),
+    ]),
   );
 
-  const picked: ChallengeCandidate[] = [];
-  const seen = new Set<string>();
+  // Interleave the kinds; the script gate drops what cannot be asked.
+  const rotation: ChallengeCandidate[] = [];
   let progressed = true;
-  while (picked.length < count && progressed) {
+  while (progressed) {
     progressed = false;
     for (const k of kinds) {
-      if (picked.length >= count) break;
       const next = pools.get(k)!.shift();
       if (!next) continue;
       progressed = true;
-      if (seen.has(next.key)) continue;
-      seen.add(next.key);
-      picked.push(next);
+      rotation.push(next);
     }
   }
 
-  picked.sort(
-    (a, b) => (TIER_ORDER.indexOf(a.type) - TIER_ORDER.indexOf(b.type)) || (a.rank - b.rank),
+  const likes: SolarChallengeLike[] = rotation.map((c) => ({
+    id: c.key,
+    type: c.type,
+    facet: c.facet,
+    position: c.position,
+    optionBodyIds: c.optionBodyIds,
+    answerBodyIds: c.answerBodyIds,
+  }));
+  const { items } = itemsFromChallenges(likes, { bodies, rung });
+
+  const rankOf = new Map(rotation.map((c) => [c.key, c.rank]));
+  const kept = items.slice(0, count);
+  kept.sort(
+    (a, b) =>
+      (TIER_ORDER.indexOf(a.kind) - TIER_ORDER.indexOf(b.kind))
+      || ((rankOf.get(a.id) ?? 0) - (rankOf.get(b.id) ?? 0)),
   );
 
-  return picked.map((c, i) => ({
+  return kept.map((item: SolarItem, i) => ({
     id: `ssc-${i + 1}`,
-    type: c.type,
-    prompt: c.prompt,
-    answerBodyIds: c.answerBodyIds,
-    hint: c.hint,
-    explanation: c.explanation,
+    type: item.kind,
+    facet: item.facet,
+    position: item.position || undefined,
+    optionBodyIds: item.pairBodyIds.length ? [...item.pairBodyIds] : undefined,
+    answerBodyIds: [...item.answerBodyIds],
+    // The spoken ask, recorded for logs and humans. Never printed on screen,
+    // never parsed — the component re-derives everything from the facet.
+    prompt: askFor(item),
   }));
 }
 

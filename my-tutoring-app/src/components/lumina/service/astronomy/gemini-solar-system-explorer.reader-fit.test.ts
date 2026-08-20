@@ -77,41 +77,38 @@ describe('solar-system-explorer — reader-fit scaffold + fallback grade rung', 
       expect(entry.tutoring!.commonStruggles!.length).toBeGreaterThanOrEqual(3);
     });
 
-    it('forbids speaking measurements to a pre-reader', () => {
-      const preReader = (entry.tutoring!.aiDirectives ?? [])
-        .find((d) => /PRE-READER/i.test(d.title))!;
-      expect(preReader).toBeDefined();
-      expect(preReader.instruction).toMatch(/OVERRIDES/);
-      expect(preReader.instruction).toMatch(/NEVER speak a measurement/i);
-      expect(preReader.instruction).toMatch(/kilometres|AU|Celsius/i);
+    it('forbids speaking measurements to a pre-reader (free-exploration face)', () => {
+      const explore = (entry.tutoring!.aiDirectives ?? [])
+        .find((d) => /FREE EXPLORATION/i.test(d.title))!;
+      expect(explore).toBeDefined();
+      expect(explore.instruction).toMatch(/that IS your greeting/i);
+      expect(explore.instruction).toMatch(/NEVER speak a measurement/i);
+      expect(explore.instruction).toMatch(/kilometres|AU|Celsius/i);
     });
 
-    it('carries the scale-honesty directive — the model cannot show size and distance truthfully at once', () => {
-      const scale = (entry.tutoring!.aiDirectives ?? [])
-        .find((d) => /SCALE HONESTY/i.test(d.title))!;
-      expect(scale).toBeDefined();
-      expect(scale.instruction).toMatch(/trade-off/i);
-    });
-
-    it('addresses the two scale misconceptions the layout itself invites', () => {
+    it('carries scale honesty — the model cannot show size and distance truthfully at once', () => {
+      const explore = (entry.tutoring!.aiDirectives ?? [])
+        .find((d) => /FREE EXPLORATION/i.test(d.title))!;
+      expect(explore.instruction).toMatch(/trade-off/i);
       const struggles = JSON.stringify(entry.tutoring!.commonStruggles);
       expect(struggles).toMatch(/lined up|in a line/i);
       expect(struggles).toMatch(/emptier|spread/i);
     });
 
-    it('references only tags the component actually emits', () => {
+    it('references only tags the component or the judged script actually emits', () => {
       const directiveText = (entry.tutoring!.aiDirectives ?? [])
         .map((d) => `${d.title} ${d.instruction}`).join(' ');
       const referenced = Array.from(directiveText.matchAll(/\[([A-Z_]+)\]/g)).map((m) => m[1]);
-      // Must stay in sync with every sendText() tag in SolarSystemExplorer.tsx —
-      // a directive naming a tag the component never sends is a rule the tutor
-      // can never apply, and it fails silently.
+      // Must stay in sync with every sendText() tag in SolarSystemExplorer.tsx
+      // and every cue tag in solarSystemScript.ts — a directive naming a tag
+      // that is never sent is a rule the tutor can never apply.
       const emitted = [
+        // Free-exploration face:
         'SOLAR_ORIENT', 'SOLAR_BODY_SELECTED', 'SOLAR_READ_ALOUD',
-        // The eval-mode surface (tap-to-answer):
-        'SOLAR_CHALLENGE', 'SOLAR_BODY_INSPECTED', 'SOLAR_ANSWER_CORRECT',
-        'SOLAR_ANSWER_WRONG', 'SOLAR_ANSWER_REVEAL', 'SOLAR_NEXT',
-        'SOLAR_ALL_COMPLETE',
+        // Judged-loop cues (solarSystemScript.ts):
+        'SOLAR_ITEM', 'SOLAR_MOVE', 'SOLAR_COMPLETE', 'SOLAR_HEAR',
+        // The generic never-read-tags directive names its own placeholder:
+        'BRACKETS',
       ];
       for (const tag of referenced) expect(emitted).toContain(tag);
     });
