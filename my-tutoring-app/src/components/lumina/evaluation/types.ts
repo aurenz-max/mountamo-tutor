@@ -1508,6 +1508,10 @@ export interface GravityDropTowerMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+// -----------------------------------------------------------------------------
+// Biology Primitives
+// -----------------------------------------------------------------------------
+
 export interface HabitatDioramaMetrics extends BasePrimitiveMetrics {
   type: 'habitat-diorama';
   totalChallenges: number;
@@ -1518,10 +1522,6 @@ export interface HabitatDioramaMetrics extends BasePrimitiveMetrics {
   modelChallenges: number;
   durationMs: number;
 }
-
-// -----------------------------------------------------------------------------
-// Biology Primitives
-// -----------------------------------------------------------------------------
 
 export interface ProcessAnimatorMetrics extends BasePrimitiveMetrics {
   type: 'bio-process-animator';
@@ -1879,6 +1879,10 @@ export interface EnergyCycleEngineMetrics extends BasePrimitiveMetrics {
   processDisrupted: boolean;            // Did they break a process via experiment
 }
 
+// -----------------------------------------------------------------------------
+// Chemistry Primitives
+// -----------------------------------------------------------------------------
+
 /** DI judged loop (first chemistry port): per-challenge-type accuracy so the
  *  three eval modes (explore/identify/trend) read separately downstream. */
 export interface PeriodicTableMetrics extends BasePrimitiveMetrics {
@@ -1893,10 +1897,6 @@ export interface PeriodicTableMetrics extends BasePrimitiveMetrics {
   trendAccuracy: number;
   attemptsCount: number;
 }
-
-// -----------------------------------------------------------------------------
-// Chemistry Primitives
-// -----------------------------------------------------------------------------
 
 export interface MatterExplorerMetrics extends BasePrimitiveMetrics {
   type: 'matter-explorer';
@@ -3590,8 +3590,8 @@ export type PrimitiveMetrics =
   | ImagePanelMetrics
   // Media
   | MediaPlayerMetrics
-  | HabitatDioramaMetrics
   // Biology
+  | HabitatDioramaMetrics
   | ClassificationSorterMetrics
   | LifeCycleSequencerMetrics
   | CompareContrastMetrics
@@ -3623,8 +3623,8 @@ export type PrimitiveMetrics =
   | PushPullArenaMetrics
   | RaceTrackLabMetrics
   | GravityDropTowerMetrics
-  | PeriodicTableMetrics
   // Chemistry
+  | PeriodicTableMetrics
   | MatterExplorerMetrics
   | ReactionLabMetrics
   | StatesOfMatterMetrics

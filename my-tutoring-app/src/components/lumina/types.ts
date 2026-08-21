@@ -1104,6 +1104,7 @@ export interface WordBuilderData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<WordBuilderMetrics>) => void;
 }
 
+// Periodic Table Types
 /** One judged periodic-table challenge — CODE-DRAWN from the element table
  *  (never LLM-authored; every answer key is computed). The script module's
  *  build gates (`periodicTableScript.itemFromChallenge`) validate and DROP,
@@ -1124,7 +1125,6 @@ export interface PeriodicTableChallenge {
   pairNumbers?: number[];
 }
 
-// Periodic Table Types
 export interface PeriodicTableData {
   title?: string;
   description?: string;
@@ -1997,7 +1997,17 @@ export type { OrganismCardData, OrganismInfo, OrganismAttributes, OrganismClassi
 export type { ClassificationSorterData, ClassificationCategory, ClassificationItem } from './primitives/visual-primitives/biology/ClassificationSorter';
 export type { LifeCycleSequencerData, LifeCycleStage, MisconceptionTrap } from './primitives/visual-primitives/biology/LifeCycleSequencer';
 export type { BodySystemExplorerData, OrganInfo, Pathway, PathwayStep, Layer, BodySystem } from './primitives/visual-primitives/biology/BodySystemExplorer';
-export type { HabitatDioramaData, Organism, Relationship, EnvironmentalFeature, DisruptionScenario } from './primitives/visual-primitives/biology/HabitatDiorama';
+export type {
+  HabitatDioramaData,
+  HabitatChallenge,
+  HabitatChallengeType,
+  HabitatEvidenceChoice,
+  HabitatZone,
+  Organism,
+  Relationship,
+  EnvironmentalFeature,
+  DisruptionScenario,
+} from './primitives/visual-primitives/biology/HabitatDiorama';
 export type { CompareContrastData, EntityAttribute, EntityInfo, SharedAttribute } from './primitives/visual-primitives/biology/CompareContrast';
 export type { ProcessAnimatorData, ProcessStage, CheckpointQuestion } from './primitives/visual-primitives/biology/ProcessAnimator';
 export type { MicroscopeViewerData, VisibleStructure, ZoomLevel } from './primitives/visual-primitives/biology/MicroscopeViewer';
@@ -2048,7 +2058,7 @@ export type { EquationWorkspaceData } from './primitives/visual-primitives/math/
 // Chemistry
 export type { MatterExplorerData } from './primitives/visual-primitives/chemistry/MatterExplorer';
 export type { ReactionLabData } from './primitives/visual-primitives/chemistry/ReactionLab';
-export type { StatesOfMatterData } from './primitives/visual-primitives/chemistry/StatesOfMatter';
+export type { StatesOfMatterData, StatesOfMatterChallenge } from './primitives/visual-primitives/chemistry/StatesOfMatter';
 export type { AtomBuilderData, AtomBuilderChallenge, AtomBuilderShowOptions, AtomBuilderConstraints } from './primitives/visual-primitives/chemistry/AtomBuilder';
 export type { MixingAndDissolvingData } from './primitives/visual-primitives/chemistry/MixingAndDissolving';
 export type { MoleculeConstructorData } from './primitives/visual-primitives/chemistry/MoleculeConstructor';
