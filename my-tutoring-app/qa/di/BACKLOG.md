@@ -64,6 +64,582 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
+### 25. 🪐 **OPENED 2026-08-19 (user pull: "rebuild and reimagine solar-system-explorer with native di modality") — THE SCIENCE PORTS. `solar-system-explorer` SHIPPED 2026-08-19 (first FULL science port); `periodic-table` SHIPPED 2026-08-19 (second science port, FIRST chemistry port — closed a three-mode eval-mode FICTION, all keys code-computed); `states-of-matter` SHIPPED 2026-08-20 (third science port — ALL THREE MODES SPOKEN, zero taps; the slider went to the tutor).** Executor: `/add-di-loop`, one science primitive per slice.
+
+> #### ✅ 2026-08-20 — `states-of-matter` IS ON THE JUDGED LOOP (THIRD science port, SECOND chemistry port). Mic row **#117**. All three eval modes, **all spoken, zero taps**.
+>
+> **THE PORT IN ONE SENTENCE: the tutor puts a substance on the bench beside its
+> particle view, asks out loud, the child answers out loud, and her affirmation RUNS
+> THE EXPERIMENT — the beaker heats to the temperature she said she was taking it to,
+> for exactly as long as she is saying so.** The click era answered all three modes
+> with multiple-choice tiles, a True/False pair and a free-text box behind a Check
+> button; the costume test cleared the whole board in one pass, because a child who
+> cannot read a particle view can still click one of three tiles.
+>
+> **THE FORK — every mode SPEAKS, and the absence of a gesture item IS the port.**
+> `observe` → `name_state` (VOICE `short_spoken_word` — say solid/liquid/gas from the
+> particles) · `predict` → `predict_state` (the state it will reach) + `predict_change`
+> (the phase-change WORD; Grade 3-5 only, a curriculum boundary not a difficulty knob),
+> both `short_spoken_word` · `compare` → `melt_first` + `stay_solid` (VOICE
+> `closed_set_choice` — one of two substances, both named in the ask by construction).
+> Zero new response classes.
+>
+> **⚠️ THE SLIDER IS NOT ten-frame's R6 PAPER.** The frame was the student's page and
+> deleting it would have deleted the work; the temperature slider is not, because the
+> ask is *"what state WILL it be"* and a slider beside a live beaker answers that by
+> EXPERIMENT — drag until the picture changes, no science required. It is a Check
+> button wearing a range input's clothes, so the judged surface hands it to the TUTOR.
+>
+> **CONTENT IS CODE, NOT GEMINI** (the periodic-table rule, one port later): ten
+> substances with real melting/boiling points live in `statesOfMatterScript.ts`, the
+> draw picks which and at what temperature (`states-of-matter-challenges.ts`), and
+> every key is computed. Gemini writes the EXPLORATION payload only — its challenge
+> schema is deleted, so the flash-lite failure family is structurally absent.
+>
+> **SCIENCE GATES (defect 8 — writing the spoken ask audited the data):** (1)
+> `boilingIsReal` — chocolate, butter and coconut oil SCORCH, they do not boil, and the
+> click-era generator keyed boiling points for all three; every gas answer and every
+> threshold sentence gates on it, so *"chocolate boils at 350 degrees"* is a sentence
+> this port refuses to say. (2) `TEMP_MARGIN` — nothing is ever asked from inside 5° of
+> a threshold (at exactly the melting point the code reads "liquid" and a child reads
+> "it is turning"; an ambiguous ask is broken, not harder). (3) K-2 never hears a
+> below-zero temperature and draws only the everyday half of the table. (4) A compare
+> pair must be BOTH SOLID at the start temperature — one beaker already a puddle and
+> the picture answers the question (defect 11, in pixels). (5) `stay_solid` needs
+> exactly ONE survivor at the target, or the question has two answers or none.
+>
+> **DEFECT 2, adapted to a THREE-WORD ANSWER SET:** substance-once-per-session in any
+> role (every ask SPEAKS its substance's thresholds, so a second item on it is recall,
+> and a compare item whose loser was named an item ago is answered from memory). Plus a
+> second rule this pack needs and no other port did — consecutive same-action items may
+> not share an ANSWER, because six observe items that are all "solid" teach a child to
+> say "solid".
+>
+> **⭐ DEFECT 6 CONFIRMED LIVE, THEN FIXED WITH A MEASURED BEFORE/AFTER — and the first
+> proven fix was NOT ENOUGH.** An observe ask names nothing but the substance by design
+> (reading the particles IS the mode), and on drive 1 the tutor read the `[CURRENT
+> STATE]` preamble aloud — *its own "never read it aloud" sentence included* — on **3 of
+> 6** asks. Solar-system's stimulus-states-its-own-non-speakability half alone took it to
+> **2 of 6**. What closed it was the second half, which the earlier report did not spell
+> out: **`{{stimulus}}` must come LAST in `taskDescription`, with the never-read-aloud
+> clause IMMEDIATELY before it** — the state line has to identify itself as not-content
+> at the exact point it arrives, not in a separate sentence higher up. Re-driven:
+> **0 of 6.**
+>
+> **⭐ A NEW RECITATION CHANNEL — THE DRAW, not `leadInFor`.** The compare drive
+> re-spoke the ~14s how-to-play on EVERY item, because the draw alternated
+> `melt_first`/`stay_solid` per item and the runner re-speaks the protocol on every
+> ACTION change. `findRepeatedConsecutiveAsks` is structurally blind to it (consecutive
+> items have different actions). Fix = `FACET_RUN = 2` in the draw: both task
+> identities survive in a 4-6 item session, protocol speech halves. **Worth carrying:
+> the 2026-08-13 recitation ruling has a third delivery route nobody had named.**
+>
+> **THE REVEAL IS THE EXPERIMENT** (18b, and the trap in a new costume): `onAffirmed`
+> and `onItemOpened` fire in ONE dispatch, so the reveal renders `reveal.item` — the
+> AFFIRMED item — never `currentItem`, or the previous item's answer paints over the
+> next item's substance. The beaker ramps from where the child saw it to where she said
+> she was taking it, behind `runner.revealHeld`, on an effect whose every dependency is
+> a PRIMITIVE (never `runner` — ten-frame's dead flash).
+>
+> **Files:** `chemistry/statesOfMatterScript.ts` (NEW — substance table, gates, judging
+> contracts, harness answers) · `chemistry/StatesOfMatter.tsx` (whole-file: JudgedFace +
+> ExploreFace) · `service/chemistry/states-of-matter-challenges.ts` (NEW — the code
+> draw) · `service/chemistry/gemini-states-of-matter.ts` (challenge schema DELETED;
+> title leak gate) · `chemistryGenerators.ts` (mode pin) · `catalog/chemistry.ts` (DI
+> frame, `audioInput`, contextKeys `['challengeType','stimulus']`, 18d-clean ladder,
+> VERDICT-ENDS-THE-TURN + THE-CHILD-IS-LOOKING directives) · `evaluation/types.ts`
+> (judged metrics) · `types.ts` (challenge type) · `service/qa/di/diDrivePlan.ts`
+> (adapter, all-spoken) · `__tests__/StatesOfMatter.di-script.test.ts` (NEW — 37 tests
+> incl. the real-session-shape pack). **Deleted:** the MC tiles, the True/False pair,
+> the textarea, Check Answer, Next Challenge, the attempts/hint ladder, the judged-side
+> slider, state badge, particle caption, phase markers and substance switcher. Census
+> greps 0 + 0 + 0.
+>
+> **Gates:** `typecheck:lumina` **0** · full `tsc` zero in touched files · di-script
+> **37/37** · service+hooks suites **1720 pass** (1 pre-existing fail:
+> `sentence-analyzer` dead intent contract, a concurrent session's file) · probe:
+> **480 randomized draws across 2 bands × 4 mode sets × 3 tiers — 2339 challenges,
+> 0 dropped, 0 empty, packGateIssues [] on every draw**; live generation clean at both
+> bands (K: "Water on a Warm Day"; G4: "Iron in the Foundry") · headless `--di` GREEN
+> on all three modes: observe plain **6/6 refused + 6/6 affirmed**, observe signature
+> **6/6 + 6/6** (the substance said back), predict plain **6/6 + 6/6**, predict
+> signature **6/6 + 6/6** (incl. "gas" refused where "boiling" was asked), compare plain
+> **4/4 + 4/4**, compare signature **5/5 + 5/5** · cap drill PASS (move-on closes the
+> link: *"Good try! That Coconut Oil is a solid."*) with the family-shared
+> verbatim-repeat WARN. Reports:
+> `qa/tutor-reports/states-of-matter-live-di-*-2026-08-20.md`.
+>
+> **Residuals (named, not hidden):** (1) mic row **#117** — the drives prove the judge's
+> SEMANTICS; only a sitting proves a five-year-old's "solid"/"liquid"/"gas" and the
+> two-name menus under real ASR. (2) One browser look at the judged stage — the reveal
+> ramp, the two-beaker compare layout and the hidden-chrome asks are all jsdom-blind.
+> (3) **The unpinned-slot call differs from periodic-table's on purpose**: these three
+> eval modes were REAL in the click era (every payload carried graded challenges), so an
+> unpinned slot draws a MIXED judged session rather than silently losing its
+> measurement. If that is wrong, the one-line change is in `chemistryGenerators.ts`.
+> (4) K-2 sessions are structurally shorter (5-substance pool × substance-once); the
+> draw returns what it can honestly fill and never pads.
+
+> #### 🧪 2026-08-20 — `habitat-diorama` REIMAGINED AS A LIVING ECOSYSTEM FIELD LAB; MACHINE-GATED, MIC ROW **#116**, HEADLESS SEMANTIC DRIVE OWED.
+>
+> **THE LADDER:** Observe β2.5 (spoken organism from evidence) → Connect β3.5
+> (build a relationship) → Predict β5.0 (spoken population response) → Restore
+> β6.5 (place a missing organism in a viable zone) → Defend β8.0 (speak the
+> strongest visible evidence). Observe/Predict/Defend are `closed_set_choice`;
+> Connect/Restore are honest `manipulation` page-work. The tutor owns the clock:
+> no Check, Next, timer, or push-to-talk controls. Challenge-less payloads retain
+> the original exploration and K-2 tagged read-aloud surface.
+>
+> **Files:** `habitatDioramaScript.ts` (NEW pack, build/leak/ear-separability
+> gates, gesture verdicts, harness answers) · `HabitatDiorama.tsx` (Lumina-kit
+> living stage + judged/explore structural fork) · `gemini-habitat-diorama.ts`
+> (five eval modes, schema pinning, grade guidance, post-generation gates) ·
+> `catalog/biology.ts` (β ladder + DI context/directives) · calibration registry
+> + evaluation/types exports · `diDrivePlan.ts` adapter · three focused suites.
+>
+> **LIVE FINDING CLOSED:** Flash Lite returned `INVALID_ARGUMENT` when all nested
+> arrays carried min/max bounds; removing every bound then produced 1-item
+> sessions. The production schema now bounds the challenge fan-out (5-8) only,
+> with scene sizes bounded in prompt/build gates. The rerun produced **50
+> challenges / 42 distinct judged items** across all five modes at K and grade 7;
+> all 10 live packs passed the shared contract gates. Drawn answers included
+> Tadpole/Cattail/Pond Snail, Red Oak/Gray Wolf/Mycorrhizal Fungi, five distinct
+> relationships, four restoration zones, and grade-banded evidence statements.
+>
+> **Gates:** `typecheck:lumina` 0 · touched-file full-tsc 0 · focused vitest
+> **30/30** (script, stage, legacy reader-fit, five pinned + mixed/blended
+> generator paths) · census 0+0 · migration glass grep 0 · live generator
+> **10/10**. The headless `--di --eval-mode observe --runs 3` process emitted no
+> report and did not close after >10 minutes, so it was terminated; do not call
+> judge semantics green. Residual: rerun all five semantic drives on a healthy
+> Live stack, then the real-mic/pixel sitting in #116.
+
+> #### ✅ 2026-08-19 — `periodic-table` IS ON THE JUDGED LOOP (second science port, FIRST chemistry port). Mic row **#115**. User-pulled ("this one might be fun").
+>
+> **THE PORT CLOSED A FICTION:** the catalog declared explore/identify/trend with
+> `supportsEvaluation: true` while the generator emitted no challenges and the component
+> rendered none — every lesson slot that pinned a mode got free exploration and no
+> measurement. There was no click-loop to delete; the port BUILT the judged item stream
+> (census greps 0+0+0 — trivially, and honestly).
+>
+> **CONTENT IS CODE, NOT GEMINI.** All 118 elements live in
+> `chemistry-primitives/constants.ts`; the draw picks WHICH elements
+> (`service/chemistry/periodic-table-challenges.ts`, deliberately no `gemini-` prefix) and
+> every answer key is computed. No LLM in the answer path, so the flash-lite failure family
+> is structurally absent — what remained gate-worthy was the CHEMISTRY (below).
+>
+> **THE FORK:** `explore` → `find` (GESTURE `manipulation` — the answer is a POSITION;
+> the teacher says "point to calcium" and the child points; one tap = one commit,
+> counting-board's structural close) · `identify` → `name` (VOICE `short_spoken_word` —
+> navigate by group/period, atomic number, or spelled symbol, read the box, SAY the name;
+> chart-reading IS the skill, so the labeled table is the page, not a leak) · `trend` →
+> `compare` (VOICE `closed_set_choice` — same-group size/reactivity pairs, both names
+> spoken in the ask by construction, the one leak-exempt span) + `valence` (VOICE
+> `number_word_to_20` — outer electrons 1..8 from the tall-column count). Zero new
+> response classes; find-by-position never names its element (a child could hunt the label
+> instead of navigating), and its affirm is where the name lands.
+>
+> **CHEMISTRY GATES (defect 8 — writing the spoken ask audited the DATA):**
+> (1) the dataset stamps `group: xpos` on EVERY row, handing the detached
+> lanthanide/actinide rows a FAKE group — "group 4, period 6" built from cerium's row
+> would name hafnium's box; `elementFactsOf` derives the honest group (null off the main
+> body) and position asks require it. (2) Helium: the taught tall-column rule says 8, its
+> real outer shell is 2 — the valence gate requires rule == shells, so He DROPS. (3)
+> Hydrogen is group 1 and NOT an alkali metal — reactivity pairs gate on category, so
+> "reactivity grows down this family" is never spoken over a pair containing H. (4)
+> Compare menus carry an ear-separability blocklist: fluorine/chlorine,
+> beryllium/barium, selenium/tellurium. (5) Session invariant, strict form: an element
+> appears in ONE item per session in ANY role (answer or pair member) — both halves of
+> defect 2 with one rule; the pool is 118 wide and a session is 6.
+>
+> **WHAT THE JUDGED SURFACE HIDES:** the search bar (type "gold", get Au — the ask
+> answered), the category chips, and the tap-to-open element modal (shells on screen
+> during a valence item is the answer in PIXELS). The element card returns as the REVEAL
+> behind `revealHeld`, and the GRID gained real group/period AXES (classroom tables print
+> them; position asks are unanswerable without them) — the exploration face gets them too.
+> **EXPLORE FACE SURVIVES** (no challenges → the free table, modal, search,
+> [ELEMENT_SELECTED] beats); the generator emits challenges ONLY on an explicit
+> `targetEvalMode` pin — deliberately no intent-inferred flip of existing exploration
+> slots into judged sessions.
+>
+> **Files:** `chemistry-primitives/periodicTableScript.ts` (NEW — pack, gates, judging
+> contracts, harness answers, pools) · `PeriodicTable.tsx` (whole-file: structural fork +
+> judged face) · `chemistry-primitives/PeriodicTableGrid.tsx` (axes + reveal/wrong-tap
+> marks) · `service/chemistry/periodic-table-challenges.ts` (NEW — the code draw) ·
+> `chemistryGenerators.ts` (pin channel) · `catalog/chemistry.ts` (DI frame, audioInput,
+> contextKeys `['challengeType','stimulus']`, 18d-clean ladder, VERDICT-ENDS-THE-TURN
+> directive) · `evaluation/types.ts` + `types.ts` (PeriodicTableMetrics / Challenge) ·
+> `service/qa/di/diDrivePlan.ts` (adapter) · `__tests__/PeriodicTable.di-script.test.ts`
+> (NEW — 23 tests incl. the real-session-shape pack).
+>
+> **Gates:** `typecheck:lumina` **0 in-slice** (8 reported errors are a concurrent
+> session's WordFlip work) · full `tsc` zero in touched files · di-script **23/23** ·
+> diDrivePlan-adjacent suites **247/247** · probe: **270 randomized draws** (5 mode sets
+> × 50 + focus-category scoping), **0 drops, packGateIssues [] on every draw** · headless
+> `--di` GREEN on all modes: identify plain 1× (6/6 refused + 6/6 affirmed) · identify
+> **signature 3× (18/18 + 18/18 — "X, e" letters-back refused for xenon, neighbor-box
+> names refused, bare "K" refused where potassium's NAME was asked)** · trend **signature
+> 3× (18/18 + 18/18 — group label "14" refused where silicon's count is four)** · explore
+> 1× (**hands-hold beats SILENT, 0 audio bytes — the bracket hold enforced**, code-computed
+> verdicts spoken verbatim) · cap drill (identify) PASS + the family-shared
+> verbatim-repeat WARN, move-on clean. Reports:
+> `qa/tutor-reports/periodic-table-live-di-*-2026-08-19.md`.
+>
+> **Residuals (named, not hidden):** (1) mic row **#115** — the drives prove the judge's
+> SEMANTICS; element names under real ASR (long Latinate words, aluminium/aluminum) need a
+> sitting. (2) One browser look at the judged grid (reveal ring, axis labels, wrong-tap
+> flash) — jsdom cannot see it. (3) `--di-cap` on a TAP item is structurally unreachable
+> in the harness (its own error says so); the tap move-on is covered by pack gates only.
+> (4) The element-detail ENHANCEMENT (the user's Gemini-image idea) is assessed in the
+> slice report: the reveal card is the insertion point (pre-generate the session's ~6
+> answer elements at open, show on affirm) — a separate slice pending a user call on
+> cost/appetite; NOT live in-modal generation.
+
+> #### ✅ 2026-08-19 — `solar-system-explorer` IS ON THE JUDGED LOOP (all five eval modes). Mic row **#114**. User-pulled as a REIMAGINING: "this is the precipice of one that could seriously encourage wonder… a new framework of ones to come."
+>
+> **THE REIMAGINING IN ONE SENTENCE: the tutor asks about a living sky out loud, the child
+> answers out loud with a planet's name, and the screen spotlights, reveals and keeps
+> orbiting — it never asks, never checks, never advances.** The click era tapped a body,
+> pressed a separate confirm button, burned through a three-tries reveal ladder and a Next
+> button; the costume test cleared the whole board in one pass because every answer this
+> primitive ever graded IS a body, and a body has a short, closed-set, sayable NAME.
+> All five modes → `short_spoken_word` (benched), so the port ships on the standing rule —
+> no bench sitting owed. The TAP SURVIVES as what it honestly is: LOOKING. Zoom, pan and
+> the research card stay free during a question, the judging contract names them as
+> research, and the child's answer is only ever what they SAY.
+>
+> **THE FORK, per mode:** `identify` FLIPPED DIRECTION — "Tap Mars" (receptive, 1-in-N)
+> became a runner-gated SPOTLIGHT + "What planet is that?" (expressive naming, the actual K
+> standard; the receptive form cannot be spoken without naming the answer in the ask).
+> `order_from_sun` = closest/farthest/Nth by name · `classify` = say any member (affirm
+> deliberately names the CATEGORY, never a member, so it consumes nothing) ·
+> `compare_attribute` and `orbital_reasoning` each gained NAMED-PAIR facets ("which is
+> bigger — Jupiter or Mars?" / "which goes around faster?") beside the extremes — pool
+> density roughly tripled for orbital, and the pair menu clause is the one leak-exempt span.
+> βs HELD with per-mode rationale in the catalog.
+>
+> **SIGNATURE ERRORS DRIVEN, not asserted — this port's are unusually good teaching:**
+> "the Sun" for biggest planet (refused; the correction draws the star/planet line) ·
+> closest-is-hottest (Venus vs Mercury — the affirm names the trap out loud) ·
+> count-the-Sun on ordinal position (lands one planet short) · direction reversals on
+> order/orbital · big-means-gas on classify (Earth for gas giant) · neighbour confusion on
+> identify. All wired as per-facet `signatureWrong` in the adapter and refused live.
+>
+> **⭐ DEFECT CLASS 6 CONFIRMED LIVE ON THE FIRST DRIVE, THEN FIXED WITH A MEASURED
+> BEFORE/AFTER — the skill's prediction was exact.** identify's ask is near-empty BY DESIGN
+> (the spotlight is the question), and on 5 of 6 asks the tutor read the `[CURRENT STATE]`
+> block aloud before the ask. Fix = the two proven halves: counting-board's NEVER_PERFORM
+> tail (forbid announcing the STATE, not just reading the tag) + decodable-reader's
+> stimulus-states-its-own-non-speakability shape, plus the catalog taskDescription naming
+> the state line "for you alone, never read aloud". Re-driven: **0 of 6**.
+>
+> **⭐ DEFECT 2 AND DEFECT 11, both structural:** answer-once is session-wide (one facet
+> once; a body stars as a single answer at most once — the feed order is the ROTATION, not
+> tier-sorted, or identify would consume every planet before order/compare drew one — that
+> bug was caught by the suites before it shipped). Defect 11: body names are GENERATED, so
+> every item scans ALL on-screen names against its facet's vocabulary via the shared
+> `nameCarriesAny` ("Giant Jupiter" poisons biggest; "Speedy Mercury" poisons orbital) —
+> and the PIXELS half: body labels are withheld wholesale during identify items (a printed
+> name under the spotlit planet IS the answer), restored only by the `revealHeld` ring.
+> Plus a port-specific gate: orbital affirms teach "farther = longer year", so the build
+> gate requires the generated period table to actually be monotonic in distance — a
+> hallucinated table would put a false law in the tutor's mouth.
+>
+> **EXPLORE MODE SURVIVES AS A SECOND FACE, untouched:** no challenges (or all dropped) →
+> the original free-exploration surface with ORIENT/BODY_SELECTED/READ_ALOUD beats; one
+> catalog entry serves both faces, forked by `{{challengeType}}` (`free_explore` has its own
+> directive). The reader-fit suite passed against the rebuild WITHOUT EDITS.
+>
+> **Files:** `astronomy/solarSystemScript.ts` (NEW — pack, gates, judging contracts,
+> harness answers) · `astronomy/SolarSystemExplorer.tsx` (whole-file rewrite: SolarCanvas +
+> JudgedFace + ExploreFace) · `service/astronomy/gemini-solar-system-explorer.ts`
+> (structured facets; the final filter IS the script's `itemsFromChallenges`, imported never
+> copied) · `catalog/astronomy.ts` (DI frame, `audioInput`, contextKeys
+> `['challengeType','stimulus']`, 18d-clean ladder) · `service/qa/di/diDrivePlan.ts`
+> (adapter — all-spoken, no gesture builder) · `__tests__/SolarSystemExplorer.di-script.test.ts`
+> (NEW, 33 tests incl. the real-session-shape packs) · `__tests__/SolarSystemExplorer.di-stage.test.tsx`
+> (NEW — every eval-loop pin re-based, none deleted unreplaced). **Deleted:**
+> `SolarSystemExplorer.eval-loop.test.tsx` (re-based), the confirm button, the three-tries
+> ladder, Next/Finish, and seven improvised [SOLAR_*] answer-choreography sends. Census
+> greps 0 + 0 + 0 (comments included).
+>
+> **Gates:** `typecheck:lumina` **0 in-slice** (11 reported errors are a concurrent
+> session's WordFlip/RhymeStudio work) · full `tsc` zero in touched files · own suites
+> **33 + 12 + 16 + 8 + 11 all green**, component reader-fit untouched-and-green · **live
+> 10-probe pipeline run (5 modes × K/G4): 0 drops, packGateIssues [] on every draw** —
+> probe record: identify@K drew Mercury/Venus/Earth/Mars; compare@K correctly derived
+> Earth as biggest of an inner-planets sky with the Sun trap still armed; classify@K
+> legitimately empty (all-rocky sky → honest degrade to explore) · **headless `--di`
+> drives GREEN on ALL FIVE modes** (24 items; every signature wrong refused, every affirm
+> verbatim) **+ the `--di-cap` drill** (move-on path clean; 2 WARNs are family-shared
+> shapes: verbatim-repeat correction is the scripted method, asks-then-withdraws is
+> structural to every capped port that re-elicits). Reports:
+> `qa/tutor-reports/solar-system-explorer-live-di-*-2026-08-19.md`.
+>
+> **Residuals (named, not hidden):** (1) mic row #114 — the drives prove the judge's
+> SEMANTICS; only a mic sitting proves the acoustics of planet names from a child
+> (Mercury/Mars share an onset). (2) The spotlight/reveal choreography needs one browser
+> look — jsdom cannot see moving SVG (`[[feedback_svg-g-unclickable-jsdom-blind]]`).
+> (3) classify at K is structurally empty on an inner-planets sky — if a K classify pin
+> ever matters, the sky needs a giant, which is a GENERATOR content decision, not a script
+> gate. (4) `--runs 3` per mode is affordable follow-up; today's drives are 1 run per mode
+> on a no-reload uvicorn (the user's `--reload` server 1012s mid-session ~half the time —
+> harness note, not a port defect).
+
+### 25. 🎙️ **BUILT 2026-08-20, MACHINE-GATED — `association` is spoken. The live gates (8, 9) and the bench RUN (7) are OWED and need a running stack.** Executor: `/add-di-loop picture-vocabulary`
+
+> **⛔ THE CODE IS BUILT AND IN THE REPO — do not re-derive the design.** What is left is
+> RUNNING it, not writing it. Pick this up by starting the stack and driving, not by reading
+> the handoff from the top.
+>
+> **Shipped:**
+> - `association` left `TAP_KINDS` → `answerKind: 'voice'`, `responseClass: 'open_set_word'`
+>   (benched). `receptive_match` untouched — still gesture/manipulation, still a ruling.
+> - The open contract in `pictureVocabularyScript.ts`: an accept clause that AUTHORISES the
+>   unlisted partner and draws the line at the story, plus **six guards** (echo,
+>   rationalised-chain, category-word, same-category, nonword, off-task).
+> - **THREE scripted correction branches, specific ahead of the catch-all** — echo and
+>   category-word each got their own, per item 24's §5 finding. The general correction is now
+>   the LAST spoken span (`correctionLine` already takes `spans[len-1]`; no change needed).
+> - The correction models the relation on a **code-owned pair** (`MODEL_ASSOCIATION_PAIRS`,
+>   `pickModelAssociationPair` — avoids every session word), because an open correction cannot
+>   name the answer without killing the re-elicit. Affirm uses deixis: *"Yes, that goes with
+>   sock — they belong together."*
+> - `service/qa/di/associationBench.ts` — 4 stimuli × 12 probes over four RELATION types,
+>   seeded from the generator's own curated pair list. `benchBuild` wired on the adapter.
+> - Generator drops association's option cards **and the 3-distractor pool floor with them** —
+>   thin pools no longer starve the mode.
+> - F3 FIXED: `--di-bench` now honors `maxCorrections` (re-anchors after N refusals). Budget
+>   ~1.7 beats/probe, not ~1.4.
+>
+> **⚠️ OWED — all three need a running frontend + backend, which this slice could not do:**
+> 1. **Gate 7** — the bench run itself: `/tutor-test --di-bench picture-vocabulary`, recorded at
+>    `qa/di-bench/`. Gate = zero false affirmations in the hard REFUSE buckets. ~85 beats, so it
+>    should fit one session; `--di-bench-item` narrows it if 1008 bites.
+> 2. **Gate 8** — a live `--di --eval-mode association` drive AND a `--di-wrong signature`
+>    drive. The latter sends the ECHO and is the ONLY way to exercise the new §5 branch.
+> 3. **Gate 9** — a HUMAN-CHECKS mic row (re-grep for the next free ID immediately before filing).
+>
+> **⚠️ AND AUDIT THE KEY BEFORE BELIEVING ANY FINDING THAT INDICTS THE TUTOR.** Association is
+> more exposed to the item-24 instrument mistake than rhyme was, because "chain vs. honest
+> unlisted partner" is a judgment *I* made when authoring the fixture. Two probes are already
+> marked `soft` for exactly that reason (`mailman` for dog, `bowl` for cup).
+>
+> **Never edit anything under `backend/` while a run is in flight** — uvicorn `--reload` kills
+> the socket 1012. It cost a 96-beat bench at beat 6 on 2026-08-19.
+
+**FULL SCOPE (design rationale, already implemented): `qa/HANDOFF-di-picture-vocabulary-association-2026-08-19.md`.**
+
+> ⛔ **ITEM 24's §7 NAMED THE WRONG MODE.** It queued this as *"the tap becomes a name-it"* —
+> but **`naming` is already spoken** and always has been. The code comment it quoted
+> (*"PRODUCTION would be `open_set_word` — that is why it taps"*) is on `responseClassFor` and
+> refers to **`association`**. Do not "fix" naming.
+>
+> ⛔ **`receptive_match` STAYS A TAP.** Hearing a word and pointing at its referent is receptive
+> identification — the tap IS the skill, and that is a recorded ruling, not debt. Only
+> `association` taps because of the (now-lifted) block.
+>
+> **Why it is the right next port:** it is the HARDEST open-set case. Rhyme had a near-binary
+> rule (shares the rime + is a real word). *"Goes with"* is semantic, graded and
+> culture-dependent, so the failure mode is the judge **rationalising a chain** — *"a cat goes
+> with a sock, cats play with socks"*. The rhyme guards do not all transfer: ONSET-ONLY has no
+> analogue, and three new ones are needed (rationalised chain, same-category swap, category
+> word). If the guards hold here they hold for morphology and retell.
+>
+> **Three rulings the bench must settle first** (§2.3): is the relation symmetric; how wide is
+> "goes with" (`sock → foot`/`drawer` are honest and are NOT the generated partner); is a
+> category word ("clothes") right or wrong. **Getting one wrong blocks the mode on our error —
+> that is exactly what `zell` did on item 24.**
+>
+> **Carried in from item 24, all transferable:** the ECHO needs its own scripted correction
+> opening with the sentinel (5/9 items stalled without it, and removing a menu makes the echo
+> MORE likely); a validation gate keyed to the data you are deleting will silently empty the
+> mode (`holdsRhymeIntegrity` nearly did); **probe material is stimulus-specific** — three
+> harness miskeys in one day each filed a confident finding against a tutor that was right.
+>
+> **⚠️ OWED FIRST: F3** — the bench does not honor `maxCorrections`, so it manufactures contract
+> decay. Fix before this run's severity numbers can mean anything.
+
+### 24. ✅ **CLOSED 2026-08-19 — `open_set_word` benched AND the rhyme-studio pilot shipped. The word bank is deleted; the family has NO blocked response class left.**
+
+> **⛔ READ THE RESULT, DO NOT RE-DERIVE THE DESIGN — it is built and in the repo.**
+> `qa/di-bench/run-2026-08-19-open-set-word.md`. 72 probes / 6 rimes + a 26-probe confirmation
+> run. **The judge's affirm set across all 72 probes was exactly the 17 planted valid rhymes**
+> — no echo, no onset match, no semantic neighbour, no off-task turn, and none of the ten
+> genuine nonwords, `nake` included. Class → `benched`.
+>
+> **⭐ THE RUN'S ONE CORRECTION WAS TO OUR CONTRACT, NOT THE JUDGE.** The bench filed `zell`
+> (a SURNAME) as a nonword, the judge affirmed it, and that single miskeyed probe read as a
+> failure and briefly blocked the class. Chasing it produced a real capability: **names COUNT**
+> — a child who says "Bill" for "hill" or "Matt" for "hat" has done the skill. Confirmed live:
+> `Matt` affirmed, `zat`/`glat`/`drell`/`plell` still refused. **A bench's own key is a thing
+> that can be wrong, and a binary gate applied to a bad probe will block a whole modality.**
+>
+> **Shipped:** `open_production` mode + four-guard contract (`rhymeStudioScript.ts`) · the
+> rhyme-studio DI adapter (this port had NONE — `--di` could not reach it) · **`--di-bench` +
+> `DiPortAdapter.benchBuild` + scored probe keys** (reusable for every future class) ·
+> `reanchorCue` · `bench-probe` routed through the compliance oracles · every assertion that
+> pinned the block INVERTED rather than deleted, plus a new `has no BLOCKED response class left`.
+>
+> **✅ THE PILOT SHIPPED THE SAME DAY.** `production` did not become a new mode — it BECAME
+> open. Bank deleted from the script module, generator (schema + prompt + validator), component
+> render, catalog and the support-tier ladder. What the child does changed from *read four
+> words and say one* to **think of a rhyme** — recognition → generation.
+> ⭐ **THE K GATE WENT WITH IT.** The generator said production was Grade 1+ because *"its
+> word-bank distractors cannot be pictured"* — a fact about the BANK, not the skill. Open
+> production is purely oral, and producing rhymes is **K.RF.2.a**. Verified live at
+> Kindergarten: 9 items, 0 dropped, gates clean, generated challenges carry only the stimulus.
+> ⚠️ Near-miss worth remembering: `holdsRhymeIntegrity` dropped production items whose
+> `acceptableAnswers` held no real rhyme — with that list gone it would have dropped EVERY
+> production challenge and shipped an empty activity. It now gates the STIMULUS (the rime must
+> be the target's ending, because the tutor speaks it).
+>
+> **➡️ NEXT, in order:**
+> 2. **F3 (owed, blocks the next CLASS bench)** — the bench does not honor `maxCorrections`, so
+>    it drove up to 8 consecutive corrections where production caps at 2.
+> 3. **F2 watch** — the say-exactly grip decays across consecutive corrections (verbatim →
+>    embellished → off-script → bracket tags aloud + invented stimulus). Open items have no menu
+>    bounding wrong answers, so the cap is load-bearing here in a way it is not elsewhere.
+> 4. **The 11 packs this unblocks** — §7 of the handoff, `picture-vocabulary` first. Queue them.
+>
+> **Everything below is the ORIGINAL scoping, kept for design rationale. §4's bench spec is
+> BUILT — read the run record instead.**
+
+### 24. 🔝 **OPENED 2026-08-18 (user directive, APPROVED) — UNBLOCK `open_set_word`: spoken PRODUCTION. The last blocked response class, and the ceiling of the whole modality.** Executor: bench first (no skill), then `/add-di-loop rhyme-studio`
+
+**FULL SCOPE + DESIGN + BENCH SPEC: `qa/HANDOFF-di-open-set-word-2026-08-18.md`.** Read it
+before pulling. Summary only below.
+
+**The user ruling that is the design:** *"we need to trust the ai model to hear the answer
+and judge correctly... we dont need a full schema but we do need to specify the problem and
+allow the ai to judge and impact the screen."* Plus: *"rhyme studio we shouldnt need an
+answer bank for synthesis, trust the model."*
+
+So: the item carries a **problem specification** (the rule an answer must satisfy, plus what
+violates it), NOT an enumerated answer set. The judge hears the audio, rules against the
+rule, and its affirmation drives the screen through the sentinel scan that already exists.
+
+**Why it is the ceiling.** `judgedScriptContract.ts` has 12 response classes; 11 are
+`benched` or `accepted-build-ahead` and **one is `blocked`** — `open_set_word`, evidence
+line *"Open-set production has no bench."* It is cited as the reason for a tap, a word bank,
+or a printed menu in **eleven shipped packs**: rhyme-studio, picture-vocabulary,
+word-builder, addition-subtraction-scene, knowledge-check (slice 2b), decodable-reader,
+genre-explorer, sentence-analyzer, text-structure-analyzer, story-talk, di-spoken-practice.
+**Every judged port shipped to date is RECOGNITION.** This is the Bloom tier jump.
+
+**It is also what three user rulings were already reaching for.** rhyme-studio, letter-spotter
+and decodable-reader each struck down a button; each was resolved with `closed_set_choice` —
+*say which one* — **and the menu stayed on screen.** This class is the version with no menu.
+
+**The honest risk:** every shipped class is safe by closed-set arithmetic (the judge is handed
+the choices and told which is right). Remove the menu and that argument is gone. The failure
+mode is **false affirmation** — accepting a nonword, an echo of the stimulus, or an onset
+match. A child who says "hat" back to *hat* and hears "Yes!" has been taught the wrong thing.
+
+**Why it is cheap NOW and was not three months ago:** `/tutor-test --di` drives the loop
+headlessly, so standing gate 1's bench is machine-runnable — score a synthetic answer set
+(valid rhymes / echoes / nonwords / onset-only / semantic neighbours / silence) against a key
+before a child ever speaks. **Gate: zero false affirmations in the REFUSE buckets, over ≥3
+stimuli with different rimes.** A missed valid answer is a lesser fault than a false affirm —
+they are NOT symmetric, weight the gate accordingly.
+
+**Pilot = `rhyme-studio` synthesis, and the deliverable is DELETING THE WORD BANK** — the bank
+exists purely as this block's workaround (`rhymeStudioScript.ts:10` says so). `rhyme_hunt` (K)
+is recognition and keeps what it needs; `/primitive-contract rhyme-studio --check` first, fork
+on conflict. **Scope is synthesis only — the other ten queue behind the pilot's live probe.**
+
+⚠️ `RhymeStudio.di-script.test.ts:146` asserts *"would REFUSE a free-production item —
+open_set_word is still blocked"*. **Rewrite that test, do not delete it** — it becomes the
+guard that the echo and nonword refusals hold.
+
+### 23. 🧩 **OPENED 2026-08-18 (user directive) — KNOWLEDGE-CHECK RECALIBRATION: microstep item model + the composite judged-loop port.** Executor: slice 2 = `/add-di-loop knowledge-check`; slice 3 = catalog + floor edit (no skill).
+
+**The directive (user, 2026-08-18):** *"if you look at true false you'll see custom chrome for
+voice eval that could just go to di modality… for younger learners its pretty conceptually
+challenging to see a list of 5-6 items and read then group them, it feels like we could go to
+microsteps where we show the individual item, and ask the student which group? for di modality
+off, again i think the microstep would work better."* Both calls were already ruled by this
+family's own doctrine: the TF mic orb is interim `/add-voice-control` chrome the judged loop
+supersedes, and the categorization microstep is **defect class #1** ("a sort is one ask per
+word", word-sorter) applied to the tap surface. Blast radius note: knowledge-check is the
+most-routed primitive in the portfolio (Grade-1 census: 6/42 generated components, in every
+lesson) — contract-first on every slice.
+
+#### Slice 1 — ✅ SHIPPED 2026-08-18: categorization microstep tap surface (this session)
+- **Files:** `primitives/problem-primitives/CategorizationActivityProblem.tsx` (whole-file
+  rewrite, drag→microstep) + `CategorizationActivityProblem.microstep.test.tsx` (new, 5 pins).
+- **Shape:** one item at a time (shuffle kept), tap the group = the commit (groups are real
+  `LuminaAnswerChoice` buttons — keyboard + touch), per-item verdict beat (1.1s/2.2s), then
+  the next item. **One tap per item** — no per-item retry, so a 2-category item can't be
+  brute-forced by elimination; retry stays whole-problem. A missed item lands in its CORRECT
+  group marked ✗ (the board a student studies at the end is a true sort); `studentWork`
+  records the student's actual choice. Aggregate submission is byte-compatible
+  (`CategorizationActivityMetrics`, one submit after the last beat) so R7 (`::pN` gate) and
+  R8 (attribution) are untouched.
+- **Why now, beyond the directive:** the old surface was HTML5 `draggable`, which never fires
+  on touch devices — likely uncompletable on tablets, the primary K-2 device class.
+  (SequencingActivityProblem still has this defect — slice 2 converts it to a judged build
+  gesture, which retires the drag there too.)
+- **Gates:** vitest 5/5 (one-at-a-time, no-draggable, no-elimination, aggregate shape,
+  reset); `typecheck:lumina` — 0 errors from this slice (the 2 reported are the ordinal-line
+  lane's untracked `OrdinalLine.di-script.test.ts`, pre-existing). **Runtime:** NOT yet
+  browser-driven — HUMAN-CHECKS **#109** (real-Chrome + touch-emulation walk).
+
+#### Slice 2 — ⚙️ SHIPPED 2026-08-18 (machine gates + live build probes; drive + mic owed): the composite port, `/add-di-loop knowledge-check`
+**The FIRST cross-cutting port** — not a subject primitive but the assessment carrier, so one
+pack mixes six item kinds and one session switches response class between consecutive items.
+- **Files:** `primitives/knowledgeCheckScript.ts` (NEW — the pack: fork, build gates, cues,
+  contracts, harness answers) · `primitives/KnowledgeCheck.tsx` (whole-file rewrite: the
+  all-or-nothing fork + the judged surface + per-problem evaluation BRIDGES so the run still
+  submits `::pN` per problem — R7/R8 unchanged) · `primitives/KnowledgeCheckTapFlow.tsx`
+  (NEW — the extracted click-era flow = the DI-off surface, incl. slice 1's microstep) ·
+  `TrueFalseProblem.tsx` + `MultipleChoiceProblem.tsx` (interim voice chrome DELETED — the
+  user's original ask; `multipleChoiceVoiceReady` superseded by `choiceSpokenReason` in the
+  script, R6 re-based) · `evaluation/types.ts` (`KnowledgeCheckJudgedMetrics` — honest judged
+  metrics, no fabricated tap-shaped fields) · catalog `assessment.ts` (DI block, `audioInput`,
+  contextKeys `[challengeType, stimulus]`, both surfaces' directives) · drive adapter in
+  `diDrivePlan.ts` (all-or-nothing mirrored: a non-viable payload returns ZERO items).
+- **The all-or-nothing rule (this pack's own):** completion is gated per problem, so a judged
+  session that dropped one problem would strand the check — if ANY problem builds zero items
+  (sequencing/scenario/short_answer, a leaked stem, a duplicate answer), the WHOLE set renders
+  as taps. Partial drops within a problem are fine.
+- **Gates:** 28-pin di-script suite (testkit + real-session-shape second pack) 28/28 ·
+  `typecheck:lumina` 0 · census greps 0 on all four files · **live 3-probe build (REAL
+  Gemini): G1-recall "Animal habitats" → choice + 4-item Water/Land sort (fish/whale/bear/
+  rabbit) + choice, viable, pack gate-clean; G1-analyze "Why plants need sunlight" → choice +
+  true_false + choice, viable, clean; K-recall "Farm animals" → 2 picture choices, viable,
+  clean.** The microstep-spoken sort landed on the first live draw.
+- **Owed (named, not hidden):** ① headless drive `run_tutor_live.py --component
+  knowledge-check --di --runs 3` (+ `--di-cap`) — adapter registered, one command; ② mic row
+  **HUMAN-CHECKS #111** (per-kind wrong answers listed there); ③ slice 2b = sequencing as a
+  judged BUILD gesture (tap-reorder stage + `armStillness`) — today those sets fall back to
+  taps; ④ β recalibration question: the same eval mode is production when judged and
+  recognition when tapped — one β cannot price both; needs drive evidence before touching;
+  ⑤ `/primitive-contract knowledge-check --check` not run this slice (manual R-sweep only —
+  R1/R4/R7/R8 hold, R2's read-aloud beat survives on the tap surface, R6 re-based in place).
+The answer-material fork per problem type as designed (all shipped except sequencing):
+| type | fork | notes |
+|---|---|---|
+| `true_false` | spoken | accept clause MUST take "yes"/"no"; signature error = echoing the statement. Closes contract gap G3 (TF PRE parity) in the strong form — the loop IS the read-aloud surface |
+| `multiple_choice` (sayable) | spoken `closed_set_choice` | `multipleChoiceVoiceReady` already computes this exact fork — reuse it as the answer-kind split; short-form accept + `optionsEarSeparable` build gate (import from the script module, both sides of the wire) |
+| `multiple_choice` (katex/numbers/symbols) | tap (manipulation) | silence contract; numbers 1-20 MAY go `number_word_to_20` later |
+| `fill_in_blanks` | spoken | the verbatim ruled case (2026-08-13 letter-spotter drive): the child SAYS the missing word; no word-bank taps |
+| `matching_activity` | one ask per pair, spoken | bank stays WHOLE — the tap surface's last pair is elimination-forced today (defect class 3) |
+| `sequencing_activity` | gesture (build) | arrangement IS the answer; `runner.armStillness` close, retires its `draggable` |
+Container deletions per doctrine: both `ADVANCE_DWELL` timers (tutor-owns-the-clock),
+`[ANSWER_*]`/`[QUIZ_*]` sendText choreography for judged problems, AIHelperCard in DI
+sessions (scripted corrections cap at 2). Insets/visuals: the Live tutor is BLIND — the
+stimulus bridge is `serializeInsetForPrompt`; **extract the shared inset module first (item
+17 P1), never write the third copy.** Honest-scoring dividend: recognition→production where
+sayable, corrections capped, retry-until-N-of-N inflation gone.
+
+#### Slice 3 — QUEUED: catalog + K floor widening (after slice 1 is browser-verified)
+Catalog `description` drops the phantom "scenario, short answer" prose (it steers the
+manifest; the orchestrator never plans them) + the port's Step-5 DI block rewrite. Widen
+`PRE_READER_PROBLEM_TYPES` to admit microstep categorization at K (picture-card + spoken
+"which group?"), which un-degenerates `analyze` at K from MCQ-only sets. Needs the
+generator's K palette to emit emoji on categorization items.
+
 ### 22. 🔝 **OPENED `/pm` 2026-08-16 (later) — THE CLOSED-SET LITERACY FRONTIER. Five primitives that a portfolio table called BLOCKED are answerable with the judge we already shipped.** Executor: `/add-di-loop`, one per slice.
 
 **WHY THIS EXISTS: a roadmap-level verdict was derived from descriptions instead of answer
@@ -2778,7 +3354,587 @@ it may be constrained production rather than free — decide it at the pack.
   - **19h(iii). QUEUED —** the §1 census greps become a vitest rule over every component importing `useJudgedScriptRunner` (two shipped ports already violate the comment clause). Executor: direct edit.
 - *(19-adjacent, already filed: 18a `numberWordFor` ×3 — fold into 19f's barrel if convenient; 18b ✅ rode 19c and shipped with it 2026-08-15.)*
 
-### 18. 🔢 **P1 SHIPPED 2026-08-13 + DRIVEN (6/6 refusals) · P2 `addition-subtraction-scene` SHIPPED 2026-08-14 · `number-bond` SHIPPED 2026-08-14 (the P3-correction port) · P3 (#63) = THE REMAINING GATE — THE DI MODALITY ON MATH PRIMITIVES (user thread 2026-08-12: *"would there be value adding /add-di-loop to any of those? for example ten frame… addition subtraction scene may benefit from speaking aloud instead of typing"*)**
+### 18. 🔢 **P4 OPEN — `place-value-chart` SHIPPED 2026-08-18 (math port 8, THE FIRST PAST THE ≤20 BENCH: new `place_value_word` class accepted-build-ahead on the user's 2026-08-19 ruling, mic **#113** = the #63 acceptance material itself) · `ordinal-line` SHIPPED 2026-08-18 (math port 6, all 5 eval modes, mic #110; its "unbenched ordinal words" gate was FALSE IN CODE) · `compare-objects` SHIPPED 2026-08-17 (4th math port, mic #107) · P1 SHIPPED 2026-08-13 + DRIVEN (6/6 refusals) · P2 `addition-subtraction-scene` SHIPPED 2026-08-14 · `number-bond` SHIPPED 2026-08-14 (the P3-correction port) · `shape-sorter` SHIPPED 2026-08-18 (5th port, 3/3 modes spoken, zero taps, mic #108) · P3 (#63) = THE REMAINING GATE — and #113 folds INTO the #63 sitting — THE DI MODALITY ON MATH PRIMITIVES (user thread 2026-08-12: *"would there be value adding /add-di-loop to any of those? for example ten frame… addition subtraction scene may benefit from speaking aloud instead of typing"*)**
+
+> #### ✅ 2026-08-18 — `place-value-chart` IS ON THE JUDGED LOOP (all four eval modes). EIGHTH math port — THE FIRST PAST THE ≤20 BENCH. Mic row **#113**, which IS the #63 acceptance material. User-pulled ("what about place value chart? this feels like a high value one?"), same session as the ruling that unblocked it.
+>
+> **⭐ THE ≤20 "RESTRICTION" WAS RE-READ IN CODE AND RULED BUILD-AHEAD — the ordinal-line
+> lesson, applied to a CLASS instead of a primitive.** The user asked whether
+> `number_word_to_20` was "a fake restriction"; the register's answer is that the bench is
+> real (the child's spoken numerals >20 are unverified BY EAR — the session log the user
+> cited had `audio_input: null` and a component grading every answer) but the registry has
+> never treated it as a block: `number_word_to_120` has shipped accepted-build-ahead gated on
+> #63 since item 10. This port adds **`place_value_word`** on the same pattern (user ruling
+> 2026-08-19 recorded in `judgedScriptContract.ts`): ONE digit's worth, 1-2 tokens from
+> closed sets ("forty", "three hundred", "ninety thousand"). **The composed numeral is
+> deliberately NOT in the class — the child never says one.** Where a whole number is the
+> material, the TUTOR dictates it and the child answers with hands, which is what keeps the
+> #63 exposure small and named.
+>
+> **THE FORK — two spoken, one written, and the catalog had already confessed.** The click
+> era's Phase 2 asked *"How do you SAY this digit's value out loud?"* through four buttons —
+> the purest costume since ordinal-line's "Name ordinal position" tap. Ships as:
+> `find_place` → SPOKEN place name (`short_spoken_word`) · `say_value` → SPOKEN value word
+> (`place_value_word`) · `build_number` → WRITTEN digits (`manipulation`, stillness close
+> 4000/1500ms) — and the build changed its STIMULUS, not just its grader: the click era
+> printed the target ("Now build 247") above the chart, a copy task; the number NEVER prints
+> now — the tutor DICTATES it and hearing "four hundred six" → 4-0-6 (not 46) is the whole
+> skill. Betas raised 0.5 across all four modes (menus → unaided production; print-copy →
+> dictation), rationale per mode in the catalog.
+>
+> **⭐ ANALYZE AND DICTATE CHALLENGES ARE DISJOINT — the port's own leak-gate shape.** A
+> number printed for two asks cannot then be "dictated" (echo-copy), and a dictated number
+> speaks its digits' value words ("two hundred forty-seven" contains "forty"), so a later
+> value ask about them is recall. `itemsFromChallenges` gives each challenge ONE role,
+> strictly alternating over KEPT challenges (`build` mode starts on dictate — construction is
+> its identity), value words are session-deduped against everything SAID (asks + dictations),
+> and no two consecutive items ever share an action — pinned, and the reason the repeat-ask
+> gate is structurally quiet here.
+>
+> **THE CHART IS AN ANSWER KEY IN PIXELS — the FOURTH port in a row** (ten-frame's counter,
+> compare-objects' unit boxes, ordinal-line's labels, now the column headers): while the ask
+> is "which place is it in?", labeled columns above the glowing digit ARE the answer, so
+> analyze items render the NUMERAL ONLY; the labeled chart appears exactly where it is the
+> page (build items — the answer is which digit goes under each label) and in the reveal.
+> Same rule deleted the "Target: 247" print and the green match-coloring on the live readout
+> (a Check button that presses itself visually); the readout survives as the child's own
+> trace, neutral at every tier. "Ten thousands"/"thousands" is sorting-station's
+> subset-pair lesson in place vocabulary — the contract demands the "ten" at place 4 and
+> names bare "thousands" as the wrong-column miss.
+>
+> **⭐ TWO DEFECTS THE HARNESSES CAUGHT THAT I HAD RATIONALIZED, both fixed and re-gated:**
+> 1. **The live probe caught the variety rule suppressing honest asks** — v1 dropped any
+>    place ask repeating the previous place; but every challenge is a NEW number, so that is
+>    fresh skill (the sorting-station closed-set shape). Now only the IDENTICAL TWIN (same
+>    place AND digit — a byte-identical ask, and the same place-value fact) suppresses.
+> 2. **The cap drill confirmed a HIGH: the ones-place value ask contained its own answer**
+>    ("The glowing FIVE is in the ones place. What is it worth?" → "five") — I had called it
+>    the degenerate-rung collapse; the oracle called it echoable, and the oracle is right.
+>    Fixed CLASS-WIDE: the say_value ask no longer names the digit at ANY place — reading it
+>    off the screen is the child's half of the composition. Re-driven: cap drill 0 HIGH.
+>
+> **Files:** `math/placeValueScript.ts` (NEW — pack, gates, judging contracts, harness
+> answers) · `math/spokenNumberWords.ts` (NEW — **the 18a extraction finally done**: one home
+> for integer words 0..999,999 + `digitValueWord` + place vocabulary; the counting-board and
+> di-spoken-practice copies still stand, migration filed in 18a) · `math/PlaceValueChart.tsx`
+> (whole-file rewrite) · `service/math/gemini-place-value.ts` (imports the gates, KEEP-OR-DROP
+> with warnings that name their reason; pool-service generator, so Gemini only writes the
+> title — the content surface is code) · `catalog/math.ts` (DI frame, `audioInput`,
+> contextKeys `['challengeType','stimulus']`, 18d-clean ladder at birth, the [CURRENT STATE]
+> block named literally per sorting-station's fix) · `service/qa/di/diDrivePlan.ts` (adapter;
+> gesture payload = the whole written number) · `hooks/judgedScriptContract.ts` (the
+> `place_value_word` registry entry) · `__tests__/PlaceValueChart.di-script.test.ts` (NEW,
+> 40 tests incl. the rotation pins and a duplicate-item pack proving the repeat-ask gate is
+> awake). **Deleted:** both MC grids + Check buttons, the printed build target, Next Number,
+> the hint ladder, two 1200ms phase-advance timers, the improvised commentary channel (nine
+> pushed turns). Census greps 0 + 0 + 0.
+>
+> **Gates:** `typecheck:lumina` **0 in-slice** (the 1 reported error is a concurrent
+> session's deleted `gemini-word-flip.ts`) · full `tsc` 804, **zero in touched files** ·
+> own suite **40/40** · full vitest **4063 passed / 1 failed** (the known
+> `intentConsumptionContract` naming the concurrent `gemini-sentence-analyzer`; the confetti
+> teardown is the filed solar-system one) · **live 6-probe pipeline run, one per eval mode +
+> both tier forks, deleted after — ZERO drops, packs green on live content.** Drawn:
+> `identify@medium(46,43,79,81)` · `identify@easy(82,26,42,24)` · `build@medium(358,189,211,551
+> — dictate-first)` · `compare@medium(2321,9883,8465,2441)` ·
+> `expanded_form@medium(57397,85987,92442,43224)` · `expanded_form@hard(77495,46265,49839,12837)`.
+> · **Headless judged drives** (`qa/tutor-reports/place-value-chart-live-di-*-2026-08-18.md`):
+> compare plain — all verdicts as scripted, the hands turn SILENT (0 audio bytes) · compare
+> signature **5/5 refused + 5/5 affirmed** (the value said for the place, the bare digit for
+> the worth) · identify signature clean · build signature clean (wrong chart → the foreign
+> model walk on 306, never the target's own columns) · expanded_form signature clean
+> ("eight thousand" affirmed; the 5-digit dictation "fifty-two thousand two hundred ten"
+> affirmed on the written commit) · **cap drill after the leak fix: 0 HIGH**; residual WARNs
+> are the family's 18c pair (verbatim-repeat ×2 — this contract COMMANDS it — plus
+> asks-then-withdraws), inherited by construction.
+> **Transport note:** three drive attempts died to the backend restarting mid-session (1012 /
+> handshake) — concurrent-session churn on a `--reload` server plus, initially, this
+> session's own log files landing in `backend/logs/` and poking the reloader (cleaned; do not
+> log into `backend/logs` during drives). All four modes were re-driven green after.
+>
+> **RESIDUALS (filed, not fixed):** (a) **mic row #113 is the #63 acceptance material** —
+> the -ty/-teen ear, the thousands/ten-thousands subset pair, and the two-token values are
+> exactly what that sitting owes; one sitting closes both and unblocks the >20 tier; (b) the
+> a/an article fix in the affirm/model lines post-dates the drives (wording-only,
+> suite-gated; the next drive re-covers it); (c) the drive reports overwrite per kind, so
+> the `-plain` file now holds the cap run — the per-drive evidence lives in this block and
+> the task log; (d) no browser run — **should work; needs a browser check on the glow
+> render, the digit-input focus flow, and the reveal band**; the machine gates and drives
+> prove the pack and the judge's semantics, not the loop a child is in; (e) decimals are
+> out of the judged form (no benched spoken class) — the catalog says so; a future
+> decimal rung is a new response-class conversation, not a config flip.
+
+> #### ✅ 2026-08-18 — `ordinal-line` IS ON THE JUDGED LOOP (all five eval modes). Math port 6. Mic row **#110**. Brief: `qa/HANDOFF-di-ordinal-line-2026-08-17.md`, executed as scoped.
+>
+> **⭐ THE BLOCKER WAS FALSE, IT WAS FALSE IN CODE, AND IT COST THREE MONTHS.** This register
+> said from 2026-08-14 that `ordinal-line` was gated by RESPONSE CLASS — *"ordinal words are
+> unbenched"*. `ordinal_word` is `status: 'benched'` in `judgedScriptContract.ts` and always
+> was. One stale doctrine line, copied forward by session after session, kept the primitive
+> off the Class-A list until port 4 had to be found OFF-LIST (`compare-objects`), and it was
+> struck on 2026-08-17 by the session that wrote the brief. **The second half of the same line
+> — *"`identify` is a tap anyway"* — was not a reason, it was THE DEFECT:** the catalog labels
+> mode 1 *"Identify — **Name** ordinal position"* and the interaction was a button. A mode
+> whose own label is a speech act and whose surface is a tap is the purest costume the lane has
+> found since compare-objects' attribute chips.
+>
+> **THE FORK AS SHIPPED — four spoken, one placement, and one band-split inside a single eval
+> mode.** `identify` (K+1) → **SPOKEN**, forked by DIRECTION · `match` (K+1) → **SPOKEN**
+> ordinal word (`ordinal_word`) · `relative_position` (K+1) → **SPOKEN** character name
+> (`short_spoken_word`) · `sequence_story` (K+1) → **SPOKEN** ordinal word (`ordinal_word`) ·
+> `build_sequence` (K+1) → **ARRANGED** (`manipulation` — the arrangement IS the answer, the
+> third unsayable shape; precedent compare-objects `order_three`, number-bond `decompose`).
+> No new response class, no bench sitting, no #63: `maxPosition` is code-clamped to 10, so
+> every place word a child ever says is inside the benched `first..tenth` window.
+>
+> **⭐ `identify` FORKS BY DIRECTION, AND THE TWO DIRECTIONS ARE DIFFERENT SKILLS** (the one
+> design decision the brief made the port take deliberately rather than discover, open decision
+> 1 — **taken as recommended**). Direction A, *"Who is third?"* → the child says the CHARACTER'S
+> NAME; the ordinal is in the ASK. Direction B, *"What place is the Fox in?"* → the child says
+> the ORDINAL WORD; the ordinal is the ANSWER. **Only B produces the vocabulary the mode is
+> named for**, but A is the easier rung and is genuinely what a K teacher asks first — so both
+> ship, BAND-SPLIT (A at K, B at Grade 1), as ONE eval mode decided in `itemFromChallenge` from
+> `band`. Not two modes: same task identity at two difficulties, the βs are already spent, and
+> a split would cost a catalog change and an IRT re-anchor for no measurement gain. Recorded in
+> the catalog `description` so the manifest routes on it, and **both directions are
+> drive-covered** (the harness defaults to Grade 3, i.e. Direction B only — `--grade
+> Kindergarten` is what reaches the other half, and a port that forks by band owes that run).
+>
+> **⭐ THE FORK HAS A PROPERTY WORTH CARRYING FORWARD: IT IS LEAK-CLEAN BY CONSTRUCTION.** Each
+> direction names the thing the OTHER one wants, so neither ask can contain its own answer.
+> `relative_position` names an anchor and wants a neighbour; `match` names nothing at all. **The
+> only `leakExemptSpan` in the whole pack is the story**, whose stimulus IS the answer key —
+> the first math port since story-talk to need one span and only one.
+>
+> **⭐ THE BRIEF GOT ONE MODE'S SHAPE WRONG, AND THE CORRECTION MADE THE PORT BETTER.** §2's
+> table calls `sequence_story` multiple choice. It was not: the component rendered it through
+> `renderBuildSequence(false)` and graded it with `checkBuildSequence` — **byte-for-byte the
+> same drag-into-slots interaction as `build_sequence`**, differing only in whether the clues
+> printed as a list or as prose. Two eval modes with two βs measuring one interaction is not a
+> fork, it is a duplicate. Spoken, they separate properly: the story is a LISTENING task (track
+> a narrative, say a place) and the build is a PLACEMENT task (hear the clues, arrange the
+> line). ASS's `solve_story` is the precedent. **The story text no longer prints** — a
+> pre-reader could never use it and a reader who re-reads it is not listening — and tap-to-hear
+> reads the whole story again, which is what replaces re-reading.
+>
+> **FIVE CONTENT FINDINGS THE SPOKEN ASK AUDITED OUT.**
+> 1. **⭐ THE ORDINAL LABELS ARE AN ANSWER KEY IN PIXELS — THE THIRD PORT IN A ROW WITH THIS
+>    DEFECT** (ten-frame's running counter, compare-objects' numbered unit boxes, now this).
+>    `showPositionLabels` rendered `getOrdinalLabel(pos, labelFormat)` under EVERY character —
+>    literally `3rd (third)` at `labelFormat: 'both'` — and on Direction B the label IS the
+>    answer, verbatim. Held behind `runner.revealHeld`; the counting walk moved into the
+>    CORRECTION, where it is earned. **The tier flag survives as a flag and no longer
+>    scaffolds**, which is the honest read: it was never a scaffold once the answer was spoken.
+> 2. **THE MATCH GRID PRINTED ITS OWN ANSWER KEY TWICE OVER** — the word column sat beside the
+>    symbol column, and the column CONSUMED its entries, so the last pair of every grid had one
+>    option left and needed no reading at all (word-sorter's elimination leak, second sighting).
+>    One judged ask per symbol, one card on screen, no word column.
+> 3. **A CHARACTER NAME MAY NOT CARRY AN ORDINAL** — defect class 11, one primitive old.
+>    *"First-Place Freddie"*, *"Number Three"*, *"Winner Wanda"*. **Generalised rather than
+>    re-written** (see the shared module below); the refuse-list includes CARDINALS too, because
+>    a *"Three-Toed Sloth"* on a line whose third place gets asked hands the child the exact
+>    wrong answer the pack exists to refuse.
+> 4. **THE ASK MUST NAME WHICH END IS THE FRONT.** `context` draws a different start label per
+>    theme (`START` / `Engine` / `Left`) and a pre-reader cannot read it. *"Third"* is
+>    meaningless without it, and counting from the wrong end is this primitive's #1 recorded
+>    misconception — so every line-reading ask STATES THE FRONT ALOUD (*"Start counting at the
+>    engine…"*).
+> 5. **`correctAnswer` COULD DISAGREE WITH `targetPosition`.** Both fields were live and
+>    `checkIdentify` just did `Number(correctAnswer)`, so the checker graded against the key
+>    while the line was drawn from the target. Spoken, that is the tutor refusing a child who
+>    counted correctly. Normalised once in the generator, DROPPED on disagreement in the pack.
+>
+> **THE SIGNATURE ERRORS ARE UNUSUALLY GOOD HERE — BOTH WERE ALREADY IN `commonStruggles`.**
+> (i) **COUNTING FROM THE WRONG END**, computed per item in CODE as `n + 1 − k`, with an
+> honest fallback: on the exact middle of an odd line the mirror image IS the answer, so the
+> clause falls back to the ADJACENT place (the catalog's third recorded struggle) rather than
+> inventing an error. (ii) **CARDINAL FOR ORDINAL** — *"three"* for *"third"* — **WRONG and
+> corrected, never leniently accepted**, because it is the confusion the ordinal modes exist to
+> undo. It is also the pack's sharpest teaching moment: the correction runs a CARDINAL counting
+> walk, lands, and names the ordinal (*"Three tells how many; third tells which one."*), so the
+> child hears both words attached to one count in one breath.
+>
+> **⭐ OPEN DECISION 2 — THE NAME GATES ARE LIFTED, NOT COPIED.** New
+> `math/spokenNameGates.ts` owns `isSayableName` / `namesEarSeparable` / `contentWordsOf` plus
+> the **parameterised** `nameCarriesAny(name, list)`; `compareObjectsScript` RE-EXPORTS what it
+> used to define, so its public API, its generator's imports and its 43-test suite are
+> untouched — one definition, two import paths, no drift. The brief's counter-argument (a
+> premature shared module is how `numberWordFor` ended up in two copies) is answered by the
+> SHAPE rather than the decision. **The generalisation that matters is the refuse-list being a
+> parameter:** defect class 11 has now bitten twice with an identical scan and a different
+> vocabulary, so a third port adds a word list, not a scanner.
+>
+> **ONE CHALLENGE IS NOT ONE ITEM** (defect class 1, first use in math): a match grid expands
+> to one judged ask PER SYMBOL. Session dedup is SESSION-WIDE on the position an ask is ABOUT,
+> plus **two answer sets kept apart** — `relative_position`'s answer sits at anchor ± 1, which
+> the position set does not cover, so two asks about different places can share one answer
+> ("Bear is fourth" makes "who is right after the third one?" free). The two answer sets cannot
+> currently COLLIDE only because the name gate refuses a character called "Third"; the
+> separation is what keeps that true if the name gate ever loosens (port 7 merged its two and
+> ran the pool dry).
+>
+> **THE CEILING MOVED WHEN THE CLUES STOPPED BEING PRINTED.** `build_sequence`'s `hard` tier
+> emitted one clue per character — up to ten — which is fine to READ and impossible to HOLD
+> from speech. `MAX_SPOKEN_CLUES = 4`, enforced on BOTH sides (the gate drops, the generator
+> stops producing), because a gate that dropped every hard-tier item would delete a tier.
+> `scrambleClues` is what makes `hard` hard now: the same four clues, said out of order — and
+> the probe confirms it live (*"The Kangaroo goes fourth. The Zebra goes third. The Tiger goes
+> first. The Elephant goes second."*). Same reasoning caps the story cast at 5: a listening task
+> over ten characters is not harder, it is unanswerable.
+>
+> **⭐ THREE DEFECTS I INTRODUCED, ALL CAUGHT BY MY OWN GATES BEFORE THE DRIVE — and the
+> revert-bites are what found two of them, which is the argument for bothering with them.**
+> (i) **THE GAPPED LINE WAS BEING COMPACTED**: the stage passed `placed.filter(Boolean)` to the
+> verdict cue, so a child who filled the first and THIRD places was reported to the tutor as
+> having filled the first and SECOND — a board that is not on the screen, and the wrong error in
+> the Tier-A evidence. Carried SPARSE now, with empty places named aloud to the judge.
+> (ii) **THE GRADE 1 REVEAL PRINTED "third — third"**: the reward echoed `answerText`, which on
+> the direction whose ANSWER is the ordinal is the same word twice. The reveal is the PAIRING
+> now (who, and which place) in both directions — at K the child said "Fox" and learns it was
+> third; at Grade 1 they said "third" and see it attached to the Fox. **Found only because a
+> revert-bite showed the 18b pin was passing for the wrong reason** — `getByText(/third/)`
+> matched the LINE LABEL, not the reward, so it passed whichever gate the stage used.
+> (iii) **`armBuildSettle` was called from inside a `setState` updater**, so StrictMode's
+> double-invoke would arm two live stillness windows racing to commit one board.
+>
+> **βs — HELD ×3, RAISED ×2, and the two that moved RESTRUCTURED.** `identify` **1.5 held**
+> (the tap became speech over the same visible line, so the guess floor is unchanged; what
+> changed is that the vocabulary leaves the child's mouth, which is the mode's own label and not
+> a tier). `match` **2.5 → 3.0** (the word column is deleted, so there is no menu to match
+> against AND the elimination leak goes with it — production replaces recognition).
+> `relative_position` **3.5 → 4.0** (a 1-of-4 MENU deleted outright, the story-talk /
+> letter-spotter precedent — the guess floor went with it). `sequence_story` **4.5 held** (the
+> demand moved CHANNEL, not level: narrower ask, no text to re-read). `build_sequence` **5.5
+> held** (same hands surface; only the Check button became a stillness close, and a part-filled
+> line now commits and is corrected where it used to be refused with a nudge).
+>
+> **Files:** `math/ordinalLineScript.ts` (NEW — pack, build gates, code-computed placement
+> verdict, harness answers, `ordinalLinePackBase`) · `math/spokenNameGates.ts` (NEW — shared,
+> see open decision 2) · `math/OrdinalLine.tsx` (whole-file rewrite) ·
+> `math/compareObjectsScript.ts` (re-exports the lifted gates; behaviour unchanged) ·
+> `service/math/gemini-ordinal-line.ts` (imports 8 gates from the script; character line
+> sanitised; identify key derived once; match pairs validated against the ordinal sequence;
+> story gated by `isSpeakableStory` on BOTH generation paths; clue ceiling; **every fallback
+> rebuilt to pass the new gates** — this generator is on the 33-generator silent-fallback list,
+> and compare-objects proved a failing fallback ships EMPTY rather than degraded) ·
+> `catalog/math.ts` (DI frame, `audioInput`, `contextKeys`, `misconceptionScope`, 5 eval-mode
+> descriptions + β comments) · `service/qa/di/diDrivePlan.ts` (adapter registered at ship —
+> the first whose `build` must read `gradeBand` off the payload, because the answer material
+> forks by band) · `__tests__/OrdinalLine.di-script.test.ts` (NEW, 66 tests).
+>
+> **Deleted:** `handleCheckAnswer` and all four checkers, the Check control, the Next control,
+> the multiple-choice option rows, the match grid, the tap-to-select on the character line, the
+> printed instruction, the printed story, the printed clue list, the feedback strings that named
+> the position out loud (*"That's the ${ordinal} position"* — an answer print), the
+> after-two-attempts hint panel, the old tutor hook with all of its improvised turns, and
+> `tutorRevealPolicy`. **Survives:** the character line, the marked reference place
+> (`highlightTarget` — the ask NAMES it aloud, so it is public), the context theming, and
+> `showSlotLabels` on `build_sequence` (there the answer is WHICH PICTURE goes where, not what
+> the place is called, so numbered slots are the page rather than the key — the ten-frame R6
+> boundary).
+>
+> **Gates:** `typecheck:lumina` **0** · full `tsc` **803 = baseline, 0 errors in any touched
+> file** · census greps **0** (voice hooks, advance timers, `AUTO_ADVANCE`, and no `setTimeout`
+> anywhere in the component) · **77 tests across 2 NEW suites, 8 REVERT-BITES** — 66 pure
+> (`OrdinalLine.di-script.test.ts`: the ordinal-in-name refusal, the identify key/target
+> agreement, `isSpeakableStory`, the greeting/how-to-play ordinal ban, the story-middle filter,
+> the answer-dedup) plus 11 render (`OrdinalLine.di-stage.test.tsx`, which exists for ONE reason
+> the pure suite structurally cannot cover: **this port's leak is in PIXELS, and every gate in
+> the DI family scans text** — bites on the label leak and on the 18b reveal gate) · full vitest
+> **3981 passed / 1 failed**, the failure being `intentConsumptionContract` on
+> `gemini-sentence-analyzer.ts` — **a previous port's, in a file this slice never touched**.
+>
+> **LIVE PROBE — 10 cases, all five eval modes × BOTH bands × three tiers. 0 gate issues, 0
+> leaks, 0 modes without askable items.** Drawn: `identify@K` parade / Elephant, Monkey, Zebra,
+> Giraffe, Lion (5 items) · `identify@G1 hard` train / Lion, Monkey, Elephant, Giraffe, Zebra,
+> Hippo, Kangaroo, Panda, Koala, Tiger (7 items) · `match@K` 5 items of 7 challenges ·
+> `match@G1` 9 items · `relative_position@K easy` 4 items · `relative_position@G1 hard` 4 items
+> · `sequence_story@K` 3 items ("The grand parade starts with the big elephant marching in first
+> place and a cheeky monkey swinging right behind in second…") · `sequence_story@G1 hard` 3
+> items over Dancing Bear / Marching Penguin / Bouncing Frog / Singing Lion / Spinning Panda ·
+> `build_sequence@K` 4 items, 3 clues in order · `build_sequence@G1 hard` 4 items, 4 clues
+> SCRAMBLED. **The drop counts are the dedup working, not faults:** `match@K` yields 5 items
+> from 7 challenges because a 5-long line has only five places, and `relative_position` yields
+> 4 of 7 because the generator emits both before- and after- tuples on one anchor.
+>
+> **HEADLESS JUDGED DRIVES — `/tutor-test --di`.** Every eval mode, both bands, and the
+> cap drill. **`identify` @ Grade 1 (Direction B, the ordinal ANSWER): 14/14 refused + 14/14
+> affirmed ×2 runs — and the "plain" wrong for that direction IS the cardinal, so the pack's
+> sharpest claim was drilled by the default drive.** `identify` @ **Kindergarten** (Direction A,
+> the character NAME, `--grade Kindergarten`): **10/10 + 10/10**, the signature wrong being the
+> WRONG-END character, refused every time. `match`: **12/12 + 12/12**, signature = the cardinal.
+> `relative_position`: **12/12 + 12/12**, signature = the ANCHOR the question points at.
+> `sequence_story`: **6/6 + 6/6**, signature = the cardinal — **and this is the strongest single
+> result in the run, because the tutor had just READ THE ANSWER ALOUD in the story and still
+> refused "three" then affirmed "third".** `build_sequence` (hands): **8/8 + 8/8** placements,
+> the reversed line refused and the correct one affirmed, tutor SILENT through every commit.
+> **Cap drill (`--di-cap`): 0 HIGH, 2 WARN, and both are the known open 18c pair** — the
+> verbatim correction repeat (which this contract deliberately COMMANDS) and the capped item
+> that asks then withdraws. **`di-no-verdict` never fired**: 18d was authored in from birth
+> rather than reproduced-then-fixed. No `di-tag-spoken`, no `di-answer-leak-in-ask`, no
+> `di-verdict-embellished` — **0 of 62 affirmations embellished**, every one the bare scripted
+> line, which is another data point for 19h-i-c pointing the same way as the other clean packs
+> (this pack carries the extended `NEVER_PERFORM` tail plus `VERDICT_ENDS_THE_TURN` on every
+> cue). Reports: `qa/tutor-reports/ordinal-line-live-di-{identify-K,identify-G1,match,
+> relative-position,sequence-story,build-sequence,cap}-2026-08-18.md` — **saved per mode by
+> hand, because the harness names its report by WRONG-KIND and a later run silently overwrites
+> an earlier one** (word-builder's residual (a), hit again here).
+>
+> **Mic row #110 filed** — and it is the sharpest ear question this lane has had, because the
+> pack's own contract makes a **word-final /θ/** the difference between right and wrong: *four*
+> → *fourth*, *six* → *sixth*. `--di` sends clean text, so it cannot see either failure
+> direction — a child who says "fourth" and drops the fricative being REFUSED while right (the
+> worst failure this family can produce), or a child who says "four" being AFFIRMED while
+> holding the misconception the lesson exists to remove.
+>
+> **Residuals, filed not fixed:** (a) `relative_position` yields ~4 items per session under the
+> position dedup, which is inside `mastery-over-demo`'s 3-6 band but at its floor — the lever if
+> it needs widening is the generator emitting more distinct anchors, not a looser gate;
+> (b) the story mode can ask about the same CHARACTER across consecutive items (different
+> stories, different answers, so not recall) — monotonous rather than wrong, and deduping the
+> asked character would shrink an already 3-item mode; (c) `match` at Kindergarten asks a
+> pre-reader to read `1st`..`5th` as sight symbols — defensible as a small closed set and the
+> age-friendly reading of `make-age-friendly-not-band-floor`, but it is a reader-fit question
+> this port did not run; (d) the two `--di-cap` WARNs are the known open **18c pair** (the
+> verbatim correction, which this contract deliberately commands, and the capped item that asks
+> then withdraws).
+
+
+> #### ✅ 2026-08-17 — P4 OPENS: `compare-objects` IS ON THE JUDGED LOOP (all four eval modes). FOURTH math port, DI port 21. Mic row **#107**.
+>
+> **WHY THIS ONE, off a list where every remaining named Class-A candidate was taken or gated.**
+> Item 18's own taxonomy list (ten-frame · ASS · number-bond · ordinal-line) is exhausted —
+> three shipped, ordinal-line believed gated by RESPONSE CLASS (**that belief was FALSE — struck
+> 2026-08-17, see the P3 block; `ordinal_word` is benched in code**). `compare-objects` was not on it and
+> should have been: **K.MD.1 is literally a SPEAKING standard** (*"describe measurable
+> attributes of objects"*), and the shipped surface answered it with four attribute chips, two
+> object buttons, a tap-in-order row and a numeric keypad under a Check button — the catalog's
+> own rung said *"Point to it!"*. It also needs NOTHING this lane is waiting on: no new response
+> class, no bench sitting, and **no #63** (the only number the child says is a unit count,
+> 1..20). Selection signal: 6 queue mentions — near the bottom of the math roster, i.e. a
+> zero-ish-queue primitive, per `worked-primitives-self-select`.
+>
+> **The fork as shipped** — three spoken, one placement, one band split:
+> `identify_attribute` (K + 1) → **SPOKEN** attribute (`short_spoken_word`; the tutor names the
+> closed menu aloud and the child says which — the chips are deleted) · `compare_two` (K + 1) →
+> **SPOKEN** object name (`short_spoken_word`; a two-button ask is a coin flip) · `order_three`
+> (1) → **ARRANGED** (`manipulation`; the arrangement IS the answer — the third unsayable
+> shape) · `non_standard` (1) → **SPOKEN** count (`number_word_to_20`; the keypad is deleted).
+> βs **HELD ×4**, rationale in the catalog comments (the menu is still named aloud on
+> identify_attribute so the guess floor is unchanged; compare_two rides the number-bond/ASS
+> weak-menu precedent; order_three's surface is untouched; the keypad was already unaided
+> production, so non_standard changed CHANNEL, not task).
+>
+> **Files:** `math/compareObjectsScript.ts` (NEW — pack, build gates, code-computed order
+> verdict, harness answers, `compareObjectsPackBase`) · `math/CompareObjects.tsx` (whole-file
+> rewrite) · `service/math/gemini-compare-objects.ts` (imports 8 gates from the script — ONE
+> predicate per rule on both sides of the wire) · `catalog/math.ts` (DI frame, `audioInput`,
+> contextKeys `['challengeType','stimulus']`) · `service/qa/di/diDrivePlan.ts` (adapter) ·
+> `__tests__/CompareObjects.di-script.test.ts` (NEW, 49 tests incl. the real-session-shape pack).
+> **Deleted:** the attribute chips, the two object buttons, the numeric keypad, `handleCheckAnswer`
+> and all four per-mode checkers, the Check control, the Next control, the feedback card that
+> printed the answer, the 3-attempt reveal ladder, `useLuminaAI` and all of its improvised turns,
+> and `tutorRevealClause` (the per-tier prose that governed them). Render-side tier levers survive
+> (`showScaleReadout`). No contract file existed, so no `--check` gate ran.
+>
+> **⭐ THE FINDING — WRITING THE SPOKEN ASK AUDITED THE CONTENT FIVE TIMES, AND THE LAST ONE
+> ONLY A HUMAN READ-THROUGH COULD FIND.** Four came out of authoring and are gated in code:
+> (1) `identify_attribute`'s key was never required to equal the DRAWN attribute — the prompt
+> said so, nothing enforced it, so the picture and the answer could disagree; (2) an option set
+> containing BOTH `length` and `height` is not defensibly answerable for one drawing (an
+> ambiguous ask is broken, not harder) — it fired on the FIRST live draw; (3) `compare_two`'s
+> `visualSize` could rank the objects AGAINST its own `actualValue` key — only `order_three`
+> ever reconciled them — so a child reading the screen correctly would be refused; (4) POSITION
+> in the ask could predict the answer, because the click era rendered the buttons in the model's
+> emitted order and nothing stopped a generator listing the winner first every time.
+>
+> **The fifth is the one to carry: THE OBJECT NAME CAN BE THE ANSWER.** The first live
+> `order_three` draw came back *"small green bush" / "tall oak tree" / "high kitchen chair" /
+> "miniature coffee mug" / "long skipping rope"* — every machine gate passed them, because the
+> fault is not in the key, the drawing or the menu, it is in the **noun**. The tutor says *"Put
+> the small green bush, the tall oak tree and the garden flower in order, from tallest to
+> shortest"* and the child never has to look at the screen. **A label on a button is scenery; a
+> label the tutor READS ALOUD is the question.** `nameCarriesTheAnswer` + a prompt rule now
+> refuse measure adjectives in names. ⚠️ **And the first version of that gate exempted
+> `identify_attribute`** on the reasoning that its answer is WHICH attribute rather than a
+> magnitude — the very next live draw refuted it in one line (*"heavy backpack"*, *"tall lamp"*
+> name the attribute, which IS that mode's answer). **Generalisable: any DI port whose stimulus
+> carries generated LABELS owes this check, and the exemption you are about to grant is the one
+> to re-draw.**
+>
+> **⭐ THE 18d STALL DID NOT HAPPEN, AND THAT IS THE POINT.** The cap drill — which has produced
+> a `di-no-verdict` on counting-board, ASS, picture-vocabulary, phoneme-explorer,
+> interactive-book and number-bond — came back **3/3 byte-identical `My turn:` corrections, no
+> `di-no-verdict`, move-on fires**, because the catalog ladder was written 18d-compliant AT
+> BIRTH (no rung offers a speakable line; every rung commands script fidelity). 18d is now cheap
+> to prevent and expensive to retrofit; write new catalog entries this way.
+>
+> **Gates:** `typecheck:lumina` **0** · full `tsc` **803 = exact baseline, 0 in touched files** ·
+> census greps **0 + 0** · own suite **49/49**, three gates **revert-bitten** (removing
+> `visualRankAgrees`, fixing `askOrderFor`, or emptying the exempt span each fails exactly its
+> own assertion and nothing else) · catalog + drive-plan + hooks suites **807/807** ·
+> **live pipeline probe ×3 rounds, deleted after the run** — all four modes × both bands —
+> final round **38/38 kept, ZERO build-gate drops**, `checkPackGates` clean on live content, with
+> four generator-side rejections firing on real content (one length+height menu, one
+> `[big pumpkin…]`, two `[heavy boulder…]` / `[large bucket…]`). Drawn words:
+> > `identify_attribute@K(pencil/crayon→length, backpack/feather→weight, bucket/cup→capacity, door/chair→height, book/paper→weight, pitcher/mug→capacity, lamp/block→height)` ·
+> > `identify_attribute@1(red crayon/blue marker→length, feather/textbook→weight, spoon/bucket→capacity, coffee mug/floor lamp→height, soccer ball/plastic block→weight, paper cup/bathtub→capacity)` ·
+> > `compare_two@K(pencil/crayon longer, ribbon/skipping rope longer, spoon/ruler shorter, strawberry/banana longer, paintbrush/guitar shorter, cracker/hot dog longer, carrot/garden hose shorter)` ·
+> > `compare_two@1(backpack/feather heavier, cotton ball/brick lighter, bucket/tea cup holds_more, spoon/soup bowl holds_less, metal hammer/foam block heavier, coffee mug/thimble holds_less)` ·
+> > `order_three@1(apple/oak/pine tree taller, street/desk/floor lamp shorter_height, wooden fence/garden border/picket fence taller, school house/dog house/office building shorter_height, crayon/paper clip/red pencil longer)` ·
+> > `non_standard@1(pencil=3 paper clip, book=5 cube, ribbon=7 crayon, shoe=4 eraser, ruler=6 block, spoon=2 button, marker=8 paper clip)`.
+> · **Headless judged drives** (`qa/tutor-reports/compare-objects-live-di-{plain,signature}-2026-08-17.md`):
+> `compare_two` ×3 runs **21/21 wrong refused, 21/21 right affirmed** · `non_standard`
+> **signature drive ×3 runs, 21/21** — the OFF-BY-ONE (n+1) refused every time, the pack's
+> hardest discrimination and the exact claim `discriminationFor` makes · `identify_attribute`
+> signature ×2 runs **12/12 + 12/12, verdict PASS** · `order_three` gesture drive **7/7 both
+> branches, hands-hold beats SILENT (0 audio bytes — the bracket held)**, every code-computed
+> verdict line spoken exactly · **cap drill clean** (above).
+>
+> **MIC ROW #107 FILED** — unlike P2/P3 this port does introduce new ANSWER MATERIAL inside an
+> already-benched class, and that is the half a machine cannot hold: a K child saying an
+> attribute PHRASE aloud (*"how heavy they are"* — the accept clause takes the bare key word
+> too, but nobody has heard a child do it), and multi-word object names through ASR ("cotton
+> ball", "jump rope", "frozen popsicle"). **Knowingly carried:** the two ordering settle windows
+> (4000ms / 1500ms complete) are hand-tuned by ear, the same class as ASS's and number-bond's
+> settle residuals; and the unit-numbering reveal is gated on `runner.revealHeld` but has NOT
+> been driven in a browser — *should work, needs a browser check on the `non_standard` reveal
+> and the `order_three` close*.
+>
+> **RESIDUALS (filed, not fixed):** (a) one single-run `di-answer-leak-in-ask` HIGH note on
+> `identify_attribute` — the transcript reads *"or **play** how heavy they are"*, an ASR
+> insertion INSIDE the exempt span which defeats the span subtraction; the same item passed on
+> the other run with the same cue, so it is oracle noise, not a leak. **Any pack whose
+> `leakExemptSpan` is long spoken prose has this exposure** — worth knowing before a future
+> session "fixes" a green pack. (b) One `di-correction-verbatim-repeat` WARN pair on the capped
+> item: 18c(c), inherited family-wide, and in THIS pack doubly expected because the contract
+> explicitly commands the same line on every wrong answer. (c) `gemini-compare-objects.ts` is on
+> the 33-generator silent-fallback list (hardcoded fallback, no retry) — the `order_three`
+> fallback's display order had to be un-sorted so the judged build gate would not drop it, which
+> is a small worked example of why that list matters to a math port.
+
+> #### ✅ 2026-08-18 — `shape-sorter` IS ON THE JUDGED LOOP (all three eval modes, ZERO taps). Fifth math port.
+>
+> **The fork has no split.** A shape's name, a count and a group name are all things a
+> five-year-old says across a table, so step 1's FIRST question ended it in all three modes:
+> `identify` → `shape_name` · `count` → `number_word_to_20` · `sort` → `short_spoken_word`.
+> Three benched classes, no new sitting owed by the CLASSES (see the mic row for what is owed
+> by the ACOUSTICS).
+>
+> **What the costume test deleted.** `identify` was SELECT-ALL-THEN-CHECK with a green/red ring
+> painted on every tap — a child who cannot identify a triangle can tap, read the ring, untap
+> the red ones and reach a correct commit, so the tap produced no evidence of the skill. And
+> the eval mode had said all along what it actually assesses: *"Name 2D shapes by visual
+> recognition."* The select-all hunt was the IMPLEMENTATION, not the identity. `count` had
+> minus/plus steppers; `sort` was select-shape-then-tap-bin (word-sorter's ruling, verbatim).
+>
+> **⭐ THE HARD-TIER LEVER MOVED OFF THE SCREEN AND INTO THE ASK, and this is the cleanest
+> statement of that boundary since word-sorter.** The click era's `showBinLabels: false`
+> blanked the mats at `hard`. That is legal while the answer is a POSITION you can tap; it is
+> an *unanswerable question* the moment the answer is the label said aloud. So the mats are
+> labelled at EVERY tier now and what `hard` withdraws is whether the ASK names the groups
+> (`namesChoices`) — letter-sound-link's tier-conditional exemption, with the K band floor
+> beating the tier because a pre-reader cannot read a mat. **Generalise it: a click-era tier
+> lever that withdraws INFORMATION FROM THE SCREEN has to be re-read under a spoken answer,
+> because "withheld" and "unknowable" were the same thing only while a tap could still land.**
+>
+> **⭐ THREE CONTENT DEFECTS A TAP SURFACE NEVER HAD TO JUSTIFY** (defect class 8 — writing the
+> spoken ask AUDITS the content). All three are DROPS in code, both sides of the wire:
+> 1. **CURVED SHAPES CANNOT CARRY A COUNT.** *"How many sides does a circle have?"* is arguable
+>    at 0 and at 1 — di-shapes' founding rule #1, decided at its L1. **The click era shipped it
+>    anyway AND printed the answer on screen:** `CountView` rendered *"This shape has curved
+>    sides — no straight sides or corners!"* under the drawing, i.e. a stepper problem
+>    answering its own question. Counting items are polygons only, which also floors the spoken
+>    answer at 3 and puts the zero gate out of scope by construction.
+> 2. **A SIDES-SORT CANNOT HOLD A CURVED SHAPE** — the same defect wearing a bin label:
+>    `getShapeBinLabel` minted **"0 sides"** for a circle, asserting one of the two arguable
+>    answers as a group name the child must say out loud.
+> 3. **DIAMOND AND RHOMBUS ARE THE SAME DRAWING.** `renderShapeSVG` renders them from ONE switch
+>    branch — pixel-identical — so a naming ask over either has two right answers. Invisible
+>    while the answer was a tap (the checker compared ids). Handled by ACCEPTING both per item
+>    (`spokenAlternates`), di-shapes' mechanism, rather than dropping a shape the curriculum wants.
+>
+> Plus one gate that is this port's own: **A SQUARE ROTATED 45 DEGREES READS AS A DIAMOND.**
+> `rotation` is generated across 0-360 deliberately (shape constancy, K.G.2) — correct for
+> counting and sorting, where the answer is unchanged, and wrong for NAMING, where the percept
+> IS the question. It binds naming only.
+>
+> **⭐ THE LIVE PROBE FOUND A DEFECT NO UNIT FIXTURE COULD HAVE, AND IT LIVES *BETWEEN* ITEMS.**
+> An `identify @ Grade 1 / hard` draw returned a pool holding BOTH `diamond` and `rhombus`, and
+> the section-4d dedupe — keyed on the raw shape kind — kept them as two separate items. The
+> child would have seen the identical figure twice, been asked its name twice, and been **right
+> both times for saying the same word**, since each item accepts the other's name by contract.
+> Every machine gate passed because every one of them is PER-ITEM. Fixed by keying both ledgers
+> on the DRAWING (`nameClassOf`) rather than the word; revert-bitten, and confirmed on a
+> re-probe (the same case now yields 6 items with the drawing asked once). **Carry the shape of
+> it: a synonym pair is ONE identity, not two, and only a live draw puts both names in one pool.**
+>
+> **The ledger is ASYMMETRIC here, which is new.** A naming turn says the shape's name aloud, so
+> it spends that kind for BOTH modes (the name hands the count over — triangle to three). A
+> counting turn never utters the name, so a counted kind may still be NAMED later. One ledger
+> would have thrown away askable material for no pedagogic reason.
+>
+> **SIDES AND CORNERS ARE THE SAME NUMBER, so we ask ONE.** Every polygon in the table has
+> `sides === corners`, so the click era's "type both, both must be right" made the second box
+> answerable from the first with zero geometry — a free half-mark hidden by a Check button. One
+> item asks one feature, code-picked and alternated across the session.
+>
+> **Files:** `math/shapeSorterScript.ts` (NEW — pack, geometry table, build gates, harness
+> answers, `shapeSorterPackBase`) · `math/ShapeSorter.tsx` (whole-file rewrite) ·
+> `service/math/gemini-shape-sorter.ts` (imports every gate from the script; KEEP-OR-DROP
+> replaces the coerce-and-rewrite validator) · `catalog/math.ts` (DI frame, `audioInput`,
+> contextKeys `['challengeType','stimulus']`) · `service/qa/di/diDrivePlan.ts` (adapter) ·
+> `__tests__/ShapeSorter.di-script.test.ts` (NEW, 58 tests incl. two real-session-shape packs).
+> **Deleted:** the select-all grid + per-tap ring, both steppers, the numbered "Side 1 / Side 2
+> / Side 3" tap row, "Show corners", the shape tray + bin buttons, Check, Next Challenge, the
+> 3-attempt hint panel, every feedback string that named the answer, the old tutor hook and its
+> six pushed turns, and the `showBinLabels` / `showMatchCount` tier flags. Census greps: 0 + 0.
+> **THE GEOMETRY TABLE WAS TRIPLICATED** (component + generator, the generator's copy carrying an
+> SS-1 note that it could not import a `'use client'` module) — it has one home now, and the
+> generator imports it. No contract file exists for shape-sorter, so no `--check` gate ran.
+>
+> **Betas: two RAISED with the reason in each description, one HELD.** `identify` 1.5 to 2.0 (a
+> select-all with per-tap feedback became unaided production with no menu at all — story-talk's
+> lever). `count` 2.5 to 3.0 (NOT stepper-to-mouth, which ten-frame correctly held beta on: the
+> numbered side buttons made the answer countable off the UI, and Check was unlimited).
+> `sort` HELD at 3.5 — word-sorter's reasoning, unchanged: the answer SET is the same size, the
+> ask re-states the choices, and the mats never shrank.
+>
+> **Gates:** `typecheck:lumina` **0** · full `tsc` 809 errors, **0 in any file this slice
+> touched** (the only changed-file errors are a concurrent session's `compareObjectsScript.ts`)
+> · census greps **0 + 0** · own suite **58/58** · full vitest **3897 passed / 1 failed**, the
+> failure being the intent-contract audit naming a concurrent session's `gemini-sentence-analyzer`
+> (shape-sorter passes it), plus the known filed solar-system-explorer confetti teardown ·
+> **live 6-case pipeline probe, deleted after** — 3 modes x 2 bands x 3 tiers, **44 askable
+> items, 0 gate issues, 0 leaks**. Drawn: `identify@K` circle/square/triangle/rectangle ·
+> `identify@1` triangle/square/rectangle/pentagon/hexagon/diamond · `count@K` triangle-3,
+> square-4, rectangle-4, hexagon-6 · `count@1` triangle-3, square-4, pentagon-5, hexagon-6 ·
+> `sort@K` Curved/Straight over circle, square, oval, triangle, rectangle, hexagon, pentagon ·
+> `sort@1` 3 sides/4 sides and 4 sides/5 sides/6 sides.
+> · **Headless judged drives, 4 sessions:** `identify` plain **4/4 refused + 4/4 affirmed** ·
+> `identify` signature **6/6 + 6/6 — THE NEAR NAME REFUSED EVERY TIME**, including
+> square/rectangle and pentagon/hexagon · `count` signature **4/4 + 4/4 — the off-by-one
+> refused every time** · `sort` signature **12/12 + 12/12 — THE SHAPE NAME SAID INSTEAD OF THE
+> GROUP refused every time**, including "square" against a "4 sides" group, which is the exact
+> trap ("a square does have four sides, close enough"). All four reports **PASS — no findings**.
+> **Cap drill: `di-no-verdict` NEVER FIRED** (18d authored in from birth — fourth port to manage
+> that), 3/3 byte-identical corrections, verdicts flowed, move-on fired; the only two WARNs are
+> the known open **18c pair**, one of which this contract deliberately COMMANDS.
+> Adapter registered at ship. **Mic row #108 filed.**
+>
+> **Residuals, filed not fixed:** (a) `shape_name`'s bench is a PROBE SET — di-shapes' pack L0
+> gate (#72) has never been driven, so this is the class's first production caller in the runner
+> era; (b) `pentagon`/`hexagon` share their last two syllables and differ only at the front,
+> which `--di` cannot see because it sends text — the sharpest question on #108, and the failure
+> mode is a CORRECT child being corrected; (c) the `hard`-tier `namesChoices: false` path is
+> gate- and probe-covered but not drive-covered, because the harness has no difficulty flag
+> (word-sorter's identical residual); (d) the adapter's `dropped` count conflates "unaskable"
+> with "already spent by the section-4d ledger", since it is computed from which challenge ids
+> produced items — honest for a build-gate report, misleading if read as a content-quality
+> number; (e) a 12-item binary `sort` at K is a lot of repetitions of one two-way choice, held
+> only by the session length cap — the mode's shape, not a defect, but worth a look on the mic
+> sitting; (f) the generator's canned fallback now warns instead of logging (the "silent
+> generator fallbacks" checklist, one row burned down) and its three payloads are judged-loop
+> valid by construction.
 
 > #### ✅ 2026-08-14 — `number-bond` IS ON THE JUDGED LOOP (all four eval modes; the port the P3-correction block below authorized). Third math port; first to ship WITH its `DiPortAdapter` in the same slice, per 19h-i-b.
 >
@@ -2855,6 +4011,126 @@ it may be constrained production rather than free — decide it at the pack.
 > capped item is 18c(c) surfacing on every port now that cap drills exist; the fix is the runner
 > knowing the final attempt (18c), not per-port wording.
 >
+> #### ✅ 2026-08-18 — `sorting-station` IS ON THE JUDGED LOOP (all SEVEN eval modes). Seventh math port, twentieth overall; the widest answer-material spread the family has shipped.
+>
+> **Opened by the user's own read of the primitive**, not by the sweep: *"there's a lot of mental
+> complexity for young learners, maybe use as an opportunity to simplify and make sequential with
+> voice DI control."* The contract had written the same thing from the other side — THREE of its five
+> open gap requirements (G1, G2, G3(a)) are blocked on the MEDIUM, not the cognition, and G2 says so
+> outright: *"what exceeds a pre-reader is the medium, not the cognition."* And the click-era
+> catalog's deepest scaffold, `level3`, was this port's default interaction verbatim (*"Let's sort one
+> at a time. Pick up this object — say what it is."*). What was tier-3 rescue is now how it works.
+>
+> **The fork — ALL SEVEN SPEAK, zero taps.** Six item KINDS across seven modes, because the class is
+> per answer-material and one mode can produce two: `sort` / `pick_rule` / `odd_one` / `compare`
+> → `short_spoken_word` · `count_group` → `number_word_to_20` · `both_criteria` → `yes_no` (rides
+> #94's owed acceptance). βs HELD ×7, rationale per mode in the catalog comments — every menu the
+> port deleted was a weak one and every ask still names its options aloud, so no guess floor moved.
+>
+> **⭐ ONE CHALLENGE IS NOT ONE ITEM, and here that IS the feature the user asked for.** A click-era
+> sort was a screenful — six objects, three bins, one Check. It is now one judged turn PER OBJECT, and
+> `two_attributes` is a spoken yes/no per object instead of one compound written instruction held in
+> working memory. That is the whole of "sequential", and it is the port's biggest measurement change.
+>
+> **Files:** `math/sortingStationScript.ts` (NEW — pack, build gates, two capping gates, spoken-axis
+> map, `sortingStationPackBase`) · `math/SortingStation.tsx` (whole-file rewrite, 1532 → ~530 lines) ·
+> `service/math/gemini-sorting-station.ts` (imports its gates FROM the script; emits the two-attribute
+> criteria as WORDS; `namesSortCriterion` hard rung; keep-or-drop validation whose warning names its
+> reason) · `catalog/math.ts` (DI frame, `audioInput`, contextKeys `['challengeType','stimulus']`) ·
+> `service/qa/di/diDrivePlan.ts` (adapter) · `__tests__/SortingStation.di-script.test.ts` (NEW, 59
+> tests incl. the real-session-shape pack) · `SortingStation.reader-fit.test.tsx` (RE-BASED, 13 tests).
+> **Deleted:** drag-to-bin placement, Check Answer / Check Sort / Check Counts / Check Tallies, the
+> attribute-choice buttons, the number steppers, the odd-one-out tap + its auto-submit latch, the
+> ≥2-attempt hint ladder, the answer-naming feedback prose, the old tutor hook and all improvised turns.
+>
+> **⭐ CONTRACT RE-BASE, NOT AN OVERRIDE — and the contract had pre-warned this exact edit.** R7 pins
+> the Check button (*"Sort-family challenges are multi-part construction and keep the explicit Check
+> even at K"*) and C3 records the near-miss: *"the tempting over-general edit is exactly what a future
+> declutter pass would reach for."* This is not that pass. R7 protects the COMMIT STEP for multi-part
+> construction; the judged loop does not remove the commit, it removes the multi-part construction —
+> one object is one atomic turn whose commit is the child's answer plus the verdict. R6 (odd-one-out
+> latch integrity) re-bases the same way: there is no tap left to latch. **R4 was the live regression
+> risk of a whole-file rewrite and is preserved verbatim** (K trays picture-primary on `bucketEmoji`
+> with colour fallback, cards enlarged, adult chrome hidden, `isPreReader` the one gate). **R3 — THE K
+> BAND FLOOR — IS DELIBERATELY UNMOVED:** the contract says unflooring needs a reader-fit re-audit,
+> *"NOT a simple unflooring"*, so the port ships the medium that makes the audit possible and the
+> floor stays. Pinned by a test. `/primitive-contract --check` verdict: **COMPATIBLE**.
+>
+> **FOUR DEFECTS THE SPOKEN ASK EXPOSED, all pre-existing, all fixed here:**
+> 1. **⭐ `showCounts` PRINTED THE ANSWER TO EVERY COUNT ASK.** A per-tray tally badge is progress
+>    under a Check button and a direct answer leak the moment *"how many are in the Need group?"*
+>    became spoken — ten-frame's R6 lesson, hunted in PIXELS. Now `hidesCounts` per item, restored
+>    once the tutor affirms.
+> 2. **The compare ask contained its own answer by construction.** *"Are there more Red, or more
+>    Blue?"* answered with "more" puts the answer in the ask twice as ordinary grammar, in a clause no
+>    menu exemption can cover. Re-shaped: the question is *"Which group has more?"* and the answer is
+>    the GROUP LABEL — leak-clean and what a five-year-old actually says.
+> 3. **A prompt CONTRADICTION had silently killed `sort_attribute`'s identity.** The mode guide
+>    demands "EXACTLY TWO clean sortable attributes"; the shared prompt body said "only the
+>    objective-relevant attributes". The model followed the later line, so objects carried ONE
+>    attribute and the metacognitive choice — the mode's whole point, and the reason it is floored —
+>    never materialised. It would have shown a one-button chooser in the click era too. Fixed; the
+>    re-probe produced `pick_rule` items immediately.
+> 4. **The spoken answer was an adult word.** `pick_rule` shipped an ask whose correct answer was
+>    literally *"category"*. A Grade 1 child says **"kind"**. `spokenAxisName` moves only the spoken
+>    side; `ruleName` keeps the key the component matches on.
+>
+> **TWO CAPPING GATES, which are this port's own contribution.** A blind cap STRANDS A TRAY — and on a
+> binary sort that makes one label right forever (`capCoveringEveryGroup`, word-sorter's gate
+> consumed). `two_attributes` has the same disease in a yes/no coat and it is WORSE because it is
+> invisible: cap six objects of which one matches and the kept set is often all-NO, which a child
+> passes 100% by saying "no" every time (`capCoveringBothVerdicts`). **And the worked example survives
+> the port** — a teacher really does lay one card in a tray — but it is excluded from the judged set
+> (its answer is on screen) while staying inside every count.
+>
+> **TWO EAR-GATE BUGS CAUGHT BY THE LIVE PROBE, not by a fixture** (both mine, both would have
+> silently shrunk sessions): the object-name cap was 2 words, copied from word-sorter where the
+> stimulus really is one word — this primitive's cards are *"Red Toy Car"*, so it dropped ordinary
+> content; and `optionsEarSeparable` called **`Living` / `Non-living` a COLLISION**, because the naive
+> word-token model reads the prefixed antonym as the unjudgeable subset shape. It is one of this
+> primitive's most common axes and the two are nothing alike acoustically. Negation particles now bind
+> to the word they negate. **This gate is shared across the family — the same blind spot is worth a
+> look wherever a pack sorts by a negated attribute.**
+>
+> **Gates:** `typecheck:lumina` **0** · full `tsc` **803, zero in touched files** · census greps
+> **0 + 0 + 0** · own suites **59/59 + 13/13** · full vitest **3969 passed / 1 failed** (the 1 is
+> `intentConsumptionContract` naming `gemini-sentence-analyzer.ts` — the CONCURRENT uncommitted
+> sentence-analyzer port, not this lane; the confetti teardown error is the known solar-system-explorer
+> one) · **live 7-probe pipeline run, one per eval mode, deleted after** — **27/27 challenges kept,
+> ZERO drops, 69 judged items, `checkPackGates` clean on live content**. Drawn:
+> > `sort_one@K(Need/Want × Fresh Apple, Warm Coat, Toy Robot, Video Game)` · `odd_one_out@K(Rock,
+> > Teddy Bear, Bicycle, Robot)` · `sort_attribute@1(pick_rule→kind; Safety/Health)` ·
+> > `sort_variety@1(Land/Water/Air × Big Bear, Small Bunny, Big Whale)` · `count_compare@1(Firefighter
+> > three / Police two → Firefighter)` · `two_attributes@1(Fresh Apple yes / Warm Coat no)` ·
+> > `tally_record@1(Writing/Cutting/Sticking/Measuring, two/two/two/one)`.
+> · **Headless judged drives** (`qa/tutor-reports/sorting-station-live-di-*-2026-08-18.md`):
+> `sort_one` plain ×2 runs **20/20 refused, 20/20 affirmed** · `sort_one` **signature ×2 runs 20/20** —
+> the stimulus said straight back refused every time · `two_attributes` signature **8/8** — the
+> HALF-ANSWERED compound (*"it is a solid"*) refused every time, which is the G2 claim made testable ·
+> `count_compare` signature **9/9** — both the off-by-one count and the bare *"more"* with no group
+> named · `odd_one_out` signature **4/4** — the REASON offered in place of the choice.
+> · **Cap drill: 3/3 byte-identical `My turn:` corrections, ZERO `di-no-verdict` — 18d clean at
+> birth.** It caught one HIGH on the first pass: the tutor read the whole **`[CURRENT STATE]` block
+> and its heading aloud** before one ask of ~60 (defect class 6, arriving on a pack whose ask is NOT
+> near-empty). The inherited *"never announce the activity's state"* wording did not stop it — it
+> describes the ACT without telling the model which block is meant. **Fixed by naming the block
+> literally, re-driven: 0 HIGH.** **⚠️ Worth copying into the family tail** — every pack carries the
+> weaker form. Residual WARNs are 18c(b)+(c), inherited by construction like every port since cap
+> drills existed.
+>
+> **NO NEW RESPONSE CLASS.** `short_spoken_word` and `number_word_to_20` are benched; `yes_no` is
+> accepted-build-ahead and rides #94. **Mic row #106** carries what no text drive reaches: the
+> `odd_one_out` NAME-A-PICTURE ask (the only closed-set ask in the family that lists nothing, so a
+> RIGHT child is the one most at risk), a dozen consecutive asks of one template (drill or drone —
+> only an ear can say), and the count-aloud-and-land accept clause.
+>
+> **RESIDUALS (filed, not fixed):** (a) **the K unfloor decision is now live** — five modes stay Grade
+> 1+ purely on a reading demand this port removed, and the contract's G2/G3(a) path is a `/reader-fit`
+> re-audit, which is the natural next pull; (b) the `sort_attribute` prompt fix is verified by one
+> probe draw — watch that two attributes keep arriving; (c) no browser run — "should work — needs a
+> browser check on the K tray render and the affirm-reveal"; the machine gates and the judged drives
+> prove the pack and the judge's semantics, not the loop a child is in.
+
 > #### 18d. 🟡 IN PROGRESS (4 of ~14 done, 2026-08-16) — CONFIRMED, NOT SUSPECTED: every judged port's catalog `scaffoldingLevels`/`commonStruggles` that OFFERS a quoted replacement line is a no-verdict stall
 >
 > ⭐ **REPRODUCED LIVE ON TWO MORE PORTS, and the fingerprint is exact** — the 19h-i-b cap drills caught the model speaking the rungs VERBATIM: `counting-board` said *"Touch each one just one time as you count."* + *"Point at the first one. Count with your finger. Then tell me how many."*, `addition-subtraction-scene` said *"…think about what happened in the story"* + *"Take your time. Look at the picture. Then tell me."* — `di-no-verdict` ×2 on each, both fixed and re-driven clean. **The collision this item deferred for is GONE (literacy Phase 1 is complete), and the fix is now proven three times, so it no longer needs designing — only applying.** It rides INSIDE the 19h-i-b sweep: each port's slice fixes its own rungs and re-drives, which is what this item's own executor line asked for. **The fix, verbatim:** state the two-branch law BEFORE the branches in the judging contract (consume `wordWorkoutScript`'s `TWO_BRANCH_LAW`, do not re-derive it), and rewrite the three rungs to route the same pedagogy through the correction, which already opens "My turn:". Remaining: the five entries named below, plus the pre-runner four.
@@ -3104,8 +4380,16 @@ it may be constrained production rather than free — decide it at the pack.
 >   **✅ EXECUTED 2026-08-14 — see the `number-bond` block at the top of this item.** The fork
 >   shipped exactly as scoped here, plus one expansion the scoping missed: decompose's
 >   find-all-pairs shape becomes one judged turn per pair.
->   `ordinal-line` stays gated — not by #63 but by RESPONSE CLASS (ordinal words are unbenched;
->   `identify` is a tap anyway) — do not read this correction as unblocking it.
+>   ~~`ordinal-line` stays gated — not by #63 but by RESPONSE CLASS (ordinal words are unbenched;
+>   `identify` is a tap anyway) — do not read this correction as unblocking it.~~
+>   ⛔ **STRUCK 2026-08-17 (user call) — THIS LINE WAS FALSE IN CODE AND COST THREE MONTHS.**
+>   `ordinal_word` is **`status: 'benched'`** in `judgedScriptContract.ts:117` (first..tenth, no
+>   homophone cluster) and has been since the class registry was written. And *"identify is a tap
+>   anyway"* is not a reason — it is the DEFECT: the catalog labels that mode *"Name ordinal
+>   position"* and its surface is a button. A stale doctrine line is copied forward and silently
+>   changes what gets built (WORKSTREAMS §hygiene); this one kept the primitive off the Class-A
+>   list until port 4 had to be found off-list. **Brief: `qa/HANDOFF-di-ordinal-line-2026-08-17.md`
+>   — scoped, executor `/add-di-loop ordinal-line`.**
 > - **P4** — Class-A sweep within the newly benched range, serial.
 >
 > #### ⚠️ Also found: `numberWordFor` now exists in TWO copies

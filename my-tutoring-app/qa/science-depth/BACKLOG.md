@@ -21,12 +21,11 @@ one-line state. **Moved verbatim, nothing deleted.** The index remains authority
 STATE (active/parked, what to pull next); this block is authority for the detail behind
 it. Where the two disagree, the queue wins on WHAT and reports win on EVIDENCE.
 
-### 0. Science depth — the biology answer-leak class — **PROMOTED TO ACTIVE `/pm` 2026-08-08** — last touched **2026-08-08**
+### 0. Science depth — the biology answer-leak class — **PROMOTED TO ACTIVE `/pm` 2026-08-08** — last touched **2026-08-18**
 
 - **Queue:** `my-tutoring-app/qa/EVAL_TRACKER.md` (rows DNA-1 ✅ / CB-1 ✅ /
-  **CELL-1** / LCS-1 / CS-1 / PA-1 / DNA-2 / BIO-1 / BIO-2). **Executors:**
-  `/primitive-contract` then `/eval-fix` for CELL-1, `/oracle-test` then `/eval-fix`
-  for the three unmeasured rows.
+  CELL-1 ✅ / **LCS-1** / CS-1 / PA-1 / DNA-2 / BIO-1 / BIO-2). **Executors:**
+  `/oracle-test` then `/eval-fix` for the three unmeasured rows.
 - **Why it took the slot.** It was carried as "QUEUED, rides as the +1" for two
   days. Then DNA-1 was actually pulled (08-08) and the fix's own domain scan found
   **four more**, one of which `/pm` verified in code this run and which is worse
@@ -45,21 +44,15 @@ it. Where the two disagree, the queue wins on WHAT and reports win on EVIDENCE.
   `npm run typecheck:lumina` 0 errors; full `tsc` 806 = baseline. **Not
   browser-driven** (render-path change → needs a look at the Place phase).
   **⚠️ UNCOMMITTED.**
-- **➡️ TOP = CELL-1 `cell-builder`, HIGH — the mechanism the leak was hiding.**
-  Found while fixing CB-1 and **measured over a 101×101 grid**, not asserted:
-  `ZONE_BOUNDS` (`:114-121`) overlap so heavily that **one drop point at (45, 25)
-  satisfies 5 of the 6 zones**, failing only `membrane-associated`. `peripheral` and
-  `scattered` are **byte-identical** (10–90 both axes, 64.3% of the cell), and
-  `center` ⊆ `large-central` ⊆ `peripheral` ≡ `scattered`. Net: drag everything to
-  the upper-middle and score **100% on every organelle whose zone isn't
-  `membrane-associated`**. **That is why CB-1 sat unnoticed for so long — the answer
-  was printed, but the answer also hardly mattered.** Phase 2 feeds
-  `zonePlacementAccuracy` (`:530`) into IRT evidence, so the selector is being fed a
-  near-free score. **Deliberately not fixed in the CB-1 slice:** re-tuning the bounds
-  changes grading semantics for every skill routing to cell-builder and re-scores
-  existing evidence — a fork-vs-edit call with no `docs/contracts/cell-builder.md` to
-  check against. **Executors: `/primitive-contract` to derive the contract, then
-  `/eval-fix`.** Row filed at `qa/EVAL_TRACKER.md`.
+- **✅ CELL-1 `cell-builder` CLOSED 2026-08-18 — contract-first redesign.**
+  Free-coordinate `ZONE_BOUNDS` grading is gone. Six mutually exclusive model-region
+  targets now emit one discrete `CellZone` per organelle; the surface says it is a
+  relationship map rather than a literal 2D coordinate claim. First commit locks
+  before corrective reveal, so retries cannot rewrite IRT evidence. Four eval modes
+  make inventory, placement, function, and specialization independently routable.
+  Contract: `src/components/lumina/docs/contracts/cell-builder.md`; focused runtime
+  10/10. Real eval-test API draw is blocked upstream by the unrelated missing
+  `gemini-word-flip` module.
 - **✅ DNA-1 CLOSED 2026-08-08** — and **the old row under-counted it**. The 6/10
   figure counted only exact `givenStrand === templateStrand`; the dominant form was
   **PARTIAL overlap** (a 4-base given inside an 8-base displayed strand), so the
@@ -79,7 +72,7 @@ it. Where the two disagree, the queue wins on WHAT and reports win on EVIDENCE.
   oracle and the leak shared a blind spot for eleven months. When fixing a leak,
   re-derive the detector **from scratch**, and re-measure the OLD number before
   trusting it — DNA-1's headline was wrong by 3×.
-- **Three unmeasured rows, filed with predicates so the probe is cheap:** LCS-1
+- **➡️ TOP = LCS-1. Three unmeasured rows are filed with predicates so the probe is cheap:** LCS-1
   (`life-cycle-sequencer` — does stage *i*'s `description` name stage *i±1*'s
   label?), CS-1 (`classification-sorter` — does the retry hint name the target
   category? the SS-5 pattern, already measured at 2/3 on spatial-scene), PA-1
@@ -88,5 +81,13 @@ it. Where the two disagree, the queue wins on WHAT and reports win on EVIDENCE.
   severity.**
 - **Scope fence.** DNA-2 (variety) is LOW and explicitly **do not spend on it** —
   same shape as SST-1, where a prompt-entropy lever A/B-proved only MODERATE and
-  was reverted. BIO-2 (~42 primitives with no eval modes) is a density campaign,
-  not this lane; it needs a demand check first.
+  was reverted. BIO-2 is a density campaign,
+  not this lane; it needs a demand check first. **Measured by `/pm` 2026-08-18, correcting
+  the "~42" estimate: 60 of 197 catalog entries carry NO `evalModes` field** — engineering
+  18, biology 17, core 12, astronomy 7, media 3, plus `scale-spectrum`, `word-flip`,
+  `motion-diagram`. The count is real but NOT all of it is demand: some are presentational
+  by design (`formula-card`, `image-panel`, `concept-card-grid`, `curator-brief`,
+  `take-home-activity`) and some are DI-judged without a mode ladder (`word-flip` — shipped
+  literacy port, `supportsEvaluation: true`, no `evalModes`). **So the demand check is a
+  triage, not a headcount: split the 60 into presentational / DI-judged / genuinely-unwired
+  before scoping any campaign.** Executor `/add-eval-modes`, after `/curriculum-fit`.

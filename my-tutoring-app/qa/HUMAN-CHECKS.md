@@ -9,10 +9,375 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-08-17, `/pm`)
 
-> **Newest five, all judged-loop mic rows:** #106 sentence-analyzer · #105 genre-explorer ·
-> #104 text-structure-analyzer · #103 word-builder · **#102 word-sorter (filed late 08-17 — see its
-> own note)**. Next free ID is **#107**. Re-grep before filing; concurrent sessions in this lane are
-> normal.
+> **Newest five:** #117 states-of-matter (third science port, all-spoken) · #116
+> habitat-diorama (living ecosystem field lab) · #115 periodic-table (first
+> chemistry port) · #114 solar-system-explorer (first science port) · #113
+> place-value-chart (the #63 material itself). Next free ID is **#118**.
+> Re-grep before filing; concurrent sessions in this lane are normal.
+
+### #117 — **`states-of-matter` (third science port): can a five-year-old's "solid / liquid / gas" survive real ASR, and does the affirmation-run experiment read as the payoff?** · OPEN
+
+Machine gates are green (di-script 37/37, Lumina typecheck 0, census 0+0+0, 480
+randomized draws with 0 drops and clean pack gates, headless `--di` green on all
+three modes plain AND signature, cap drill PASS). What no machine touched: the
+acoustics of the three state words from a child, the two-name compare menus, and
+every pixel of the judged stage.
+
+`cd my-tutoring-app && npm run dev`, open a states-of-matter lesson with an eval
+mode pinned, and say these OUT LOUD:
+
+1. **observe** — say the SUBSTANCE'S NAME ("water") where the state was asked. It
+   must draw the correction, not an affirmation; the contract names this as the
+   signature miss. Then say the state. Watch that the beaker shows NO state badge,
+   NO particle caption and NO numeric temperature until she affirms.
+2. **observe, the honest synonym** — on a water item that is solid, say **"ice"**
+   (or "steam" on a gas item). It MUST be accepted; a refusal here fails a child
+   who has done the skill.
+3. **predict** — say the state it is in RIGHT NOW instead of the one it will reach
+   (e.g. "solid" when the wax is being heated past 60°). Refusal expected. Then
+   answer correctly and **watch the reveal**: the beaker should ramp to the
+   temperature she said she was taking it to, while she says so, and stop when the
+   next question starts. That ramp is the whole payoff — check it does not fire on
+   the WRONG item (the next one) or flash past.
+4. **predict_change (Grade 3-5)** — answer with the resulting STATE ("liquid")
+   where the CHANGE word ("melting") was asked. Refusal expected.
+5. **compare** — say the wrong one of the two names, then the right one. Listen to
+   whether the two substance names are separable to your own ear at speaking speed;
+   the code blocks water/butter, water/wax and nitrogen/oxygen, and this sitting is
+   where any pair it MISSED shows up.
+6. **The stage, in pixels** — two beakers side by side on a compare item; no
+   slider, no MP/BP markers, no switcher anywhere; the mic orb never claims to be
+   listening for something you cannot say.
+
+Headless drives that are already green and do NOT need repeating:
+`cd backend/tests/tutor_live && python run_tutor_live.py --component states-of-matter
+--di --eval-mode <observe|predict|compare> [--di-wrong signature]` and `--di-cap`.
+Reports: `qa/tutor-reports/states-of-matter-live-di-*-2026-08-20.md`.
+Slice: `qa/di/BACKLOG.md` item 25.
+
+### #116 — **`habitat-diorama`: does the spoken/build ecology split feel like field work under a real mic?** · OPEN
+
+Machine gates are green (30 focused assertions, Lumina typecheck 0, census 0,
+10 real-generator probes at K and grade 7 yielding 42 contract-clean items), but
+the headless semantic drive stalled without producing a report. First rerun
+`python run_tutor_live.py --component habitat-diorama --di --eval-mode <mode>
+--di-wrong signature` for all five modes on a healthy stack; that still does not
+replace this mic/pixel sitting.
+
+1. **Observe:** give the name of a tempting wrong organism, then the clue-matching
+   organism. The wrong answer must draw the model-lead-test correction; the right
+   one must affirm and advance without a Next control.
+2. **Connect:** tap a wrong destination, then the right destination. The tutor is
+   silent before the commit and never names where to tap; the source highlight and
+   affirmed relationship should clear together on the next ask.
+3. **Predict:** after a disruption, name a directly affected but wrong population,
+   then trace the food web and name the keyed one. Watch especially plural names
+   and multi-word species under ASR.
+4. **Restore:** place the candidate in a plausible wrong zone, then its viable
+   zone. No Check button or timer may appear; the placement itself is the answer.
+5. **Defend:** say the short distinguishing phrase from a wrong evidence card,
+   then the strongest card. Confirm the judge accepts a natural short form and
+   does not require the whole printed sentence.
+6. **Reveal + exploration:** earned explanation appears only with affirmation and
+   clears for the next item. Separately open a no-challenge K payload: organism
+   taps and read-aloud still work, role jargon stays hidden, and free exploration
+   does not turn into a scored quiz.
+
+Report target: `qa/di/BACKLOG.md` item 25. Filed 2026-08-20.
+
+### #115 — **`periodic-table` (second science port, FIRST chemistry): element names under real ASR — long Latinate words, a dialect fork, and a table the child reads while talking** · OPEN
+
+**Why a row.** Every machine gate is green (23 di-script pins, typecheck 0 in-slice, census
+0, 270-draw probe with zero drops, headless `--di` drives green on all three modes with
+signature wrongs refused 18/18 twice over + the cap drill) — but the drives answer in TEXT,
+so the acoustics of element names from a real voice, the mic transport, and the
+reveal/axis pixels remain human questions. jsdom is also blind to the judged grid's reveal
+ring and wrong-tap flash.
+
+Drive a lesson (or the chemistry tester) with the mic, and say per mode:
+
+1. **The letters-back miss.** On a name-by-symbol item ("the element whose symbol is B, r")
+   answer "B, r" first — the contract refuses it (the letters are the question) — then say
+   "bromine". Machine-refused 3/3 as text; the mic run tests it as sound.
+2. **The dialect fork.** Get an aluminium item (or say it anyway on a nearby name item):
+   the contract accepts a close try at the name — US "aluminum" must be AFFIRMED against
+   the dataset's British "Aluminium".
+3. **The group-label trap.** On a valence item for chlorine say "seventeen" (the number
+   printed on the very axis you are reading) — must be refused with the tall-column
+   correction — then "seven".
+4. **The short form.** On "which atom is bigger — sodium, or potassium?" answer "the lower
+   one" — the contract accepts a clear point at the winner; confirm the judge does.
+5. **The silent hold.** On find items, tap a NEIGHBOR box: the correction must arrive
+   without the tutor ever saying where the right box is — and between your taps the tutor
+   must be truly silent (the drive's hands-hold beats were 0 audio bytes; confirm with ears).
+6. **The reveal clock.** The element card + emerald ring must appear only WITH her
+   affirmation, hold while she speaks it, and clear when her next ask starts. No modal may
+   open mid-run; search and category chips must be gone.
+
+Headless first (closes the semantics half — DONE 2026-08-19, all three modes + cap):
+`cd backend/tests/tutor_live && python run_tutor_live.py --component periodic-table
+--di --eval-mode <mode> --di-wrong signature` (+ `--di-cap --eval-mode identify`). Report
+target: `qa/di/BACKLOG.md` item 25. Filed 2026-08-19.
+
+### #114 — **`solar-system-explorer` (FIRST science port, user-pulled reimagining): can a child's planet names survive ASR under a moving sky, and does the spotlight arrive after her ask?** · OPEN
+
+**Why a row.** Every machine gate is green (33 di-script pins + 12 stage pins, typecheck 0
+in-slice, census 0, live 10-probe pipeline with zero drops, headless `--di` drives green on
+ALL FIVE modes + the cap drill; defect-class-6 [CURRENT STATE] leak found on drive 1 and
+fixed with a measured 5-of-6 → 0-of-6) — but the drives answer in TEXT, so the acoustics of
+planet names from a real child, the mic transport, and the spotlight/reveal pixels remain
+human questions. jsdom is also blind to whether the moving SVG bodies are hittable
+([[feedback_svg-g-unclickable-jsdom-blind]]).
+
+Drive a lesson (or the astronomy tester) with the mic, and say per mode:
+
+1. **The onset pair.** On identify items answer "Mars" where "Mercury" is right and back —
+   the two share /m/; listen for which the ASR hears from a real voice, and check the
+   correction names the planet plus its colour clause ("Mercury — the small grey one").
+2. **The Sun trap.** On "which planet is the biggest?" answer "the Sun" confidently — the
+   contract refuses it and the correction draws the star/planet line. This is the port's
+   best teaching moment; confirm it lands as teaching, not as a rebuff.
+3. **The hottest trap.** Answer "Mercury" to "which planet is the hottest?" — must be
+   corrected toward Venus, and the AFFIRM (after you then say Venus) must name the trap
+   ("even though it is not the closest").
+4. **The spotlight clock.** On identify items, watch: the pulsing halo must appear only
+   AFTER her ask finishes (runner stimulus gate) and the planet's LABEL must stay hidden
+   until her affirmation reveals it in emerald. On a wrong answer, the re-flash waits for
+   her correction to finish.
+5. **Looking stays free.** Mid-question, zoom, pan, and tap planets open (on a compare item
+   the research card shows) — the tutor must stay silent through all of it and judge only
+   what you SAY.
+6. **A description is not a name.** Answer "the red one" — the contract calls it wrong and
+   the correction asks for the name. Confirm this feels like DI, not pedantry, at K.
+
+Headless first (closes the semantics half — DONE 2026-08-19, all five modes):
+`cd backend/tests/tutor_live && python run_tutor_live.py --component solar-system-explorer
+--di --eval-mode <mode> --di-wrong signature` (+ `--di-cap`). Report target:
+`qa/di/BACKLOG.md` item 25. Filed 2026-08-19.
+
+### #113 — **`place-value-chart` (math port 8, the FIRST past the ≤20 bench): the mic row IS the #63 acceptance material — fold the two into one sitting** · OPEN
+
+**Why a row.** Machine gates green (40 di-script pins, typecheck 0 in-slice, census 0, live
+6-probe build clean with zero drops) and the headless drives are green (compare plain +
+signature, identify signature, build signature, cap drill 0 HIGH after the ones-place leak
+fix) — but this pack is the first production caller of `place_value_word`
+(accepted-build-ahead, 2026-08-19), so its spoken answers run PAST twenty ("forty", "three
+hundred", "ninety thousand") — exactly the multi-word-numeral material sitting #63 owes.
+**One mic sitting can close this row AND accept #63**, which unblocks coin-counter,
+area-model, array-grid, skip-counting-runner and the whole >20 tier. Price it as
+lane-unblocking, not as one row.
+
+Drive a lesson place-value-chart (or the tester) with the mic, and say per kind:
+
+1. **The -ty/-teen ear — the sitting's sharpest question.** Where "forty" is right, say
+   "fourteen" confidently; it must be corrected, never leniently matched. Then take an
+   `identify` dictation of a TEEN number (thirteen) and a decade (thirty) and listen for
+   which the ASR hears from a real voice.
+2. **The subset pair.** On a ten-thousands item answer a bare "thousands" — the contract
+   calls it the wrong column and corrects; listen that the two-word right answer
+   ("ten thousands") survives ASR as two words.
+3. **Two-token values.** Say "three hundred" and "ninety thousand" as answers — the
+   `place_value_word` class's whole case; then say the signature bare digit ("three") and
+   check the refusal, which is the #63 discriminating-judge criterion.
+4. **The unit form.** Answer "four tens" where "forty" is right — the accept clause counts
+   it, and the affirmation must echo "forty".
+5. **The writing turn.** On a dictation, think out loud while typing ("four hundred…
+   six…") — the tutor must stay silent (bracket hold); stop typing and check the ~4s
+   stillness commit; tap-to-hear must re-dictate the whole number (it is never printed).
+6. **The advance is her voice** — no dead air after affirmations; on a wrong answer the
+   re-ask must not race her correction.
+
+Headless first (closes the semantics half): `cd backend/tests/tutor_live && python
+run_tutor_live.py --component place-value-chart --di --di-wrong signature` (+ `--di-cap`).
+Report target: `qa/di/BACKLOG.md` item 18. Filed 2026-08-18.
+
+### #111 — knowledge-check (DI port 23, the FIRST cross-cutting port): the closing assessment goes spoken, and one session mixes five answer materials the mic has never carried back-to-back · OPEN
+
+**Why a row.** Machine gates green (28 di-script pins, typecheck 0, census 0, live 3-probe
+build clean) and the headless drive is one command away — but only a mic run proves the loop
+a child is in, and this pack is the first whose SESSION switches response class between
+consecutive items (yes_no → closed_set_choice → short_spoken_word in one run). Every earlier
+port held one or two classes per session.
+
+Drive a lesson knowledge-check (or the tester) with the mic, and say per kind:
+
+1. **true_false — the natural verdicts.** Answer "yes" and "nope" instead of "true"/"false";
+   both must be affirmed. Then answer a fragment of the STATEMENT back ("eight legs…") —
+   the contract says that judges nothing; a verdict on it is a finding.
+2. **choice (spoken menu) — the short form.** Answer with the distinguishing word alone
+   ("cow"), then on another item with the position ("the second one"); both are full
+   answers. Say a wrong option's short form and check it is corrected, not matched leniently.
+3. **sort — the fluent non-placement.** When asked "which group does shark go in", answer
+   "shark". The contract treats it as no answer (stay-silent), never as wrong — listen for
+   which happens.
+4. **blank — the bank distractor.** Say the on-screen word-bank word that does NOT fit; it
+   must be corrected. Then say the answer inside the whole sentence — must be affirmed.
+5. **choice_tap — the silence bracket.** On a KaTeX/number MCQ, talk while deciding
+   ("hmm, maybe this one…") and check the tutor stays silent until you TAP; the orb label
+   must read the touch form, never "I'm listening".
+6. **The advance is her voice** — after each affirmation the next ask arrives with no dead
+   air and no double-flash; on a wrong answer the re-ask must not race her correction.
+
+Headless first (closes the semantics half): `cd backend/tests/tutor_live && python
+run_tutor_live.py --component knowledge-check --di --runs 3` (+ `--di-cap`).
+Report target: `qa/di/BACKLOG.md` item 23 slice 2. Filed 2026-08-18.
+
+### #110 — **`ordinal-line` (math port 6): the pack REFUSES a word that differs from the right answer by ONE WORD-FINAL FRICATIVE, and that is the hardest sound a five-year-old makes** · OPEN
+
+**Why a row, and why this is the sharpest mic question the lane has had.** Every earlier
+port's ear question was "can the judge hear the child at all". This one is narrower and it
+cuts both ways, because the pack's own contract makes /θ/ the difference between a correct
+answer and the misconception it exists to undo:
+
+- *four* → *fourth*, *six* → *sixth*, *five* → *fifth* differ by a **word-final /θ/**, and
+  `sixth` puts it after /ks/ — the hardest cluster in English for a K-1 mouth.
+- The contract says the bare counting number is **WRONG however close it sounds** (that is
+  the whole point of the `match` and Grade 1 `identify` modes), so:
+  - **(a) a child who says "fourth" but drops the /θ/ gets REFUSED while being right** —
+    the worst failure this family can produce, a correct child corrected; and
+  - **(b) a child who says "four" gets AFFIRMED while holding the misconception** — the
+    lesson teaching the exact confusion it was built to remove.
+- `--di` sends clean TEXT, so it can see NEITHER. The headless drives refused "four" for
+  "fourth" 12/12 and affirmed "fourth" 12/12 — that proves the judge's SEMANTICS and says
+  nothing at all about the acoustics, which is the whole of this row.
+
+**Say these, on purpose, and watch which way it goes.**
+
+| Mode | Grade | Say this | It should be |
+|---|---|---|---|
+| `match` | K | *"four"* over the `4th` card | REFUSED — cardinal for ordinal |
+| `match` | K | *"fourth"* said naturally | affirmed |
+| `match` | K | *"fourf"* / *"fort"* (the real K articulation) | **affirmed** — this is the row |
+| `match` | 1 | *"six"* then *"sixth"* over the `6th` card | refused, then affirmed |
+| `match` | 1 | *"seventh"* over the `6th` card | REFUSED — the near-pair |
+| `identify` | 1 | *"three"* for a third-place ask | REFUSED — cardinal for ordinal |
+| `identify` | 1 | the wrong-END place (say *"eighth"* on a 10-line where the answer is *"third"*) | REFUSED — the #1 recorded misconception |
+| `identify` | K | *"the bear"* where the character is **Polar Bear** | affirmed (accept clause) |
+| `identify` | K | *"that one"* | REFUSED — a pointing word is not a name |
+| `relative_position` | K | the ANCHOR's name (the one the question points at) | REFUSED |
+| `sequence_story` | K | a place from the wrong character | REFUSED |
+| `build_sequence` | 1 | put them in the wrong order and STOP TOUCHING | commits on stillness, then corrected |
+
+**Four more things only a mic can close.**
+
+1. **Two-word animal names, read aloud and said back.** The live probe drew *Polar Bear*,
+   *Sea Turtle*, *Snow Owl*, *Marching Penguin*, *Red Fox*. The accept clause invites the
+   short form (*"the bear"*), and ASR on a compound animal name is unmeasured — #107 asked
+   a version of this for two-word OBJECT names and it is still open.
+2. **`sequence_story` speaks 40-60 words of GENERATED NARRATIVE into an open mic, and the
+   narrative NAMES THE ANSWER by construction** (it has to — that is the listening task, and
+   it is the pack's only `leakExemptSpan`). #100 asked whether the judge ever credits its own
+   voice to the child over a much shorter read; this is the longest version of that question
+   the family has shipped.
+3. **The stillness window on `build_sequence` (4000ms mid-line / 1500ms full) is hand-tuned
+   by ear**, carried over from compare-objects. A K child who pauses to think mid-line and
+   gets committed early has spent one of two corrections for free.
+4. **The ordinal labels are held behind `runner.revealHeld`** — pixel-check that they paint
+   ONLY while the tutor is affirming, on an item that is NOT the last one (18b's defect
+   painted the reveal on the final item and nowhere else, in four ports, for a month).
+
+**Everything a machine could hold is green:** 77 tests / 2 suites (8 revert-bites), full tsc
+803 = baseline with 0 in any touched file, census greps 0, live probe 10/10 cases across all
+five eval modes × both bands with 0 gate issues and 0 leaks, and the headless drives below.
+Report: `qa/tutor-reports/ordinal-line-live-di-*-2026-08-18.md`.
+
+### #109 — knowledge-check categorization MICROSTEP (item 23 slice 1): a drag surface became a tap surface, and only a real browser can prove the tap loop · OPEN
+
+**Why a row.** The rewrite is jsdom-green (5 pins) and typecheck-clean, but it replaced
+HTML5 drag — which never fires on touch — with tap-to-place, and the whole justification is
+tablets. jsdom proves the logic, not the pixels or the touch path.
+
+Drive a lesson whose knowledge-check plans a `categorization_activity` (any G1 `analyze` or
+`mixed` topic that routes one), in real Chrome AND once with DevTools touch emulation:
+
+1. **One item at a time:** a single large item card + the group panels; no item list, no
+   "Check Answer" button anywhere in the categorization step.
+2. **Tap = commit:** tap the right group → chime + green pop, chip lands ✓, next item after
+   ~1s. Tap a wrong group → buzz + shake, the chip lands in the **correct** group marked ✗
+   (the board must end TRUE), next item after ~2s.
+3. **No dead taps:** during the verdict beat, extra taps do nothing (no double sounds).
+4. **Container handoff:** after the last item, the rationale card + Try Again render; a
+   not-all-correct sort shows the KC container's Next → button and does NOT auto-advance;
+   an all-correct sort auto-advances after the dwell.
+5. **Touch emulation:** repeat one full sort with DevTools device toolbar on — every tap
+   must register (this is the regression the rewrite exists to fix).
+
+Report target: `qa/di/BACKLOG.md` item 23 slice 1. Filed 2026-08-18.
+
+### #108 — `shape-sorter` (DI port 22, 5th MATH port): `shape_name` gets its first PRODUCTION caller, and two of its answers differ by ONE SYLLABLE at the front of a shared word · OPEN
+
+**Why a row.** The standing rule is machine gates + a live probe when a port adds no new
+response class and no new answer material. This port clears the first half —
+`shape_name`, `number_word_to_20` and `short_spoken_word` are all benched — and fails the
+second in a way that is specific and testable, so the row is narrow rather than a full
+re-run of the judging contract (proven on five surfaces now).
+
+**The ear question the `--di` drive cannot reach, because it sends TEXT.** The drive proved
+the JUDGE separates these; it says nothing about whether ASR delivers them separated.
+
+1. **`pentagon` vs `hexagon` share their last two syllables** (/-əɡɒn/), and `octagon` is in
+   the same family if the shape set ever grows. They differ ONLY in the first syllable, spoken
+   by a five- or six-year-old. The signature drive refused "pentagon" for a hexagon 6/6 as
+   text — but if ASR hears a child's "hexagon" as "pentagon", a CORRECT child is corrected,
+   which is worse than a wrong one being affirmed. **Say each one over the other's drawing and
+   check the verdict, twice.**
+2. **`rectangle` vs `rhombus`** both open on /r/ and are the two longest names in the set.
+   Same test.
+3. **`diamond` / `rhombus` must BOTH be affirmed over the one drawing** — they are a single
+   branch of `renderShapeSVG`, so the pack accepts either by contract. Say the less obvious
+   one ("rhombus" at K) and check it is not corrected.
+4. **The sort answer is a NUMERAL inside a phrase** — "3 sides" vs "4 sides", accepted as the
+   bare number by contract. Say just "three" and check it is affirmed for the "3 sides" group.
+5. **`shape_name`'s own bench is a PROBE SET, not a shipped pack** — di-shapes' pack L0 gate
+   (#72) has never been driven. This is the class's first production caller in the runner era,
+   so a clean sitting here is worth more than one row.
+
+**Not covered by any drive, and cheap to check while you are here:** the `hard` tier for a
+READER stops SPEAKING the groups (`namesChoices: false`) and leaves them printed. The harness
+has no difficulty flag, so that path is gate-covered and probe-covered only. Run a Grade-1
+`sort` at `hard` and confirm the mats are still labelled and the ask says "Which group does
+this shape belong with?" with no menu.
+
+**Everything else is machine-green:** 58 di-script tests, 6-case live probe (44 items, 0 gate
+issues, 0 leaks), four `--di` drives (26/26 wrong refused, 26/26 right affirmed, including
+the near-name 6/6, the off-by-one 4/4 and the shape-name-for-group 12/12), and a cap drill
+whose only findings are the known open 18c pair. Report: `qa/di/BACKLOG.md` item 18.
+
+### #107 — compare-objects (DI port 21, 4th MATH port): can a five-year-old SAY an attribute phrase, and does ASR hear a two-word object name? · OPEN
+
+**Why a row at all, when P2/P3 filed none.** The standing rule is machine gates + a live
+generation probe when a port introduces no new response class and no new answer material. This
+port clears the first half — `short_spoken_word`, `number_word_to_20` and `manipulation` are all
+benched — but not the second: it puts two new SHAPES inside `short_spoken_word` that no sitting
+has heard.
+
+**What a machine already proved (do not re-check these):** `compare_two` 21/21 wrong refused +
+21/21 right affirmed over 3 runs · `non_standard` **signature** drive 21/21 — the off-by-one
+(n+1) refused every time · `identify_attribute` 12/12 + 12/12 · `order_three` gesture 7/7 with the
+hands-hold beats genuinely silent (0 audio bytes) · cap drill 3/3 `My turn:`, **no
+`di-no-verdict`**. Reports: `qa/tutor-reports/compare-objects-live-di-{plain,signature}-2026-08-17.md`.
+
+**What only a mic can close — say these OUT LOUD:**
+1. **The attribute phrase.** On `identify_attribute` the tutor asks *"Is the picture showing us
+   how long they are, how heavy they are, or how much they hold?"* Answer it three ways and check
+   all three are accepted: the full phrase (*"how heavy they are"*), the bare key word
+   (*"heavy"*), and the grown-up noun (*"weight"*). A five-year-old will do the middle one.
+2. **Two-word object names through ASR.** On `compare_two`, say names like *"cotton ball"*,
+   *"jump rope"*, *"frozen popsicle"*. Then say a WRONG one on purpose and confirm the correction
+   fires; then say *"that one"* and confirm it is treated as wrong (the contract says so — a
+   pointing word is not a name).
+3. **The off-by-one out loud.** On `non_standard`, count aloud and deliberately land one too many.
+   Machine-proven in text; unproven as speech, and counting-aloud-then-answering is exactly the
+   acoustic shape the accept clause has to survive.
+
+**Also needs a browser glance (not the mic — pixels):**
+4. **The unit numbering must NOT be visible while the child counts.** `non_standard` numbers the
+   measuring boxes 1..n, and the last box equals the spoken answer. It is gated on
+   `runner.revealHeld`, so it must appear ONLY while the tutor is affirming. *Should work — not
+   driven in a browser.*
+5. **The `order_three` close.** Touch two of three and stop: it should commit after ~4s and be
+   corrected as incomplete. Touch all three and stop: ~1.5s. Neither is correctness-gated — a
+   reversed order must commit just as readily as the right one. Windows are hand-tuned by ear.
 
 > **📐 FORMAT UNIFIED 2026-08-13 (user ruling).** This file used to keep TWO "Open"
 > sections in two formats — a `###` section list for the judged-loop era and a 5-column
@@ -97,6 +462,39 @@ measures rhythm.
 vocabulary is not in scope, and the pack builds nothing rather than degrade). `parse_structure` is
 the one to watch: it carries the answer-key fix, and its asks are the two-word "subject or predicate"
 binary.
+
+### #112 — **`sorting-station` (DI port 20, math port 7): the first pack whose SESSION is one mode repeated a dozen times, and the first to ask a child to NAME A PICTURE with no menu at all** · OPEN
+
+Ported 2026-08-18 on the user's own reading of the primitive — *"there's a lot of mental complexity
+for young learners, maybe use as an opportunity to simplify and make sequential with voice DI
+control."* All seven eval modes speak; the drag-to-bin, three Check buttons, the attribute buttons,
+the number steppers and the odd-one-out tap are gone. Machine gates are green and unusually broad
+(7/7 modes live-probed, 27/27 challenges kept, 0 drops; plain + signature drives PASS on four modes;
+cap drill 0 HIGH). What no text drive reached:
+
+- **`odd_one_out` asks the child to NAME A PICTURE, and the ask deliberately lists nothing.** Every
+  other closed-set ask in the family names its options aloud; this one cannot, because saying the six
+  cards would say the answer. So the child must produce the word for a picture from their own
+  vocabulary — and the accept clause leans on *"a close everyday word for the same picture"*. Say
+  **"the truck"** for a card labelled *Fire Truck*, **"doggy"** for *Dog*, **"the round one"** for
+  *Ball*. The first two should be accepted; the third should not (it is a description, not a name).
+  This is the mode most likely to fail a child who is RIGHT.
+- **A dozen consecutive asks of one template.** One challenge is now one judged turn per object, so a
+  `sort_one` session is *"Your turn. Listen: X. Need, or Want?"* ten to twelve times. The repeat-ask
+  gate passes it because the content varies — but only an ear can say whether it is a DRILL (which is
+  the method) or a DRONE. Listen for whether you would want to be the child on ask nine.
+- **The count kinds say a number into a room where the answer is also a pile of pictures.** On
+  `count_group` the child may count aloud on the way — *"one, two, three… three!"* — and the contract
+  says only the number they LAND on is the answer. Drive it: count aloud slowly and land right; then
+  count aloud and land wrong. The first must be affirmed, the second refused.
+- **`two_attributes` is the contract's G2 unlock, and it is a `yes_no` answer at volume.** Rides
+  #94's owed acceptance. Say *"yeah"*, *"nope"*, *"it is"*, *"only one"* — all named in the accept
+  clause, none of them the bare word.
+
+⚠️ **Not a mic question but ask it while you are there:** the K band floor is UNMOVED by this port
+(contract R3 — unflooring needs a reader-fit re-audit, not a catalog edit). At Kindergarten a child
+still gets only `sort_one` and `odd_one_out`. Whether the other five should now be unfloored is the
+decision this port was built to make possible.
 
 ### #105 — **`genre-explorer` (DI port 19): `yes_no` gets its first high-volume caller, and the tutor now speaks 20-70 words of GENERATED NARRATIVE into an open mic before every band-floor ask** · OPEN
 
@@ -1481,10 +1879,10 @@ The dep-list rules that fixed them stay — but the thing that made them fatal i
 - **How to reach it:** `npm run dev` → dev tools → **math**-primitives-tester → `hundreds-chart`, or trace the topic "Counting to 10" at K
 - **Source report:** `qa/topic-traces/counting-to-10-2026-08-08.md`
 
-### #80 — **`cell-builder` Place phase — the answer used to be printed on the card; confirm it isn't, and that the correction still teaches** · OPEN
-- **What to check:** *(Opened 2026-08-08 with the CB-1 fix. Render-path change, not browser-driven.)* CB-1 was CRITICAL: every **unplaced** organelle in the drag palette carried `Zone: Center` / `Zone: Near Nucleus` / `Zone: Cell Edge` — the answer key, ungated, in the default UI state. The palette now renders the **name only**, and the zone appears on the *placed* organelle behind `placeChecked && !zoneCorrect`. **(a)** Before checking, confirm no zone vocabulary appears anywhere on screen — palette cards, tooltips, or the cell itself. **(b)** Place one organelle wrong and Check: you should get `→ <Zone>` on that organelle, and nothing on the ones you got right. **(c)** Judge the pedagogy, which is the real question: the student can now drag to the revealed zone and re-check for full marks, since the score is computed from final positions. Is a corrective reveal that can be acted on still teaching, or should the first attempt be what scores? **That question is not cell-builder-specific** — it applies to every retryable primitive, and CS-1 is filed for the same shape on `classification-sorter`. Report what it feels like rather than filing a bug. **(d)** Related but separate: while placing, notice how *forgiving* the zones feel — that is **CELL-1**, measured (one point satisfies 5 of 6 zones), already filed, and not fixed here.
-- **How to reach it:** `npm run dev` → dev tools → **biology**-primitives-tester → `cell-builder` → Place phase
-- **Source report:** `qa/EVAL_TRACKER.md` CB-1 (closed) + CELL-1 (open); `qa/eval-reports/dna-explorer-DNA-1-2026-08-08.md`
+### #80 — **`cell-builder` redesign — judge the new model regions and four mission surfaces in a real browser** · OPEN
+- **What to check:** *(Rebased 2026-08-18 after CELL-1 closed in code; focused jsdom/runtime 10/10, not browser-driven.)* **(a)** Generate each of the four eval modes and Auto. A pinned mode should show one mission; Auto should show all four in order. **(b)** In Build the model, the palette may show organelle names but never the organelle→region mapping. The six region labels are the answer choices, not a leak. Place one structure wrong and commit: its `→ <Region>` correction should appear, all placement controls should lock, and no re-check path should rewrite the first score. **(c)** Judge the science: does “relationship map, not a literal floor plan” plus the distinction between **Cytoplasm** (one structure away from the core) and **Distributed throughout** (many copies) prevent false 2D precision? **(d)** Check narrow width: the organelle bay, six targets, long labels, and specialization quantity chips must remain usable without clipping. **(e)** The specialization reasoning must be absent before commit and readable afterward. Report feel/pedagogy as well as actual broken states.
+- **How to reach it:** `npm run dev` → dev tools → **biology**-primitives-tester → `cell-builder` → each eval mode + Auto
+- **Source report:** `qa/eval-reports/cell-builder-2026-08-18.md`; `src/components/lumina/docs/contracts/cell-builder.md`; `qa/EVAL_TRACKER.md` CB-1 / CELL-1 (closed)
 
 ### #79 — **`constellation-builder` + `planetary-explorer` @ K (item 16) — the last two astronomy voices** · OPEN
 - **What to check:** *(Opened `/pm` 2026-08-08. **Opened from the SHAPE of the slices, not from a claimed residual** — neither report files live-audio debt, but constellation-builder's severe finding was that its tutoring channel arrived **EMPTY**, and a repaired voice nobody has heard is exactly what #73/#74/#75 exist for.)* **constellation-builder — the row's real question.** Pre-fix, a full catalog tutoring block delivered nothing: `sendTextTags: []`, **0 of 7 contextKeys resolved**, ~10 `(not set)` in the live prompt. So confirm the tutor now actually SPEAKS on arrival at K and names what to do — for a non-reader its voice IS the instructions. Then confirm it speaks on star selection without narrating every tap. Known residual to judge, not file: `free_connect` is two-tap with no spoken twin for "star selected" (Tier 2, grades 1–3 — a band gate, not a redesign, if K ever routes there). **planetary-explorer.** At K the options are single concrete colour words the tutor must SAY (rule 3 is PARTIAL by design — this is a text MCQ). Confirm the tutor speaks the options; a silent beat leaves a non-reader with unreadable buttons. Two residuals to judge rather than re-file: the nav buttons (`Ready for Questions →`, `Check Answer`) have **no spoken twin** — can a child proceed by position alone? And rule 8 fails by design (it is a read-then-quiz instrument; the fix is a rebuild conversation, not a slice). Grade-5 control: content should be adult-register again.
