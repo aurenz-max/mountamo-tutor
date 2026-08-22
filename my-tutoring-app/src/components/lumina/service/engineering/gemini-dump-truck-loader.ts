@@ -7,9 +7,40 @@ import { buildScopePromptSection } from '../scopeContext';
 import type {
   DumpTruckLoaderData,
 } from '../../primitives/visual-primitives/engineering/DumpTruckLoader';
+import {
+  selectDumpTruckJobs,
+  selectMixedDumpTruckJobs,
+} from '../../primitives/visual-primitives/engineering/dumpTruckJobs';
+import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
 
 // Re-export for convenience if needed elsewhere
 export type { DumpTruckLoaderData };
+
+/**
+ * The eval-mode ladder — task identities, not difficulty dials.
+ *
+ * Fork A: the jobs themselves are CODE-OWNED (the density arithmetic IS the
+ * correctness, so Gemini never authors the numbers). The resolution therefore
+ * selects jobs from the pool rather than constraining a schema enum; Gemini
+ * still writes the title/description, so it is told which rung it is framing.
+ */
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  load: {
+    promptDoc:
+      `"load": the student hauls a target number of loads and discovers BY DOING which meter (bed volume or weight scale) stops them first. Procedural — no prediction is asked for.`,
+    schemaDescription: "'load' (haul N loads, discover the limit)",
+  },
+  predict: {
+    promptDoc:
+      `"predict": the student commits to which meter will fill first BEFORE loading anything, then verifies. Never state or hint at the binding meter in the title or description — that is the question.`,
+    schemaDescription: "'predict' (call the binding meter first)",
+  },
+  plan_trips: {
+    promptDoc:
+      `"plan_trips": the student clears an entire pile and works out how many trips the material's density forces. Quantitative and multi-step.`,
+    schemaDescription: "'plan_trips' (clear a pile, reason the trip count)",
+  },
+};
 
 /**
  * Schema for Dump Truck Loader Data
@@ -107,9 +138,28 @@ export const generateDumpTruckLoader = async (
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<DumpTruckLoaderData>;
+
+  // Which SKILL is this instance running? Explicit pin wins; otherwise the
+  // intent/objective resolves it. null => genuine mixed.
+  const resolution = await resolveEvalModes(
+    'dump-truck-loader',
+    {
+      targetEvalMode: ctx.targetEvalMode,
+      intent: ctx.intent,
+      objectiveText: ctx.objective?.text,
+    },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const modeSection = resolution
+    ? `\nTHIS INSTANCE RUNS ONE RUNG OF THE LADDER:\n${resolution.modes
+        .map((m) => CHALLENGE_TYPE_DOCS[m.evalMode]?.promptDoc ?? m.evalMode)
+        .join('\n')}\nWrite the title and description to frame THAT task. Do not name which meter fills first.\n`
+    : '';
+
   const prompt = `
 Create an educational Dump Truck Loader visualization for teaching "${topic}"
 ${scopeSection} to ${gradeLevel} students.
+${modeSection}
 
 CONTEXT - DUMP TRUCK LOADING ENGINEERING:
 A dump truck is a vehicle with a tilting bed used to transport and dump loose materials:
@@ -351,6 +401,20 @@ Return a complete Dump Truck Loader configuration appropriate for the grade leve
     if (config.theme) data.theme = config.theme;
     if (config.truckColor) data.truckColor = config.truckColor;
   }
+
+  // Fork A: the jobs are code-owned and mode-selected. A manifest-supplied
+  // config.jobs (a curator override) still wins.
+  if (!config?.jobs || config.jobs.length === 0) {
+    data.jobs = resolution
+      ? selectDumpTruckJobs(resolution.allowedTypes, 4)
+      : selectMixedDumpTruckJobs(6);
+  }
+
+  console.log(
+    `[DumpTruckLoader] modes: ${
+      resolution ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})` : 'mixed'
+    } -> jobs [${(data.jobs ?? []).map((j: { id: string }) => j.id).join(', ')}]`,
+  );
 
   return data;
 };

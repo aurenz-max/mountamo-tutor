@@ -733,7 +733,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "shape-strength-tester":      {"default": PriorConfig(3.5, "Test shape rigidity under load")},
     "foundation-builder":         {"default": PriorConfig(3.5, "Design foundations for soil/load")},
     "excavator-arm-simulator":    {"default": PriorConfig(3.5, "Control multi-jointed excavator arm")},
-    "dump-truck-loader":          {"default": PriorConfig(2.5, "Load and haul material within capacity")},
+    "dump-truck-loader": {
+        "load":       PriorConfig(-1.0, "Haul N loads; find the binding meter by doing"),
+        "predict":    PriorConfig(0.0, "Call which meter fills first before loading"),
+        "plan_trips": PriorConfig(1.5, "Clear a pile; reason the trip count from density"),
+    },
     "blueprint-canvas":           {"default": PriorConfig(3.5, "Draw technical floor plans and elevations")},
     "flight-forces-explorer": {
         "predict": PriorConfig(-1.0, "Predict flight outcomes before testing"),

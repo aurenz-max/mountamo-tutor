@@ -126,7 +126,33 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   {
     id: 'dump-truck-loader',
     description: 'Interactive dump truck loading and hauling simulation for teaching capacity, weight limits, and material transport efficiency. Students load material into the truck bed, monitor weight and volume capacity, drive to dump location, raise the bed to dump, and return for more loads. Features realistic Verlet physics for material particle simulation. Material types (dirt, gravel, sand, debris) have different densities affecting weight vs volume trade-offs. Teaches full and empty concepts, capacity constraints (weight AND volume), overloading consequences, counting loads, weight vs volume understanding, efficiency optimization (material per trip), and how dump trucks work. Shows real-world connections: construction sites, material delivery, landscaping, mining operations, waste management. Features multiple themes (realistic, cartoon, simple) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching capacity, material handling, weight concepts, and construction equipment.',
-    constraints: 'Best for grades K-5. Use for dump trucks, capacity concepts, weight limits, material handling, construction equipment, efficiency. K: full and empty concepts (cartoon theme, simple loads). K-1: capacity and "too much" understanding (overload feedback). 1-2: counting loads, how many trips needed (target loads). 2-3: weight limits vs volume limits (different materials, show both). 3-4: material density understanding (gravel is heavier than debris for same volume). 4-5: efficiency optimization (maximize load size, minimize trips, time limits). Supports free exploration and guided challenges with material moving targets and efficiency goals.',
+    constraints: 'Best for grades K-5. Use for dump trucks, capacity concepts, weight limits, material handling, construction equipment, efficiency. K: full and empty concepts (cartoon theme, simple loads). K-1: capacity and "too much" understanding (overload feedback). 1-2: counting loads, how many trips needed (target loads). 2-3: weight limits vs volume limits (different materials, show both). 3-4: material density understanding (gravel is heavier than debris for same volume). 4-5: efficiency optimization (maximize load size, minimize trips, time limits). Supports free exploration and guided challenges with material moving targets and efficiency goals. Curriculum home: G1 SCI005-02 "Construction Machines" (curriculum-fit 2026-08-21, 0.873 / 5-of-5).',
+    evalModes: [
+      {
+        evalMode: 'load',
+        label: 'Haul the Loads (Easy)',
+        beta: -1.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['load'],
+        description: 'Haul a target number of loads and discover by doing which meter — bed volume or weight scale — stops you first.',
+      },
+      {
+        evalMode: 'predict',
+        label: 'Call the Limit (Medium)',
+        beta: 0.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['predict'],
+        description: 'Commit to which meter will fill first BEFORE loading anything, then load up and check the call.',
+      },
+      {
+        evalMode: 'plan_trips',
+        label: 'Plan the Trips (Hard)',
+        beta: 1.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['plan_trips'],
+        description: 'Clear a whole pile and work out how many trips the material density forces — same pile, different trip counts.',
+      },
+    ],
     supportsEvaluation: true,
   },
   {

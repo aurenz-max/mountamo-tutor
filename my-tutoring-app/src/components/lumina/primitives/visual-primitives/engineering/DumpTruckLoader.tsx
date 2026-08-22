@@ -18,6 +18,21 @@ import {
   LuminaButton,
   LuminaBadge,
 } from '../../../ui';
+import {
+  DENSITY_BY_MATERIAL,
+  MATERIAL_LABEL,
+  DEFAULT_JOBS,
+  type MaterialType,
+  type DumpTruckJob,
+  type DumpTruckJobMode,
+} from './dumpTruckJobs';
+// Re-exported so the component stays the public face of the primitive.
+export {
+  DENSITY_BY_MATERIAL,
+  selectDumpTruckJobs,
+  selectMixedDumpTruckJobs,
+} from './dumpTruckJobs';
+export type { MaterialType, DumpTruckJob, DumpTruckJobMode } from './dumpTruckJobs';
 
 /**
  * Dump Truck Loader - Interactive dump truck loading and hauling simulation
@@ -59,96 +74,6 @@ interface DumpTruckLoaderProps {
   className?: string;
 }
 
-// ============================================================================
-// Density (weight per volume unit) — the heart of the lesson.
-// With a fixed bed (30) and weight cap (50): heavy materials hit the SCALE
-// before the bed fills; light materials fill the BED before they get heavy.
-//   full-bed weight = bedVolume * density  → if > capacity, WEIGHT-limited.
-// ============================================================================
-
-type MaterialType = 'dirt' | 'gravel' | 'sand' | 'debris';
-
-const DENSITY_BY_MATERIAL: Record<MaterialType, number> = {
-  debris: 1.0, // light & fluffy → bed fills first (volume-limited)
-  dirt: 1.5,   // medium → bed fills first, just under weight
-  gravel: 1.8, // heavy → weight-limited, bed ~83% full
-  sand: 2.5,   // wet sand, really heavy → weight-limited, bed ~67% full
-};
-
-const MATERIAL_LABEL: Record<MaterialType, string> = {
-  debris: 'light debris',
-  dirt: 'dirt',
-  gravel: 'gravel',
-  sand: 'wet sand',
-};
-
-// ============================================================================
-// Jobs — code-owned density puzzles (numbers = correctness).
-// Bed volume and weight capacity stay CONSTANT across jobs; only the material
-// (and therefore its density) changes, so the binding limit shifts. That
-// contrast is the whole lesson. Optional data.jobs can re-theme the words.
-// ============================================================================
-
-export interface DumpTruckJob {
-  id: string;
-  title: string;
-  material: MaterialType;
-  sourceSize: number;          // units of material at the pile for this job
-  goal: 'complete_loads' | 'clear_source';
-  targetLoads?: number;        // for 'complete_loads'
-  predict?: boolean;           // ask "which fills first?" before solving
-  brief: string;               // kid-friendly job description
-  hint: string;                // shown only on request
-  explainOnSolve: string;      // the density "why it worked" payoff
-}
-
-const DEFAULT_JOBS: DumpTruckJob[] = [
-  {
-    id: 'j1',
-    title: 'Light & Fluffy',
-    material: 'debris',
-    sourceSize: 60,
-    goal: 'complete_loads',
-    targetLoads: 2,
-    brief: "First job: haul this pile of light packing debris. Fill the bed right up and dump it at the dump zone — twice. Watch the two meters as you load: which one fills up first?",
-    hint: "Debris is light. Keep scooping — you'll fill the BED to the top long before the truck gets heavy.",
-    explainOnSolve: "Light debris is fluffy — the BED filled to the top while the weight scale barely moved. When material is light, the SIZE of the bed is your limit.",
-  },
-  {
-    id: 'j2',
-    title: 'Heavy Wet Sand',
-    material: 'sand',
-    sourceSize: 40,
-    goal: 'complete_loads',
-    targetLoads: 1,
-    predict: true,
-    brief: "New job: wet sand — and it's HEAVY. Load as much as you can safely carry, then dump it. First, make a prediction below.",
-    hint: "Try to fill the bed. You'll notice the truck refuses more sand while the bed still looks part-empty — that's the weight limit talking.",
-    explainOnSolve: "Wet sand is heavy! The SCALE hit the limit when the bed was only about two-thirds full. With heavy material, WEIGHT is your limit — not space. The bed can't fill all the way.",
-  },
-  {
-    id: 'j3',
-    title: 'Gravel Run',
-    material: 'gravel',
-    sourceSize: 50,
-    goal: 'complete_loads',
-    targetLoads: 1,
-    predict: true,
-    brief: "Gravel is heavier than dirt but lighter than wet sand. Predict which meter fills first, then load a full safe load and dump it.",
-    hint: "Gravel is heavy enough that the scale still wins — but the bed gets fuller than it did with the wet sand.",
-    explainOnSolve: "Gravel is heavy, so WEIGHT was still your limit — but because it's lighter than wet sand, the bed got fuller (about 83%) before the scale maxed out. Heavier material = less you can fit before the weight limit.",
-  },
-  {
-    id: 'j4',
-    title: 'The Big Haul',
-    material: 'sand',
-    sourceSize: 80,
-    goal: 'clear_source',
-    brief: "Big job: move ALL 80 units of wet sand to the dump zone. Because it's so heavy, each safe load is small — so how many trips will it take? Find out!",
-    hint: "Each safe load of wet sand is about 20 units (the scale limit). 80 units ÷ 20 per trip = 4 trips.",
-    explainOnSolve: "Heavy material means small safe loads, which means MORE trips. Wet sand only lets you carry ~20 units per trip, so moving 80 units took about 4 trips. Density decides your trip count!",
-  },
-];
 
 // Dump pile particle
 interface DumpPileParticle {
