@@ -31,7 +31,7 @@ batchable:
 |---|---:|---:|---:|---:|
 | math | 61 | 61 | 61 | 8 |
 | literacy | 32 | 32 | 28 | 20 |
-| engineering | 24 | 6 | 13 | **0** |
+| engineering | 24 | 7 | 13 | **0** |
 | core | 19 | 7 | 12 | 0 |
 | biology | 17 | **1** | 6 | **0** |
 | chemistry | 14 | 14 | 14 | **0** |
@@ -44,7 +44,7 @@ batchable:
 
 ### ⭐ The finding that orders this queue
 
-**103 primitives are DI-portable RIGHT NOW** — they carry eval modes and have no judged
+**104 primitives are DI-portable RIGHT NOW** — they carry eval modes and have no judged
 pack. Math alone is 53; chemistry is 14 and is *fully* eval+tutor wired with zero DI.
 
 So **the binding constraint on DI coverage is THROUGHPUT, not prerequisites.** An earlier
@@ -61,27 +61,91 @@ can share a script *template*. Wave B is organised by shape for exactly this rea
 
 ## Queue
 
-### A. 🔝 **L1 — the 41 that declare themselves evaluable and have no eval-mode ladder.** Executor: `/add-eval-modes` (after `/curriculum-fit`)
+### A. 🔝 **L1 — the 38 that declare themselves evaluable and have no eval-mode ladder.** Executor: `/add-eval-modes` — ✅ **curriculum-fit gate CLEARED 2026-08-21**
 
 These carry `supportsEvaluation: true` and **no `evalModes`**. The adaptive engine cannot
 discriminate difficulty on any of them, and none can take a DI port until this lands.
 
-- **engineering (17):** airfoil-lab, blueprint-canvas, bridge-builder, dump-truck-loader,
+- **engineering (15):** airfoil-lab, blueprint-canvas, bridge-builder,
   engine-explorer, excavator-arm-simulator, foundation-builder, gear-train-builder,
-  lever-lab, paper-airplane-designer, propulsion-timeline, pulley-system-builder, ramp-lab,
+  lever-lab, paper-airplane-designer, propulsion-timeline, pulley-system-builder,
   shape-strength-tester, tower-stacker, vehicle-design-studio, wheel-axle-explorer
-- **biology (13):** adaptation-investigator, bio-compare-contrast, bio-process-animator,
+- **biology (12):** adaptation-investigator, bio-compare-contrast, bio-process-animator,
   classification-sorter, dna-explorer, energy-cycle-engine, evolution-timeline,
-  food-web-builder, habitat-diorama, inheritance-lab, life-cycle-sequencer,
-  microscope-viewer, protein-folder
+  food-web-builder, inheritance-lab, life-cycle-sequencer, microscope-viewer,
+  protein-folder
 - **astronomy (6):** mission-planner, moon-phases-lab, orbit-mechanics-lab, rocket-builder,
   scale-comparator, telescope-simulator
-- **core (3):** comparison-panel, fast-fact, feature-exhibit
-- **physics (1):** motion-diagram · **media (1):** image-panel
+- **physics (1):** motion-diagram
+- **core (3):** comparison-panel, fast-fact, feature-exhibit · **media (1):** image-panel
+  — ✅ **USER RULING 2026-08-21: ladder these anyway.** They are not gateable by
+  `/curriculum-fit` (core/media have no curriculum subject, so retrieval declines by
+  design) and the treadmill risk was raised and overruled. **Do not re-probe them and do
+  not re-open the question** — write the ladders from the catalog `constraints`, as task
+  identities. They stay in queue A; they are simply ungated.
 
-⚠️ **`/curriculum-fit` FIRST, per primitive.** Do not author eval modes for a primitive
-with no curriculum home — that is how a maintenance treadmill starts. A primitive that
-fails curriculum-fit moves to §C (presentational) or gets a demand ruling, not a ladder.
+✅ **The `/curriculum-fit` gate is CLOSED — run 2026-08-21, all 36 probeable primitives
+MATCH.** Report + per-grade top-5 JSON:
+`qa/curriculum-fit/_sweep-coverage-queueA-2026-08-21.md`. **`/add-eval-modes` is
+unblocked; read the anchor tables in that report before writing a ladder.** Three things
+it changed:
+
+- **41 → 40.** `habitat-diorama` gained `evalModes` with its DI port (#116); biology is 12.
+- **40 → 38.** `dump-truck-loader` and `ramp-lab` gained focused ladders on 2026-08-21;
+  engineering is 15.
+- **The 4 core/media entries are NOT gateable** — their domains have no curriculum subject
+  (`_DOMAIN_TO_SUBJECT` omits core/media/assessment/calendar), so retrieval declines by
+  design. They declare `supportsEvaluation: true` so they are not §C either. **Ruling collected 08-21: ladder
+  them (see the roster above).**
+- ⚠️ **Never anchor a queue-A ladder at Grade 4.** G4 `SCI001-04 "Electric Circuits"` is a
+  semantic attractor — **17 of 37 primitives rank it top-1 there and 6 clear MATCH**,
+  because its subskills are written in generic systems language (*"identify the
+  components… describe the role of each part"*, *"trace the transformation of energy into…
+  motion"*). Sole legitimate G4 home is `evolution-timeline` → SCI004-06. The curriculum
+  side of this is a `/curriculum-author` item, not a campaign item.
+- **SCIENCE publishes K,1,2,3,4 — no G5.** Every science ladder is bounded K–4.
+
+✅ **PILOT SHIPPED 2026-08-21 — `dump-truck-loader`** @ G1 `SCI005-02 Construction
+Machines` (0.873, 5/5). 3 rungs `load` / `predict` / `plan_trips`, a 12-job code-owned
+pool, catalog + backend β. Gates: `typecheck:lumina` 0 · 17/17 contract tests · **live
+Gemini drive on all three paths incl. unpinned intent resolution**. Owes a browser check.
+Report: `qa/eval-reports/dump-truck-loader-evalmodes-2026-08-21.md`.
+
+✅ **`ramp-lab` SHIPPED 2026-08-21 — the first sandbox-to-assessment conversion.** Three
+task identities (`compare_conditions` / `find_threshold` / `design_with_budget`), a
+12-challenge code-owned physics pool, hidden-before-check force evidence, evaluation
+submission, catalog + backend β. Gates: `typecheck:lumina` 0 · 7/7 contract tests · live
+pinned/mixed/unpinned drives. Owes browser check #120. Report:
+`qa/eval-reports/ramp-lab-2026-08-21.md`.
+
+⚠️⚠️ **THE FINDING THAT RE-ORDERS THIS SECTION: much of the engineering block has nothing to
+evaluate.** `ramp-lab` was the curriculum-fit pilot pick and originally had **1172 lines
+with zero occurrences of challenge / answer / correct / submit**. Curriculum-fit measures
+whether a *home* exists; it is silent on whether the primitive has an *assessable moment*.
+**Triage before pulling any engineering entry:**
+
+- **Ready to ladder (5):** ✅ `dump-truck-loader` · `paper-airplane-designer` ·
+  `engine-explorer` · `vehicle-design-studio` · `airfoil-lab`
+- **Solve surface, no challenge structure (6):** `bridge-builder`, `tower-stacker`,
+  `shape-strength-tester`, `blueprint-canvas`, `excavator-arm-simulator`,
+  `foundation-builder` — a ladder here needs a challenge structure authored with it.
+- **⛔ Pure sandbox (5) — challenge surface FIRST:** `lever-lab`, `wheel-axle-explorer`,
+  `pulley-system-builder`, `gear-train-builder`,
+  `propulsion-timeline`. `/add-eval-modes` alone buys these a log line and nothing a
+  student can see. **Do not pull one off the top expecting a 15-line slice.**
+
+**➡️ Next: `paper-airplane-designer` or `engine-explorer`** (both ready, both queue A).
+`dump-truck-loader`'s Fork A shape — code-owned pool tagged by task identity + a
+mode-aware selector + a `selectMixed*` rotation — is the template for any primitive whose
+correctness is arithmetic. Run the same assessability check on the biology 12 and
+astronomy 6 before scoping them.
+
+⚠️ **Six SOFT homes need the ladder written against the observable, not the primitive's
+concept** — `protein-folder`, `dna-explorer`, `microscope-viewer`, `rocket-builder`,
+`propulsion-timeline`, `energy-cycle-engine`. Per-primitive guidance is in the report's
+diagnosis table. **Five are content-agnostic shells** (`adaptation-investigator`,
+`bio-compare-contrast`, `food-web-builder`, `blueprint-canvas`, `bio-process-animator`)
+that match at 4-5 grades — ladder them as task identities, never grade bands.
 
 ⚠️ **Three of these are already spoken for.** `dna-explorer` (DNA-1/DNA-2),
 `classification-sorter` (CS-1), `bio-process-animator` (PA-1) and `life-cycle-sequencer`
@@ -98,7 +162,7 @@ adding modes** — a ladder over a leak just multiplies the leak.
 | chemistry | **14** | fully eval+tutor wired, **zero DI** — the single densest untouched block |
 | literacy | 12 | phase-1 remainder |
 | core | 7 | check presentational overlap first |
-| engineering | 6 | the 6 that already have eval modes |
+| engineering | 7 | the 7 that already have eval modes |
 | astronomy | 4 · physics 3 · calendar 2 · biology 1 · media 1 | tail |
 
 **Step B0 — ✅ EXECUTED 2026-08-18, see the cluster map below.** It produced **B1, an
@@ -190,7 +254,13 @@ meaningfully more.
 | physics | `gravity-drop-tower` | 5 | do_it, order_it, say_number |
 | core | `timeline-explorer` | 3 | do_it, order_it |
 
-**Pull order — chemistry first, and the pilot is `periodic-table`.** Chemistry contributes 5
+✅ **PILOT DONE + TWO SHIPPED (`/pm` 2026-08-22).** `periodic-table` shipped 2026-08-19 (mic
+#115) and `states-of-matter` shipped 2026-08-20 (mic #117, all three modes spoken) — both
+runtime-driven, not type-checked. **➡ The remaining chemistry three are the next pulls and they
+reuse the pilot template: `matter-explorer` · `gas-laws-simulator` · `ph-explorer`.** Then math.
+`habitat-diorama` (biology) also shipped 2026-08-21 off-roster on a user pull — di item 25.
+
+**Pull order — chemistry first, and the pilot was `periodic-table`.** Chemistry contributes 5
 of the 18, is fully eval+tutor wired, has **zero** prior DI work, and sits in no other queue
 ([[feedback_worked-primitives-self-select]]). `periodic-table` is the cleanest shape in the
 block: `choose_it` + `name_it` only, no gesture, no number words — one template, two classes.
@@ -209,7 +279,19 @@ template. Then math, which is the volume.
 
 These have ≥1 `explain_it` mode. **They are not fully blocked** — their other modes are
 portable — but porting them piecemeal creates the letter-spotter hybrid the DI doctrine
-strikes at (some modes spoken, one tapping). **Wait for di item 24**, then port whole.
+strikes at (some modes spoken, one tapping). ~~**Wait for di item 24**, then port whole.~~
+
+✅⚠ **THE GATE IS GONE — corrected by `/pm` 2026-08-22. `open_set_word` was BENCHED and di item
+24 CLOSED on 2026-08-19** (`qa/di-bench/run-2026-08-19-open-set-word.md`; the rhyme-studio pilot
+shipped with it, and `judgedScriptContract.ts` has no `blocked` class left). **These 21 have been
+portable for three days and this line was still telling readers to wait** — the stale-doctrine
+shape WORKSTREAMS names. Port whole, as originally intended; nothing is deferred.
+
+⚠ **One real precondition remains, and it is the INSTRUMENT, not the class: di item 27.** Three
+`--di-bench` defects corrupt open-set evidence — I2 silently overwrites a bench report with a later
+plain drive, I1 scores every correctly-fired specific correction branch as embellishment, I3 prints
+rhyme vocabulary into non-rhyme benches. **Fix item 27 before the next open-set bench**, then pull
+from this list freely.
 
 ### B3 — the 135 unclassified modes
 
@@ -241,4 +323,11 @@ read happens anyway during `/add-di-loop` phase 0, so a standalone pass is dupli
 
 ## Done
 
-*(nothing yet — opened 2026-08-18)*
+- **2026-08-21 — §A `/curriculum-fit` gate.** All 36 probeable queue-A primitives MATCH
+  against the live retrieval path; no curriculum gap, no thin-description finding, no
+  scoping failure. Roster corrected 41→40. `/add-eval-modes` unblocked.
+  `qa/curriculum-fit/_sweep-coverage-queueA-2026-08-21.{md,json}`.
+- **2026-08-21 — §A pilot `dump-truck-loader` L0→L1.** 3 rungs, 12-job code-owned pool,
+  catalog + backend β, 17 contract tests, live Gemini drive on all three resolution paths.
+  Produced the assessability triage above — the more valuable half of the slice.
+  `qa/eval-reports/dump-truck-loader-evalmodes-2026-08-21.md`. **Owes a browser check.**

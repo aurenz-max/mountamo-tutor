@@ -180,6 +180,97 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > (4) K-2 sessions are structurally shorter (5-substance pool × substance-once); the
 > draw returns what it can honestly fill and never pads.
 
+> #### ✅ 2026-08-21 — `habitat-diorama`'s HEADLESS DRIVES ARE RUN, AND THEY FOUND THREE DEFECTS NO MACHINE GATE COULD SEE. Mic row **#116** stands.
+>
+> **THE SLICE IN ONE SENTENCE: the port that shipped "machine-gated, drive owed" was
+> right to owe it — the judge's semantics were perfect on all five modes, and the
+> CONTENT the judge was faithfully affirming included the tutor telling a child, out
+> loud, that a water lily eats a mallard duck.**
+>
+> **WHY THE 08-20 RUN STALLED: nothing to do with the pack.** The frontend was not
+> running on :3000, so the probe never returned; the drive sat in `fetch_live_context`'s
+> retry loop. With the dev server up, the same probe answers in **17s**. One drive also
+> died mid-run on a backend `--reload` restart (WS **1012**) and passed on a straight
+> retry — the known hazard, no code involved.
+>
+> **DRIVE RESULTS — all five modes, plus both wrong-kinds on the three spoken ones and
+> the cap drill.** Every wrong refused, every right affirmed, `packGateIssues []` on live
+> content in every run: observe plain **5/5 + 5/5**, observe signature **5/5 + 5/5** (real
+> in-scene organisms as distractors), predict plain **5/5 + 5/5**, predict signature
+> **4/4 + 4/4** (1 challenge correctly dropped), defend plain **5/5 + 5/5**, defend
+> signature **5/5 + 5/5**, connect **5/5 + 5/5** gesture, restore **2/2 + 2/2** gesture.
+> Gesture holds were SILENT on every item — the silence contract holds. Cap drill PASS
+> with the family-shared `di-correction-verbatim-repeat` WARN.
+>
+> **⭐ DEFECT 8, THE WORST INSTANCE THIS FAMILY HAS SHIPPED — `connect` INVERTED THE
+> PREDATION DIRECTION ON 5 OF 5 LIVE ITEMS.** `relationshipClue('predation')` said *"the
+> living thing it eats"*, i.e. from = predator. The generator emitted the food-web
+> convention (from = prey, energy flowing prey → predator) — which is also the direction
+> the stage's own arrow draws. **Nothing anywhere defined the direction**: not the type,
+> not the schema, not the prompt. So the tutor said *"Find Water Lily. Connect it to the
+> living thing it eats"* with the key set to Mallard Duck, and *"Find Pond Tadpole…"*
+> keyed to Dragonfly Nymph. **Every single item was contradicted by its own explanation
+> in the very next breath** (*"The dragonfly nymph preys upon tadpoles"*), and every
+> machine gate passed because the key matched the drawing. A tap surface never had to
+> justify the relation; the spoken ask does.
+> **Fix (three layers, because a prompt alone is not a gate):** the direction rule is
+> pinned in ONE docblock — `fromId -> toId` follows the flow of energy or benefit — the
+> clues are rewritten to match, the generator prompt states it per relationship type, and
+> `predationDirectionOk` DROPS any predation edge whose eater does not outrank the eaten
+> on the trophic ladder the payload already carries (producers never eat; decomposers are
+> not predators). Re-driven: **4/4, every ask now agreeing with its own explanation.**
+>
+> **⭐ DEFECT 2 APPLIED TO A SIX-VALUE ANSWER SPACE STARVES THE SESSION.** `restore`'s
+> answer text is a bare ZONE, and the session-uniqueness rule keyed on it — so five
+> generated challenges collapsed to **two items, three dropped on zone collision alone**.
+> But defect 2 is a rule about what the verdict NAMED, and the verdict says *"Microscopic
+> Algae belongs in the water zone"*: a later item about a different organism that also
+> lives in the water is a new question, not recall. Keyed on the ORGANISM instead
+> (`sessionKeyFor`), and re-driven: **5 items, 0 dropped**, three of them sharing "water"
+> and all three honest. *Carry: the uniqueness key belongs on what the verdict SAID, not
+> on the answer field — check it wherever an answer space is small.*
+>
+> **DEFEND WAS DOUBLY FRAMED, AND SAID EVERY ANSWER WITH TWO FULL STOPS.** The ask
+> wrapped the prompt in *"Which evidence best supports this claim: …?"* while the
+> generator — told to emit a bare claim — reliably emits an INSTRUCTION, producing
+> *"Which evidence best supports this claim: Evaluate the claim that great blue herons
+> occupy the top tier of this wetland food chain.? Say the evidence that fits."* on all
+> ten live defend items. The ask now reads `${endSentence(prompt)} Say the evidence that
+> fits.`, which is grammatical for BOTH shapes and loses no framing (`howToPlayFor`
+> already carries it). Separately, evidence answers are whole sentences and the cue
+> templates append a stop: **10 audible `..` instances before, 0 after** (`asClause`).
+>
+> **Files:** `biology/habitatDioramaScript.ts` (direction docblock + `predationDirectionOk`
+> + `trophicRank` + `sessionKeyFor` + `endSentence`/`asClause` + defend ask) ·
+> `service/biology/gemini-habitat-diorama.ts` (direction pinned in the challenge contract
+> and the connect promptDoc) · four test files (fixtures flipped to the pinned direction;
+> the stage's source-tap test re-pinned on the same intent) · `HabitatDiorama.di-script.test.ts`
+> (+3 pins: direction spoken + inverted edge dropped + `predationDirectionOk` truth table;
+> restore keyed on organism not zone, both directions; defend single-frame + no `..`).
+>
+> **Gates:** `typecheck:lumina` **0** · census **0 + 0** · biology + habitat-generator
+> suites **108/108** · lumina service+hooks **1720 pass, 1 fail
+> (`intentConsumptionContract`, PRE-EXISTING — confirmed by stashing this slice and
+> re-running; a concurrent session's file)** · 11 live drives, reports in
+> `qa/tutor-reports/habitat-diorama-live-di-<mode>-<kind>-2026-08-21.md` with the
+> post-fix ones suffixed `-FIXED`.
+>
+> **Residuals (named, not hidden):** (1) Mic row **#116** — the drives prove SEMANTICS
+> only. (2) **The short-form accept clause has never been exercised**: the harness always
+> answers with the full `answerText`, and defend's answers are whole sentences no child
+> will recite. That is criterion 5 of #116 and the highest-value thing in it. (3)
+> **Commensalism and parasitism direction is prompt-pinned but not code-gated** — the
+> role ladder can order a predation pair and nothing else. A post-fix connect draw
+> (*"Freshwater Pond Snail … the organism that benefits from it without harming it"* →
+> Broadleaf Cattail) is plausibly still inverted and the explanation was too vague to
+> call it. (4) **Generated ecology is unverifiable in code**: the pre-fix defend draw
+> affirmed *"herons consume adult mallards"*. No gate proposed — it needs an eval pass,
+> not a regex. (5) **Grade-3 defend vocabulary is far over band** (*"trophic dependency"*,
+> *"benthic decomposers"*, *"apex"*) — a `/reader-fit` question, not a loop defect.
+> (6) **The harness overwrites its own evidence**: report paths carry the wrong-kind and
+> the date but NOT the eval mode, so driving five modes leaves one file. Renamed by hand
+> here; worth a one-line fix in `run_tutor_live.py` next time someone is in it.
+
 > #### 🧪 2026-08-20 — `habitat-diorama` REIMAGINED AS A LIVING ECOSYSTEM FIELD LAB; MACHINE-GATED, MIC ROW **#116**, HEADLESS SEMANTIC DRIVE OWED.
 >
 > **THE LADDER:** Observe β2.5 (spoken organism from evidence) → Connect β3.5
@@ -386,7 +477,42 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > on a no-reload uvicorn (the user's `--reload` server 1012s mid-session ~half the time —
 > harness note, not a port defect).
 
-### 25. 🎙️ **BUILT 2026-08-20, MACHINE-GATED — `association` is spoken. The live gates (8, 9) and the bench RUN (7) are OWED and need a running stack.** Executor: `/add-di-loop picture-vocabulary`
+### 27. 🔧 **OPENED 2026-08-21 — THREE `--di-bench` INSTRUMENT DEFECTS, found by running item 26's gates. Two of them corrupt the evidence a bench exists to produce.** Executor: no skill — direct edits to `run_tutor_live.py` + `diDrivePlan.ts`
+
+> **Why its own item:** these are a defect CLASS, not a picture-vocabulary fact. Every
+> remaining `open_set_word` port (word-builder morphology, knowledge-check 2b, retell, the
+> six proposition packs) will hit them, and **I2 destroys a bench record silently.** Fix
+> before the next open-set bench, not after.
+>
+> Evidence for all three: `qa/di-bench/run-2026-08-21-picture-vocabulary-association.md`.
+>
+> **I2 — ⚠️ THE HIGH ONE: A BENCH REPORT IS SILENTLY DESTROYED BY A LATER PLAIN DRIVE.**
+> `--di-bench` implies `--di` and leaves `--di-wrong` at its default `plain`, so a bench and
+> a plain drive both write `<id>-live-di-plain-<date>.md`. On 2026-08-21 the gate-8 drive
+> overwrote the gate-7 bench report in the same session — `grep -c bench-assoc` on that file
+> is now `0`, and the 48-probe matrix is gone from it. The run survived ONLY because the
+> console output happened to be captured. **Fix: give a bench its own filename
+> (`…-di-bench-…`).** Until then, capture console output on every bench.
+>
+> **I1 — `di-verdict-embellished` fires on every correctly-fired SPECIFIC correction branch.**
+> `run_tutor_live.py:2418` sets `expected_line = item["correctionLine"]` — ONE string, and
+> `DiDriveItem.correctionLine` takes `spans[len-1]`, the GENERAL branch. A pack with scripted
+> echo / category-word branches (which is now the shape `/add-di-loop` recommends for any
+> open class) therefore has its correct specific refusals scored as ~8 words of
+> embellishment. 8 bogus WARNs on the bench, 5 more on the signature drive.
+> **The plain drive is the control that proves it is the harness:** same primitive, same
+> oracle, only the general branch firing → **zero** embellishment WARNs.
+> **Fix: carry the branch SET into `expected_line` and match against the closest one.**
+>
+> **I3 — rhyme vocabulary leaks into every bench.** The summary prints
+> `VERDICT: FAIL - open_set_word stays blocked` and `N slant-rhyme disagreement(s)` whatever
+> the pack is. On an association bench all three phrases are wrong: it benched a PACK, the
+> class has been BENCHED since 2026-08-19, and there are no rhymes in the fixture. This is
+> the **stale doctrine line** shape WORKSTREAMS names — a rule copied forward silently
+> changes what gets built, and `tsc` sees none of it. **Fix: take the class name and the
+> soft-bucket label from the port's fixture, not from rhyme's.**
+
+### 26. ⛔ **GATES 7+8 RUN 2026-08-21 — gate 8 PASSES (both drives), gate 7 **FAILS**: `same-category` scored **0/8**, 7 false affirmations. The mode does NOT ship until the guard is fixed and the bench re-run.** Executor: `/add-di-loop picture-vocabulary`
 
 > **⛔ THE CODE IS BUILT AND IN THE REPO — do not re-derive the design.** What is left is
 > RUNNING it, not writing it. Pick this up by starting the stack and driving, not by reading
@@ -412,13 +538,54 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > - F3 FIXED: `--di-bench` now honors `maxCorrections` (re-anchors after N refusals). Budget
 >   ~1.7 beats/probe, not ~1.4.
 >
-> **⚠️ OWED — all three need a running frontend + backend, which this slice could not do:**
-> 1. **Gate 7** — the bench run itself: `/tutor-test --di-bench picture-vocabulary`, recorded at
->    `qa/di-bench/`. Gate = zero false affirmations in the hard REFUSE buckets. ~85 beats, so it
->    should fit one session; `--di-bench-item` narrows it if 1008 bites.
-> 2. **Gate 8** — a live `--di --eval-mode association` drive AND a `--di-wrong signature`
->    drive. The latter sends the ECHO and is the ONLY way to exercise the new §5 branch.
-> 3. **Gate 9** — a HUMAN-CHECKS mic row (re-grep for the next free ID immediately before filing).
+> **RUN 2026-08-21. The stack was ALREADY UP — this item was never blocked on one.** Full
+> record + evidence: `qa/di-bench/run-2026-08-21-picture-vocabulary-association.md`.
+> 1. **Gate 7** — ⛔ **FAIL.** 39/48 agreed, **7 false affirmations, ALL in `same-category`
+>    (0/8)**: `shirt`/`hat` (sock), `cat`/`bird` (dog), `chair`/`table` (bed), `mug` (cup).
+>    Every OTHER bucket held — including `rationalised-chain` at 7/8, the one the fixture was
+>    weighted toward, and **12/12 on the AFFIRM side with zero false refusals** (all eight
+>    unlisted partners accepted, so the §2.2 ruling is vindicated).
+> 2. **Gate 8** — ✅ **PASS, both drives.** `--di-wrong signature`: the new scripted ECHO
+>    branch fired **5/5** with the sentinel, so item 24's §5 stall did NOT recur. `--di` plain:
+>    16 beats, **zero findings at any severity**.
+> 3. **Gate 9** — HUMAN-CHECKS **#118**, still OPEN. The runs retire the SEMANTIC half of its
+>    criteria 1-3 and add one the row lacks: the same-category swap. The sitting is the user's.
+>
+> ⭐ **THE MECHANISM — the accept clause defeats the same-category guard, by construction.**
+> The judge did not rationalise; it applied the contract as written, where both clauses are
+> true of the same word and no precedence is stated. Accept (`pictureVocabularyScript.ts:578`)
+> says *"something you would find with it, use with it, or **keep with it** in ordinary life"* —
+> and same-category members are exactly the things most reliably kept together (socks with
+> shirts, mugs with cups). The guard (`:632`) is one abstract sentence, fourth of six.
+>
+> **The generalisable finding: the guard that HELD ships a worked counterexample
+> (*"a cat goes with a sock because cats play with socks"* is named as a story); the guard
+> that LOST ships only an abstraction.** In an open-set contract an abstraction loses to a
+> concrete accept clause. **Carry this to the remaining `open_set_word` packs BEFORE they are
+> written** — word-builder morphology, knowledge-check 2b, retell, the six proposition packs.
+>
+> **NEXT, and it is small:** give the same-category guard a worked counterexample; narrow
+> *"keep with it"*, the phrase that licenses co-membership; add an explicit precedence line.
+> Then **re-run gate 7 only** — gate 8 is banked and nothing else changes.
+>
+> **The key WAS audited before this was believed** (handoff §4). It holds: the mode teaches
+> complementary pairing (*hammer/nail*), `mug` for `cup` is the echo failure wearing a
+> synonym, and `cat` for `dog` blurs `association` into `opposite` — a separate eval mode of
+> this same primitive. `shirt` for `sock` is the one arguable probe; discount both clothes
+> probes and the bucket is still 0/6 hard.
+>
+> **⚠️ THREE INSTRUMENT DEFECTS FOUND — all filed against the harness as ⭐ ITEM 27:**
+> - **I1** — `di-verdict-embellished` fires on every correctly-fired SPECIFIC branch:
+>   `run_tutor_live.py:2418` holds ONE `expected_line` (`correctionLine` = `spans[len-1]`,
+>   the general branch) where the pack now has THREE. Proven by the plain drive as a control:
+>   general branch only → zero embellishment WARNs.
+> - **I2** — ⚠️ **A BENCH RUN'S REPORT IS DESTROYED BY A LATER PLAIN DRIVE.** `--di-bench`
+>   implies `--di` and leaves `--di-wrong` at `plain`, so both write
+>   `<id>-live-di-plain-<date>.md`. The gate-8 drive silently overwrote the bench's 48-probe
+>   matrix the same session. **Capture bench console output until this is fixed.**
+> - **I3** — rhyme vocabulary leaks into an association bench: the harness prints
+>   *"open_set_word stays blocked"* and *"slant-rhyme disagreement"*. The class is BENCHED and
+>   there are no rhymes here. That line is the stale-doctrine shape WORKSTREAMS warns about.
 >
 > **⚠️ AND AUDIT THE KEY BEFORE BELIEVING ANY FINDING THAT INDICTS THE TUTOR.** Association is
 > more exposed to the item-24 instrument mistake than rhyme was, because "chain vs. honest
@@ -505,7 +672,7 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > **Everything below is the ORIGINAL scoping, kept for design rationale. §4's bench spec is
 > BUILT — read the run record instead.**
 
-### 24. 🔝 **OPENED 2026-08-18 (user directive, APPROVED) — UNBLOCK `open_set_word`: spoken PRODUCTION. The last blocked response class, and the ceiling of the whole modality.** Executor: bench first (no skill), then `/add-di-loop rhyme-studio`
+#### 24 · original scope as OPENED 2026-08-18 — ✅ **CLOSED 2026-08-19, see the closure directly above. Design record only; do not pull.** (Was: UNBLOCK `open_set_word`, spoken PRODUCTION — the last blocked response class.)
 
 **FULL SCOPE + DESIGN + BENCH SPEC: `qa/HANDOFF-di-open-set-word-2026-08-18.md`.** Read it
 before pulling. Summary only below.

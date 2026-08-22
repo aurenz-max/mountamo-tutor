@@ -1,0 +1,5459 @@
+{
+ "sweep": "coverage queue A",
+ "date": "2026-08-21",
+ "subject": "SCIENCE",
+ "grades_published": [
+  "Kindergarten",
+  "1",
+  "2",
+  "3",
+  "4"
+ ],
+ "queueA": {
+  "engineering": {
+   "airfoil-lab": {
+    "primitive": "airfoil-lab",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7361,
+     "coherent": 4,
+     "skill_id": "SCI001-04",
+     "skill_desc": "Patterns in Motion"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7287,
+      "coherent": 3,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Vibrations and Sound"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7486,
+      "coherent": 2,
+      "skill_id": "SCI003-01",
+      "skill_desc": "Wind and Water Erosion"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7361,
+      "coherent": 4,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.7267,
+      "coherent": 3,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7122,
+      "coherent": 4,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Forces and Motion"
+     }
+    ],
+    "query_head": "Wing cross-section in a simulated wind tunnel. Students change the wing shape, angle of at"
+   },
+   "blueprint-canvas": {
+    "primitive": "blueprint-canvas",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8298,
+     "coherent": 4,
+     "skill_id": "SCI005-04",
+     "skill_desc": "Planning a Build"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8298,
+      "coherent": 4,
+      "skill_id": "SCI005-04",
+      "skill_desc": "Planning a Build"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8106,
+      "coherent": 3,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7645,
+      "coherent": 2,
+      "skill_id": "SCI005-02",
+      "skill_desc": "Generate Solutions"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.6915,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7519,
+      "coherent": 5,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "General-purpose grid-based drawing surface for creating technical drawings of ANY subject."
+   },
+   "bridge-builder": {
+    "primitive": "bridge-builder",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8747,
+     "coherent": 3,
+     "skill_id": "SCI004-01",
+     "skill_desc": "Design Solutions"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8202,
+      "coherent": 5,
+      "skill_id": "SCI005-03",
+      "skill_desc": "Building Strong Structures"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8747,
+      "coherent": 3,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7317,
+      "coherent": 1,
+      "skill_id": "SCI005-04",
+      "skill_desc": "Test and Improve"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.7309,
+      "coherent": 3,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7388,
+      "coherent": 4,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "Interactive 2D bridge construction canvas for teaching structural engineering. Students pl"
+   },
+   "dump-truck-loader": {
+    "primitive": "dump-truck-loader",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8729,
+     "coherent": 5,
+     "skill_id": "SCI005-02",
+     "skill_desc": "Construction Machines"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8729,
+      "coherent": 5,
+      "skill_id": "SCI005-02",
+      "skill_desc": "Construction Machines"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7588,
+      "coherent": 1,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.727,
+      "coherent": 3,
+      "skill_id": "SCI001-03",
+      "skill_desc": "Forces and Gravity"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7136,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7259,
+      "coherent": 2,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "Interactive dump truck loading and hauling simulation for teaching capacity, weight limits"
+   },
+   "engine-explorer": {
+    "primitive": "engine-explorer",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7718,
+     "coherent": 3,
+     "skill_id": "SCI001-03",
+     "skill_desc": "Heating and Cooling"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.7434,
+      "coherent": 3,
+      "skill_id": "SCI005-04",
+      "skill_desc": "Planning a Build"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7718,
+      "coherent": 3,
+      "skill_id": "SCI001-03",
+      "skill_desc": "Heating and Cooling"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7524,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7369,
+      "coherent": 4,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7272,
+      "coherent": 5,
+      "skill_id": "SCI001-03",
+      "skill_desc": "Energy"
+     }
+    ],
+    "query_head": "Living Engine particle simulation \u2014 students watch water/fuel particles heat up, build pre"
+   },
+   "excavator-arm-simulator": {
+    "primitive": "excavator-arm-simulator",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8628,
+     "coherent": 5,
+     "skill_id": "SCI005-02",
+     "skill_desc": "Construction Machines"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8628,
+      "coherent": 5,
+      "skill_id": "SCI005-02",
+      "skill_desc": "Construction Machines"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7472,
+      "coherent": 1,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7232,
+      "coherent": 4,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7306,
+      "coherent": 2,
+      "skill_id": "SCI004-03",
+      "skill_desc": "Rock Layers & Fossils"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.703,
+      "coherent": 4,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "Interactive multi-jointed excavator arm simulation with boom, stick, and bucket for teachi"
+   },
+   "foundation-builder": {
+    "primitive": "foundation-builder",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8725,
+     "coherent": 5,
+     "skill_id": "SCI005-03",
+     "skill_desc": "Building Strong Structures"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8725,
+      "coherent": 5,
+      "skill_id": "SCI005-03",
+      "skill_desc": "Building Strong Structures"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7776,
+      "coherent": 2,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7515,
+      "coherent": 1,
+      "skill_id": "SCI004-05",
+      "skill_desc": "Designing for Hazards"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7323,
+      "coherent": 2,
+      "skill_id": "SCI004-03",
+      "skill_desc": "Rock Layers & Fossils"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7248,
+      "coherent": 4,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "Interactive soil/foundation simulator for teaching why buildings need foundations and how "
+   },
+   "gear-train-builder": {
+    "primitive": "gear-train-builder",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.852,
+     "coherent": 3,
+     "skill_id": "SCI005-04",
+     "skill_desc": "Planning a Build"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.852,
+      "coherent": 3,
+      "skill_id": "SCI005-04",
+      "skill_desc": "Planning a Build"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7399,
+      "coherent": 2,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7713,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.726,
+      "coherent": 4,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7171,
+      "coherent": 2,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Forces and Motion"
+     }
+    ],
+    "query_head": "Interactive gear train sandbox for teaching speed/torque trade-offs fundamental to all mac"
+   },
+   "lever-lab": {
+    "primitive": "lever-lab",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8406,
+     "coherent": 5,
+     "skill_id": "SCI005-01",
+     "skill_desc": "Simple Machines"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8406,
+      "coherent": 5,
+      "skill_id": "SCI005-01",
+      "skill_desc": "Simple Machines"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7573,
+      "coherent": 2,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7413,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7393,
+      "coherent": 4,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7527,
+      "coherent": 4,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Forces and Motion"
+     }
+    ],
+    "query_head": "Interactive lever/fulcrum simulation for teaching simple machines. Students explore balanc"
+   },
+   "paper-airplane-designer": {
+    "primitive": "paper-airplane-designer",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7352,
+     "coherent": 5,
+     "skill_id": "SCI004-01",
+     "skill_desc": "Engineering Design Process"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.741,
+      "coherent": 2,
+      "skill_id": "SCI002-04",
+      "skill_desc": "Biomimicry"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7482,
+      "coherent": 2,
+      "skill_id": "SCI001-02",
+      "skill_desc": "Materials for a Purpose"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7475,
+      "coherent": 1,
+      "skill_id": "SCI005-04",
+      "skill_desc": "Test and Improve"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.7096,
+      "coherent": 3,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Speed and Energy"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7352,
+      "coherent": 5,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "Interactive paper airplane design lab where students choose templates (dart, glider, stunt"
+   },
+   "propulsion-timeline": {
+    "primitive": "propulsion-timeline",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7642,
+     "coherent": 3,
+     "skill_id": "SCI001-04",
+     "skill_desc": "Patterns in Motion"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.748,
+      "coherent": 1,
+      "skill_id": "SCI002-04",
+      "skill_desc": "Biomimicry"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7482,
+      "coherent": 2,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Fast and Slow Earth Changes"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7642,
+      "coherent": 3,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7437,
+      "coherent": 2,
+      "skill_id": "SCI004-06",
+      "skill_desc": "Changing Surface"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7044,
+      "coherent": 3,
+      "skill_id": "SCI004-02",
+      "skill_desc": "Tools and Technology"
+     }
+    ],
+    "query_head": "Interactive timeline showing the evolution of transportation from walking to spacecraft. S"
+   },
+   "pulley-system-builder": {
+    "primitive": "pulley-system-builder",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8451,
+     "coherent": 5,
+     "skill_id": "SCI005-01",
+     "skill_desc": "Simple Machines"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8451,
+      "coherent": 5,
+      "skill_id": "SCI005-01",
+      "skill_desc": "Simple Machines"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7399,
+      "coherent": 2,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.731,
+      "coherent": 5,
+      "skill_id": "SCI001-03",
+      "skill_desc": "Forces and Gravity"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7273,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7318,
+      "coherent": 3,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Forces and Motion"
+     }
+    ],
+    "query_head": "Interactive pulley system simulation for teaching mechanical advantage and simple machines"
+   },
+   "ramp-lab": {
+    "primitive": "ramp-lab",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8668,
+     "coherent": 5,
+     "skill_id": "SCI005-01",
+     "skill_desc": "Simple Machines"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8668,
+      "coherent": 5,
+      "skill_id": "SCI005-01",
+      "skill_desc": "Simple Machines"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7399,
+      "coherent": 2,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7676,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7504,
+      "coherent": 4,
+      "skill_id": "SCI001-02",
+      "skill_desc": "Energy Transfer in Collisions"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7513,
+      "coherent": 5,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Forces and Motion"
+     }
+    ],
+    "query_head": "Interactive inclined plane (ramp) simulation for teaching simple machines. Students explor"
+   },
+   "shape-strength-tester": {
+    "primitive": "shape-strength-tester",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8158,
+     "coherent": 5,
+     "skill_id": "SCI005-03",
+     "skill_desc": "Building Strong Structures"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8158,
+      "coherent": 5,
+      "skill_id": "SCI005-03",
+      "skill_desc": "Building Strong Structures"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7626,
+      "coherent": 3,
+      "skill_id": "SCI004-02",
+      "skill_desc": "Test and Compare"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.6862,
+      "coherent": 1,
+      "skill_id": "SCI004-05",
+      "skill_desc": "Designing for Hazards"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.64,
+      "coherent": 2,
+      "skill_id": "SCI001-02",
+      "skill_desc": "Energy Transfer in Collisions"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.6889,
+      "coherent": 3,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "Interactive experimental rig for testing shape strength under load. Students discover why "
+   },
+   "tower-stacker": {
+    "primitive": "tower-stacker",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8588,
+     "coherent": 5,
+     "skill_id": "SCI005-03",
+     "skill_desc": "Building Strong Structures"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8588,
+      "coherent": 5,
+      "skill_id": "SCI005-03",
+      "skill_desc": "Building Strong Structures"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7952,
+      "coherent": 3,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7184,
+      "coherent": 3,
+      "skill_id": "SCI001-03",
+      "skill_desc": "Forces and Gravity"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.6727,
+      "coherent": 2,
+      "skill_id": "SCI004-03",
+      "skill_desc": "Rock Layers & Fossils"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7139,
+      "coherent": 3,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "Interactive vertical building challenge for teaching stability and center of gravity. Stud"
+   },
+   "vehicle-design-studio": {
+    "primitive": "vehicle-design-studio",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7728,
+     "coherent": 3,
+     "skill_id": "SCI005-04",
+     "skill_desc": "Planning a Build"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7728,
+      "coherent": 3,
+      "skill_id": "SCI005-04",
+      "skill_desc": "Planning a Build"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7752,
+      "coherent": 2,
+      "skill_id": "SCI001-02",
+      "skill_desc": "Materials for a Purpose"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7589,
+      "coherent": 1,
+      "skill_id": "SCI004-05",
+      "skill_desc": "Designing for Hazards"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.723,
+      "coherent": 2,
+      "skill_id": "SCI005-01",
+      "skill_desc": "Energy and Fuel Sources"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.771,
+      "coherent": 5,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Engineering Design Process"
+     }
+    ],
+    "query_head": "Engineering design process studio where students pick vehicle body, propulsion, and contro"
+   },
+   "wheel-axle-explorer": {
+    "primitive": "wheel-axle-explorer",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.838,
+     "coherent": 5,
+     "skill_id": "SCI005-01",
+     "skill_desc": "Simple Machines"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.838,
+      "coherent": 5,
+      "skill_id": "SCI005-01",
+      "skill_desc": "Simple Machines"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7146,
+      "coherent": 2,
+      "skill_id": "SCI003-01",
+      "skill_desc": "Wind and Water Erosion"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7331,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7298,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7124,
+      "coherent": 5,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Forces and Motion"
+     }
+    ],
+    "query_head": "Interactive wheel and axle simulation for teaching simple machines and force multiplicatio"
+   }
+  },
+  "biology": {
+   "adaptation-investigator": {
+    "primitive": "adaptation-investigator",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8512,
+     "coherent": 5,
+     "skill_id": "SCI002-03",
+     "skill_desc": "Structures for Survival"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8512,
+      "coherent": 5,
+      "skill_id": "SCI002-03",
+      "skill_desc": "Structures for Survival"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7887,
+      "coherent": 3,
+      "skill_id": "SCI002-04",
+      "skill_desc": "Surviving in a Habitat"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8094,
+      "coherent": 3,
+      "skill_id": "SCI002-05",
+      "skill_desc": "Environment and Traits"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.796,
+      "coherent": 5,
+      "skill_id": "SCI003-01",
+      "skill_desc": "External Structures"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7413,
+      "coherent": 5,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Ecosystems"
+     }
+    ],
+    "query_head": "Interactive adaptation reasoning primitive that presents an organism\\'s trait and guides s"
+   },
+   "bio-compare-contrast": {
+    "primitive": "bio-compare-contrast",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8147,
+     "coherent": 4,
+     "skill_id": "SCI002-03",
+     "skill_desc": "Habitats and Biodiversity"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8133,
+      "coherent": 5,
+      "skill_id": "SCI002-06",
+      "skill_desc": "Parent-Offspring Traits"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8147,
+      "coherent": 4,
+      "skill_id": "SCI002-03",
+      "skill_desc": "Habitats and Biodiversity"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7906,
+      "coherent": 4,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Comparing Life Cycles"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7446,
+      "coherent": 3,
+      "skill_id": "SCI003-06",
+      "skill_desc": "Comparing Structures"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7111,
+      "coherent": 5,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Ecosystems"
+     }
+    ],
+    "query_head": "Side-by-side or interactive Venn diagram comparison of two biological entities (organisms,"
+   },
+   "bio-process-animator": {
+    "primitive": "bio-process-animator",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8011,
+     "coherent": 3,
+     "skill_id": "SCI002-02",
+     "skill_desc": "Life Cycles and Seeds"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7497,
+      "coherent": 4,
+      "skill_id": "SCI002-02",
+      "skill_desc": "External Plant Parts"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8011,
+      "coherent": 3,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Life Cycles and Seeds"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7703,
+      "coherent": 4,
+      "skill_id": "SCI002-01",
+      "skill_desc": "Life Cycle Stages"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.731,
+      "coherent": 1,
+      "skill_id": "SCI003-02",
+      "skill_desc": "Internal Structures"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7127,
+      "coherent": 5,
+      "skill_id": "SCI002-01",
+      "skill_desc": "Plants and Animals"
+     }
+    ],
+    "query_head": "Step-through animation of a biological process with narrated stages and checkpoint questio"
+   },
+   "classification-sorter": {
+    "primitive": "classification-sorter",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8761,
+     "coherent": 5,
+     "skill_id": "SCI002-10",
+     "skill_desc": "Living Things Classification"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8761,
+      "coherent": 5,
+      "skill_id": "SCI002-10",
+      "skill_desc": "Living Things Classification"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7975,
+      "coherent": 2,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Classify Materials"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.8336,
+      "coherent": 2,
+      "skill_id": "SCI003-06",
+      "skill_desc": "Decomposers and Recycling"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7682,
+      "coherent": 2,
+      "skill_id": "SCI001-06",
+      "skill_desc": "Energy Sources"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7774,
+      "coherent": 3,
+      "skill_id": "SCI002-01",
+      "skill_desc": "Plants and Animals"
+     }
+    ],
+    "query_head": "Interactive drag-and-drop classification activity where students categorize organisms or c"
+   },
+   "dna-explorer": {
+    "primitive": "dna-explorer",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7242,
+     "coherent": 4,
+     "skill_id": "SCI002-04",
+     "skill_desc": "Inherited vs Learned"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7231,
+      "coherent": 5,
+      "skill_id": "SCI002-06",
+      "skill_desc": "Parent-Offspring Traits"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7176,
+      "coherent": 2,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Life Cycles and Seeds"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7242,
+      "coherent": 4,
+      "skill_id": "SCI002-04",
+      "skill_desc": "Inherited vs Learned"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7122,
+      "coherent": 1,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.6842,
+      "coherent": 2,
+      "skill_id": "SCI002-03",
+      "skill_desc": "Human Body"
+     }
+    ],
+    "query_head": "Interactive DNA structure explorer with double helix visualization, base pairing challenge"
+   },
+   "energy-cycle-engine": {
+    "primitive": "energy-cycle-engine",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7758,
+     "coherent": 3,
+     "skill_id": "SCI002-01",
+     "skill_desc": "Needs of Living Things"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7184,
+      "coherent": 3,
+      "skill_id": "SCI002-09",
+      "skill_desc": "Living Things Needs"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7758,
+      "coherent": 3,
+      "skill_id": "SCI002-01",
+      "skill_desc": "Needs of Living Things"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7333,
+      "coherent": 3,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Comparing Life Cycles"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7314,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7081,
+      "coherent": 4,
+      "skill_id": "SCI002-03",
+      "skill_desc": "Human Body"
+     }
+    ],
+    "query_head": "Interactive dual-panel model showing the coupled relationship between photosynthesis and c"
+   },
+   "evolution-timeline": {
+    "primitive": "evolution-timeline",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "4",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.776,
+     "coherent": 4,
+     "skill_id": "SCI004-06",
+     "skill_desc": "Changing Surface"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7328,
+      "coherent": 4,
+      "skill_id": "SCI002-10",
+      "skill_desc": "Living Things Classification"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7738,
+      "coherent": 3,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Fast and Slow Earth Changes"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.8161,
+      "coherent": 2,
+      "skill_id": "SCI003-05",
+      "skill_desc": "Fossils and Past Life"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.776,
+      "coherent": 4,
+      "skill_id": "SCI004-06",
+      "skill_desc": "Changing Surface"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7011,
+      "coherent": 3,
+      "skill_id": "SCI003-02",
+      "skill_desc": "Earth's Systems"
+     }
+    ],
+    "query_head": "Interactive deep-time timeline showing evolutionary events, branching points, and the emer"
+   },
+   "food-web-builder": {
+    "primitive": "food-web-builder",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8486,
+     "coherent": 5,
+     "skill_id": "SCI003-01",
+     "skill_desc": "Food Chains"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7589,
+      "coherent": 5,
+      "skill_id": "SCI002-09",
+      "skill_desc": "Living Things Needs"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7592,
+      "coherent": 5,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Life Cycles and Seeds"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8486,
+      "coherent": 5,
+      "skill_id": "SCI003-01",
+      "skill_desc": "Food Chains"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7246,
+      "coherent": 3,
+      "skill_id": "SCI005-03",
+      "skill_desc": "Human Impact"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.786,
+      "coherent": 5,
+      "skill_id": "SCI002-01",
+      "skill_desc": "Plants and Animals"
+     }
+    ],
+    "query_head": "Interactive food web construction where students draw energy-flow connections between orga"
+   },
+   "habitat-diorama": {
+    "primitive": "habitat-diorama",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8132,
+     "coherent": 5,
+     "skill_id": "SCI002-09",
+     "skill_desc": "Living Things Needs"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8132,
+      "coherent": 5,
+      "skill_id": "SCI002-09",
+      "skill_desc": "Living Things Needs"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7987,
+      "coherent": 5,
+      "skill_id": "SCI002-03",
+      "skill_desc": "Habitats and Biodiversity"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.8144,
+      "coherent": 2,
+      "skill_id": "SCI003-02",
+      "skill_desc": "Food Webs and Habitats"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7397,
+      "coherent": 4,
+      "skill_id": "SCI005-03",
+      "skill_desc": "Human Impact"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7909,
+      "coherent": 5,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Ecosystems"
+     }
+    ],
+    "query_head": "A living ecosystem field lab for grades K-8. Students observe organisms from ecological cl"
+   },
+   "inheritance-lab": {
+    "primitive": "inheritance-lab",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.794,
+     "coherent": 5,
+     "skill_id": "SCI002-06",
+     "skill_desc": "Parent-Offspring Traits"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.794,
+      "coherent": 5,
+      "skill_id": "SCI002-06",
+      "skill_desc": "Parent-Offspring Traits"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7094,
+      "coherent": 2,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Life Cycles and Seeds"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7765,
+      "coherent": 5,
+      "skill_id": "SCI002-04",
+      "skill_desc": "Inherited vs Learned"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7226,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.662,
+      "coherent": 4,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Ecosystems"
+     }
+    ],
+    "query_head": "Interactive Punnett square and trait prediction tool for genetics inheritance education. S"
+   },
+   "life-cycle-sequencer": {
+    "primitive": "life-cycle-sequencer",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8423,
+     "coherent": 3,
+     "skill_id": "SCI002-02",
+     "skill_desc": "Life Cycles and Seeds"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7999,
+      "coherent": 2,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Moon Patterns"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8423,
+      "coherent": 3,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Life Cycles and Seeds"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8361,
+      "coherent": 5,
+      "skill_id": "SCI002-01",
+      "skill_desc": "Life Cycle Stages"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.7667,
+      "coherent": 3,
+      "skill_id": "SCI004-06",
+      "skill_desc": "Changing Surface"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.703,
+      "coherent": 4,
+      "skill_id": "SCI002-01",
+      "skill_desc": "Plants and Animals"
+     }
+    ],
+    "query_head": "Interactive temporal sequencing activity where students arrange stages of a biological pro"
+   },
+   "microscope-viewer": {
+    "primitive": "microscope-viewer",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7522,
+     "coherent": 5,
+     "skill_id": "SCI002-10",
+     "skill_desc": "Living Things Classification"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7522,
+      "coherent": 5,
+      "skill_id": "SCI002-10",
+      "skill_desc": "Living Things Classification"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7382,
+      "coherent": 2,
+      "skill_id": "SCI001-03",
+      "skill_desc": "Heating and Cooling"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.744,
+      "coherent": 1,
+      "skill_id": "SCI003-06",
+      "skill_desc": "Decomposers and Recycling"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7443,
+      "coherent": 3,
+      "skill_id": "SCI003-02",
+      "skill_desc": "Internal Structures"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.714,
+      "coherent": 4,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Ecosystems"
+     }
+    ],
+    "query_head": "Simulated microscope experience with zoom levels, structure labeling tasks, and guided obs"
+   },
+   "protein-folder": {
+    "primitive": "protein-folder",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7359,
+     "coherent": 5,
+     "skill_id": "SCI002-04",
+     "skill_desc": "Inherited vs Learned"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.7192,
+      "coherent": 3,
+      "skill_id": "SCI002-06",
+      "skill_desc": "Parent-Offspring Traits"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.7277,
+      "coherent": 3,
+      "skill_id": "SCI001-03",
+      "skill_desc": "Heating and Cooling"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7359,
+      "coherent": 5,
+      "skill_id": "SCI002-04",
+      "skill_desc": "Inherited vs Learned"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7098,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.6768,
+      "coherent": 3,
+      "skill_id": "SCI002-03",
+      "skill_desc": "Human Body"
+     }
+    ],
+    "query_head": "Interactive protein folding simulator where students visualize how a linear amino acid cha"
+   }
+  },
+  "astronomy": {
+   "mission-planner": {
+    "primitive": "mission-planner",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7594,
+     "coherent": 5,
+     "skill_id": "SCI003-03",
+     "skill_desc": "Space Systems"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.725,
+      "coherent": 3,
+      "skill_id": "SCI003-01",
+      "skill_desc": "Sun Patterns"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7255,
+      "coherent": 2,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7251,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "scattered",
+      "best": 0.7045,
+      "coherent": 3,
+      "skill_id": "SCI005-01",
+      "skill_desc": "Energy and Fuel Sources"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7594,
+      "coherent": 5,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Space Systems"
+     }
+    ],
+    "query_head": "Simplified mission design tool where students plan trips to the Moon, Mars, and beyond. St"
+   },
+   "moon-phases-lab": {
+    "primitive": "moon-phases-lab",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8197,
+     "coherent": 5,
+     "skill_id": "SCI003-03",
+     "skill_desc": "Moon Patterns"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8197,
+      "coherent": 5,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Moon Patterns"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7203,
+      "coherent": 1,
+      "skill_id": "SCI002-02",
+      "skill_desc": "Life Cycles and Seeds"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7497,
+      "coherent": 1,
+      "skill_id": "SCI004-02",
+      "skill_desc": "Seasons and Patterns"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7147,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.774,
+      "coherent": 5,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Space Systems"
+     }
+    ],
+    "query_head": "Interactive Earth-Moon-Sun model that explains why the Moon appears to change shape throug"
+   },
+   "orbit-mechanics-lab": {
+    "primitive": "orbit-mechanics-lab",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7738,
+     "coherent": 5,
+     "skill_id": "SCI001-04",
+     "skill_desc": "Patterns in Motion"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7339,
+      "coherent": 5,
+      "skill_id": "SCI003-01",
+      "skill_desc": "Sun Patterns"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7123,
+      "coherent": 1,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7738,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7216,
+      "coherent": 4,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7246,
+      "coherent": 3,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Space Systems"
+     }
+    ],
+    "query_head": "Interactive orbital mechanics sandbox where students discover that orbiting is falling whi"
+   },
+   "rocket-builder": {
+    "primitive": "rocket-builder",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7452,
+     "coherent": 3,
+     "skill_id": "SCI005-03",
+     "skill_desc": "Building Strong Structures"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7452,
+      "coherent": 3,
+      "skill_id": "SCI005-03",
+      "skill_desc": "Building Strong Structures"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7435,
+      "coherent": 2,
+      "skill_id": "SCI004-01",
+      "skill_desc": "Design Solutions"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7423,
+      "coherent": 3,
+      "skill_id": "SCI001-03",
+      "skill_desc": "Forces and Gravity"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7135,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7119,
+      "coherent": 3,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Space Systems"
+     }
+    ],
+    "query_head": "Comprehensive rocket design and simulation tool where students assemble rockets from compo"
+   },
+   "scale-comparator": {
+    "primitive": "scale-comparator",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7849,
+     "coherent": 5,
+     "skill_id": "SCI003-03",
+     "skill_desc": "Space Systems"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7309,
+      "coherent": 4,
+      "skill_id": "SCI003-01",
+      "skill_desc": "Sun Patterns"
+     },
+     {
+      "grade": "2",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7079,
+      "coherent": 3,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Fast and Slow Earth Changes"
+     },
+     {
+      "grade": "3",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7534,
+      "coherent": 2,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.716,
+      "coherent": 2,
+      "skill_id": "SCI005-01",
+      "skill_desc": "Energy and Fuel Sources"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7849,
+      "coherent": 5,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Space Systems"
+     }
+    ],
+    "query_head": "Interactive scale comparison tool for celestial objects that helps students grasp mind-ben"
+   },
+   "telescope-simulator": {
+    "primitive": "telescope-simulator",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8156,
+     "coherent": 5,
+     "skill_id": "SCI003-02",
+     "skill_desc": "Day and Night"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.8156,
+      "coherent": 5,
+      "skill_id": "SCI003-02",
+      "skill_desc": "Day and Night"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.6953,
+      "coherent": 2,
+      "skill_id": "SCI001-02",
+      "skill_desc": "Materials for a Purpose"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7118,
+      "coherent": 5,
+      "skill_id": "SCI001-06",
+      "skill_desc": "Magnets and Electricity"
+     },
+     {
+      "grade": "4",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7,
+      "coherent": 1,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Electric Circuits"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.741,
+      "coherent": 5,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Space Systems"
+     }
+    ],
+    "query_head": "Virtual telescope experience where students explore the night sky, find celestial objects,"
+   }
+  },
+  "physics": {
+   "motion-diagram": {
+    "primitive": "motion-diagram",
+    "subject": "SCIENCE",
+    "chosen": {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7952,
+     "coherent": 5,
+     "skill_id": "SCI001-04",
+     "skill_desc": "Patterns in Motion"
+    },
+    "per_grade": [
+     {
+      "grade": "1",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.7293,
+      "coherent": 2,
+      "skill_id": "SCI001-06",
+      "skill_desc": "Shadows"
+     },
+     {
+      "grade": "2",
+      "verdict": "abstain",
+      "reason": "diffuse",
+      "best": 0.6977,
+      "coherent": 2,
+      "skill_id": "SCI003-03",
+      "skill_desc": "Fast and Slow Earth Changes"
+     },
+     {
+      "grade": "3",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7952,
+      "coherent": 5,
+      "skill_id": "SCI001-04",
+      "skill_desc": "Patterns in Motion"
+     },
+     {
+      "grade": "4",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7595,
+      "coherent": 5,
+      "skill_id": "SCI001-02",
+      "skill_desc": "Energy Transfer in Collisions"
+     },
+     {
+      "grade": "Kindergarten",
+      "verdict": "match",
+      "reason": null,
+      "best": 0.7559,
+      "coherent": 5,
+      "skill_id": "SCI001-01",
+      "skill_desc": "Forces and Motion"
+     }
+    ],
+    "query_head": "Motion Diagram / Strobe Diagram showing object positions at equal time intervals with velo"
+   }
+  }
+ },
+ "detail_topk": [
+  {
+   "domain": "engineering",
+   "primitive": "engine-explorer",
+   "desc": "Living Engine particle simulation \u2014 students watch water/fuel particles heat up, build pressure, push a piston, and turn a drive wheel. Canvas-based physics with fuel and load sliders that have real consequences. Interactive zone exploration and MC challenges. Perfect for teaching energy transformation, cause-and-effect, and mechanical systems. ESSENTIAL for grades 1-5 engineering and physics.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7272,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.727,
+       "sid": "SCI001-03",
+       "sk": "Energy",
+       "sub": "Create simple energy-based devices (pinwheels, circuits with batteries"
+      },
+      {
+       "r": 2,
+       "c": 0.724,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Create and explain simple force transfer systems (dominos, pulleys, ch"
+      },
+      {
+       "r": 3,
+       "c": 0.718,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Explore how strength and direction of pushes and pulls affect object m"
+      },
+      {
+       "r": 4,
+       "c": 0.717,
+       "sid": "SCI001-03",
+       "sk": "Energy",
+       "sub": "Demonstrate how our bodies use energy for movement through pushing, pu"
+      },
+      {
+       "r": 5,
+       "c": 0.71,
+       "sid": "SCI001-03",
+       "sk": "Energy",
+       "sub": "Match common energy sources (sun, batteries, electricity) to devices a"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "abstain",
+     "reason": "scattered",
+     "best": 0.7434,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.743,
+       "sid": "SCI005-04",
+       "sk": "Planning a Build",
+       "sub": "Students experiment with a gear train to watch how gears turn together"
+      },
+      {
+       "r": 2,
+       "c": 0.733,
+       "sid": "SCI001-01",
+       "sk": "Vibrations and Sound",
+       "sub": "Use the sound-wave-explorer to interact with virtual objects by plucki"
+      },
+      {
+       "r": 3,
+       "c": 0.727,
+       "sid": "SCI001-02",
+       "sk": "Properties of Sound",
+       "sub": "Adjust the vibration strength in the sound-wave-explorer to hear volum"
+      },
+      {
+       "r": 4,
+       "c": 0.726,
+       "sid": "SCI005-01",
+       "sk": "Simple Machines",
+       "sub": "Students investigate how moving the fulcrum on a seesaw changes the ef"
+      },
+      {
+       "r": 5,
+       "c": 0.726,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students stack various blocks to build the tallest possible tower whil"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7718,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.772,
+       "sid": "SCI001-03",
+       "sk": "Heating and Cooling",
+       "sub": "Observe the changes in the state of matter of various substances when "
+      },
+      {
+       "r": 2,
+       "c": 0.736,
+       "sid": "SCI002-01",
+       "sk": "Needs of Living Things",
+       "sub": "Observe and manipulate variables in a simulated environment to investi"
+      },
+      {
+       "r": 3,
+       "c": 0.729,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 4,
+       "c": 0.727,
+       "sid": "SCI001-03",
+       "sk": "Heating and Cooling",
+       "sub": "Predict whether the application of heating or cooling will cause a cha"
+      },
+      {
+       "r": 5,
+       "c": 0.722,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7524,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.752,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Use an observed, regular pattern in the race-track-lab to predict the "
+      },
+      {
+       "r": 2,
+       "c": 0.752,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 3,
+       "c": 0.742,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Observe and label specific movement patterns in the race-track-lab suc"
+      },
+      {
+       "r": 4,
+       "c": 0.741,
+       "sid": "SCI001-06",
+       "sk": "Magnets and Electricity",
+       "sub": "Observe how rubbing different materials produces a static charge that "
+      },
+      {
+       "r": 5,
+       "c": 0.73,
+       "sid": "SCI001-06",
+       "sk": "Magnets and Electricity",
+       "sub": "Discover that magnet poles interact by attracting or repelling when br"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7369,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.737,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 2,
+       "c": 0.727,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Predict how the motion of a stationary object changes after being stru"
+      },
+      {
+       "r": 3,
+       "c": 0.717,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students compare various fuel sources by analyzing their intended uses"
+      },
+      {
+       "r": 4,
+       "c": 0.717,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Analyze how increasing the speed or mass of a moving object increases "
+      },
+      {
+       "r": 5,
+       "c": 0.713,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Predict which of two objects carries more energy by evaluating their r"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "engineering",
+   "primitive": "airfoil-lab",
+   "desc": "Wing cross-section in a simulated wind tunnel. Students change the wing shape, angle of attack, and airspeed to observe how lift is generated. Animated streamlines, color-coded pressure maps, and force gauges make the invisible physics of flight visible and tangible. Drag handles reshape the airfoil. Compare two airfoils side-by-side. Stall visualization at extreme angles. Teaches variable manipulation, observation, cause-and-effect. Perfect for grades 1-5 flight and aerodynamics education. ESSENTIAL for answering \"Why is the wing shaped like that?\"",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7122,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.712,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Compare object behavior in different environments (air vs. water, ramp"
+      },
+      {
+       "r": 2,
+       "c": 0.703,
+       "sid": "SCI003-02",
+       "sk": "Earth's Systems",
+       "sub": "Demonstrate how wind and water can change land shapes using models and"
+      },
+      {
+       "r": 3,
+       "c": 0.7,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Explore how strength and direction of pushes and pulls affect object m"
+      },
+      {
+       "r": 4,
+       "c": 0.689,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Sort objects based on how they move in response to forces (wind, water"
+      },
+      {
+       "r": 5,
+       "c": 0.685,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Demonstrate how objects can be moved without direct contact (magnets, "
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7287,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.729,
+       "sid": "SCI001-01",
+       "sk": "Vibrations and Sound",
+       "sub": "Use the sound-wave-explorer to interact with virtual objects by plucki"
+      },
+      {
+       "r": 2,
+       "c": 0.728,
+       "sid": "SCI001-02",
+       "sk": "Properties of Sound",
+       "sub": "Adjust the vibration speed in the sound-wave-explorer to hear pitch ch"
+      },
+      {
+       "r": 3,
+       "c": 0.722,
+       "sid": "SCI001-02",
+       "sk": "Properties of Sound",
+       "sub": "Adjust the vibration strength in the sound-wave-explorer to hear volum"
+      },
+      {
+       "r": 4,
+       "c": 0.721,
+       "sid": "SCI002-04",
+       "sk": "Biomimicry",
+       "sub": "Sort common human inventions into bins based on the natural biological"
+      },
+      {
+       "r": 5,
+       "c": 0.721,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students press on different straw shapes\u2014triangles, squares, and penta"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7486,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.749,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students compare the effectiveness of different engineering designs fo"
+      },
+      {
+       "r": 2,
+       "c": 0.744,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students investigate how strong winds carry loose sediment to change l"
+      },
+      {
+       "r": 3,
+       "c": 0.732,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      },
+      {
+       "r": 4,
+       "c": 0.72,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 5,
+       "c": 0.717,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Test different material samples to determine which provides the necess"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7361,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.736,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 2,
+       "c": 0.731,
+       "sid": "SCI001-03",
+       "sk": "Forces and Gravity",
+       "sub": "Compare fall times of different objects in the gravity-drop-tower to a"
+      },
+      {
+       "r": 3,
+       "c": 0.729,
+       "sid": "SCI001-06",
+       "sk": "Magnets and Electricity",
+       "sub": "Observe how rubbing different materials produces a static charge that "
+      },
+      {
+       "r": 4,
+       "c": 0.728,
+       "sid": "SCI004-05",
+       "sk": "Designing for Hazards",
+       "sub": "Simulate, test, and refine a physical model design to see how well it "
+      },
+      {
+       "r": 5,
+       "c": 0.721,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Use an observed, regular pattern in the race-track-lab to predict the "
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "scattered",
+     "best": 0.7267,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.727,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 2,
+       "c": 0.708,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Predict which of two objects carries more energy by evaluating their r"
+      },
+      {
+       "r": 3,
+       "c": 0.688,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students compare various fuel sources by analyzing their intended uses"
+      },
+      {
+       "r": 4,
+       "c": 0.684,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Predict how the motion of a stationary object changes after being stru"
+      },
+      {
+       "r": 5,
+       "c": 0.675,
+       "sid": "SCI005-04",
+       "sk": "Solutions and Conservation",
+       "sub": "Students evaluate the effectiveness of different solutions for reducin"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "engineering",
+   "primitive": "propulsion-timeline",
+   "desc": "Interactive timeline showing the evolution of transportation from walking to spacecraft. Scrub through eras, tap milestones for detail cards, filter by domain (land/sea/air/space), trace innovation chains showing how one invention enabled the next, complete chronological ordering challenges, and observe exponential speed record growth. Period-accurate vehicle descriptions with real dates and speeds. Perfect for K-5 history and engineering education. ESSENTIAL for teaching innovation history and technological progress.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7044,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.704,
+       "sid": "SCI004-02",
+       "sk": "Tools and Technology",
+       "sub": "Identify how tools and technology help solve everyday problems in diff"
+      },
+      {
+       "r": 2,
+       "c": 0.697,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Sort objects based on how they move in response to forces (wind, water"
+      },
+      {
+       "r": 3,
+       "c": 0.696,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Ask questions and identify simple design problems in familiar situatio"
+      },
+      {
+       "r": 4,
+       "c": 0.693,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Compare object behavior in different environments (air vs. water, ramp"
+      },
+      {
+       "r": 5,
+       "c": 0.692,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Follow and complete pictorial instruction guides to build basic struct"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.748,
+     "coherent": 1,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.748,
+       "sid": "SCI002-04",
+       "sk": "Biomimicry",
+       "sub": "Sort common human inventions into bins based on the natural biological"
+      },
+      {
+       "r": 2,
+       "c": 0.715,
+       "sid": "SCI003-02",
+       "sk": "Day and Night",
+       "sub": "Sequence events in the day-night cycle, ordering them from sunrise thr"
+      },
+      {
+       "r": 3,
+       "c": 0.711,
+       "sid": "SCI003-03",
+       "sk": "Moon Patterns",
+       "sub": "Arrange moon phase images in the correct chronological order of the lu"
+      },
+      {
+       "r": 4,
+       "c": 0.708,
+       "sid": "SCI005-04",
+       "sk": "Planning a Build",
+       "sub": "Students experiment with a gear train to watch how gears turn together"
+      },
+      {
+       "r": 5,
+       "c": 0.707,
+       "sid": "SCI001-01",
+       "sk": "Vibrations and Sound",
+       "sub": "Tap different virtual objects in the sound-wave-explorer and match the"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7482,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.748,
+       "sid": "SCI003-03",
+       "sk": "Fast and Slow Earth Changes",
+       "sub": "Learners organize Earth events into a chronological timeline to demons"
+      },
+      {
+       "r": 2,
+       "c": 0.738,
+       "sid": "SCI003-03",
+       "sk": "Fast and Slow Earth Changes",
+       "sub": "Students sort various Earth events based on the duration of time they "
+      },
+      {
+       "r": 3,
+       "c": 0.731,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Arrange the developmental stages of various plants in the correct chro"
+      },
+      {
+       "r": 4,
+       "c": 0.73,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 5,
+       "c": 0.716,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7642,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.764,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 2,
+       "c": 0.744,
+       "sid": "SCI003-05",
+       "sk": "Fossils and Past Life",
+       "sub": "Arrange a series of organisms and their fossils onto a chronological t"
+      },
+      {
+       "r": 3,
+       "c": 0.727,
+       "sid": "SCI002-01",
+       "sk": "Life Cycle Stages",
+       "sub": "Students arrange the developmental milestones of a flowering plant in "
+      },
+      {
+       "r": 4,
+       "c": 0.726,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Observe and label specific movement patterns in the race-track-lab suc"
+      },
+      {
+       "r": 5,
+       "c": 0.717,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Use an observed, regular pattern in the race-track-lab to predict the "
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7437,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.744,
+       "sid": "SCI004-06",
+       "sk": "Changing Surface",
+       "sub": "Sequence various geological events on a timeline, distinguishing betwe"
+      },
+      {
+       "r": 2,
+       "c": 0.721,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Predict which of two objects carries more energy by evaluating their r"
+      },
+      {
+       "r": 3,
+       "c": 0.706,
+       "sid": "SCI004-03",
+       "sk": "Rock Layers & Fossils",
+       "sub": "Sequence geologic events by observing the physical evidence preserved "
+      },
+      {
+       "r": 4,
+       "c": 0.702,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Calculate the speed of a vehicle by measuring the distance it travels "
+      },
+      {
+       "r": 5,
+       "c": 0.696,
+       "sid": "SCI005-04",
+       "sk": "Solutions and Conservation",
+       "sub": "Students evaluate the effectiveness of different solutions for reducin"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "engineering",
+   "primitive": "vehicle-design-studio",
+   "desc": "Engineering design process studio where students pick vehicle body, propulsion, and control parts then test against physics simulation. Includes radar performance chart, design log for iteration tracking, and challenge mode with constraints. Perfect for teaching the engineering design cycle (design \\u2192 test \\u2192 analyze \\u2192 iterate), trade-off analysis, and systematic testing. ESSENTIAL for grades 2-5 engineering and design thinking.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.771,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.771,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Improve designs based on test results and feedback, suggesting and imp"
+      },
+      {
+       "r": 2,
+       "c": 0.768,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Evaluate design outcomes by comparing two solutions and explaining whi"
+      },
+      {
+       "r": 3,
+       "c": 0.767,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Create simple drawings and models to communicate design ideas for solv"
+      },
+      {
+       "r": 4,
+       "c": 0.763,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Make predictions and test simple design solutions, recording observati"
+      },
+      {
+       "r": 5,
+       "c": 0.761,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Measure and compare design elements using non-standard units (blocks, "
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7728,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.773,
+       "sid": "SCI005-04",
+       "sk": "Planning a Build",
+       "sub": "Students experiment with a gear train to watch how gears turn together"
+      },
+      {
+       "r": 2,
+       "c": 0.738,
+       "sid": "SCI002-04",
+       "sk": "Biomimicry",
+       "sub": "Sort common human inventions into bins based on the natural biological"
+      },
+      {
+       "r": 3,
+       "c": 0.738,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students assemble a bridge using beams and supports to span a gap, the"
+      },
+      {
+       "r": 4,
+       "c": 0.737,
+       "sid": "SCI002-04",
+       "sk": "Biomimicry",
+       "sub": "Apply an observed natural structure to a problem scenario by selecting"
+      },
+      {
+       "r": 5,
+       "c": 0.734,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students stack various blocks to build the tallest possible tower whil"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7752,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.775,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 2,
+       "c": 0.756,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students compare the effectiveness of different engineering designs fo"
+      },
+      {
+       "r": 3,
+       "c": 0.753,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Create a visual plan for an object by selecting and placing symbols or"
+      },
+      {
+       "r": 4,
+       "c": 0.753,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      },
+      {
+       "r": 5,
+       "c": 0.747,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Test different material samples to determine which provides the necess"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7589,
+     "coherent": 1,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.759,
+       "sid": "SCI004-05",
+       "sk": "Designing for Hazards",
+       "sub": "Simulate, test, and refine a physical model design to see how well it "
+      },
+      {
+       "r": 2,
+       "c": 0.758,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 3,
+       "c": 0.751,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Use an observed, regular pattern in the race-track-lab to predict the "
+      },
+      {
+       "r": 4,
+       "c": 0.746,
+       "sid": "SCI005-04",
+       "sk": "Test and Improve",
+       "sub": "Create an ordered step-by-step plan for a fair test where only one var"
+      },
+      {
+       "r": 5,
+       "c": 0.745,
+       "sid": "SCI005-04",
+       "sk": "Test and Improve",
+       "sub": "Simulate building a model and conducting tests to record performance r"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.723,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.723,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students compare various fuel sources by analyzing their intended uses"
+      },
+      {
+       "r": 2,
+       "c": 0.72,
+       "sid": "SCI005-04",
+       "sk": "Solutions and Conservation",
+       "sub": "Students evaluate the effectiveness of different solutions for reducin"
+      },
+      {
+       "r": 3,
+       "c": 0.719,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Predict how the motion of a stationary object changes after being stru"
+      },
+      {
+       "r": 4,
+       "c": 0.718,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Predict which of two objects carries more energy by evaluating their r"
+      },
+      {
+       "r": 5,
+       "c": 0.709,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Calculate the speed of a vehicle by measuring the distance it travels "
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "engineering",
+   "primitive": "gear-train-builder",
+   "desc": "Interactive gear train sandbox for teaching speed/torque trade-offs fundamental to all machinery. Students place gears on a grid, connect them by proximity (auto-mesh), rotate driver gear, and watch followers spin. Count teeth and observe speed ratios. Build gear chains for specific ratios. Shows real-world connections: bicycle gears, clock mechanisms, wind-up toys, car transmissions. Features multiple themes (toy, machine, clock, bicycle) to connect engineering to everyday objects. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching gears, speed ratios, direction changes, and mechanical advantage.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7171,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.717,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Create and explain simple force transfer systems (dominos, pulleys, ch"
+      },
+      {
+       "r": 2,
+       "c": 0.71,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Ask questions and identify simple design problems in familiar situatio"
+      },
+      {
+       "r": 3,
+       "c": 0.706,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Follow and complete pictorial instruction guides to build basic struct"
+      },
+      {
+       "r": 4,
+       "c": 0.702,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Measure and compare design elements using non-standard units (blocks, "
+      },
+      {
+       "r": 5,
+       "c": 0.701,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Explore how strength and direction of pushes and pulls affect object m"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.852,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.852,
+       "sid": "SCI005-04",
+       "sk": "Planning a Build",
+       "sub": "Students experiment with a gear train to watch how gears turn together"
+      },
+      {
+       "r": 2,
+       "c": 0.734,
+       "sid": "SCI005-01",
+       "sk": "Simple Machines",
+       "sub": "Students compare the ease of turning small knobs versus large wheels l"
+      },
+      {
+       "r": 3,
+       "c": 0.731,
+       "sid": "SCI001-01",
+       "sk": "Vibrations and Sound",
+       "sub": "Use the sound-wave-explorer to interact with virtual objects by plucki"
+      },
+      {
+       "r": 4,
+       "c": 0.729,
+       "sid": "SCI001-01",
+       "sk": "Vibrations and Sound",
+       "sub": "Tap different virtual objects in the sound-wave-explorer and match the"
+      },
+      {
+       "r": 5,
+       "c": 0.727,
+       "sid": "SCI005-01",
+       "sk": "Simple Machines",
+       "sub": "Students operate a virtual pulley system to hoist a flag up a flagpole"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7399,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.74,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      },
+      {
+       "r": 2,
+       "c": 0.733,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 3,
+       "c": 0.725,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students compare the effectiveness of different engineering designs fo"
+      },
+      {
+       "r": 4,
+       "c": 0.722,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Create a visual plan for an object by selecting and placing symbols or"
+      },
+      {
+       "r": 5,
+       "c": 0.721,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Investigate how animals interact with plants to facilitate reproductio"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7713,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.771,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 2,
+       "c": 0.747,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Use an observed, regular pattern in the race-track-lab to predict the "
+      },
+      {
+       "r": 3,
+       "c": 0.736,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Observe and label specific movement patterns in the race-track-lab suc"
+      },
+      {
+       "r": 4,
+       "c": 0.715,
+       "sid": "SCI001-06",
+       "sk": "Magnets and Electricity",
+       "sub": "Discover that magnet poles interact by attracting or repelling when br"
+      },
+      {
+       "r": 5,
+       "c": 0.711,
+       "sid": "SCI001-03",
+       "sk": "Forces and Gravity",
+       "sub": "Compare fall times of different objects in the gravity-drop-tower to a"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.726,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.726,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 2,
+       "c": 0.711,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Predict how the motion of a stationary object changes after being stru"
+      },
+      {
+       "r": 3,
+       "c": 0.703,
+       "sid": "SCI004-03",
+       "sk": "Rock Layers & Fossils",
+       "sub": "Sequence geologic events by observing the physical evidence preserved "
+      },
+      {
+       "r": 4,
+       "c": 0.703,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Predict which of two objects carries more energy by evaluating their r"
+      },
+      {
+       "r": 5,
+       "c": 0.699,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Analyze how increasing the speed or mass of a moving object increases "
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "engineering",
+   "primitive": "bridge-builder",
+   "desc": "Interactive 2D bridge construction canvas for teaching structural engineering. Students place beams, cables, and supports to span gaps, then test bridges with loads (cars, trucks, trains) to see if they hold. Watch bridges deform under stress with color-coded feedback (green/yellow/red). Teaches triangles are strong, load distribution, and truss optimization. Shows real-world connections: highway bridges, railroad trestles, footbridges. Features multiple themes (construction, medieval, modern) to connect engineering to different contexts. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching structural engineering, forces, and design iteration.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7388,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.739,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Follow and complete pictorial instruction guides to build basic struct"
+      },
+      {
+       "r": 2,
+       "c": 0.725,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Measure and compare design elements using non-standard units (blocks, "
+      },
+      {
+       "r": 3,
+       "c": 0.72,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Explore and sort building materials based on physical properties (hard"
+      },
+      {
+       "r": 4,
+       "c": 0.714,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Create simple drawings and models to communicate design ideas for solv"
+      },
+      {
+       "r": 5,
+       "c": 0.709,
+       "sid": "SCI001-01",
+       "sk": "Forces and Motion",
+       "sub": "Create and explain simple force transfer systems (dominos, pulleys, ch"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8202,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.82,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students assemble a bridge using beams and supports to span a gap, the"
+      },
+      {
+       "r": 2,
+       "c": 0.787,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students press on different straw shapes\u2014triangles, squares, and penta"
+      },
+      {
+       "r": 3,
+       "c": 0.76,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students select the appropriate foundation material, comparing how bui"
+      },
+      {
+       "r": 4,
+       "c": 0.75,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students stack various blocks to build the tallest possible tower whil"
+      },
+      {
+       "r": 5,
+       "c": 0.738,
+       "sid": "SCI005-01",
+       "sk": "Simple Machines",
+       "sub": "Students investigate how moving the fulcrum on a seesaw changes the ef"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8747,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.875,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      },
+      {
+       "r": 2,
+       "c": 0.791,
+       "sid": "SCI004-02",
+       "sk": "Test and Compare",
+       "sub": "Perform stress tests on various geometric structures to observe which "
+      },
+      {
+       "r": 3,
+       "c": 0.786,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 4,
+       "c": 0.782,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Test different material samples to determine which provides the necess"
+      },
+      {
+       "r": 5,
+       "c": 0.777,
+       "sid": "SCI004-02",
+       "sk": "Test and Compare",
+       "sub": "Analyze two different structure designs by comparing their performance"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7317,
+     "coherent": 1,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.732,
+       "sid": "SCI005-04",
+       "sk": "Test and Improve",
+       "sub": "Simulate building a model and conducting tests to record performance r"
+      },
+      {
+       "r": 2,
+       "c": 0.727,
+       "sid": "SCI001-05",
+       "sk": "Magnetic Forces",
+       "sub": "Interact with a virtual magnet in the foundation-explorer to observe h"
+      },
+      {
+       "r": 3,
+       "c": 0.726,
+       "sid": "SCI004-05",
+       "sk": "Designing for Hazards",
+       "sub": "Simulate, test, and refine a physical model design to see how well it "
+      },
+      {
+       "r": 4,
+       "c": 0.716,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 5,
+       "c": 0.712,
+       "sid": "SCI001-06",
+       "sk": "Magnets and Electricity",
+       "sub": "Discover that magnet poles interact by attracting or repelling when br"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "scattered",
+     "best": 0.7309,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.731,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 2,
+       "c": 0.698,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Predict which of two objects carries more energy by evaluating their r"
+      },
+      {
+       "r": 3,
+       "c": 0.696,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Predict how the motion of a stationary object changes after being stru"
+      },
+      {
+       "r": 4,
+       "c": 0.696,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students compare various fuel sources by analyzing their intended uses"
+      },
+      {
+       "r": 5,
+       "c": 0.696,
+       "sid": "SCI005-04",
+       "sk": "Solutions and Conservation",
+       "sub": "Students evaluate the effectiveness of different solutions for reducin"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "biology",
+   "primitive": "evolution-timeline",
+   "desc": "Interactive deep-time timeline showing evolutionary events, branching points, and the emergence of major groups across geological time. Students navigate billions of years of history, explore mass extinctions, and trace evolutionary lineages. The CORE \"when did this happen in the history of life?\" primitive for evolution education. Features horizontal scrollable/zoomable timeline with color-coded era bands (Precambrian, Paleozoic, Mesozoic, Cenozoic), clickable event markers that expand to detail cards, \"Lineage Trace\" mode highlighting single evolutionary paths (fish \u2192 amphibians \u2192 reptiles \u2192 mammals), scale anchors that make deep time tangible (\"If Earth\\'s history were 24 hours, humans appear at 11:58 PM\"), and mass extinction explorer with cause, impact, and aftermath analysis. Handles the fundamental scale problem \u2014 4.5 billion years is hard to grasp \u2014 through zoom, era navigation, and multiple scale analogies. PERFECT for teaching evolution, geological time, mass extinctions, adaptive radiation, common ancestry, and the history of life on Earth. ESSENTIAL for grades 4-8 whenever students need to understand WHEN evolutionary events happened, how they relate to each other in time, and what major forces (extinctions, adaptations, environmental changes) shaped the diversity of life.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7011,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.701,
+       "sid": "SCI003-02",
+       "sk": "Earth's Systems",
+       "sub": "Connect natural resources to their everyday uses and environmental imp"
+      },
+      {
+       "r": 2,
+       "c": 0.687,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Differentiate between living and non-living things in various environm"
+      },
+      {
+       "r": 3,
+       "c": 0.682,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Compare size relationships between Earth, sun, and moon using manipula"
+      },
+      {
+       "r": 4,
+       "c": 0.674,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Match five common animals to their appropriate habitats (desert, ocean"
+      },
+      {
+       "r": 5,
+       "c": 0.671,
+       "sid": "SCI003-02",
+       "sk": "Earth's Systems",
+       "sub": "Demonstrate how wind and water can change land shapes using models and"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7328,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.733,
+       "sid": "SCI002-10",
+       "sk": "Living Things Classification",
+       "sub": "Sort key defining characteristics into the correct animal group bin us"
+      },
+      {
+       "r": 2,
+       "c": 0.721,
+       "sid": "SCI002-04",
+       "sk": "Biomimicry",
+       "sub": "Sort common human inventions into bins based on the natural biological"
+      },
+      {
+       "r": 3,
+       "c": 0.719,
+       "sid": "SCI003-02",
+       "sk": "Day and Night",
+       "sub": "Rotate the virtual Earth relative to a light source to observe the phy"
+      },
+      {
+       "r": 4,
+       "c": 0.716,
+       "sid": "SCI002-09",
+       "sk": "Living Things Needs",
+       "sub": "Match various organisms to the specific resources available in a given"
+      },
+      {
+       "r": 5,
+       "c": 0.714,
+       "sid": "SCI002-02",
+       "sk": "External Plant Parts",
+       "sub": "Sort plant structures into labeled bins based on the specific survival"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7738,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.774,
+       "sid": "SCI003-03",
+       "sk": "Fast and Slow Earth Changes",
+       "sub": "Learners organize Earth events into a chronological timeline to demons"
+      },
+      {
+       "r": 2,
+       "c": 0.761,
+       "sid": "SCI003-03",
+       "sk": "Fast and Slow Earth Changes",
+       "sub": "Students sort various Earth events based on the duration of time they "
+      },
+      {
+       "r": 3,
+       "c": 0.735,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Arrange the developmental stages of various plants in the correct chro"
+      },
+      {
+       "r": 4,
+       "c": 0.721,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students compare the effectiveness of different engineering designs fo"
+      },
+      {
+       "r": 5,
+       "c": 0.716,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Investigate how animals interact with plants to facilitate reproductio"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.8161,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.816,
+       "sid": "SCI003-05",
+       "sk": "Fossils and Past Life",
+       "sub": "Arrange a series of organisms and their fossils onto a chronological t"
+      },
+      {
+       "r": 2,
+       "c": 0.757,
+       "sid": "SCI003-05",
+       "sk": "Fossils and Past Life",
+       "sub": "Use fossil evidence to justify the conclusion that both environments a"
+      },
+      {
+       "r": 3,
+       "c": 0.718,
+       "sid": "SCI002-05",
+       "sk": "Environment and Traits",
+       "sub": "Students predict the outcome of environmental shifts on an organism an"
+      },
+      {
+       "r": 4,
+       "c": 0.717,
+       "sid": "SCI002-02",
+       "sk": "Comparing Life Cycles",
+       "sub": "Students examine the variety of ways organisms begin their life cycles"
+      },
+      {
+       "r": 5,
+       "c": 0.715,
+       "sid": "SCI002-02",
+       "sk": "Comparing Life Cycles",
+       "sub": "Students analyze two different organism cycles to pinpoint the univers"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.776,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.776,
+       "sid": "SCI004-06",
+       "sk": "Changing Surface",
+       "sub": "Sequence various geological events on a timeline, distinguishing betwe"
+      },
+      {
+       "r": 2,
+       "c": 0.758,
+       "sid": "SCI004-03",
+       "sk": "Rock Layers & Fossils",
+       "sub": "Sequence geologic events by observing the physical evidence preserved "
+      },
+      {
+       "r": 3,
+       "c": 0.713,
+       "sid": "SCI004-03",
+       "sk": "Rock Layers & Fossils",
+       "sub": "Evaluate what fossils tell us about the environment where a creature l"
+      },
+      {
+       "r": 4,
+       "c": 0.702,
+       "sid": "SCI004-04",
+       "sk": "Plate Tectonics",
+       "sub": "Identify historical and scientific evidence, such as similar fossils f"
+      },
+      {
+       "r": 5,
+       "c": 0.693,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students examine the origins of common fossil fuels and how these reso"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "biology",
+   "primitive": "energy-cycle-engine",
+   "desc": "Interactive dual-panel model showing the coupled relationship between photosynthesis and cellular respiration. Students manipulate input levels (light intensity, CO\u2082, glucose, O\u2082) via sliders and observe how outputs change. Coupling visualization shows shared molecules flowing between chloroplast (photosynthesis) and mitochondrion (respiration). \"What If?\" experiments let students break one process and observe cascade effects on the other. The CORE \"how are photosynthesis and respiration connected?\" primitive. PERFECT for teaching systems thinking, energy transformation, input-output reasoning, and the continuous energy cycle in living organisms. Features adjustable sliders, animated molecule flow, process stages with subcellular locations, and experiment prediction with feedback. ESSENTIAL for grades 5-8 whenever students need to understand that photosynthesis and cellular respiration are NOT isolated processes but form a continuous, interdependent energy cycle.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7081,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.708,
+       "sid": "SCI002-03",
+       "sk": "Human Body",
+       "sub": "Connect physical activities to body responses (increased heart rate, b"
+      },
+      {
+       "r": 2,
+       "c": 0.702,
+       "sid": "SCI003-02",
+       "sk": "Earth's Systems",
+       "sub": "Connect natural resources to their everyday uses and environmental imp"
+      },
+      {
+       "r": 3,
+       "c": 0.697,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Differentiate between living and non-living things in various environm"
+      },
+      {
+       "r": 4,
+       "c": 0.687,
+       "sid": "SCI002-01",
+       "sk": "Plants and Animals",
+       "sub": "Create simple food chains showing relationships between producers, con"
+      },
+      {
+       "r": 5,
+       "c": 0.681,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Design a model habitat showing the relationship between living things "
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7184,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.718,
+       "sid": "SCI002-09",
+       "sk": "Living Things Needs",
+       "sub": "Match various organisms to the specific resources available in a given"
+      },
+      {
+       "r": 2,
+       "c": 0.717,
+       "sid": "SCI002-06",
+       "sk": "Parent-Offspring Traits",
+       "sub": "Identify inherited traits common to both parents and their offspring u"
+      },
+      {
+       "r": 3,
+       "c": 0.716,
+       "sid": "SCI003-01",
+       "sk": "Sun Patterns",
+       "sub": "Predict where the sun will be at specific times by rotating the Earth "
+      },
+      {
+       "r": 4,
+       "c": 0.715,
+       "sid": "SCI003-02",
+       "sk": "Day and Night",
+       "sub": "Rotate the virtual Earth relative to a light source to observe the phy"
+      },
+      {
+       "r": 5,
+       "c": 0.714,
+       "sid": "SCI002-09",
+       "sk": "Living Things Needs",
+       "sub": "Predict the consequences when a survival need is missing or insufficie"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7758,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.776,
+       "sid": "SCI002-01",
+       "sk": "Needs of Living Things",
+       "sub": "Observe and manipulate variables in a simulated environment to investi"
+      },
+      {
+       "r": 2,
+       "c": 0.74,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Investigate how animals interact with plants to facilitate reproductio"
+      },
+      {
+       "r": 3,
+       "c": 0.723,
+       "sid": "SCI001-03",
+       "sk": "Heating and Cooling",
+       "sub": "Observe the changes in the state of matter of various substances when "
+      },
+      {
+       "r": 4,
+       "c": 0.714,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students compare the effectiveness of different engineering designs fo"
+      },
+      {
+       "r": 5,
+       "c": 0.708,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Arrange the developmental stages of various plants in the correct chro"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7333,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.733,
+       "sid": "SCI002-02",
+       "sk": "Comparing Life Cycles",
+       "sub": "Students analyze two different organism cycles to pinpoint the univers"
+      },
+      {
+       "r": 2,
+       "c": 0.732,
+       "sid": "SCI002-05",
+       "sk": "Environment and Traits",
+       "sub": "Students interact with a simulated environment to observe how external"
+      },
+      {
+       "r": 3,
+       "c": 0.717,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 4,
+       "c": 0.715,
+       "sid": "SCI002-05",
+       "sk": "Environment and Traits",
+       "sub": "Students predict the outcome of environmental shifts on an organism an"
+      },
+      {
+       "r": 5,
+       "c": 0.713,
+       "sid": "SCI004-02",
+       "sk": "Seasons and Patterns",
+       "sub": "Interact with a 3D model to observe how Earth's axial tilt directly in"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7314,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.731,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 2,
+       "c": 0.713,
+       "sid": "SCI005-04",
+       "sk": "Solutions and Conservation",
+       "sub": "Students evaluate the effectiveness of different solutions for reducin"
+      },
+      {
+       "r": 3,
+       "c": 0.706,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students compare various fuel sources by analyzing their intended uses"
+      },
+      {
+       "r": 4,
+       "c": 0.703,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Predict how the motion of a stationary object changes after being stru"
+      },
+      {
+       "r": 5,
+       "c": 0.698,
+       "sid": "SCI003-02",
+       "sk": "Internal Structures",
+       "sub": "Identify major internal organs in animals and describe their anatomica"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "biology",
+   "primitive": "protein-folder",
+   "desc": "Interactive protein folding simulator where students visualize how a linear amino acid chain folds into a 3D structure based on chemical properties. Two-panel layout: left panel shows the amino acid sequence color-coded by property (hydrophobic, hydrophilic, charged, polar), right panel shows a simplified folding visualization. Students classify each residue as interior (hydrophobic core) or surface-facing (hydrophilic shell), then explore \"Mutation Mode\" where swapping one amino acid changes the fold and disrupts function. Connects mutations to real-world diseases (sickle cell anemia, cystic fibrosis). The CORE \"sequence determines shape determines function\" primitive for molecular biology. Three learning phases: Explore (learn properties), Fold (classify residue placement), Mutate (predict mutation consequences). PERFECT for teaching protein structure, structure-function relationships, amino acid chemistry, molecular disease mechanisms, and the central dogma of biology. ESSENTIAL for grades 7-8 molecular biology and biochemistry units.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.6768,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.677,
+       "sid": "SCI002-03",
+       "sk": "Human Body",
+       "sub": "Connect physical activities to body responses (increased heart rate, b"
+      },
+      {
+       "r": 2,
+       "c": 0.66,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Follow and complete pictorial instruction guides to build basic struct"
+      },
+      {
+       "r": 3,
+       "c": 0.658,
+       "sid": "SCI001-02",
+       "sk": "Matter and Its Properties",
+       "sub": "Sort and classify objects by basic observable properties (color, shape"
+      },
+      {
+       "r": 4,
+       "c": 0.657,
+       "sid": "SCI002-03",
+       "sk": "Human Body",
+       "sub": "Apply basic body care and safety practices (healthy food choices, exer"
+      },
+      {
+       "r": 5,
+       "c": 0.654,
+       "sid": "SCI002-01",
+       "sk": "Plants and Animals",
+       "sub": "Match animal body parts to their functions and survival purposes (wing"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "abstain",
+     "reason": "scattered",
+     "best": 0.7192,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.719,
+       "sid": "SCI002-06",
+       "sk": "Parent-Offspring Traits",
+       "sub": "Identify inherited traits common to both parents and their offspring u"
+      },
+      {
+       "r": 2,
+       "c": 0.716,
+       "sid": "SCI001-02",
+       "sk": "Properties of Sound",
+       "sub": "Adjust the vibration speed in the sound-wave-explorer to hear pitch ch"
+      },
+      {
+       "r": 3,
+       "c": 0.716,
+       "sid": "SCI002-10",
+       "sk": "Living Things Classification",
+       "sub": "Sort key defining characteristics into the correct animal group bin us"
+      },
+      {
+       "r": 4,
+       "c": 0.713,
+       "sid": "SCI002-01",
+       "sk": "External Animal Parts",
+       "sub": "Sort animal body parts into labeled bins based on the primary survival"
+      },
+      {
+       "r": 5,
+       "c": 0.71,
+       "sid": "SCI003-03",
+       "sk": "Moon Patterns",
+       "sub": "Arrange moon phase images in the correct chronological order of the lu"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "scattered",
+     "best": 0.7277,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.728,
+       "sid": "SCI001-03",
+       "sk": "Heating and Cooling",
+       "sub": "Observe the changes in the state of matter of various substances when "
+      },
+      {
+       "r": 2,
+       "c": 0.716,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Arrange the developmental stages of various plants in the correct chro"
+      },
+      {
+       "r": 3,
+       "c": 0.709,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 4,
+       "c": 0.705,
+       "sid": "SCI001-01",
+       "sk": "Classify Materials",
+       "sub": "Group a collection of diverse materials into two categories based on a"
+      },
+      {
+       "r": 5,
+       "c": 0.705,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students compare the effectiveness of different engineering designs fo"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7359,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.736,
+       "sid": "SCI002-04",
+       "sk": "Inherited vs Learned",
+       "sub": "Students classify various animal and human characteristics based on wh"
+      },
+      {
+       "r": 2,
+       "c": 0.736,
+       "sid": "SCI002-05",
+       "sk": "Environment and Traits",
+       "sub": "Students interact with a simulated environment to observe how external"
+      },
+      {
+       "r": 3,
+       "c": 0.714,
+       "sid": "SCI002-05",
+       "sk": "Environment and Traits",
+       "sub": "Students predict the outcome of environmental shifts on an organism an"
+      },
+      {
+       "r": 4,
+       "c": 0.711,
+       "sid": "SCI002-01",
+       "sk": "Life Cycle Stages",
+       "sub": "Students arrange the developmental milestones of a flowering plant in "
+      },
+      {
+       "r": 5,
+       "c": 0.701,
+       "sid": "SCI002-05",
+       "sk": "Environment and Traits",
+       "sub": "Students link specific inherited traits to the environmental advantage"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7098,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.71,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 2,
+       "c": 0.701,
+       "sid": "SCI004-03",
+       "sk": "Rock Layers & Fossils",
+       "sub": "Sequence geologic events by observing the physical evidence preserved "
+      },
+      {
+       "r": 3,
+       "c": 0.699,
+       "sid": "SCI003-02",
+       "sk": "Internal Structures",
+       "sub": "Identify major internal organs in animals and describe their anatomica"
+      },
+      {
+       "r": 4,
+       "c": 0.693,
+       "sid": "SCI003-01",
+       "sk": "External Structures",
+       "sub": "Match specific biological external structures to the survival function"
+      },
+      {
+       "r": 5,
+       "c": 0.688,
+       "sid": "SCI001-06",
+       "sk": "Energy Sources",
+       "sub": "Classify different energy sources into renewable or nonrenewable categ"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "biology",
+   "primitive": "dna-explorer",
+   "desc": "Interactive DNA structure explorer with double helix visualization, base pairing challenges, zoom levels from chromosome to molecular scale, and nucleotide reference. The CORE \"what is DNA made of?\" primitive for molecular genetics. Students explore an SVG double helix by clicking bases to learn about nucleotides (A, T, C, G), practice complementary strand construction through build challenges, and navigate zoom levels from chromosome down to individual base pairs. PERFECT for teaching DNA structure, base pairing rules (A-T with 2 hydrogen bonds, C-G with 3 hydrogen bonds), sugar-phosphate backbone, antiparallel orientation, purine vs pyrimidine classification, and the central dogma (DNA \u2192 RNA \u2192 Protein). Features tabbed interface with Explore (helix + sequence view), Structure (backbone and groove details), Build (complementary strand challenges with feedback), and Zoom Levels (progressive scale exploration). Evaluation tracks build challenge accuracy and zoom level exploration. ESSENTIAL for grades 5-8 genetics and molecular biology whenever students need to understand DNA at the molecular level.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.6842,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.684,
+       "sid": "SCI002-03",
+       "sk": "Human Body",
+       "sub": "Connect physical activities to body responses (increased heart rate, b"
+      },
+      {
+       "r": 2,
+       "c": 0.662,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Differentiate between living and non-living things in various environm"
+      },
+      {
+       "r": 3,
+       "c": 0.66,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Compare size relationships between Earth, sun, and moon using manipula"
+      },
+      {
+       "r": 4,
+       "c": 0.66,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Follow and complete pictorial instruction guides to build basic struct"
+      },
+      {
+       "r": 5,
+       "c": 0.655,
+       "sid": "SCI003-02",
+       "sk": "Earth's Systems",
+       "sub": "Connect natural resources to their everyday uses and environmental imp"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7231,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.723,
+       "sid": "SCI002-06",
+       "sk": "Parent-Offspring Traits",
+       "sub": "Identify inherited traits common to both parents and their offspring u"
+      },
+      {
+       "r": 2,
+       "c": 0.721,
+       "sid": "SCI002-02",
+       "sk": "External Plant Parts",
+       "sub": "Sort plant structures into labeled bins based on the specific survival"
+      },
+      {
+       "r": 3,
+       "c": 0.714,
+       "sid": "SCI002-04",
+       "sk": "Biomimicry",
+       "sub": "Sort common human inventions into bins based on the natural biological"
+      },
+      {
+       "r": 4,
+       "c": 0.713,
+       "sid": "SCI002-10",
+       "sk": "Living Things Classification",
+       "sub": "Sort key defining characteristics into the correct animal group bin us"
+      },
+      {
+       "r": 5,
+       "c": 0.708,
+       "sid": "SCI002-03",
+       "sk": "Structures for Survival",
+       "sub": "Analyze how plant structures allow them to survive in specific conditi"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7176,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.718,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Arrange the developmental stages of various plants in the correct chro"
+      },
+      {
+       "r": 2,
+       "c": 0.715,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students compare the effectiveness of different engineering designs fo"
+      },
+      {
+       "r": 3,
+       "c": 0.706,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Investigate how animals interact with plants to facilitate reproductio"
+      },
+      {
+       "r": 4,
+       "c": 0.696,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      },
+      {
+       "r": 5,
+       "c": 0.695,
+       "sid": "SCI003-02",
+       "sk": "Mapping Land and Water",
+       "sub": "Learners identify and categorize various landforms and water bodies by"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7242,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.724,
+       "sid": "SCI002-04",
+       "sk": "Inherited vs Learned",
+       "sub": "Students classify various animal and human characteristics based on wh"
+      },
+      {
+       "r": 2,
+       "c": 0.713,
+       "sid": "SCI002-05",
+       "sk": "Environment and Traits",
+       "sub": "Students interact with a simulated environment to observe how external"
+      },
+      {
+       "r": 3,
+       "c": 0.709,
+       "sid": "SCI002-03",
+       "sk": "Inherited Traits",
+       "sub": "Students explore cards representing different individuals to note natu"
+      },
+      {
+       "r": 4,
+       "c": 0.699,
+       "sid": "SCI001-06",
+       "sk": "Magnets and Electricity",
+       "sub": "Discover that magnet poles interact by attracting or repelling when br"
+      },
+      {
+       "r": 5,
+       "c": 0.699,
+       "sid": "SCI002-03",
+       "sk": "Inherited Traits",
+       "sub": "Students trace physical traits in plant lineages to determine which fe"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7122,
+     "coherent": 1,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.712,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 2,
+       "c": 0.699,
+       "sid": "SCI004-03",
+       "sk": "Rock Layers & Fossils",
+       "sub": "Sequence geologic events by observing the physical evidence preserved "
+      },
+      {
+       "r": 3,
+       "c": 0.693,
+       "sid": "SCI003-02",
+       "sk": "Internal Structures",
+       "sub": "Identify major internal organs in animals and describe their anatomica"
+      },
+      {
+       "r": 4,
+       "c": 0.689,
+       "sid": "SCI003-01",
+       "sk": "External Structures",
+       "sub": "Match specific biological external structures to the survival function"
+      },
+      {
+       "r": 5,
+       "c": 0.678,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students examine the origins of common fossil fuels and how these reso"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "biology",
+   "primitive": "bio-process-animator",
+   "desc": "Step-through animation of a biological process with narrated stages and checkpoint questions embedded at key moments. Students control playback (play, pause, step forward/back) and demonstrate comprehension by answering questions. The CORE \"how does this process work?\" primitive for biology. PERFECT for teaching photosynthesis, cellular respiration, digestion, blood circulation, breathing, pollination, germination, protein synthesis, DNA replication, nutrient absorption, transpiration, and any multi-step biological process. Features sequential stages with narration, visual descriptions, key molecules involved, energy transformations, duration indicators, and comprehension checkpoints that pause the animation. Includes process overview with inputs/outputs and optional chemical equations. Progress tracking with visual stage indicators. Students advance through stages at their own pace and must answer checkpoint questions correctly to demonstrate understanding before continuing. ESSENTIAL for grades 2-8 biology whenever students need to understand sequential processes, mechanisms, and cause-and-effect relationships in living systems.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7127,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.713,
+       "sid": "SCI002-01",
+       "sk": "Plants and Animals",
+       "sub": "Create simple food chains showing relationships between producers, con"
+      },
+      {
+       "r": 2,
+       "c": 0.706,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Differentiate between living and non-living things in various environm"
+      },
+      {
+       "r": 3,
+       "c": 0.703,
+       "sid": "SCI002-03",
+       "sk": "Human Body",
+       "sub": "Connect physical activities to body responses (increased heart rate, b"
+      },
+      {
+       "r": 4,
+       "c": 0.7,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Demonstrate how plants and animals use their body parts and senses to "
+      },
+      {
+       "r": 5,
+       "c": 0.692,
+       "sid": "SCI002-01",
+       "sk": "Plants and Animals",
+       "sub": "Recognize basic needs of plants and animals (food, water, light, air) "
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7497,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.75,
+       "sid": "SCI002-02",
+       "sk": "External Plant Parts",
+       "sub": "Sort plant structures into labeled bins based on the specific survival"
+      },
+      {
+       "r": 2,
+       "c": 0.739,
+       "sid": "SCI002-09",
+       "sk": "Living Things Needs",
+       "sub": "Sort items into the four core survival need categories for plants usin"
+      },
+      {
+       "r": 3,
+       "c": 0.736,
+       "sid": "SCI002-10",
+       "sk": "Living Things Classification",
+       "sub": "Sort key defining characteristics into the correct animal group bin us"
+      },
+      {
+       "r": 4,
+       "c": 0.73,
+       "sid": "SCI003-02",
+       "sk": "Day and Night",
+       "sub": "Sequence events in the day-night cycle, ordering them from sunrise thr"
+      },
+      {
+       "r": 5,
+       "c": 0.726,
+       "sid": "SCI002-03",
+       "sk": "Structures for Survival",
+       "sub": "Analyze how plant structures allow them to survive in specific conditi"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.8011,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.801,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Investigate how animals interact with plants to facilitate reproductio"
+      },
+      {
+       "r": 2,
+       "c": 0.78,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Arrange the developmental stages of various plants in the correct chro"
+      },
+      {
+       "r": 3,
+       "c": 0.763,
+       "sid": "SCI002-01",
+       "sk": "Needs of Living Things",
+       "sub": "Observe and manipulate variables in a simulated environment to investi"
+      },
+      {
+       "r": 4,
+       "c": 0.715,
+       "sid": "SCI003-01",
+       "sk": "Wind and Water Erosion",
+       "sub": "Students compare the effectiveness of different engineering designs fo"
+      },
+      {
+       "r": 5,
+       "c": 0.712,
+       "sid": "SCI003-03",
+       "sk": "Fast and Slow Earth Changes",
+       "sub": "Learners organize Earth events into a chronological timeline to demons"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7703,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.77,
+       "sid": "SCI002-01",
+       "sk": "Life Cycle Stages",
+       "sub": "Students arrange the developmental milestones of a flowering plant in "
+      },
+      {
+       "r": 2,
+       "c": 0.763,
+       "sid": "SCI003-06",
+       "sk": "Decomposers and Recycling",
+       "sub": "Describe the sequence of steps that decomposers take to break down was"
+      },
+      {
+       "r": 3,
+       "c": 0.751,
+       "sid": "SCI002-02",
+       "sk": "Comparing Life Cycles",
+       "sub": "Students analyze two different organism cycles to pinpoint the univers"
+      },
+      {
+       "r": 4,
+       "c": 0.74,
+       "sid": "SCI002-02",
+       "sk": "Comparing Life Cycles",
+       "sub": "Students contrast the dramatic life changes in a butterfly with the st"
+      },
+      {
+       "r": 5,
+       "c": 0.739,
+       "sid": "SCI002-01",
+       "sk": "Life Cycle Stages",
+       "sub": "Students order the stages of insect metamorphosis to show the transfor"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.731,
+     "coherent": 1,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.731,
+       "sid": "SCI003-02",
+       "sk": "Internal Structures",
+       "sub": "Identify major internal organs in animals and describe their anatomica"
+      },
+      {
+       "r": 2,
+       "c": 0.726,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 3,
+       "c": 0.712,
+       "sid": "SCI004-02",
+       "sk": "Erosion & Deposition",
+       "sub": "Sequence the steps of how flowing water picks up, carries, and transpo"
+      },
+      {
+       "r": 4,
+       "c": 0.698,
+       "sid": "SCI005-03",
+       "sk": "Human Impact",
+       "sub": "Students explain the causal processes by which human activities like a"
+      },
+      {
+       "r": 5,
+       "c": 0.697,
+       "sid": "SCI004-06",
+       "sk": "Changing Surface",
+       "sub": "Sequence various geological events on a timeline, distinguishing betwe"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "biology",
+   "primitive": "microscope-viewer",
+   "desc": "Simulated microscope experience with zoom levels, structure labeling tasks, and guided observation prompts. Students examine specimens at increasing magnification (40x, 100x, 400x) through a circular lens viewport, identify and label structures at each level, and respond to observation questions. The PRIMARY \"what do you see under the microscope?\" primitive for biology. PERFECT for teaching cell biology (plant cells, animal cells, bacteria), tissue types (muscle, epithelial), microorganisms (paramecium, amoeba, euglena), and mineral structures. Bridges the gap between macro observation and micro understanding. Features per-zoom structure hotspots, drag-to-label interaction, guided observation prompts, AI-generated microscope images, and evaluation tracking for labeling accuracy and observation quality. ESSENTIAL for grades 3-8 whenever students need to develop microscopy skills, learn cell structure, practice scientific observation, or understand biological organization at different scales.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.714,
+     "coherent": 4,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.714,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Differentiate between living and non-living things in various environm"
+      },
+      {
+       "r": 2,
+       "c": 0.7,
+       "sid": "SCI002-01",
+       "sk": "Plants and Animals",
+       "sub": "Identify and name basic plant parts (roots, stem, leaves, flower, seed"
+      },
+      {
+       "r": 3,
+       "c": 0.68,
+       "sid": "SCI004-02",
+       "sk": "Tools and Technology",
+       "sub": "Demonstrate fundamental digital device skills (mouse control, keyboard"
+      },
+      {
+       "r": 4,
+       "c": 0.679,
+       "sid": "SCI002-02",
+       "sk": "Ecosystems",
+       "sub": "Demonstrate how plants and animals use their body parts and senses to "
+      },
+      {
+       "r": 5,
+       "c": 0.679,
+       "sid": "SCI002-01",
+       "sk": "Plants and Animals",
+       "sub": "Classify animals by physical characteristics (fur, feathers, scales) a"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7522,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.752,
+       "sid": "SCI002-10",
+       "sk": "Living Things Classification",
+       "sub": "Sort key defining characteristics into the correct animal group bin us"
+      },
+      {
+       "r": 2,
+       "c": 0.749,
+       "sid": "SCI002-09",
+       "sk": "Living Things Needs",
+       "sub": "Match various organisms to the specific resources available in a given"
+      },
+      {
+       "r": 3,
+       "c": 0.744,
+       "sid": "SCI002-02",
+       "sk": "External Plant Parts",
+       "sub": "Sort plant structures into labeled bins based on the specific survival"
+      },
+      {
+       "r": 4,
+       "c": 0.742,
+       "sid": "SCI002-04",
+       "sk": "Biomimicry",
+       "sub": "Sort common human inventions into bins based on the natural biological"
+      },
+      {
+       "r": 5,
+       "c": 0.733,
+       "sid": "SCI002-03",
+       "sk": "Structures for Survival",
+       "sub": "Identify how an animal uses specific body parts to thrive in its envir"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7382,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.738,
+       "sid": "SCI001-03",
+       "sk": "Heating and Cooling",
+       "sub": "Observe the changes in the state of matter of various substances when "
+      },
+      {
+       "r": 2,
+       "c": 0.726,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Arrange the developmental stages of various plants in the correct chro"
+      },
+      {
+       "r": 3,
+       "c": 0.725,
+       "sid": "SCI001-01",
+       "sk": "Classify Materials",
+       "sub": "Group a collection of diverse materials into two categories based on a"
+      },
+      {
+       "r": 4,
+       "c": 0.721,
+       "sid": "SCI002-01",
+       "sk": "Needs of Living Things",
+       "sub": "Observe and manipulate variables in a simulated environment to investi"
+      },
+      {
+       "r": 5,
+       "c": 0.715,
+       "sid": "SCI002-03",
+       "sk": "Habitats and Biodiversity",
+       "sub": "Explore and identify the diversity of organisms that exist within a sp"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.744,
+     "coherent": 1,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.744,
+       "sid": "SCI003-06",
+       "sk": "Decomposers and Recycling",
+       "sub": "Sort various organisms including bacteria, fungi, plants, and animals "
+      },
+      {
+       "r": 2,
+       "c": 0.73,
+       "sid": "SCI002-04",
+       "sk": "Inherited vs Learned",
+       "sub": "Students classify various animal and human characteristics based on wh"
+      },
+      {
+       "r": 3,
+       "c": 0.73,
+       "sid": "SCI002-05",
+       "sk": "Environment and Traits",
+       "sub": "Students interact with a simulated environment to observe how external"
+      },
+      {
+       "r": 4,
+       "c": 0.729,
+       "sid": "SCI002-02",
+       "sk": "Comparing Life Cycles",
+       "sub": "Students analyze two different organism cycles to pinpoint the univers"
+      },
+      {
+       "r": 5,
+       "c": 0.723,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Observe and label specific movement patterns in the race-track-lab suc"
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7443,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.744,
+       "sid": "SCI003-02",
+       "sk": "Internal Structures",
+       "sub": "Identify major internal organs in animals and describe their anatomica"
+      },
+      {
+       "r": 2,
+       "c": 0.719,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 3,
+       "c": 0.704,
+       "sid": "SCI003-01",
+       "sk": "External Structures",
+       "sub": "Identify external physical features of various animals and describe th"
+      },
+      {
+       "r": 4,
+       "c": 0.704,
+       "sid": "SCI004-03",
+       "sk": "Rock Layers & Fossils",
+       "sub": "Sequence geologic events by observing the physical evidence preserved "
+      },
+      {
+       "r": 5,
+       "c": 0.701,
+       "sid": "SCI003-01",
+       "sk": "External Structures",
+       "sub": "Match specific biological external structures to the survival function"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "astronomy",
+   "primitive": "rocket-builder",
+   "desc": "Comprehensive rocket design and simulation tool where students assemble rockets from components, balance thrust and weight, and launch to see if their designs reach space. The flagship spaceflight primitive. Students select rocket stages and components (capsules, fuel tanks, engines, boosters, fins), stack stages vertically, choose engine types and fuel amounts, adjust payload, check thrust-to-weight ratio, launch and watch flight profile with real-time D3 animation, see staging events during flight, and analyze why designs succeed or fail. Features progressive difficulty from K (rockets have parts) to Grade 5 (delta-v budgets and orbit insertion). Includes budget constraints for resource management, guided mode with hints, multiple atmosphere models, and detailed flight profile graphs showing altitude, velocity, and staging events. ESSENTIAL for NGSS engineering design standards and spaceflight education.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7119,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.712,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Compare size relationships between Earth, sun, and moon using manipula"
+      },
+      {
+       "r": 2,
+       "c": 0.711,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Collect and analyze data about daylight length and weather patterns ov"
+      },
+      {
+       "r": 3,
+       "c": 0.708,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Create a daily schedule based on sun position, connecting activities t"
+      },
+      {
+       "r": 4,
+       "c": 0.706,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Follow and complete pictorial instruction guides to build basic struct"
+      },
+      {
+       "r": 5,
+       "c": 0.7,
+       "sid": "SCI004-01",
+       "sk": "Engineering Design Process",
+       "sub": "Create simple drawings and models to communicate design ideas for solv"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7452,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.745,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students stack various blocks to build the tallest possible tower whil"
+      },
+      {
+       "r": 2,
+       "c": 0.731,
+       "sid": "SCI005-04",
+       "sk": "Planning a Build",
+       "sub": "Students experiment with a gear train to watch how gears turn together"
+      },
+      {
+       "r": 3,
+       "c": 0.715,
+       "sid": "SCI005-03",
+       "sk": "Building Strong Structures",
+       "sub": "Students press on different straw shapes\u2014triangles, squares, and penta"
+      },
+      {
+       "r": 4,
+       "c": 0.715,
+       "sid": "SCI002-04",
+       "sk": "Biomimicry",
+       "sub": "Sort common human inventions into bins based on the natural biological"
+      },
+      {
+       "r": 5,
+       "c": 0.714,
+       "sid": "SCI003-02",
+       "sk": "Day and Night",
+       "sub": "Rotate the virtual Earth relative to a light source to observe the phy"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7435,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.744,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      },
+      {
+       "r": 2,
+       "c": 0.736,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 3,
+       "c": 0.735,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Stack modular segments to construct a structure that stands tall witho"
+      },
+      {
+       "r": 4,
+       "c": 0.727,
+       "sid": "SCI002-02",
+       "sk": "Life Cycles and Seeds",
+       "sub": "Arrange the developmental stages of various plants in the correct chro"
+      },
+      {
+       "r": 5,
+       "c": 0.726,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Test different material samples to determine which provides the necess"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7423,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.742,
+       "sid": "SCI001-03",
+       "sk": "Forces and Gravity",
+       "sub": "Compare fall times of different objects in the gravity-drop-tower to a"
+      },
+      {
+       "r": 2,
+       "c": 0.73,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Use an observed, regular pattern in the race-track-lab to predict the "
+      },
+      {
+       "r": 3,
+       "c": 0.726,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 4,
+       "c": 0.721,
+       "sid": "SCI004-05",
+       "sk": "Designing for Hazards",
+       "sub": "Simulate, test, and refine a physical model design to see how well it "
+      },
+      {
+       "r": 5,
+       "c": 0.711,
+       "sid": "SCI002-01",
+       "sk": "Life Cycle Stages",
+       "sub": "Students arrange the developmental milestones of a flowering plant in "
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7135,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.714,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      },
+      {
+       "r": 2,
+       "c": 0.704,
+       "sid": "SCI004-03",
+       "sk": "Rock Layers & Fossils",
+       "sub": "Sequence geologic events by observing the physical evidence preserved "
+      },
+      {
+       "r": 3,
+       "c": 0.703,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students compare various fuel sources by analyzing their intended uses"
+      },
+      {
+       "r": 4,
+       "c": 0.692,
+       "sid": "SCI001-02",
+       "sk": "Energy Transfer in Collisions",
+       "sub": "Predict how the motion of a stationary object changes after being stru"
+      },
+      {
+       "r": 5,
+       "c": 0.691,
+       "sid": "SCI004-06",
+       "sk": "Changing Surface",
+       "sub": "Sequence various geological events on a timeline, distinguishing betwe"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "domain": "astronomy",
+   "primitive": "mission-planner",
+   "desc": "Simplified mission design tool where students plan trips to the Moon, Mars, and beyond. Students select destinations on an interactive D3 solar system map, choose launch windows based on planetary alignment, plan trajectories (direct route vs gravity assist via other planets), pack supplies for crew (food, water, oxygen), estimate travel time, calculate fuel requirements, and monitor animated mission progress. Features progressive learning phases: explore destinations, plan route and timing, prepare supplies, and launch with real-time progress tracking. Includes interactive supply calculator for food/water/oxygen planning, launch window selection showing optimal planetary alignment, gravity assist trajectory visualization, mission clock with elapsed time, and destination info panels with fun facts. D3 solar system visualization shows orbital paths, planet positions, trajectory lines, and animated spacecraft icon. Progressive difficulty from K (pick a destination!) to Grade 5 (optimize fuel vs payload trade-offs with gravity assists and tight fuel constraints). ESSENTIAL for teaching space travel concepts, mission planning, supply logistics, and interplanetary navigation for K-5 astronomy.",
+   "per_grade": [
+    {
+     "grade": "Kindergarten",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.7594,
+     "coherent": 5,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.759,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Create a daily schedule based on sun position, connecting activities t"
+      },
+      {
+       "r": 2,
+       "c": 0.746,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Compare size relationships between Earth, sun, and moon using manipula"
+      },
+      {
+       "r": 3,
+       "c": 0.731,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Collect and analyze data about daylight length and weather patterns ov"
+      },
+      {
+       "r": 4,
+       "c": 0.717,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Sort and classify objects as \"space objects\" (sun, moon, stars) or \"Ea"
+      },
+      {
+       "r": 5,
+       "c": 0.709,
+       "sid": "SCI003-03",
+       "sk": "Space Systems",
+       "sub": "Identify and draw the three main moon phases (full, half, crescent) us"
+      }
+     ]
+    },
+    {
+     "grade": "1",
+     "verdict": "match",
+     "reason": null,
+     "best": 0.725,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.725,
+       "sid": "SCI003-01",
+       "sk": "Sun Patterns",
+       "sub": "Predict where the sun will be at specific times by rotating the Earth "
+      },
+      {
+       "r": 2,
+       "c": 0.724,
+       "sid": "SCI003-03",
+       "sk": "Moon Patterns",
+       "sub": "Arrange moon phase images in the correct chronological order of the lu"
+      },
+      {
+       "r": 3,
+       "c": 0.715,
+       "sid": "SCI005-04",
+       "sk": "Planning a Build",
+       "sub": "Students experiment with a gear train to watch how gears turn together"
+      },
+      {
+       "r": 4,
+       "c": 0.715,
+       "sid": "SCI003-01",
+       "sk": "Sun Patterns",
+       "sub": "Observe the sun's position throughout the day using the virtual Earth "
+      },
+      {
+       "r": 5,
+       "c": 0.711,
+       "sid": "SCI005-02",
+       "sk": "Construction Machines",
+       "sub": "Students estimate how many full truck loads are required to move a pil"
+      }
+     ]
+    },
+    {
+     "grade": "2",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7255,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.726,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Create a visual plan for an object by selecting and placing symbols or"
+      },
+      {
+       "r": 2,
+       "c": 0.722,
+       "sid": "SCI001-02",
+       "sk": "Materials for a Purpose",
+       "sub": "Select the best material for a specific design job after reviewing the"
+      },
+      {
+       "r": 3,
+       "c": 0.716,
+       "sid": "SCI004-01",
+       "sk": "Design Solutions",
+       "sub": "Design and place support beams to span a gap safely while carrying a r"
+      },
+      {
+       "r": 4,
+       "c": 0.714,
+       "sid": "SCI003-02",
+       "sk": "Mapping Land and Water",
+       "sub": "Learners identify and categorize various landforms and water bodies by"
+      },
+      {
+       "r": 5,
+       "c": 0.712,
+       "sid": "SCI003-02",
+       "sk": "Mapping Land and Water",
+       "sub": "Students locate water across the globe and classify it by its physical"
+      }
+     ]
+    },
+    {
+     "grade": "3",
+     "verdict": "abstain",
+     "reason": "diffuse",
+     "best": 0.7251,
+     "coherent": 2,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.725,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Measure and compare the distances traveled by two objects over equal t"
+      },
+      {
+       "r": 2,
+       "c": 0.713,
+       "sid": "SCI001-04",
+       "sk": "Patterns in Motion",
+       "sub": "Use an observed, regular pattern in the race-track-lab to predict the "
+      },
+      {
+       "r": 3,
+       "c": 0.707,
+       "sid": "SCI004-05",
+       "sk": "Designing for Hazards",
+       "sub": "Simulate, test, and refine a physical model design to see how well it "
+      },
+      {
+       "r": 4,
+       "c": 0.706,
+       "sid": "SCI004-02",
+       "sk": "Seasons and Patterns",
+       "sub": "Interact with a 3D model to observe how Earth's axial tilt directly in"
+      },
+      {
+       "r": 5,
+       "c": 0.704,
+       "sid": "SCI002-01",
+       "sk": "Life Cycle Stages",
+       "sub": "Students arrange the developmental milestones of a flowering plant in "
+      }
+     ]
+    },
+    {
+     "grade": "4",
+     "verdict": "abstain",
+     "reason": "scattered",
+     "best": 0.7045,
+     "coherent": 3,
+     "top_k": [
+      {
+       "r": 1,
+       "c": 0.705,
+       "sid": "SCI005-01",
+       "sk": "Energy and Fuel Sources",
+       "sub": "Students compare various fuel sources by analyzing their intended uses"
+      },
+      {
+       "r": 2,
+       "c": 0.703,
+       "sid": "SCI005-04",
+       "sk": "Solutions and Conservation",
+       "sub": "Students evaluate the effectiveness of different solutions for reducin"
+      },
+      {
+       "r": 3,
+       "c": 0.702,
+       "sid": "SCI005-02",
+       "sk": "Natural Hazards",
+       "sub": "Students explore strategies for predicting hazards and designing prepa"
+      },
+      {
+       "r": 4,
+       "c": 0.701,
+       "sid": "SCI001-01",
+       "sk": "Speed and Energy",
+       "sub": "Predict which of two objects carries more energy by evaluating their r"
+      },
+      {
+       "r": 5,
+       "c": 0.699,
+       "sid": "SCI001-04",
+       "sk": "Electric Circuits",
+       "sub": "Determine if a circuit is open or closed and predict whether current w"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

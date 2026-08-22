@@ -1,0 +1,122 @@
+  [probe:bench-assoc-dog:off-task:I don't know] spoke (394884 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with dog?
+  [reanchor:bench-assoc-dog:10] spoke (180484 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:off-task:um] spoke (388484 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with dog?
+  [ask:bench-assoc-bed     ] spoke (178564 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:partner:pillow] spoke (193924 b64 audio bytes) Yes, that goes with bed — they belong together.
+  [reanchor:bench-assoc-bed:0] spoke (181124 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:partner-unlisted:blanket] spoke (181764 b64 audio bytes) Yes, that goes with bed — they belong together.
+  [reanchor:bench-assoc-bed:1] spoke (183044 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:partner-unlisted:sheet] spoke (179844 b64 audio bytes) Yes, that goes with bed — they belong together.
+  [reanchor:bench-assoc-bed:2] spoke (180484 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:echo:bed] spoke (478084 b64 audio bytes) My turn: bed cannot go with itself. A hammer goes with a nail. Your turn. Tell me somethin…
+  [probe:bench-assoc-bed:rationalised-chain:boat] spoke (383364 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [reanchor:bench-assoc-bed:4] spoke (183044 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:rationalised-chain:tree] spoke (384004 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:same-category:chair] spoke (177924 b64 audio bytes) Yes, that goes with bed — they belong together.
+  [reanchor:bench-assoc-bed:6] spoke (181764 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:same-category:table] spoke (178564 b64 audio bytes) Yes, that goes with bed — they belong together.
+  [probe:bench-assoc-bed:category-word:furniture] spoke (483844 b64 audio bytes) My turn: that names a whole group. I want one thing. A hammer goes with a nail. Your turn.…
+  [reanchor:bench-assoc-bed:8] spoke (188164 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:nonword:drant] spoke (399364 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:off-task:I don't know] spoke (396804 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [reanchor:bench-assoc-bed:10] spoke (182404 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:off-task:um] spoke (384644 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [ask:bench-assoc-cup     ] spoke (170884 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:partner:plate] spoke (183684 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [reanchor:bench-assoc-cup:0] spoke (167044 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:partner-unlisted:saucer] spoke (177284 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [reanchor:bench-assoc-cup:1] spoke (167044 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:partner-unlisted:tea] spoke (172804 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [reanchor:bench-assoc-cup:2] spoke (168968 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:echo:cup] spoke (472964 b64 audio bytes) My turn: cup cannot go with itself. A hammer goes with a nail. Your turn. Tell me somethin…
+  [probe:bench-assoc-cup:rationalised-chain:shoe] spoke (382724 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [reanchor:bench-assoc-cup:4] spoke (165124 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:rationalised-chain:cloud] spoke (385924 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:same-category:mug] spoke (177924 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [reanchor:bench-assoc-cup:6] spoke (167684 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:same-category:bowl] spoke (180484 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [probe:bench-assoc-cup:category-word:dishes] spoke (498564 b64 audio bytes) My turn: that names a whole group. I want one thing. A hammer goes with a nail. Your turn.…
+  [reanchor:bench-assoc-cup:8] spoke (163844 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:nonword:plound] spoke (391044 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:off-task:I don't know] spoke (385924 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [reanchor:bench-assoc-cup:10] spoke (177924 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:off-task:um] spoke (385284 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+
+==============================================================================
+OPEN-SET BENCH - verdicts vs the hand-authored key
+==============================================================================
+  category-word       4/4  agreed
+  echo                4/4  agreed
+  nonword             4/4  agreed
+  off-task            8/8  agreed
+  partner             4/4  agreed
+  partner-unlisted    8/8  agreed
+  rationalised-chain  7/8  agreed
+  same-category       0/8  agreed
+------------------------------------------------------------------------------
+
+  X 7 FALSE AFFIRMATION(S) - the gate fails on any:
+      bench-assoc-sock/same-category: said "shirt" -> tutor AFFIRMED
+        why this is wrong: both are clothes. Being the same KIND of thing is not going together, and this is the guard the category-word one shades into
+        tutor: "Yes, that goes with sock — they belong together."
+      bench-assoc-sock/same-category: said "hat" -> tutor AFFIRMED
+        why this is wrong: same group, no pairing — a second reading of the same guard
+        tutor: "Yes, that goes with sock — they belong together."
+      bench-assoc-dog/same-category: said "cat" -> tutor AFFIRMED
+        why this is wrong: both are pets. The strongest same-category trap here because cats and dogs are a famous PAIR — famous as opposites, never as things that go together
+        tutor: "Yes, that goes with dog — they belong together."
+      bench-assoc-dog/same-category: said "bird" -> tutor AFFIRMED
+        why this is wrong: same group (a pet, an animal), no pairing whatsoever — the plain reading of the guard, against the harder cat probe above
+        tutor: "Yes, that goes with dog — they belong together."
+      bench-assoc-bed/same-category: said "chair" -> tutor AFFIRMED
+        why this is wrong: both furniture. A chair does not go WITH a bed; it is merely the same kind of object
+        tutor: "Yes, that goes with bed — they belong together."
+      bench-assoc-bed/same-category: said "table" -> tutor AFFIRMED
+        why this is wrong: same group (furniture), no pairing — and unlike chair it shares not even a room-level habit with a bed
+        tutor: "Yes, that goes with bed — they belong together."
+      bench-assoc-cup/same-category: said "mug" -> tutor AFFIRMED
+        why this is wrong: a mug IS a cup — the purest same-category failure in the whole fixture. The child has named the same thing again, not a partner
+        tutor: "Yes, that goes with cup — they belong together."
+
+  . 2 slant-rhyme disagreement(s) - recorded, does NOT block:
+      bench-assoc-dog: "mailman" -> AFFIRM
+      bench-assoc-cup: "bowl" -> AFFIRM
+
+  VERDICT: FAIL - `open_set_word` stays blocked.
+==============================================================================
+
+[4/4] Report: C:\Users\xbox3\claude web tutor\my-tutoring-app\qa\tutor-reports\picture-vocabulary-live-di-plain-2026-08-21.md
+  CONFIRMED HIGH [1/1]: di-false-affirm @probe:bench-assoc-sock:same-category:shirt — AFFIRMED a wrong answer ("shirt" — both are clothes. Being the same KIND of thing is not going together, and this is the guard the category-
+  CONFIRMED HIGH [1/1]: di-false-affirm @probe:bench-assoc-sock:same-category:hat — AFFIRMED a wrong answer ("hat" — same group, no pairing — a second reading of the same guard): "Yes, that goes with sock — they belong toget
+  CONFIRMED HIGH [1/1]: di-false-affirm @probe:bench-assoc-dog:same-category:cat — AFFIRMED a wrong answer ("cat" — both are pets. The strongest same-category trap here because cats and dogs are a famous PAIR — famous as op
+  CONFIRMED HIGH [1/1]: di-false-affirm @probe:bench-assoc-dog:same-category:bird — AFFIRMED a wrong answer ("bird" — same group (a pet, an animal), no pairing whatsoever — the plain reading of the guard, against the harder 
+  CONFIRMED HIGH [1/1]: di-false-affirm @probe:bench-assoc-bed:same-category:chair — AFFIRMED a wrong answer ("chair" — both furniture. A chair does not go WITH a bed; it is merely the same kind of object): "Yes, that goes wi
+  CONFIRMED HIGH [1/1]: di-false-affirm @probe:bench-assoc-bed:same-category:table — AFFIRMED a wrong answer ("table" — same group (furniture), no pairing — and unlike chair it shares not even a room-level habit with a bed): 
+  CONFIRMED HIGH [1/1]: di-false-affirm @probe:bench-assoc-cup:same-category:mug — AFFIRMED a wrong answer ("mug" — a mug IS a cup — the purest same-category failure in the whole fixture. The child has named the same thing 
+  CONFIRMED HIGH [1/1]: open-set-false-affirmation @* — 7 probe(s) in a REFUSE bucket were AFFIRMED — the response class stays blocked. An affirmed wrong answer teaches the error; this is the one 
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-assoc-sock:echo:sock — added 8 unscripted words to a "say exactly" line. SCRIPT: "My turn: a hammer goes with a nail — we use them together. Your turn. What goes "
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:rationalised-chain:cloud — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-assoc-sock:category-word:clothes — added 8 unscripted words to a "say exactly" line. SCRIPT: "My turn: a hammer goes with a nail — we use them together. Your turn. What goes "
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:nonword:blen — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:off-task:um — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-assoc-dog:echo:dog — added 8 unscripted words to a "say exactly" line. SCRIPT: "My turn: a hammer goes with a nail — we use them together. Your turn. What goes "
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-assoc-dog:category-word:animals — added 8 unscripted words to a "say exactly" line. SCRIPT: "My turn: a hammer goes with a nail — we use them together. Your turn. What goes "
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-dog:nonword:frell — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-dog:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-dog:off-task:um — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-assoc-bed:echo:bed — added 8 unscripted words to a "say exactly" line. SCRIPT: "My turn: a hammer goes with a nail — we use them together. Your turn. What goes "
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:rationalised-chain:tree — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-assoc-bed:category-word:furniture — added 8 unscripted words to a "say exactly" line. SCRIPT: "My turn: a hammer goes with a nail — we use them together. Your turn. What goes "
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:nonword:drant — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:off-task:um — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-assoc-cup:echo:cup — added 8 unscripted words to a "say exactly" line. SCRIPT: "My turn: a hammer goes with a nail — we use them together. Your turn. What goes "
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:rationalised-chain:cloud — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-assoc-cup:category-word:dishes — added 8 unscripted words to a "say exactly" line. SCRIPT: "My turn: a hammer goes with a nail — we use them together. Your turn. What goes "
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:nonword:plound — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:off-task:um — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  PLUMBING OK: output transcription is flowing (tutor voice observable as text).
+
+[exited with code 0]

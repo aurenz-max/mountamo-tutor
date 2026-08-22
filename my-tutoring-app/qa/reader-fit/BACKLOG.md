@@ -83,12 +83,24 @@ LA/Math/SS shape (reports in `qa/topic-traces/g1-*-2026-08-01.md`).
 > load-bearing one — **a derived key cannot contradict the screen, and a prompt
 > generated FROM its answer cannot leak it**, which is the failure mode that made
 > DNA-1 and CB-1. 5 modes β 1.5→8.0, catalog + backend priors + 24 tests.
-> **Its own residual is now HUMAN-CHECKS #77 and it gates the rung:** jsdom cannot
-> see whether a moving `<g>` is hittable, and this repo has already shipped an
-> unclickable `<g>` that every jsdom test passed
-> ([[feedback_svg-g-unclickable-jsdom-blind]]). **Drive #77 before copying the
-> template three more times** — if the taps don't land, the template needs a hit
-> layer, and copying it first means fixing it four times.
+> ~~**Its own residual is now HUMAN-CHECKS #77 and it gates the rung:** jsdom cannot
+> see whether a moving `<g>` is hittable... **Drive #77 before copying the template
+> three more times.**~~
+>
+> ✅⚠ **THE GATE IS VOID — `/pm` 2026-08-22. THE TAP-ANSWER TEMPLATE NO LONGER EXISTS.**
+> `solar-system-explorer` took a full `/add-di-loop` port on **2026-08-19** (di item 25,
+> first science port, whole-file rewrite) and **all five modes became `short_spoken_word`**
+> — `identify` even FLIPPED DIRECTION, from "Tap Mars" to a spotlight + "What planet is
+> that?". The judging contract now names zoom/pan/research-card as RESEARCH: *"the TAP
+> SURVIVES as what it honestly is: LOOKING."* There is no derived tap key left to
+> contradict the screen, and no hit-testing risk to copy four times.
+>
+> **So this item is UNBLOCKED and its template question is re-opened, not answered.** The
+> 08-08 tap-derived-key template is superseded; whoever pulls item 17 decides per primitive
+> between a plain `/add-eval-modes` ladder and a judged/spoken port, and must NOT copy the
+> 08-08 shape by reference. **#77 survives only as band/pixel debt** (its criteria (c) K
+> chrome and (d) does-it-read-as-a-task), which #73/S11 already covers — it is no longer a
+> code gate on anything. Pull order below still stands.
 >
 > **Pull order, if pulled:** `organism-card` first (K-8, elementary demand, per-fact
 > read-aloud already shipped — the cheapest), then `species-profile`, then

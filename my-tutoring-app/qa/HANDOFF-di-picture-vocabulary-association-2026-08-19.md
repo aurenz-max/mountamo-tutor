@@ -2,7 +2,7 @@
 
 **Opened:** 2026-08-19, on the close of item 24 (`open_set_word` benched + rhyme-studio pilot).
 **Executor:** `/add-di-loop picture-vocabulary` (adapter exists; this is a mode conversion).
-**Owning queue:** `qa/di/BACKLOG.md` — file as item 25.
+**Owning queue:** `qa/di/BACKLOG.md` — filed as item 26 (`25` collided with the science-ports item; corrected by `/pm` 2026-08-21).
 **Status:** SCOPED, not started.
 
 ---

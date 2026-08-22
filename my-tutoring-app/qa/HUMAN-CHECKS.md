@@ -7,13 +7,113 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open — ONE list, newest first (as of 2026-08-17, `/pm`)
+## Open — ONE list, newest first (as of 2026-08-22, `/pm`)
 
-> **Newest five:** #117 states-of-matter (third science port, all-spoken) · #116
-> habitat-diorama (living ecosystem field lab) · #115 periodic-table (first
-> chemistry port) · #114 solar-system-explorer (first science port) · #113
-> place-value-chart (the #63 material itself). Next free ID is **#118**.
+> **86 rows open.** **Newest five:** #120 ramp-lab (three focused ramp task identities) ·
+> #119 dump-truck-loader (three capacity rungs) · #118 picture-vocabulary `association`
+> (the hardest open-set case; its gates 7+8 are headless and still owed too) · #117
+> states-of-matter (third science port, all-spoken) · #116 habitat-diorama (living
+> ecosystem field lab). Next free ID is **#121**.
 > Re-grep before filing; concurrent sessions in this lane are normal.
+
+### #120 — **`ramp-lab`: do prediction, measurement, and design feel like three different investigations?** · OPEN
+
+Engineering Primitives Tester → `ramp-lab`. Pin each mode and complete one challenge:
+
+- **`compare_conditions`** — choose A/B before any threshold or live status is visible;
+  after checking, both force values should appear and only one causal variable should differ.
+- **`find_threshold`** — a maximum push must be rejected as “works, but not minimum”; the
+  first valid 0.5 N slider step should solve and animate the load.
+- **`design_with_budget`** — changing angle must keep the blue platform height fixed while
+  the ramp visibly gets longer/gentler or shorter/steeper. Check both 10° and 50° extremes.
+
+Also run Auto/mixed: the first three tasks must be compare → threshold → design. Force
+evidence, status, and decomposition values must remain hidden until the learner checks.
+
+Headless evidence: 7/7 physics-contract tests, `typecheck:lumina` 0, live pinned 3/3,
+explicit mixed rotation PASS, and unpinned minimum-force intent resolved to
+`find_threshold`. Report: `qa/eval-reports/ramp-lab-2026-08-21.md`.
+
+### #119 — **`dump-truck-loader` eval-mode rungs: does pinning a rung actually change what the child is asked to do?** · OPEN
+
+Primitives Tester → engineering → `dump-truck-loader`. Pin each rung in turn and walk one
+job of each:
+
+- **`load`** — the job board should ask you to haul N loads, with **no prediction buttons**.
+- **`predict`** — the "which meter fills first?" choice must appear **before** you can load,
+  and the brief must not give it away. Check the meter reveal stays hidden until you commit.
+- **`plan_trips`** — a `clear_source` job; the pile is 90 units every time, and the trip
+  count should visibly differ between the debris job (3) and the sand job (5).
+
+Also: **Auto/mixed** must show all three rungs in one session, not four of the same.
+
+Headless evidence already in hand (so this is pixels + a real click only): `typecheck:lumina`
+0, 17/17 content-contract tests, and a live Gemini drive on all three resolution paths
+(pinned `predict`, pinned `plan_trips`, and unpinned intent → `predict (resolved)`).
+Report: `qa/eval-reports/dump-truck-loader-evalmodes-2026-08-21.md`.
+
+### #118 — **`picture-vocabulary` `association`: is *"goes with"* audible as a JUDGMENT, or does the tutor rationalise any chain a child says?** · OPEN
+
+The hardest open-set case the family has shipped. Rhyme was near-binary (shares the
+rime + is a real word); *"goes with"* is semantic, graded and culture-dependent, so the
+signature failure is the judge **rationalising a chain** — *"a cat goes with a sock,
+cats play with socks."* Six guards and three scripted correction branches were authored
+against exactly that; no machine has heard them. **✅ GATES 7 AND 8 HAVE NOW BEEN RUN (2026-08-21) — read this before sitting down.**
+Record: `qa/di-bench/run-2026-08-21-picture-vocabulary-association.md`.
+
+- **Gate 8 PASSED, both drives.** The scripted ECHO branch fires **5/5** with the sentinel
+  and re-elicits — so **criterion 3 below is already machine-settled**; your ear only owes
+  it prosody, not correctness.
+- **Gate 7 FAILED on ONE bucket.** `same-category` scored **0/8**: the tutor affirmed
+  `shirt` and `hat` for sock, `cat` and `bird` for dog, `chair` and `table` for bed, and
+  `mug` for cup. Everything else held — the chain guard 7/8, the echo 4/4, the category
+  word 4/4, and **12/12 on the accept side with zero false refusals**.
+- **So criteria 1, 2 and 4 are largely answered already.** Criterion 1 (the unlisted
+  partner) passed 8/8 — `foot`, `drawer`, `leash`, `collar`, `blanket`, `sheet`, `saucer`,
+  `tea` were all accepted. Criterion 2 (the chain) passed 7/8. Criterion 4's ruling is
+  **settled: the category word is WRONG**, and the tutor refuses it correctly.
+- **⭐ ADD A SEVENTH CHECK — the one this row did not anticipate.** Say a **same-category
+  swap** out loud: *"shirt"* on a sock stimulus, *"cat"* on a dog stimulus, *"mug"* on a cup.
+  Today the tutor affirms all of them. If a fix has landed before your sitting, this is the
+  criterion to weigh hardest; if it has not, expect to hear the bug.
+
+The known mechanism is not that the judge rationalises — it is that the accept clause
+(*"something you would find with it, use with it, or **keep with it**"*) is literally true
+of same-category members, and the guard forbidding them is one abstract sentence with no
+worked example. **Your ear is still the tiebreak on whether "shirt goes with sock" sounds
+wrong to a five-year-old** — that is a pedagogy call the bench cannot make.
+
+`cd my-tutoring-app && npm run dev`, open a picture-vocabulary lesson pinned to
+**`association`**, and say these OUT LOUD:
+
+1. **The honest unlisted partner.** On a `sock` stimulus say **"foot"** or **"drawer"** —
+   neither is the generated partner. Both MUST be accepted; the accept clause authorises
+   them on purpose, and a refusal here fails a child who did the skill correctly.
+2. **The chain — the row's reason.** Say something reachable only by a STORY (*"a cat,
+   because cats play with socks"*). It must draw the correction. An affirm here means the
+   accept clause is wider than the pedagogy and the mode is measuring nothing.
+3. **The ECHO.** Say the stimulus word straight back ("sock"). It has its own scripted
+   correction branch (item 24 §5: 5/9 items stalled without one, and deleting the option
+   cards makes the echo MORE likely). Confirm the correction opens with the sentinel and
+   **re-elicits** rather than ending the beat.
+4. **The category word.** Say **"clothes"** on a clothing stimulus. ✅ **SETTLED by the
+   2026-08-21 bench: it is WRONG, and the tutor refuses it correctly (4/4), on its own
+   scripted branch.** Confirm by ear that the refusal lands kindly; the ruling itself is
+   closed and §2.3 no longer lists it as open.
+5. **The correction never names the answer.** When corrected, the tutor models the relation
+   on a **code-owned pair** (`MODEL_ASSOCIATION_PAIRS`), never a session word. Confirm it
+   does not leak the item's own partner — that would kill the re-elicit.
+6. **The stage, in pixels.** No option cards anywhere (the 3-distractor pool floor went with
+   them), and `receptive_match` on the same primitive must STILL be a tap — that split is a
+   recorded ruling, not debt.
+
+⚠️ **Audit the key before believing any finding that indicts the tutor.** Association is
+more exposed to the item-24 instrument mistake than rhyme was: three harness miskeys in one
+day each filed a confident finding against a tutor that was right. Two fixture probes are
+already marked `soft` for this reason (`mailman` for dog, `bowl` for cup).
+
+Slice: `qa/di/BACKLOG.md` item 26. Design record:
+`qa/HANDOFF-di-picture-vocabulary-association-2026-08-19.md`.
 
 ### #117 — **`states-of-matter` (third science port): can a five-year-old's "solid / liquid / gas" survive real ASR, and does the affirmation-run experiment read as the payoff?** · OPEN
 
@@ -57,12 +157,19 @@ Slice: `qa/di/BACKLOG.md` item 25.
 
 ### #116 — **`habitat-diorama`: does the spoken/build ecology split feel like field work under a real mic?** · OPEN
 
-Machine gates are green (30 focused assertions, Lumina typecheck 0, census 0,
-10 real-generator probes at K and grade 7 yielding 42 contract-clean items), but
-the headless semantic drive stalled without producing a report. First rerun
-`python run_tutor_live.py --component habitat-diorama --di --eval-mode <mode>
---di-wrong signature` for all five modes on a healthy stack; that still does not
-replace this mic/pixel sitting.
+**The headless drives are now RUN (2026-08-21) — all five modes, both wrong-kinds
+on the spoken ones, plus the cap drill: every wrong refused, every right affirmed,
+`packGateIssues []` on live content. They also found three real defects that no
+machine gate could see, all fixed and re-driven; see `qa/di/BACKLOG.md` item 25.**
+So this row is now purely what a machine cannot hold: acoustics, the mic, and
+pixels. Machine gates: 108 focused assertions, Lumina typecheck 0, census 0+0.
+
+⚠️ **Two things the drives specifically could NOT close, so weigh them here.**
+(a) Every drive answers with the FULL printed answer text; the short-form accept
+clause (criterion 5) has never been exercised. (b) Predation direction is now
+code-gated, but commensalism and parasitism direction is pinned in the generator
+prompt only — listen for a connect ask whose clue contradicts the tutor's own
+explanation, which is exactly how the predation inversion sounded.
 
 1. **Observe:** give the name of a tempting wrong organism, then the clue-matching
    organism. The wrong answer must draw the model-lead-test correction; the right
@@ -83,7 +190,7 @@ replace this mic/pixel sitting.
    taps and read-aloud still work, role jargon stays hidden, and free exploration
    does not turn into a scored quiz.
 
-Report target: `qa/di/BACKLOG.md` item 25. Filed 2026-08-20.
+Report target: `qa/di/BACKLOG.md` item 25. Filed 2026-08-20; drives run + defects fixed 2026-08-21.
 
 ### #115 — **`periodic-table` (second science port, FIRST chemistry): element names under real ASR — long Latinate words, a dialect fork, and a table the child reads while talking** · OPEN
 
@@ -973,7 +1080,7 @@ drive 5/5 (another *feeling* refused every time), cap drill clean, live probe 15
 > across all eight scripted-opener packs. **Criterion #84 (f) is the check for it, and it is
 > the same first-10-seconds check on #82 and #83.**
 
-### #99 — **MIC-LEVEL CONTEXT CHURN (DI BACKLOG 19b): the mic level stopped being a React value and became a subscription. Does the mic still HEAR?** · **✅ CLOSED 2026-08-14 — BOTH PATHS DRIVEN: standalone (drive 1) + LESSON (drive 2, session `046ad3a42906`)**
+### ~~#99 — MIC-LEVEL CONTEXT CHURN (DI BACKLOG 19b): the mic level stopped being a React value and became a subscription. Does the mic still HEAR?~~ · ✅ **CLOSED 2026-08-14 — BOTH PATHS DRIVEN: standalone (drive 1) + LESSON (drive 2, session `046ad3a42906`). Struck in the list by `/pm` 2026-08-22 — it had stayed unstruck and was counted as open.**
 
 **✅ DRIVE 1 (2026-08-14, user, `ten-frame` / `subitize`) — *"worked correctly for subitize."*** The frame-driven turn machine is confirmed on a real microphone: a spoken number opened a turn, the turn closed, and the tutor judged it. **(a), (b) and (d) are struck for the STANDALONE path**, and with them the whole deaf-mic risk that made this row worth filing — the subscription reaches the machine. `subitize` also carries the stimulus flash, so the timer-under-churn paths landed in the right order too.
 
@@ -1894,7 +2001,8 @@ The dep-list rules that fixed them stay — but the thing that made them fatal i
 - **How to reach it:** `npm run dev` → dev tools → **biology**-primitives-tester → `dna-explorer` → Explore tab, then Build tab, ×2-3 generations
 - **Source report:** `qa/eval-reports/dna-explorer-DNA-1-2026-08-08.md` §Residuals; `qa/EVAL_TRACKER.md` DNA-1 / DNA-2
 
-### #77 — **`solar-system-explorer` — the new eval modes are TAPS ON A MOVING BODY. Do they land?** · OPEN
+### #77 — **`solar-system-explorer` — ~~the new eval modes are TAPS ON A MOVING BODY. Do they land?~~ → NARROWED: band/pixel only** · OPEN, **but no longer a code gate — `/pm` 2026-08-22**
+- ⚠ **CRITERIA (a) AND (b) ARE VOID.** The `/add-di-loop` port of 2026-08-19 (di item 25) rewrote this primitive whole and **all five modes became `short_spoken_word`** — `identify` flipped from "Tap Mars" to a spotlight + "What planet is that?". The tap is no longer an answer surface; the judging contract names zoom/pan/research-card as RESEARCH (*"the TAP SURVIVES as what it honestly is: LOOKING"*). So there is **no hit-testing risk on a moving `<g>`** (a) and **no derived key that could contradict the screen** (b). **What remains is (c) and (d) only** — K-band chrome and does-an-assessment mode read as a task — and #73/S11 already covers the same ground; fold this into that sitting. **This row no longer blocks reader-fit item 17** (which was parked on it since 08-08). Live evidence for the port: `qa/di/BACKLOG.md` item 25.
 - **What to check:** *(Opened `/pm` 2026-08-08. **Drive this one first** — it gates whether a whole L1 rung is real.)* The L0→L1 rung had no challenge enum to constrain, so it BUILT the answer surface: the student answers by tapping a planet/moon in the live orbital model, and the items **and the key** are derived in code from the same `bodies` array the component renders. jsdom asserted the handlers; it cannot assert hit-testing. **(a) THE ROW'S REASON — tap targets.** Drive all five modes (`identify`, `order_from_sun`, `classify`, `compare_attribute`, `orbital_reasoning`) and confirm a tap on each body actually registers **while the orbits are animating**, including the small outer bodies and any moon. This project has already shipped an unclickable SVG `<g>` that every jsdom test passed ([[feedback_svg-g-unclickable-jsdom-blind]]); if targets are missed, the fix is a transparent hit `<circle>`, not a test. **(b) The key cannot contradict the screen — check that it doesn't anyway.** Answer each mode *correctly* and confirm it scores correct; the whole design claim is that a derived key matches the render. One wrong-scoring correct answer is a rule-#1 defect. **(c) At K it must still be the explorer it was.** S11's band work (no AU/km/°C/orbital-period chrome, tutor says "the biggest one", not a measurement) must survive the eval-mode add — confirm no number came back with the challenges. **(d) Does an assessment mode read as a task at all** to a non-reader, or does the screen still read as free exploration?
 - **How to reach it:** `npm run dev` → dev tools → **astronomy**-primitives-tester → `solar-system-explorer` → each of the five modes @ K, then one @ grade 3-5
 - **Source report:** `qa/reader-fit/BACKLOG.md` item 15 §S11 (the rung's record; the slice is uncommitted at the time of writing)

@@ -1,106 +1,80 @@
 # Workstreams — Portfolio Index
 
-The single orientation surface for all Lumina workstreams. Any session answering
-"what's next?" starts HERE, then pulls the top item of an ACTIVE stream's queue.
+Start here for "what's next?", then pull the top item of an ACTIVE stream's queue.
+**Queues are authority over this file; this file over memory.**
 
-## ⚖️ THE RULE THAT MAKES THIS FILE WORK (restructured 2026-08-16)
+## ⚖️ Rules
 
-**This file holds STATE. It does not hold findings, evidence, or reasoning.**
+This file holds **state** — not findings, evidence, or reasoning. Run the three gates
+before you finish:
 
-| Hard rule | Check it mechanically |
+```bash
+wc -c < WORKSTREAMS.md                                            # ≤ 10000 BYTES
+awk 'length>400 && /^\|/ {print FNR": "length}' WORKSTREAMS.md    # empty (whole LINE, bytes)
+grep -c '^> ### ' WORKSTREAMS.md                                  # 0 — /pm edits rows, never appends
+```
+
+It was split three times in four days and regrew each time — because findings were written
+here instead of where their reader acts. Decide the home at WRITE time:
+
+| The finding… | Home |
 |---|---|
-| **Every table cell ≤ 400 chars** (≈4 lines) | `awk -F'\t' 'length>400 && /^\|/ {print FNR": "length}' WORKSTREAMS.md` → empty |
-| **Whole file ≤ 10,000 chars** | `wc -c < WORKSTREAMS.md` → over budget means something is in the wrong home |
-| **No reconcile notes in this file** | `grep -c '^> ### ' WORKSTREAMS.md` → **0**. `/pm` reports its run to the user and edits rows; it never appends prose |
+| changes how the next slice is **DONE** | the executor skill (`/add-di-loop`, `/reader-fit`, …) |
+| is true about **ONE primitive** | `docs/contracts/<id>.md` |
+| is a **defect CLASS** | its own queue item |
+| is **evidence of a run** | `qa/tutor-reports/`, `qa/<lane>/` |
+| is **state** (lane, health, next pull) | **here — as a row** |
 
-*400 is the number this restructure could actually hold while keeping the deploy caveats
-and pull pointers intact — checked, not aspired to. The previous caps ("a row that needs
-scrolling belongs in its queue") failed because they were prose inside the file they
-governed, with no number and no command.*
+**States:** ACTIVE = worked now · DELEGATED = another session holds it, read its report
+first · PARKED = idle, queue trusted only as of its date · BLOCKED = named dependency.
+Prior snapshots and the reasoning behind past calls: `git log -p WORKSTREAMS.md`.
 
-**Why this is stricter than it looks.** The index was split three times in four days
-(08-12 at 358KB, 08-13, 08-16) and regrew each time. On 2026-08-16 **one table cell —
-the judged-loop row — was 31,526 chars, 37% of the file**, one day after 41,365 chars
-had been moved out of that same cell. Splitting has a ~24h half-life. The cause was
-never volume; it was **routing**: findings were written here instead of where their
-reader acts.
+## Portfolio — as of 2026-08-22
 
-### 📍 Where a finding goes instead (decide at WRITE time)
-
-| The finding… | Home | Reader |
-|---|---|---|
-| changes how the next slice is **DONE** | the executor skill (`/add-di-loop`, `/reader-fit`, …) | whoever runs it next |
-| is true about **ONE primitive** | `docs/contracts/<id>.md` | the next edit to that primitive |
-| is a **defect CLASS** | its own queue item (18d, 19h-i-c, SP-31) | whoever pulls that item |
-| is **evidence of a run** | `qa/tutor-reports/<id>-*.md`, `qa/<lane>/*.md` | anyone auditing the claim |
-| is **state** (lane, health, next pull) | **this file — a row** | a session orienting cold |
-
-*Measured 2026-08-16: of 12 landmark judged-loop findings, 12 were in the queue and
-only 2 were in the skill the executor actually reads. The index was the third copy.*
-
-**History:** superseded reconcile notes and prior snapshots are in
-[`git log -p WORKSTREAMS.md`](WORKSTREAMS.md) (95+ commits). Read it for *why* a call
-was made, never for what is true now. **Queues are authority over this file; this file
-is authority over memory.**
-
-| State | Meaning |
-|---|---|
-| ACTIVE | being worked now; queue is trusted |
-| DELEGATED | handed to another session; check its report before touching |
-| PARKED | intentionally idle; queue trusted only as of the noted date |
-| BLOCKED | waiting on a named dependency |
-
-## Portfolio — as of 2026-08-18
-
-**WIP limit 2 ACTIVE + 1 opportunistic. ⚠️ OVER: judged-loop literacy + math + two lanes opened
-08-18 by user directive (`open_set_word`, coverage). Deliberate — but pick 2 to actually run.**
+**WIP 2 ACTIVE + 1.** Judged-loop ports are ONE stream (`/add-di-loop`, queue
+`qa/di/BACKLOG.md`); science / math / picture-vocabulary are its items, not rival lanes.
 
 | Lane | State | Pull now | As of |
 |---|---|---|---|
-| 🚀 **PROD / `main`** | ⚠️ **5 SLICES NOT ON `main`** | `/pm` 08-18: `main` = **`730e8a7d`**, not `c7f5ad7a` as this row claimed. Ship branch is **5 commits ahead** + ~100 dirty files — 3 judged ports pushed, **not in production**. **➡️ ff `main`, then `/ship`.** Deploy caveats below. | 08-18 |
-| 🔝 **JUDGED-LOOP FAMILY** | **ACTIVE** | 🆕 **Item 25 `states-of-matter` SHIPPED 08-20 (third science port): ALL THREE MODES SPOKEN, zero taps — the temperature slider went to the TUTOR (a slider beside a live beaker answers “what state WILL it be” by experiment), and her affirmation RUNS the experiment as the reveal. Content is code (10 substances, real thresholds, every key computed); `boilingIsReal` refuses “chocolate boils at 350 degrees”. ⭐ Two carry-forwards: **defect 6 needed a SECOND half** — `{{stimulus}}` must sit LAST in `taskDescription` with the never-read-aloud clause immediately before it (3/6 → 2/6 → **0/6**); and **the DRAW is a third recitation channel** — alternating facets per item re-speaks the how-to-play every round and `findRepeatedConsecutiveAsks` cannot see it (`FACET_RUN=2`). 37/37 di-script, 480 probe draws 0 drops, all 3 modes green plain+signature, cap drill PASS; mic **#117**. Earlier: `habitat-diorama` (#116, headless drive still owed), `periodic-table` (#115), `solar-system-explorer` (#114). **➡️ Next: habitat semantic drives, then the mic sitting.** | 08-20 |
-| 🎙️ **Judged-loop human queue** | **66 open rows** | Mic **#100**–**#108**, **#110**–**#117** *(#114 solar-system-explorer; #115 periodic-table; #116 habitat-diorama; **#117 states-of-matter**)*. Non-mic **#109**. Plus **#63** (BLOCKS code), **#90**. Full list: `qa/HUMAN-CHECKS.md`. | 08-20 |
-| 🔢 **Judged loop — MATH (item 18)** | **ACTIVE** | ✅ `place-value-chart` SHIPPED 08-18 (math port 8, user call) — **THE FIRST PORT PAST THE ≤20 BENCH**: new `place_value_word` class accepted-build-ahead (user ruling 08-19), spoken places + values, build = DICTATION (target never prints); all drives green, cap drill 0 HIGH after the ones-place leak fix; mic **#113 = the #63 acceptance material — one sitting closes both and unblocks the >20 tier**. ✅ `ordinal-line` port 6 (mic #110) · ✅ `sorting-station` 7/7 modes (owes `/reader-fit`). **➡️ Next: the #63/#113 mic sitting (user), or `3d-shape-explorer` (shape-sorter's machinery, benched classes).** | 08-18 |
-| 00. **Lesson ordering** | ⛔ **PARKED — top item was REJECTED** | `/pm` 08-18: this row sold **B′** as a ready ~15-line pull for 10 days; handoff §5 **killed B′ on 08-10** (`32267345`) — 886 mode pairs, zero disagreeing with β. Arms B and C also rejected. **No ordering work left.** Residual is per-primitive content → `/primitive-contract`. | 08-18 |
-| 0. **Science depth** | PARKED (was ACTIVE) | CELL-1 ✅ 08-18: discrete model regions + 4 eval modes; focused runtime 10/10, real API draw blocked upstream. Resume top = **LCS-1** (`/oracle-test` first). DNA-1 ✅ CB-1 ✅; #80 open. `qa/science-depth/BACKLOG.md`. | 08-18 |
-| 🆕 **Silent generator fallbacks** | OPENED then DEMOTED | 33 generators carry a hardcoded fallback with no retry and no warn; **32 are math**. ⚖️ Ruling 08-16: not its own sweep — **math DI ports force the same live probe**, so the 33-item list is the checklist a math port consults. List in this row's git history. | 08-16 |
-| 🆕 **`di-spoken-practice`** | SHIPPED, 2 open | `71cba07` + `ead9ae1` on `main`. Open: **item 17** (embedded insets — scoped, not started) and the routing hold. `qa/di/BACKLOG.md` items 16–17. | 08-12 |
-| **DI closeout (CTX-2)** | Documentation + 1 probe | The excavators run already carries the post-fix floor-gate numbers (27 batches, wedged 0, superseded 0). Write the report citing it. Genuinely unproven: the **`wedged` watchdog** — a wedged-0 run cannot show it fires. `qa/di/BACKLOG.md` item 15. | 08-10 |
-| 1. **Reader-fit sweep** | PARKED — BLOCKED | Item 17 gated on HUMAN-CHECKS **#77** (`solar-system-explorer`). Resume the moment #77 is struck; executor `/add-eval-modes`, 3 primitives. It is an eval-hook portfolio decision, not a band fix — probe the tutor channel BEFORE scoping. | 08-08 |
-| **Support tiers (non-math) · LA K-2 grammar** | PARKED | Batch-3 needs evidence via `/eval-test`; grammar is BLOCKED on a user design ruling, not capacity. | 08-05 |
-| ⚠️ **IMG-1 — tutor is blind to images** | PARKED (user: *"I don't think we push this forward"*) | If resumed, the cheap pedagogy half comes first: the tutor SAYING it cannot see, instead of confabulating. Record: `qa/tutor-reports/lesson-live-2026-08-10-excavators.md`. | 08-10 |
-| **Closed, no code owed** | 3 filed | `multiplication-explorer` ✅ `927b754` (gate **#90**). `Pip` ✅ `997c875`, UNFILED. `npm test` exits 1 with 0 failing tests (`canvas-confetti` rAF after jsdom teardown) — rides whoever next touches `solar-system-explorer`. | 08-18 |
-| 🗣️ **`open_set_word` + rhyme-studio pilot** | ✅ **BOTH SHIPPED 08-19. No blocked response class left in the family.** | Bench: **72 probes / 6 rimes, the judge's affirm set was EXACTLY the 17 planted valid rhymes** (`qa/di-bench/run-2026-08-19-open-set-word.md`). ⭐ Its only apparent false affirm was OUR miskey (`zell` = a surname); chasing it gained a capability — **names COUNT**. **PILOT: the word bank is DELETED.** `production` became open — read-four-say-one → **think of a rhyme** (recognition → generation). ⭐ **K unlocked**: the Grade-1+ gate existed because bank distractors could not be pictured; open production is oral, and rhyme production is K.RF.2.a. Live at K: 9 items, 0 dropped, gates clean. **Built for reuse: `--di-bench` + scored probe keys.** **➡️ Next: queue the 11 unblocked packs; widen fixture rime coverage.** ✅ `maxCorrections` FIXED 08-20 (item 25's F3). ⛔ The "`picture-vocabulary` first — tap becomes name-it" note named the WRONG MODE: `naming` was already spoken, the tap was `association`, and it converted on 08-20. di item 24. | 08-19 |
-| 🖼️ **picture-vocabulary `association` → spoken** | 🎙️ **BUILT 08-20, machine-gated. 3 live gates OWED.** | The first port to spend the newly-benched `open_set_word`, and the hardest open-set case yet — *"goes with"* is fuzzy where rhyme was near-binary, so the failure mode is the judge RATIONALISING a chain (*"a cat goes with a sock, cats play with socks"*). **Shipped:** `association` → voice/`open_set_word`; an accept clause that authorises the UNLISTED partner (`sock → foot`/`drawer`) and draws the line at the story; **six guards**; **three scripted correction branches** (echo + category-word got their own, per item 24 §5); the correction models the relation on a **code-owned pair** because an open correction cannot name the answer without killing the re-elicit; `associationBench.ts` (4 stimuli × 12 probes, 4 relation types); **F3 fixed** — `--di-bench` honors `maxCorrections`. Generator also lost association's 3-distractor pool floor. `receptive_match` untouched — still a tap, still a ruling. **Gates:** tsc 0 new (806 vs 811 baseline), vitest 4205 pass, 52 pack assertions. **⚠️ OWED, all need a running stack:** the bench RUN, a live `--di` + `--di-wrong signature` drive (the only way to exercise the echo branch), and a mic row. di item 25. | 08-20 |
-| 📊 **Coverage campaign (200)** | 🆕 **OPENED 08-18 (user directive)** | Catalog measured: **197 entries — evalModes 70%, tutoring 80%, judged pack 18%.** ⭐ **103 are DI-portable TODAY** (chemistry 13 untouched after `periodic-table` 08-19, math 53). Constraint is **throughput, not prerequisites** — cluster by response-class SHAPE. 41 need eval modes; 17 presentational. `qa/coverage/BACKLOG.md`. | 08-18 |
+| 🚀 **PROD / `main`** | ⚠ **UNSHIPPED ×2** | ship `5d5010fe` is **2 ahead of `origin`** (ramp-lab, dump-truck-loader) and **`main` is still `0f2b2ab0`** — not pushed, not fast-forwarded. TREE also holds habitat-diorama DI, sentence-analyzer, coreGenerators, 5 queues, ~20 reports. **`/ship` in slices; shared queue files get their own.** Deploy caveats below stand. | 08-22 |
+| 🔝 **JUDGED-LOOP PORTS** | **ACTIVE** — `qa/di/BACKLOG.md` | `habitat-diorama` SHIPPED 08-21: 5 modes green after 3 live-caught defects (connect had the tutor inverting predation 5/5). Mic **#116**; prior #117 #115 #114. **Next = the B1 chemistry three: `matter-explorer` · `gas-laws-simulator` · `ph-explorer`** — template proven. di item 25. | 08-22 |
+| ↳ **math ports** | same stream, queued | `place-value-chart` shipped 08-18 (port 8, first past the ≤20 bench). **Mic #113 IS the #63 material — one sitting closes both and unblocks >20.** `sorting-station` owes `/reader-fit`. **Next codeable: `3d-shape-explorer`.** item 18. | 08-21 |
+| ↳ **picture-vocabulary** | **ACTIVE — g8 ✅ / g7 ⛔** | Gates RUN 08-21 (never blocked on a stack). g8 PASS both drives. **g7 FAIL — `same-category` 0/8, 7 false affirms**; every other bucket held. **⚠ di item 27 FIRST** — 3 `--di-bench` defects corrupt open-set evidence (I2 overwrites a bench report). Then re-run g7. Mic **#118**. items 27 → 26. | 08-22 |
+| 📊 **Coverage campaign (200)** | **ACTIVE** | ✅ gate CLOSED + `dump-truck-loader` and **sandbox conversion `ramp-lab` SHIPPED 08-21** (3 modes each, live-driven, browser checks #119/#120). ⚠ **5 of 15 queue-A engineering remain pure SANDBOXES** — author a challenge surface with the ladder. Triage + roster in the queue. **➡ `paper-airplane-designer` or `engine-explorer`.** | 08-21 |
+| 🎙️ **Human-check queue** | **86 open** — only the user closes these | Mic **#100**–**#108**, **#110**–**#118**. Non-mic **#109**, **#119** (dump-truck rungs), **#120** (ramp-lab modes). **#63** BLOCKS code; **#90**. Next free ID **#121**. #99 was closed 08-14 but unstruck — struck 08-22. `qa/HUMAN-CHECKS.md`. | 08-22 |
+| 0. **Science depth** | PARKED (was ACTIVE) | CELL-1 ✅ 08-18. Resume top = **LCS-1**, `/oracle-test` first. DNA-1 ✅ CB-1 ✅; #80 open. `qa/science-depth/`. | 08-18 |
+| 1. **Reader-fit sweep** | PARKED — ✅ **UNBLOCKED 08-22** | Item 17's gate (**#77**) is VOID: the 08-19 DI port made all 5 solar-system modes spoken, so the tap-answer template it protected is gone. **The 08-08 template is superseded — do not copy it.** Executor `/add-eval-modes`, 3 primitives, an eval-hook decision. | 08-22 |
+| **DI closeout (CTX-2)** | Docs + 1 probe | The excavators run carries the post-fix floor-gate numbers; write the report citing it. Unproven: the **`wedged` watchdog** — a wedged-0 run cannot show it fires. item 15. | 08-10 |
+| **`di-spoken-practice`** | SHIPPED, 2 open | `71cba07` + `ead9ae1` on `main`. Open: item 17 (embedded insets, scoped not started) and the routing hold. | 08-12 |
+| 00. **Lesson ordering** | ⛔ **PARKED — top item REJECTED** | B′ killed 08-10 (`32267345`); arms B and C also rejected. **No ordering work left.** Residual is per-primitive content → `/primitive-contract`. | 08-18 |
+| **Silent generator fallbacks** | DEMOTED, not a sweep | 33 generators fall back with no retry and no warn; 32 are math. Math DI ports force the same live probe, so it is a checklist a port consults. List in this row's git history. | 08-16 |
+| **Support tiers (non-math) · LA K-2 grammar** | PARKED | Batch-3 needs evidence via `/eval-test`; grammar is BLOCKED on a user design ruling. | 08-05 |
+| ⚠️ **IMG-1 — tutor blind to images** | PARKED (user: do not push forward) | If resumed, the cheap pedagogy half first: the tutor SAYING it cannot see instead of confabulating. `qa/tutor-reports/lesson-live-2026-08-10-excavators.md`. | 08-10 |
+| **Closed, no code owed** | 4 filed | `multiplication-explorer` ✅ `927b754` (gate #90). `Pip` ✅ `997c875`, UNFILED. **Intent contract 174/174 green 08-21** — `sentence-analyzer` was the last generator on the legacy signature; migrated context-native, runtime-probed. `npm test` exits 1 with 0 failing tests (`canvas-confetti` rAF) — rides the next `solar-system-explorer` touch. | 08-21 |
 | **Delegated lane** | NONE | — | 08-16 |
 
-### Recorded once so it is not re-discovered as new
+## Recorded once, so it is not re-discovered as new
 
-- **`parent/link-student` has no verification.** NOT a row — user ruling 2026-08-14: the
-  parent portal is **vestigial, pre-Lumina**, may be picked up at a future state. `POST
-  /api/parent/link-student` has a literal `# TODO` where verification should be. If the
-  portal is ever revived, verification is the first thing it needs.
-- **Deploy caveats (carried).** `my-tutoring-app/vercel.json` pins **no branch**, so which branch
-  production tracks is unconfirmed. `backend/cloudbuild.yaml` deploys Cloud Run service
-  **`ai-tutor-backend`** (us-east5); the live service is **`mountamo-education`** — the backend has
-  not moved. Both verified in-file by `/pm` 2026-08-18.
-- **Pilot onboarding — CLOSED 2026-08-14** (user: *"onboarding is done"*). Queue deleted;
-  items 1–3 retired unbuilt, deliberately.
+- **Deploy caveats.** `my-tutoring-app/vercel.json` pins **no branch**, so which branch
+  production tracks is unconfirmed. `backend/cloudbuild.yaml` deploys Cloud Run
+  **`ai-tutor-backend`** (us-east5); the live service is **`mountamo-education`** — the
+  backend has not moved. Verified in-file 08-18.
+- **`parent/link-student` has no verification** — a literal `# TODO`. NOT a row: the parent
+  portal is vestigial and pre-Lumina (user ruling 08-14).
+- **Pilot onboarding CLOSED 08-14** (user: onboarding is done). Queue deleted, items 1-3
+  retired unbuilt on purpose.
 
 ## Standing hygiene
 
-- Human-only verification debt lives in `my-tutoring-app/qa/HUMAN-CHECKS.md`. **ONE
-  format, one list, newest first: file new rows at the TOP as `### #N — …`.** There is no
-  second section, and there used to be — which is how a row came to exist twice and
-  disagree with itself. **Re-grep for the next free ID immediately before filing;**
-  concurrent sessions in these lanes are normal and IDs move.
-- **A stale doctrine line costs more than a stale status line.** Status decays visibly; a
-  rule (*"class X is BLOCKED"*, *"this stream is uncommitted"*) is copied forward by the
-  next session and silently changes what gets built. When a user ruling overturns a rule,
-  grep for its prose copies in queues, scripts and docblocks — `tsc` sees none of them.
-- **Commit at the mechanism boundary.** In a lane two sessions are both in, commit while
-  you still know which lines are yours. Shared files (EVAL_TRACKER, BACKLOG,
-  `run_tutor_live.py`) commit in their own slice.
+- **Strike the row in the same slice as the event.** The `main` row sold three days of
+  phantom ship debt because the fast-forward happened and nothing came back here.
+- **Re-grep IDs immediately before filing** — both HUMAN-CHECKS rows (`### #N`, newest at
+  the TOP, one list) and queue items (`^### [0-9]`). Concurrent sessions are normal and IDs
+  move; 08-21 found `qa/di/BACKLOG.md` carrying two item 25s filed a day apart.
+- **A stale doctrine line costs more than a stale status line.** A rule (*"class X is
+  BLOCKED"*) gets copied forward and silently changes what is built. When a ruling
+  overturns one, grep its prose copies in queues, scripts and docblocks — `tsc` sees none.
+- **Commit at the mechanism boundary** — in a shared lane, while you still know which lines
+  are yours. Shared files (EVAL_TRACKER, BACKLOG, `run_tutor_live.py`) get their own slice.
 - **Every closing session updates the owning queue AND this file's "As of" in the same
-  slice** — and routes its findings per the table at the top, not into this file.
+  slice**, routing findings per the table above rather than into this file.
