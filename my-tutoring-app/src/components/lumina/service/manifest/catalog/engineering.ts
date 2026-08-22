@@ -22,7 +22,33 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   {
     id: 'ramp-lab',
     description: 'Interactive inclined plane (ramp) simulation for teaching simple machines. Students explore how ramps reduce the force needed to lift objects by trading distance for effort. Adjust angle, friction, and push force to see how steeper ramps require more force. Shows real-world connections: loading docks, wheelchair ramps (ADA), dump trucks, skateboard ramps. Features multiple themes (loading_dock, dump_truck, skateboard, generic) and load types (box, barrel, wheel). Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching inclined planes and force trade-offs.',
-    constraints: 'Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects. K-1: rolling vs sliding exploration (wheel vs box). 1-2: steeper = harder to push. 2-3: height vs length trade-off. 4-5: mechanical advantage calculations, force decomposition. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.',
+    constraints: 'Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects, fair tests, and constraint-based engineering design. compare_conditions isolates angle, surface, or rolling/sliding in matched setups. find_threshold measures the least sufficient push. design_with_budget holds platform height fixed while students find the steepest feasible ramp. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.',
+    evalModes: [
+      {
+        evalMode: 'compare_conditions',
+        label: 'Compare Conditions',
+        beta: -1.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['compare_conditions'],
+        description: 'Compare matched ramp setups that change one variable and identify which condition reduces the required push.',
+      },
+      {
+        evalMode: 'find_threshold',
+        label: 'Find the Threshold',
+        beta: 0.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['find_threshold'],
+        description: 'Use controlled trials to find the smallest push setting that makes a fixed load climb.',
+      },
+      {
+        evalMode: 'design_with_budget',
+        label: 'Design with a Force Budget',
+        beta: 1.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['design_with_budget'],
+        description: 'Hold the platform height fixed and design the steepest whole-degree ramp that stays within a force budget.',
+      },
+    ],
     supportsEvaluation: true,
   },
   {

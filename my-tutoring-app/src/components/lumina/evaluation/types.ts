@@ -261,6 +261,12 @@ export interface RampLabMetrics extends BasePrimitiveMetrics {
   // Concept exploration
   experimentCount: number;
   variablesExplored: string[];  // ['angle', 'mass', 'friction']
+
+  // Focused challenge session
+  challengesSolved?: number;
+  challengesTotal?: number;
+  checksMade?: number;
+  firstTryCorrect?: number;
 }
 
 export interface ShapeStrengthTesterMetrics extends BasePrimitiveMetrics {

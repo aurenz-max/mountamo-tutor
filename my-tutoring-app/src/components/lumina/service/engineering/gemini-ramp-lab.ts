@@ -2,6 +2,30 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
+import {
+  selectMixedRampChallenges,
+  selectRampChallenges,
+  type RampChallenge,
+} from '../../primitives/visual-primitives/engineering/rampChallenges';
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  compare_conditions: {
+    promptDoc:
+      `"compare_conditions": matched ramp setups change exactly one variable (angle, surface, or rolling/sliding); the student commits to which needs less push before the force results are revealed.`,
+    schemaDescription: "'compare_conditions' (compare one causal variable)",
+  },
+  find_threshold: {
+    promptDoc:
+      `"find_threshold": the student runs controlled trials to find the smallest 0.5 N slider setting that moves a fixed load; maximum-force brute force is not success.`,
+    schemaDescription: "'find_threshold' (measure least sufficient push)",
+  },
+  design_with_budget: {
+    promptDoc:
+      `"design_with_budget": the platform height stays fixed while the student finds the steepest whole-degree ramp that a fixed force budget can handle.`,
+    schemaDescription: "'design_with_budget' (optimize under a force constraint)",
+  },
+};
 
 /**
  * Load types for the ramp
@@ -30,6 +54,13 @@ export interface RampLabData {
   pushForce?: number;           // Initial push force
   customLoadIcon?: string;      // Custom emoji for load
   customLoadLabel?: string;     // Custom label for load
+  challenges?: RampChallenge[]; // Code-owned, physics-checked task sequence
+  freeExplore?: boolean;        // Curator escape hatch that preserves the original sandbox
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
 }
 
 /**
@@ -136,6 +167,20 @@ export const generateRampLab = async (
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<RampLabData>;
+  const resolution = await resolveEvalModes(
+    'ramp-lab',
+    {
+      targetEvalMode: ctx.targetEvalMode,
+      intent: ctx.intent,
+      objectiveText: ctx.objective?.text,
+    },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const modeSection = resolution
+    ? `\nTHIS RAMP LAB RUNS THESE TASK IDENTITIES:\n${resolution.modes
+        .map((mode) => CHALLENGE_TYPE_DOCS[mode.evalMode]?.promptDoc ?? mode.evalMode)
+        .join('\n')}\nFrame the title and description around those actions. Never state a correct comparison, threshold force, or design angle.\n`
+    : `\nThis is a mixed inquiry session: frame prediction, controlled measurement, and engineering design without revealing any answers.\n`;
   // Generate random scenarios for variety
   const randomScenarios = [
     { angle: 20, weight: 3, friction: 'low' as FrictionLevel, load: 'wheel' as LoadType },
@@ -150,6 +195,7 @@ export const generateRampLab = async (
   const prompt = `
 Create an educational Ramp Lab (Inclined Plane) visualization for teaching "${topic}"
 ${scopeSection} to ${gradeLevel} students.
+${modeSection}
 
 RANDOMIZATION: Use these values for variety: angle ${randomScenario.angle}°, weight ${randomScenario.weight}, friction ${randomScenario.friction}, load type ${randomScenario.load}.
 
@@ -353,6 +399,18 @@ Return a complete Ramp Lab configuration appropriate for the grade level.
     if (config.pushForce !== undefined) data.pushForce = config.pushForce;
     if (config.customLoadIcon) data.customLoadIcon = config.customLoadIcon;
     if (config.customLoadLabel) data.customLoadLabel = config.customLoadLabel;
+    if (config.freeExplore !== undefined) data.freeExplore = config.freeExplore;
+  }
+
+  // Fork A: challenge arithmetic is code-owned so the UI and answer key use
+  // the exact same force model. An explicit curator challenge list wins, and
+  // freeExplore preserves the original open sandbox when deliberately asked.
+  if (!config.freeExplore && (!config.challenges || config.challenges.length === 0)) {
+    data.challenges = resolution
+      ? selectRampChallenges(resolution.allowedTypes, 4)
+      : selectMixedRampChallenges(6);
+  } else if (config.challenges?.length) {
+    data.challenges = config.challenges;
   }
 
   // Set sensible defaults for optional fields
@@ -360,6 +418,12 @@ Return a complete Ramp Lab configuration appropriate for the grade level.
   if (data.showMA === undefined) data.showMA = false;
   if (data.allowPush === undefined) data.allowPush = true;
   if (data.pushForce === undefined) data.pushForce = 0;
+
+  console.log(
+    `[RampLab] modes: ${
+      resolution ? `${resolution.modes.map((mode) => mode.evalMode).join('+')} (${resolution.source})` : 'mixed'
+    } -> challenges [${(data.challenges ?? []).map((challenge: RampChallenge) => challenge.id).join(', ')}]`,
+  );
 
   return data;
 };

@@ -703,7 +703,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "lever-lab":                  {"default": PriorConfig(3.5, "Balance a lever")},
     "pulley-system":              {"default": PriorConfig(4.0, "Design pulley system")},
     "gear-train":                 {"default": PriorConfig(4.5, "Connect gears for target ratio")},
-    "ramp-lab":                   {"default": PriorConfig(3.0, "Explore inclined planes")},
+    "ramp-lab": {
+        "compare_conditions": PriorConfig(-1.0, "Compare matched ramp conditions one variable at a time"),
+        "find_threshold":     PriorConfig(0.0, "Measure the least push that moves a fixed load"),
+        "design_with_budget": PriorConfig(1.5, "Design the steepest feasible ramp under a force budget"),
+    },
     "hydraulics-lab": {
         "predict": PriorConfig(-1.0, "Predict hydraulic outcomes before testing"),
         "observe": PriorConfig(0.0, "Watch fluid particles and explain pressure transmission"),
