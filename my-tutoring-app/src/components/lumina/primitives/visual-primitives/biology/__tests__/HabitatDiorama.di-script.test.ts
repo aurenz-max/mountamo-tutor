@@ -12,6 +12,7 @@ import {
   itemCue,
   itemFromChallenge,
   itemsFromChallenges,
+  predationDirectionOk,
   pronounceCue,
   responseClassFor,
 } from '../habitatDioramaScript';
@@ -25,15 +26,15 @@ const organisms: HabitatDioramaData['organisms'] = [
 ];
 
 const relationships: HabitatDioramaData['relationships'] = [
-  { fromId: 'hare', toId: 'oak', type: 'predation', description: 'The hare eats oak leaves.' },
-  { fromId: 'fox', toId: 'hare', type: 'predation', description: 'The fox hunts the hare.' },
+  { fromId: 'oak', toId: 'hare', type: 'predation', description: 'The hare eats oak leaves.' },
+  { fromId: 'hare', toId: 'fox', type: 'predation', description: 'The fox hunts the hare.' },
   { fromId: 'fungus', toId: 'oak', type: 'symbiosis-commensalism', description: 'The fungus uses fallen oak wood.' },
-  { fromId: 'beaver', toId: 'oak', type: 'predation', description: 'The beaver eats bark and twigs.' },
+  { fromId: 'oak', toId: 'beaver', type: 'predation', description: 'The beaver eats bark and twigs.' },
 ];
 
 const challenges: HabitatChallenge[] = [
   { id: 'observe-1', type: 'observe', prompt: 'It captures sunlight and starts the food chain.', explanation: 'The oak makes food that supports consumers.', focusOrganismId: 'oak', optionOrganismIds: ['oak', 'hare', 'fox', 'fungus'] },
-  { id: 'connect-1', type: 'connect', prompt: 'Complete the fox feeding relationship.', explanation: 'The fox gets energy by hunting the hare.', fromId: 'fox', toId: 'hare' },
+  { id: 'connect-1', type: 'connect', prompt: 'Complete the hare feeding relationship.', explanation: 'The fox gets energy by hunting the hare.', fromId: 'hare', toId: 'fox' },
   { id: 'predict-1', type: 'predict', prompt: 'Trace the first population response.', explanation: 'With fewer foxes hunting them, more hares survive.', disruptionEvent: 'The fox population becomes much smaller.', affectedOrganismId: 'hare', expectedTrend: 'increase', optionOrganismIds: ['hare', 'oak', 'fungus', 'beaver'] },
   { id: 'restore-1', type: 'restore', prompt: 'Return the decomposer to a viable layer.', explanation: 'Dead wood collects near the soil where the fungus can break it down.', restorationEntityId: 'fungus', restorationZone: 'ground' },
   { id: 'defend-1', type: 'defend', prompt: 'The beaver can change habitat for many other species', explanation: 'A dam redirects water and creates new wet areas.', evidenceChoices: [
@@ -78,8 +79,8 @@ describe('habitat-diorama DI contract', () => {
       expect(spans[2].startsWith('My turn:')).toBe(true);
     }
     const connect = built.find((item) => item.kind === 'connect')!;
-    expect(gestureVerdictCue(connect, { fromId: 'fox', toId: 'hare' })).toContain('Say exactly: "Yes,');
-    expect(gestureVerdictCue(connect, { fromId: 'fox', toId: 'oak' })).toContain('Say exactly: "My turn:');
+    expect(gestureVerdictCue(connect, { fromId: 'hare', toId: 'fox' })).toContain('Say exactly: "Yes,');
+    expect(gestureVerdictCue(connect, { fromId: 'hare', toId: 'oak' })).toContain('Say exactly: "My turn:');
   });
 
   it('drops leaked, broken, and duplicate-answer challenges instead of repairing them', () => {
@@ -90,6 +91,63 @@ describe('habitat-diorama DI contract', () => {
     expect(broken).toBeNull();
     expect(duplicate.items).toHaveLength(1);
     expect(duplicate.dropped).toBe(1);
+  });
+
+  // --- 2026-08-21, found by the first headless connect/defend/restore drives ---
+
+  it('speaks the pinned relationship direction, and drops an inverted predation edge', () => {
+    // fromId -> toId follows the flow of energy: the source is EATEN.
+    const connect = itemFromChallenge(challenges[1], { organisms, relationships })!;
+    expect(askFor(connect)).toContain('Find Snowshoe Hare.');
+    expect(askFor(connect)).toContain('the living thing that eats it');
+    expect(askFor(connect)).not.toContain('the living thing it eats');
+
+    // The live drive's exact shape: a producer listed as the eater. The
+    // explanation contradicts the ask, so the item may not be spoken at all.
+    const inverted = itemFromChallenge(
+      { id: 'connect-bad', type: 'connect', prompt: 'Complete the oak feeding relationship.', explanation: 'The hare eats oak leaves.', fromId: 'hare', toId: 'oak' },
+      { organisms, relationships: [...relationships, { fromId: 'hare', toId: 'oak', type: 'predation', description: 'The hare eats oak leaves.' }] },
+    );
+    expect(inverted).toBeNull();
+    expect(predationDirectionOk(organisms[0], organisms[1])).toBe(true);   // oak -> hare
+    expect(predationDirectionOk(organisms[1], organisms[0])).toBe(false);  // hare -> oak
+    expect(predationDirectionOk(organisms[1], organisms[3])).toBe(false);  // decomposer is not a predator
+  });
+
+  it('keys restore uniqueness on the ORGANISM, not the six-value zone', () => {
+    // The verdict names "<organism> belongs in the <zone> zone", so a second
+    // organism that also lives on the ground is a new question, not recall.
+    // Keying on the zone collapsed five live challenges to two.
+    const sameZone: HabitatChallenge[] = [
+      challenges[3],
+      { ...challenges[3], id: 'restore-2', restorationEntityId: 'beaver', explanation: 'The beaver works where land meets water.' },
+    ];
+    const kept = itemsFromChallenges(sameZone, { organisms, relationships });
+    expect(kept.items).toHaveLength(2);
+    expect(kept.dropped).toBe(0);
+
+    // The same organism twice is still recall, and still drops.
+    const sameEntity = itemsFromChallenges([challenges[3], { ...challenges[3], id: 'restore-3' }], { organisms, relationships });
+    expect(sameEntity.items).toHaveLength(1);
+  });
+
+  it('asks a defend item in ONE frame and never doubles a full stop', () => {
+    const defend = itemFromChallenge(challenges[4], { organisms, relationships })!;
+    expect(askFor(defend)).not.toContain('Which evidence best supports this claim');
+    expect(askFor(defend)).not.toMatch(/[.?!]\s*\?/);
+    expect(askFor(defend)).toContain('Say the evidence that fits.');
+
+    // The generator reliably emits an INSTRUCTION where the contract asks for a
+    // claim; both shapes must come out as one grammatical spoken sentence.
+    const instructionShaped = itemFromChallenge(
+      { ...challenges[4], id: 'defend-2', prompt: 'Evaluate the claim that the beaver reshapes this habitat.' },
+      { organisms, relationships },
+    )!;
+    expect(askFor(instructionShaped)).toContain('Evaluate the claim that the beaver reshapes this habitat. Say the evidence that fits.');
+
+    // An evidence card is a whole sentence, and the cue templates add a stop.
+    const sentenceAnswer = spokenSpansOf(itemCue(defend)).join(' ');
+    expect(sentenceAnswer).not.toContain('..');
   });
 
   it('registers the same cue surface with the headless DI drive', () => {

@@ -54,7 +54,7 @@ const baseProps = (gradeBand: 'K-2' | '3-5' | '6-8') => ({
       },
     ],
     relationships: [
-      { fromId: 'deer', toId: 'oak', type: 'predation', description: 'Deer browse oak leaves' },
+      { fromId: 'oak', toId: 'deer', type: 'predation', description: 'Deer browse oak leaves' },
     ],
     environmentalFeatures: [
       { id: 'water', name: 'Stream', type: 'water', description: 'Fresh water', position: { x: 80, y: 80 } },

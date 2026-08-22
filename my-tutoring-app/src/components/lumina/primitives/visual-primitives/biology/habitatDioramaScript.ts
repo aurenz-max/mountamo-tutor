@@ -108,13 +108,49 @@ const roleClue = (role: Organism['role']): string => {
   return 'gets energy by eating other living things';
 };
 
+/**
+ * THE DIRECTION RULE, pinned in one place: `fromId -> toId` follows the flow of
+ * ENERGY or BENEFIT. Prey -> predator, host -> parasite, host -> beneficiary.
+ * It is also the direction the stage's arrow already draws.
+ *
+ * This existed nowhere before — not in the type, not in the generator prompt —
+ * so the model picked the food-web convention (prey -> predator) while the clue
+ * below assumed the opposite, and the 2026-08-21 connect drive had the tutor say
+ * "Find Water Lily. Connect it to the living thing it eats." with the key set to
+ * Mallard Duck. Five of five live items were inverted, each one contradicted by
+ * its own explanation, and every machine gate passed because the key matched the
+ * drawing. Defect 8: writing the spoken ask audits the content.
+ */
 const relationshipClue = (type: Relationship['type']): string => ({
-  predation: 'the living thing it eats',
+  predation: 'the living thing that eats it',
   'symbiosis-mutualism': 'the partner it helps and gets help from',
-  'symbiosis-commensalism': 'the organism it benefits from without harming',
-  'symbiosis-parasitism': 'the host it depends on and harms',
+  'symbiosis-commensalism': 'the organism that benefits from it without harming it',
+  'symbiosis-parasitism': 'the organism that lives on it and harms it',
   competition: 'the organism competing for the same limited resource',
 })[type];
+
+/** Trophic rank on the ladder the payload already carries. Decomposers sit off
+ * the ladder (they are not predators in this model) and return null. */
+const trophicRank = (role: Organism['role']): number | null => ({
+  producer: 0,
+  'primary-consumer': 1,
+  'secondary-consumer': 2,
+  'tertiary-consumer': 3,
+  decomposer: null,
+}[role] as number | null);
+
+/**
+ * The gate the prompt alone cannot be trusted to hold. A predation edge is only
+ * sayable if the eater really does outrank the eaten: a producer never eats, and
+ * a decomposer is not a predator here. Drop rather than degrade — an inverted
+ * edge becomes a spoken lie, not a harder question.
+ */
+export const predationDirectionOk = (prey: Organism, predator: Organism): boolean => {
+  const preyRank = trophicRank(prey.role);
+  const predatorRank = trophicRank(predator.role);
+  if (preyRank === null || predatorRank === null) return false;
+  return predatorRank > preyRank;
+};
 
 export interface HabitatItem extends JudgedScriptItem {
   kind: HabitatChallengeType;
@@ -201,6 +237,8 @@ export const itemFromChallenge = (
     const from = organismById(data.organisms, challenge.fromId);
     const to = organismById(data.organisms, challenge.toId);
     if (!relationship || !from || !to || from.id === to.id) return null;
+    // The spoken clue asserts a direction, so the data must earn it.
+    if (relationship.type === 'predation' && !predationDirectionOk(from, to)) return null;
     return {
       ...base,
       answerText: `${from.commonName} to ${to.commonName}`,
@@ -267,6 +305,24 @@ export const itemFromChallenge = (
   };
 };
 
+/**
+ * What the tutor's verdict actually NAMED, which is what a later item would be
+ * recalling. For most kinds that is the answer text. Restore is the exception:
+ * its answer text is a bare ZONE out of six, but the verdict says "Microscopic
+ * Algae belongs in the water zone" — so a later item about a DIFFERENT organism
+ * that also lives in the water is a genuine new question, not recall.
+ *
+ * Keying restore on the zone made five generated challenges collapse to two in
+ * the 2026-08-21 drive (three dropped on zone collision alone). Defect 2 is a
+ * rule about what was NAMED, and applying it to a six-value answer space starves
+ * the session instead of protecting it.
+ */
+const sessionKeyFor = (item: HabitatItem): string => (
+  item.kind === 'restore'
+    ? `restore:${item.restorationEntityId ?? item.answerText}`
+    : item.answerText.toLowerCase()
+);
+
 /** Select rather than blindly truncate, and do not ask for the same spoken
  * answer twice after the tutor has already named it in a verdict. */
 export const itemsFromChallenges = (
@@ -280,7 +336,7 @@ export const itemsFromChallenges = (
   const gestureAnswers = new Set<string>();
   for (const item of built) {
     if (!item) continue;
-    const key = item.answerText.toLowerCase();
+    const key = sessionKeyFor(item);
     const seen = item.answerKind === 'voice' ? spokenAnswers : gestureAnswers;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -303,7 +359,14 @@ export const askFor = (item: HabitatItem): string => {
     case 'restore':
       return `Place ${item.organismNames[item.restorationEntityId ?? '']} in the habitat zone where it can best meet its needs.`;
     case 'defend':
-      return `Which evidence best supports this claim: ${item.prompt}? Say the evidence that fits.`;
+      // The generator is told to emit a bare CLAIM and reliably emits an
+      // INSTRUCTION instead ("Evaluate the claim that…", "Select the piece of
+      // evidence demonstrating that…"). Wrapping either in "Which evidence best
+      // supports this claim: … ?" produced a doubly-framed, ungrammatical
+      // sentence on every defend item of the 2026-08-21 drives. This phrasing
+      // reads correctly for BOTH shapes, and howToPlayFor already frames the
+      // game, so no frame is lost.
+      return `${endSentence(item.prompt)} Say the evidence that fits.`;
   }
 };
 
@@ -315,10 +378,18 @@ const howToPlayFor = (item: HabitatItem): string => ({
   defend: 'Read or listen to the evidence cards, then say the evidence that best supports the claim. ',
 })[item.kind];
 
+/** Answers that are whole sentences already carry their own full stop; the cue
+ * templates add one, and the drives heard "…large fish.. Herons are…". */
+const endSentence = (text: string): string => {
+  const trimmed = clean(text).replace(/\s+$/, '');
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+};
+const asClause = (text: string): string => clean(text).replace(/[.\s]+$/, '');
+
 const affirmFor = (item: HabitatItem): string => {
   if (item.kind === 'connect') return `Yes, that connection works. ${item.explanation}`;
   if (item.kind === 'restore') return `Yes, that placement helps the habitat recover. ${item.explanation}`;
-  return `Yes, ${item.answerText}. ${item.explanation}`;
+  return `Yes, ${asClause(item.answerText)}. ${item.explanation}`;
 };
 
 const correctionFor = (item: HabitatItem): string => {
@@ -328,7 +399,7 @@ const correctionFor = (item: HabitatItem): string => {
   if (item.kind === 'restore') {
     return `My turn: ${item.organismNames[item.restorationEntityId ?? '']} belongs in the ${item.restorationZone} zone. ${item.explanation} Your turn: place it there.`;
   }
-  return `My turn: the answer is ${item.answerText}. ${item.explanation} Your turn. ${askFor(item)}`;
+  return `My turn: the answer is ${asClause(item.answerText)}. ${item.explanation} Your turn. ${askFor(item)}`;
 };
 
 const acceptClause = (item: HabitatItem): string => {

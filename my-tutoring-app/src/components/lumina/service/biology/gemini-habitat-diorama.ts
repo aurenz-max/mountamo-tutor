@@ -28,7 +28,7 @@ export const HABITAT_CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   connect: {
     promptDoc:
-      '"connect": The learner BUILDS one ecological relationship by linking fromId to toId. The pair must exist in relationships; prompt may name the source but never the destination.',
+      '"connect": The learner BUILDS one ecological relationship by linking fromId to toId, in the direction energy or benefit flows (for predation, fromId is eaten by toId). The pair must exist in relationships; prompt may name the source but never the destination.',
     schemaDescription: "'connect' (build an ecological relationship)",
   },
   predict: {
@@ -181,6 +181,7 @@ CHALLENGE CONTRACT — every generated item must survive code gates:
 - prompt, explanation, organism names, events, and evidence must never begin a sentence with "Yes" or "My turn".
 - Observe: focusOrganismId is the answer. prompt must not contain its common name. Supply 3-5 optionOrganismIds including it.
 - Connect: fromId -> toId must exactly match one relationship. prompt may name the source, NEVER the destination.
+- RELATIONSHIP DIRECTION is not free: fromId -> toId always follows the flow of ENERGY or BENEFIT. For predation fromId is EATEN and toId EATS it. For parasitism fromId is the host and toId the parasite. For commensalism fromId is the one used and toId the one that benefits. Mutualism and competition are symmetric. The tutor speaks this direction aloud, so an inverted edge becomes a false sentence and the item is dropped.
 - Predict: affectedOrganismId is the downstream answer. disruptionEvent must NOT name that organism. Supply 3-5 optionOrganismIds including it. expectedTrend must follow from the food web.
 - Restore: restorationEntityId names the temporarily missing organism; restorationZone is where it can actually meet its needs. Do not make the zone obvious from the organism's generated name.
 - Defend: prompt is a claim, not a question with the answer embedded. Provide exactly 3 evidenceChoices. Each choice needs at least one distinctive content word so a child can say a short form without matching two cards.

@@ -50,12 +50,12 @@ const data: HabitatDioramaData = {
     { id: 'fungus', commonName: 'Shelf Fungus', role: 'decomposer', imagePrompt: 'fungus', position: { x: '28%', y: '80%' }, description: 'Breaks down wood.', adaptations: ['enzymes'] },
   ],
   relationships: [
-    { fromId: 'fox', toId: 'hare', type: 'predation', description: 'Fox hunts hare.' },
-    { fromId: 'hare', toId: 'oak', type: 'predation', description: 'Hare eats oak.' },
+    { fromId: 'hare', toId: 'fox', type: 'predation', description: 'Fox hunts hare.' },
+    { fromId: 'oak', toId: 'hare', type: 'predation', description: 'Hare eats oak.' },
   ],
   environmentalFeatures: [{ id: 'stream', name: 'Stream', description: 'Fresh water.', position: { x: '80%', y: '75%' } }],
   challenges: [
-    { id: 'connect', type: 'connect', prompt: 'Complete the fox feeding relationship.', explanation: 'The fox hunts the hare.', fromId: 'fox', toId: 'hare' },
+    { id: 'connect', type: 'connect', prompt: 'Complete the hare feeding relationship.', explanation: 'The fox hunts the hare.', fromId: 'hare', toId: 'fox' },
     { id: 'restore', type: 'restore', prompt: 'Return the decomposer to a viable layer.', explanation: 'Dead wood collects by soil.', restorationEntityId: 'fungus', restorationZone: 'ground' },
   ],
 };
@@ -79,9 +79,11 @@ describe('habitat-diorama judged stage', () => {
 
   it('commits a relationship only when the learner selects a destination', () => {
     render(<HabitatDiorama data={data} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Red Fox' }));
-    expect(runnerState.submitGestureAttempt).not.toHaveBeenCalled();
+    // The SOURCE is the pinned start of the edge (prey, under the energy-flow
+    // direction rule), so tapping it is a no-op; the destination commits.
     fireEvent.click(screen.getByRole('button', { name: 'Snowshoe Hare' }));
+    expect(runnerState.submitGestureAttempt).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Red Fox' }));
     expect(runnerState.submitGestureAttempt).toHaveBeenCalledOnce();
     expect(String(runnerState.submitGestureAttempt.mock.calls[0][0])).toContain('MATCHES');
   });

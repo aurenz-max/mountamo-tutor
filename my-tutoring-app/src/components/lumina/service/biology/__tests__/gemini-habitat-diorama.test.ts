@@ -17,10 +17,10 @@ const payload = {
     { id: 'beaver', commonName: 'River Beaver', role: 'primary-consumer', imagePrompt: 'beaver', position: { x: '84%', y: '68%' }, description: 'Builds dams.', adaptations: ['flat tail'] },
   ],
   relationships: [
-    { fromId: 'hare', toId: 'oak', type: 'predation', description: 'Hare eats oak leaves.' },
-    { fromId: 'fox', toId: 'hare', type: 'predation', description: 'Fox hunts hare.' },
+    { fromId: 'oak', toId: 'hare', type: 'predation', description: 'Hare eats oak leaves.' },
+    { fromId: 'hare', toId: 'fox', type: 'predation', description: 'Fox hunts hare.' },
     { fromId: 'fungus', toId: 'oak', type: 'symbiosis-commensalism', description: 'Fungus uses fallen wood.' },
-    { fromId: 'beaver', toId: 'oak', type: 'predation', description: 'Beaver eats bark.' },
+    { fromId: 'oak', toId: 'beaver', type: 'predation', description: 'Beaver eats bark.' },
   ],
   environmentalFeatures: [
     { id: 'stream', name: 'Stream', description: 'Fresh water', position: { x: '75%', y: '75%' } },
@@ -28,7 +28,7 @@ const payload = {
   ],
   challenges: [
     { id: 'o', type: 'observe', prompt: 'It captures sunlight and starts the food chain.', explanation: 'The oak supports consumers.', focusOrganismId: 'oak', optionOrganismIds: ['oak', 'hare', 'fox', 'fungus'] },
-    { id: 'c', type: 'connect', prompt: 'Complete the fox feeding relationship.', explanation: 'The fox hunts the hare.', fromId: 'fox', toId: 'hare' },
+    { id: 'c', type: 'connect', prompt: 'Complete the hare feeding relationship.', explanation: 'The fox hunts the hare.', fromId: 'hare', toId: 'fox' },
     { id: 'p', type: 'predict', prompt: 'Trace the first response.', explanation: 'Fewer hunters let more hares survive.', disruptionEvent: 'The fox population becomes smaller.', affectedOrganismId: 'hare', expectedTrend: 'increase', optionOrganismIds: ['hare', 'oak', 'fungus', 'beaver'] },
     { id: 'r', type: 'restore', prompt: 'Return the decomposer to a viable layer.', explanation: 'Fallen wood collects near the soil.', restorationEntityId: 'fungus', restorationZone: 'ground' },
     { id: 'd', type: 'defend', prompt: 'The beaver changes habitat for other species', explanation: 'The dam redirects water.', evidenceChoices: [
