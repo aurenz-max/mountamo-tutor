@@ -350,17 +350,10 @@ registerContextGenerator('custom-visual', async (ctx) => {
 
 // Sentence Analyzer (grammar/sentence structure analysis)
 registerContextGenerator('sentence-analyzer', async (ctx) => {
-  const data = await generateSentenceAnalyzer(ctx.topic, ctx.gradeContext, {
-    ...(ctx.raw as AnyConfig),
-    intent: ctx.intent,
-    // ⚠️ THE CANONICAL GRADE, not a digit scraped out of `gradeContext` prose.
-    // GenerationContext says it in as many words: "NEVER parse grade out of
-    // gradeContext prose; read this." The click-era generator did exactly that
-    // and resolved EVERY elementary lesson to grade 1 — see the resolution
-    // block in gemini-sentence-analyzer.ts.
-    grade: ctx.grade,
-    gradeBand: ctx.gradeLevel,
-  });
+  // Context-native since 2026-08-21: the hand-threading that used to live here
+  // (raw spread + intent + the canonical grade) is now read off the context
+  // inside the generator, like every other registered generator.
+  const data = await generateSentenceAnalyzer(ctx);
   return {
     type: 'sentence-analyzer',
     instanceId: ctx.instanceId,

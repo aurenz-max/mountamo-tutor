@@ -32,6 +32,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from '../generation/generationContext';
 import type {
   SentenceAnalyzerData,
   SentenceAnalyzerChallenge,
@@ -82,15 +83,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// Within-mode support tier (config.difficulty) — scaffolding, NOT content
-// ---------------------------------------------------------------------------
-
-function normalizeSupportTier(difficulty?: string): SentenceTier | null {
-  const d = difficulty?.toLowerCase().trim() ?? '';
-  if (d === 'easy' || d === 'medium' || d === 'hard') return d;
-  return null;
-}
+// Within-mode support tier — scaffolding, NOT content. The local copy of
+// `normalizeSupportTier` was deleted with the context migration: the same
+// normalization now happens once in `resolveGenerationContext`, and this
+// generator reads `ctx.supportTier`.
 
 // ---------------------------------------------------------------------------
 // Grade resolution — the canonical value, never the prose
@@ -335,22 +331,35 @@ function validateChallenge(flat: FlatChallenge): SentenceAnalyzerChallenge | nul
 // Generator
 // ---------------------------------------------------------------------------
 
+/**
+ * ⭐ CONTEXT-NATIVE, as of 2026-08-21 — this was the LAST of 174 generators still
+ * on the legacy `(topic, gradeContext, config)` signature, with the registry
+ * doing adapter work at the call site. `audit-intent-consumption.mjs` failed it
+ * for a near-miss reason (the file named `GenerationContext` only inside a
+ * docblock, so the loose classifier called it context-native and then found no
+ * `ctx.` read) — but the audit was right about the gap, if not about the cause:
+ * intent DID reach the prompt, threaded by hand one layer up.
+ *
+ * The migration is behavior-preserving by construction. `resolveGenerationContext`
+ * sets `raw = config`, `targetEvalMode = config.targetEvalMode` and
+ * `supportTier = normalizeSupportTier(config.difficulty)`, which is exactly what
+ * the three reads below used to compute locally.
+ */
 export const generateSentenceAnalyzer = async (
-  topic: string,
-  /** Band PROSE for prompts. Deliberately not read for the grade — see
-   *  `resolveGrade` and the resolution block below. */
-  gradeContext: string,
-  config?: {
-    intent?: string;
-    title?: string;
-    targetEvalMode?: string;
-    difficulty?: string;
-    /** Canonical curriculum grade for this objective — 'K' or '1'..'12'. */
-    grade?: string;
-    /** Normalized band key ('elementary', 'kindergarten', …) — the fallback. */
-    gradeBand?: string;
-  },
+  ctx: GenerationContext,
 ): Promise<SentenceAnalyzerData> => {
+  const { topic } = ctx;
+  const config = {
+    intent: ctx.intent,
+    // `ctx.raw.title` is the config title this generator has always read;
+    // `ctx.title` (the manifest ITEM title) is the canonical fallback behind it.
+    title: (ctx.raw as { title?: string }).title ?? ctx.title,
+    targetEvalMode: ctx.targetEvalMode,
+    /** Canonical curriculum grade for this objective — 'K' or '1'..'12'. */
+    grade: ctx.grade,
+    /** Normalized band key ('elementary', 'kindergarten', …) — the fallback. */
+    gradeBand: ctx.gradeLevel,
+  };
   const evalConstraint = resolveEvalModeConstraint(
     'sentence-analyzer',
     config?.targetEvalMode,
@@ -362,7 +371,7 @@ export const generateSentenceAnalyzer = async (
     : sentenceAnalyzerSchema;
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
-  const tier = normalizeSupportTier(config?.difficulty);
+  const tier: SentenceTier | undefined = ctx.supportTier as SentenceTier | undefined;
 
   // --- Grade resolution -----------------------------------------------------
   //
