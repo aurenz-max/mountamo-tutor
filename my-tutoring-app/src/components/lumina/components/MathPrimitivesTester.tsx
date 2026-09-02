@@ -61,6 +61,7 @@ import NetFolder from '../primitives/visual-primitives/math/NetFolder';
 import EquationBuilder from '../primitives/visual-primitives/math/EquationBuilder';
 import CompareObjects from '../primitives/visual-primitives/math/CompareObjects';
 import ParameterExplorer from '../primitives/visual-primitives/math/ParameterExplorer';
+import FormulaLab, { type FormulaLabData } from '../primitives/visual-primitives/math/FormulaLab';
 import EquationWorkspace, { type EquationWorkspaceData } from '../primitives/visual-primitives/math/EquationWorkspace';
 import FunctionSketch from '../primitives/visual-primitives/math/FunctionSketch';
 import type { FunctionSketchData } from '../primitives/visual-primitives/math/FunctionSketch';
@@ -79,7 +80,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 type PrimitiveOption = { value: PrimitiveType; label: string; icon: string; topic: string };
@@ -168,6 +169,7 @@ const PRIMITIVE_GROUPS: Array<{ label: string; grade: string; items: PrimitiveOp
     items: [
       { value: 'balance-scale', label: 'Balance / Scale Model', icon: '⚖️', topic: 'Solving equations' },
       { value: 'equation-workspace', label: 'Equation Workspace', icon: '⚖️', topic: 'Equation Workspace' },
+      { value: 'formula-lab', label: 'Formula Lab', icon: '🧪', topic: 'Predicting and testing how variables change formula relationships' },
       { value: 'practice-problem', label: 'Practice Problem', icon: '✏️', topic: 'Solve a multi-step linear equation' },
     ],
   },
@@ -934,6 +936,19 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'formula-lab':
+      return (
+        <FormulaLab
+          data={{
+            ...(data as FormulaLabData),
+            instanceId: `formula-lab-${Date.now()}`,
+            skillId: 'math-formula-relationships',
+            subskillId: 'predict-variable-effects',
+            objectiveId: 'predict-and-test-formula-relationships',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'equation-workspace':
       return (
         <EquationWorkspace
@@ -1154,6 +1169,18 @@ const EvaluationResultsPanel: React.FC = () => {
                 )}
                 {/* Show FunctionSketch-specific metrics */}
                 {result.metrics.type === 'function-sketch' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show FormulaLab-specific metrics */}
+                {result.metrics.type === 'formula-lab' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.challengeType}</span>
                     <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>

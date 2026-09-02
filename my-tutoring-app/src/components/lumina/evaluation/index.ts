@@ -89,6 +89,7 @@ export type {
   FactorTreeMetrics,
   BarModelMetrics,
   FormulaCardMetrics,
+  FormulaLabMetrics,
   ArrayGridMetrics,
   RatioTableMetrics,
   TapeDiagramMetrics,

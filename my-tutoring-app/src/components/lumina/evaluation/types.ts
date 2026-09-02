@@ -1039,6 +1039,18 @@ export interface FormulaCardMetrics extends BasePrimitiveMetrics {
   formulaTitle: string;               // For analytics
 }
 
+export interface FormulaLabMetrics extends BasePrimitiveMetrics {
+  type: 'formula-lab';
+  challengeType: 'free-explore' | 'predict-direction' | 'predict-magnitude' | 'construct-formula' | 'transfer-apply';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface ArrayGridMetrics extends BasePrimitiveMetrics {
   type: 'array-grid';
   challengeType: 'build_array' | 'count_array' | 'multiply_array';
@@ -3569,6 +3581,7 @@ export type PrimitiveMetrics =
   | FactorTreeMetrics
   | BarModelMetrics
   | FormulaCardMetrics
+  | FormulaLabMetrics
   | ArrayGridMetrics
   | RatioTableMetrics
   | TapeDiagramMetrics

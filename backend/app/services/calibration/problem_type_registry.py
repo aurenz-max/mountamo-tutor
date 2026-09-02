@@ -407,6 +407,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "identify-relationship":  PriorConfig(3.0, "Identify which parameter has strongest effect"),
         "predict-value":          PriorConfig(3.5, "Quantitative prediction of output value"),
     },
+    "formula-lab": {
+        "free-explore":       PriorConfig(1.5, "Observe a formula output while directly varying one input"),
+        "predict-direction":  PriorConfig(2.5, "Predict the direction of output change before testing"),
+        "predict-magnitude":  PriorConfig(3.5, "Predict signed relative output change before testing"),
+        "construct-formula":  PriorConfig(5.0, "Assemble the symbolic relationship from its tokens"),
+        "transfer-apply":     PriorConfig(8.0, "Apply the formula in a new context with the output withheld"),
+    },
     "equation-workspace": {
         "guided-solve":        PriorConfig(1.5, "Operations highlighted as hints, student clicks in order"),
         "identify-operation":  PriorConfig(2.5, "Given partially-solved equation, identify the next valid step (MC)"),

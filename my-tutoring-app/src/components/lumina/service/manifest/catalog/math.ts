@@ -4800,6 +4800,128 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'formula-lab',
+    description: 'Interactive Formula Lab for grades 6-12 math and science relationship reasoning. Students hold other variables constant while they explore a living system, predict direction or relative magnitude, construct the symbolic relationship, and transfer the same formula to a new setting with the output withheld. Perfect for building conceptual understanding of direct, inverse, and nonlinear formulas before calculation or memorization. ESSENTIAL for middle-school and high-school algebra, physics, chemistry, and quantitative science.',
+    constraints: 'Use only scalar formulas expressible with 2-3 numeric input variables and restricted +, -, *, /, and ^ arithmetic. The manifest must NOT supply specific per-challenge values, variable settings, predictions, or answers — the generator builds the local value pool and derives every challenge deterministically. Supply only topic, grade-level context, and session-level formula metadata.',
+    tutoring: {
+      taskDescription:
+        'Investigate how {{changedVariable}} affects {{outputName}} in {{challengeType}} mode. '
+        + 'Relationship available to the student: {{formulaContext}}. Experiment {{currentChallengeIndex}} of {{totalChallenges}}.',
+      contextKeys: [
+        'title',
+        'context',
+        'formulaContext',
+        'outputName',
+        'challengeType',
+        'changedVariable',
+        'currentChallengeIndex',
+        'totalChallenges',
+        'predictionLocked',
+        'predictionDirection',
+        'currentInputValue',
+        'targetInputValue',
+        'challengeComplete',
+      ],
+      scaffoldingLevels: {
+        level1: 'Ask one question that points the student to the role {{changedVariable}} plays in the displayed relationship.',
+        level2:
+          'Prompt the student to hold every other input constant, compare {{currentInputValue}} with {{targetInputValue}}, '
+          + 'and decide whether {{changedVariable}} is multiplied, divided, or raised to a power before testing.',
+        level3:
+          'Guide a three-step check without supplying the result: identify the structural role of {{changedVariable}}, '
+          + 'state a prediction in words, then test it against the living system and explain any mismatch.',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Predicts that the output changes in the same direction in every experiment',
+          response: 'Ask the student to locate {{changedVariable}} and name whether it is a multiplier, divisor, or exponent before revising the prediction.',
+        },
+        {
+          pattern: 'Tries to move the input before committing a prediction',
+          response: 'Pause the test and ask for a signed prediction first; explain that prediction-before-testing makes the experiment informative.',
+        },
+        {
+          pattern: 'Reasons as though several inputs changed at once',
+          response: 'Restate that only {{changedVariable}} changes while every other input is held constant, then ask which comparison isolates its effect.',
+        },
+        {
+          pattern: 'Starts arithmetic without interpreting the relationship structure',
+          response: 'Ask for a verbal description of the variable role and expected change before any substitution or calculation.',
+        },
+        {
+          pattern: 'Repeatedly assembles the formula tokens in an invalid order',
+          response: 'Coach one operation or parenthesized group at a time without naming the next token or revealing the completed expression.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'FORMULA LAB ANSWER BOUNDARIES',
+          instruction:
+            'Treat {{formulaContext}} as the exact visibility boundary. If it says the expression is withheld, never infer, state, '
+            + 'or confirm the formula or token order. Before predictionLocked is true, never state the actual direction or magnitude. '
+            + 'Before challengeComplete is true, never state a withheld output. Scaffold from variable roles, controlled comparison, '
+            + 'substitution, and operation order without completing the student\'s response.',
+        },
+        {
+          title: 'TAGGED FORMULA LAB MOMENTS',
+          instruction:
+            'For [ACTIVITY_START], orient briefly without previewing a result. For [PREDICTION_LOCKED], give one short testing cue '
+            + 'without revealing the outcome. For [ANSWER_INCORRECT], give one actionable hint rather than the answer. '
+            + 'For [ANSWER_CORRECT], connect the observed evidence to the relationship in one or two sentences. '
+            + 'For [NEXT_ITEM], introduce only the supplied visible task data. For [ALL_COMPLETE], celebrate the reasoning habits practiced.',
+        },
+      ],
+    },
+    evalModes: [
+      {
+        evalMode: 'free-explore',
+        label: 'Free Explore (Tier 1)',
+        beta: 1.5,
+        discrimination: 1.8,
+        scaffoldingMode: 1,
+        challengeTypes: ['free-explore'],
+        description: 'Move one input with the output visible and observe the response while every other quantity stays fixed.',
+      },
+      {
+        evalMode: 'predict-direction',
+        label: 'Predict Direction (Tier 2)',
+        beta: 2.5,
+        discrimination: 1.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['predict-direction'],
+        description: 'Commit whether the output will increase, decrease, or stay about the same before testing the system.',
+      },
+      {
+        evalMode: 'predict-magnitude',
+        label: 'Predict Magnitude (Tier 3)',
+        beta: 3.5,
+        discrimination: 1.6,
+        scaffoldingMode: 3,
+        challengeTypes: ['predict-magnitude'],
+        description: 'Produce a signed relative-strength prediction and score it by distance from the observed change marker.',
+      },
+      {
+        evalMode: 'construct-formula',
+        label: 'Construct Formula (Tier 4)',
+        beta: 5.0,
+        discrimination: 1.8,
+        scaffoldingMode: 4,
+        challengeTypes: ['construct-formula'],
+        description: 'Assemble the hidden symbolic expression from variables, numbers, parentheses, and operators.',
+      },
+      {
+        evalMode: 'transfer-apply',
+        label: 'Transfer & Apply (Tier 6)',
+        beta: 8.0,
+        discrimination: 1.6,
+        scaffoldingMode: 6,
+        challengeTypes: ['transfer-apply'],
+        description: 'Apply the relationship in a related new context and calculate a withheld output from supplied inputs.',
+      },
+    ],
+    supportsEvaluation: true,
+  },
+  {
     id: 'parameter-explorer',
     description: 'Multi-variable formula explorer with interactive sliders. Students adjust parameters via continuous sliders to observe how output changes in real-time. Supports prediction checkpoints and hold-and-vary (lock variables). Perfect for exploring STEM relationships (physics, chemistry, economics). ESSENTIAL for grade 6-12 science and math.',
     constraints: 'Requires jsExpression (JS-evaluable formula) alongside LaTeX formula. Parameters need numeric min/max/step ranges. Works best with 2-3 parameters.',

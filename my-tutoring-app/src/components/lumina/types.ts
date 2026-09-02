@@ -1327,6 +1327,7 @@ export type ComponentId =
 
   // Math & Science Engines
   | 'formula-card'       // LaTeX/Math display
+  | 'formula-lab'        // Interactive formula exploration and prediction lab
   | 'custom-visual'      // The SVG/HTML wildcard
 
   // Math Visualization Primitives (Elementary Math)
@@ -2052,6 +2053,7 @@ export type { CompareObjectsData } from './primitives/visual-primitives/math/Com
 export type { ComparisonBuilderData } from './primitives/visual-primitives/math/ComparisonBuilder';
 export type { FunctionMachineData, FunctionMachineChallenge, FunctionMachineChallengeType } from './primitives/visual-primitives/math/FunctionMachine';
 export type { FunctionSketchData } from './primitives/visual-primitives/math/FunctionSketch';
+export type { FormulaLabData } from './primitives/visual-primitives/math/FormulaLab';
 export type { NumberBondData } from './primitives/visual-primitives/math/NumberBond';
 export type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
 export type { RatioTableData, RatioTableChallenge } from './primitives/visual-primitives/math/RatioTable';

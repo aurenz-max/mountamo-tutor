@@ -30,6 +30,7 @@ import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
 import FunctionSketch from '../primitives/visual-primitives/math/FunctionSketch';
+import FormulaLab from '../primitives/visual-primitives/math/FormulaLab';
 import { DistributionExplorer } from '../primitives/DistributionExplorer';
 import CompareObjects from '../primitives/visual-primitives/math/CompareObjects';
 import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
@@ -423,6 +424,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   '3d-shape-explorer': {
     component: ThreeDShapeExplorer,
     sectionTitle: '3D Shape Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'formula-lab': {
+    component: FormulaLab,
+    sectionTitle: 'Formula Lab',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

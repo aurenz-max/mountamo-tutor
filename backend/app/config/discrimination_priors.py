@@ -83,6 +83,13 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "discover_rule": PATTERN_PATTERN_RECOGNITION,     # a=1.2
         "create_rule":   PATTERN_CREATIVE_OPEN_ENDED,     # a=1.0
     },
+    "formula-lab": {
+        "free-explore":      PATTERN_DIRECT_MANIPULATION,   # a=1.8
+        "predict-direction": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+        "predict-magnitude": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+        "construct-formula": PATTERN_DIRECT_MANIPULATION,   # a=1.8
+        "transfer-apply":    PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+    },
     "interactive-book": {
         "find-feature":    PATTERN_DIRECT_MANIPULATION,   # a=1.8
         "read-focus-word": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6

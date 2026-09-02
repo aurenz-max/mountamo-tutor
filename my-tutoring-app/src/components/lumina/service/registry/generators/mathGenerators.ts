@@ -64,6 +64,7 @@ import { generateCompareObjects } from '../../math/gemini-compare-objects';
 import { generateParameterExplorer } from '../../math/gemini-parameter-explorer';
 import { generateEquationWorkspace } from '../../math/gemini-equation-workspace';
 import { generateFunctionSketch } from '../../math/gemini-function-sketch';
+import { generateFormulaLab } from '../../math/gemini-formula-lab';
 import { generateDistributionExplorer } from '../../distribution-explorer/gemini-distribution-explorer';
 import { generatePracticeProblem } from '../../math/gemini-practice-problem';
 
@@ -461,6 +462,15 @@ registerContextGenerator('function-sketch', async (ctx) => ({
   type: 'function-sketch',
   instanceId: ctx.instanceId,
   data: await generateFunctionSketch(ctx),
+}));
+
+registerContextGenerator('formula-lab', async (ctx) => ({
+  type: 'formula-lab',
+  instanceId: ctx.instanceId,
+  data: await generateFormulaLab(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+  }),
 }));
 
 // Distribution Explorer (probability distributions: explore → identify → compute)
