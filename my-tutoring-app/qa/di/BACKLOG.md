@@ -477,7 +477,53 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > on a no-reload uvicorn (the user's `--reload` server 1012s mid-session ~half the time —
 > harness note, not a port defect).
 
-### 27. 🔧 **OPENED 2026-08-21 — THREE `--di-bench` INSTRUMENT DEFECTS, found by running item 26's gates. Two of them corrupt the evidence a bench exists to produce.** Executor: no skill — direct edits to `run_tutor_live.py` + `diDrivePlan.ts`
+### 27. ✅ **CLOSED 2026-08-23 — all three `--di-bench` instrument defects fixed and machine-gated. `--di-bench` is trustworthy again; item 26's g7 re-run is unblocked.** Executor: no skill — direct edits to `run_tutor_live.py` + `diDrivePlan.ts`
+
+> **FIXED 2026-08-23.** All three, plus one the filing did not reach. Gates: `pytest
+> backend/tests/tutor_live` 20 pass (13 new), `vitest .../qa/di/` 68 pass (5 new),
+> `npm run typecheck:lumina` 0.
+>
+> - **I1** — `DiDriveItem.correctionLines` carries the WHOLE branch set (`spans.slice(2)`,
+>   cue order, specific ahead of the catch-all) beside the unchanged `correctionLine`.
+>   The harness matches an observed correction to its CLOSEST branch and scores compliance
+>   against THAT, naming the branch in the finding (`[branch 1/3]`). **The matcher is
+>   Jaccard, not `_di_overlap`, and that is load-bearing**: association's general branch is
+>   very nearly a word-subset of its echo branch, so one-way overlap scores the catch-all
+>   1.0 against an utterance of the echo line and I1 survives its own fix. Dividing by the
+>   union penalises the words a branch does not account for. Reproduced with the REAL
+>   `sock`/hammer-nail strings — pre-fix "added 8 unscripted words", post-fix clean — and
+>   pinned as `test_i1_closest_branch_resists_the_subset_trap`. A one-correction pack sends
+>   no `correctionLines` and scores byte-identically to before: a pure widening.
+> - **I2** — the suffix moved out of `amain` into `report_suffix()` so the rule is testable,
+>   and every flag that changes WHAT WAS MEASURED is now in the name: `-di-bench`,
+>   `-di-bench-<stimulus>`, `-di-<wrong>-cap[-<item>]`. The narrowed-bench workflow the
+>   `--di-bench-item` help documents is now actually performable — the six records no
+>   longer overwrite each other. A same-shape re-drive still overwrites (that is a redo)
+>   but says so on stdout first.
+> - **I2b — THE HALF THE FILING DID NOT REACH, and it mattered more.** Fixing the filename
+>   was necessary and not sufficient: `_di_report_section` only reads `answer`/`verdict`
+>   beats and every bench beat is a `bench-probe`, so a bench's Judgment matrix printed
+>   `n/a` on every row — **a bench report never carried the probe matrix at all**, in any
+>   file, and `report_di_bench`'s return value went into a list nothing read. New
+>   `_di_bench_section` writes the bucket tally, the full per-probe table (owed vs.
+>   observed) and the false-affirmation detail into the report. The run now survives the
+>   terminal it was run in, which was the actual thing I2 was about.
+> - **I3** — the summary takes its class name from the ITEMS' `responseClass` and its soft
+>   label from the buckets that actually tripped; the verdict states what this run measured
+>   (``open_set_word` holds through picture-vocabulary on this evidence`) instead of
+>   asserting a registry status the harness cannot see. Gated by a test that fails if the
+>   string `rhyme` or `blocked` appears in an association bench summary.
+>
+> **NOT touched, deliberately:** `di-correction-verbatim-repeat` ×15 on the same run. The
+> run record already ruled it *"not a defect — bench-amplified"* (a bench drives more
+> consecutive refusals than production's cap allows, so identical general corrections in a
+> row are the expected shape). Re-deriving that ruling would be the same stale-doctrine
+> mistake I3 fixes.
+>
+> **Not verified here:** a live `--di-bench` socket run. The instrument's logic is exercised
+> at runtime against the real strings and the real plan builder, and the route serializes
+> the plan whole (no field whitelist), but the first end-to-end proof is item 26's g7
+> re-run — which is the next thing to do anyway.
 
 > **Why its own item:** these are a defect CLASS, not a picture-vocabulary fact. Every
 > remaining `open_set_word` port (word-builder morphology, knowledge-check 2b, retell, the

@@ -377,6 +377,26 @@ export interface DiDriveItem {
   affirmLine?: string;
   /** The exact line the contract owes on a wrong answer (voice items). */
   correctionLine?: string;
+  /**
+   * ⭐ EVERY scripted correction branch, in cue order — specific ones first,
+   * the catch-all last, so `correctionLine` is always the last entry here.
+   *
+   * `correctionLine` alone was a harness DEFECT the moment a pack scripted more
+   * than one correction (qa/di/BACKLOG.md item 27, I1). picture-vocabulary
+   * `association` scripts three — echo, category-word, then the general
+   * re-model — and each is ~8 words the others do not contain. The harness
+   * compared every correction to the ONE general line, so a correctly-fired
+   * echo branch scored as 8 words of embellishment: 8 bogus WARNs on the bench
+   * and 5 more on the signature drive, with the plain drive as the control that
+   * proved it was the instrument (general branch only → zero WARNs).
+   *
+   * Absent for a pack with a single correction, where the old field is already
+   * the whole truth. The harness matches an observed line to its CLOSEST branch
+   * and scores compliance against THAT — a pure widening: nothing that passed
+   * before can start failing, because a one-branch pack's closest branch is the
+   * branch it already used.
+   */
+  correctionLines?: string[];
   context: Record<string, string>;
   answers: DiHarnessAnswers;
   /**
@@ -1745,6 +1765,14 @@ export function buildDiDrivePlan(
        * harness's `plainWrong` should draw — moved to the end.
        */
       correctionLine: item.answerKind === 'voice' ? spans[spans.length - 1] : undefined,
+      /**
+       * spans[0] is the ask and spans[1] the affirmation — the family writes its
+       * contract in that order — so everything from index 2 on is a correction
+       * branch. Left `undefined` below three spans so a pack with one
+       * correction is byte-identical to what it emitted before item 27.
+       */
+      correctionLines:
+        item.answerKind === 'voice' && spans.length > 2 ? spans.slice(2) : undefined,
       context: surface.contextFor(item),
       answers: adapter.answersFor(item),
       gestureVerdict:

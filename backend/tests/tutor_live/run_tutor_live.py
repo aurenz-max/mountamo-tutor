@@ -2003,6 +2003,47 @@ def _di_extra_words(spoken: str, expected: str) -> List[str]:
     return [w for w in _norm(spoken).split() if w not in want]
 
 
+def _di_branch_score(spoken: str, expected: str) -> float:
+    """How well one SCRIPTED branch explains this utterance, both ways at once.
+
+    Jaccard over the word sets, NOT `_di_overlap`, and the difference is the
+    whole point. `_di_overlap` asks only "how much of the script survived", so a
+    branch whose words are a SUBSET of a longer branch scores 1.0 against an
+    utterance of the longer one — which is exactly the shape here.
+    picture-vocabulary's general correction ("My turn: a hammer goes with a
+    nail - we use them together. Your turn. What goes with sock?") is very
+    nearly contained in its echo branch, so one-way overlap would keep picking
+    the catch-all and I1 would survive its own fix. Dividing by the UNION
+    penalises the words the branch does not account for, which is precisely the
+    signal that says "you are looking at the wrong branch".
+    """
+    got = set(_norm(spoken).split())
+    want = set(_norm(expected).split())
+    union = got | want
+    return len(got & want) / len(union) if union else 0.0
+
+
+def _di_closest_branch(spoken: str, branches: List[str]) -> str:
+    """WHICH scripted correction was the tutor firing? (qa/di/BACKLOG.md item 27, I1.)
+
+    A pack may script several corrections and the model picks one. The harness
+    used to hold a single `expected_line` - `DiDriveItem.correctionLine`, which
+    is `spans[len-1]`, the CATCH-ALL - so a correctly-fired SPECIFIC branch was
+    compared to a line it was never supposed to be speaking and scored as ~8
+    words of embellishment. 8 bogus WARNs on the picture-vocabulary bench, 5
+    more on its signature drive; the plain drive, where only the general branch
+    ever fires, is the control that proved the defect was the instrument.
+
+    Ties resolve to the EARLIEST branch, which is cue order - specific ahead of
+    the catch-all. A tie can only happen when two branches carry the same word
+    set, so the choice cannot change the compliance verdict either way.
+    """
+    live = [b for b in branches if b]
+    if not live:
+        return ""
+    return max(live, key=lambda b: _di_branch_score(spoken, b))
+
+
 # "You're all done with this part!" — spoken at item 4 of 7 on the first
 # headless run. Harmless-sounding, and false: the child is told the work is
 # over while five more items are queued behind it.
@@ -2063,6 +2104,11 @@ def build_di_journey(live: Dict[str, Any], grade: str,
                 "answer_kind": item["answerKind"],
                 "expected_line": item.get("affirmLine") if expect == "affirm"
                                  else item.get("correctionLine"),
+                # Item 27 (I1): the FULL branch set, so the compliance oracles
+                # can score against the branch the tutor actually fired. Empty
+                # on an affirm (one line) and on a one-correction pack.
+                "expected_lines": [] if expect == "affirm"
+                                  else (item.get("correctionLines") or []),
                 # The attempt the runner will not let stand: it decides the cap
                 # AFTER the tutor has spoken, so a correction that re-asks here
                 # is a question the child is never allowed to answer (18c(b)).
@@ -2416,6 +2462,12 @@ def build_di_bench_journey(live: Dict[str, Any], grade: str,
                     "answer_kind": "voice",
                     "expected_line": item.get("affirmLine") if probe["expect"] == "affirm"
                                      else item.get("correctionLine"),
+                    # Item 27 (I1). A BENCH is where this bit hardest: the key
+                    # is weighted toward the wrong answers, so nearly every
+                    # probe draws a correction and a three-branch pack had most
+                    # of its run mis-scored.
+                    "expected_lines": [] if probe["expect"] == "affirm"
+                                      else (item.get("correctionLines") or []),
                     "final_attempt": False,
                     "is_last_item": False,
                 },
@@ -2492,15 +2544,29 @@ def build_di_bench_journey(live: Dict[str, Any], grade: str,
     }
 
 
-def report_di_bench(results: List[BeatResult], sentinels: Dict[str, Any]) -> Dict[str, Any]:
+def report_di_bench(results: List[BeatResult], plan: Dict[str, Any]) -> Dict[str, Any]:
     """Score the probe verdicts against the key and print the bucket table.
 
     THE GATE IS ASYMMETRIC AND DELIBERATELY NOT AN ACCURACY NUMBER. A false
     affirmation teaches a five-year-old something false - that "nake" is a word,
-    or that a word rhymes with itself. A missed valid rhyme costs a turn and the
-    correction re-teaches the rime. 95% with one affirmed nonword is a failing
+    or that a word goes with itself. A missed valid answer costs a turn and the
+    correction re-teaches the rule. 95% with one affirmed nonword is a failing
     run; the false-affirmation list is the whole verdict.
+
+    (WARNING) EVERY LABEL BELOW COMES FROM THE PLAN, NOT FROM A LITERAL - item
+    27 (I3), and it is the STALE DOCTRINE LINE shape WORKSTREAMS warns about.
+    This function was written for rhyme-studio and hard-coded rhyme's
+    vocabulary, so the first ASSOCIATION bench printed "N missed valid
+    rhyme(s)", "N slant-rhyme disagreement(s)" and "FAIL - `open_set_word`
+    stays blocked" over a fixture with no rhymes in it, for a class that had
+    been BENCHED (not blocked) for two days. Three sentences, all wrong, and
+    tsc sees none of it. So: a soft bucket is named by the fixture that marked
+    it soft, the class is named by the ITEMS, and the verdict states what THIS
+    run measured instead of asserting a registry status the harness cannot see.
     """
+    sentinels = plan["sentinels"]
+    classes = sorted({i.get("responseClass") for i in plan["items"] if i.get("responseClass")})
+    bench_class = "/".join(classes) if classes else "the class"
     rows: List[Dict[str, Any]] = []
     for r in results:
         di = r.beat.di
@@ -2534,7 +2600,8 @@ def report_di_bench(results: List[BeatResult], sentinels: Dict[str, Any]) -> Dic
 
     label = {"affirm": "AFFIRM", "correct": "REFUSE"}
     print("\n" + "=" * 78)
-    print("OPEN-SET BENCH - verdicts vs the hand-authored key")
+    print("BENCH: %s via %s - verdicts vs the hand-authored key"
+          % (bench_class, plan["componentId"]))
     print("=" * 78)
     for bucket in sorted(by_bucket):
         tally = by_bucket[bucket]
@@ -2557,20 +2624,28 @@ def report_di_bench(results: List[BeatResult], sentinels: Dict[str, Any]) -> Dic
     else:
         print("\n  OK - ZERO false affirmations in the hard REFUSE buckets.")
     if missed_valid:
-        print("\n  . %d missed valid rhyme(s) - reported, does NOT block:" % len(missed_valid))
+        print("\n  . %d missed valid answer(s) - reported, does NOT block:" % len(missed_valid))
         for r in missed_valid:
             print('      %s: "%s" (%s) -> %s'
                   % (r["item"], r["said"], r["bucket"],
                      label.get(r["observed"] or "", "NO VERDICT")))
     if soft_disagree:
-        print("\n  . %d slant-rhyme disagreement(s) - recorded, does NOT block:" % len(soft_disagree))
+        # The FIXTURE decides which buckets are defensible either way - rhyme
+        # marks `near-rime` and `proper-noun`, association marks two judgment
+        # calls in its key - so the line names whichever ones actually tripped.
+        print("\n  . %d SOFT disagreement(s) in %s - recorded, does NOT block:"
+              % (len(soft_disagree), ", ".join(sorted({r["bucket"] for r in soft_disagree}))))
         for r in soft_disagree:
-            print('      %s: "%s" -> %s'
-                  % (r["item"], r["said"], label.get(r["observed"] or "", "NO VERDICT")))
+            print('      %s/%s: "%s" -> %s'
+                  % (r["item"], r["bucket"], r["said"],
+                     label.get(r["observed"] or "", "NO VERDICT")))
     passed = bool(rows) and not false_affirms
-    print("\n  VERDICT: " + ("PASS - the class may move off `blocked` on this evidence."
-                             if passed else
-                             "FAIL - `open_set_word` stays blocked."))
+    print("\n  VERDICT: " + (
+        "PASS - zero false affirmations. `%s` holds through %s on this evidence."
+        % (bench_class, plan["componentId"])
+        if passed else
+        "FAIL - %d false affirmation(s). `%s` is NOT cleared by this run."
+        % (len(false_affirms), bench_class)))
     print("=" * 78 + "\n")
     return {
         "rows": rows,
@@ -2713,17 +2788,33 @@ def run_di_oracles(results: List[BeatResult], events: List[str],
                         "DISTAR firms by escalating, not by repeating")
                 prior.append(spoken)
 
-            expected_line = di.get("expected_line")
+            # ⭐ ITEM 27 (I1): SCORE COMPLIANCE AGAINST THE BRANCH THAT FIRED.
+            # A pack that scripts a specific correction ahead of the catch-all
+            # (the shape /add-di-loop now recommends for any open class) owes a
+            # DIFFERENT line depending on how the child was wrong, and the
+            # tutor choosing correctly between them is the feature. Comparing
+            # all of them to the catch-all turned that feature into a WARN.
+            branches = di.get("expected_lines") or []
+            expected_line = _di_closest_branch(spoken, branches) or di.get("expected_line")
+            # Named in the finding so a reader of the run record can see WHICH
+            # line the harness judged against — with three branches on screen,
+            # "only 41% of the scripted line survived" is unreadable without it.
+            branch_note = ""
+            if len(branches) > 1 and expected_line in branches:
+                branch_note = (f" [branch {branches.index(expected_line) + 1}"
+                               f"/{len(branches)}]")
             if expected_line and got == want:
                 overlap = _di_overlap(spoken, expected_line)
                 if overlap < 0.6:
                     add("WARN", "di-off-script-verdict", b,
                         f"verdict was right but only {overlap:.0%} of the scripted line "
-                        f'survived. SCRIPT: "{expected_line[:110]}" SPOKE: "{spoken[:110]}"')
+                        f'survived{branch_note}. SCRIPT: "{expected_line[:110]}" '
+                        f'SPOKE: "{spoken[:110]}"')
                 extra = _di_extra_words(spoken, expected_line)
                 if len(extra) >= 5:
                     add("WARN", "di-verdict-embellished", b,
-                        f'added {len(extra)} unscripted words to a "say exactly" line. '
+                        f'added {len(extra)} unscripted words to a "say exactly" '
+                        f'line{branch_note}. '
                         f'SCRIPT: "{expected_line[:80]}" SPOKE: "{spoken[:150]}"')
 
             if di.get("final_attempt") and spoken.rstrip().endswith("?"):
@@ -3193,9 +3284,110 @@ def _di_report_section(plan: Dict[str, Any],
     return lines
 
 
+def report_suffix(args: Any, journey: Dict[str, Any]) -> str:
+    """Which report file this run owns.
+
+    (WARNING) ONE FILENAME PER KIND OF RUN - qa/di/BACKLOG.md item 27, I2, and
+    it DESTROYED EVIDENCE before it was fixed.
+
+    `--di-bench` implies `--di` and leaves `--di-wrong` at its default, so a
+    bench and an ordinary plain drive both resolved to
+    `<id>-live-di-plain-<date>.md`. On 2026-08-21 the gate-8 drive silently
+    overwrote the gate-7 bench report in the same session; `grep -c bench-assoc`
+    on that file is now 0 and the 48-probe matrix is gone from it. The run
+    survived only because the console happened to be captured. The cap drill
+    collided the same way, and two `--di-bench-item` runs collided with EACH
+    OTHER - which made the documented "narrow the sweep when a session limit
+    bites, aggregate the six records by hand" workflow impossible to perform.
+
+    So every flag that changes WHAT WAS MEASURED goes in the name. Extracted
+    from `amain` rather than left inline because a rule this file cannot test
+    is a rule that will rot again.
+    """
+    if getattr(args, "di_bench", False):
+        return "-di-bench" + (f"-{args.di_bench_item}" if args.di_bench_item else "")
+    if args.di:
+        suffix = f"-di-{args.di_wrong}"
+        if args.di_cap:
+            suffix += "-cap" + (f"-{args.di_cap_item}" if args.di_cap_item else "")
+        return suffix
+    if args.lesson or journey.get("force_lesson"):
+        return "-lesson"
+    return ""
+
+
+def _di_bench_section(plan: Dict[str, Any],
+                      bench_reports: List[Dict[str, Any]]) -> List[str]:
+    """The probe matrix, IN THE REPORT FILE - the other half of item 27's I2.
+
+    I2 was filed as "a bench report is overwritten by a later plain drive", and
+    fixing the filename is necessary but was not sufficient: `_di_report_section`
+    only reads beats whose role is `answer` or `verdict`, and every bench beat is
+    a `bench-probe`. So a bench's Judgment matrix printed `n/a` on every row and
+    the scored result existed ONLY in the console and in the raw beat-by-beat
+    transcript. `report_di_bench` had been computing all of this and returning it
+    to a list that nothing ever read.
+
+    A record that has to be reconstructed from a transcript is not a record. The
+    48 probes, their buckets, the verdict owed and the verdict observed go in the
+    file, so the run survives the terminal it was run in.
+    """
+    classes = sorted({i.get("responseClass") for i in plan["items"] if i.get("responseClass")})
+    bench_class = "/".join(classes) if classes else "the class"
+    lines = ["", f"## Bench matrix - `{bench_class}` via {plan['componentId']}", "",
+             "Scored against the port's hand-authored fixture, not against generated "
+             "content. **THE GATE IS ASYMMETRIC AND IS NOT AN ACCURACY NUMBER**: zero "
+             "false affirmations in the hard REFUSE buckets. A missed valid answer costs "
+             "the child a turn; an affirmed wrong answer teaches them the error.", ""]
+    for run_no, report in enumerate(bench_reports, 1):
+        rows = report["rows"]
+        if len(bench_reports) > 1:
+            lines += [f"### Run {run_no}", ""]
+        verdict = ("**PASS** - zero false affirmations" if report["passed"]
+                   else f"**FAIL** - {report['false_affirmations']} false affirmation(s)")
+        lines += [
+            f"{verdict}. {len(rows)} scored probe(s) over "
+            f"{len({r['item'] for r in rows})} stimulus/stimuli - "
+            f"{sum(1 for r in rows if r['agreed'])} agreed with the key, "
+            f"{report['missed_valid']} missed valid, "
+            f"{report['soft_disagreements']} soft disagreement(s), "
+            f"{report['no_verdict']} drew no classifiable verdict.",
+            "", "| Bucket | Agreed | Probes |", "|---|---|---|",
+        ]
+        by_bucket: Dict[str, Dict[str, int]] = {}
+        for r in rows:
+            t = by_bucket.setdefault(r["bucket"], {"n": 0, "agreed": 0})
+            t["n"] += 1
+            t["agreed"] += 1 if r["agreed"] else 0
+        for bucket in sorted(by_bucket):
+            t = by_bucket[bucket]
+            lines.append(f"| `{bucket}` | {t['agreed']} | {t['n']} |")
+        label = {"affirm": "AFFIRM", "correct": "REFUSE"}
+        lines += ["", "| Item | Bucket | Student said | Owed | Observed | |",
+                  "|---|---|---|---|---|---|"]
+        for r in rows:
+            mark = "OK" if r["agreed"] else ("soft" if r["soft"] else "MISS")
+            lines.append(
+                f"| `{r['item']}` | `{r['bucket']}` | {r['said']} "
+                f"| {label[r['expect']]} | {label.get(r['observed'] or '', 'NO VERDICT')} "
+                f"| {mark} |")
+        bad = [r for r in rows
+               if r["expect"] == "correct" and not r["soft"] and r["observed"] == "affirm"]
+        if bad:
+            lines += ["", "**False affirmations - the gate fails on any of these:**", ""]
+            for r in bad:
+                lines += [f'- `{r["item"]}` / `{r["bucket"]}` - the student said '
+                          f'**"{r["said"]}"** and the tutor AFFIRMED it. '
+                          f'Why that is wrong: {r["why"]}',
+                          f'  - tutor: *"{r["spoken"][:220]}"*']
+        lines.append("")
+    return lines
+
+
 def write_report(path: str, component_id: str, journey: Dict[str, Any],
                  run_results: List[List[BeatResult]], aggregated: List[Dict[str, Any]],
-                 style: Optional[Dict[str, float]], events: List[str]) -> None:
+                 style: Optional[Dict[str, float]], events: List[str],
+                 bench_reports: Optional[List[Dict[str, Any]]] = None) -> None:
     runs = len(run_results)
     confirmed_high = [f for f in aggregated if f["confirmed"] and f["severity"] == "HIGH"]
     confirmed_warn = [f for f in aggregated if f["confirmed"] and f["severity"] == "WARN"]
@@ -3258,7 +3450,13 @@ def write_report(path: str, component_id: str, journey: Dict[str, Any],
         lines.append("None.")
 
     if journey.get("di_plan"):
-        lines += _di_report_section(journey["di_plan"], run_results)
+        # A bench and a drive answer different questions, so they get different
+        # tables. The Judgment matrix reads `answer`/`verdict` beats and a bench
+        # has none of those - printing it here would render a wall of `n/a`.
+        if bench_reports:
+            lines += _di_bench_section(journey["di_plan"], bench_reports)
+        else:
+            lines += _di_report_section(journey["di_plan"], run_results)
 
     for i, results in enumerate(run_results, 1):
         lines += ["", f"## Run {i} — beat-by-beat transcript", ""]
@@ -3445,7 +3643,7 @@ async def amain() -> int:
                 # tutor stayed on script, kept the tag syntax out of its mouth
                 # and did not leak. The DI oracles check that half; this checks
                 # whether the judge was RIGHT.
-                report = report_di_bench(results, journey["di_plan"]["sentinels"])
+                report = report_di_bench(results, journey["di_plan"])
                 bench_reports.append(report)
                 if report["false_affirmations"]:
                     findings.append({
@@ -3481,17 +3679,19 @@ async def amain() -> int:
 
     aggregated = aggregate_findings(per_run_findings)
     style = average_style_metrics(per_run_findings)
-    if args.di:
-        suffix = f"-di-{args.di_wrong}"
-    elif args.lesson or journey.get("force_lesson"):
-        suffix = "-lesson"
-    else:
-        suffix = ""
+    suffix = report_suffix(args, journey)
     report_path = os.path.join(
         REPO_ROOT, "my-tutoring-app", "qa", "tutor-reports",
         f"{args.component}-live{suffix}-{date.today().isoformat()}.md",
     )
-    write_report(report_path, args.component, journey, run_results, aggregated, style, all_events)
+    # A same-shape re-drive on the same day SHOULD overwrite — that is a redo.
+    # It just may never do it quietly again: the defect above was invisible
+    # because nothing said a word.
+    if os.path.exists(report_path):
+        print(f"  · overwriting an earlier {os.path.basename(report_path)} from today "
+              f"(same run shape — re-drive)")
+    write_report(report_path, args.component, journey, run_results, aggregated, style, all_events,
+                 bench_reports)
 
     print(f"[4/4] Report: {report_path}")
     if style:
