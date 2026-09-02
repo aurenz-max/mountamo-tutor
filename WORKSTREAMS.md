@@ -29,14 +29,14 @@ here instead of where their reader acts. Decide the home at WRITE time:
 first · PARKED = idle, queue trusted only as of its date · BLOCKED = named dependency.
 Prior snapshots and the reasoning behind past calls: `git log -p WORKSTREAMS.md`.
 
-## Portfolio — as of 2026-08-24
+## Portfolio — as of 2026-09-02
 
 **WIP 2 ACTIVE + 1.** Judged-loop ports are ONE stream (`/add-di-loop`, queue
 `qa/di/BACKLOG.md`); science / math / picture-vocabulary are its items, not rival lanes.
 
 | Lane | State | Pull now | As of |
 |---|---|---|---|
-| 🚀 **PROD / `main`** | ⚠ **`main` 5 BEHIND** | `ship/…judged-loop` = `d6feaed8`, **in sync with origin — the 08-22 "UNSHIPPED ×2" was wrong**. Owed: ff `main`, then ship the **47-file tree** (history suite, `formula-lab`, `fast-fact` WIP, di-bench, priors). **`/ship` in slices.** | 08-24 |
+| 🚀 **PROD / `main`** | ✅ **LEVEL at `f8bcae52`** | Shipped 09-02: the 47-file tree went out in **5 slices** — di-bench item 27 (`d9264313`), `era-explorer` L0→L4 (`096c6c4b`), `formula-lab` L0→L3 (`57e49801`), `fast-fact` L1 **WIP with FF-5 open** (`095d8006`), queues (`f8bcae52`). `main` fast-forwarded and pushed; branch, `main` and `origin` all level. Nothing owed. | 09-02 |
 | 🔝 **JUDGED-LOOP PORTS** | **ACTIVE** — `qa/di/BACKLOG.md` | `habitat-diorama` SHIPPED 08-21: 5 modes green after 3 live-caught defects (connect had the tutor inverting predation 5/5). Mic **#116**; prior #117 #115 #114. **Next = the B1 chemistry three: `matter-explorer` · `gas-laws-simulator` · `ph-explorer`** — template proven. di item 25. | 08-22 |
 | ↳ **math ports** | same stream, queued | `place-value-chart` shipped 08-18 (port 8, first past the ≤20 bench). **Mic #113 IS the #63 material — one sitting closes both and unblocks >20.** `sorting-station` owes `/reader-fit`. **Next codeable: `3d-shape-explorer`.** item 18. | 08-21 |
 | ↳ **picture-vocabulary** | **g8 ✅ / g7 ⛔ — ✅ UNBLOCKED** | **di item 27 CLOSED 08-23**: the 3 `--di-bench` defects are fixed + gated, so **the g7 re-run is the pull now**. g7 FAIL = `same-category` 0/8 (accept clause defeats the guard); all other buckets held. item 26. Mic **#118**. | 08-24 |
