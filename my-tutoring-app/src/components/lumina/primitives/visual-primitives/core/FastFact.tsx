@@ -40,6 +40,8 @@ export interface FastFactChallenge {
   id: string;
   /** Phase grouping key — drives PhaseSummaryPanel (e.g. 'recall', 'match', 'speed-round'). */
   type: string;
+  /** Stable eval-mode task identity; intentionally independent of the phase key. */
+  challengeType: 'recognize' | 'recall' | 'apply';
   prompt: {
     /** Primary question or stimulus text shown large. */
     text: string;
@@ -281,7 +283,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
 
   const aiPrimitiveData = useMemo(() => ({
     subject,
-    challengeType: currentChallenge?.type ?? '',
+    challengeType: currentChallenge?.challengeType ?? '',
     promptText: currentChallenge?.prompt.text ?? '',
     correctAnswer: currentChallenge?.correctAnswer ?? '',
     responseMode: 'choice',

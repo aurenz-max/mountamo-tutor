@@ -353,6 +353,35 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     constraints: 'Best for factual recall (not reasoning or multi-step problems). '
       + 'Challenges should have single correct answers. Keep to 8-15 challenges per session for engagement. '
       + 'No timers — never frame challenges around speed or deadlines.',
+    evalModes: [
+      {
+        evalMode: 'recognize',
+        label: 'Recognize a Cue',
+        beta: 2.5,
+        discrimination: 1.2,
+        scaffoldingMode: 2,
+        challengeTypes: ['recognize'],
+        description: 'Translate a visible, symbolic, pictorial, or patterned cue into its matching name or value.',
+      },
+      {
+        evalMode: 'recall',
+        label: 'Recall a Fact',
+        beta: 3.5,
+        discrimination: 1.2,
+        scaffoldingMode: 3,
+        challengeTypes: ['recall'],
+        description: 'Retrieve one directly requested fact without an answer-bearing visual cue.',
+      },
+      {
+        evalMode: 'apply',
+        label: 'Apply in Context',
+        beta: 5.0,
+        discrimination: 1.2,
+        scaffoldingMode: 4,
+        challengeTypes: ['apply'],
+        description: 'Use a known fact in a short context, cloze, comparison, or reverse-direction association.',
+      },
+    ],
     tutoring: {
       taskDescription:
         'Guide the student through an untimed fluency drill (no clock, no time pressure). Subject: {{subject}}. '

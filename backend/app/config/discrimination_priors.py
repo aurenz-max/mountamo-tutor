@@ -172,6 +172,11 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "analyze":  DiscriminationPrior(a=1.6, c=0.20),
         "evaluate": DiscriminationPrior(a=1.8, c=0.15),
     },
+    "fast-fact": {
+        "recognize": PATTERN_MULTIPLE_CHOICE,
+        "recall":    PATTERN_MULTIPLE_CHOICE,
+        "apply":     PATTERN_MULTIPLE_CHOICE,
+    },
     "true-false":              {"default": PATTERN_TRUE_FALSE},
     "fill-in-blanks":          {"default": PATTERN_CONSTRUCTED_RESPONSE},
     "matching-activity":       {"default": PATTERN_PROCEDURAL_SEQUENCING},

@@ -924,6 +924,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     # Core / general-content primitives
     # -----------------------------------------------------------------
+    "fast-fact": {
+        "recognize": PriorConfig(2.5, "Translate a visible or symbolic cue into its matching name or value"),
+        "recall":    PriorConfig(3.5, "Retrieve one directly requested fact without an answer-bearing cue"),
+        "apply":     PriorConfig(5.0, "Use a known fact in a short context or reverse association"),
+    },
     "fact-file": {
         "explore":  PriorConfig(1.5, "Guided exploration with easy recall questions"),
         "recall":   PriorConfig(3.5, "Unguided recall, mix of easy and medium"),

@@ -15,7 +15,46 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
+import {
+  resolveEvalModes,
+  constrainChallengeTypeEnum,
+  buildModeConstraintSection,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 import type { FastFactData, FastFactChallenge } from '../../primitives/visual-primitives/core/FastFact';
+
+type FastFactChallengeType = 'recognize' | 'recall' | 'apply';
+
+/**
+ * Stable task identities. These are deliberately separate from challenge.type,
+ * which remains the presentation-phase key used by PhaseSummaryPanel.
+ */
+const CHALLENGE_TYPE_DOCS: Record<FastFactChallengeType, ChallengeTypeDoc> = {
+  recognize: {
+    promptDoc:
+      `"recognize": Translate a visible, symbolic, pictorial, or patterned cue into its matching name or value. `
+      + `Examples: Fe -> Iron, an emoji quantity -> numeral, an expression -> result. `
+      + `The cue must honor REPRESENTATION SHIFT and must never display the answer itself.`,
+    schemaDescription: "'recognize' (translate a visible cue)",
+  },
+  recall: {
+    promptDoc:
+      `"recall": Retrieve one directly requested fact from memory without an answer-bearing visual cue. `
+      + `Examples: state -> capital, term -> definition, word -> translation, event -> date. `
+      + `A decorative visual is allowed, but it cannot supply the fact.`,
+    schemaDescription: "'recall' (retrieve a direct fact)",
+  },
+  apply: {
+    promptDoc:
+      `"apply": Use a known fact through at least one binding application shape: reverse the learned association, `
+      + `place the fact in a cloze or short context, compare two factual cases, or choose the fact that resolves a short scenario. `
+      + `EVERY apply challenge must use one of those shapes. Do NOT ask for a direct cue-to-memorized-partner response `
+      + `(for example state -> capital, term -> definition, element symbol -> name, or word -> translation); `
+      + `those direct questions belong to "recall" or "recognize". `
+      + `The task must still have one unambiguous answer and require factual automaticity, not multi-step reasoning.`,
+    schemaDescription: "'apply' (use a fact in context)",
+  },
+};
 
 /**
  * Infer the grade-level label from the grade-context prose string.
@@ -70,6 +109,11 @@ const flatChallengeSchema: Schema = {
     type: {
       type: Type.STRING,
       description: "Phase grouping key, e.g. 'recall', 'apply', 'speed-round'",
+    },
+    challengeType: {
+      type: Type.STRING,
+      enum: ["recognize", "recall", "apply"],
+      description: "Stable task identity, independent of the presentation phase",
     },
     promptText: {
       type: Type.STRING,
@@ -126,7 +170,7 @@ const flatChallengeSchema: Schema = {
     },
   },
   required: [
-    "id", "type", "promptText", "promptSubtext", "visualType", "visualContent",
+    "id", "type", "challengeType", "promptText", "promptSubtext", "visualType", "visualContent",
     "visualRepeat", "visualAlt", "correctAnswer", "acceptableAnswers",
     "responseMode", "options", "explanation", "difficulty",
   ],
@@ -447,6 +491,7 @@ function reconstructChallenge(
   flat: any,
   index: number,
   rejected: RejectionReason[],
+  fallbackChallengeType: FastFactChallengeType,
 ): FastFactChallenge | null {
   const id = flat.id || `ff_${index + 1}`;
   const correctStr = String(flat.correctAnswer ?? '').trim();
@@ -522,6 +567,9 @@ function reconstructChallenge(
   return {
     id,
     type: flat.type || 'recall',
+    challengeType: (['recognize', 'recall', 'apply'] as const).includes(flat.challengeType)
+      ? flat.challengeType
+      : fallbackChallengeType,
     prompt: {
       text: promptText,
       subtext: promptSubtext || undefined,
@@ -570,10 +618,13 @@ const MIN_MEASURABLE_CHALLENGES = 6;
  * Exported for the answer-contract tests, which drive it with unmutated flat
  * output from real 2026-08-06 generations.
  */
-export function validateFastFactData(raw: any): FastFactData {
+export function validateFastFactData(
+  raw: any,
+  fallbackChallengeType: FastFactChallengeType = 'recall',
+): FastFactData {
   const rejected: RejectionReason[] = [];
   const challenges: FastFactChallenge[] = (Array.isArray(raw.challenges) ? raw.challenges : [])
-    .map((c: any, i: number) => reconstructChallenge(c, i, rejected))
+    .map((c: any, i: number) => reconstructChallenge(c, i, rejected, fallbackChallengeType))
     .filter((c: FastFactChallenge | null): c is FastFactChallenge => c !== null);
 
   // Spread the correct button across slots. Rotating from a per-drill random
@@ -651,6 +702,69 @@ export function validateFastFactData(raw: any): FastFactData {
 
 type FastFactConfig = Record<string, unknown>;
 
+interface FastFactSupportStructure {
+  maxOptions: 3 | 4;
+  maxAttempts: 1 | 2;
+  promptLines: string[];
+}
+
+/** Withdraw support within one resolved skill without changing topic scope. */
+function resolveSupportStructure(
+  tier: NonNullable<GenerationContext['supportTier']>,
+): FastFactSupportStructure {
+  if (tier === 'easy') {
+    return {
+      maxOptions: 3,
+      maxAttempts: 2,
+      promptLines: [
+        'EASY support: use three choices (two only for genuine binary questions), keep a brief non-answer cue in promptSubtext, and use clearly distinguishable but real distractors.',
+      ],
+    };
+  }
+  if (tier === 'medium') {
+    return {
+      maxOptions: 4,
+      maxAttempts: 2,
+      promptLines: [
+        'MEDIUM support: use four choices for non-binary questions, keep promptSubtext concise, and use plausible same-category distractors.',
+      ],
+    };
+  }
+  return {
+    maxOptions: 4,
+    maxAttempts: 1,
+    promptLines: [
+      'HARD support: use four choices for non-binary questions, allow one attempt, and make every distractor a close, plausible same-category alternative. Keep any load-bearing cloze or context in promptSubtext.',
+    ],
+  };
+}
+
+/**
+ * Deterministically apply support after generation. The model proposes content;
+ * code owns option count, cue visibility, attempt count, and the tier stamp.
+ */
+function applySupportStructure(raw: any, support: FastFactSupportStructure): void {
+  if (!Array.isArray(raw.challenges)) return;
+
+  for (const challenge of raw.challenges) {
+    challenge.difficulty = support.maxAttempts === 1
+      ? 'hard'
+      : support.maxOptions === 3 ? 'easy' : 'medium';
+
+    const correctAnswer = String(challenge.correctAnswer ?? '').trim();
+    const acceptable = Array.isArray(challenge.acceptableAnswers)
+      ? challenge.acceptableAnswers.map(String)
+      : [];
+    const options = normalizeOptions(challenge.options, correctAnswer, acceptable);
+    const correct = options.find((option) => gradesCorrect(option, correctAnswer, acceptable));
+    if (!correct) continue;
+    const distractors = options.filter((option) => !gradesCorrect(option, correctAnswer, acceptable));
+    challenge.options = [correct, ...distractors.slice(0, support.maxOptions - 1)];
+  }
+
+  raw.maxAttemptsPerChallenge = support.maxAttempts;
+}
+
 /**
  * Generate a FastFact timed fluency drill for any subject.
  */
@@ -674,6 +788,34 @@ export const generateFastFact = async (
     ctx.grade ? `Set gradeBand to the band containing grade ${ctx.grade}.` : '',
   );
 
+  // Resolve the task identity from the primitive's own catalog. An explicit
+  // tester/curator pin short-circuits; no resolution means a genuine mixed run.
+  const resolution = await resolveEvalModes(
+    'fast-fact',
+    {
+      targetEvalMode: ctx.targetEvalMode,
+      intent: ctx.intent,
+      objectiveText: ctx.objective.text,
+    },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const allowedTypes = resolution?.allowedTypes;
+  const activeSchema = resolution
+    ? constrainChallengeTypeEnum(
+        fastFactSchema,
+        resolution.allowedTypes,
+        CHALLENGE_TYPE_DOCS,
+        { fieldName: 'challengeType' },
+      )
+    : fastFactSchema;
+  const challengeTypeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
+  const tierScaffold = resolution && resolution.modes.length === 1 && ctx.supportTier
+    ? resolveSupportStructure(ctx.supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER\n${tierScaffold.promptLines.map((line) => `- ${line}`).join('\n')}\n`
+    : '';
+
   const prompt = `You are a curriculum expert creating fluency drill challenges.
 
 TOPIC / LEARNING OBJECTIVE: ${topic}
@@ -685,9 +827,12 @@ NUMBER OF CHALLENGES: ${challengeCount} (8-12 range)
 ## Your Mission:
 Create a Fast Fact fluency drill for "${topic}". Infer the subject area from the topic (Math, Science, Language Arts, History, etc.).
 
+${challengeTypeSection}
+${tierSection}
+
 ## Phase Design:
 - Generate challenges across 2-3 PHASES (e.g. 'recall', 'apply', 'rapid-recall').
-- Each challenge has a \`type\` field that groups it into a phase.
+- Each challenge has a \`type\` field that groups it into a presentation phase. This is separate from \`challengeType\`, which records the stable task identity selected above.
 - Early phases should be easier; later phases should be harder (more abstract / less scaffolded), NOT faster.
 - Distribute challenges roughly evenly across phases.
 
@@ -736,20 +881,28 @@ Now generate the Fast Fact drill.`;
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: fastFactSchema,
+        responseSchema: activeSchema,
       },
     });
 
     if (!response.text) throw new Error("No content generated for fast-fact");
 
     const raw = JSON.parse(response.text);
-    const data = validateFastFactData(raw);
+    if (tierScaffold) applySupportStructure(raw, tierScaffold);
+    const data = validateFastFactData(
+      raw,
+      (allowedTypes?.[0] as FastFactChallengeType | undefined) ?? 'recall',
+    );
 
     console.log('[Fast Fact] Generated from dedicated service:', {
       topic,
       gradeLevel,
       challengeCount: data.challenges.length,
       phases: Object.keys(data.phaseConfig),
+      modes: resolution
+        ? `${resolution.modes.map((mode) => mode.evalMode).join('+')} (${resolution.source})`
+        : 'mixed',
+      challengeTypes: Array.from(new Set(data.challenges.map((challenge) => challenge.challengeType))),
       subject: data.subject,
     });
 

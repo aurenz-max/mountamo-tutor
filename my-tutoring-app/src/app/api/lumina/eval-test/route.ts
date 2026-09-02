@@ -360,7 +360,9 @@ function validateChallengeTypes(
   }
 
   // Check root-level type field (e.g., function-machine)
-  const typeFieldNames = ['type', 'mode', 'operation', 'clueType', 'patternType', 'sentenceType', 'challengeType'];
+  // Prefer the explicit eval identity when a primitive also carries a separate
+  // presentation-phase `type` (fast-fact is the canonical example).
+  const typeFieldNames = ['challengeType', 'type', 'mode', 'operation', 'clueType', 'patternType', 'sentenceType'];
   for (const field of typeFieldNames) {
     if (typeof data[field] === 'string' && !challenges) {
       const rootType = data[field] as string;
