@@ -7,14 +7,45 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open — ONE list, newest first (as of 2026-08-22, `/pm`)
+## Open — ONE list, newest first (as of 2026-08-24, `/pm`)
 
-> **86 rows open.** **Newest five:** #120 ramp-lab (three focused ramp task identities) ·
-> #119 dump-truck-loader (three capacity rungs) · #118 picture-vocabulary `association`
-> (the hardest open-set case; its gates 7+8 are headless and still owed too) · #117
-> states-of-matter (third science port, all-spoken) · #116 habitat-diorama (living
-> ecosystem field lab). Next free ID is **#121**.
+> **88 rows open.** **Newest five:** #122 formula-lab (six component pedagogical
+> moments — the generic live journey does not replay them) · #121 era-explorer (the L4
+> difficulty tiers, never browser-driven) · #120 ramp-lab (three ramp task identities) ·
+> #119 dump-truck-loader (three capacity rungs) · #118 picture-vocabulary `association`.
+> Next free ID is **#123**.
 > Re-grep before filing; concurrent sessions in this lane are normal.
+
+### #122 — **`formula-lab`: do the six pedagogical moments actually fire in the app?** · OPEN
+
+Math Primitives Tester → `formula-lab`, with the Lumina Tutor connected. Tier 1-2 passed
+headlessly and the scaffold contract is answer-safe, but the generic live journey does not
+replay this primitive's own component tags. Walk one full item and confirm the tutor reacts
+once — and only once — at each moment: `ACTIVITY_START`, `PREDICTION_LOCKED`,
+`ANSWER_CORRECT`, `ANSWER_INCORRECT`, `NEXT_ITEM`, `ALL_COMPLETE`.
+
+Watch for the TU-6 symptom while you are there: if the tutor narrates a `[CURRENT STATE]`
+preamble aloud, that is the shared transport defect, not this primitive — leave TU-6 open.
+
+Evidence: [`qa/tutor-reports/formula-lab-2026-08-23.md`](tutor-reports/formula-lab-2026-08-23.md) ·
+[transcripts](tutor-reports/formula-lab-live-2026-08-23.md)
+
+### #121 — **`era-explorer`: does a harder tier LOOK harder, and still read at the same level?** · OPEN
+
+History Primitives Tester → `era-explorer`. All 13 verifying generations came through
+`/api/lumina/eval-test`; the render tree has never been driven. Pin the same era and
+compare an easy run against a hard run:
+
+- **`era_sort` / `era_compare`** — the "both / continuity" bin should hold 1 of 6 statements
+  at easy and 3 of 6 at hard, and the subject should ladder artifact → practice → institution.
+- **`cause_of_change`** — distractors should move from far-off to near-miss, with exactly one
+  defensible answer still present.
+- **Reading level must NOT move with the tier** — structure changes, wording does not. Mild
+  sentence-length drift at hard was measured headlessly; confirm it is not visible.
+
+Known-partial: `lens_id`'s ceiling saturates on well-paraphrased statements (one hard run
+shipped 0/6 on target). Evidence:
+[`qa/eval-reports/era-explorer-structural-difficulty-2026-08-24.md`](eval-reports/era-explorer-structural-difficulty-2026-08-24.md)
 
 ### #120 — **`ramp-lab`: do prediction, measurement, and design feel like three different investigations?** · OPEN
 

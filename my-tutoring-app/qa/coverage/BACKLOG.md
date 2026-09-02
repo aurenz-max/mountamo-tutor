@@ -140,6 +140,78 @@ mode-aware selector + a `selectMixed*` rotation — is the template for any prim
 correctness is arithmetic. Run the same assessability check on the biology 12 and
 astronomy 6 before scoping them.
 
+✅⭐ **BIOLOGY + ASTRONOMY ASSESSABILITY TRIAGE — RUN `/pm` 2026-08-23, as this section demanded.**
+Probe (not grep-for-words — the ramp-lab lesson): does the component import `usePrimitiveEvaluation`
++ `onEvaluationSubmit`, **and** does it compute a correctness verdict? **The result inverts the
+engineering picture: almost everything here is already wired to the evaluation pipeline.** 18 of 21
+import the hook. The discriminator is whether a KEY exists.
+
+**✅ TIER 1 — pipeline wired AND a correctness key exists. These need the LADDER ONLY** (≈ the
+`dump-truck-loader` slice, minus building a solve surface). Correctness sites in the Key column:
+
+| Primitive | Home (cos, votes) | Key | Note |
+|---|---|---:|---|
+| `adaptation-investigator` | G1 SCI002-03 Structures for Survival (0.851, 5/5) | 12 | ⭐ leak-free; matches ALL grades → task identities |
+| `food-web-builder` | G3 SCI003-01 Food Chains (0.849, 5/5) | 9 | ⭐ leak-free; `isCorrectConnection` already written |
+| `inheritance-lab` | G1 SCI002-06 Parent-Offspring Traits (0.794, 5/5) | 4 | ⭐ leak-free; thinner key |
+| `microscope-viewer` | G1 SCI002-10 (0.752, 5/5 soft) | 11 | ladder classification-from-structure; the scope is the medium |
+| `protein-folder` | G3 SCI002-04 (0.736, 5/5 **soft**) | 8 | ladder the observable, never "protein structure" |
+| `classification-sorter` | G1 SCI002-10 (**0.876** — top score) | 21 | ⛔ **CS-1 leak open — fix first** |
+| `life-cycle-sequencer` | G3 SCI002-01 (0.836, 5/5) | 14 | ⛔ **LCS-1 open** |
+| `dna-explorer` | G3 SCI002-04 (0.724, 4/5 soft) | 16 | ⛔ **DNA-1/DNA-2 open** |
+| `feature-exhibit` | core — ungated by design | 29 | user-ruled 08-21: ladder anyway |
+| `image-panel` | media — ungated by design | 2 | weakest key of the tier |
+
+**⚠️ TIER 2 — pipeline wired, NO correctness key (8).** Same bucket as engineering's "solve surface,
+no challenge structure": a ladder here needs a challenge structure authored WITH it, so scope these
+like the `ramp-lab` conversion, not like `dump-truck-loader`. `energy-cycle-engine` ·
+`evolution-timeline` · `motion-diagram` · `mission-planner` · `moon-phases-lab` ·
+`orbit-mechanics-lab` · `rocket-builder` · `telescope-simulator`.
+
+**⛔ TIER 3 — NOTHING wired; do not ladder, DECLARE (2).** `scale-comparator` (804 lines, zero hook,
+zero submit, zero key) and `comparison-panel` (106 lines, same). **Drop `supportsEvaluation` so the
+manifest stops routing assessment at them.** ⚠️ `scale-comparator` is ALSO reader-fit item 17's #3 —
+both queues now reach the same verdict, so close it once, in whichever lane pulls first.
+
+⭐ **THE CHEAPEST WIN IN THE WHOLE 38 IS NOT IN THIS TRIAGE: `fast-fact`.** It is the one entry that
+is already fully challenge-structured (66 `challenges`/`challengeType` sites, 8-12 challenges over
+2-3 phases) and simply has no `evalModes` — **`EVAL_TRACKER.md` has carried FF-4 for exactly this.**
+It scores itself rather than using `usePrimitiveEvaluation`, so the slice is the ladder plus a hook
+decision, and nothing has to be designed first.
+
+⭐⭐ **THE SHARPEST SUB-FINDING — `/pm` 2026-08-23, probing what Tier 1 actually GRADES: three of
+them already carry a PHASE ENUM that IS an undeclared eval-mode ladder.** The task identities are
+written, graded and shipping; they were simply never exposed as `evalModes`. This is the inverse of
+periodic-table's eval-mode FICTION — there the modes were declared and not real; here they are real
+and not declared. **It makes these a CLUSTER on one template, not three bespoke jobs.**
+
+| Primitive | Phase enum in code | Graded moment |
+|---|---|---|
+| `adaptation-investigator` | `'explore' \| 'practice' \| 'apply'` (:115) | `apply` = What-If scenarios, `answer === adaptationStillUseful` |
+| `feature-exhibit` | explore / practice / synthesis | `exploreCorrectAnswer`, `evidenceClaims[i].correctSectionIndex`, `synthesisCorrectId` — **three separate keys** |
+| `protein-folder` | `'explore' \| 'fold' \| 'mutate'` (:110) | `foldingResults` per-fold `student === correct`, then mutate |
+
+**The slice shape: expose each phase as a task identity, set βs, pin the mode in the generator.** No
+solve surface to build and no content to design — the cheapest rungs in queue A after `fast-fact`.
+
+**The other two leak-free Tier 1 have NO phase machine** and are single-identity, so they are ordinary
+`/add-eval-modes` slices: `food-web-builder` (clean structural grader — `isCorrectConnection` +
+`evaluateWeb().isComplete`) and `inheritance-lab` (Punnett cell-grid, `cellResults[key]`, thinnest).
+
+⚠️ **`microscope-viewer` is NOT a clean handoff despite its 11 key sites.** It grades a FREE-TEXT
+label by exact string equality — `studentLabel.trim().toLowerCase() === structure.name.toLowerCase()`
+(:246). A child who types "membrane" for "cell membrane" is marked wrong, and the reveal prints the
+answer. **Fix or narrow the grading before laddering** — either a closed-set label menu or the judge
+([[feedback_schema-over-regex-and-prompt]]). Filed here rather than as its own row because it is
+discovered-with and fixed-with the ladder.
+
+⚠️ **PARALLEL-HANDOFF COLLISIONS — catalog files are shared.** `fast-fact` (`core.ts:347`) and
+`feature-exhibit` (`core.ts:233`) are in the SAME file; the five biology entries are all in
+`biology.ts:460-530`. **Hand off at most one per catalog file at a time**, or expect the merge.
+
+**➡ PULL ORDER OUT OF THIS TRIAGE:** `fast-fact` → `adaptation-investigator` → `food-web-builder`
+→ `inheritance-lab`. Then the leak four (`/eval-fix` first), then Tier 2 as conversions.
+
 ⚠️ **Six SOFT homes need the ladder written against the observable, not the primitive's
 concept** — `protein-folder`, `dna-explorer`, `microscope-viewer`, `rocket-builder`,
 `propulsion-timeline`, `energy-cycle-engine`. Per-primitive guidance is in the report's

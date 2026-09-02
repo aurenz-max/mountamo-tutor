@@ -29,19 +29,21 @@ here instead of where their reader acts. Decide the home at WRITE time:
 first · PARKED = idle, queue trusted only as of its date · BLOCKED = named dependency.
 Prior snapshots and the reasoning behind past calls: `git log -p WORKSTREAMS.md`.
 
-## Portfolio — as of 2026-08-22
+## Portfolio — as of 2026-08-24
 
 **WIP 2 ACTIVE + 1.** Judged-loop ports are ONE stream (`/add-di-loop`, queue
 `qa/di/BACKLOG.md`); science / math / picture-vocabulary are its items, not rival lanes.
 
 | Lane | State | Pull now | As of |
 |---|---|---|---|
-| 🚀 **PROD / `main`** | ⚠ **UNSHIPPED ×2** | ship `5d5010fe` is **2 ahead of `origin`** (ramp-lab, dump-truck-loader) and **`main` is still `0f2b2ab0`** — not pushed, not fast-forwarded. TREE also holds habitat-diorama DI, sentence-analyzer, coreGenerators, 5 queues, ~20 reports. **`/ship` in slices; shared queue files get their own.** Deploy caveats below stand. | 08-22 |
+| 🚀 **PROD / `main`** | ⚠ **`main` 5 BEHIND** | `ship/…judged-loop` = `d6feaed8`, **in sync with origin — the 08-22 "UNSHIPPED ×2" was wrong**. Owed: ff `main`, then ship the **47-file tree** (history suite, `formula-lab`, `fast-fact` WIP, di-bench, priors). **`/ship` in slices.** | 08-24 |
 | 🔝 **JUDGED-LOOP PORTS** | **ACTIVE** — `qa/di/BACKLOG.md` | `habitat-diorama` SHIPPED 08-21: 5 modes green after 3 live-caught defects (connect had the tutor inverting predation 5/5). Mic **#116**; prior #117 #115 #114. **Next = the B1 chemistry three: `matter-explorer` · `gas-laws-simulator` · `ph-explorer`** — template proven. di item 25. | 08-22 |
 | ↳ **math ports** | same stream, queued | `place-value-chart` shipped 08-18 (port 8, first past the ≤20 bench). **Mic #113 IS the #63 material — one sitting closes both and unblocks >20.** `sorting-station` owes `/reader-fit`. **Next codeable: `3d-shape-explorer`.** item 18. | 08-21 |
-| ↳ **picture-vocabulary** | **ACTIVE — g8 ✅ / g7 ⛔** | Gates RUN 08-21 (never blocked on a stack). g8 PASS both drives. **g7 FAIL — `same-category` 0/8, 7 false affirms**; every other bucket held. **⚠ di item 27 FIRST** — 3 `--di-bench` defects corrupt open-set evidence (I2 overwrites a bench report). Then re-run g7. Mic **#118**. items 27 → 26. | 08-22 |
-| 📊 **Coverage campaign (200)** | **ACTIVE** | ✅ gate CLOSED + `dump-truck-loader` and **sandbox conversion `ramp-lab` SHIPPED 08-21** (3 modes each, live-driven, browser checks #119/#120). ⚠ **5 of 15 queue-A engineering remain pure SANDBOXES** — author a challenge surface with the ladder. Triage + roster in the queue. **➡ `paper-airplane-designer` or `engine-explorer`.** | 08-21 |
-| 🎙️ **Human-check queue** | **86 open** — only the user closes these | Mic **#100**–**#108**, **#110**–**#118**. Non-mic **#109**, **#119** (dump-truck rungs), **#120** (ramp-lab modes). **#63** BLOCKS code; **#90**. Next free ID **#121**. #99 was closed 08-14 but unstruck — struck 08-22. `qa/HUMAN-CHECKS.md`. | 08-22 |
+| ↳ **picture-vocabulary** | **g8 ✅ / g7 ⛔ — ✅ UNBLOCKED** | **di item 27 CLOSED 08-23**: the 3 `--di-bench` defects are fixed + gated, so **the g7 re-run is the pull now**. g7 FAIL = `same-category` 0/8 (accept clause defeats the guard); all other buckets held. item 26. Mic **#118**. | 08-24 |
+| 📊 **Coverage campaign (200)** | **ACTIVE** | `fast-fact` L1 is **in the tree, uncommitted, with a live defect**: `apply` stamps 10/10 but reads as `recall`. **Pull = `/eval-fix fast-fact` per `qa/HANDOFF-…-2026-08-23.md` — do NOT restart it.** Closes FF-4. Then the phase-enum trio. | 08-24 |
+| 🏛️ **History suite (C3)** | **ACTIVE — user-pulled** | `era-explorer` **L4 shaped**: tier changes the PROBLEM (over-generate → measure → select); untiered path byte-identical. Gates green. **Next `/add-sound`, then `/add-di-loop`** (`era_sort` = `closed_set_choice`). Residuals in its 08-24 eval report. **#121**. | 08-24 |
+| 🗣️ **TU-6 — tutor speaks state** | **NEW 08-23, unowned** | **CLASS, not a primitive bug.** `PrimitiveState.attach` (`lumina_tutor.py:310`) prepends a voiceable `[CURRENT STATE]`; the tutor read it aloud 3/3 + 3/3. Prompt-only bans lose; `scripted:true` is not the fix. **Needs a non-voiceable channel.** | 08-24 |
+| 🎙️ **Human-check queue** | **88 open** — only the user closes these | Mic **#100**–**#108**, **#110**–**#118**. Non-mic **#109**, **#119**, **#120**, **#121** (era tiers), **#122** (formula-lab tags). **#63** BLOCKS code; **#90**. Next free **#123**. `qa/HUMAN-CHECKS.md`. | 08-24 |
 | 0. **Science depth** | PARKED (was ACTIVE) | CELL-1 ✅ 08-18. Resume top = **LCS-1**, `/oracle-test` first. DNA-1 ✅ CB-1 ✅; #80 open. `qa/science-depth/`. | 08-18 |
 | 1. **Reader-fit sweep** | PARKED — ✅ **UNBLOCKED 08-22** | Item 17's gate (**#77**) is VOID: the 08-19 DI port made all 5 solar-system modes spoken, so the tap-answer template it protected is gone. **The 08-08 template is superseded — do not copy it.** Executor `/add-eval-modes`, 3 primitives, an eval-hook decision. | 08-22 |
 | **DI closeout (CTX-2)** | Docs + 1 probe | The excavators run carries the post-fix floor-gate numbers; write the report citing it. Unproven: the **`wedged` watchdog** — a wedged-0 run cannot show it fires. item 15. | 08-10 |
