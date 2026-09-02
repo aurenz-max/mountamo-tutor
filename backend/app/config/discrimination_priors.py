@@ -149,6 +149,15 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "missing_factor": PATTERN_CONSTRUCTED_RESPONSE,
         "fluency":        PATTERN_CONSTRUCTED_RESPONSE,
     },
+    # --- History / social studies primitives ---
+    # Every era-explorer mode is a 3-option closed-set choice, so the guessing
+    # floor is 1/3 rather than the 4-option 0.25 baked into PATTERN_MULTIPLE_CHOICE.
+    "era-explorer": {
+        "lens_id":         DiscriminationPrior(a=1.2, c=0.33),
+        "era_sort":        DiscriminationPrior(a=1.4, c=0.33),
+        "era_compare":     DiscriminationPrior(a=1.2, c=0.33),
+        "cause_of_change": DiscriminationPrior(a=1.2, c=0.33),
+    },
     # --- Assessment primitives ---
     "knowledge-check": {
         "recall":   DiscriminationPrior(a=1.6, c=0.25),

@@ -932,6 +932,22 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "order":    PriorConfig(3.5, "Chronological ordering and identify questions"),
         "connect":  PriorConfig(5.5, "Cause-effect matching and date placement"),
     },
+    # -----------------------------------------------------------------
+    # History / social studies primitives (C3 framework)
+    #
+    # One era per session, explored through 3 lenses. The ladder walks the
+    # historian's moves, not a number range: locate the detail in its lens →
+    # place it in time against today → contrast it against the era before →
+    # explain what caused the change. Each rung removes an anchor the rung
+    # below could lean on (the lens card, then lived present-day experience,
+    # then description itself).
+    # -----------------------------------------------------------------
+    "era-explorer": {
+        "lens_id":         PriorConfig(2.0, "Locate: which lens of the era card does this life detail come from"),
+        "era_sort":        PriorConfig(3.5, "Classify: life detail true only in the era, only today, or in both"),
+        "era_compare":     PriorConfig(5.0, "Contrast: life detail belongs to this era, the preceding era, or both"),
+        "cause_of_change": PriorConfig(6.5, "Causation: pick the technological/economic/political cause of a change"),
+    },
     "vocabulary-explorer": {
         "explore":  PriorConfig(1.5, "Guided exploration with term matching"),
         "recall":   PriorConfig(3.5, "Unguided recall with matching and fill-in-blank"),

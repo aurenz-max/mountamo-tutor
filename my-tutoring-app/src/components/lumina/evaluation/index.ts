@@ -212,6 +212,8 @@ export type {
   DiWordReadingMetrics,
   DiMathFactsMetrics,
   DiSentenceReadingMetrics,
+  // History metrics
+  EraExplorerMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

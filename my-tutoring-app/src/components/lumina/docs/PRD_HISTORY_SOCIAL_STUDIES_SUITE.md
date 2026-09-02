@@ -4,7 +4,7 @@
 
 History and social studies occupy ~30-45 minutes/day in K-6 classrooms, yet Lumina has zero dedicated coverage. The only history-adjacent primitive is `timeline-explorer` in the core catalog — a general chronological tool that lacks the disciplinary thinking skills that define social studies education: source analysis, geographic reasoning, perspective-taking, civic understanding, and economic reasoning.
 
-This PRD proposes **20 new primitives** organized across the 4 dimensions of the C3 Framework (College, Career, and Civic Life), the national standard for K-6 social studies. These primitives leverage Lumina's existing multimodal infrastructure — Gemini content generation, AI image generation, drag-and-drop, TTS, and rich evaluation — to deliver interactive history education that goes far beyond "read the chapter and answer questions."
+This PRD proposes **20 new primitives** organized across the 4 dimensions of the C3 Framework (College, Career, and Civic Life), the national standard for K-6 social studies. These primitives leverage Lumina's current multimodal stack — Gemini content generation, AI image generation, drag-and-drop, LuminaReadAloud, the spoken production judge, Gemini Live tutoring personas, and task-identity eval modes with IRT calibration — to deliver interactive history education that goes far beyond "read the chapter and answer questions."
 
 ---
 
@@ -26,7 +26,12 @@ This PRD proposes **20 new primitives** organized across the 4 dimensions of the
 |-----------|---------|----------------------|
 | **AI Image Generation** | Gemini image generation | None for history |
 | **Drag-and-Drop** | React DnD patterns (engineering, word-builder, etc.) | None for history |
-| **Rich Evaluation** | `usePrimitiveEvaluation` + metrics system | None for history |
+| **Rich Evaluation** | Task-identity eval modes + beta priors (IRT) via `/add-eval-modes` | None for history |
+| **Read-Aloud** | `LuminaReadAloud` driven by catalog `aiDirectives` (the one read-aloud surface) | None for history |
+| **Spoken production judge** | `useSpokenWordCapture` (Azure → flash-latest) + `LuminaMicListener` orb | None for history |
+| **Closed-set spoken choice** | `judgeChoiceAudio` / `useVoiceChoice` | None for history |
+| **Live tutoring & personas** | Gemini Live via the L2 tutoring scaffold (`/add-tutoring-scaffold`) | None for history |
+| **DI judged loop** | Tutor-owned runner (stimulus gate, stillness window, reveal hold) via `/add-di-loop` | None for history |
 | **Node-and-Edge Graphs** | Pattern exists in `nested-hierarchy` | Could map cause-effect chains |
 | **Comparison Panels** | `comparison-panel`, side-by-side patterns | Could compare sources/perspectives |
 | **Canvas Physics** | Living simulation pattern (engineering primitives) | Could drive geography/map interactions |
@@ -43,6 +48,20 @@ These existing problem types work for social studies without new code:
 | `scenario-question` | "What would you do?" civic reasoning |
 | `fill-in-blanks` | Key terms, dates, vocabulary |
 | `short-answer` | Historical explanations, source analysis responses |
+
+---
+
+## Modality & Lifecycle Doctrine (2026-08-23)
+
+The primitive specs below were drafted before the current modality stack landed. These rules govern wherever the older prose disagrees:
+
+1. **Spoken-first production.** Every "explain / justify / argue / propose" capstone phase is spoken: the student answers out loud and the spoken judge (`useSpokenWordCapture` → flash-latest, never flash-lite) scores it. Typed entry is the grade-6/accessibility fallback, not the default. Tap remains correct for position/form/build interactions (sorting, dragging, placing, drawing). A menu of propositions is `closed_set_choice`, not buttons.
+2. **Read-aloud = LuminaReadAloud.** Wherever a spec says "TTS," read `LuminaReadAloud` driven by catalog `aiDirectives` — the one read-aloud surface. PRE-band read-aloud triggers must be `silent:true`. No bespoke TTS paths.
+3. **Personas ride the L2 tutoring scaffold.** First-person perspectives and character voices are Gemini Live personas (`/add-tutoring-scaffold`), and scripted persona openers MUST set `owns_opening`. Live API limits to design around: no image channel, no ASR language lock, the transcript is a spectator.
+4. **Judged-loop mechanics are declared, never hand-rolled.** Any primitive adopting the DI judged loop (`/add-di-loop`) declares the stimulus gate, stillness window, and reveal hold — the runner owns them. No advance timers: the tutor's utterance owns the clock.
+5. **Lifecycle: birth L0, ladder up.** Each primitive ships via `/primitive` with ONE core measurable mode. The multi-phase interaction models and "Evaluation metrics" blocks below are ladder raw material, not birth scope: metrics blocks become task-identity eval modes (`/add-eval-modes`), and the grade ladders are structural difficulty tiers (Bloom-shaped, `/add-structural-difficulty`) — difficulty is structural, never a numeric knob.
+6. **Mastery over demo.** A session runs 3-6+ generated instances per mode (N challenges = N distinct problems), not one scenario walked through phases.
+7. **Never print the answer.** Default UI state must not reveal rankings, ratings, or correct classifications (see `citizen-action-sim` action cards).
 
 ---
 
@@ -74,7 +93,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Question classification board (two columns: factual vs compelling). Question quality meter that shows depth/complexity. Question scaffold templates with sentence starters. Topic card with AI-generated historical illustration.
-- **Audio (TTS):** Questions and topic introduction read aloud for accessibility.
+- **Audio:** Questions and topic introduction via `LuminaReadAloud`. The factual-vs-compelling sort can run as closed-set spoken choice (`judgeChoiceAudio`); the student's own compelling question can be dictated and judge-scored.
 - **Interactive:** Drag questions to classify, fill-in-scaffold to build compelling questions, link supporting questions to a central compelling question.
 
 **Learning goals by grade:**
@@ -138,7 +157,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Era card with AI-generated period illustrations for each lens (daily life scene, technology artifacts, cultural elements). Expandable accordion sections. "Before vs During vs After" comparison strips showing change over time.
-- **Audio (TTS):** Era introduction narration. Key figure quotes read aloud in context.
+- **Audio:** Era introduction via `LuminaReadAloud`. Key figure quotes voiced in character by a Gemini Live persona (L2 scaffold).
 - **Interactive:** Expand/collapse lens sections, swipe between "before/during/after" comparisons, answer challenges about era characteristics.
 
 **Learning goals by grade:**
@@ -149,7 +168,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 - Grade 5: Connect changes between eras to specific causes (economic, technological, political). Evaluate significance of changes.
 - Grade 6: Analyze continuity and change — what stayed the same across eras and why? Challenge presentism (judging the past by today's standards).
 
-**Interaction model:** Phase 1 (Explore) — examine at least 3 lenses of the era. Phase 2 (Compare) — identify 2-3 key differences from the preceding era or from today. Phase 3 (Explain) — answer a cause-and-effect challenge about why the era was the way it was.
+**Interaction model:** Phase 1 (Explore) — examine at least 3 lenses of the era. Phase 2 (Compare) — identify 2-3 key differences from the preceding era or from today. Phase 3 (Explain) — explain aloud why the era was the way it was; the spoken judge scores the causal explanation (typed fallback at grade 6).
 
 **Evaluable:** Yes.
 
@@ -170,7 +189,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Node-and-edge canvas with directional arrows. Color-coded nodes by category (political = blue, economic = green, social = orange, technological = purple). Connection labels on arrows. Zoom in/out for complex chains. AI-generated event illustrations on hover.
-- **Audio (TTS):** Event descriptions read aloud on node tap.
+- **Audio (LuminaReadAloud):** Event descriptions read aloud on node tap.
 - **Interactive:** Drag to create nodes, draw arrows between nodes, label connections, rearrange graph layout.
 
 **Learning goals by grade:**
@@ -202,7 +221,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Split-screen or tab view with perspective cards, each with an AI-generated character portrait and first-person narrative. Venn diagram for comparing perspectives. Emphasis/omission highlighter showing what each account includes or leaves out.
-- **Audio (TTS):** Each perspective narrated in first person via TTS. Different voices/tones for different perspectives (where TTS allows).
+- **Audio:** Each perspective is a Gemini Live persona the student can question by voice — an interview, not a narration (per-perspective persona packs on the L2 tutoring scaffold; scripted openers set `owns_opening`). `LuminaReadAloud` covers the narrative text at PRE bands.
 - **Interactive:** Switch between perspectives via tabs, highlight shared vs unique details, drag details to Venn diagram regions, answer comprehension and analysis questions.
 
 **Learning goals by grade:**
@@ -213,7 +232,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 - Grade 5: Identify what each perspective emphasizes and omits. Recognize that omission shapes understanding.
 - Grade 6: Evaluate reliability of accounts given the perspective holder's position. Synthesize multiple perspectives into a more complete picture. Recognize how power and position shape narrative.
 
-**Interaction model:** Phase 1 (Read) — explore at least 2 perspective accounts. Phase 2 (Compare) — identify similarities and differences using the Venn diagram. Phase 3 (Analyze) — explain why the perspectives differ and which details each emphasizes or omits.
+**Interaction model:** Phase 1 (Read) — explore at least 2 perspective accounts. Phase 2 (Compare) — identify similarities and differences using the Venn diagram. Phase 3 (Analyze) — explain aloud why the perspectives differ and which details each emphasizes or omits; judge-scored (typed fallback at grade 6).
 
 **Evaluable:** Yes.
 
@@ -235,7 +254,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Horizontal comparison strip with period cards, each showing an AI-generated illustration of the topic in that era (e.g., communication: messenger on horseback → telegraph → telephone → email → smartphone). Continuity highlights (things that stayed the same across periods are connected with dotted lines).
-- **Audio (TTS):** Period descriptions read aloud.
+- **Audio (LuminaReadAloud):** Period descriptions read aloud.
 - **Interactive:** Swipe/scroll between periods, toggle continuity connections, answer "what changed" and "why" questions, drag forces-of-change labels (technology, economics, politics, culture) onto the relevant transitions.
 
 **Learning goals by grade:**
@@ -333,7 +352,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Canvas-based landscape with animated elements (flowing rivers, growing/shrinking forests, expanding settlements). Resource meters (water, soil fertility, timber, food). Decision consequence animations. Living simulation pattern — the environment responds visually to student choices.
-- **Audio (TTS):** Narrator describes consequences of decisions. Environmental sound effects (water, wind, construction).
+- **Audio (LuminaReadAloud):** Narrator describes consequences of decisions. Environmental sound effects (water, wind, construction).
 - **Interactive:** Place settlements, allocate resources, choose adaptation strategies (irrigation, terrace farming, sea walls), advance time periods, observe consequences.
 
 **Learning goals by grade:**
@@ -368,7 +387,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Scenario cards with AI-generated illustrations showing rule-in-action and rule-absent situations. Rule classification board (safety, fairness, order, rights). Fairness evaluation checklist. Rule-revision workspace.
-- **Audio (TTS):** Scenarios read aloud.
+- **Audio:** Scenarios via `LuminaReadAloud`; the Phase 3 justification is spoken and judge-scored.
 - **Interactive:** Classify rules by purpose, evaluate fairness using checklist, propose rule modifications with justification, vote on proposed changes.
 
 **Learning goals by grade:**
@@ -380,7 +399,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 - Grade 5: Due process — how rules get made, enforced, and changed. Citizen participation in rule-making.
 - Grade 6: Constitutional amendments as a rule-changing process. Landmark cases where rules were challenged. Balancing individual rights vs common good.
 
-**Interaction model:** Phase 1 (Analyze) — read a scenario and identify the rule and its purpose. Phase 2 (Evaluate) — assess the rule against fairness criteria. Phase 3 (Propose) — suggest a modification and justify it.
+**Interaction model:** Phase 1 (Analyze) — read a scenario and identify the rule and its purpose. Phase 2 (Evaluate) — assess the rule against fairness criteria. Phase 3 (Propose) — suggest a modification and justify it aloud; the spoken judge scores the justification.
 
 **Evaluable:** Yes.
 
@@ -402,7 +421,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Interactive organizational chart with expandable branches (legislative, executive, judicial). "How a bill becomes a law" flow diagram. Government level selector (local → state → federal). Role cards with AI-generated portrait illustrations and responsibility lists.
-- **Audio (TTS):** Role descriptions and process explanations read aloud.
+- **Audio (LuminaReadAloud):** Role descriptions and process explanations read aloud.
 - **Interactive:** Expand/collapse org chart branches, trace a bill's path through government, match roles to responsibilities, compare government levels.
 
 **Learning goals by grade:**
@@ -433,8 +452,8 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 **What it does:** A scenario-based simulation where students encounter a community problem (playground needs repair, traffic is dangerous near school, local park is polluted, library hours are being cut) and must decide how to take civic action. Students evaluate multiple action options (write a letter, attend a meeting, start a petition, organize volunteers, contact an elected official, vote), considering effectiveness, audience, and feasibility. They build an action plan and see a simulated outcome based on their choices. Teaches that citizens have both rights AND responsibilities.
 
 **Multimodal features:**
-- **Visual:** Community scenario with AI-generated illustration. Action option cards with effectiveness and effort ratings. Action plan builder (steps in sequence). Simulated outcome panel showing the consequence of their chosen actions. Community impact meter.
-- **Audio (TTS):** Scenario narration. Action descriptions.
+- **Visual:** Community scenario with AI-generated illustration. Action option cards — effectiveness/effort ratings are revealed only AFTER the student ranks, never in the default card state (printing them hands over the ranking answer). Action plan builder (steps in sequence). Simulated outcome panel showing the consequence of their chosen actions. Community impact meter.
+- **Audio (LuminaReadAloud):** Scenario narration. Action descriptions.
 - **Interactive:** Evaluate action options, build multi-step action plan, see simulated outcome, reflect on effectiveness.
 
 **Learning goals by grade:**
@@ -468,7 +487,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Bill of Rights cards with kid-friendly language and AI-generated illustrations. Scenario cards with rights-in-action situations. Rights vs responsibilities T-chart. "Rights in Conflict" balance scale for advanced levels.
-- **Audio (TTS):** Scenarios and rights descriptions read aloud.
+- **Audio (LuminaReadAloud):** Scenarios and rights descriptions read aloud.
 - **Interactive:** Match rights to scenarios, pair rights with responsibilities, evaluate rights-in-conflict scenarios using the balance metaphor.
 
 **Learning goals by grade:**
@@ -501,7 +520,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Trading marketplace with AI-generated merchant characters and goods illustrations. Inventory panel showing student's goods. Trade proposal interface. Supply/demand price indicators for advanced levels. Trade route map for international trade. Animated transactions.
-- **Audio (TTS):** Merchant dialogue. Trade narrator.
+- **Audio (LuminaReadAloud):** Merchant dialogue. Trade narrator.
 - **Interactive:** Propose trades, accept/reject counter-offers, discover the need for currency, set prices based on supply/demand, establish trade routes.
 
 **Learning goals by grade:**
@@ -597,7 +616,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 **Multimodal features:**
 - **Visual:** Source display area (text excerpt, AI-generated historical image/artifact representation, or map). Source analysis framework panel with structured fields. Source context timeline showing when the source was created. Corroboration view showing 2-3 sources on the same topic for comparison.
-- **Audio (TTS):** Source text read aloud. Analysis framework prompts.
+- **Audio (LuminaReadAloud):** Source text read aloud. Analysis framework prompts.
 - **Interactive:** Fill in structured analysis fields, highlight key phrases in text sources, examine details in image sources, compare multiple sources in corroboration mode.
 
 **Learning goals by grade:**
@@ -626,7 +645,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 ### 18. `evidence-weigher` — Evaluate and Use Historical Evidence
 
-**What it does:** Students are given a historical claim (e.g., "The transcontinental railroad helped the economy but hurt Native American communities") and a set of 4-6 evidence cards. They must evaluate each piece of evidence: Does it support the claim, challenge the claim, or is it irrelevant? How strong is the evidence? They then select the best 2-3 pieces of evidence and write a short evidence-based explanation. Builds on `source-detective` by teaching students to USE evidence, not just analyze it.
+**What it does:** Students are given a historical claim (e.g., "The transcontinental railroad helped the economy but hurt Native American communities") and a set of 4-6 evidence cards. They must evaluate each piece of evidence: Does it support the claim, challenge the claim, or is it irrelevant? How strong is the evidence? They then select the best 2-3 pieces of evidence and produce a short evidence-based explanation — spoken and judge-scored at grades 3-5, written at grade 6. Builds on `source-detective` by teaching students to USE evidence, not just analyze it.
 
 **Multimodal features:**
 - **Visual:** Claim card prominently displayed. Evidence cards with source attribution, each categorizable as support/challenge/irrelevant. Evidence strength meter (strong/moderate/weak). Evidence selection area for building an argument. Writing scaffold for evidence-based explanation.
@@ -638,7 +657,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 - Grade 5: Three-way sort: supports, challenges, irrelevant. Explain WHY evidence supports or challenges. Rate evidence strength.
 - Grade 6: Weigh competing evidence. Write an evidence-based paragraph using 2-3 pieces of evidence. Acknowledge counter-evidence.
 
-**Interaction model:** Phase 1 (Sort) — classify each evidence card as supports, challenges, or irrelevant. Phase 2 (Evaluate) — rate the strength of relevant evidence. Phase 3 (Use) — select the best 2-3 pieces and write a short evidence-based explanation.
+**Interaction model:** Phase 1 (Sort) — classify each evidence card as supports, challenges, or irrelevant. Phase 2 (Evaluate) — rate the strength of relevant evidence. Phase 3 (Use) — select the best 2-3 pieces and give a short evidence-based explanation aloud (judge-scored; written at grade 6).
 
 **Evaluable:** Yes.
 
@@ -647,7 +666,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 - `evidenceSortedCorrectly` / `evidenceTotal`
 - `strengthRatingsAccurate` / `ratingsTotal`
 - `bestEvidenceSelected` (boolean — did they pick the strongest pieces)
-- `explanationWritten` (boolean)
+- `explanationProduced` (boolean — spoken at grades 3-5, written at grade 6)
 - `explanationUsesEvidence` (boolean — did they reference specific evidence)
 - `counterEvidenceAcknowledged` (boolean, grade 6+)
 - `attemptsCount`
@@ -658,12 +677,12 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 ### 19. `argument-builder` — Construct Historical Arguments
 
-**What it does:** Students build structured historical arguments using the claim-evidence-reasoning (CER) framework adapted for social studies. Given a historical question, students state a claim, support it with evidence from provided sources, explain their reasoning (how the evidence supports the claim), and acknowledge a counter-argument. The primitive provides structural scaffolding that fades as students advance: full sentence frames at grade 3, partial frames at grade 4, open fields with checklists at grade 5-6.
+**What it does:** Students build structured historical arguments using the claim-evidence-reasoning (CER) framework adapted for social studies. Given a historical question, students state a claim, support it with evidence from provided sources, explain their reasoning (how the evidence supports the claim), and acknowledge a counter-argument. The primitive provides structural scaffolding that fades as students advance: full sentence frames at grade 3, partial frames at grade 4, open fields with checklists at grade 5-6. Claim, reasoning, and rebuttal are produced aloud — the spoken judge scores CER completeness and evidence linkage; typed entry is the grade-6/accessibility path.
 
 **Multimodal features:**
 - **Visual:** CER framework visualization with color-coded sections (claim = blue, evidence = green, reasoning = orange, counter = red). Scaffold that visually fades from heavy (full sentence frames) to light (checklists). Source cards available for evidence selection. Argument strength meter based on completeness and evidence quality.
-- **Audio (TTS):** Read-back of completed argument so students hear the rhetorical flow.
-- **Interactive:** Fill in CER sections with scaffolding support, select evidence from source cards, drag to reorder argument components, hear TTS read-back.
+- **Audio:** Claim/reasoning/counter spoken via `LuminaMicListener` and judge-scored. `LuminaReadAloud` read-back of the completed argument so students hear the rhetorical flow.
+- **Interactive:** Fill in CER sections with scaffolding support, select evidence from source cards, drag to reorder argument components, hear the read-back.
 
 **Learning goals by grade:**
 - Grade 3: Answer a question with "I think ___ because ___" using one piece of evidence.
@@ -690,11 +709,11 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 
 ### 20. `presentation-builder` — Communicate Historical Understanding
 
-**What it does:** Students organize their historical knowledge into a structured presentation format: introduction (hook + thesis), body sections (each with a main idea + supporting details + source citations), and conclusion (summary + significance). The primitive provides structural templates (3-slide, 5-slide, research poster) and teaches presentation organization, not slide design. Each section has guiding prompts and a completeness checklist. Students can hear their full presentation read back via TTS to evaluate flow and persuasiveness.
+**What it does:** Students organize their historical knowledge into a structured presentation format: introduction (hook + thesis), body sections (each with a main idea + supporting details + source citations), and conclusion (summary + significance). The primitive provides structural templates (3-slide, 5-slide, research poster) and teaches presentation organization, not slide design. Each section has guiding prompts and a completeness checklist. Students can hear their full presentation read back via `LuminaReadAloud` to evaluate flow and persuasiveness.
 
 **Multimodal features:**
 - **Visual:** Presentation outline builder with expandable sections. Section cards with guiding prompts and checklists. Flow diagram showing presentation structure. AI-generated topic illustration for the title/introduction. Progress tracker showing completeness.
-- **Audio (TTS):** Full presentation read-back. Section-by-section read-back for revision.
+- **Audio (LuminaReadAloud):** Full presentation read-back. Section-by-section read-back for revision.
 - **Interactive:** Add/remove/reorder sections, fill in content with scaffolded prompts, check off completeness criteria, hear read-back, revise.
 
 **Learning goals by grade:**
@@ -704,7 +723,7 @@ The C3 Framework organizes K-6 social studies into 4 dimensions:
 - Grade 5: Research poster format: question, sources used, findings, conclusion, significance. Proper citation.
 - Grade 6: Full structured presentation: hook, thesis, 3+ body sections with evidence and source attribution, counter-perspective, conclusion with significance and connection to today.
 
-**Interaction model:** Phase 1 (Outline) — select a template and fill in section topics. Phase 2 (Develop) — add content to each section using guiding prompts. Phase 3 (Review) — hear TTS read-back and revise for clarity and flow.
+**Interaction model:** Phase 1 (Outline) — select a template and fill in section topics. Phase 2 (Develop) — add content to each section using guiding prompts. Phase 3 (Review) — hear the read-back and revise for clarity and flow.
 
 **Evaluable:** Yes (structural completeness and organization, not content quality).
 
@@ -752,7 +771,10 @@ New directory: `service/history/` with individual generator files. New `historyG
 
 | Modality | Primitives Using It | Infrastructure |
 |---|---|---|
-| **TTS Read-Aloud** | `inquiry-builder`, `era-explorer`, `perspective-lens`, `source-detective`, `evidence-weigher`, `argument-builder`, `presentation-builder`, `rules-and-laws-lab`, `government-explorer`, `citizen-action-sim`, `rights-and-responsibilities`, `trade-and-exchange`, `budget-challenge`, `economic-system-explorer` | Gemini TTS -> base64 PCM -> Web Audio API (exists) |
+| **Read-Aloud** | `inquiry-builder`, `era-explorer`, `perspective-lens`, `source-detective`, `evidence-weigher`, `argument-builder`, `presentation-builder`, `rules-and-laws-lab`, `government-explorer`, `citizen-action-sim`, `rights-and-responsibilities`, `trade-and-exchange`, `budget-challenge`, `economic-system-explorer` | `LuminaReadAloud` via catalog `aiDirectives` (exists) — PRE triggers `silent:true` |
+| **Spoken production (judge-scored)** | `argument-builder`, `evidence-weigher`, `perspective-lens`, `era-explorer`, `rules-and-laws-lab`, `inquiry-builder` | `useSpokenWordCapture` (Azure → flash-latest) + `LuminaMicListener` (exists) |
+| **Closed-set spoken choice** | `inquiry-builder`, `government-explorer`, `rights-and-responsibilities` | `judgeChoiceAudio` / `useVoiceChoice` (exists) |
+| **Live persona interview** | `perspective-lens`, `era-explorer` | Gemini Live via the L2 tutoring scaffold (exists) |
 | **AI Image Generation** | `era-explorer`, `perspective-lens`, `change-over-time`, `map-lab`, `human-environment-sim`, `citizen-action-sim`, `trade-and-exchange`, `source-detective`, `presentation-builder` | Gemini image generation (exists) |
 | **Drag-and-Drop** | `cause-effect-chain`, `evidence-weigher`, `argument-builder`, `inquiry-builder`, `investigation-planner`, `budget-challenge`, `region-builder` | React DnD patterns (exists) |
 | **Node-and-Edge Graph** | `cause-effect-chain` | Pattern exists in `nested-hierarchy` |
@@ -769,7 +791,8 @@ New directory: `service/history/` with individual generator files. New `historyG
 | **Drawable overlay** | `region-builder` | Medium — freeform or lasso drawing on map canvas for region boundaries. |
 | **Living sim: environment** | `human-environment-sim` | Medium — extends living simulation pattern with resource meters and consequence animations. |
 | **Trade simulation engine** | `trade-and-exchange` | Medium — AI "villager" trading partners with inventory and preference logic. |
-| **AI scenario evaluation** | `citizen-action-sim`, `budget-challenge` | Low-Medium — Gemini evaluates student decisions against rubric for consequence generation. |
+
+The judge, mic, read-aloud, and live-tutor infrastructure this suite needs already exists — **the map canvas family is the only genuinely new infrastructure in this PRD.** Scenario evaluation (`citizen-action-sim`, `budget-challenge`) uses the existing judge pattern (flash-latest, never flash-lite), not new infrastructure.
 
 ---
 
@@ -929,13 +952,13 @@ map-lab -> region-builder -> human-environment-sim
 
 1. **Map canvas technology** — `map-lab`, `region-builder`, and `human-environment-sim` all need a map canvas. Options: (a) SVG-based custom maps generated by Gemini, (b) Leaflet.js or similar mapping library with custom tiles, (c) simple image-based maps with interactive overlay zones. SVG gives most control; Leaflet gives real geographic accuracy; image-based is simplest. Needs spike.
 
-2. **Historical accuracy in AI generation** — Gemini generates the content for these primitives. History content requires factual accuracy more than creative domains. Should we add a historical accuracy validation layer? Or trust Gemini with careful prompt engineering and source attribution in generators?
+2. **Historical accuracy in AI generation** — Gemini generates the content for these primitives. History content requires factual accuracy more than creative domains. Should we add a historical accuracy validation layer? Or trust Gemini with careful prompt engineering and source attribution in generators? **ANSWERED (2026-08-23):** gate factual claims with `/oracle-test` content contracts — code-judged, CI-able. Prompt engineering covers prose; oracles cover facts.
 
 3. **Sensitive topics** — History includes slavery, genocide, colonialism, and other sensitive topics. How should the generators handle age-appropriate presentation? Should there be topic-level content filters? The C3 Framework says students should engage with difficult history, but the presentation must be grade-appropriate.
 
 4. **State-specific content** — Social studies standards vary significantly by state (e.g., Texas vs California vs New York). The C3 Framework provides a national foundation, but many states have specific content requirements (state history in grade 4, US history in grade 5, world history in grade 6). Should primitives be content-agnostic (just the thinking skills) or include state-specific content packs?
 
-5. **Assessment integration** — Many of these primitives teach process skills (source analysis, argument construction) that are harder to auto-evaluate than factual recall. How much should we rely on Gemini for evaluating argument quality vs sticking to structural metrics (completeness, evidence count, etc.)?
+5. **Assessment integration** — Many of these primitives teach process skills (source analysis, argument construction) that are harder to auto-evaluate than factual recall. How much should we rely on Gemini for evaluating argument quality vs sticking to structural metrics (completeness, evidence count, etc.)? **ANSWERED (2026-08-23):** the spoken judge evaluates production quality, and its semantics are machine-testable (di-bench-style scoring against hand-authored keys). Structural metrics remain for tap phases.
 
 6. **Simulation complexity** — `human-environment-sim` and `trade-and-exchange` are the most simulation-heavy primitives. How complex should the simulation model be? Simple (3-4 variables, clear cause-effect) vs rich (8+ variables, emergent behavior)? K-6 students need clarity, not complexity.
 

@@ -165,6 +165,8 @@ import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWave
 import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena';
 import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
 import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
+// History Primitives
+import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
 // Literacy Primitives (Wave 1 - K-6 ELA)
 import ParagraphArchitect from '../primitives/visual-primitives/literacy/ParagraphArchitect';
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
@@ -1811,6 +1813,17 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'gravity-drop-tower': {
     component: GravityDropTower,
     sectionTitle: 'Gravity Drop Tower',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // History Primitives
+  'era-explorer': {
+    component: EraExplorer,
+    sectionTitle: 'Era Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -15,6 +15,7 @@
  * - foundationGenerators.ts (1 primitive)
  * - biologyGenerators.ts (1 primitive)
  * - astronomyGenerators.ts (1 primitive)
+ * - historyGenerators.ts (1 primitive)
  *
  * Total: 63 registered generators
  */
@@ -32,6 +33,7 @@ import './physicsGenerators';
 import './literacyGenerators';
 import './calendarGenerators';
 import './diGenerators';
+import './historyGenerators';
 
 // Re-export registry functions for convenience
 export {

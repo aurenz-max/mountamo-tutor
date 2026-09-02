@@ -1543,6 +1543,9 @@ export type ComponentId =
   | 'push-pull-arena'     // Interactive push and pull force exploration for physics concepts
   | 'race-track-lab'      // Interactive race track laboratory for physics experiments
 
+  // History Primitives
+  | 'era-explorer'        // Interactive historical era exploration
+
 /**
  * Tutoring scaffold metadata for AI-assisted learning.
  * Embedded in the catalog so scaffolding instructions live alongside
@@ -2110,3 +2113,6 @@ export type { WordSorterData } from './primitives/visual-primitives/literacy/Wor
 
 // Core
 export type { DigitalSkillsSimData } from './primitives/visual-primitives/core/DigitalSkillsSim';
+
+// History
+export type { EraExplorerData } from './primitives/visual-primitives/history/EraExplorer';

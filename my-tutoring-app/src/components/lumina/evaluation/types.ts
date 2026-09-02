@@ -3498,6 +3498,26 @@ export interface DiSpokenPracticeMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+// -----------------------------------------------------------------------------
+// History Primitives
+// -----------------------------------------------------------------------------
+
+export interface EraExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'era-explorer';
+  /**
+   * Session task identity. 'mixed' when one session spans several rungs of the
+   * ladder — per-challenge breakdown rides `phaseResults`, not this field.
+   */
+  challengeType: 'lens_id' | 'era_sort' | 'era_compare' | 'cause_of_change' | 'mixed';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total tries across all challenges
+  firstTryCount: number;          // challenges scoring 100 (first-try correct)
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -3704,7 +3724,9 @@ export type PrimitiveMetrics =
   | DiMathFactsMetrics
   | DiShapesMetrics
   | DiSentenceReadingMetrics
-  | DiSpokenPracticeMetrics;
+  | DiSpokenPracticeMetrics
+  // History
+  | EraExplorerMetrics;
 
 // =============================================================================
 // Session & Summary Types
