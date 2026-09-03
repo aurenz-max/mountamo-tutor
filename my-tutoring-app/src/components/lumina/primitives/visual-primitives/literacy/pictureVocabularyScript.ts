@@ -575,8 +575,20 @@ const acceptClauseFor = (item: PictureVocabItem): string => {
     case 'association':
       return (
         `The learner has to name a REAL, everyday thing that plainly goes with ${item.baseWord} — `
-        + `something you would find with it, use with it, or keep with it in ordinary life. `
+        // ⭐ NARROWED 2026-09-02 (item 26, lever 2). This read "find with it,
+        // use with it, or KEEP WITH IT in ordinary life", and "keep with it"
+        // licensed co-membership almost definitionally: things of the same kind
+        // are exactly the things most reliably stored together (socks with
+        // shirts, mugs with cups, chairs with tables). The bench affirmed 7
+        // same-category swaps against a guard that was true but abstract. What
+        // is kept now names a PLACE, not a neighbouring THING — which still
+        // admits every unlisted partner the 2026-08-21 run got right (`drawer`
+        // is a place; `foot`, `shoe`, `saucer`, `tea`, `collar`, `blanket`,
+        // `sheet` are all put-on/put-in or used-with).
+        + `something you would use with it, put on it or in it, or the place you keep it. `
         + `Things that go together go together BOTH WAYS, so it does not matter which one names the other. `
+        + `A DIFFERENT THING that merely shares a place with ${item.baseWord} — the same shelf, the same basket, `
+        + `the same group name — is NOT a thing that goes with it. The place itself still counts; another thing standing in it does not. `
         + `Any such thing is correct, INCLUDING ONE YOU DID NOT THINK OF YOURSELF: ${item.baseWord} honestly goes with `
         + `several things, and the first one that came to your mind is not the only right answer. `
         + `Judge the thing you heard, and a small mispronunciation from a five-year-old's mouth still counts. `
@@ -604,6 +616,16 @@ const acceptClauseFor = (item: PictureVocabItem): string => {
  * these are refused and the bench is that claim made testable. Change one,
  * change both.
  *
+ * ⭐ SIX GUARDS AND ONE PRECEDENCE LINE, and the precedence line is not a
+ * seventh guard — it is the tie-break the 2026-08-21 bench proved was missing
+ * (`qa/di-bench/run-2026-08-21-picture-vocabulary-association.md`). Six guards
+ * scored 39/48 with `same-category` at 0/8, and the mechanism was not a judge
+ * that rationalised: accept and refuse were BOTH true of `shirt` for `sock`
+ * and no clause said which won. Carry all three fixes to the remaining
+ * `open_set_word` packs BEFORE they are written — a worked counterexample on
+ * every guard, no accept phrase that licenses mere co-location, and an
+ * explicit refusal-wins line.
+ *
  * ⚠️ THERE IS NO NAME CLAUSE HERE, and its absence is deliberate. Rhyme's
  * nonword guard carries one ("Bill" rhymes with "hill") because a name really
  * can be a correct rhyme. A name is not a correct answer to "what goes with
@@ -629,11 +651,56 @@ const wrongClauseFor = (item: PictureVocabItem): string => {
         + `The name of the GROUP that ${item.baseWord} belongs to is not the answer either — that names the set ${item.baseWord} is IN, `
         + `and the question asks for one thing that goes WITH it. `
         // SAME-CATEGORY SWAP — same kind of thing is not the same as together.
+        //
+        // ⭐ THE GUARD THAT LOST 0/8 ON 2026-08-21, AND WHY IT LOST: it was one
+        // abstract sentence where the guard that HELD (rationalised-chain,
+        // 7/8) ships a worked counterexample. In an open-set contract an
+        // abstraction loses to a concrete accept clause — the judge did not
+        // rationalise, it applied two simultaneously-true clauses with no
+        // precedence between them. So this one now ships its own worked pair,
+        // and the pair is deliberately NOT in `associationBench.ts` (apple /
+        // banana, couch / sofa): a guard keyed to its own fixture would score
+        // the bench rather than the rule.
         + `Another member of that same group is not the answer either: being the same KIND of thing is not the same as going together. `
+        + `⭐ An apple is not the answer for a banana. Both are fruit, both sit in the same basket, both travel in the same bag — `
+        + `and they still do not go together, because neither is used with, put on, or put in the other. `
+        // ⭐ THE HYPONYM CLAUSE, and it is separate from the synonym one because
+        // the 2026-09-02 bench showed the synonym sentence alone does not reach
+        // it. `sock`, `dog` and `bed` all scored same-category 2/2 with only
+        // "a couch is not the answer for a sofa" — and `cup` still affirmed
+        // `mug` 1/1, the fixture's own "purest same-category failure". A mug is
+        // not a SECOND NAME for a cup, it is a KIND of cup, and nothing in the
+        // contract had named that relation. Both halves ship because the two
+        // buckets came apart in measurement, not by symmetry.
+        + `The same thing under a second name is not the answer either: a couch is not the answer for a sofa. `
+        + `⭐ Nor is a KIND of ${item.baseWord}, or the thing ${item.baseWord} is a kind of. `
+        + `If you could point at what the learner named and truthfully call it "a ${item.baseWord}", they have named ${item.baseWord} a second time and it is WRONG — `
+        + `two of the same thing are not two things that go together. `
         // NONWORD — the failure a closed card set made structurally impossible.
         + `A made-up word is NOT the answer. If what you heard is not a real thing you know, it is wrong. `
         // OFF-TASK — without this the judge has no scripted branch and invents one.
         + `If you did not hear a thing at all, or the learner says they do not know, that is not an answer — treat it as wrong and run the correction. `
+        // ⭐ PRECEDENCE — THE CLAUSE THE 2026-08-21 BENCH PROVED WAS MISSING, IN
+        // ITS SECOND SHAPE. The first shape was a blunt tie-break ("when two of
+        // these rules are both true, THE REFUSAL WINS") and the 2026-09-02 run
+        // showed within five probes why that cannot stand: the generated
+        // PARTNER was refused. `sock`/`shoe` is simultaneously the curated
+        // right answer AND a same-category pair (both footwear), so a rule that
+        // makes same-kind decisive at all destroys the answer the mode teaches.
+        //
+        // The category is not the question and never was. What separates
+        // `shoe` from `shirt` is not whether they share a kind with the
+        // stimulus — both do — but whether the two things are actually USED
+        // together. So precedence is stated as a DISCRIMINATION PAIR: one
+        // same-kind pair that is right, one that is wrong, differing only in
+        // that. Both examples sit outside `associationBench.ts` for the reason
+        // the 2026-09-02 `drawer` false refusal made expensive.
+        + `Being the same KIND of thing does not by itself make an answer right, and it does not by itself make one wrong. `
+        + `Ask only this: are the two actually used, worn, or put together in ordinary life? `
+        + `⭐ A glove goes with a hand — you put one on the other, so it is RIGHT, even though dressing covers them both. `
+        + `A glove does NOT go with a scarf — both are clothes and both live in the same box, but neither is ever used on or with the other, so it is WRONG. `
+        + `When the only link you can find between what you heard and ${item.baseWord} is that they are the same kind of thing, `
+        + `or that they sit in the same place, the answer is WRONG. `
       );
     case 'naming':
       return `A category word like animal or food, a word that would be true of almost anything like "a thing" or "stuff", or the name of something else, is NOT the answer — the one word that names THIS picture is. `;

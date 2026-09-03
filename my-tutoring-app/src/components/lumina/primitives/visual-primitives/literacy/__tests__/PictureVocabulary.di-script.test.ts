@@ -20,6 +20,7 @@
  *     with a verdict sentinel.
  */
 import { describe, it, expect } from 'vitest';
+import { ASSOCIATION_BENCH_STIMULI } from '@/components/lumina/service/qa/di/associationBench';
 import {
   answerKindFor,
   completeCue,
@@ -357,6 +358,85 @@ describe('picture-vocabulary pack · tap items', () => {
     expect(cue).toContain('they do not know');                      // off-task
     // The symmetry ruling (§2.3.1) is STATED, not left to inference.
     expect(cue).toContain('BOTH WAYS');
+  });
+
+  it('gives the same-category guard a worked counterexample, and states precedence', () => {
+    /**
+     * ⭐ THE 2026-08-21 BENCH FAILURE, MADE UN-REGRESSABLE. `same-category`
+     * scored 0/8 while `rationalised-chain` — the bucket the fixture was
+     * weighted toward — held 7/8, and the only structural difference between
+     * them was that the guard which held ships a worked counterexample and the
+     * guard which lost shipped one abstract sentence. Three levers, all three
+     * asserted here so none can be quietly dropped by a later edit.
+     */
+    const cue = itemCue(ASSOCIATION, {}, pairs);
+
+    // 1. A WORKED COUNTEREXAMPLE, from OUTSIDE the fixture. A guard keyed to
+    //    its own bench probes would score the bench rather than the rule, so
+    //    none of associationBench.ts's same-category words may appear here.
+    expect(cue).toContain('An apple is not the answer for a banana');
+    expect(cue).toContain('a couch is not the answer for a sofa');
+    // The HYPONYM half is separately pinned: `sock`, `dog` and `bed` all held
+    // same-category 2/2 on the synonym sentence alone while `cup` still
+    // affirmed `mug`. A mug is a KIND of cup, not a second name for one.
+    expect(cue).toContain('Nor is a KIND of sock');
+    expect(cue).toContain('a second time and it is WRONG');
+    // Whole words — 'hat' is a substring of 'that', which the cue is full of.
+    for (const probe of ['shirt', 'hat', 'chair', 'table', 'mug', 'bowl', 'bird']) {
+      expect(cue).not.toMatch(new RegExp(`\b${probe}\b`));
+    }
+  });
+
+  it('never names a bench probe word in the contract — a guard keyed to its own fixture scores the bench, not the rule', () => {
+    /**
+     * ⚠️ THE DEFECT THIS PINS, AND IT COST A 48-PROBE RUN. The first draft of
+     * the narrowed accept clause excluded things "kept in the same DRAWER" —
+     * and `drawer` is an AFFIRM probe (where socks are kept). The 2026-09-02
+     * bench refused it on probe 3: a false refusal manufactured entirely by
+     * the contract contradicting itself, indistinguishable in the matrix from
+     * a judge that had re-closed the set.
+     *
+     * The general rule is the one associationBench.ts already states about
+     * PROBES and this states about the CONTRACT: fixture words and contract
+     * words must not overlap, or the bench is scoring its own crib sheet.
+     *
+     * TWO SANCTIONED EXCEPTIONS, both load-bearing:
+     *  - the stimulus itself, which the cue must name to ask the question;
+     *  - `cat`/`sock`, the rationalised-chain guard's worked counterexample.
+     *    It predates this rule, it is the guard that HELD 7/8 on 2026-08-21,
+     *    and it is a real tension — recorded here rather than resolved by
+     *    quietly deleting either the probe or the example.
+     */
+    const cue = itemCue(ASSOCIATION, {}, pairs);
+    const sanctioned = new Set(['sock', 'cat']);
+    const named = ASSOCIATION_BENCH_STIMULI
+      .flatMap((s) => s.probes.map((probe) => probe.text.toLowerCase()))
+      .filter((word) => /^[a-z]+$/.test(word) && !sanctioned.has(word))
+      .filter((word) => new RegExp(`\b${word}\b`).test(cue));
+    expect(named).toEqual([]);
+
+    // 2. THE ACCEPT CLAUSE NO LONGER LICENSES CO-LOCATION. "keep with it" was
+    //    the exact phrase the judge applied to affirm shirt/sock: what is kept
+    //    is now a PLACE, never a neighbouring thing.
+    expect(cue).not.toContain('keep with it');
+    expect(cue).toContain('the place you keep it');
+    expect(cue).toContain('merely shares a place with');
+    // … and the exclusion must not swallow the PLACE, which is a valid answer.
+    expect(cue).toContain('The place itself still counts');
+
+    // 3. PRECEDENCE, AS A DISCRIMINATION PAIR — never as a blunt tie-break.
+    //    A rule that makes same-kind decisive refuses `shoe` for `sock`, which
+    //    is BOTH the curated partner AND same-category footwear; the
+    //    2026-09-02 run proved that within five probes. The pair must carry
+    //    one same-kind case that is RIGHT and one that is WRONG, so the
+    //    judge reads "used together" as the question rather than "same kind".
+    expect(cue).toContain('A glove goes with a hand');
+    expect(cue).toContain('A glove does NOT go with a scarf');
+    expect(cue).toContain('does not by itself make an answer right');
+    expect(cue).not.toContain('THE REFUSAL WINS');
+    //    It must come AFTER the accept clause it qualifies.
+    expect(cue.indexOf('A glove goes with a hand'))
+      .toBeGreaterThan(cue.indexOf('INCLUDING ONE YOU DID NOT THINK OF YOURSELF'));
   });
 
   it('gives the echo and the group word their OWN branches, ahead of the catch-all', () => {
