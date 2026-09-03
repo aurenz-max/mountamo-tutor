@@ -1,0 +1,57 @@
+[1/4] Firebase sign-in…
+[2/4] Generating real content + fetching tutoring block (probe&live)…
+      tier-1 status: warn; scaffold keys: ['taskDescription', 'contextKeys', 'scaffoldingLevels', 'commonStruggles', 'aiDirectives']
+      BENCH: 1 stimulus/stimuli, 12 scored probes
+[3/4] Run 1/1: connecting ws://localhost:8000/api/lumina-tutor, driving 20 beats…
+  [ask:bench-assoc-cup     ] spoke (184964 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:partner:plate] spoke (202884 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [reanchor:bench-assoc-cup:0] spoke (173444 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:partner-unlisted:saucer] spoke (195844 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [reanchor:bench-assoc-cup:1] spoke (177284 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:partner-unlisted:tea] spoke (202280 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [reanchor:bench-assoc-cup:2] spoke (177924 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:echo:cup] spoke (497924 b64 audio bytes) My turn: cup cannot go with itself. A hammer goes with a nail. Your turn. Tell me somethin…
+  [probe:bench-assoc-cup:rationalised-chain:shoe] spoke (384644 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [reanchor:bench-assoc-cup:4] spoke (175364 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:rationalised-chain:cloud] spoke (384644 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:same-category:mug] spoke (384644 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [reanchor:bench-assoc-cup:6] spoke (183044 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:same-category:bowl] spoke (186280 b64 audio bytes) Yes, that goes with cup — they belong together.
+  [probe:bench-assoc-cup:category-word:dishes] spoke (475524 b64 audio bytes) My turn: that names a whole group. I want one thing. A hammer goes with a nail. Your turn.…
+  [reanchor:bench-assoc-cup:8] spoke (193284 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:nonword:plound] spoke (380804 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:off-task:I don't know] spoke (379524 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+  [reanchor:bench-assoc-cup:10] spoke (195844 b64 audio bytes) Cup. Your turn. What goes with cup?
+  [probe:bench-assoc-cup:off-task:um] spoke (423044 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with cup?
+
+==============================================================================
+BENCH: open_set_word via picture-vocabulary - verdicts vs the hand-authored key
+==============================================================================
+  category-word       1/1  agreed
+  echo                1/1  agreed
+  nonword             1/1  agreed
+  off-task            2/2  agreed
+  partner             1/1  agreed
+  partner-unlisted    2/2  agreed
+  rationalised-chain  2/2  agreed
+  same-category       1/2  agreed
+------------------------------------------------------------------------------
+
+  OK - ZERO false affirmations in the hard REFUSE buckets.
+
+  . 1 SOFT disagreement(s) in same-category - recorded, does NOT block:
+      bench-assoc-cup/same-category: "bowl" -> AFFIRM
+
+  VERDICT: PASS - zero false affirmations. `open_set_word` holds through picture-vocabulary on this evidence.
+==============================================================================
+
+  · overwriting an earlier picture-vocabulary-live-di-bench-bench-assoc-cup-2026-09-02.md from today (same run shape — re-drive)
+[4/4] Report: C:\Users\xbox3\claude web tutor\my-tutoring-app\qa\tutor-reports\picture-vocabulary-live-di-bench-bench-assoc-cup-2026-09-02.md
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:rationalised-chain:cloud — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:same-category:mug — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:nonword:plound — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-cup:off-task:um — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  PLUMBING OK: output transcription is flowing (tutor voice observable as text).
+
+[exited with code 0]

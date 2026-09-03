@@ -1,0 +1,57 @@
+[1/4] Firebase sign-in…
+[2/4] Generating real content + fetching tutoring block (probe&live)…
+      tier-1 status: warn; scaffold keys: ['taskDescription', 'contextKeys', 'scaffoldingLevels', 'commonStruggles', 'aiDirectives']
+      BENCH: 1 stimulus/stimuli, 12 scored probes
+[3/4] Run 1/1: connecting ws://localhost:8000/api/lumina-tutor, driving 20 beats…
+  [ask:bench-assoc-dog     ] spoke (225284 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:partner:bone] spoke (218244 b64 audio bytes) Yes, that goes with dog — they belong together.
+  [reanchor:bench-assoc-dog:0] spoke (231684 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:partner-unlisted:leash] spoke (211204 b64 audio bytes) Yes, that goes with dog — they belong together.
+  [reanchor:bench-assoc-dog:1] spoke (227844 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:partner-unlisted:collar] spoke (200964 b64 audio bytes) Yes, that goes with dog — they belong together.
+  [reanchor:bench-assoc-dog:2] spoke (245764 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:echo:dog] spoke (520964 b64 audio bytes) My turn: dog cannot go with itself. A hammer goes with a nail. Your turn. Tell me somethin…
+  [probe:bench-assoc-dog:rationalised-chain:moon] spoke (433284 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with dog?
+  [reanchor:bench-assoc-dog:4] spoke (249604 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:rationalised-chain:mailman] spoke (209284 b64 audio bytes) Yes, that goes with dog — they belong together.
+  [probe:bench-assoc-dog:same-category:cat] spoke (458884 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with dog?
+  [reanchor:bench-assoc-dog:6] spoke (251524 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:same-category:bird] spoke (466564 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:category-word:animals] spoke (551684 b64 audio bytes) My turn: that names a whole group. I want one thing. A hammer goes with a nail. Your turn.…
+  [reanchor:bench-assoc-dog:8] spoke (252804 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:nonword:frell] spoke (443524 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:off-task:I don't know] spoke (457604 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with dog?
+  [reanchor:bench-assoc-dog:10] spoke (244484 b64 audio bytes) Dog. Your turn. What goes with dog?
+  [probe:bench-assoc-dog:off-task:um] spoke (451204 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with dog?
+
+==============================================================================
+BENCH: open_set_word via picture-vocabulary - verdicts vs the hand-authored key
+==============================================================================
+  category-word       1/1  agreed
+  echo                1/1  agreed
+  nonword             1/1  agreed
+  off-task            2/2  agreed
+  partner             1/1  agreed
+  partner-unlisted    2/2  agreed
+  rationalised-chain  1/2  agreed
+  same-category       2/2  agreed
+------------------------------------------------------------------------------
+
+  OK - ZERO false affirmations in the hard REFUSE buckets.
+
+  . 1 SOFT disagreement(s) in rationalised-chain - recorded, does NOT block:
+      bench-assoc-dog/rationalised-chain: "mailman" -> AFFIRM
+
+  VERDICT: PASS - zero false affirmations. `open_set_word` holds through picture-vocabulary on this evidence.
+==============================================================================
+
+  · overwriting an earlier picture-vocabulary-live-di-bench-bench-assoc-dog-2026-09-02.md from today (same run shape — re-drive)
+[4/4] Report: C:\Users\xbox3\claude web tutor\my-tutoring-app\qa\tutor-reports\picture-vocabulary-live-di-bench-bench-assoc-dog-2026-09-02.md
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-dog:same-category:cat — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-dog:same-category:bird — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-dog:nonword:frell — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-dog:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-dog:off-task:um — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  PLUMBING OK: output transcription is flowing (tutor voice observable as text).
+
+[exited with code 0]

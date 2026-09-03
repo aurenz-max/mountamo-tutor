@@ -1,0 +1,55 @@
+[1/4] Firebase sign-in…
+[2/4] Generating real content + fetching tutoring block (probe&live)…
+      tier-1 status: warn; scaffold keys: ['taskDescription', 'contextKeys', 'scaffoldingLevels', 'commonStruggles', 'aiDirectives']
+      BENCH: 1 stimulus/stimuli, 12 scored probes
+[3/4] Run 1/1: connecting ws://localhost:8000/api/lumina-tutor, driving 20 beats…
+  [ask:bench-assoc-bed     ] spoke (211240 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:partner:pillow] spoke (204804 b64 audio bytes) Yes, that goes with bed — they belong together.
+  [reanchor:bench-assoc-bed:0] spoke (194564 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:partner-unlisted:blanket] spoke (187560 b64 audio bytes) Yes, that goes with bed — they belong together.
+  [reanchor:bench-assoc-bed:1] spoke (192004 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:partner-unlisted:sheet] spoke (182440 b64 audio bytes) Yes, that goes with bed — they belong together.
+  [reanchor:bench-assoc-bed:2] spoke (193924 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:echo:bed] spoke (482564 b64 audio bytes) My turn: bed cannot go with itself. A hammer goes with a nail. Your turn. Tell me somethin…
+  [probe:bench-assoc-bed:rationalised-chain:boat] spoke (365444 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [reanchor:bench-assoc-bed:4] spoke (189444 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:rationalised-chain:tree] spoke (381444 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:same-category:chair] spoke (393604 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [reanchor:bench-assoc-bed:6] spoke (193924 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:same-category:table] spoke (380804 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:category-word:furniture] spoke (472324 b64 audio bytes) My turn: that names a whole group. I want one thing. A hammer goes with a nail. Your turn.…
+  [reanchor:bench-assoc-bed:8] spoke (193924 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:nonword:drant] spoke (384644 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:off-task:I don't know] spoke (382724 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+  [reanchor:bench-assoc-bed:10] spoke (195844 b64 audio bytes) Bed. Your turn. What goes with bed?
+  [probe:bench-assoc-bed:off-task:um] spoke (381444 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with bed?
+
+==============================================================================
+BENCH: open_set_word via picture-vocabulary - verdicts vs the hand-authored key
+==============================================================================
+  category-word       1/1  agreed
+  echo                1/1  agreed
+  nonword             1/1  agreed
+  off-task            2/2  agreed
+  partner             1/1  agreed
+  partner-unlisted    2/2  agreed
+  rationalised-chain  2/2  agreed
+  same-category       2/2  agreed
+------------------------------------------------------------------------------
+
+  OK - ZERO false affirmations in the hard REFUSE buckets.
+
+  VERDICT: PASS - zero false affirmations. `open_set_word` holds through picture-vocabulary on this evidence.
+==============================================================================
+
+  · overwriting an earlier picture-vocabulary-live-di-bench-bench-assoc-bed-2026-09-02.md from today (same run shape — re-drive)
+[4/4] Report: C:\Users\xbox3\claude web tutor\my-tutoring-app\qa\tutor-reports\picture-vocabulary-live-di-bench-bench-assoc-bed-2026-09-02.md
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:rationalised-chain:tree — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:same-category:chair — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:same-category:table — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:nonword:drant — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-bed:off-task:um — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  PLUMBING OK: output transcription is flowing (tutor voice observable as text).
+
+[exited with code 0]

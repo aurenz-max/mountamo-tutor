@@ -558,7 +558,60 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > changes what gets built, and `tsc` sees none of it. **Fix: take the class name and the
 > soft-bucket label from the port's fixture, not from rhyme's.**
 
-### 26. ⛔ **GATES 7+8 RUN 2026-08-21 — gate 8 PASSES (both drives), gate 7 **FAILS**: `same-category` scored **0/8**, 7 false affirmations. The mode does NOT ship until the guard is fixed and the bench re-run.** Executor: `/add-di-loop picture-vocabulary`
+### 26. ✅ **CLOSED 2026-09-02 — GATE 7 PASSES. `same-category` 0/8 → 7/7 hard across all four stimuli, 46/48 agreed, ZERO false affirmations and ZERO false refusals. Both remaining disagreements are the fixture's own `soft` probes.** Executor: `/add-di-loop picture-vocabulary`
+
+> **⭐ READ THE RESULT, DO NOT RE-DERIVE THE CONTRACT.** Full record + per-stimulus consoles:
+> `qa/di-bench/run-2026-09-02-picture-vocabulary-association.md`.
+>
+> | Stimulus | Agreed | same-category |
+> |---|---|---|
+> | `sock` | 12/12 | 2/2 |
+> | `dog` | 11/12 (`mailman` soft) | 2/2 |
+> | `bed` | 12/12 | 2/2 |
+> | `cup` | 11/12 (`bowl` soft) | 1/2 |
+>
+> **FOUR levers shipped, not the three this item planned — and the ORDER the item predicted
+> was wrong in an instructive way:**
+> 1. **Worked counterexample** on the same-category guard (apple/banana, couch/sofa), drawn
+>    from OUTSIDE the fixture. The lever that carried the result, as predicted.
+> 2. **Narrowed the accept clause**: "keep with it" → "the place you keep it". What is kept
+>    is a PLACE, never a neighbouring thing.
+> 3. **Precedence — the blunt form was MEASURED AND REJECTED.** *"When two rules are both
+>    true, THE REFUSAL WINS"* refused `shoe`, the GENERATED PARTNER, within five probes:
+>    `sock`/`shoe` is simultaneously the curated right answer AND same-category footwear, so
+>    **any rule making same-kind decisive destroys the answer the mode teaches.** Shipped
+>    instead as a DISCRIMINATION PAIR (`glove`/`hand` right, `glove`/`scarf` wrong). Do not
+>    re-derive the tie-break form.
+> 4. **A HYPONYM clause this item did not plan, and the gate needed it.** `sock`, `dog` and
+>    `bed` all held 2/2 on levers 1–3 while `cup` still affirmed `mug` — a mug is not a
+>    second NAME for a cup, it is a KIND of cup, and nothing named that relation.
+>
+> ⚠️ **TWO SELF-INFLICTED FAULTS, both now machine-gated — carry these, they cost two runs:**
+> - **A guard that names a fixture word scores the bench, not the rule.** The first narrowing
+>   excluded things "kept in the same drawer" — and `drawer` is an AFFIRM probe. The false
+>   refusal it manufactured is **indistinguishable in the matrix from a judge re-closing the
+>   set**. Gated: a test fails if any `ASSOCIATION_BENCH_STIMULI` probe word appears in the cue.
+> - **A lever can fix one bucket by breaking another.** Gated: the pack test asserts the
+>   discrimination pair and asserts the rejected `THE REFUSAL WINS` string is ABSENT.
+>
+> **INSTRUMENT: item 27's fixes are CONFIRMED LIVE** — the end-to-end proof it said it owed.
+> Zero `di-verdict-embellished` (I1), four stimulus reports side by side with no overwrite
+> (I2), probe matrices present (I2b), no rhyme vocabulary (I3). **And four `--di-bench` runs
+> execute in PARALLEL against one backend** with no 1008/1012 — a 4-stimulus bench drops from
+> ~6h serial to ~1.5h. Use `--di-bench-item` fan-out by default now.
+>
+> **NOT closed by this item:** HUMAN-CHECKS **#118** (acoustics/ASR — the user's sitting; the
+> semantic half of criteria 1–3 plus the same-category swap are now retired). Gate 8 is
+> banked from 08-21; four new sentences entered the cue, so a cheap `--di --eval-mode
+> association` re-drive before ship is prudent, not required.
+>
+> ⚠️ **TU-6 FIRED LIVE AND IT IS INTERMITTENT** — 7× HIGH `di-tag-spoken` on the `sock`
+> re-run (`[CURRENT STATE]` read aloud on EVERY reanchor beat), and ZERO on an earlier `sock`
+> run the same day with the same pack and the same beats. **A TU-6 fix cannot be validated by
+> a single clean run.** Evidence for that row, not a defect of this port.
+
+<details><summary>Original filing (2026-08-21 FAIL) — kept for the mechanism</summary>
+
 
 > **⛔ THE CODE IS BUILT AND IN THE REPO — do not re-derive the design.** What is left is
 > RUNNING it, not writing it. Pick this up by starting the stack and driving, not by reading
@@ -672,6 +725,8 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 >
 > **⚠️ OWED FIRST: F3** — the bench does not honor `maxCorrections`, so it manufactures contract
 > decay. Fix before this run's severity numbers can mean anything.
+
+</details>
 
 ### 24. ✅ **CLOSED 2026-08-19 — `open_set_word` benched AND the rhyme-studio pilot shipped. The word bank is deleted; the family has NO blocked response class left.**
 

@@ -1,0 +1,82 @@
+[1/4] Firebase sign-in…
+[2/4] Generating real content + fetching tutoring block (probe&live)…
+      tier-1 status: warn; scaffold keys: ['taskDescription', 'contextKeys', 'scaffoldingLevels', 'commonStruggles', 'aiDirectives']
+      BENCH: 1 stimulus/stimuli, 12 scored probes
+[3/4] Run 1/1: connecting ws://localhost:8000/api/lumina-tutor, driving 20 beats…
+  [ask:bench-assoc-sock    ] spoke (894724 b64 audio bytes) Hi! Time to play with words! Some things go together, like friends — a hammer goes with a …
+  [probe:bench-assoc-sock:partner:shoe] spoke (211844 b64 audio bytes) Yes, that goes with sock — they belong together.
+  [reanchor:bench-assoc-sock:0] spoke (209960 b64 audio bytes) [CURRENT STATE]: challengeType: association
+stimulus: sock
+[SESSION RESUMED]
+Sock. Your tu…
+  [probe:bench-assoc-sock:partner-unlisted:foot] spoke (189444 b64 audio bytes) Yes, that goes with sock — they belong together.
+  [reanchor:bench-assoc-sock:1] spoke (206084 b64 audio bytes) [CURRENT STATE]: challengeType: association
+stimulus: sock
+[SESSION RESUMED]
+Sock. Your tu…
+  [probe:bench-assoc-sock:partner-unlisted:drawer] spoke (184964 b64 audio bytes) Yes, that goes with sock — they belong together.
+  [reanchor:bench-assoc-sock:2] spoke (216964 b64 audio bytes) [CURRENT STATE]: challengeType: association
+stimulus: sock
+Sock. Your turn. What goes with…
+  [probe:bench-assoc-sock:echo:sock] spoke (529284 b64 audio bytes) My turn: sock cannot go with itself. A hammer goes with a nail. Your turn. Tell me somethi…
+  [probe:bench-assoc-sock:rationalised-chain:cat] spoke (410884 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with sock?
+  [reanchor:bench-assoc-sock:4] spoke (212484 b64 audio bytes) [CURRENT STATE]: challengeType: association
+stimulus: sock
+[SESSION RESUMED]
+Sock. Your tu…
+  [probe:bench-assoc-sock:rationalised-chain:cloud] spoke (393604 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with sock?
+  [probe:bench-assoc-sock:same-category:shirt] spoke (398724 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with sock?
+  [reanchor:bench-assoc-sock:6] spoke (215080 b64 audio bytes) [CURRENT STATE]: challengeType: association
+stimulus: sock
+[SESSION RESUMED]
+Sock. Your tu…
+  [probe:bench-assoc-sock:same-category:hat] spoke (407080 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with sock?
+  [probe:bench-assoc-sock:category-word:clothes] spoke (504964 b64 audio bytes) My turn: that names a whole group. I want one thing. A hammer goes with a nail. Your turn.…
+  [reanchor:bench-assoc-sock:8] spoke (225960 b64 audio bytes) [CURRENT STATE]: challengeType: association
+stimulus: sock
+[SESSION RESUMED]
+Sock. Your tu…
+  [probe:bench-assoc-sock:nonword:blen] spoke (389764 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with sock?
+  [probe:bench-assoc-sock:off-task:I don't know] spoke (384644 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with sock?
+  [reanchor:bench-assoc-sock:10] spoke (225320 b64 audio bytes) [CURRENT STATE]: challengeType: association
+stimulus: sock
+[SESSION RESUMED]
+Sock. Your tu…
+  [probe:bench-assoc-sock:off-task:um] spoke (392964 b64 audio bytes) My turn: a hammer goes with a nail — we use them together. Your turn. What goes with sock?
+
+==============================================================================
+BENCH: open_set_word via picture-vocabulary - verdicts vs the hand-authored key
+==============================================================================
+  category-word       1/1  agreed
+  echo                1/1  agreed
+  nonword             1/1  agreed
+  off-task            2/2  agreed
+  partner             1/1  agreed
+  partner-unlisted    2/2  agreed
+  rationalised-chain  2/2  agreed
+  same-category       2/2  agreed
+------------------------------------------------------------------------------
+
+  OK - ZERO false affirmations in the hard REFUSE buckets.
+
+  VERDICT: PASS - zero false affirmations. `open_set_word` holds through picture-vocabulary on this evidence.
+==============================================================================
+
+  · overwriting an earlier picture-vocabulary-live-di-bench-bench-assoc-sock-2026-09-02.md from today (same run shape — re-drive)
+[4/4] Report: C:\Users\xbox3\claude web tutor\my-tutoring-app\qa\tutor-reports\picture-vocabulary-live-di-bench-bench-assoc-sock-2026-09-02.md
+  CONFIRMED HIGH [1/1]: di-tag-spoken @reanchor:bench-assoc-sock:0 — read control syntax aloud: "[CURRENT STATE]" — the fabricated-tag class
+  CONFIRMED HIGH [1/1]: di-tag-spoken @reanchor:bench-assoc-sock:1 — read control syntax aloud: "[CURRENT STATE]" — the fabricated-tag class
+  CONFIRMED HIGH [1/1]: di-tag-spoken @reanchor:bench-assoc-sock:2 — read control syntax aloud: "[CURRENT STATE]" — the fabricated-tag class
+  CONFIRMED HIGH [1/1]: di-tag-spoken @reanchor:bench-assoc-sock:4 — read control syntax aloud: "[CURRENT STATE]" — the fabricated-tag class
+  CONFIRMED HIGH [1/1]: di-tag-spoken @reanchor:bench-assoc-sock:6 — read control syntax aloud: "[CURRENT STATE]" — the fabricated-tag class
+  CONFIRMED HIGH [1/1]: di-tag-spoken @reanchor:bench-assoc-sock:8 — read control syntax aloud: "[CURRENT STATE]" — the fabricated-tag class
+  CONFIRMED HIGH [1/1]: di-tag-spoken @reanchor:bench-assoc-sock:10 — read control syntax aloud: "[CURRENT STATE]" — the fabricated-tag class
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:rationalised-chain:cloud — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:same-category:shirt — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:same-category:hat — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:nonword:blen — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-assoc-sock:off-task:um — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  PLUMBING OK: output transcription is flowing (tutor voice observable as text).
+
+[exited with code 1]
