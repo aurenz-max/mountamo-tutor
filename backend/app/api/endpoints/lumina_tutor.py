@@ -170,6 +170,17 @@ class TextQueueEntry:
     # said, and must leave no trace in that state. When set, `text` carries
     # only the cue tag, for coalescing and the ledger.
     render: Optional[Callable[[], str]] = None
+    # This entry must NOT take a turn of its own. It stays in the gate until a
+    # batch with an unheld entry arrives and then rides out at the front of
+    # that message. Used for the [PRIMITIVE SWITCH] into a pack that owns its
+    # opening (DI-GREET-1 at the switch boundary, lesson-bench sitting
+    # b833c0f89475, 2026-09-03): announced on its own, the switch is a turn
+    # the model has to fill, and it filled 57s with an improvised greeting, a
+    # made-up "[CUE_1] Say exactly..." and the stage direction read aloud, while
+    # the pack's real opener waited 52s for the floor. Merged into the opener's
+    # own turn it is context, not a prompt. A later switch still supersedes it
+    # (same tag), so a child who walks on through never hears it.
+    held: bool = False
 
     def supersedes_key(self, index: int) -> str:
         """Identity for supersession inside one batch.
@@ -380,6 +391,42 @@ def should_queue_greeting(
     if resumption_handle:
         return False
     return True
+
+
+def held_back(entries: List[TextQueueEntry]) -> bool:
+    """Floor-gate step 3.5: does this batch stay in the gate instead of shipping?
+
+    True only when EVERY survivor of supersession is `held`. One unheld entry
+    -- the pack's opening cue, a hint request, a student action -- carries the
+    held ones out with it, in FIFO order. Module-level for the same reason as
+    `should_queue_greeting`: the inline version would be untestable.
+    """
+    return bool(entries) and all(e.held for e in entries)
+
+
+def switch_tail(owns_opening: bool, from_type: str) -> str:
+    """The instruction that closes a [PRIMITIVE SWITCH] announcement.
+
+    A primitive that improvises is asked for a one-sentence greeting. A pack
+    that OWNS its opening line (judged loops, the DI family) is told the
+    opposite: its first scripted cue is the transition, and this notice rides
+    inside that cue's turn (see TextQueueEntry.held), so the only thing the
+    model may say is the cue's quoted line. Before 2026-09-03 the greeting
+    tail was unconditional here -- `owns_opening` was honored at session-init
+    only -- so every DI block past block 1 of a lesson got the greeting turn
+    the connect path had already learned to suppress.
+    """
+    if owns_opening:
+        return (
+            "Do not greet the student and do not introduce or describe this "
+            "activity: it owns its opening line, which arrives as a scripted "
+            "cue. If a cue is in this same message, say only that cue's quoted "
+            "line; otherwise say nothing about this switch at all."
+        )
+    return (
+        f"Greet the student briefly for this new activity. Keep it to one sentence. "
+        f"If relevant, connect to what they just finished in {from_type}."
+    )
 
 
 def format_objectives(objectives: List[Dict]) -> str:
@@ -1007,8 +1054,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                     f"Previous activity: {from_type}\n"
                     f"New activity: {sw['primitive_type']} (instance: {sw['instance_id']})\n\n"
                     f"{scaffold_text}\n\n"
-                    f"Greet the student briefly for this new activity. Keep it to one sentence. "
-                    f"If relevant, connect to what they just finished in {from_type}."
+                    f"{switch_tail(bool(sw.get('owns_opening')), from_type)}"
                 )
             return render
 
@@ -1152,8 +1198,12 @@ async def lumina_tutor_session(websocket: WebSocket):
                         instance_id = new_primitive.get("instance_id", "unknown")
                         primitive_data = new_primitive.get("primitive_data", {})
                         tutoring_scaffold = new_primitive.get("tutoring")
+                        # Same flag the connect path honors in should_queue_greeting,
+                        # now carried per switch (the client resolves it from the
+                        # catalog like `tutoring`/`audio_input`).
+                        owns_opening = bool(new_primitive.get("owns_opening"))
 
-                        logger.info(f"Switching primitive: {old_type} -> {primitive_type} (instance: {instance_id})")
+                        logger.info(f"Switching primitive: {old_type} -> {primitive_type} (instance: {instance_id}, owns_opening={owns_opening})")
                         ledger.write(
                             "switch-primitive",
                             from_primitive=old_type,
@@ -1172,14 +1222,27 @@ async def lumina_tutor_session(websocket: WebSocket):
                         # case of the general rule, not a separate 2.5s
                         # timer that could land the announcement after the
                         # activity it announces has already spoken.
+                        #
+                        # A pack that owns its opening gets no turn for the
+                        # announcement: `held` keeps it in the gate until the
+                        # pack's first cue (or any other floor-giving message)
+                        # carries it out. `scripted` too -- that cue is a
+                        # say-exactly line and the pack's per-item context
+                        # update lands between switch and cue, so an unscripted
+                        # announcement in the batch would reopen the state
+                        # channel and the model would narrate the item, target
+                        # answer included (the defect `scripted` exists for).
                         await text_queue.put(TextQueueEntry(
                             text="[PRIMITIVE SWITCH]",
                             interrupt=interrupt,
+                            held=owns_opening,
+                            scripted=owns_opening,
                             render=_switch_render({
                                 "primitive_type": primitive_type,
                                 "instance_id": instance_id,
                                 "primitive_data": primitive_data,
                                 "tutoring": tutoring_scaffold,
+                                "owns_opening": owns_opening,
                             }),
                         ))
 
@@ -1255,10 +1318,16 @@ async def lumina_tutor_session(websocket: WebSocket):
             [ANSWER_CORRECT] cancelled the tutor, [NEXT_ITEM] 2s later
             cancelled the reply to that, and the child heard neither.
             """
+            # Entries held back from an earlier pass (TextQueueEntry.held).
+            # They lead the next batch so FIFO order survives the hold.
+            pending: List[TextQueueEntry] = []
             try:
                 while True:
                     batch: List[TextQueueEntry] = []
                     await _collect(batch, None)
+                    if pending:
+                        batch = pending + batch
+                        pending = []
 
                     # 1. Let the tutor finish — unless the caller said this
                     #    message earns the interruption. Anything the
@@ -1312,6 +1381,21 @@ async def lumina_tutor_session(websocket: WebSocket):
                             # newest claim speaks in its arrival position.
                             del kept[key]
                         kept[key] = item
+
+                    # 3.5. Hold -- a batch of nothing but held entries is not
+                    #    a turn. It waits for the next floor-giving message
+                    #    and leads it. Nothing is rendered here, so a held
+                    #    switch that a later switch supersedes leaves no
+                    #    trace (its render is never called).
+                    survivors = list(kept.values())
+                    if held_back(survivors):
+                        pending = survivors
+                        ledger.write(
+                            "switch-held",
+                            cues=len(survivors),
+                            tags=[classify_cue(e.text) for e in survivors],
+                        )
+                        continue
 
                     parts = []
                     for item in kept.values():

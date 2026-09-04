@@ -915,6 +915,19 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // creation (connectLesson already scanned the manifest and applied it),
         // but the backend sees what the incoming primitive would have asked for.
         audio_input: componentDef?.audioInput ?? null,
+        // DI-GREET-1 AT THE SWITCH BOUNDARY (lesson-bench sitting b833c0f89475,
+        // 2026-09-03). The connect paths already pass owns_opening so the
+        // backend skips its greeting turn; the switch never did, so a judged
+        // pack that is not block 1 of a lesson got the greeting the connect
+        // path suppresses — 57s of improvised tutoring, a fabricated
+        // "[CUE_1] Say exactly…" and its stage direction read aloud, before
+        // the pack's real opener. Derived from the catalog's manual-activity
+        // declaration: a surface that brackets its own learner turns is a
+        // judged pack whose first cue is its opening line (every such pack
+        // declares both together — see JUDGED_AUDIO_INPUT + owns_opening in
+        // useJudgedScriptRunner). An explicit flag on the context still wins.
+        owns_opening: primitiveContext.owns_opening
+          ?? componentDef?.audioInput?.manual_activity === true,
       },
     }));
 

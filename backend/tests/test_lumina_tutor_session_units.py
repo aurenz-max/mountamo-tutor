@@ -12,9 +12,11 @@ from app.api.endpoints.lumina_tutor import (
     build_lesson_system_instruction,
     build_lumina_system_instruction,
     get_primitive_specific_instructions,
+    held_back,
     interpolate_line,
     interpolate_template,
     should_queue_greeting,
+    switch_tail,
 )
 from app.services.session_ledger import classify_cue
 
@@ -571,3 +573,96 @@ def test_an_ordinary_surface_on_a_fresh_connect_STILL_GREETS():
     well live ("Hey there! I'm ready to help you explore these big machines.").
     DI-GREET-1 removes that turn only where a script replaces it."""
     assert should_queue_greeting(owns_opening=False, resumption_handle=None) is True
+
+
+# ---------------------------------------------------------------------------
+# DI-GREET-1 at the SWITCH boundary (lesson-bench sitting b833c0f89475,
+# 2026-09-03). `owns_opening` was honored at session-init only; the
+# [PRIMITIVE SWITCH] into a judged pack still closed with "Greet the student
+# briefly" and took a turn of its own. Gemini filled it: a greeting, "Put 5
+# circles onto the frame", a fabricated "[CUE_1] Say exactly: …" and the whole
+# stage direction voiced — 200 words, ~57s — while the real [TF_ITEM] opener
+# waited 52.7s for the floor.
+# ---------------------------------------------------------------------------
+
+def test_a_pack_that_owns_its_opening_is_not_asked_to_greet():
+    tail = switch_tail(owns_opening=True, from_type="counting-board")
+    assert "greet" in tail.lower()
+    assert "Do not greet" in tail
+    assert "Greet the student briefly" not in tail
+    assert "quoted line" in tail
+
+
+def test_an_improvising_primitive_still_gets_the_one_sentence_greeting():
+    """REGRESSION GATE (qa/di/BACKLOG.md CTX item, verification (b)): the
+    switch into a non-pack must still acknowledge the new activity."""
+    tail = switch_tail(owns_opening=False, from_type="ten-frame")
+    assert tail.startswith("Greet the student briefly")
+    assert "ten-frame" in tail
+
+
+def _held_switch(label="ten-frame"):
+    return TextQueueEntry(text="[PRIMITIVE SWITCH]", held=True, scripted=True,
+                          render=lambda: f"[PRIMITIVE SWITCH] -> {label}")
+
+
+def test_a_held_switch_never_ships_alone():
+    assert held_back([_held_switch()])
+
+
+def test_an_ordinary_switch_ships_as_before():
+    assert not held_back([TextQueueEntry(text="[PRIMITIVE SWITCH]",
+                                          render=lambda: "x")])
+
+
+def test_an_empty_batch_is_not_held():
+    assert not held_back([])
+
+
+def test_the_packs_first_cue_carries_the_held_switch_out_in_front():
+    """The gate prepends `pending` to the next batch, so the announcement is
+    context at the top of the opener's turn — not a prompt of its own."""
+    pending = [_held_switch()]
+    cue = TextQueueEntry(text='[TF_ITEM] Say exactly: "Hi! Time to work with the ten frame!"',
+                         scripted=True)
+    batch = pending + [cue]
+    assert not held_back(batch)
+    texts, superseded = _collapse(batch)
+    assert texts == ["[PRIMITIVE SWITCH]", cue.text]
+    assert superseded == 0
+
+
+def test_a_held_switch_keeps_the_state_channel_closed():
+    """The pack's per-item context update lands between switch and cue. The
+    opener is say-exactly; if the held announcement were unscripted the batch
+    would reopen the [CURRENT STATE] preamble and the model would narrate the
+    item, target answer included (the defect `scripted` exists for)."""
+    batch = [_held_switch(), TextQueueEntry(text="[TF_ITEM] Say exactly: ...", scripted=True)]
+    assert all(e.scripted for e in batch)
+
+
+def test_a_child_who_walks_on_never_hears_the_held_switch():
+    """Held + a later switch: same tag, so the later one supersedes it and its
+    render is never called — no ghost 'Previous activity'."""
+    rendered = []
+
+    def make(label):
+        def render():
+            rendered.append(label)
+            return f"[PRIMITIVE SWITCH] -> {label}"
+        return render
+
+    held = TextQueueEntry(text="[PRIMITIVE SWITCH]", held=True, scripted=True,
+                          render=make("ten-frame"))
+    later = TextQueueEntry(text="[PRIMITIVE SWITCH]", render=make("take-home-activity"))
+    batch = [held, later]
+    assert not held_back(batch)
+    kept = {}
+    for i, e in enumerate(batch):
+        k = e.supersedes_key(i)
+        if k in kept:
+            del kept[k]
+        kept[k] = e
+    out = [e.render() for e in kept.values()]
+    assert rendered == ["take-home-activity"]
+    assert out == ["[PRIMITIVE SWITCH] -> take-home-activity"]
