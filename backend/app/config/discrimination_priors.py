@@ -172,6 +172,22 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "analyze":  DiscriminationPrior(a=1.6, c=0.20),
         "evaluate": DiscriminationPrior(a=1.8, c=0.15),
     },
+    # Live-judged spoken matter classification, K-2. The first three modes keep
+    # the values they already inferred (a=1.4, c=0.0) and are listed so the
+    # fourth's divergence is visible rather than buried in a heuristic.
+    #
+    # `change` is a TWO-option spoken choice, so its guessing floor is REAL:
+    # inference gives c=0.0, which would read a coin flip as evidence of
+    # ability and hand the mastery gates a mode that is never wrong for long.
+    # a drops with it, because a two-option item discriminates less per answer
+    # than a three-option one — the ladder pays for the shorter menu here, in
+    # the measurement model, rather than by pretending the menu is longer.
+    "matter-explorer": {
+        "sort":     DEFAULT_DISCRIMINATION_PRIOR,   # a=1.4, c=0
+        "property": DEFAULT_DISCRIMINATION_PRIOR,   # a=1.4, c=0
+        "change":   PATTERN_TRUE_FALSE,             # a=1.0, c=0.50
+        "mystery":  DEFAULT_DISCRIMINATION_PRIOR,   # a=1.4, c=0
+    },
     "fast-fact": {
         "recognize": PATTERN_MULTIPLE_CHOICE,
         "recall":    PATTERN_MULTIPLE_CHOICE,

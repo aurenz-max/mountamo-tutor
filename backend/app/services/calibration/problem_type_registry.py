@@ -805,6 +805,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "matter-explorer": {
         "sort":     PriorConfig(-1.0, "Sort familiar objects into solid, liquid, gas bins"),
         "property": PriorConfig(0.5, "Identify properties that determine state of matter"),
+        # K-2 reversible vs irreversible change: harder than naming what a thing
+        # does in a cup (it needs a change imagined and then run backwards),
+        # easier than deducing a state from clues with the object withheld.
+        "change":   PriorConfig(1.2, "Say whether an everyday change to a familiar object can be undone"),
         "mystery":  PriorConfig(2.0, "Classify tricky materials using property evidence"),
     },
     "reaction-lab": {

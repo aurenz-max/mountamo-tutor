@@ -1922,6 +1922,9 @@ export interface MatterExplorerMetrics extends BasePrimitiveMetrics {
   sortingTotal: number;
   propertiesIdentified: number;
   propertiesTotal: number;
+  /** `change` mode (port 23 rung 2): reversible-vs-irreversible judgements. */
+  changesJudged: number;
+  changesTotal: number;
   stateChangePredicted: boolean;
   mysteryMaterialsSolved: number;
   mysteryTotal: number;

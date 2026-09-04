@@ -303,6 +303,16 @@ import {
   type StatesOfMatterItem,
   type StatesTier,
 } from '../../../primitives/visual-primitives/chemistry/statesOfMatterScript';
+import {
+  itemsFromChallenges as matterExplorerItems,
+  matterExplorerPackBase,
+  matterExplorerHarnessAnswers,
+  type MatterBand,
+  type MatterChallengeLike,
+  type MatterExplorerItem,
+  type MatterObjectLike,
+  type MatterTier,
+} from '../../../primitives/visual-primitives/chemistry/matterExplorerScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -1644,6 +1654,49 @@ const statesOfMatterAdapter: DiPortAdapter<StatesOfMatterItem> = {
   answersFor: statesOfMatterHarnessAnswers,
 };
 
+/**
+ * matter-explorer (port 23, third chemistry port). ALL THREE MODES SPOKEN, so
+ * there is no `gestureVerdictCue` here and the absence is the port's point.
+ *
+ * It is the first adapter whose `build` needs the OBJECT TABLE as well as the
+ * challenges, because every answer is computed from the object's own `state`
+ * and `properties.shape` rather than read off a generated key — the click era's
+ * free-text `targetAnswer` is not consulted at all.
+ *
+ * `dropped` counts CHALLENGES that produced nothing, not the items/challenges
+ * difference, because one challenge here is legitimately MANY items: a sort
+ * challenge that names no object is a whole screenful and expands to one judged
+ * ask per object. That expansion is the port's biggest measurement change and
+ * would read as a huge negative drop count under the usual subtraction.
+ *
+ * What the drive is really testing is the two content gates the data invites:
+ * an object whose NAME carries its own answer ("liquid soap"), and a `shape`
+ * that disagrees with `state`. Both drop build-side AND generator-side from the
+ * same imported predicate, so a drive that reports zero drops on a clean
+ * payload and non-zero on a dirty one is exercising one rule, not two copies.
+ */
+const matterExplorerAdapter: DiPortAdapter<MatterExplorerItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as Array<{ id: string; type?: string; challengeType?: string; objectId?: string }>;
+    const objects = (data.objects ?? []) as MatterObjectLike[];
+    const band = ((data.gradeBand as MatterBand) ?? 'K-1') as MatterBand;
+    const tier = (data.supportTier as MatterTier) ?? undefined;
+    const shaped: MatterChallengeLike[] = challenges.map((ch) => ({
+      id: ch.id,
+      challengeType: ch.challengeType ?? ch.type ?? '',
+      objectId: ch.objectId,
+    }));
+    const items = matterExplorerItems(shaped, objects, { band, tier });
+    const producedFrom = new Set(items.map((i) => i.id.split('::')[0]));
+    return {
+      items,
+      dropped: shaped.filter((ch) => !producedFrom.has(ch.id)).length,
+      surface: matterExplorerPackBase(items),
+    };
+  },
+  answersFor: matterExplorerHarnessAnswers,
+};
+
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'knowledge-check': knowledgeCheckAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
@@ -1677,6 +1730,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'rhyme-studio': rhymeStudioAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'periodic-table': periodicTableAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'states-of-matter': statesOfMatterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'matter-explorer': matterExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

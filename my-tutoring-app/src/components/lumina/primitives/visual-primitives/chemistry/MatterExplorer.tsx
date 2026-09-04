@@ -1,9 +1,56 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+/**
+ * MatterExplorer — TWO surfaces, forked on whether judged challenges arrived:
+ *
+ *  - DI JUDGED LOOP (challenges present — the normal path now): the Live tutor
+ *    owns the clock. It asks ONCE, waits, judges the spoken answer in-band,
+ *    corrects contrastively, and its own affirmation is the advance. No advance
+ *    timer, no Next button, no Check button, no push-to-talk mic, no printed
+ *    answer before the affirm.
+ *
+ *  - EXPLORATION (no challenges, or every one dropped by a build gate): the
+ *    free object shelf with its property panel, tutor as a silent guide. The
+ *    honest degrade, and a real reference surface.
+ *
+ * ⭐ ALL FOUR EVAL MODES ARE SPOKEN. sort says the state, property says what
+ * the thing does in a cup, change says whether an everyday change to the
+ * object can be undone, mystery says the state of a withheld object. The
+ * click era answered every one with a drag, a Check press or a text box, and
+ * the costume test cleared the board in one pass: a child who cannot classify
+ * matter can still drag a card into one of three bins.
+ *
+ * ── WHAT THE CLICK ERA WAS ACTUALLY MEASURING ───────────────────────────────
+ * Four measurement fictions, all removed here and all confirmed by reading the
+ * pre-port file rather than inferred:
+ *   1. `handleCheckPredictChallenge` wrote `correct: true` UNCONDITIONALLY.
+ *   2. `handleCheckCompareChallenge` did the same, gated only on two text
+ *      boxes being non-empty.
+ *   3. `describe` completed when properties had been VIEWED — clicking earned
+ *      the credit.
+ *   4. `sort` graded all 6-10 objects as ONE all-or-nothing boolean, so a
+ *      child who knew seven of eight scored what a child who knew none did.
+ * Here one OBJECT is one judged item and every key is code-computed.
+ *
+ * WHAT THE JUDGED SURFACE HIDES, and why each one is the answer rather than
+ * chrome:
+ *  - the THREE BINS as a drop target — the bins ARE the three answers, printed
+ *    and clickable. A menu with a drag on it, floored at one in three.
+ *  - the PROPERTY PANEL — `properties.shape` is a 1:1 map onto the answer
+ *    (keeps_shape → solid), so the panel is the answer key for two of three
+ *    modes and the whole question for the third.
+ *  - the TEMPERATURE SLIDER — it changes the state on screen, which is the
+ *    thing being asked about.
+ *  - the MYSTERY TEXT BOX — a K-2 child cannot spell "liquid", and the click
+ *    era substring-matched what they typed against an LLM's free-text guess.
+ * All of them return in the REVEAL, behind `runner.revealHeld` (18b).
+ *
+ * Cue lines, judging contracts and build gates live in `matterExplorerScript.ts`
+ * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ */
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Volume2 } from 'lucide-react';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -11,7 +58,36 @@ import {
 import type { MatterExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { LuminaDropZone, type DropZoneState } from '../../../ui';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaChallengeCounter,
+  type LuminaAccent,
+} from '../../../ui';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  CHANGE_CATALOG,
+  CHANGE_OPTIONS,
+  itemsFromChallenges,
+  matterExplorerPackBase,
+  nameCarriesAnswer,
+  PROPERTY_OPTIONS,
+  type EverydayChange,
+  type MatterBand,
+  type MatterExplorerItem,
+  type MatterKind,
+  type MatterTier,
+} from './matterExplorerScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -32,15 +108,26 @@ export interface MatterObject {
   imagePrompt?: string;
   canChangeState: boolean;
   stateChangeTemp?: number | null;
+  /** The one everyday change this object undergoes, from the closed
+   *  `CHANGE_CATALOG` menu. Read ONLY by the `change` mode; whether it can be
+   *  undone is code-owned, never carried in the payload. */
+  everydayChange?: EverydayChange;
 }
 
 export interface MatterChallenge {
   id: string;
-  type: 'sort' | 'describe' | 'predict' | 'mystery' | 'compare';
+  /** The judged identity. `describe`/`predict`/`compare` are legacy generator
+   *  types that carried no judgeable answer; `normalizeChallengeType` folds
+   *  them onto `property`, the mode that asks what they gestured at. */
+  type: 'sort' | 'property' | 'change' | 'mystery' | 'describe' | 'predict' | 'compare';
   instruction: string;
-  targetAnswer: string | string[];
-  hint: string;
-  narration: string;
+  /** Which object this item is about. When absent the challenge is a whole
+   *  SCREENFUL and `itemsFromChallenges` expands it to one item per object —
+   *  the port's biggest measurement change (defect class 1). */
+  objectId?: string;
+  targetAnswer?: string | string[];
+  hint?: string;
+  narration?: string;
 }
 
 export interface MatterExplorerData {
@@ -55,6 +142,7 @@ export interface MatterExplorerData {
     showVennDiagram?: boolean;
   };
   gradeBand?: 'K-1' | '1-2';
+  supportTier?: MatterTier;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -65,44 +153,20 @@ export interface MatterExplorerData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<MatterExplorerMetrics>) => void;
 }
 
+export interface MatterExplorerProps {
+  data: MatterExplorerData;
+  className?: string;
+}
+
 // ============================================================================
-// Constants
+// Presentation constants
 // ============================================================================
 
 const STATE_CONFIG = {
-  solid: {
-    label: 'Solid',
-    emoji: '🧊',
-    color: 'slate',
-    bgClass: 'bg-slate-500/10 border-slate-400/30',
-    activeClass: 'bg-slate-500/20 border-slate-400/50',
-    textClass: 'text-slate-300',
-    glowClass: 'shadow-[0_0_15px_rgba(148,163,184,0.15)]',
-    description: 'Keeps its own shape',
-  },
-  liquid: {
-    label: 'Liquid',
-    emoji: '💧',
-    color: 'blue',
-    bgClass: 'bg-blue-500/10 border-blue-400/30',
-    activeClass: 'bg-blue-500/20 border-blue-400/50',
-    textClass: 'text-blue-300',
-    glowClass: 'shadow-[0_0_15px_rgba(96,165,250,0.15)]',
-    description: 'Takes the shape of its container',
-  },
-  gas: {
-    label: 'Gas',
-    emoji: '💨',
-    color: 'cyan',
-    bgClass: 'bg-cyan-500/10 border-cyan-400/30',
-    activeClass: 'bg-cyan-500/20 border-cyan-400/50',
-    textClass: 'text-cyan-300',
-    glowClass: 'shadow-[0_0_15px_rgba(103,232,249,0.15)]',
-    description: 'Fills all the space it can',
-  },
+  solid: { label: 'Solid', emoji: '🧊', textClass: 'text-slate-300' },
+  liquid: { label: 'Liquid', emoji: '💧', textClass: 'text-blue-300' },
+  gas: { label: 'Gas', emoji: '💨', textClass: 'text-cyan-300' },
 } as const;
-
-type MatterState = keyof typeof STATE_CONFIG;
 
 const OBJECT_EMOJIS: Record<string, string> = {
   'ice cube': '🧊', 'ice': '🧊', 'rock': '🪨', 'water': '💧',
@@ -120,25 +184,107 @@ function getObjectEmoji(name: string): string {
   for (const [key, emoji] of Object.entries(OBJECT_EMOJIS)) {
     if (lower.includes(key)) return emoji;
   }
-  return '⬤';
+  return '🔬';
 }
 
-const PROPERTY_LABELS: Record<string, Record<string, string>> = {
-  texture: { smooth: 'Smooth', rough: 'Rough', bumpy: 'Bumpy', soft: 'Soft', hard: 'Hard' },
-  transparency: { transparent: 'See-through', translucent: 'A little see-through', opaque: 'Can\'t see through' },
-  flexibility: { rigid: 'Stiff', flexible: 'Bendy', flows: 'Flows' },
-  shape: { keeps_shape: 'Keeps its shape', takes_container: 'Takes container shape', fills_space: 'Fills all space' },
-  weight: { light: 'Light', medium: 'Medium', heavy: 'Heavy' },
+const MODE_META: Record<MatterKind, { badge: string; icon: string; accent: LuminaAccent }> = {
+  name_state: { badge: 'Name the State', icon: '🔍', accent: 'cyan' },
+  name_property: { badge: 'In the Cup', icon: '🥤', accent: 'purple' },
+  name_undo: { badge: 'Can It Go Back?', icon: '🔄', accent: 'emerald' },
+  mystery_state: { badge: 'Mystery Material', icon: '❓', accent: 'amber' },
+};
+
+interface RevealPayload {
+  item: MatterExplorerItem;
+  line: string;
+}
+
+// ============================================================================
+// The bench — what the child looks at while they think
+// ============================================================================
+
+/**
+ * The stimulus card. It shows the OBJECT and nothing that classifies it: no
+ * state label, no property list, no bin. On `mystery_state` even the object is
+ * withheld — the covered box IS the mode.
+ *
+ * Defect 11 in PIXELS: walk this asking "does anything on screen equal what I
+ * am about to ask them to say?" The answer here is no by construction, which
+ * is why the property chips render only behind `revealed`.
+ */
+const ObjectStage: React.FC<{
+  item: MatterExplorerItem;
+  revealed: boolean;
+}> = ({ item, revealed }) => {
+  const hidden = item.kind === 'mystery_state' && !revealed;
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-3xl border-2 border-white/10 bg-slate-900/40 px-8 py-6 backdrop-blur-xl">
+      <div className="text-7xl leading-none" aria-hidden>
+        {hidden ? '📦' : getObjectEmoji(item.objectName)}
+      </div>
+      <div className="text-slate-200 text-lg font-medium">
+        {hidden ? 'a secret thing' : item.objectName}
+      </div>
+
+      {/* The change mode's premise. It is what HAPPENED, never whether it
+          undoes — the same standing the mystery clues have. */}
+      {item.kind === 'name_undo' && item.change && (
+        <p className="text-slate-400 text-sm text-center max-w-[22rem]">
+          {CHANGE_CATALOG[item.change].storyFor(item.objectName)}.
+        </p>
+      )}
+
+      {item.kind === 'mystery_state' && !revealed && item.clues && (
+        <ul className="text-slate-400 text-sm space-y-0.5 text-center">
+          {item.clues.map((c) => (
+            <li key={c}>• {c}</li>
+          ))}
+        </ul>
+      )}
+
+      {/* The property panel is the ANSWER KEY for two of the three modes, so it
+          exists only after the affirmation. */}
+      {revealed && (
+        <div className="flex flex-wrap justify-center gap-1.5">
+          <LuminaBadge accent="emerald" className="text-xs">
+            {STATE_CONFIG[item.answerState].emoji} {STATE_CONFIG[item.answerState].label}
+          </LuminaBadge>
+          <LuminaBadge accent="purple" className="text-xs">
+            {PROPERTY_OPTIONS[item.answerShape].phrase}
+          </LuminaBadge>
+          {item.kind === 'name_undo' && item.answerUndo && (
+            <LuminaBadge accent="cyan" className="text-xs">
+              {CHANGE_OPTIONS[item.answerUndo].phrase}
+            </LuminaBadge>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 // ============================================================================
-// Props
+// Exploration fallback — no judged challenges arrived
 // ============================================================================
 
-interface MatterExplorerProps {
-  data: MatterExplorerData;
-  className?: string;
-}
+const ExplorationShelf: React.FC<{ objects: MatterObject[]; onInspect: (o: MatterObject) => void }> = ({
+  objects,
+  onInspect,
+}) => (
+  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+    {objects.map((o) => (
+      <button
+        key={o.id}
+        type="button"
+        onClick={() => onInspect(o)}
+        className="flex flex-col items-center gap-1 rounded-2xl border-2 border-white/10 bg-slate-900/40 px-3 py-4 hover:border-cyan-400/40 hover:scale-105 transition-all"
+      >
+        <span className="text-4xl leading-none" aria-hidden>{getObjectEmoji(o.name)}</span>
+        <span className="text-slate-300 text-xs text-center">{o.name}</span>
+      </button>
+    ))}
+  </div>
+);
 
 // ============================================================================
 // Component
@@ -147,11 +293,10 @@ interface MatterExplorerProps {
 const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
   const {
     title,
-    description,
     objects = [],
     challenges = [],
-    showOptions = {},
     gradeBand = 'K-1',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -160,86 +305,37 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  const {
-    showPropertyPanel = true,
-    showTemperatureSlider = false,
-    showVennDiagram = false,
-  } = showOptions;
+  const resolvedInstanceId = instanceId ?? 'matter-explorer';
 
-  // -------------------------------------------------------------------------
-  // State
-  // -------------------------------------------------------------------------
-
-  // Sorting bins: objectId -> placed state
-  const [sortedObjects, setSortedObjects] = useState<Record<string, MatterState>>({});
-  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
-  const [draggedObjectId, setDraggedObjectId] = useState<string | null>(null);
-  const [hoveredBin, setHoveredBin] = useState<MatterState | null>(null);
-  const [dropFlash, setDropFlash] = useState<{ state: MatterState; ok: boolean } | null>(null);
-  const dropFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (dropFlashTimer.current) clearTimeout(dropFlashTimer.current);
-    },
-    []
+  /**
+   * Defect 11, the PIXELS half done in strings: the lesson title is printed
+   * over the bench and read by the child, so a generated "Sort the Liquids!"
+   * answers a sort item before the tutor has finished asking.
+   */
+  const safeTitle = useMemo(
+    () => (title && !nameCarriesAnswer(title) ? title : 'Matter Explorer'),
+    [title],
   );
 
-  // Challenge tracking
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [currentAttempts, setCurrentAttempts] = useState(0);
+  const band: MatterBand = gradeBand === '1-2' ? '1-2' : 'K-1';
 
-  // Temperature slider
-  const [temperature, setTemperature] = useState(20);
-
-  // Mystery mode
-  const [mysteryGuess, setMysteryGuess] = useState('');
-
-  // Compare mode
-  const [compareSame, setCompareSame] = useState('');
-  const [compareDifferent, setCompareDifferent] = useState('');
-
-  // Tracking
-  const [sortingCorrect, setSortingCorrect] = useState(0);
-  const [sortingTotal, setSortingTotal] = useState(0);
-  const [propertiesIdentified, setPropertiesIdentified] = useState(0);
-  const [propertiesTotal] = useState(() =>
-    objects.reduce((sum, obj) => sum + Object.keys(obj.properties).length, 0)
-  );
-  const [stateChangePredicted, setStateChangePredicted] = useState(false);
-  const [mysteryMaterialsSolved, setMysteryMaterialsSolved] = useState(0);
-  const [mysteryTotal] = useState(() =>
-    challenges.filter(c => c.type === 'mystery').length
-  );
-  const [trickyMaterialsExplored, setTrickyMaterialsExplored] = useState(0);
-  const [temperatureSliderUsed, setTemperatureSliderUsed] = useState(false);
-  const [viewedProperties, setViewedProperties] = useState<Set<string>>(new Set());
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    challengeId: string;
-    correct: boolean;
-    attempts: number;
-  }>>([]);
-
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `matter-explorer-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  const currentChallenge = challenges[currentChallengeIndex] || null;
-  const allChallengesComplete = challenges.length > 0 &&
-    challengeResults.filter(r => r.correct).length >= challenges.length;
-  const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct
+  const items = useMemo(
+    () => itemsFromChallenges(
+      challenges.map((c) => ({ id: c.id, challengeType: c.type, objectId: c.objectId })),
+      objects,
+      { band, tier: supportTier },
+    ),
+    [challenges, objects, band, supportTier],
   );
 
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<MatterExplorerMetrics>({
+  /** The reveal payload (18b): set in `onAffirmed`, rendered behind
+   *  `runner.revealHeld`, deliberately NOT cleared in `onItemOpened` — the
+   *  runner fires both in ONE dispatch on the advance path, so clearing there
+   *  paints the reveal on the last item and nowhere else. */
+  const [reveal, setReveal] = useState<RevealPayload | null>(null);
+  const [inspected, setInspected] = useState<MatterObject | null>(null);
+
+  const evaluation = usePrimitiveEvaluation<MatterExplorerMetrics>({
     primitiveType: 'matter-explorer',
     instanceId: resolvedInstanceId,
     skillId,
@@ -249,762 +345,259 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    totalObjects: objects.length,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    challengeType: currentChallenge?.type ?? 'sort',
-    instruction: currentChallenge?.instruction ?? 'Explore matter',
-    sortedCount: Object.keys(sortedObjects).length,
-    selectedObject: selectedObjectId
-      ? objects.find(o => o.id === selectedObjectId)?.name ?? null
-      : null,
-    temperature,
-    attemptNumber: currentAttempts + 1,
-  }), [
-    gradeBand, objects.length, challenges.length, currentChallengeIndex,
-    currentChallenge, sortedObjects, selectedObjectId, objects, temperature, currentAttempts,
-  ]);
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const solvedIn = (predicate: (item: MatterExplorerItem) => boolean) =>
+      items.filter((i) => predicate(i) && summary.outcomes.find((o) => o.id === i.id)?.solved).length;
+    const totalIn = (predicate: (item: MatterExplorerItem) => boolean) =>
+      items.filter(predicate).length;
 
+    const metrics: MatterExplorerMetrics = {
+      type: 'matter-explorer',
+      // One OBJECT is one item now, so these counts finally mean what they say:
+      // the click era wrote sortingCorrect = objects.length or 0.
+      sortingCorrect: solvedIn((i) => i.challengeType === 'sort'),
+      sortingTotal: totalIn((i) => i.challengeType === 'sort'),
+      propertiesIdentified: solvedIn((i) => i.challengeType === 'property'),
+      propertiesTotal: totalIn((i) => i.challengeType === 'property'),
+      changesJudged: solvedIn((i) => i.challengeType === 'change'),
+      changesTotal: totalIn((i) => i.challengeType === 'change'),
+      // The slider and the particle view are not on the judged surface at all,
+      // so these report honestly rather than being set true by a render.
+      stateChangePredicted: false,
+      mysteryMaterialsSolved: solvedIn((i) => i.challengeType === 'mystery'),
+      mysteryTotal: totalIn((i) => i.challengeType === 'mystery'),
+      trickyMaterialsExplored: new Set(items.map((i) => i.objectId)).size,
+      temperatureSliderUsed: false,
+      particleViewEngaged: false,
+      attemptsCount: summary.attemptsCount,
+    };
+
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      undefined,
+      summary.diagnosisEvidence,
+    );
+  }, [items, evaluation]);
+
+  // ── The pack — wording lives in matterExplorerScript.ts ────────────────────
+  // The cue surface is SPREAD, not re-declared, so the DI drive harness reads
+  // the same bytes this component sends.
+  const pack = useMemo<JudgedScriptPack<MatterExplorerItem>>(() => ({
+    ...matterExplorerPackBase(items),
+    statusLines: {
+      ready: () => 'Listen, then say your answer.',
+      retry: () => 'Listen again — then say your answer.',
+      done: 'Great science today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      const heard = (lastHeard ?? '').trim();
+      const observed = heard ? `Said "${heard}".` : 'Said something that did not match.';
+      switch (item.kind) {
+        case 'name_state':
+          return {
+            challenge: `Name the state of ${item.objectName}.`,
+            expected: `"${item.answerState}".`,
+            observed,
+          };
+        case 'name_property':
+          return {
+            challenge: `Say what ${item.objectName} does in a cup.`,
+            expected: `"${PROPERTY_OPTIONS[item.answerShape].phrase}".`,
+            observed,
+          };
+        case 'name_undo':
+          return {
+            challenge: `Say whether the change to ${item.objectName} can be undone.`,
+            expected: `"${item.answerUndo ? CHANGE_OPTIONS[item.answerUndo].phrase : ''}".`,
+            observed,
+          };
+        case 'mystery_state':
+          return {
+            challenge: `Name the state of a withheld object from ${item.clues?.length ?? 0} clues.`,
+            expected: `"${item.answerState}".`,
+            observed,
+          };
+      }
+    },
+  }), [items]);
+
+  const runner = useJudgedScriptRunner<MatterExplorerItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel: band === 'K-1' ? 'Kindergarten' : 'Grade 1-2',
+    exhibitId,
+    onFinished: handleFinished,
+    onAffirmed: (item) => {
+      const line = item.kind === 'name_property'
+        ? `${item.objectName} — ${PROPERTY_OPTIONS[item.answerShape].phrase}`
+        : item.kind === 'name_undo' && item.answerUndo
+          ? `${item.objectName} — ${CHANGE_OPTIONS[item.answerUndo].phrase}`
+          : item.kind === 'mystery_state'
+            ? `It was the ${item.objectName} — a ${item.answerState}`
+            : `${item.objectName} is a ${item.answerState}`;
+      setReveal({ item, line });
+    },
+  });
+
+  const showReveal = runner.revealHeld && reveal !== null;
+
+  useEffect(() => {
+    if (showReveal) SoundManager.playCorrect();
+  }, [showReveal, reveal?.item.id]);
+
+  // ── Exploration fallback: the tutor as a silent guide ──────────────────────
+  const judged = items.length > 0;
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'matter-explorer',
     instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K-1' ? 'Kindergarten' : 'Grade 1-2',
+    // Exploration-only context. `state` and `properties.shape` are deliberately
+    // absent: on this surface nothing is being judged, but the tutor is still
+    // guiding a child through the same classification and must not hand it over.
+    primitiveData: {
+      title: safeTitle,
+      objects: objects.map((o) => o.name),
+      selectedObject: inspected?.name ?? null,
+    },
+    // The judged path owns the tutor through the runner; this hook is only the
+    // exploration surface's guide, and must never open a second channel to it.
+    enabled: !judged,
   });
 
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
   useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-
-    const objectNames = objects.slice(0, 4).map(o => o.name).join(', ');
+    if (judged || !isConnected || !inspected) return;
     sendText(
-      `[ACTIVITY_START] This is a Matter Explorer activity for ${gradeBand === 'K-1' ? 'Kindergarten' : 'Grades 1-2'}. `
-      + `Objects: ${objectNames}${objects.length > 4 ? ` and ${objects.length - 4} more` : ''}. `
-      + `${challenges.length} challenges about states of matter. `
-      + `First challenge: "${currentChallenge?.instruction}". `
-      + `Introduce warmly: "Let's explore what stuff is made of! Look at all these interesting things. Can you tell which ones are solid, liquid, or gas?"`,
-      { silent: true }
+      `[OBJECT_SELECTED] The learner is looking at "${inspected.name}". `
+      + 'Wonder aloud with them about what it is like to hold. Do not classify it for them.',
+      { silent: true },
     );
-  }, [isConnected, challenges.length, objects, gradeBand, currentChallenge, sendText]);
+  }, [judged, isConnected, inspected, sendText]);
 
-  // -------------------------------------------------------------------------
-  // Drag & Drop Handlers
-  // -------------------------------------------------------------------------
-  const handleDragStart = useCallback((objectId: string) => {
-    if (hasSubmittedEvaluation) return;
-    setDraggedObjectId(objectId);
-  }, [hasSubmittedEvaluation]);
-
-  const handleDragOver = useCallback((e: React.DragEvent, state: MatterState) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setHoveredBin(state);
-  }, []);
-
-  const handleDrop = useCallback((state: MatterState) => {
-    setHoveredBin(null);
-    if (!draggedObjectId || hasSubmittedEvaluation) return;
-
-    const obj = objects.find(o => o.id === draggedObjectId);
-    if (!obj) return;
-
-    SoundManager.snap();
-
-    setSortedObjects(prev => ({ ...prev, [draggedObjectId]: state }));
-    setSortingTotal(prev => prev + 1);
-
-    const isCorrect = obj.state === state;
-    if (dropFlashTimer.current) clearTimeout(dropFlashTimer.current);
-    setDropFlash({ state, ok: isCorrect });
-    dropFlashTimer.current = setTimeout(() => setDropFlash(null), 900);
-
-    if (isCorrect) {
-      setSortingCorrect(prev => prev + 1);
-      setFeedback(`Yes! ${obj.name} is a ${state}!`);
-      setFeedbackType('success');
-      sendText(
-        `[SORT_CORRECT] Student correctly sorted "${obj.name}" as ${state}. `
-        + `Celebrate briefly: "That's right! ${obj.name} is a ${state}!"`,
-        { silent: true }
-      );
-    } else {
-      setFeedback(`Hmm, is ${obj.name} really a ${state}? Think about its shape.`);
-      setFeedbackType('error');
-
-      // Check if this is a "tricky" material
-      const trickyMaterials = ['honey', 'sand', 'toothpaste', 'clay', 'fog', 'jelly'];
-      if (trickyMaterials.some(t => obj.name.toLowerCase().includes(t))) {
-        setTrickyMaterialsExplored(prev => prev + 1);
-      }
-
-      sendText(
-        `[SORT_INCORRECT] Student put "${obj.name}" (correct: ${obj.state}) in the ${state} bin. `
-        + `Guide gently: "Hmm, let's think about ${obj.name}. Does it keep its own shape? Does it flow? Does it fill all the space?"`,
-        { silent: true }
-      );
-    }
-
-    setDraggedObjectId(null);
-  }, [draggedObjectId, hasSubmittedEvaluation, objects, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Object Selection & Properties
-  // -------------------------------------------------------------------------
-  const handleSelectObject = useCallback((objectId: string) => {
-    setSelectedObjectId(prev => prev === objectId ? null : objectId);
-
-    if (objectId) {
-      const obj = objects.find(o => o.id === objectId);
-      if (obj) {
-        const newViewed = new Set(viewedProperties);
-        Object.keys(obj.properties).forEach(key => {
-          newViewed.add(`${objectId}-${key}`);
-        });
-        const newCount = newViewed.size;
-        if (newCount > viewedProperties.size) {
-          setPropertiesIdentified(newCount);
-        }
-        setViewedProperties(newViewed);
-
-        sendText(
-          `[OBJECT_SELECTED] Student is examining "${obj.name}" (${obj.state}). `
-          + `Properties: ${obj.properties.texture}, ${obj.properties.shape}. `
-          + `Ask an observation question: "What do you notice about ${obj.name}? Is it hard or soft?"`,
-          { silent: true }
-        );
-      }
-    }
-  }, [objects, viewedProperties, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Temperature Slider
-  // -------------------------------------------------------------------------
-  // Spoken state-change narration is gated so the tutor illuminates, not nags:
-  //   - settle timer: the range onChange fires on every integer step, so speak
-  //     only once the student stops dragging (~1s), never mid-scrub.
-  //   - witnessed Set (per object): each object's state change narrates once —
-  //     scrubbing back and forth through its transition temp stays silent.
-  // The tutor still tracks live temperature via the silent context-update channel.
-  const stateChangeSpeakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const witnessedStateChangesRef = useRef<Set<string>>(new Set());
-
-  const handleTemperatureChange = useCallback((newTemp: number) => {
-    setTemperature(newTemp);
-    if (!temperatureSliderUsed) setTemperatureSliderUsed(true);
-
-    if (stateChangeSpeakTimerRef.current) clearTimeout(stateChangeSpeakTimerRef.current);
-    stateChangeSpeakTimerRef.current = setTimeout(() => {
-      objects.forEach(obj => {
-        if (!obj.canChangeState || obj.stateChangeTemp == null) return;
-        if (Math.abs(newTemp - obj.stateChangeTemp) >= 3) return;
-        if (witnessedStateChangesRef.current.has(obj.id)) return;
-        witnessedStateChangesRef.current.add(obj.id);
-        sendText(
-          `[STATE_CHANGE] Temperature near ${newTemp}°C. "${obj.name}" changes state around ${obj.stateChangeTemp}°C. `
-          + `Narrate: "Look! The ${obj.name} is changing! Can you see what's happening?"`,
-          { silent: true }
-        );
-      });
-    }, 1000);
-  }, [temperatureSliderUsed, objects, sendText]);
-
-  // Clear any pending state-change narration on unmount.
-  useEffect(() => {
-    return () => {
-      if (stateChangeSpeakTimerRef.current) clearTimeout(stateChangeSpeakTimerRef.current);
-    };
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Challenge Checking
-  // -------------------------------------------------------------------------
-  const handleCheckSortChallenge = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'sort') return;
-
-    const allSorted = objects.every(obj => sortedObjects[obj.id] !== undefined);
-    if (!allSorted) {
-      setFeedback('Sort all the objects into bins first!');
-      setFeedbackType('error');
-      return;
-    }
-
-    const allCorrect = objects.every(obj => sortedObjects[obj.id] === obj.state);
-    setCurrentAttempts(a => a + 1);
-
-    if (allCorrect) {
-      SoundManager.playCorrect();
-      setFeedback('Amazing! You sorted everything correctly!');
-      setFeedbackType('success');
-      setChallengeResults(prev => [...prev, {
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      }]);
-      sendText(
-        `[ANSWER_CORRECT] Student sorted all ${objects.length} objects correctly! `
-        + `Celebrate: "Wow, you know your solids, liquids, and gases!"`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      const wrongCount = objects.filter(obj => sortedObjects[obj.id] !== obj.state).length;
-      setFeedback(`${wrongCount} ${wrongCount === 1 ? 'object is' : 'objects are'} in the wrong bin. Try again!`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] ${wrongCount} objects in wrong bins. Attempt ${currentAttempts + 1}. `
-        + `Give a hint: "${currentChallenge.hint}"`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, objects, sortedObjects, currentAttempts, sendText]);
-
-  const handleCheckPredictChallenge = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'predict') return;
-
-    setCurrentAttempts(a => a + 1);
-    // For predict challenges, acceptance is more flexible
-    setStateChangePredicted(true);
-    setFeedback('Great prediction! Let\'s see what happens...');
-    setFeedbackType('success');
-    setChallengeResults(prev => [...prev, {
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts: currentAttempts + 1,
-    }]);
-    sendText(
-      `[PREDICTION_MADE] Student made a prediction about state change. `
-      + `Celebrate curiosity: "Great thinking! Let's test your prediction with the temperature slider."`,
-      { silent: true }
-    );
-  }, [currentChallenge, currentAttempts, sendText]);
-
-  const handleCheckMysteryChallenge = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'mystery') return;
-    if (!mysteryGuess.trim()) return;
-
-    setCurrentAttempts(a => a + 1);
-    const target = Array.isArray(currentChallenge.targetAnswer)
-      ? currentChallenge.targetAnswer
-      : [currentChallenge.targetAnswer];
-    const correct = target.some(t =>
-      mysteryGuess.toLowerCase().trim().includes(t.toLowerCase())
-    );
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! It was ${target[0]}! Great detective work!`);
-      setFeedbackType('success');
-      setMysteryMaterialsSolved(prev => prev + 1);
-      setChallengeResults(prev => [...prev, {
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      }]);
-      sendText(
-        `[MYSTERY_SOLVED] Student correctly identified the mystery material as "${target[0]}". `
-        + `Celebrate: "You figured it out! The clues told you it was ${target[0]}!"`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback('Not quite! Read the clues again carefully.');
-      setFeedbackType('error');
-      sendText(
-        `[MYSTERY_INCORRECT] Student guessed "${mysteryGuess}" but answer is "${target[0]}". `
-        + `Hint: "${currentChallenge.hint}"`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, mysteryGuess, currentAttempts, sendText]);
-
-  const handleCheckCompareChallenge = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'compare') return;
-
-    if (!compareSame.trim() || !compareDifferent.trim()) {
-      setFeedback('Write one thing that is the SAME and one thing that is DIFFERENT!');
-      setFeedbackType('error');
-      return;
-    }
-
-    setCurrentAttempts(a => a + 1);
-    setFeedback('Great comparing! You found a similarity and a difference!');
-    setFeedbackType('success');
-    setChallengeResults(prev => [...prev, {
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts: currentAttempts + 1,
-    }]);
-    sendText(
-      `[COMPARE_COMPLETE] Student compared objects. Same: "${compareSame}". Different: "${compareDifferent}". `
-      + `Celebrate: "Great thinking! You noticed what's alike and what's different!"`,
-      { silent: true }
-    );
-  }, [currentChallenge, compareSame, compareDifferent, currentAttempts, sendText]);
-
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    switch (currentChallenge.type) {
-      case 'sort': handleCheckSortChallenge(); break;
-      case 'predict': handleCheckPredictChallenge(); break;
-      case 'mystery': handleCheckMysteryChallenge(); break;
-      case 'compare': handleCheckCompareChallenge(); break;
-      case 'describe':
-        // Describe challenges complete when properties have been viewed
-        if (viewedProperties.size > 0) {
-          setFeedback('Great observations!');
-          setFeedbackType('success');
-          setChallengeResults(prev => [...prev, {
-            challengeId: currentChallenge.id,
-            correct: true,
-            attempts: 1,
-          }]);
-          sendText(
-            `[DESCRIBE_COMPLETE] Student examined properties. Celebrate their observations.`,
-            { silent: true }
-          );
-        }
-        break;
-      default: break;
-    }
-  }, [currentChallenge, handleCheckSortChallenge, handleCheckPredictChallenge,
-    handleCheckMysteryChallenge, handleCheckCompareChallenge, viewedProperties.size, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Navigation
-  // -------------------------------------------------------------------------
-  const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
-
-    if (nextIndex >= challenges.length) {
-      sendText(
-        `[ALL_COMPLETE] Student completed all ${challenges.length} challenges! `
-        + `Celebrate: "You're a matter expert! You know all about solids, liquids, and gases!"`,
-        { silent: true }
-      );
-
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
-        const correctCount = challengeResults.filter(r => r.correct).length;
-        const score = challenges.length > 0
-          ? Math.round((correctCount / challenges.length) * 100) : 0;
-
-        const metrics: MatterExplorerMetrics = {
-          type: 'matter-explorer',
-          sortingCorrect,
-          sortingTotal,
-          propertiesIdentified,
-          propertiesTotal,
-          stateChangePredicted,
-          mysteryMaterialsSolved,
-          mysteryTotal,
-          trickyMaterialsExplored,
-          temperatureSliderUsed,
-          particleViewEngaged: false,
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-
-        submitEvaluation(
-          correctCount === challenges.length,
-          score,
-          metrics,
-          { challengeResults, sortedObjects }
-        );
-      }
-      return;
-    }
-
-    // Reset for next challenge
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
-    setFeedback('');
-    setFeedbackType('');
-    setMysteryGuess('');
-    setCompareSame('');
-    setCompareDifferent('');
-    if (challenges[nextIndex]?.type === 'sort') {
-      setSortedObjects({});
-      setHoveredBin(null);
-      setDropFlash(null);
-      if (dropFlashTimer.current) clearTimeout(dropFlashTimer.current);
-    }
-
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
-      + `"${challenges[nextIndex]?.instruction}". Introduce it to the student.`,
-      { silent: true }
-    );
-  }, [
-    currentChallengeIndex, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, sortingCorrect, sortingTotal, propertiesIdentified,
-    propertiesTotal, stateChangePredicted, mysteryMaterialsSolved, mysteryTotal,
-    trickyMaterialsExplored, temperatureSliderUsed, submitEvaluation, sortedObjects,
-  ]);
-
-  // -------------------------------------------------------------------------
-  // Derived State
-  // -------------------------------------------------------------------------
-  const selectedObject = useMemo(() =>
-    objects.find(o => o.id === selectedObjectId) ?? null,
-    [objects, selectedObjectId]
-  );
-
-  // Compute current state of objects based on temperature
-  const objectStates = useMemo(() => {
-    return objects.map(obj => {
-      if (!obj.canChangeState || obj.stateChangeTemp == null) return obj.state;
-      if (obj.state === 'solid' && temperature > obj.stateChangeTemp) return 'liquid' as MatterState;
-      if (obj.state === 'liquid' && temperature > (obj.stateChangeTemp + 30)) return 'gas' as MatterState;
-      return obj.state;
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
+      const meta = MODE_META[item.kind];
+      return { label: meta.badge, icon: meta.icon };
     });
-  }, [objects, temperature]);
+  }, [evaluation.hasSubmitted, runner.summary, items]);
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
+  /**
+   * WHICH item is on the bench right now. On the advance path the runner opens
+   * the next item in the SAME dispatch as the affirmation, so by render time
+   * `currentItem` is already the NEXT one while the tutor is still saying the
+   * verdict for the last. The reveal therefore renders its OWN item — anything
+   * else puts the previous item's answer over the next item's object.
+   */
+  const staged = showReveal && reveal ? reveal.item : runner.currentItem;
+  const modeMeta = MODE_META[staged?.kind ?? 'name_state'];
+
+  if (!judged) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader className="pb-3">
+          <LuminaCardTitle className="text-lg">{safeTitle}</LuminaCardTitle>
+        </LuminaCardHeader>
+        <LuminaCardContent className="space-y-4">
+          {objects.length === 0 ? (
+            <p className="text-slate-400 text-center">No objects available.</p>
+          ) : (
+            <>
+              <p className="text-slate-400 text-sm text-center">
+                Tap anything to look at it closely.
+              </p>
+              <ExplorationShelf objects={objects} onInspect={setInspected} />
+              {inspected && (
+                <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-white/10 bg-slate-900/40 px-5 py-4">
+                  <span className="text-5xl leading-none" aria-hidden>{getObjectEmoji(inspected.name)}</span>
+                  <span className="text-slate-200 font-medium">{inspected.name}</span>
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.color}</LuminaBadge>
+                    <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.texture}</LuminaBadge>
+                    <LuminaBadge accent="cyan" className="text-xs">{inspected.properties.weight}</LuminaBadge>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
-              {gradeBand === 'K-1' ? 'Kindergarten' : 'Grades 1-2'}
-            </Badge>
-            {currentChallenge && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
-                {currentChallenge.type}
-              </Badge>
-            )}
-          </div>
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <LuminaCardTitle className="text-lg">{safeTitle}</LuminaCardTitle>
+          {!evaluation.hasSubmitted && staged && (
+            <LuminaBadge accent={modeMeta.accent} className="text-xs">
+              {modeMeta.icon} {modeMeta.badge}
+            </LuminaBadge>
+          )}
         </div>
-        {description && (
-          <p className="text-slate-400 text-sm mt-1">{description}</p>
-        )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Challenge Progress */}
-        {challenges.length > 0 && (
-          <div className="flex items-center gap-2">
-            {challenges.map((c, i) => (
-              <div
-                key={c.id}
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                  challengeResults.some(r => r.challengeId === c.id && r.correct)
-                    ? 'bg-emerald-400'
-                    : i === currentChallengeIndex
-                      ? 'bg-cyan-400 scale-125'
-                      : 'bg-slate-600'
-                }`}
+      <LuminaCardContent className="space-y-4">
+        {!evaluation.hasSubmitted && (
+          <>
+            <div className="flex items-center justify-center gap-4">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
               />
-            ))}
-            <span className="text-slate-500 text-xs ml-auto">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
-            </span>
-          </div>
-        )}
-
-        {/* Instruction */}
-        {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-            <p className="text-slate-200 text-sm font-medium">
-              {currentChallenge.instruction}
-            </p>
-          </div>
-        )}
-
-        {/* Object Gallery */}
-        {(!currentChallenge || currentChallenge.type !== 'mystery') && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {objects.map((obj, idx) => {
-              const placed = sortedObjects[obj.id];
-              const currentState = objectStates[idx];
-              const stateConf = STATE_CONFIG[currentState];
-              const isSelected = selectedObjectId === obj.id;
-              const emoji = getObjectEmoji(obj.name);
-
-              return (
-                <div
-                  key={obj.id}
-                  draggable={!hasSubmittedEvaluation}
-                  onDragStart={() => handleDragStart(obj.id)}
-                  onClick={() => handleSelectObject(obj.id)}
-                  className={`
-                    relative rounded-lg border p-3 text-center cursor-pointer
-                    transition-all duration-300 select-none
-                    ${placed
-                      ? `${STATE_CONFIG[placed].bgClass} opacity-70 hover:opacity-100`
-                      : isSelected
-                        ? `${stateConf.activeClass} ${stateConf.glowClass} scale-105`
-                        : `bg-white/5 border-white/10 hover:bg-white/10 hover:scale-105`
-                    }
-                  `}
-                >
-                  <div className="text-2xl mb-1">{emoji}</div>
-                  <div className="text-slate-200 text-xs font-medium truncate">{obj.name}</div>
-                  {placed && (
-                    <Badge className={`absolute -top-1.5 -right-1.5 text-[10px] px-1.5 py-0 ${STATE_CONFIG[placed].bgClass} ${STATE_CONFIG[placed].textClass}`}>
-                      {STATE_CONFIG[placed].label}
-                    </Badge>
-                  )}
-                  {obj.canChangeState && showTemperatureSlider && currentState !== obj.state && (
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-                      <span className="text-[10px] text-amber-400">Changed!</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Sorting Bins */}
-        {currentChallenge?.type === 'sort' && !isCurrentChallengeComplete && (
-          <div className="grid grid-cols-3 gap-3">
-            {(['solid', 'liquid', 'gas'] as MatterState[]).map(state => {
-              const conf = STATE_CONFIG[state];
-              const objectsInBin = objects.filter(o => sortedObjects[o.id] === state);
-              const zoneState: DropZoneState =
-                hoveredBin === state
-                  ? 'dragOver'
-                  : dropFlash?.state === state
-                    ? dropFlash.ok
-                      ? 'correct'
-                      : 'incorrect'
-                    : objectsInBin.length > 0
-                      ? 'filled'
-                      : 'idle';
-
-              return (
-                <div
-                  key={state}
-                  onDragOver={(e) => handleDragOver(e, state)}
-                  onDragLeave={() => setHoveredBin(null)}
-                  onDrop={(e) => { e.preventDefault(); handleDrop(state); }}
-                  className="text-center"
-                >
-                  <div className="text-lg mb-1">{conf.emoji}</div>
-                  <div className={`text-sm font-medium mb-1 ${conf.textClass}`}>
-                    {conf.label}
-                  </div>
-                  <div className="text-slate-500 text-[10px] mb-2">
-                    {conf.description}
-                  </div>
-                  <LuminaDropZone
-                    state={zoneState}
-                    emptyPrompt="Drop objects here"
-                    className="min-h-[72px] content-center justify-center p-2"
-                  >
-                    {objectsInBin.length > 0 && (
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {objectsInBin.map(obj => (
-                        <span
-                          key={obj.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!hasSubmittedEvaluation) {
-                              setSortedObjects(prev => {
-                                const next = { ...prev };
-                                delete next[obj.id];
-                                return next;
-                              });
-                              setFeedback('');
-                              setFeedbackType('');
-                            }
-                          }}
-                          className={`text-xs px-1.5 py-0.5 rounded cursor-pointer hover:opacity-70 transition-opacity ${
-                            obj.state === state
-                              ? 'bg-emerald-500/20 text-emerald-300'
-                              : 'bg-red-500/20 text-red-300'
-                          }`}
-                          title="Click to remove"
-                        >
-                          {getObjectEmoji(obj.name)} {obj.name}
-                        </span>
-                      ))}
-                    </div>
-                    )}
-                  </LuminaDropZone>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Mystery Challenge */}
-        {currentChallenge?.type === 'mystery' && !isCurrentChallengeComplete && (
-          <div className="bg-slate-800/30 rounded-xl p-4 border border-cyan-500/20">
-            <div className="text-center mb-3">
-              <span className="text-3xl">🔍</span>
-              <p className="text-slate-300 text-sm mt-2">What material am I?</p>
-            </div>
-            <div className="flex items-center gap-2 mt-3">
-              <input
-                type="text"
-                value={mysteryGuess}
-                onChange={e => setMysteryGuess(e.target.value)}
-                placeholder="Type your guess..."
-                className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-cyan-400/50 placeholder:text-slate-600"
-                onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Compare Challenge */}
-        {currentChallenge?.type === 'compare' && !isCurrentChallengeComplete && (
-          <div className="bg-slate-800/30 rounded-xl p-4 border border-purple-500/20">
-            <div className="grid grid-cols-2 gap-4">
-              {/* Same */}
-              <div>
-                <label className="flex items-center gap-1.5 text-emerald-300 text-xs font-medium mb-2">
-                  <span className="text-base">🤝</span> One thing the SAME
-                </label>
-                <input
-                  type="text"
-                  value={compareSame}
-                  onChange={e => setCompareSame(e.target.value)}
-                  placeholder="e.g. Both are heavy"
-                  className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-emerald-400/50 placeholder:text-slate-600"
-                />
-              </div>
-              {/* Different */}
-              <div>
-                <label className="flex items-center gap-1.5 text-amber-300 text-xs font-medium mb-2">
-                  <span className="text-base">↔️</span> One thing DIFFERENT
-                </label>
-                <input
-                  type="text"
-                  value={compareDifferent}
-                  onChange={e => setCompareDifferent(e.target.value)}
-                  placeholder="e.g. One flows, one doesn't"
-                  className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-amber-400/50 placeholder:text-slate-600"
-                />
-              </div>
-            </div>
-            <p className="text-slate-500 text-[10px] mt-2 text-center">
-              Click on the objects above to see their properties, then write your answers!
-            </p>
-          </div>
-        )}
-
-        {/* Property Panel */}
-        {showPropertyPanel && selectedObject && (
-          <div className="bg-slate-800/20 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">{getObjectEmoji(selectedObject.name)}</span>
-              <span className="text-slate-200 text-sm font-medium">{selectedObject.name}</span>
-              <Badge className={`text-[10px] ${STATE_CONFIG[selectedObject.state].bgClass} ${STATE_CONFIG[selectedObject.state].textClass}`}>
-                {STATE_CONFIG[selectedObject.state].label}
-              </Badge>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {Object.entries(selectedObject.properties).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="bg-white/5 rounded-md px-2 py-1 text-xs"
-                >
-                  <span className="text-slate-500 capitalize">{key}: </span>
-                  <span className="text-slate-300">
-                    {PROPERTY_LABELS[key]?.[value] ?? value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Temperature Slider */}
-        {showTemperatureSlider && (
-          <div className="bg-slate-800/20 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-slate-400 text-xs">Temperature</span>
-              <span className={`text-sm font-mono font-medium ${
-                temperature < 0 ? 'text-blue-400' :
-                temperature > 100 ? 'text-red-400' :
-                'text-slate-200'
-              }`}>
-                {temperature}°C
-              </span>
-            </div>
-            <input
-              type="range"
-              min={-20}
-              max={120}
-              value={temperature}
-              onChange={e => handleTemperatureChange(parseInt(e.target.value))}
-              className="w-full h-2 rounded-lg appearance-none cursor-pointer
-                bg-gradient-to-r from-blue-500 via-slate-400 to-red-500"
-            />
-            <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-              <span>Freezing</span>
-              <span>Room Temp</span>
-              <span>Boiling</span>
-            </div>
-          </div>
-        )}
-
-        {/* Feedback */}
-        {feedback && (
-          <div className={`text-center text-sm font-medium transition-all duration-300 ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            'text-slate-300'
-          }`}>
-            {feedback}
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        {challenges.length > 0 && (
-          <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                onClick={handleCheckAnswer}
-                disabled={hasSubmittedEvaluation}
+              {/* Tap-to-hear the question again — never the answer. */}
+              <button
+                type="button"
+                onClick={runner.hearStimulus}
+                aria-label="Hear the question again"
+                className={`
+                  flex items-center justify-center w-10 h-10 rounded-full
+                  bg-amber-500/15 border-2 border-amber-500/30 text-amber-300
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
+                `}
               >
-                Check Answer
-              </Button>
-            )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={advanceToNextChallenge}
-              >
-                Next Challenge
-              </Button>
-            )}
-            {allChallengesComplete && (
-              <div className="text-center">
-                <p className="text-emerald-400 text-sm font-medium mb-2">
-                  All challenges complete!
-                </p>
-                <p className="text-slate-400 text-xs">
-                  {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-                </p>
+                <Volume2 size={18} />
+              </button>
+            </div>
+
+            {/* THE BENCH. No bins, no property panel, no slider, no text box —
+                every one of them either prints the answer or lets the child
+                pick it from a menu the tutor never offered. */}
+            <div className="flex justify-center">
+              {staged && <ObjectStage item={staged} revealed={showReveal} />}
+            </div>
+
+            {/* Reveal-on-affirm: the answer, in words, for exactly as long as
+                the tutor's affirmation is being spoken (runner.revealHeld). */}
+            {showReveal && reveal && (
+              <div className="flex justify-center">
+                <div className="rounded-2xl border-2 border-emerald-400/30 bg-emerald-500/10 px-5 py-2.5 animate-in fade-in duration-300">
+                  <span className="text-emerald-200 text-sm font-medium">{reveal.line}</span>
+                </div>
               </div>
             )}
-          </div>
+
+            <JudgedMicPanel run={runner} />
+          </>
         )}
 
-        {/* Hint */}
-        {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
-            <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
+            heading="Great Science!"
+            celebrationMessage={`You worked out what ${items.length} things are made of — out loud!`}
+            className="mt-4"
+          />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

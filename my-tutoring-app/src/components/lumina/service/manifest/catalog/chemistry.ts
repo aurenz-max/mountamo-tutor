@@ -121,27 +121,90 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'matter-explorer',
-    description: 'Interactive matter classification activity where students sort everyday objects (ice, water, air, rock, milk, steam) into solid, liquid, and gas bins. Features property inspector, temperature slider for state changes, and mystery material challenges. Perfect for teaching K-2 students about states of matter and observable properties. ESSENTIAL for Kindergarten and Grade 1-2 science.',
-    constraints: 'Best for K-2. Use for early science lessons on states of matter, properties of materials, heating/cooling changes, and classification skills.',
+    // -- PORT 23 -- the judged loop, third chemistry port --------------------
+    // RUNG 2 (2026-09-03, queue item 28): a FOURTH mode, `change` -- can this
+    // everyday change go back, or is it for ever. It is here rather than on
+    // `states-of-matter` because that sibling teaches the reversible half from
+    // THRESHOLDS ("it melts at zero degrees"), which is a Grade 3-5 ask; the
+    // irreversible half had no home in the catalog at all. The LLM picks WHICH
+    // change happened from a closed menu; `CHANGE_CATALOG` owns whether it
+    // undoes, so no answer is ever read off a generated field.
+    // ALL FOUR MODES SPEAK. Zero taps. The click era's three drag-bins, its
+    // Check button and its typed mystery box are gone: every answer this
+    // primitive wants is a thing a five-year-old says out loud at a table.
+    // THE SPLIT (standing gate 1): sort and mystery answer with one word from
+    // a three-word set (short_spoken_word, benched); property answers with one
+    // proposition from a menu the ask itself states (closed_set_choice) --
+    // free production there would be open-set, so the menu stays and the
+    // BUTTON is what the port deletes.
+    // WHAT THE JUDGED SURFACE HIDES: the three bins as a drop target, the
+    // property panel (its `shape` field IS the answer key for two of the three
+    // modes), the temperature slider, and the mystery text box. The property
+    // panel returns as the reveal, after the affirmation.
+    // `property` WAS AN EVAL-MODE FICTION -- declared here and never emitted by
+    // the generator, so it was IRT-weighted and unroutable. It is real now,
+    // bound to `properties.shape`, which the generator always emitted and
+    // nothing ever read.
+    // Cue lines and per-item judging contracts live in `matterExplorerScript.ts`
+    // (hand-authored, DISTAR); this block is the session-level frame.
+    // SENTINEL DISCIPLINE re-checked on every line: no sentence begins with
+    // "Yes" or with "My turn".
+    description: 'Live-judged Direct Instruction on states of matter and everyday change for K-2, spoken end to end. The tutor names an everyday object and the child SAYS whether it is a solid, a liquid or a gas; says what it does when you pour it into a cup; says whether a change that happened to it can go back the way it was or is changed for ever (ice melts and freezes again, a cooked egg does not); and works out the state of a secret object from clues. Requires a microphone. Every answer is spoken aloud and judged from the audio - there is nothing to drag, tap or type. ESSENTIAL for Kindergarten and Grade 1-2 science.',
+    constraints: 'Best for K-2. Requires a working microphone and the live tutor - the whole activity is a spoken exchange. Use for early science lessons on states of matter, observable properties of materials, classification, and changes that can or cannot be undone. Reversible and irreversible change is taught here from what a child can picture, never from melting and boiling points - that framing belongs to states-of-matter at Grade 3-5.',
+    audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'Student is exploring matter by sorting {{totalObjects}} objects into solid, liquid, and gas bins. Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). They have sorted {{sortedCount}} objects so far.',
-      contextKeys: ['gradeBand', 'totalObjects', 'totalChallenges', 'currentChallengeIndex', 'challengeType', 'instruction', 'sortedCount', 'selectedObject', 'temperature', 'attemptNumber'],
+      // Defect 12: `{{stimulus}}` goes LAST, with the never-read-aloud clause
+      // IMMEDIATELY before it. Split that clause off into its own sentence
+      // higher up and the block stops identifying itself as not-content at the
+      // point it arrives -- measured on the states-of-matter port, 2 of 6 asks
+      // read the preamble aloud until the clause moved next to the value.
+      taskDescription: 'Live-judged Direct Instruction on states of matter with a K-2 learner. The round type right now is "{{challengeType}}". The learner answers OUT LOUD every round and you judge what you hear against the exact contract in each bracketed [MEX_ITEM] message; you speak the scripted lines from those messages and nothing else. Working the answer out from what they can picture is the entire skill being practiced, so never volunteer an object\'s state, never say which bin it belongs in, never describe what it does in a cup, and never say whether a change can be undone, before they have. The question side of what is on screen, described for you alone and never read aloud: {{stimulus}}.',
+      // Exactly what the pack pushes through contextFor. Every key the
+      // click-era block interpolated (selectedObject, sortedCount, temperature)
+      // was the answer or the material that gives it away.
+      contextKeys: ['challengeType', 'stimulus'],
+      // 18d: every rung routes through the SCRIPTED correction. A re-spoken
+      // ask opens with neither "Yes" nor "My turn:", so the reducer records no
+      // verdict and the child waits on a lesson that cannot advance.
       scaffoldingLevels: {
-        level1: '"What do you notice about this object? Does it keep its own shape, or does it flow?"',
-        level2: '"Think about what happens when you pour it. Solids keep their shape. Liquids take the shape of their container. Gases spread out everywhere. Which one is {{selectedObject}}?"',
-        level3: '"Let\'s look at {{selectedObject}} together. Can you hold it in your hand? If you put it in a cup, would it keep its shape or fill the cup? That tells us if it\'s a solid or a liquid."',
+        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it inside the item message. It already re-models the rule and hands the question back, and it opens with "My turn:" where the activity can hear it.',
+        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all.',
+        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further - the activity moves the lesson on by itself and carries the next question to you.',
       },
+      // Observable behaviours only, with PERFORMABLE responses that produce a
+      // VERDICT (defect 7: a sentiment without the verdict line stalls a
+      // correct child).
       commonStruggles: [
-        { pattern: 'Student places honey or sand in solid bin', response: 'Ask: "I see why you think that! It IS thick. But try imagining pouring it — does it flow? Solids keep their shape, but honey flows slowly like a liquid."' },
-        { pattern: 'Student cannot identify gases', response: 'Say: "Gases are tricky because you can\'t always see them! Think about air — you can\'t see it, but you can feel it when the wind blows. Air is a gas!"' },
-        { pattern: 'Student confuses steam and water', response: 'Say: "Great question! Water is a liquid you can see in your glass. Steam is what happens when water gets really hot — it turns into a gas that floats up into the air!"' },
-        { pattern: 'Student struggles with temperature slider', response: 'Guide: "Watch what happens to the ice cube as we make it warmer. See it changing? That\'s because heat can turn solids into liquids!"' },
+        { pattern: 'Says the object\'s own name back instead of what state it is', response: 'Run the item\'s scripted correction line - the name is the question, not the answer - then wait in silence for their next try.' },
+        { pattern: 'Calls something that pours a liquid when it is grains or powder', response: 'Run the item\'s scripted correction line, which re-models the rule about holding its own shape, then wait in silence.' },
+        { pattern: 'Names the state when the round asked what the object DOES in a cup', response: 'Run the item\'s scripted correction line for this round - it is the right idea answering a different question - then wait in silence.' },
+        { pattern: 'Guesses what the secret object IS instead of what state it is', response: 'Run the item\'s scripted correction line, which reads the clues again and asks for the state, then wait in silence.' },
+        { pattern: 'Says what happened to the object instead of whether it can go back', response: 'Run the item\'s scripted correction line for this round - repeating the change is not yet an answer - then wait in silence.' },
+        { pattern: 'Goes quiet and does not speak for a long time', response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'THE VERDICT ENDS THE TURN',
+          instruction:
+            'After an affirmation or a correction, the turn is OVER - never run on into another question, '
+            + 'another object, another clue, or a next round of your own: the application sends every next question itself. '
+            + 'A continued turn asks about an object the screen is not showing.',
+        },
+        {
+          title: 'THE PROPERTY PANEL IS THE ANSWER KEY',
+          instruction:
+            'What an object does with its shape - holds its own, takes the shape of what holds it, spreads out to fill the room - '
+            + 'is exactly what the learner is being asked to work out, in every round. '
+            + 'Never read a property list aloud, never say which bin an object belongs in, and never say how an object pours '
+            + 'unless the scripted line you were given says it.',
+        },
       ],
     },
     evalModes: [
-      { evalMode: 'sort', label: 'Sort (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['sort'], description: 'Sort familiar objects into solid, liquid, gas bins' },
-      { evalMode: 'property', label: 'Property Inspector (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['property'], description: 'Identify properties that determine state of matter' },
-      { evalMode: 'mystery', label: 'Mystery Material (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['mystery'], description: 'Classify tricky materials using property evidence' },
+      { evalMode: 'sort', label: 'Sort (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['sort'], description: 'DI judged, spoken: the tutor names an everyday object and the child says whether it is a solid, a liquid or a gas. One judged item per OBJECT - the click era graded a whole screenful as one boolean. Key computed from the object\'s own state field.' },
+      { evalMode: 'property', label: 'Property Inspector (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['property'], description: 'DI judged, spoken: the child says what the object DOES in a cup - keeps its own shape, takes the cup\'s shape, or spreads out and fills the room. The observation that sits one step before classification; key computed from properties.shape.' },
+      { evalMode: 'change', label: 'Can It Go Back? (Medium-Hard)', beta: 1.2, discrimination: 1.0, scaffoldingMode: 4, challengeTypes: ['change'], description: 'DI judged, spoken: the tutor says what happened to the object - it melted, it was cooked, it was torn - and the child says whether it can go back the way it was or is changed for ever. The K-2 reversible/irreversible standard, asked from what a child can picture rather than from a melting point; the change comes from a closed menu and the key is code-owned.' },
+      { evalMode: 'mystery', label: 'Mystery Material (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['mystery'], description: 'DI judged, spoken: the object\'s name is withheld and the child names its state from two or three observable clues. Shape and flow clues are refused in code - they would hand over the answer.' },
     ],
     supportsEvaluation: true,
   },
