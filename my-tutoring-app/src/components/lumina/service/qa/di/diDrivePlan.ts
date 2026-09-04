@@ -313,6 +313,15 @@ import {
   type MatterObjectLike,
   type MatterTier,
 } from '../../../primitives/visual-primitives/chemistry/matterExplorerScript';
+import {
+  itemsFromChallenges as eraExplorerItems,
+  eraExplorerPackBase,
+  eraExplorerHarnessAnswers,
+  type EraChallengeLike,
+  type EraExplorerItem,
+  type EraSessionLike,
+  type EraTier,
+} from '../../../primitives/visual-primitives/history/eraExplorerScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -1697,6 +1706,58 @@ const matterExplorerAdapter: DiPortAdapter<MatterExplorerItem> = {
   answersFor: matterExplorerHarnessAnswers,
 };
 
+/**
+ * era-explorer (port 24, FIRST history / social-studies port). ALL FOUR MODES
+ * SPOKEN, so there is no `gestureVerdictCue` here.
+ *
+ * Its `build` needs the SESSION as well as the challenges — the era name, the
+ * prior era's name and the three lens titles and bodies — because every spoken
+ * menu is assembled from them and every leak audit is measured against them.
+ * The key itself is NOT re-derived: the generator already owns `options` and
+ * `correctIndex` in code, which was the click era's one honest measurement.
+ *
+ * What the drive is really testing is the pair of gates the SPOKEN form adds:
+ * a menu whose options are not separable by ear (two era names sharing a word;
+ * `cause_of_change` at `hard`, where the structural lever picks the NEAREST
+ * wrong causes on purpose), and a statement carrying the words that
+ * distinguish its own correct choice. Both drop build-side AND generator-side
+ * from the same imported predicates, so a run reporting zero drops on a clean
+ * payload and non-zero on a dirty one is exercising one rule, not two copies.
+ */
+const eraExplorerAdapter: DiPortAdapter<EraExplorerItem> = {
+  build: (data) => {
+    const raw = (data.challenges ?? []) as Array<{
+      id: string; type?: string; statement?: string;
+      options?: string[]; correctIndex?: number; explanation?: string;
+    }>;
+    const lenses = (data.lenses ?? []) as Array<{ title?: string; body?: string }>;
+    const priorEra = (data.priorEra ?? {}) as { name?: string };
+    const session: EraSessionLike = {
+      eraName: String(data.eraName ?? ''),
+      priorEraName: String(priorEra.name ?? ''),
+      lensTitles: lenses.map((l) => l.title ?? ''),
+      lensBodies: lenses.map((l) => l.body ?? ''),
+    };
+    const tier = (data.supportTier as EraTier) ?? undefined;
+    const shaped: EraChallengeLike[] = raw.map((ch) => ({
+      id: ch.id,
+      type: ch.type ?? '',
+      statement: ch.statement ?? '',
+      options: ch.options ?? [],
+      correctIndex: ch.correctIndex ?? -1,
+      explanation: ch.explanation,
+    }));
+    const items = eraExplorerItems(shaped, session, { tier });
+    const kept = new Set(items.map((i) => i.id));
+    return {
+      items,
+      dropped: shaped.filter((ch) => !kept.has(ch.id)).length,
+      surface: eraExplorerPackBase(items),
+    };
+  },
+  answersFor: eraExplorerHarnessAnswers,
+};
+
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'knowledge-check': knowledgeCheckAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
@@ -1731,6 +1792,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'periodic-table': periodicTableAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'states-of-matter': statesOfMatterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'matter-explorer': matterExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'era-explorer': eraExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

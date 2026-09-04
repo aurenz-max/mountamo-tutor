@@ -56,6 +56,21 @@ import type {
   EraPriorEra,
 } from '../../primitives/visual-primitives/history/EraExplorer';
 
+// The judged pack's leak gates and its spoken-menu builder, IMPORTED rather
+// than re-implemented. Two hand-synced copies of a leak rule drift —
+// letter-spotter's two sides of the wire disagreed live on what a sayable
+// sentence was until the copies were deleted — so this generator consumes
+// exactly what `itemFromChallenge` will run again before the ask is spoken.
+// Only the pure predicates moved; the structural machinery below
+// (`selectForShape`, `lensReachOf`, the distractor-distance lever) stays here.
+import {
+  answerWordsInStatement,
+  choicesFor,
+  optionsEarSeparable,
+  statementLeaks,
+  toWords,
+} from '../../primitives/visual-primitives/history/eraExplorerScript';
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -74,25 +89,6 @@ const CHALLENGE_TYPES: readonly EraChallengeType[] = [
 const SORT_SLOTS = ['era', 'today', 'both'] as const;
 const COMPARE_SLOTS = ['earlier', 'era', 'both'] as const;
 
-/**
- * Words that place a statement in time and therefore answer the sort for the
- * student. Any hit rejects the statement (years like "1850" included; the
- * unanchored \d{4} also catches "1800s"). Applies to era_sort / era_compare.
- */
-const TIME_LEAK =
-  /\b(today|now|nowadays|long ago|back then|these days|modern)\b|\d{4}/i;
-
-/**
- * A cause_of_change statement must state the CHANGE only. A causal connective
- * means the reason is already in the stem, so the three options are decoration.
- */
-const CAUSAL_CONNECTIVE =
-  /\b(because|since|due to|thanks to|owing to|as a result|which led to|so that)\b/i;
-
-/** Generic era-name words that are safe inside statements ("times", "age"…). */
-const GENERIC_ERA_WORDS = new Set([
-  'times', 'time', 'days', 'day', 'era', 'age', 'ages', 'the', 'old', 'early', 'life', 'years',
-]);
 
 // ---------------------------------------------------------------------------
 // Grade normalization
@@ -639,49 +635,6 @@ const nonempty = (value: unknown): string | null =>
 const isChallengeType = (value: unknown): value is EraChallengeType =>
   typeof value === 'string' && (CHALLENGE_TYPES as readonly string[]).includes(value);
 
-const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const containsPhrase = (haystack: string, phrase: string): boolean =>
-  new RegExp(`\\b${escapeRegExp(phrase)}\\b`, 'i').test(haystack);
-
-/**
- * Verbatim tripwire: a statement sharing this many CONSECUTIVE words with a
- * source body is a copied sentence, not a paraphrase — the judgment degrades
- * into a string-match lookup. Anchor phrases ("single-room schoolhouse",
- * "wagons pulled by oxen") stay well under this bar, so paraphrases survive.
- */
-const VERBATIM_RUN = 7;
-
-/** Shorter run for cause echoes: the cause is only a few words to begin with. */
-const CAUSE_ECHO_RUN = 4;
-
-const toWords = (s: string): string[] =>
-  s.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(Boolean);
-
-const sharesRun = (statement: string, sources: string[], run: number): boolean => {
-  const words = toWords(statement);
-  if (words.length < run) return false;
-  for (const source of sources) {
-    const haystack = ` ${toWords(source).join(' ')} `;
-    for (let i = 0; i + run <= words.length; i++) {
-      if (haystack.includes(` ${words.slice(i, i + run).join(' ')} `)) return true;
-    }
-  }
-  return false;
-};
-
-/** Distinctive words of an era name — "Pioneer" counts, "Times" doesn't. */
-const eraKeywords = (eraName: string): string[] =>
-  eraName
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((word) => word.length >= 4 && !GENERIC_ERA_WORDS.has(word));
-
-const namesEra = (statement: string, eraNames: string[]): boolean =>
-  eraNames
-    .flatMap(eraKeywords)
-    .some((word) => new RegExp(`\\b${escapeRegExp(word)}`, 'i').test(statement));
-
 // ---------------------------------------------------------------------------
 // Shape measurement (structural axis) — how subtle is THIS candidate?
 // ---------------------------------------------------------------------------
@@ -898,39 +851,6 @@ const resolveAnswer = (
   }
 };
 
-/**
- * The reason a statement answers its own question, or null when it doesn't.
- * Each mode leaks a different way, so each gets its own audit rather than one
- * blanket regex.
- */
-const statementLeaks = (
-  type: EraChallengeType,
-  statement: string,
-  answer: string,
-  ctx: EraContext,
-): string | null => {
-  // Every mode: a copied source sentence turns the judgment into a string match.
-  if (sharesRun(statement, ctx.lensBodies, VERBATIM_RUN)) return 'verbatim lens copy';
-
-  switch (type) {
-    case 'lens_id':
-      // Naming a lens hands over the only thing being asked.
-      if (ctx.lensTitles.some((t) => containsPhrase(statement, t))) return 'names a lens';
-      return null;
-    case 'era_sort':
-      if (TIME_LEAK.test(statement)) return 'time word or year';
-      if (namesEra(statement, [ctx.eraName])) return 'names the era';
-      return null;
-    case 'era_compare':
-      if (TIME_LEAK.test(statement)) return 'time word or year';
-      if (namesEra(statement, [ctx.eraName, ctx.priorEraName])) return 'names an era';
-      return null;
-    case 'cause_of_change':
-      if (CAUSAL_CONNECTIVE.test(statement)) return 'states its own cause';
-      if (sharesRun(statement, [answer], CAUSE_ECHO_RUN)) return 'echoes the cause';
-      return null;
-  }
-};
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -1164,6 +1084,7 @@ const validateChallenges = (
   let rejectedFields = 0;
   let rejectedLeaks = 0;
   let rejectedAnswers = 0;
+  let rejectedSpoken = 0;
   let duplicates = 0;
   let snappedHints = 0;
   let narrowedCauses = 0;
@@ -1209,6 +1130,33 @@ const validateChallenges = (
       continue;
     }
 
+    /**
+     * THE ANSWER IS SPOKEN NOW, so two gates the click era never needed run
+     * here as well as build-side — imported from the pack, never copied.
+     *
+     *  - `optionsEarSeparable`: the three options are read aloud as a MENU, and
+     *    a menu whose options share every content word has no honest verdict.
+     *    It bites hardest exactly where the structural lever is strongest —
+     *    `cause_of_change` at `hard` deliberately picks the NEAREST wrong
+     *    causes — which is the point: the gate is the floor under the lever.
+     *  - `answerWordsInStatement`: a statement carrying the words that
+     *    DISTINGUISH its own correct choice. The audits above catch a named
+     *    lens, a time word, a year and a four-word cause echo; this catches the
+     *    single rare noun a spoken ask gives away and a run-length gate cannot
+     *    see.
+     */
+    const spoken = choicesFor(type, resolved.options);
+    if (!spoken || !optionsEarSeparable(spoken)) {
+      rejectedSpoken++;
+      console.warn(`[EraExplorer] ${type} options are not separable by ear, dropped: "${statement}"`);
+      continue;
+    }
+    if (answerWordsInStatement(statement, spoken[resolved.correctIndex])) {
+      rejectedSpoken++;
+      console.warn(`[EraExplorer] ${type} statement carries its own answer word, dropped: "${statement}"`);
+      continue;
+    }
+
     const key = `${type}|${statement.toLowerCase()}`;
     if (seen.has(key)) {
       duplicates++;
@@ -1240,11 +1188,12 @@ const validateChallenges = (
     });
   }
 
-  if (rejectedFields + rejectedLeaks + rejectedAnswers + duplicates + snappedHints > 0) {
+  if (rejectedFields + rejectedLeaks + rejectedAnswers + rejectedSpoken + duplicates + snappedHints > 0) {
     console.warn(
       `[EraExplorer] Challenge validation: ${survivors.length} kept, `
       + `${rejectedFields} rejected (missing/invalid fields), ${rejectedLeaks} rejected (answer leak), `
       + `${rejectedAnswers} rejected (unresolvable answer), `
+      + `${rejectedSpoken} rejected (unsayable menu), `
       + `${duplicates} duplicates dropped, ${snappedHints} lens hints snapped`,
     );
   }
