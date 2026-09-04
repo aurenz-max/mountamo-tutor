@@ -51,7 +51,21 @@ const CHALLENGE_TYPE_DOCS: Record<FastFactChallengeType, ChallengeTypeDoc> = {
       + `EVERY apply challenge must use one of those shapes. Do NOT ask for a direct cue-to-memorized-partner response `
       + `(for example state -> capital, term -> definition, element symbol -> name, or word -> translation); `
       + `those direct questions belong to "recall" or "recognize". `
-      + `The task must still have one unambiguous answer and require factual automaticity, not multi-step reasoning.`,
+      + `Wrapping a direct question in a scenario sentence does NOT make it apply: if the student still only has to `
+      + `retrieve the memorized partner of a cue the stem names, it is recall no matter how it is phrased. `
+      + `The stem must hand the student a DIFFERENT handle than the learned cue: the fact's partner in reverse, `
+      + `a use, a property, a blank it fills, or a rival case to weigh against it. `
+      + `Give exactly ONE handle. If you ask by use, property, or context, the stem must NOT also print the `
+      + `symbol, term, or cue that maps straight to the answer - a stem carrying both is recall with decoration `
+      + `("the metal with the symbol Cu used in wiring" is answerable from Cu alone, so it is recognize, not apply). `
+      + `The task must still have one unambiguous answer and require factual automaticity, not multi-step reasoning. `
+      + `Many drill topics have exactly ONE learned pair (symbol/name, state/capital, word/meaning). On those topics the `
+      + `ONLY apply shape is to reach one side of the pair through something OTHER than the other side: `
+      + `GOOD  "Which element symbol is on the tank of a gas that makes balloons float?" -> He  (property -> symbol; the name is never shown) `
+      + `GOOD  "Denver is the capital of which state?" -> Colorado  (the pair, reversed) `
+      + `BAD   "Which noble gas is represented by the symbol He?" -> Helium  (symbol -> name: this is recognize) `
+      + `BAD   "The gas used in balloons has the symbol He. What is it called?" -> Helium  (the symbol is printed, so the property is decoration) `
+      + `BAD   "What is the chemical symbol for silver?" -> Ag  (name -> symbol: this is recall).`,
     schemaDescription: "'apply' (use a fact in context)",
   },
 };
@@ -816,6 +830,20 @@ export const generateFastFact = async (
     ? `\n## WITHIN-MODE SUPPORT TIER\n${tierScaffold.promptLines.map((line) => `- ${line}`).join('\n')}\n`
     : '';
 
+  // Phases are the PRESENTATION axis; the eval mode is the TASK axis. Left
+  // unqualified, the phase block sits directly under a "generate ONLY <mode>"
+  // constraint and quietly re-licenses the identities the mode excluded - its
+  // own examples named 'recall' and 'apply', and "early phases should be easier"
+  // reads as permission to soften the TASK. The measured failure was an `apply`
+  // pin whose first phase was ordinary direct recall, every item still stamped
+  // `apply` because the constrained schema enum left no other value to write.
+  // Naming the two axes apart closes the channel; the stamp alone never did.
+  const phaseIdentityLine = resolution
+    ? `\n- "Easier" means easier CONTENT (more familiar facts, wider-apart distractors) - it NEVER means a different task shape.`
+      + ` EVERY challenge in EVERY phase, including the first, must be ${resolution.allowedTypes.map((type) => `"${type}"`).join(' or ')} as defined above.`
+      + ` A phase is a place in the drill, not a task type.`
+    : '';
+
   const prompt = `You are a curriculum expert creating fluency drill challenges.
 
 TOPIC / LEARNING OBJECTIVE: ${topic}
@@ -831,9 +859,9 @@ ${challengeTypeSection}
 ${tierSection}
 
 ## Phase Design:
-- Generate challenges across 2-3 PHASES (e.g. 'recall', 'apply', 'rapid-recall').
+- Generate challenges across 2-3 PHASES, named for their PLACE in the drill (e.g. 'warm-up', 'core', 'mastery') - never for a task identity.
 - Each challenge has a \`type\` field that groups it into a presentation phase. This is separate from \`challengeType\`, which records the stable task identity selected above.
-- Early phases should be easier; later phases should be harder (more abstract / less scaffolded), NOT faster.
+- Early phases should be easier; later phases should be harder (more abstract / less scaffolded), NOT faster.${phaseIdentityLine}
 - Distribute challenges roughly evenly across phases.
 
 ## Challenge Design:
