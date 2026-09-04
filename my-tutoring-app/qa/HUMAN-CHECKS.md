@@ -7,14 +7,233 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open — ONE list, newest first (as of 2026-08-24, `/pm`)
+## Open — ONE list, newest first (as of 2026-09-03, `/add-di-loop` cause-effect-chain)
 
-> **88 rows open.** **Newest five:** #122 formula-lab (six component pedagogical
-> moments — the generic live journey does not replay them) · #121 era-explorer (the L4
-> difficulty tiers, never browser-driven) · #120 ramp-lab (three ramp task identities) ·
-> #119 dump-truck-loader (three capacity rungs) · #118 picture-vocabulary `association`.
-> Next free ID is **#123**.
+> **93 rows open.** **Newest five:** #130 cause-effect-chain (port 25 — yes/no per card, a chain that
+> commits on stillness, a spoken root pick; di item 29) · #129 scroll-layout lesson focus (di item 31) ·
+> #128 judged pack past block 1 (di item 30) · #127 era-explorer (port 24; **supersedes #121**) ·
+> #126 matter-explorer `change`.
+> Next free ID is **#131**.
 > Re-grep before filing; concurrent sessions in this lane are normal.
+
+### #130 — **cause-effect-chain (port 25): can a child SAY yes/no per card, BUILD a chain that commits on stillness, and SAY which card is the root?** · OPEN
+
+Dev → History tester → **Cause & Effect Chain** → pick a mode (or leave it mixed) → Generate → mic on.
+Three headless DI drives PASS (identify 10/10, hands 5/5, pick 5/5 after one wording fix), but the
+drives answer in TEXT and commit the chain by message — the acoustics, the stillness close and the
+hold are unproven. Queue: `qa/di/BACKLOG.md` item 29.
+
+- **identify_cause (say it wrong):** on a card that is plainly a RESULT of the ending, say *"yes, it's
+  about the same thing"* — expect *"My turn: An event is a cause when…"* and the same card asked
+  again. On a real cause say *"no"*. Then *"yeah"*, *"nope"*, *"it did"* — all should land as verdicts.
+  Listen for a hedge (*"maybe"*) being corrected, not affirmed.
+- **build_chain (hands):** tap the cards into the wrong order and STOP. About three seconds after the
+  last slot fills the tutor should speak the correction unprompted; the board should CLEAR entirely
+  (never leave the right cards in place). Say things while building — she must not answer them.
+  Build it right and hold still: *"Yes, that is the order…"*, slots turn green, the teaching note appears
+  and stays until her next ask begins. Tap a filled slot before the window closes — nothing should commit.
+- **root_vs_proximate (say it wrong):** when asked for the ROOT, name the card that happened LAST (the
+  one right before the ending); when asked for the one right before the ending, name the root. Both
+  should be refused. Then answer by position — *"the second one"* — and by the card's subject noun
+  (*"the farmers"*); both should be affirmed. Listen for whether a one-word answer that is only an
+  adjective on the card (*"local"*) is what you naturally say, or whether you reach for the noun.
+- **K/G1:** the ask should READ every card in page order; at G3+ it should not. Tap the ear button — it
+  reads the ending and the cards, never a hint. "Read this to me" on the background reads it word for word.
+- **Phone width:** the chain slots and the bank must not overlap the mic orb.
+
+**Pass:** every wrong above corrected with *"My turn:"*, every right affirmed with *"Yes,"*, the chain
+committing from stillness alone, and nothing spoken during a hold.
+
+### #129 — **scroll-layout lesson: after the student walks away from a block mid-item, can the NEXT spoken block hear them?** · OPEN
+
+Lesson Bench → drop `qa/lesson-bench/packages/kindergarten-counting-objects-to-10-20260904013634-pgr5.json`
+→ Play (it lands on the SCROLL layout — `qa/lesson-bench/BACKLOG.md` item 9, which is what makes this
+reproducible) → mic on → answer counting-board's first item and scroll on mid-item → tap ten-frame's
+orb, build ONE frame, scroll on while its next build ask is still up → **Counting Fun**
+(di-spoken-practice): tap the orb, count the apples out loud. Before 2026-09-04 (session
+`de90b50f9e1b`) this block was deaf for 149s — not one `activity_start` in the ledger — because
+ten-frame's gesture hold on the shared bracket outlived the student. Fix: `qa/di/BACKLOG.md` item 31.
+
+- **Pass:** after the DI opener the ledger shows `activity_start` / `activity_end` and a
+  `user-transcript`, and the tutor says "Yes, three." (or corrects) — the run advances to the stars.
+- **Fence:** counting-board and ten-frame do NOT advance, re-ask, or speak during the DI block — no
+  `[COUNT_ITEM]` / `[TF_ITEM]` `text-to-gemini` while `di-spoken-practice` is the active primitive.
+- **Return:** scroll back to ten-frame — its build ask is where it was, the frame still commits, and the
+  tutor judges it.
+
+### #128 — **a judged pack that is NOT block 1 of a lesson: does the tutor stay silent until the pack's own opener?** · OPEN
+
+Lesson Bench → drop `qa/lesson-bench/packages/kindergarten-counting-objects-to-10-20260903122953-hxav.json`
+→ Play → mic on → answer the counting-board items → scroll to **Fill the Ten-Frame**. Before 2026-09-03
+(session `b833c0f89475`) the switch took a 57s turn of its own: greeting, "Put 5 circles onto the frame",
+then a fabricated `[CUE_1] Say exactly: "…show 4…"` with its stage direction read aloud, and the real
+`[TF_ITEM]` ("Put two counters on the frame") 52s later. Fix: `qa/di/BACKLOG.md` item 30.
+
+- **Pass:** the first thing spoken after leaving counting-board is the ten-frame opener's quoted line
+  ("Hi! Time to work with the ten frame! … Put two counters on the frame. Your turn.") — no greeting, no
+  activity description, no bracket tag voiced, no number other than the item's.
+- **Ledger:** `switch-primitive` → `switch-held` → one `text-to-gemini` with `kind: [PRIMITIVE SWITCH]`
+  and `cues: 2` (the announcement riding inside the opener's turn) — NOT a separate switch turn.
+- **Regression fence:** walk on to **Hands-On Toy Counter Hunt** (take-home-activity, not a pack) and
+  confirm the one-sentence greeting still lands there.
+
+### #127 — **era-explorer (port 24): can a child SAY a three-part historical judgment, and does the era card still work as a source?** · OPEN
+
+Dev → History tester → **Era Explorer**. Four headless DI drives PASS (34/34 wrongs refused,
+33/34 affirmed across the four modes), but the drives answer in TEXT — the acoustics of this
+pack's menus, and the whole open-book surface, are unproven.
+
+- **The three-way menu, said aloud.** "back then" / "today" / "both" on `era_sort`, and the two
+  ERA NAMES on `era_compare`. `optionsEarSeparable` gates them build-side, but a generated pair
+  like *Pioneer Times* against *Early Colonial Days* is only separable if a child actually says a
+  distinguishing word. Listen for what happens when they say just "the first one" (accepted by
+  the contract) or "the old one" (not).
+- **`cause_of_change`'s menu is THREE full causes, spoken.** ~25 words of options before the
+  child answers. That is the longest ask in the pack by a wide margin. Does a Grade 5 child hold
+  all three, or do they answer from whichever they heard last? If they cannot, the mode may owe
+  a shorter menu form rather than a leniency change.
+- **The era card as a source, not scenery.** Do they actually open the lens tabs before
+  answering? At the HARD tier the card folds away between items and takes one tap to reopen
+  (re-folded on every advance) — check that a child finds that tap, and that re-opening does not
+  feel like a punishment.
+- **The source read-aloud (`[ERA_SOURCE]`).** Tap "Read this to me" on a lens at K/G1. It must
+  read the lens body word for word and then STOP — no summary, no quiz, and never a hint about
+  the live statement.
+- **The statement, heard once.** The whole ask is spoken and the statement is the longest part of
+  it. At K/G1, can they hold the statement through the menu that follows it?
+
+Report: `qa/di/BACKLOG.md` item 29 · drives: `qa/tutor-reports/era-explorer-live-di-*-2026-09-03.md`.
+
+### #126 — **matter-explorer `change`: does a five-year-old's "go back" / "for ever" survive the microphone?** · OPEN
+
+Dev → Chemistry testers → **Matter Explorer**, eval mode **Can It Go Back?**. Both headless DI
+drives PASS with no findings (9/9 wrongs refused, 9/9 affirmed) — but the drives answer in TEXT,
+so what is unproven is the ACOUSTICS of this mode's answer set, which is new for the pack.
+
+- **The two options, said aloud.** "go back" and "for ever" against a child's voice. They share
+  no content word by construction (`optionsEarSeparable` gates it), but "for ever" said fast is
+  one word and "go back" can arrive as "goes back" or just "back".
+- **The bare yes/no.** The ask's first clause is a yes/no question, and the contract accepts
+  "yes" for can-go-back and "no" for changed-for-ever ON THAT CLAUSE ORDER. Say just "yes" to a
+  melt item and just "no" to a cooked one: both must affirm. Say "no" to a melt item: it must
+  correct. This is the `yes_no` class riding inside `closed_set_choice` — the one thing about it
+  a text drive cannot test.
+- **The premise, heard once.** The ask states what happened ("We cooked the egg in a hot pan")
+  and then asks. Listen for whether a child can hold the premise across the question.
+
+Report: `qa/eval-reports/matter-explorer-change-2026-09-03.md`.
+
+### #125 — **Lesson Bench: does a dropped package play as the SAME lesson, and does the rail land the label?** · OPEN
+
+Dev → **Lesson Bench** (new card) → drop `qa/lesson-bench/packages/kindergarten-counting-objects-to-10-*.json`
+→ **Play this lesson**. Every machine gate is green (`typecheck:lumina` 0, vitest 4464, the
+trace route produced 7/7 blocks) and the assembly is the production one, but the panel and the
+rail have **never rendered in Chrome**.
+
+- **Replay fidelity** — the lesson opens on the brief, then `counting-board` → `ten-frame` →
+  … → `knowledge-check` in the package's order, with NO generating screen and NO Gemini call
+  (network tab: no `/api/lumina` POSTs before the first block). Titles match the panel's table.
+- **The rail** (redesigned 09-03 after the first drive: "just feels like buttons") — one
+  score for the lesson, keep / fix / cut per block, plain-language reasons only when a block is
+  fixed or cut. Rate the lesson, cut one block with a reason, type a note, collapse and reopen:
+  every value survives a page reload of the same package (localStorage) and **Download labeled
+  JSON** writes the package back with `human` filled. FIRST DRIVE (user, 09-03): drop → play →
+  rail rendered over the lesson ✅; download + reload + tutor sitting still open.
+- **The first bench finding** — both saved packages put a **`hundreds-chart`** (a grid of
+  written numerals) in a K "count objects" lesson. Rate it: Q1 concrete opener, Q3 concrete
+  before symbol. That label is calibration row #1.
+- **Live tutor on a replayed block** — second sitting with a spoken port's package (produce
+  one from a `matter-explorer` or `states-of-matter` topic): the tutor opens from the replayed
+  data, and `backend/logs/lumina-sessions/*.jsonl` `session-init.client_run_id` starts with
+  the package id.
+
+Evidence: [`qa/lesson-bench/BACKLOG.md`](lesson-bench/BACKLOG.md) · packages in
+[`qa/lesson-bench/packages/`](lesson-bench/packages/)
+
+### #124 — **`cause-effect-chain`: does building the chain FEEL like reasoning, in a real browser?** · OPEN
+
+Dev → **History Primitives** (new panel — it also gives `era-explorer` the browser surface it has
+never had) → Cause & Effect Chain → Generate. Every machine gate is green: 5 live generations, a
+27-test audit suite, `typecheck:lumina` 0. What no gate covers is that this render tree has
+**never run in Chrome** — it was born and verified in jsdom and through the eval-test API.
+
+- **Tap-to-place** — tapping a card in the bank drops it into the earliest empty slot; tapping a
+  placed card sends it back. Confirm both on a phone-width window, where the cards wrap.
+- **The wrong-answer read** — a wrong chain must shake as ONE unit. If individual slots grade
+  green/red, the second try has become a much easier question and that is a defect, not polish.
+- **The reveal** — after the second wrong check the true chain fills in and the explanation
+  appears. Confirm it stays readable until you press "Next Round" (the bug `era-explorer` had at
+  birth: the summary swapped in over the final explanation).
+- **Does it teach?** — read one generated chain and ask whether the order is genuinely
+  *defensible*, not merely narratively plausible. That judgment is the whole primitive.
+- **The two PICK rungs, added the same day** (`/add-eval-modes`, L1) — these render a NEW
+  surface the birth never had: the ending in its own panel over a selectable chip bank. Pin
+  **Which Ones Are Causes?** in the tester's new Eval Mode selector: tapping toggles, a second tap
+  releases, and "Check my picks" grades the SET all-or-nothing. Then pin **Root or Right Before?**:
+  one tap only — a second tap must MOVE the choice, not add one. On both, a wrong try must leave
+  every chip looking exactly as the student left it; per-card green/red before the round closes is
+  the same defect as per-slot grading above.
+- **Read the question on a root round.** It flips between "the ROOT cause" and "the event that
+  happened LAST" across the session. If those two read as the same question on screen, the rung
+  measures a habit.
+
+- **Turn the tutor on while you build a chain** (added with L2, 09-03). The scaffold is written
+  entirely as restraint: it may name the ENDING and nothing else. Headless drives say it holds --
+  5 Live sessions, and asked point blank for the answer it refuses every time -- but every one of
+  those gates reads a transcript, so nobody has yet HEARD it. Two things to listen for.
+  **(a)** Tap "read the cards to me": the ending and every card must come back word for word, in
+  the order they sit on screen -- an emerging reader has no other channel to the bank, and a tutor
+  that re-orders or groups them while reading hands over the answer in a friendly voice.
+  **(b)** Get one wrong on purpose, then ask it outright which card goes first. It should refuse
+  and hand back the test ("could one of those have happened if the other hadn't yet?") without
+  singling out a single card -- *including* by who is in it. "Think about the pioneers" is the leak
+  this layer had to fix, and it is the one to listen for coming back.
+
+- **Support tier (added with L3/L4, 09-03).** The tester has a **Support Tier** select now. Generate
+  at **easy**: a compass line under the question names the historian's test, every card carries its
+  category label, slots are numbered, "Need a hint?" is offered. Generate at **hard**: none of those
+  — icon and text only, blank slot dots, no hint — and the chains should need an inference to close
+  (a card that does not name the thing the previous card produced). Ask whether hard *feels* like a
+  harder decision at the same reading level, not just a barer screen.
+
+**2026-09-03, mechanical half evidenced headlessly.** A `playwright-core` drive in real Chromium
+ran this list end to end: 25/26 checks, the one miss a selector artefact (revealed slots confirmed
+by screenshot) — tap-to-place, tap-to-return, ONE whole-chain verdict, edit clears it, reveal +
+explanation readable until Next Round, hard withdraws everything and keeps the icons, identify_cause
+grades the set. What it could not do and this row still owns: the phone-width wrap, hearing the
+tutor, and the only question that matters — is the order *defensible*. One thing to watch for:
+the slot colour lags the state by over a second (the kit's transition is still fading the last
+rose out when the emerald lands), so a fast second check briefly shows the true chain in red.
+
+Evidence: [L3+L4 tiers + browser drive](eval-reports/cause-effect-chain-tiers-2026-09-03.md)
+· [L2 tutoring scaffold](eval-reports/cause-effect-chain-tutoring-2026-09-03.md)
+· [Tier-3 live PASS, 3 runs](tutor-reports/cause-effect-chain-live-2026-09-03.md)
+· [L1 eval modes](eval-reports/cause-effect-chain-evalmodes-2026-09-03.md)
+· [birth run](eval-reports/cause-effect-chain-2026-09-03.md)
+· birth certificate [`cause-effect-chain-birth.md`](eval-reports/cause-effect-chain-birth.md)
+
+### #123 — **`matter-explorer`: is a spoken K-2 sorting lesson actually answerable by a five-year-old?** · OPEN
+
+Chemistry Primitives Tester → `matter-explorer`, mic on. Every gate below is headless-green
+(14/14 signature wrongs refused across three modes); what a machine cannot close is whether a
+child's voice clears the judge and whether the pacing suits a five-year-old.
+
+- **`sort`** — say "solid" / "liquid" / "gas" out loud. Then say the OBJECT's name instead
+  ("rock") — that must be refused, not affirmed. Check the three-way menu is spoken at the easy
+  tier and absent at hard.
+- **`property`** — answer with the SHORT form only: "own shape", "the cup", "the room". All
+  three must be accepted; a five-year-old will never recite the whole proposition back. Then
+  answer with the state ("liquid") — that must be refused.
+- **`mystery`** — guess the OBJECT ("honey") rather than its state; must be refused. Confirm the
+  object's name and picture stay hidden until the affirmation.
+
+Also watch: the reveal should appear only while the tutor is speaking the affirmation, and the
+how-to-play should be spoken ONCE per mode, not once per item (fixed 09-02 — confirm by ear).
+
+⚠️ Content residual to eyeball: a gas named after its container ("party balloon") is now refused
+in code, but the generator still reaches for vessel names. If you see an object drop, that is the
+gate working. Evidence:
+[`qa/tutor-reports/matter-explorer-live-di-signature-2026-09-02.md`](tutor-reports/matter-explorer-live-di-signature-2026-09-02.md)
 
 ### #122 — **`formula-lab`: do the six pedagogical moments actually fire in the app?** · OPEN
 
@@ -30,7 +249,18 @@ preamble aloud, that is the shared transport defect, not this primitive — leav
 Evidence: [`qa/tutor-reports/formula-lab-2026-08-23.md`](tutor-reports/formula-lab-2026-08-23.md) ·
 [transcripts](tutor-reports/formula-lab-live-2026-08-23.md)
 
-### #121 — **`era-explorer`: does a harder tier LOOK harder, and still read at the same level?** · OPEN
+### #121 — **`era-explorer`: does a harder tier LOOK harder, and still read at the same level?** · ⚠️ PARTLY SUPERSEDED 2026-09-03 by the DI port (#127)
+
+**Half of this row no longer exists to look at.** The port deleted the on-screen surface most of
+the bullets below describe — the bin captions, the hint disclosure and the strategy line are gone,
+and those tier levers are SPOKEN now (the lead-in ladder), so "does a harder tier LOOK harder" is
+answered by ear on #127. What SURVIVES and is still owed: the **generator-side** structural axis —
+the subtle-bin share, the cross-lens reach and the distractor distance — still measured only by
+`/api/lumina/eval-test` and still never read in a browser, plus the `lensAccess` fold, the one
+render lever the port kept. Drive both on #127's sitting.
+
+<details><summary>Original row (click-era surface, mostly deleted)</summary>
+
 
 History Primitives Tester → `era-explorer`. All 13 verifying generations came through
 `/api/lumina/eval-test`; the render tree has never been driven. Pin the same era and
@@ -46,6 +276,8 @@ compare an easy run against a hard run:
 Known-partial: `lens_id`'s ceiling saturates on well-paraphrased statements (one hard run
 shipped 0/6 on target). Evidence:
 [`qa/eval-reports/era-explorer-structural-difficulty-2026-08-24.md`](eval-reports/era-explorer-structural-difficulty-2026-08-24.md)
+
+</details>
 
 ### #120 — **`ramp-lab`: do prediction, measurement, and design feel like three different investigations?** · OPEN
 

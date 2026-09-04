@@ -64,7 +64,455 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
+### 32. 🗣️ **OPENED 2026-09-04 (lesson-bench sitting `ee232274f4c2`, K counting package `…pgr5`, user: "at the end of the lesson, the tutor spoke instructions, then started speaking spanish") — END-OF-LESSON PHANTOM TURNS. A one-frame mic blip hands Gemini a whole turn, its transcription hallucinates a stock Spanish sentence, and the tutor answers it — in Spanish. And with the knowledge-check switch HELD for the rest of the session, the model fabricated and read aloud a `[PRIMITIVE SWITCH]` for a block that does not exist.** Executor: three levers below; (a) is client-side and first. (b) and (c) are backend — NEVER while `run_tutor_live` drives are up.
+
+> **Evidence (`2026-09-04-021753-lumina-tutor-ee232274f4c2.jsonl`).** 487: fast-fact → knowledge-check
+> switch, `switch-held` (a pack that owns its opening). The student never re-tapped the check's orb, so
+> no opener ever came and the switch sat in the gate for the remaining 139s — there is NO
+> `text-to-gemini` row after 487. Then 489–501: learner brackets of 2.2s / 10.9s / 6.9s / 3.3s with the
+> lesson mic open and nobody answering a pack. Every closed turn owes a reply, and the model's last
+> announced activity was fast-fact, so it improvised the app's own messages: 492 "[PRIMITIVE SWITCH]"
+> (barged in), 502 "The student finished the fluency drill…" (third person, narrating a switch nobody
+> sent), 527 a full fabricated "[PRIMITIVE SWITCH] The student has moved to a new activity. Previous
+> activity: fast-fact New activity: completion-summary (instance: counting-to-10-end) Celebrate their
+> effort…" read verbatim — 27s of it — and 635 "[PRIMITIVE SWITCH]" once more. `completion-summary` and
+> `counting-to-10-end` exist nowhere in the package, the manifest, or the ledger except the tutor's own
+> transcript. 571 and 601: two brackets of exactly 937ms = `silenceCloseMs` 900 + ONE capture frame
+> above the open bar. A blip: `voicedMs` ≈ 85ms < `minVoiceMs` 120, so the client refused to own it —
+> but `activity_start`/`activity_end` had already gone out. Gemini's input transcription returned the
+> identical "¿Qué es el número de cuenta?" both times, a stock hallucination on near-silence. 574
+> answered in English (it was mid-celebration); at 603→604 the system prompt's *"when the student asks a
+> question of their OWN, answer it FIRST"* rule fired, and the tutor explained bank account numbers, in
+> Spanish, to a kindergartner. `MODEL = gemini-3.1-flash-live-preview`; `SpeechConfig` carries only the
+> voice. Native-audio Live models pick the language from the input and do not accept `language_code`
+> (live-guide, checked 09-04) — there is no language pin anywhere in the prompt either.
+> **Mechanisms.** (1) Desync channel (a), already written down in `useJudgedSpeechLoop`'s diagnostics
+> docblock: a blip's bracket reaches Gemini immediately (barge-in needs the start edge now) and the
+> client then declines the turn — Gemini still replies, and on near-silence its ASR invents words.
+> (2) A held switch has no release but "the next floor-giving message"; when the pack's opener never
+> comes, the model is left on the previous block indefinitely while learner turns keep demanding
+> replies — item 30's fabrication mechanism, re-armed from the other side. (3) No language pin.
+> **Fix shape.** (a) CLIENT — closes the channel: open the bracket only once `minVoiceMs` of voiced
+> frames has accumulated, replaying the buffered pre-roll frames right after `activity_start` (manual
+> VAD bypasses the server's own audio buffering, so a delayed start WITHOUT pre-roll clips "three").
+> Barge-in lands ~2 frames (≈170ms) later. Gate: `voiceTurnMachine` fuzz + `--di-bench` blip probes,
+> then a mic sitting. (b) BACKEND: a held switch still pending when a LEARNER turn closes — or after a
+> watchdog — goes out as a plain announcement; the model must never be left holding stale state through
+> turns it owes replies to. (c) BACKEND: a language pin in the system instruction ("the student speaks
+> English; always answer in English; if you could not make out the words, say so in one short
+> sentence"), validated by `/tutor-test`. Order: (a) first — without phantom turns, (b) and (c) have
+> nothing to fire on. TU-6 (WORKSTREAMS) gets this as evidence: the recital happened with NO text sent.
+
+### 31. 🧏 **SHIPPED 2026-09-04 (same day; lesson-bench sitting `de90b50f9e1b`, K counting package `…pgr5`, user: "it's getting hung up on Say it out loud") — SCROLL-LAYOUT LESSONS: A JUDGED RUN THE STUDENT SCROLLED AWAY FROM KEPT ITS FLOOR HOLD AND ITS EARS. `di-spoken-practice` was DEAF for 149s because `ten-frame`, three blocks up, was still mid-gesture-item.** Machine gates green; the mic sitting is HUMAN-CHECKS **#129**.
+
+> **Shipped.** `useJudgedSpeechLoop` takes `active` (default true). While false the loop releases the
+> provider's bracket hold, unsubscribes from the shared turn authority, advances past the conversation
+> without dispatching (another block's exchange never replays on return), and holds any queued cue
+> (`blocked`, reason `inactive`, re-fired on the active edge — the same release-edge shape as audio).
+> NOT `enabled`: that falling edge disarms, and a child who scrolls back finds the item where they left
+> it. `useJudgedScriptRunner` computes it — `sessionMode !== 'lesson' || activePrimitiveId == null ||
+> activePrimitiveId === instanceId` — null fails OPEN; standalone testers and the DI bench never pass
+> it. Tests: 3 in `useJudgedSpeechLoop.shared-turns.test.tsx` (hold follows active; ears + feed
+> withheld and taken back; a cue waits) + 2 in `useJudgedScriptRunner.test.tsx`, all five RED on the
+> pre-fix sources; judged suites 196/196, `typecheck:lumina` 0. **Not driven in a browser** — #129.
+> **Residuals, queued here, not fixed:** (a) an inactive runner's STIMULUS gate still latches on any
+> tutor audio once its own cue was sent, so a subitize flash can fire off-screen; (b) `micState` reads
+> `idle` while a run is live with the lesson mic paused (Pip's button), so the orb offers `start()`
+> and a tap re-sends the opener; (c) lesson-bench item 9 — a K package replays on the scroll layout.
+
+> **Evidence (ledger `2026-09-04-013823-lumina-tutor-de90b50f9e1b.jsonl`).** counting-board 61–86s: four
+> `activity_start/end` pairs, transcripts "four" / "sechs" / "five" — the shared turn authority worked.
+> ten-frame 121–201s: six `[TF_ITEM]` build asks, every one closed by `[TF_FRAME]` gesture commits, ZERO
+> activity signals (correct — the bracket hold). The student left ten-frame 0.9s after its sixth ask
+> ("Put eight counters", 200.4s → switch 201.3s), so its runner stayed `running` on a GESTURE item.
+> di-spoken-practice 202–350s: opener sent (`[SAY_ITEM]` merged into the switch), tutor asked "Count the
+> apples out loud…", then **not one `activity_start` for 149s**, one `[SAY_HEAR]` tap at 234s, disconnect.
+> The child could not be heard. counting-board was ALSO left mid-run (its 4th `[COUNT_ITEM]` at 89.2s,
+> switch at 90.9s) on a VOICE item — still armed and subscribed, so once the hold is lifted a spoken
+> "three" on the DI block is judged by TWO loops.
+> **Mechanism.** `useJudgedSpeechLoop` takes the provider's ref-counted `holdVoiceTurns()` whenever
+> `enabled && sessionMode==='lesson' && !listenForVoice`, and releases it only on run end, a voice item,
+> or UNMOUNT. `ManifestOrderRenderer` (scroll layout) never unmounts a block, and nothing unsets `running`
+> when the student scrolls on — so ten-frame's hold outlived the student's attention and
+> `lessonVoiceTurns.enabled` (`… && !voiceTurnsHeld`) stayed false for every later block. The same
+> shape leaks the SUBSCRIPTION: a voice pack left mid-item keeps consuming shared turns and tutor text.
+> `KindergartenStage` is immune only because it unmounts the previous section. NOT bench-only: any
+> grade-1+ lesson with a gesture pack (ten-frame build, cvc spell-word, letter-spotter) followed by a
+> spoken pack hits it in production.
+> **Fix shape.** The lesson's own focus signal is `ctx.activePrimitiveId` (viewport-driven, set
+> synchronously in `switchPrimitive`; the manifest `instanceId` OrderedSection injects is the same
+> string the runner receives — verified for all 39 runner consumers, incl. knowledge-check). Add
+> `active` to the loop options (runner computes `sessionMode !== 'lesson' || activePrimitiveId == null
+> || activePrimitiveId === instanceId`) and gate BOTH the hold effect and the shared-turn subscribe
+> effect on it — not `enabled`, whose falling edge disarms the loop and would need a re-arm on return.
+> Gate: the shared-turns suite gets "holds only while active / re-holds on return / does not subscribe
+> while inactive"; mic sitting = replay `…pgr5.json`, leave ten-frame mid-item, scroll to the DI block,
+> say "three" → `activity_start` in the ledger and "Yes, three." Fence: counting-board must NOT advance.
+> **Seen in the same sitting, separate:** the DI orb read "Tap to start" under "YOUR TURN" — `running`
+> with `ctx.isListening` false. The only in-lesson lever that closes the lesson mic is Pip's pause
+> button (`CuratorCompanion`); the orb then offers `start()` again, which re-sends the opener and
+> resets the run. Not what deafened the block, but the affordance is wrong while a run is live.
+
+### 30. 🔇 **SHIPPED 2026-09-03 (same day it was found; lesson-bench sitting `b833c0f89475`, K counting package) — DI-GREET-1 AT THE SWITCH BOUNDARY: a judged pack that is NOT the first block got an improvised greeting turn before its opener.** Machine gates green; the mic sitting is HUMAN-CHECKS **#128**.
+
+> **Shipped.** (1) `LuminaAIContext.switchPrimitive` now carries `owns_opening` on the switch payload,
+> derived from the catalog's `audioInput.manual_activity` (the 44 judged/DI entries declare it; an
+> explicit flag on the context wins). (2) `lumina_tutor.py`: `switch_tail(owns_opening, from_type)`
+> replaces the unconditional "Greet the student briefly" — a pack that owns its opening is told to say
+> only the cue's quoted line; a new `TextQueueEntry.held` keeps that announcement IN THE GATE until the
+> next floor-giving message (the pack's opener) and prepends it (`held_back` + a `pending` list in
+> `handle_text_to_gemini`, ledger row `switch-held`). Held entries are also `scripted`, so the per-item
+> context update that lands between switch and cue cannot reopen the [CURRENT STATE] preamble. A later
+> switch still supersedes a held one (same tag, render never called). Non-pack switches are byte-identical
+> to before. 8 new units in `tests/test_lumina_tutor_session_units.py`.
+> **Gate for #128:** replay `packages/kindergarten-counting-objects-to-10-…hxav.json`, walk
+> counting-board → ten-frame. Ledger must show `switch-held` then ONE `text-to-gemini` whose preview
+> begins `[PRIMITIVE SWITCH]` and whose transcript is only the `[TF_ITEM]` quoted line — no greeting,
+> no "[CUE_1]", no number other than the item's. Then walk on to take-home-activity and confirm the
+> one-sentence greeting still lands there (regression fence, item 2's verification (b)).
+
+> **Evidence.** Ledger turn 10: the switch counting-board → ten-frame sent `[PRIMITIVE SWITCH]` with the
+> full DI scaffold *and* the standing tail "Greet the student briefly for this new activity". Gemini
+> improvised 200 words / ~57s: a greeting, "Put 5 circles onto the frame", then a FABRICATED
+> `[CUE_1] Say exactly: "Look to the frame. Press the squares to show 4…"` and read the whole stage
+> direction aloud (three different numbers spoken: 5, 4, then the real item's 2). The real
+> `[TF_ITEM]` opener waited 52.7s for the floor. `cues: 1` on the switch = no client cue was attached;
+> the cue text exists nowhere in the repo — the model composed it from the scaffold's "scripted lines
+> sent as cues" description. Same mechanism as DI-GREET-1 (`should_queue_greeting`), which is honored
+> ONLY at session-init: `owns_opening` is never read on `switch_primitive`, and `_switch_render`
+> appends the greet line unconditionally. Every mic sitting so far opened ON the pack, so this never
+> fired; any multi-block lesson with a DI pack past block 1 hits it in production (not bench-only).
+> **Fix shape.** Carry `owns_opening` on the switch payload (resolve from the catalog entry like
+> `tutoring`/`audio_input` already are), and have `_switch_render` drop the greet tail — and ideally
+> the scaffold's cue description — when the incoming pack owns its opening; the pack's first cue is the
+> transition. Gate: replay the same package, ledger turn after `switch-announced` to a DI block must be
+> the `[TF_ITEM]` line only (`/tutor-test --di` can pin the render; the audio is a mic check).
+
+
+### 29. 🏛️ **OPENED 2026-09-03 (user pull: "finish era-explorer — /add-sound then /add-di-loop") — THE HISTORY / SOCIAL-STUDIES PORTS. `era-explorer` SHIPPED 2026-09-03 (port 24, FIRST history port); `cause-effect-chain` SHIPPED 2026-09-03 (port 25 — the first port with a HANDS rung beside two spoken ones).** Executor: `/add-di-loop`, one history primitive per slice.
+
+> #### ✅ 2026-09-03 — `cause-effect-chain` IS ON THE JUDGED LOOP (port 25, second history port). Mic row **#130**. Two modes SPOKEN, one HANDS — the first port whose fork lands on all three answer shapes at once.
+>
+> **Files.** `primitives/visual-primitives/history/causeEffectChainScript.ts` (new — the pack, the two
+> spoken-form gates, the harness answers); `CauseEffectChain.tsx` (whole-file rewrite, 1113 → 846 lines);
+> `__tests__/CauseEffectChain.di-script.test.ts` (new, 32 pins); `service/manifest/catalog/history.ts`
+> (entry rewritten); `service/history/gemini-cause-effect-chain.ts` (imports `cardSpeakable` +
+> `chainEarSeparable`, stamps rungs by ELIGIBILITY, prompt rule 9); `service/qa/di/diDrivePlan.ts`
+> (adapter + registration). The generator's own 64 audit/shape tests still pass untouched.
+>
+> **The split (standing gate 1) — argued per mode, not assumed:**
+> - `identify_cause` → **one spoken yes/no PER CARD** (`yes_no`, accepted-build-ahead). Defect class 1
+>   in its purest form: the click era graded a five-card set-pick as one item; the reasoning is per card
+>   ("did this come before, and did the ending need it?") and that is what a child can SAY. A challenge
+>   expands into a BALANCED run — every non-cause the generator wrote plus the same number of causes —
+>   so one word said every time scores at chance. The affirmation teaches the distinction it just
+>   judged (consequence: *"it could only happen once the ending had already happened"*; background:
+>   *"it was true at the time, but it pushed nothing along"*).
+> - `build_chain` → **HANDS** (`manipulation`). A permutation of prose cards is the skill's own third
+>   unsayable shape — the arrangement IS the answer. The chain commits on STILLNESS (`armStillness`,
+>   3s) once every slot is filled: completeness-gated, never correctness-gated. The match is computed in
+>   code (`chainVerdictCue`) and a correction clears the WHOLE board, because leaving the right cards in
+>   place would hand back which ones were already right (the birth's all-or-nothing rule, kept).
+> - `root_vs_proximate` → **spoken pick** (`closed_set_choice`). The cards ARE the menu on screen, so the
+>   ask names the move and the CONTRACT names the choices; the accept clause carries each card's own
+>   unique word (ONE word — see below) or its position as it sits on the screen. Ear-separability is a
+>   build gate AND a stamping rule: a chain whose cards share every content word is never given this rung.
+>
+> **Deleted from the surface.** The pick CHIPS on two rungs (a menu with a tap on it), the per-rung Check
+> buttons, the Next button, the hint disclosure, the `MAX_TRIES` reveal ladder, the feedback/explanation
+> card (a reveal — rides `runner.revealHeld`), the five improvised tutor sends and the tier reveal clause.
+> Census greps: 0 voice hooks, 0 advance timers, **0 `setTimeout` of any kind**, 0 Check/Next/hint.
+> **Kept:** the background panel + its read-aloud (`contextCue` — question-side by construction, the
+> setting never states what caused what), the CHAIN BOARD (the page), and two L3 render levers
+> (`showSlotNumbers`, `showCategoryLabels`; the icon stays at every tier). The strategy line became the
+> spoken guide line at `easy`; the hint died — the scripted correction re-models the rule at EVERY tier.
+>
+> **Session shape.** Modes ship as RUNS in ladder order (defect 13). Cap 10, allocated round-robin with a
+> slot held for every mode not yet served — an identify run cannot eat the cap before the chain and the
+> pick have been asked once, and a unit that does not fit whole ships as balanced pairs, never a slice.
+>
+> **Three things the gates and the live draws caught, all fixed in-slice:**
+> 1. **The repeat-ask gate fired** on the first fixture — two consecutive chains with identical cards, a
+>    38-word byte-identical ask. A fixture defect (the generator refuses duplicate outcomes), but it is the
+>    gate proving it is awake on a real session shape rather than asleep on one-item-per-mode.
+> 2. **The first live root draw handed the judge two-word non-phrases** as accept tokens ("craftsmen
+>    affordable", "magistrates levy"). A card is a whole sentence; the child says its SUBJECT. The
+>    distinguisher is now the card's first unique word, the next few count individually. **No machine
+>    gate saw this — only reading the live draw did** (era-explorer's plural-fold lesson, one port on).
+> 3. **The first root drive tripped `di-false-completion-claim`** on the proximate affirmation *"Yes, that
+>    was the last thing to happen before the ending"* — an oracle tripwire, but a fair one: a child hears
+>    "the last". Every spoken "last" on that rung is gone (*"nothing else happened in between"*, *"the
+>    final step before it"*); the judge-side contract keeps its LAST. Re-drive **PASS, 0 findings**.
+>
+> **Gates.** `typecheck:lumina` **0**. Project-local `tsc --noEmit` **802 = the exact pre-edit baseline, 0
+> new**. Full vitest **4555 passed / 0 failed**. New suite **32 pins** at three tiers × two reading bands;
+> the generator's 64 audit/shape tests unchanged and green.
+>
+> **Live real-pipeline probe** (temporary file, deleted; draws in
+> `qa/tutor-reports/cause-effect-chain-live-probe-2026-09-03.md`): 5 draws — `identify_cause` @G1,
+> `build_chain` @G3 hard, `root_vs_proximate` @G5, `mixed` @G2, `build_chain` @G5 easy. 33 items,
+> **`checkPackGates` clean on every one, zero fallbacks**. The K-2 ask reads every card in page order;
+> the G3+ ask leaves them on the page (tap-to-hear reads them for anyone).
+>
+> **Headless judged drives — `/tutor-test --di`:**
+>
+> | Run | Items | Verdict | Judge |
+> |---|---|---|---|
+> | `identify_cause` @G2, **signature** | 10 | **PASS, 0 findings** | 10/10 refused, 10/10 affirmed |
+> | `build_chain` @G3, hands | 5 | **PASS, 0 findings** | 5/5 wrong commits corrected, 5/5 right commits affirmed, hold silent 5/5 |
+> | `root_vs_proximate` @G5, **signature** (re-drive) | 5 | **PASS, 0 findings** | 5/5 refused, 5/5 affirmed |
+> | `root_vs_proximate` @G5, signature, pre-fix | 5 | FAIL (1 HIGH, wording — item 3 above) | 5/5 refused, 5/5 affirmed |
+> | `identify_cause` @G3 cap drill | 6 | PASS with the 2 family-wide WARNs (item 30: `di-correction-verbatim-repeat` ×2, `di-capped-item-asks-then-withdraws`) | 3/3 refused past the cap, then moved on |
+>
+> The signature wrongs are the ones that earn their keep, and both spoken rungs refused every one: a
+> CONSEQUENCE affirmed *"yes, it is about the same thing"* and BACKGROUND affirmed *"yes, that was true
+> back then"* (connected ≠ caused, the primitive's founding confusion), a real cause refused *"no, that
+> was not the last thing that happened"*, and on the pick, the OTHER END of the chain named for the one
+> asked (root for last, last for root). Reports: `qa/tutor-reports/cause-effect-chain-live-di-*-2026-09-03.md`.
+>
+> **Also in this slice: `/add-sound` (birth queue item 5) — folded, small, and stated as such.** `tap()`
+> on place and remove stays; the placement that COMPLETES the chain is a choice committed, not one more
+> tap → `select()`. Correct/incorrect moved off the deleted Check press: the RUNNER plays them on the
+> verdict, so the component adds none (a second `playCorrect` on the reveal would double it).
+>
+> **Residuals (queued, not silently dropped):**
+> 1. **NOT browser-driven.** Machine gates and headless TEXT drives only; the stillness close, the hold,
+>    the K-1 read-aloud and the reveal hold are unheard — mic row **#130**.
+> 2. **The distinguisher is the card's FIRST unique word, which is sometimes an adjective** ("local",
+>    "shop"). The noun a child would actually say rides `alsoCounts` and the judge has the full card, and
+>    the drives judged single words 10/10 — but a mic sitting should listen for "the printers one"
+>    landing. If it does not, prefer the longest unique word; executor `/add-di-loop`.
+> 3. **A pinned identify session ships ~10 of ~20 possible items** — the cap, not a drop (the probe's
+>    "dropped challenges 2" on `identify_cause` @G1 is exactly this). Right for a session; the number is
+>    a constant if it is wrong.
+> 4. **`yes_no` is accepted-build-ahead** — this port's acceptance evidence rides #130 with #94.
+> 5. The birth's **tutor-reveal-clause residual is RETIRED by construction**: there is no improvised tier
+>    reveal left to hear; the tier is the scripted lead-in and the correction re-models at every tier. The
+>    **G5 3-card-chain residual stands** (`/eval-fix`, grade fidelity, unchanged by the port).
+
+> #### ✅ 2026-09-03 — `era-explorer` IS ON THE JUDGED LOOP (port 24, first history / social-studies port). Mic row **#127**. All FOUR eval modes, **all spoken, zero taps on the answer**.
+>
+> **Files.** `primitives/visual-primitives/history/eraExplorerScript.ts` (new — the pack AND the leak
+> gates); `EraExplorer.tsx` (whole-file rewrite, 941 → 511 lines); `__tests__/EraExplorer.di-script.test.ts`
+> (new, 34 pins) replacing `EraExplorer.tiers.test.tsx` + `EraExplorer.tutoring.test.tsx` (deleted, every
+> intent RE-BASED — the mapping is in the new file's header); `service/manifest/catalog/history.ts` (entry
+> rewritten); `service/history/gemini-era-explorer.ts` (leak predicates moved out and imported back, plus
+> two new spoken-menu gates); `service/qa/di/diDrivePlan.ts` (adapter + registration).
+>
+> **Deleted from the surface.** The three time-bin BUTTONS (the bins *were* the three answers, printed and
+> clickable), the Check button, the Next button, the "Start the Questions" explore gate, the hint
+> disclosure and its three-rung ladder, the `MAX_TRIES` reveal ladder, the `[ERA_FIGURE_VOICE]` button, and
+> the explanation printed under the choices (it names the answer, so it is a reveal and now rides
+> `runner.revealHeld`). Census greps on the component: 0 voice hooks, 0 advance timers, **0 `setTimeout` of
+> any kind**, 0 Check/Next/hint/answer-choice components.
+>
+> **KEPT, deliberately: the era card.** This primitive is open-book by design — the lens bodies ARE the
+> evidence and consulting them IS the historian's method — so the card is the PAGE in the
+> teacher-at-a-table picture, not apparatus. Deleting it would have converted historical reasoning into a
+> memory quiz. Its read-aloud (`sourceCue`) is the pre-reader's only channel to that evidence, is
+> question-side by construction (a lens BODY, never a statement or an option), and REFUSES a body that
+> opens with a verdict sentinel — a generated lens body starting "Yes, …" would be read as an affirmation
+> of an answer nobody gave and would desync the loop.
+>
+> **The split (standing gate 1).** All four modes are `closed_set_choice`, and the uniformity is ARGUED in
+> the script header rather than assumed: era-explorer is a three-bin CLASSIFICATION primitive in every one
+> of its modes, so free production is open-set in all four and the menu IS the ask (the mats rule). The
+> BUTTON is what the port deletes. **βs unchanged** — nothing structural moved; the child was already
+> picking one of three and now has to say it out loud.
+>
+> **What the L3 tier levers became.** `showStrategy` → the guide line, spoken at `easy` only.
+> `showBinCaptions` → the plain-language half of each spoken menu phrase. `hintLevel` → deleted; the
+> scripted correction re-models instead, which also **retires the L3 gotcha by construction**: there is no
+> improvised tutor nudge left to branch by tier, so the tier can no longer be half-applied by the tutor
+> handing back what the screen withdrew. `lensAccess` survives untouched as a render lever (the source
+> folds away between items at hard, re-folded in `onItemOpened`). `requireAllLenses` dies with the Start
+> button — the tutor owns the clock, so there is no gate for the child to press through.
+>
+> **Two defects the gates caught, both fixed in-slice:**
+> 1. **The plural fold leaked into the spoken accept clause.** `eraTokens` folds plurals so "today" and
+>    "today's" collide by ear — right for the comparison, wrong for anything handed to the tutor. The
+>    FIRST live draw put `"automobile factorie"` and `"widespread electrical"` into the `cause_of_change`
+>    accept clause: it told the judge to listen for a misspelling and handed the drive harness a non-word
+>    to say. `uniqueCauseWords` now compares on the folded form and returns the SURFACE one. Pinned and
+>    mutation-checked. **No machine gate saw this — only reading a live draw did.**
+> 2. **The exploration fallback's context bag diverged from the pack's.** The catalog interpolates exactly
+>    `challengeType` + `stimulus`, and the fallback pushed five other keys, so on the exploration surface
+>    both interpolated keys arrived EMPTY. Fixed to push the same two keys with the `free_explore` sentinel
+>    (states-of-matter's convention), and the catalog now explains that round type. Side effect: the
+>    family-wide `/tutor-test` Tier-1 fail count went **37 → 36** and era-explorer went fail → **PASS**.
+>    `matter-explorer` still carries the same shape and would gain the same way.
+>
+> **Gates.** `typecheck:lumina` **0**. Project-local `tsc --noEmit` **802 = the exact pre-edit baseline, 0
+> new**. Full vitest **4480 passed / 0 failed**. The new suite is **34 pins, mutation-checked ×7** — each of
+> these breaks a test: `optionsEarSeparable` → true · `answerWordsInStatement` → false · drop the mode-run
+> grouping · drop the lens-uniqueness rule · strip the menu from the ask · speak the lead-in per item ·
+> return the folded plural. **Two pins were VACUOUS on the first pass and were rewritten**: the fixture was
+> pre-grouped by mode (so the defect-13 assertion passed by doing nothing) and the repeated lens was
+> ADJACENT (so the weak consecutive-answer rule caught it and the per-lens set never had to fire).
+>
+> **Live real-pipeline probe** (temporary file, deleted): 6 draws — `lens_id` @ K, `era_sort` @ G3 ×2
+> (untiered + hard), `era_compare` @ G4, `cause_of_change` @ G5 hard, `mixed` @ G2. 25 items,
+> **`checkPackGates` clean on every one**. Drawn eras: Pioneer Times against Early Settler / Early Colonial /
+> Early Wilderness / Early Frontier Days. Grade steer honored (no `cause_of_change` at G2).
+>
+> **Headless judged drives — `/tutor-test --di`, 4 modes plus a cap drill:**
+>
+> | Run | Items | Verdict | Judge |
+> |---|---|---|---|
+> | `era_sort` @ G3, plain, ×2 | 5 | **PASS, 0 findings** | 10/10 refused, 10/10 affirmed |
+> | `lens_id` @ G1, **signature**, ×2 | 3 | **PASS, 0 findings** | 6/6 refused, 6/6 affirmed |
+> | `era_compare` @ G4, **signature**, ×2 | 5 | **PASS**, 4 single-run notes | 10/10 refused, 9/10 affirmed |
+> | `cause_of_change` @ G5, **signature**, ×2 | 4 | **PASS, 0 findings** | 8/8 refused, 8/8 affirmed |
+> | `era_sort` cap drill | 5 | PASS with 2 family-wide WARNs | 3/3 refused past the cap |
+>
+> The signature wrongs are the ones that earn their keep, and all three modes refused them: the era weighed
+> against **"today"** on `era_compare` (not one of the three choices at all — the documented struggle), the
+> **statement echoed back** on `cause_of_change` (what changed, not why), and the **thing named instead of
+> the lens** on `lens_id`. Reports: `qa/tutor-reports/era-explorer-live-di-*-2026-09-03.md`.
+>
+> **`era_compare`'s 4 notes are ONE incident on ONE run, and it is transport.** That run's `Message types
+> seen` carries `session_resuming` / `session_resumed`, absent from every other run. The fragments show
+> stitching ("…rely on nearbyListen. Settlements"), and the late-flushed affirmation for item 2 arriving
+> welded to item 3's ask is what produced all four notes at 1/2 each — `di-no-verdict`,
+> `di-off-script-ask`, `di-off-script-verdict`, `di-sentinel-on-ask`. Not a script defect; see
+> `project_gemini-live-session-resumption`.
+>
+> **The cap drill's 2 WARNs are FAMILY-WIDE, not this port's.** `di-correction-verbatim-repeat` appears in
+> 10+ shipped reports (including `matter-explorer`'s, one day old) and
+> `di-capped-item-asks-then-withdraws` in 18. Both need a change to the CONTRACT SHAPE every port shares —
+> a second, firmer correction rung would make the two-branch law a three-branch law — so fixing them on
+> port 24 alone would fork the loop discipline 23 other ports depend on. Filed as item 30 below.
+>
+> **Residuals (queued, not silently dropped):**
+> 1. **A pinned `lens_id` session is capped at 3 items by construction** — three lenses, and defect 2 says a
+>    lens may be the answer once, so 4-6 generated `lens_id` challenges ship 3. Both K/G1 draws confirmed it
+>    (2 dropped, then 1). Three is the mastery FLOOR, not a comfortable number. Executor: `/add-eval-modes`
+>    or a generator prompt line capping the ask at three.
+> 2. **One `era_sort` hard draw shipped only 2 of its 3 answers across 6 items** (3 × both, 3 × today, zero
+>    era-only) — a three-way task that was a two-way task for that session. The second draw had all three, so
+>    it is draw variance rather than a systematic tier bug, but the generator's variety telemetry only warns
+>    when every `correctIndex` is IDENTICAL and cannot see it. Executor: `/eval-fix`.
+> 3. **NOT browser-driven.** Every gate above is a machine gate or a headless TEXT drive. The judged loop's
+>    semantics are green; **only a mic run proves the loop a child is actually in** — mic row **#127**.
+> 4. **The L5 production rung is still open.** The birth certificate names spoken causal explanation ("say
+>    WHY the era was that way", PRD Phase 3) as the strong form. This port made every existing mode spoken;
+>    it did not add a mode where the child PRODUCES rather than picks. That is a new eval mode, not a port.
+>
+> **Also in this slice: `/add-sound` (birth queue item 5) — three semantic corrections, no new sound points.**
+> The points the birth wired (lens tap, correct, incorrect, start) were already there; what was wrong was
+> which sound each event got. Choosing a time bin is a CHOICE, not a neutral press → `select()`, so the bin
+> row stops sounding like more browsing. Opening a lens for the FIRST time reveals a card → `pop()`, a
+> revisit stays `tap()`, so the ear and the explore counter agree about what progressed. The source
+> disclosure is a toggle → `toggle(on)`. **The rung is structurally small and that is the ratio stated, not
+> dressed up** — which is exactly why the user paired it with the port. The bin sounds then went WITH the bins — `select()`
+> survives on nothing, because no answer is tapped any more. **Four points ship**: `pop` / `tap` on the
+> lens tabs, `toggle(on)` on the source disclosure, and `playCorrect()` moved off the deleted Check press
+> onto the REVEAL, where it opens with her affirmation and closes when her next cue is sent. There is no
+> `playIncorrect` counterpart on purpose: a wrong answer is answered by her CORRECTION, and a sound under
+> it would talk over the teaching.
+
+### 30. 🔁 **OPENED 2026-09-03 — TWO CAP-DRILL WARNS ARE FAMILY-WIDE AND NEED ONE CONTRACT-SHAPE DECISION, not 24 pack edits.** Executor: no skill — a doctrine call, then a sweep of `<primitive>Script.ts` correction builders.
+
+> Found again by `era-explorer`'s cap drill (port 24) and present in every cap report back to `ten-frame`:
+>
+> - **`di-correction-verbatim-repeat`** (10+ reports, incl. `matter-explorer` one day old): the second
+>   correction on an item is word-for-word the first. DISTAR firms by ESCALATING, not by repeating.
+> - **`di-capped-item-asks-then-withdraws`** (18 reports): the last correction before the cap ends in a
+>   question the runner immediately withdraws with the move-on cue — the child is asked, then told to move
+>   on before they can answer.
+>
+> **Why no port should fix this alone.** Both come from the shape every pack shares: ONE correction string,
+> quoted once inside the item cue, spoken on every miss. Escalating means a second quoted branch ("if they
+> miss it a second time, say exactly …"), which turns `TWO_BRANCH_LAW` into a three-branch law — and the
+> two-branch discipline is what makes the reducer's verdict scan reliable across 24 ports. The withdraw
+> WARN has the same root: the cue cannot know it is the last one, because the runner owns the cap.
+>
+> **What the decision needs:** whether a firming rung can be added without weakening the sentinel contract
+> (the candidate: correction 2 re-models against THIS item's evidence rather than the rule, still ending in
+> the same re-elicit, so the branch count stays two and only the wording escalates), and whether the runner
+> should hand the cue a `correctionIndex` so the final one can close instead of asking. Then one sweep.
+
 ### 25. 🪐 **OPENED 2026-08-19 (user pull: "rebuild and reimagine solar-system-explorer with native di modality") — THE SCIENCE PORTS. `solar-system-explorer` SHIPPED 2026-08-19 (first FULL science port); `periodic-table` SHIPPED 2026-08-19 (second science port, FIRST chemistry port — closed a three-mode eval-mode FICTION, all keys code-computed); `states-of-matter` SHIPPED 2026-08-20 (third science port — ALL THREE MODES SPOKEN, zero taps; the slider went to the tutor).** Executor: `/add-di-loop`, one science primitive per slice.
+
+> #### ✅ 2026-09-02 — `matter-explorer` IS ON THE JUDGED LOOP (port 23, THIRD chemistry port, and the first spoken K-2 chemistry loop). Mic row **#123**. All three eval modes, **all spoken, zero taps**.
+>
+> **Files.** `primitives/visual-primitives/chemistry/matterExplorerScript.ts` (new, the pack);
+> `MatterExplorer.tsx` (whole-file rewrite); `__tests__/MatterExplorer.di-script.test.ts` (new, 33
+> pins); `service/manifest/catalog/chemistry.ts` (entry rewritten); `service/chemistry/
+> gemini-matter-explorer.ts` (schema + gates + eval-mode pin); `service/qa/di/diDrivePlan.ts`
+> (adapter + registration).
+>
+> **THE FORK.** `sort` → `short_spoken_word` (benched); `mystery` → `short_spoken_word`;
+> `property` → `closed_set_choice`, because free production there is open-set. The menu stays and
+> the BUTTON goes. Short forms are accepted on the distinguishing NOUN — "own shape" / "the cup" /
+> "the room" — never the whole proposition, and `optionsEarSeparable` gates that in code.
+>
+> **DELETED:** the three drag-bins, the Check button, the property panel, the temperature slider,
+> the mystery text box, and every `sendText` choreography call on the judged path. The property
+> panel returns as the reveal behind `runner.revealHeld`.
+>
+> ⭐ **FOUR MEASUREMENT FICTIONS CLOSED — this is what the port was actually worth.** Read from
+> the pre-port component, not inferred:
+> 1. `handleCheckPredictChallenge` wrote `correct: true` UNCONDITIONALLY — no answer consulted.
+> 2. `handleCheckCompareChallenge` the same, gated only on two text boxes being non-empty.
+> 3. `describe` completed when properties had been VIEWED — clicking earned the credit.
+> 4. `sort` graded all 6-10 objects as ONE all-or-nothing boolean. Now one OBJECT is one item, so
+>    a child who knows seven of eight scores seven.
+>
+> ⭐ **THE `property` EVAL MODE WAS A FICTION** — declared and IRT-weighted in the catalog
+> (β 0.5), and the generator's enum never emitted it. Same class the periodic-table port closed.
+> Made REAL rather than deleted, bound to `properties.shape`, which the generator always emitted
+> and nothing ever read.
+>
+> ⭐ **THE EVAL-MODE PIN WAS DEAD.** `ctx.targetEvalMode` was never read, so `--eval-mode sort`
+> came back with all three modes and the catalog's three betas routed to nothing. Wired through
+> `resolveEvalModeConstraint` + `constrainChallengeTypeEnum` — the enum narrows, so the pin
+> binds. **Found by DRIVING the pin, not by reading the generator.**
+>
+> ⭐ **DEFECT 13, live-caught on the first drive.** The draw interleaved modes, so every item was
+> an `action` change and the runner re-spoke the full how-to-play plus the rule clause EVERY
+> round — ~14s of recitation against a ~3s answer, 4 of 4 items.
+> `findRepeatedConsecutiveAsks` is structurally blind to it (consecutive items differ by action
+> by construction). Fixed in the DRAW: modes ship as RUNS in ladder order, and the
+> no-repeated-answer rule applies within a run. Confirmed by re-drive — item 1 carries the
+> how-to-play, items 2+ are the short ask.
+>
+> ⭐ **DEFECT 8: "the party balloon is a gas".** A balloon is rubber; the air inside is the gas.
+> In a data field it reads as reasonable shorthand, out loud it is false — and a child who
+> answers "solid" about the balloon is corrected for being RIGHT. **Prose failed twice**: the
+> prompt was given the rule AND a worked counter-example naming "inflated balloon", and the very
+> next generation shipped "party balloon". Now `gasNamesItsVessel` in CODE, both sides of the
+> wire from ONE imported predicate, and deliberately NARROW — it fires only when the state is
+> `gas`, so a drinking glass is still a fine solid. (The compare-objects exemption refuted by its
+> own next draw is the warning against widening it.)
+>
+> **WHY THE LEAK VOCABULARY IS NOT THE SHARED ONE.** `statesOfMatterScript.STATE_WORDS` includes
+> `ice`/`steam`/`vapor`; here those are the primitive's BEST K-2 stimuli. Importing it wholesale
+> would refuse the strongest content. The narrower list is documented in the header so nobody
+> "fixes" the divergence.
+>
+> **GATES.** `typecheck:lumina` **0**; full tsc **802 vs 803 baseline** (zero new, one fewer);
+> **33 di-script pins** incl. a real same-mode run so `findRepeatedConsecutiveAsks` is awake;
+> chemistry + di suites **138/138**; census greps 0 (no deleted hooks, no advance timers, no
+> `setTimeout` at all). **4 live generations** (K-1 + 1-2 × two topics) all clean.
+> **6 judged drives**: sort / property / mystery plain, all three signature, plus `--di-cap`.
+> **14/14 signature wrongs REFUSED, 14/14 right answers affirmed, zero findings.** Cap drill
+> fires at 3 and closes the link ("Good try! The garden rock is a solid.").
+> Drawn objects: garden pebble, drinking water, sweet honey, sandbox sand, air, steam, rock,
+> party balloon (dropped by the vessel gate).
+>
+> **RESIDUALS.**
+> - One WARN, `di-correction-verbatim-repeat`, on the cap drive: corrections 2 and 3 are
+>   word-for-word. That is what the catalog's 18d rungs MANDATE ("speak the SAME scripted
+>   correction line again, a little slower") — a re-worded correction risks opening with neither
+>   sentinel. Expected and doctrinal, not a new defect; every port in the family has this shape.
+> - The harness names its report by run SHAPE, not eval mode, so three `--di-wrong signature`
+>   runs overwrite one file. Copied by hand this time; a harness fix belongs to `/tutor-test`.
+> - Soft leak not gated: a `property` item on "puddle splash" or "drinking water" hints at
+>   pouring through the noun. Weaker than defect 11 (an inference, not the answer stated), and a
+>   speculative refuse-list is exactly what got refuted on compare-objects. Wants a draw that
+>   demands it before a gate is written.
+> - **NOT browser-driven and NOT mic-driven.** #123 is the sitting.
 
 > #### ✅ 2026-08-20 — `states-of-matter` IS ON THE JUDGED LOOP (THIRD science port, SECOND chemistry port). Mic row **#117**. All three eval modes, **all spoken, zero taps**.
 >
@@ -476,6 +924,87 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > gate. (4) `--runs 3` per mode is affordable follow-up; today's drives are 1 run per mode
 > on a no-reload uvicorn (the user's `--reload` server 1012s mid-session ~half the time —
 > harness note, not a port defect).
+
+### 28. ✅ **CLOSED 2026-09-03, SAME DAY — the fourth mode `change` SHIPPED and both live DI drives PASS with no findings. The K-2 irreversible half has a home, and a lesson about it now ROUTES there.** Executor: `/add-eval-modes matter-explorer` + a hand-authored script item in `matterExplorerScript.ts`.
+
+> **SHIPPED 2026-09-03.** The tutor says what happened to an object; the child says whether it
+> **can go back the way it was** or is **changed for ever**. `closed_set_choice` (the menu IS the
+> ask), β=1.2 between `property` and `mystery`, spoken at every tier. Report:
+> `qa/eval-reports/matter-explorer-change-2026-09-03.md`.
+>
+> **Live: [signature](../tutor-reports/matter-explorer-live-di-signature-2026-09-03.md) 5/5
+> refused + 5/5 affirmed, [plain](../tutor-reports/matter-explorer-live-di-plain-2026-09-03.md)
+> 4/4 + 4/4, both PASS with 0 findings and 0 dropped challenges.** `typecheck:lumina` 0 · vitest
+> **4466** (this suite 46 → 48) · 2 new backend calibration asserts.
+>
+> **The answer is CODE-owned.** Reversibility is not derivable from `state` or `shape` — those
+> describe the object at rest — so the LLM picks the CHANGE from a closed eight-key menu and
+> `CHANGE_CATALOG` decides whether it undoes. The fit gate matches `canChangeState` for
+> EQUALITY, which blocks "we melted the paper" AND "we cooked the ice cube" — the second is the
+> pairing a K-2 generator actually reaches for. Dissolving is deliberately excluded (contested =
+> a FALSE key, not a hard one).
+>
+> **Two options means a real 50% guessing floor**, so the mode registers `PATTERN_TRUE_FALSE`
+> (a=1.0, c=0.50) instead of the inferred c=0.0 that would have handed the mastery gates a coin
+> flip scored as evidence. Pinned in `backend/tests/test_matter_explorer_calibration.py`.
+>
+> **What the live probes caught and every machine gate missed:** (1) **4 challenges → 2 items** —
+> the no-repeated-answer rule strands a two-answer mode, so alternation is now a preference under
+> "select, never truncate", but ONLY where `ANSWER_SET_WIDTH` is 2; the three-answer modes keep
+> the hard stop byte-for-byte. (2) An unasked-for field is answered anyway — a pinned `sort`
+> probe emitted `everydayChange: "burn"` on a ROCK, so the rules AND the schema property are now
+> omitted when the session cannot ask a change. (3) Draw imbalance (1 reversible vs 3) is a
+> CONTENT lever: rule 12b now demands two challenges of each `canChangeState` kind, stated
+> structurally so the model is never handed the answer vocabulary. 2/2 balanced on every probe since.
+>
+> **THE GAP ACTUALLY CLOSING, in one line:** `/topic-trace` on *"Changes we can undo and changes
+> we cannot"* ran the real pipeline — curator brief → objective → manifest → eval-mode stage →
+> **`targetEvalMode: "change"`** → 4 balanced change challenges. That also exercises the resolver
+> migration (pin-only `resolveEvalModeConstraint` → `resolveEvalModes`), so intent now routes the
+> unpinned path for all four modes.
+>
+> **Residuals:** mic **#126** (the drives prove SEMANTICS in text; the acoustics of "go back" /
+> "for ever" / bare "yes"/"no" from a five-year-old need a sitting) · pairing plausibility is
+> prompt-side only, not code-gatable · `SCI001-02-H` says "when exposed to heat", so `tear` and
+> `rust` sit outside its wording · `boil_to_steam` is the one reversible change a child may argue
+> with, named in the contract but not yet hit by a drive.
+
+> #### The filing that opened it (kept for the reasoning, not the status)
+
+> **The gap.** K-2 science asks whether a change can go BACK: ice melts and freezes again;
+> a cooked egg, burnt toast, mixed batter cannot. The catalog covers the reversible half
+> and nothing else.
+>
+> **Why the two candidate homes do not close it:**
+> - `states-of-matter.predict` (`catalog/chemistry.ts:362`) is the reversible half only —
+>   melting / freezing / boiling / condensing — and its ask hands the child the
+>   **thresholds aloud**. Threshold reasoning is wrong for K: a five-year-old is not
+>   deriving a state from a melting point. This is a band mismatch, not a defect to fix in
+>   place (`[[feedback_make-age-friendly-not-band-floor]]` — do not push the mode down).
+> - `reaction-lab.observe` (`catalog/chemistry.ts:224`) is the nearest neighbour and still
+>   the wrong home: K-8 tap/notebook multi-phase surface, NOT on the judged loop, and it
+>   frames the contrast as **chemical vs physical change** — the G3-5 vocabulary, not
+>   *can it go back*.
+>
+> **Why `matter-explorer`.** It already owns the K-2 "what you see" everyday-object
+> vocabulary, the judged loop (port 23 — three modes, all spoken, zero taps), and the
+> hand-authored DISTAR script with its sentinel discipline. A fourth mode is one script
+> item + one catalog eval mode, not a new primitive.
+>
+> **Proposed shape (NOT settled — the executor rules on it):** the tutor names a change
+> the child can picture ("we left the ice cube on the table", "we cooked the egg") and the
+> child SAYS whether it can go back. Two-way spoken closed set — a NARROWING of
+> `short_spoken_word`, which is already benched, so standing gate 1 likely needs no new
+> bench run; confirm at execution rather than assuming. Key computed in code from a
+> per-item field on the object, never from the LLM. Answer-leak rule applies: the property
+> panel already leaks shape for two modes, so whatever field carries reversibility must be
+> hidden the same way and must not appear in `{{stimulus}}`.
+>
+> **Gates:** `/curriculum-fit` for the new mode (standing gate 4 — every mode needs a
+> curriculum home; this one should land on the K-2 changes-in-matter subskills that
+> motivated the finding), then `/eval-test` and a `--di` drive. `--di` proves the judge's
+> semantics headlessly, so a mic row is owed only if the answer words are acoustically new
+> for a child — a two-way set of everyday phrases probably is not.
 
 ### 27. ✅ **CLOSED 2026-08-23 — all three `--di-bench` instrument defects fixed and machine-gated. `--di-bench` is trustworthy again; item 26's g7 re-run is unblocked.** Executor: no skill — direct edits to `run_tutor_live.py` + `diDrivePlan.ts`
 
