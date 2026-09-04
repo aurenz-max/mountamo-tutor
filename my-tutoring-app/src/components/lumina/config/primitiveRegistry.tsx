@@ -167,6 +167,7 @@ import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena
 import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
 import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
 // History Primitives
+import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
 // Literacy Primitives (Wave 1 - K-6 ELA)
 import ParagraphArchitect from '../primitives/visual-primitives/literacy/ParagraphArchitect';
@@ -1832,6 +1833,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   },
 
   // History Primitives
+  'cause-effect-chain': {
+    component: CauseEffectChain,
+    sectionTitle: 'Cause & Effect Chain',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
   'era-explorer': {
     component: EraExplorer,
     sectionTitle: 'Era Explorer',

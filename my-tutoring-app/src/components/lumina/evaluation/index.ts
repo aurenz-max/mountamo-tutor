@@ -214,6 +214,7 @@ export type {
   DiMathFactsMetrics,
   DiSentenceReadingMetrics,
   // History metrics
+  CauseEffectChainMetrics,
   EraExplorerMetrics,
   // Session types
   SessionEvaluationSummary,

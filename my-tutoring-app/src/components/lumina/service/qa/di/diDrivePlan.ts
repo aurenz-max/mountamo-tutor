@@ -322,6 +322,15 @@ import {
   type EraSessionLike,
   type EraTier,
 } from '../../../primitives/visual-primitives/history/eraExplorerScript';
+import {
+  causeEffectChainHarnessAnswers,
+  causeEffectChainPackBase,
+  chainVerdictCue,
+  itemsFromChallenges as causeEffectChainItems,
+  type CauseEffectChainItem,
+  type ChainChallengeLike,
+  type ChainTier,
+} from '../../../primitives/visual-primitives/history/causeEffectChainScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -1758,6 +1767,61 @@ const eraExplorerAdapter: DiPortAdapter<EraExplorerItem> = {
   answersFor: eraExplorerHarnessAnswers,
 };
 
+/**
+ * cause-effect-chain (port 25, second history port). Two spoken modes and one
+ * HANDS mode. `build_chain` commits the slot ORDER as card ids joined by
+ * commas, and `chainVerdictCue` computes the match in code; `answersFor` hands
+ * the harness the correct order and the REVERSED order (the ordering mode's
+ * own signature error) through `tapped`.
+ *
+ * What the drive is really testing on the spoken modes: the yes/no contract's
+ * refusal of a CONSEQUENCE affirmed "because it is about the same thing"
+ * (identify_cause's signature), and the pick contract's refusal of the OTHER
+ * END of the chain (root named when the last event was asked for, and the
+ * reverse). Both are the misconceptions the click era's tutoring block
+ * documented; the port made them judgeable.
+ */
+const causeEffectChainAdapter: DiPortAdapter<CauseEffectChainItem> = {
+  build: (data) => {
+    type RawNode = { id?: string; text?: string; category?: string; icon?: string };
+    const raw = (data.challenges ?? []) as Array<{
+      id: string; type?: string; ask?: 'root' | 'proximate';
+      outcome?: RawNode; nodes?: RawNode[]; correctOrder?: string[]; explanation?: string;
+    }>;
+    const shaped: ChainChallengeLike[] = raw.map((ch) => ({
+      id: ch.id,
+      type: ch.type ?? '',
+      ask: ch.ask,
+      outcome: {
+        id: ch.outcome?.id ?? `${ch.id}-outcome`,
+        text: ch.outcome?.text ?? '',
+        category: ch.outcome?.category,
+        icon: ch.outcome?.icon,
+      },
+      nodes: (ch.nodes ?? []).map((n) => ({
+        id: n.id ?? '', text: n.text ?? '', category: n.category, icon: n.icon,
+      })),
+      correctOrder: ch.correctOrder ?? [],
+      explanation: ch.explanation,
+    }));
+    const session = {
+      periodLabel: String(data.periodLabel ?? ''),
+      gradeLevel: typeof data.gradeLevel === 'string' ? data.gradeLevel : undefined,
+    };
+    const tier = (data.supportTier as ChainTier) ?? undefined;
+    const items = causeEffectChainItems(shaped, session, { tier });
+    const producedFrom = new Set(items.map((i) => i.challengeId));
+    return {
+      items,
+      dropped: shaped.filter((ch) => !producedFrom.has(ch.id)).length,
+      surface: causeEffectChainPackBase(items),
+    };
+  },
+  answersFor: causeEffectChainHarnessAnswers,
+  gestureVerdictCue: (item, gesture) =>
+    (item.kind === 'build_chain' ? chainVerdictCue(item, String(gesture)) : ''),
+};
+
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'knowledge-check': knowledgeCheckAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
@@ -1793,6 +1857,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'states-of-matter': statesOfMatterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'matter-explorer': matterExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'era-explorer': eraExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'cause-effect-chain': causeEffectChainAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

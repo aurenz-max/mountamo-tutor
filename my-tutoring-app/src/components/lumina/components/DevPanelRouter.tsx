@@ -29,6 +29,7 @@ import PipLab from './PipLab';
 import BlendJudgeLab from './BlendJudgeLab';
 import DirectInstructionBench from './di-bench/DirectInstructionBench';
 import DirectInstructionPrimitivesTester from './DirectInstructionPrimitivesTester';
+import HistoryPrimitivesTester from './HistoryPrimitivesTester';
 import DesignStudio from './DesignStudio';
 import DiagnosisLab from './DiagnosisLab';
 import { PlannerDashboard } from './PlannerDashboard';
@@ -65,6 +66,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'blend-judge-lab': BlendJudgeLab,
   'di-bench': DirectInstructionBench,
   'direct-instruction-tester': DirectInstructionPrimitivesTester,
+  'history-primitives-tester': HistoryPrimitivesTester,
   'design-studio': DesignStudio,
   'diagnosis-lab': DiagnosisLab,
   'lumina-tutor-tester': LuminaTutorTester,

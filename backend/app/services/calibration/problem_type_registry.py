@@ -964,6 +964,16 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "era_compare":     PriorConfig(5.0, "Contrast: life detail belongs to this era, the preceding era, or both"),
         "cause_of_change": PriorConfig(6.5, "Causation: pick the technological/economic/political cause of a change"),
     },
+    # The PRD's own three phases for one causal chain, not three sizes of one
+    # task. Each rung asks a different question over IDENTICAL content: is this
+    # even a cause, in what order did the causes have to happen, and which end
+    # of the chain is the root. The climb is the reasoning, not the card count -
+    # chain LENGTH is grade fidelity and is spoken for elsewhere.
+    "cause-effect-chain": {
+        "identify_cause":    PriorConfig(2.0, "Locate: pick the causes of the outcome out of a bank salted with a consequence and inert background"),
+        "build_chain":       PriorConfig(3.5, "Sequence: order every cause so each one made the next possible"),
+        "root_vs_proximate": PriorConfig(6.0, "Analyze: name the root cause, or the proximate one, over a chain of the same cards"),
+    },
     "vocabulary-explorer": {
         "explore":  PriorConfig(1.5, "Guided exploration with term matching"),
         "recall":   PriorConfig(3.5, "Unguided recall with matching and fill-in-blank"),

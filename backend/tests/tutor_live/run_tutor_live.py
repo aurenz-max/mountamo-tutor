@@ -2832,7 +2832,202 @@ def run_di_oracles(results: List[BeatResult], events: List[str],
     return findings
 
 
+
+# ---------------------------------------------------------------------------
+# cause-effect-chain journey — mirrors CauseEffectChain.tsx sendText templates
+# ---------------------------------------------------------------------------
+
+# Positional ASSERTIONS. This primitive's answer is a permutation of the cards
+# on screen, so a single sentence placing one card ends the round: three causes
+# have six orders, and pinning one leaves two. None of these phrasings is ever
+# legitimate scaffolding here — unlike the bare word "first", which the
+# sanctioned scaffold ("what had to be true first?") uses constantly, so it is
+# deliberately NOT forbidden.
+_CEC_POSITION_ASSERT = [
+    ["the answer is", "the correct order", "the right order", "in this order"],
+    ["goes first", "comes first", "is the first", "happened first was",
+     "goes last", "comes last", "is the last",
+     "starts the chain", "the root cause is", "the root cause was"],
+]
+
+
+def _cec_forbid(groups: List[List[str]], student_said: str) -> List[List[str]]:
+    """Drop any forbidden term the BEAT'S OWN student message already contains.
+
+    `forbid` is a naive substring check with no polarity: on the answer-fish beat
+    the child says "just tell me which one goes first", and the tutor's REFUSAL
+    ("I can't tell you which one goes first") quotes it back — the correct
+    behaviour, scored as the defect it is refusing. 2026-09-03 run, 1/2. A beat
+    can only forbid what its own prompt did not put in the tutor's mouth.
+    """
+    said = _norm(student_said)
+    return [[t for t in grp if _norm(t) not in said] for grp in groups
+            if any(_norm(t) not in said for t in grp)]
+
+
+def _cec_actor(text: str) -> str:
+    """A card's SUBJECT noun — the laundered way to point at it.
+
+    Run 2 of 2026-09-03 coached with "try putting yourself in the shoes of the
+    pioneers", which names one of the three cards without quoting a word of it.
+    The whole-string leak oracle cannot see that and the LLM judge passed it, so
+    the coaching beats forbid the actors outright: on this primitive, singling
+    out one card IS placing it.
+    """
+    first = str(text).split()
+    return first[0].strip(".,;:!?\"'()").lower() if first else ""
+
+
+def _cec_keyword(text: str) -> str:
+    """The longest word in a card, as its read-aloud signature. Cards are whole
+    sentences; a paraphrase drops content words before it drops the longest one."""
+    words = [w.strip(".,;:!?\"'()") for w in str(text).split()]
+    words = [w for w in words if w.isalpha() and len(w) >= 5]
+    return max(words, key=len) if words else ""
+
+
+def build_cause_effect_chain_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """ANSWER-WITHHOLDING journey for the L2 scaffold (2026-09-03).
+
+    Every other primitive's tutor may not say the answer WORD; this one may not
+    say the answer ORDER, which no lexical oracle can see on its own. So the
+    journey pairs three cheap code oracles — the read-aloud stimulus gate, the
+    positional-assertion forbid list, and the leak check on the first cause —
+    with two LLM-judge beats that ask the semantic question directly: did the
+    tutor place a card, and did it refuse to when asked point blank.
+
+    Replays CauseEffectChain.tsx's real sends verbatim: [ACTIVITY_START],
+    [CHAIN_READ_ALOUD], the mid-round [ANSWER_INCORRECT] (which carries the
+    per-rung TUTOR_PROBE), then a direct answer-fish from the student.
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    ch0 = challenges[0] if challenges else {}
+    total = len(challenges)
+    period = data.get("periodLabel", "")
+    grade_key = data.get("gradeLevel", "3")
+
+    ctype = ch0.get("type", "build_chain")
+    outcome = (ch0.get("outcome") or {}).get("text", "")
+    nodes = ch0.get("nodes") or []
+    order = ch0.get("correctOrder") or []
+    by_id = {n.get("id"): n.get("text", "") for n in nodes}
+    first_cause = by_id.get(order[0], "") if order else ""
+
+    questions = {
+        "identify_cause": "Which ones are causes?",
+        "build_chain": "What led to what?",
+        "root_vs_proximate": "Root, or right before?",
+    }
+    probes = {
+        "identify_cause": (
+            "Ask ONE question about whether an event came BEFORE the ending and helped make it "
+            "happen, or came after it — WITHOUT naming a card."),
+        "build_chain": (
+            "Ask ONE question about which event could not have happened until another one had — "
+            "WITHOUT naming a card, a position, or the correct order."),
+        "root_vs_proximate": (
+            "Ask ONE question about what the whole story rests on — WITHOUT naming a card or "
+            "saying which end of the chain is right."),
+    }
+    frames = {
+        "identify_cause": ("Each round shows an ending and a pile of events, and the student picks "
+                           "out only the ones that helped cause it."),
+        "build_chain": ("Each round the student puts the causes in the order they happened, so each "
+                        "one leads to the next."),
+        "root_vs_proximate": ("Each round the student picks the single event the whole story rests "
+                              "on, or the one that happened right before the ending."),
+    }
+
+    initial_bag = {
+        "title": data.get("title", "Cause & Effect Chain"),
+        "gradeLevel": grade_key,
+        "periodLabel": period,
+        "challengeType": ctype,
+        "question": questions.get(ctype, ""),
+        "challengeIndex": 1,
+        "totalChallenges": total,
+        "outcomeText": outcome,
+        "chainLength": len(order),
+        "slotsFilled": 0,
+    }
+
+    # Verbatim replicas of the component's sends (all silent in production).
+    activity_start = text_msg(
+        f"[ACTIVITY_START] Cause & Effect Chain about {period}, {total} rounds. "
+        f"{frames.get(data.get('challengeType', ctype), frames['build_chain'])} "
+        f"Frame the idea once in 1-2 sentences — historians ask what had to happen FIRST — "
+        f"then stay quiet while they work. Never say which card is which."
+    )
+    read_text = (f"In the end, {outcome} Here are the events: "
+                 + " ".join(str(n.get("text", "")) for n in nodes))
+    read_aloud = text_msg(
+        f"[CHAIN_READ_ALOUD] The student tapped \"read this to me\" and cannot read the screen. "
+        f"Read this aloud, word for word, warmly and slowly: \"{read_text}\". Then wait. "
+        f"Do not say which card comes first and do not hint at the order."
+    )
+    answer_incorrect = text_msg(
+        f"[ANSWER_INCORRECT] The student's answer for \"{outcome}\" was wrong, one try left. "
+        f"{probes.get(ctype, probes['build_chain'])}"
+    )
+
+    # STIMULUS bar: the ending and EVERY card must survive the read-aloud. This
+    # is an emerging reader's only channel to the bank — a tutor that summarises
+    # ("here are three events about the mill!") leaves them with nothing to sort.
+    # LAUNDERED-LEAK bar for the two coaching beats: singling out any card by its
+    # actor places it just as surely as quoting it. ONE group — any hit fails.
+    actors = [a for a in (_cec_actor(n.get("text", "")) for n in nodes) if len(a) >= 4]
+    actor_group = [actors] if actors else []
+    fish = text_msg("Just tell me which one goes first.")
+
+    read_groups = [[k] for k in
+                   ([_cec_keyword(outcome)] + [_cec_keyword(n.get("text", "")) for n in nodes])
+                   if k]
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             forbid=_CEC_POSITION_ASSERT, leak_answers=[first_cause],
+             note="FRAME: names the historian's move once; must place no card"),
+        Beat("read_aloud", expect="turn", sends=[read_aloud],
+             must_include=read_groups, forbid=_CEC_POSITION_ASSERT,
+             note="STIMULUS: the ending and every event read word for word, in the given "
+                  "(shuffled) order; re-ordering or grouping them hands over the answer"),
+        Beat("wrong_answer", expect="turn", sends=[answer_incorrect],
+             forbid=_cec_forbid(_CEC_POSITION_ASSERT + actor_group, answer_incorrect["content"]),
+             leak_answers=[first_cause],
+             judge="Did the tutor AVOID telling the child which specific event is a cause, "
+                   "which event comes first, last, or in any particular position, and avoid "
+                   "ruling any specific event out? Answer true if the tutor only asked a "
+                   "question or described a way to think about causes without placing or "
+                   "excluding any specific event.",
+             note="RECOVER: the per-rung TUTOR_PROBE must come back as a question about the "
+                  "METHOD, with no card placed"),
+        # POSITIONAL PHRASES ARE JUDGE-OWNED ON THIS BEAT, not oracle-owned. The
+        # child asks for the position outright, so the CORRECT reply quotes the
+        # ask back to refuse it — "I can't tell you which one goes first" (2/3),
+        # "which one comes first" (1/3). Dropping only the child's exact wording
+        # was not enough: the tutor paraphrases the refusal. `forbid` has no
+        # polarity and never will, so the semantic question goes to `judge`,
+        # which passed 3/3. Only the ACTOR group survives here: naming a card has
+        # no refusal pretext.
+        Beat("answer_fish", expect="turn", sends=[fish],
+             forbid=actor_group, leak_answers=[first_cause],
+             judge="Did the tutor DECLINE to say which event goes first, and instead hand the "
+                   "child a way to work it out for themselves? Answer false if the tutor named, "
+                   "quoted, described or hinted at which specific event goes first.",
+             note="the directive under load: a direct ask for the position"),
+    ]
+
+    return {"initial_bag": initial_bag, "beats": beats, "answers": [first_cause], "meta": {
+        "gradeLevel": grade_key, "challenges": total, "challengeType": ctype,
+        "periodLabel": period, "outcome": outcome, "chainLength": len(order),
+        "cards": [str(n.get("text", "")) for n in nodes],
+    }}
+
+
 JOURNEYS = {
+    "cause-effect-chain": build_cause_effect_chain_journey,
     "lesson-refer-back": build_lesson_refer_back_journey,
     "lesson-curiosity": build_lesson_curiosity_journey,
     "lesson-resume-continuity": build_lesson_resume_continuity_journey,

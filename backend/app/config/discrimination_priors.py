@@ -165,6 +165,19 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "era_compare":     DiscriminationPrior(a=1.2, c=0.33),
         "cause_of_change": DiscriminationPrior(a=1.2, c=0.33),
     },
+    # cause-effect-chain guesses are NOT a flat 1/3 - each rung has its own
+    # arithmetic, so each gets its own floor rather than a shared default:
+    #   identify_cause    pick 3 of 5 cards          -> C(5,3) = 10  -> 0.10
+    #   build_chain       order 3 (K-4) or 4 (5+)    -> 1/6 .. 1/24  -> 0.12
+    #   root_vs_proximate one card of 3-4            -> ~2/7         -> 0.29
+    # `a` is high across the ladder because every rung is production over the
+    # same cards: a student who cannot reason causally has nothing to fall back
+    # on, so the response separates cleanly.
+    "cause-effect-chain": {
+        "identify_cause":    DiscriminationPrior(a=1.4, c=0.10),
+        "build_chain":       DiscriminationPrior(a=1.5, c=0.12),
+        "root_vs_proximate": DiscriminationPrior(a=1.5, c=0.29),
+    },
     # --- Assessment primitives ---
     "knowledge-check": {
         "recall":   DiscriminationPrior(a=1.6, c=0.25),

@@ -142,6 +142,8 @@ cd backend/tests/tutor_live && python run_tutor_live.py --component <id> --plumb
 cd backend/tests/tutor_live && python run_tutor_live.py --component <id> --runs 3
 ```
 
+**Run it with the backend venv's python** — `backend/venv/Scripts/python.exe run_tutor_live.py …` on Windows. A `judge:` beat imports `google.genai`, which the ambient conda/miniforge python does not have; the import runs AFTER every Live session is spent, so the wrong interpreter costs you the whole drive and writes no report (2026-09-03, cause-effect-chain).
+
 Needs backend :8000 + frontend :3000 running, and `content-pipeline/.env` Firebase test creds. The harness fetches real generated content + the raw tutoring block via `&probe=1&live=1`, authenticates on `/api/lumina-tutor` exactly like `LuminaAIContext`, replays the component's sendText `[TAG]` templates and `update_context` slider moves beat by beat, and judges the per-beat transcript with the code oracles below. Report: `qa/tutor-reports/<id>-live-<date>.md` with all runs' transcripts — always read it; oracles are tripwires, the transcript is the evidence.
 
 **Rate-based scoring:** sessions are nondeterministic — `--runs N` replays the same journey over the SAME generated content; a finding is **CONFIRMED at ≥2/3 of runs**, otherwise it's a single-run note. Default to `--runs 3`; never file a finding off one run.

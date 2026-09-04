@@ -3517,6 +3517,23 @@ export interface DiSpokenPracticeMetrics extends BasePrimitiveMetrics {
 // History Primitives
 // -----------------------------------------------------------------------------
 
+export interface CauseEffectChainMetrics extends BasePrimitiveMetrics {
+  type: 'cause-effect-chain';
+  /**
+   * Session task identity — the PRD's three phases, or 'mixed' when one session
+   * spans several rungs. The per-challenge breakdown rides `phaseResults`, not
+   * this field.
+   */
+  challengeType: 'identify_cause' | 'build_chain' | 'root_vs_proximate' | 'mixed';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total tries across all challenges
+  firstTryCount: number;          // challenges scoring 100 (first-try correct)
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
 export interface EraExplorerMetrics extends BasePrimitiveMetrics {
   type: 'era-explorer';
   /**
@@ -3742,6 +3759,7 @@ export type PrimitiveMetrics =
   | DiSentenceReadingMetrics
   | DiSpokenPracticeMetrics
   // History
+  | CauseEffectChainMetrics
   | EraExplorerMetrics;
 
 // =============================================================================

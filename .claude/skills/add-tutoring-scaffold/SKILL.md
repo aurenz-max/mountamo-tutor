@@ -115,6 +115,13 @@ Adding scaffolding is a **frontend-only** task. No backend changes needed.
 7. **Define `contextKeys`**
    - List only the `primitive_data` fields the AI needs to see
    - Omit to send all keys (not recommended — keep the AI focused)
+   - **Every key must be one that would be HARMLESS SPOKEN.** `contextKeys` render into a
+     `[CURRENT STATE]` block that `PrimitiveState.attach` prepends, and TU-6 is the standing
+     finding that the tutor READS THAT BLOCK ALOUD — prompt-only bans on speaking it have lost
+     3/3. So a key protected only by a directive not to say it is not protected. Drop it instead.
+     Watch for keys that are answer-adjacent rather than answer-valued: `cause-effect-chain`
+     excludes `chainLength` because on its set-selection rung that number is the cardinality of
+     the answer set, even though on the other two rungs it is visible on screen anyway.
 
 8. **Write scaffolding levels** (progressive support)
 
@@ -125,6 +132,16 @@ Adding scaffolding is a **frontend-only** task. No backend changes needed.
    | Level 3 | Detailed walkthrough | Step-by-step instructions with concrete details |
 
    **Never give the answer at any level.** The AI scaffolds, not solves.
+
+   **If the answer is a RELATION, the leak is a REFERENCE.** On a primitive whose answer is an
+   ordering, a pairing or a selection over things on screen — not a value the tutor could utter —
+   singling out ONE item places it, and the tutor can do that without quoting a word of it.
+   `cause-effect-chain`'s live drive caught *"try putting yourself in the shoes of the pioneers"*,
+   which names one of three cards by its actor: the whole-string leak oracle cannot see it and the
+   LLM judge passed the turn, because the tutor had correctly declined to name a POSITION. Say so
+   explicitly in an `aiDirective` — name the paraphrases ("think about the X", "picture the Y",
+   "the one with the Z") and require the items be spoken about only as a group. Then check for it
+   in Tier 3: it is invisible to Tiers 1 and 2 by construction.
 
 9. **Write `commonStruggles`**
    - Describe *observable* student behavior (not vague labels like "struggling")

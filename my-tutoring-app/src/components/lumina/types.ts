@@ -1545,6 +1545,7 @@ export type ComponentId =
   | 'race-track-lab'      // Interactive race track laboratory for physics experiments
 
   // History Primitives
+  | 'cause-effect-chain'  // Build chains of historical cause and effect
   | 'era-explorer'        // Interactive historical era exploration
 
 /**
@@ -2117,4 +2118,5 @@ export type { WordSorterData } from './primitives/visual-primitives/literacy/Wor
 export type { DigitalSkillsSimData } from './primitives/visual-primitives/core/DigitalSkillsSim';
 
 // History
+export type { CauseEffectChainData } from './primitives/visual-primitives/history/CauseEffectChain';
 export type { EraExplorerData } from './primitives/visual-primitives/history/EraExplorer';
