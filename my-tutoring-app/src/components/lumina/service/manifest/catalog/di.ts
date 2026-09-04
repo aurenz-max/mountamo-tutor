@@ -451,6 +451,135 @@ export const DI_CATALOG: ComponentDefinition[] = [
     },
   },
   {
+    id: 'di-dice-roll',
+    description:
+      'Live-judged Direct Instruction DICE practice: the child taps one or two dice to roll, looks at the '
+      + 'pip patterns, and answers aloud while the tutor judges the spoken response in-band. Supports three '
+      + 'distinct early-math skills: recognize/count one die, compare two visible quantities by saying left, '
+      + 'right, or same, and add two dice by saying the total. Builds one-to-one counting, dice-pip quantity '
+      + 'recognition, comparison, early subitizing, and concrete addition without printing the answer first. '
+      + 'Perfect for ages 3-7, Pre-K through grade 1 early mathematics.',
+    constraints:
+      'Requires microphone + live audio tutor. Use standard six-sided dice with approved pip layouts only; '
+      + 'no numeral faces or polyhedral dice. count_pips uses one die; compare_dice and sum_two_dice use two. '
+      + 'Generate 3-6 controlled challenges per session and render from each challenge\'s own type in blended '
+      + 'or mixed runs. The generator owns every finalized face value (1-6), relation, total (2-12), and spoken '
+      + 'answer. Difficulty keeps count_pips unchanged, narrows non-tie comparison gaps from 3 to 2 to 1, and '
+      + 'lengthens the right-die count-on path while preserving each addition total. Does not yet support choosing '
+      + 'dice to make a target, matching a built quantity, or roll-until probability.',
+    // L1 ladder (2026-09-03, /add-eval-modes). All three identities use
+    // already-benched DI response classes: number_word_to_20 for count/sum and
+    // short_spoken_word for left/right/same. β mirrors the backend registry.
+    // Count is one concrete quantity; compare adds relational attention across
+    // two sets; sum composes both sets and may produce totals through twelve.
+    evalModes: [
+      {
+        evalMode: 'count_pips',
+        label: 'Count the Pips',
+        beta: 1.5,
+        discrimination: 1.6,
+        scaffoldingMode: 1,
+        challengeTypes: ['count_pips'],
+        description: 'Roll one six-sided die and say its visible pip quantity as a number word.',
+      },
+      {
+        evalMode: 'compare_dice',
+        label: 'Compare Two Dice',
+        beta: 2.5,
+        discrimination: 1.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['compare_dice'],
+        description: 'Roll two dice, compare their pip quantities, and say left, right, or same.',
+      },
+      {
+        evalMode: 'sum_two_dice',
+        label: 'Add Two Dice',
+        beta: 3.5,
+        discrimination: 1.6,
+        scaffoldingMode: 3,
+        challengeTypes: ['sum_two_dice'],
+        description: 'Roll two dice, combine both visible pip sets, and say the total from two through twelve.',
+      },
+    ],
+    supportsEvaluation: true,
+    // Misconception Loop gate 3 — family ruling, see the module docblock.
+    misconceptionScope: 'primitive',
+    // The live tutor judges the child's number word inside the manual turn.
+    audioInput: { manual_activity: true },
+    // DI-native birth exception: exact cue wording and in-band judgment are the
+    // mechanism, so the generic tutor cannot execute this primitive safely.
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction dice practice (current task: {{challengeType}}; '
+        + 'support tier: {{supportTier}}; interaction: {{interaction}}). Speak only the exact scripted lines in each bracketed '
+        + 'application message and judge the learner\'s spoken number or comparison word from the audio you heard.',
+      // Answer-safe runtime state only. The die value, number word, aliases, and
+      // expected answer remain inside the per-item judging contract.
+      contextKeys: ['challengeType', 'supportTier', 'interaction'],
+      scaffoldingLevels: {
+        level1: 'Repeat only the item\'s exact scripted question, then wait; never add an unscripted strategy.',
+        level2: 'Use the item\'s exact tier-aware correction line, then wait. The line already contains all support allowed at the current supportTier.',
+        level3: 'Use the exact tier-aware model-and-retry correction and continue only when the application instructs you; never supplement it with easier-tier help.',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Loses one-to-one correspondence by skipping a pip or touching the same pip twice',
+          response: 'Use only the item\'s exact tier-aware correction branch. It supplies touch-each-dot language only when the active support tier allows it.',
+        },
+        {
+          pattern: 'Guesses a number immediately without inspecting or counting the pips',
+          response: 'Judge the spoken number honestly; if it is wrong, use the exact tier-aware correction branch without adding an easier-tier strategy.',
+        },
+        {
+          pattern: 'Recounts repeatedly, changes the answer, or never lands on one final number',
+          response: 'Wait for a final number; judge the last completed count, and use only the scripted correction if no final number arrives.',
+        },
+        {
+          pattern: 'Compares the physical position of the dice instead of matching their pip quantities',
+          response: 'Use only the exact tier-aware comparison correction, then ask for left, right, or same again.',
+        },
+        {
+          pattern: 'Counts each die correctly but states one face instead of the combined total',
+          response: 'Use only the exact tier-aware addition correction before re-eliciting the total; never append an easier-tier count-on hint.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [DICE_ITEM], [DICE_MOVE_ON], or [DICE_COMPLETE] contain the only lesson words '
+            + 'you may speak. Never speak the bracketed tag or invent wording. Use the exact quoted branch '
+            + 'for the audio actually heard: an affirmation begins with "Yes"; every correction begins with '
+            + '"My turn". Never begin any other sentence with those verdict words. The application alone '
+            + 'chooses and advances items.',
+        },
+        {
+          title: 'JUDGE THE CURRENT DICE TASK',
+          instruction:
+            'For count and sum, judge the learner\'s final spoken number; counting aloud and ending on the '
+            + 'correct quantity is correct. For compare, accept the scripted left/right/same equivalents only. '
+            + 'Never say a die value, total, or correct relation before the learner attempts it unless the '
+            + 'application\'s exact quoted correction line models it after an incorrect or missing answer.',
+        },
+        {
+          title: 'EXACT CUES AND BREVITY',
+          instruction:
+            'Speak only the exact quoted cue or judging line, then stop and wait. Never narrate the die state, '
+            + 'count the pips for the learner, reveal an upcoming value, explain scoring, or add praise, hints, '
+            + 'filler, or chit-chat outside the scripted line.',
+        },
+        {
+          title: 'SUPPORT TIER STAYS SCRIPT-OWNED',
+          instruction:
+            'RUNTIME STATE names the current supportTier, but each [DICE_ITEM] correction already contains '
+            + 'the complete strategy allowance for that tier. Easy may name the explicit one-to-one strategy; '
+            + 'medium gives one brief reminder; hard re-models and immediately re-asks. Never add support from '
+            + 'a different tier or change how the spoken answer is judged.',
+        },
+      ],
+    },
+  },
+  {
     id: 'di-shapes',
     description: 'Live-judged Direct Instruction SHAPE PRACTICE over voice: the tutor shows one drawn 2D shape, models the answer aloud ("this shape is a triangle" / "this shape has three sides"), practices it together, then asks the child and judges the spoken answer from the audio. Two kinds of ask — NAME the shape ("What shape is this?") and COUNT its attributes ("How many sides does this shape have?", "How many corners?"). The child SEES the drawn shape and SPEAKS the answer aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them, and counting the sides and corners (vertices) of straight-sided shapes to confirm what they are. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification, naming, and side/vertex counting for early learners.',
     constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders) and no composing, decomposing, or building shapes from other shapes; use a geometry primitive when composing IS the objective. Side and corner counting ARE supported (count_sides / count_corners), on straight-sided shapes only — a curved shape carries no side count, so a circles-and-ovals objective routes to naming. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken answer is the answer: neither the shape name nor its side/corner count ever appears on screen (or in the title/description) before the child says it.',

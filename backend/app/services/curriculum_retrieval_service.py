@@ -62,15 +62,17 @@ _DOMAIN_TO_SUBJECT: Dict[str, str] = {
     "history": "SOCIAL_STUDIES",
     # Direct Instruction packs are literacy-first (letter sounds, word reading)
     # — this removes the --domain literacy workaround for probes/attribution.
-    # Per-primitive overrides now live in _PRIMITIVE_TO_SUBJECT (di-math-facts
-    # -> MATHEMATICS) and win over this default.
+    # Per-primitive overrides now live in _PRIMITIVE_TO_SUBJECT (for example,
+    # di-dice-roll and di-math-facts -> MATHEMATICS) and win over this default.
     "di": "LANGUAGE_ARTS",
 }
 
 # Per-primitive subject overrides — consulted BEFORE the domain map. The DI
 # family spans subjects (letter sounds / word reading are LANGUAGE_ARTS via the
-# 'di' domain default; math facts is MATHEMATICS), so primitive wins over domain.
+# 'di' domain default; dice, math facts, and shapes are MATHEMATICS), so the
+# primitive override wins over the family domain.
 _PRIMITIVE_TO_SUBJECT: Dict[str, str] = {
+    "di-dice-roll": "MATHEMATICS",
     "di-math-facts": "MATHEMATICS",
     "di-shapes": "MATHEMATICS",
 }

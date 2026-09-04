@@ -174,6 +174,7 @@ import ParagraphArchitect from '../primitives/visual-primitives/literacy/Paragra
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
 import StoryMap from '../primitives/visual-primitives/literacy/StoryMap';
 import PhonicsBlender from '../primitives/visual-primitives/literacy/PhonicsBlender';
+import DiDiceRoll from '../primitives/visual-primitives/direct-instruction/DiDiceRoll';
 import DiLetterSounds from '../primitives/visual-primitives/direct-instruction/DiLetterSounds';
 import DiWordReading from '../primitives/visual-primitives/direct-instruction/DiWordReading';
 import DiMathFacts from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
@@ -1924,6 +1925,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'di-dice-roll': {
+    component: DiDiceRoll,
+    sectionTitle: 'Dice Roll',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 

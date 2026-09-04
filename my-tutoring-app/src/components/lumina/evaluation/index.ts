@@ -209,6 +209,7 @@ export type {
   TimelineBuilderMetrics,
   CompareObjectsMetrics,
   // Direct Instruction metrics
+  DiDiceRollMetrics,
   DiLetterSoundsMetrics,
   DiWordReadingMetrics,
   DiMathFactsMetrics,

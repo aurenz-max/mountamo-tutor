@@ -576,6 +576,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "fact_review":      PriorConfig(2.5, "Review: answer taught facts from a wide cumulative mix"),
         "subtraction_fact": PriorConfig(3.0, "Production: answer a printed subtraction fact aloud with the number word"),
     },
+    # L1 ladder (2026-09-03). All tasks use the same dice stage and a benched
+    # short spoken response. The load rises from naming one visible quantity,
+    # through relational comparison, to composing two quantities mentally.
+    "di-dice-roll": {
+        "count_pips":    PriorConfig(1.5, "Perceptual: say one die's visible pip quantity"),
+        "compare_dice":  PriorConfig(2.5, "Relational: compare two visible pip quantities and say left, right, or same"),
+        "sum_two_dice":  PriorConfig(3.5, "Composition: combine two visible pip quantities and say the total"),
+    },
     # L1 ladder (2026-08-07). Four identities on ONE drawn-shape stage, across
     # two ALREADY-BENCHED response classes: naming is the single-spoken-word
     # class, and a count is a number word in 3..6 (the #46 class; the menu tops

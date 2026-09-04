@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import { EvaluationProvider } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
+import DiDiceRoll, { type DiDiceRollData } from '../primitives/visual-primitives/direct-instruction/DiDiceRoll';
 import DiLetterSounds, { type DiLetterSoundsData } from '../primitives/visual-primitives/direct-instruction/DiLetterSounds';
 import DiWordReading, { type DiWordReadingData } from '../primitives/visual-primitives/direct-instruction/DiWordReading';
 import DiMathFacts, { type DiMathFactsData } from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
@@ -19,7 +20,7 @@ interface Props { onBack: () => void; }
 // must NEVER import them directly — generate via the eval-test API route.
 // One picker drives every DI pack; eval modes must mirror catalog/di.ts.
 // 'mixed' pins nothing → generator spread (letter-sounds L1 only).
-type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-shapes' | 'di-sentence-reading' | 'di-spoken-practice';
+type DiPrimitiveId = 'di-dice-roll' | 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-shapes' | 'di-sentence-reading' | 'di-spoken-practice';
 
 interface DiPrimitiveOption {
   id: DiPrimitiveId;
@@ -44,6 +45,19 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
       { key: 'letter_sound', label: 'Letter Sound (isolated)' },
       { key: 'letter_sound_review', label: 'Sound Review (mixed set)' },
       { key: 'first_sound_in_word', label: 'First Sound in a Word' },
+      { key: 'mixed', label: 'Mixed (all modes)' },
+    ],
+  },
+  {
+    id: 'di-dice-roll',
+    label: 'Dice Roll',
+    subtitle: 'Roll, count, compare, or add visible dice pips aloud.',
+    defaultTopic: 'subitizing dice patterns to 6',
+    defaultGrade: 'kindergarten',
+    evalModes: [
+      { key: 'count_pips', label: 'Count the Pips' },
+      { key: 'compare_dice', label: 'Compare Two Dice' },
+      { key: 'sum_two_dice', label: 'Add Two Dice' },
       { key: 'mixed', label: 'Mixed (all modes)' },
     ],
   },
@@ -117,6 +131,7 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
 ];
 
 type DiData =
+  | { id: 'di-dice-roll'; data: DiDiceRollData }
   | { id: 'di-letter-sounds'; data: DiLetterSoundsData }
   | { id: 'di-word-reading'; data: DiWordReadingData }
   | { id: 'di-math-facts'; data: DiMathFactsData }
@@ -216,6 +231,9 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
           props merged in (ManifestOrderRenderer's shape). The bench used to
           spread the data across props, which is why the packs' props-are-data
           signature survived here and only crashed in a real lesson. */}
+      {generated?.id === 'di-dice-roll' && (
+        <DiDiceRoll key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
+      )}
       {generated?.id === 'di-letter-sounds' && (
         <DiLetterSounds key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
       )}

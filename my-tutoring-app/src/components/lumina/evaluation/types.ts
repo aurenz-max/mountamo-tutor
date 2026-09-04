@@ -3404,6 +3404,20 @@ export interface CompareObjectsMetrics extends BasePrimitiveMetrics {
 }
 
 // Direct Instruction (live-judged spoken family)
+export interface DiDiceRollMetrics extends BasePrimitiveMetrics {
+  type: 'di-dice-roll';
+  challengeType: 'count_pips' | 'compare_dice' | 'sum_two_dice';
+  challengeTypesTested: Array<'count_pips' | 'compare_dice' | 'sum_two_dice'>;
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  meanResponseMs: number | null;
+}
+
 export interface DiLetterSoundsMetrics extends BasePrimitiveMetrics {
   type: 'di-letter-sounds';
   // L1 ladder (all within the benched continuant response class).
@@ -3752,6 +3766,7 @@ export type PrimitiveMetrics =
   | TimelineBuilderMetrics
   | CompareObjectsMetrics
   // Direct Instruction
+  | DiDiceRollMetrics
   | DiLetterSoundsMetrics
   | DiWordReadingMetrics
   | DiMathFactsMetrics

@@ -13,6 +13,7 @@ import { generateDiMathFacts } from '../../direct-instruction/gemini-di-math-fac
 import { generateDiShapes } from '../../direct-instruction/gemini-di-shapes';
 import { generateDiSentenceReading } from '../../direct-instruction/gemini-di-sentence-reading';
 import { generateDiSpokenPractice } from '../../direct-instruction/gemini-di-spoken-practice';
+import { generateDiDiceRoll } from '../../direct-instruction/gemini-di-dice-roll';
 
 // di-letter-sounds — continuous letter sounds, menu-scoped to the objective.
 registerContextGenerator('di-letter-sounds', async (ctx) => ({
@@ -74,6 +75,17 @@ registerContextGenerator('di-spoken-practice', async (ctx) => ({
   type: 'di-spoken-practice',
   instanceId: ctx.instanceId,
   data: await generateDiSpokenPractice(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+  }),
+}));
+
+// di-dice-roll -- code-owned six-sided die values and spoken answers; Gemini
+// writes only answer-free session chrome.
+registerContextGenerator('di-dice-roll', async (ctx) => ({
+  type: 'di-dice-roll',
+  instanceId: ctx.instanceId,
+  data: await generateDiDiceRoll(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
   }),

@@ -166,6 +166,7 @@ export interface SentenceSchemaData {
 export type { SentenceAnalyzerData, SentenceAnalyzerChallenge, SentenceWord } from './primitives/visual-primitives/literacy/SentenceAnalyzer';
 export type { StoryTalkData } from './primitives/visual-primitives/literacy/StoryTalk';
 export type { WordFlipData, WordFlipChallenge } from './primitives/visual-primitives/literacy/WordFlip';
+export type { DiDiceRollData, DiDiceRollChallenge, DiceComparison, DieValue } from './primitives/visual-primitives/direct-instruction/DiDiceRoll';
 export type { DiLetterSoundsData } from './primitives/visual-primitives/direct-instruction/DiLetterSounds';
 export type { DiWordReadingData } from './primitives/visual-primitives/direct-instruction/DiWordReading';
 export type { DiMathFactsData } from './primitives/visual-primitives/direct-instruction/DiMathFacts';
@@ -1413,6 +1414,7 @@ export type ComponentId =
 
   // Language Arts Suite (K-6 ELA Expansion — PRD_LANGUAGE_ARTS_SUITE.md)
   | 'phonics-blender'           // Sound-by-sound word building with phoneme tiles and audio (K-2)
+  | 'di-dice-roll'              // Direct Instruction: roll a die and produce the quantity shown
   | 'di-letter-sounds'          // Live-judged Direct Instruction: continuous letter sounds, spoken call-response (K)
   | 'di-word-reading'           // Live-judged Direct Instruction: read printed CVC + sight words aloud (K-G1)
   | 'di-math-facts'             // Live-judged Direct Instruction: spoken math fact fluency call-response (K-G2)
