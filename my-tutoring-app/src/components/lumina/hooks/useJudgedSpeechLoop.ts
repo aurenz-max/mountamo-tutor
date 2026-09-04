@@ -80,8 +80,9 @@ export interface CueLogEvent {
   cutIn?: boolean;
   /** The cue text, verbatim. Consumers are expected to truncate for display. */
   text: string;
-  /** On 'blocked': which gate held it. */
-  reason?: 'audio' | 'voice' | 'attempt';
+  /** On 'blocked': which gate held it. 'inactive' = the lesson is pointed at
+   *  another block (item 31); the cue waits for the student to come back. */
+  reason?: 'audio' | 'voice' | 'attempt' | 'inactive';
 }
 
 export interface JudgedSpeechLoopOptions {
@@ -108,6 +109,22 @@ export interface JudgedSpeechLoopOptions {
    * the model a turn.
    */
   listenForVoice?: boolean;
+  /**
+   * Is this loop's primitive the one the LESSON is pointed at? Default true;
+   * standalone surfaces never pass it.
+   *
+   * In the scroll layout every block stays mounted and a run the student
+   * scrolled away from keeps running, so a lesson can hold several live loops
+   * at once. Only the active one may hold the shared bracket, consume shared
+   * turns, read the conversation, or send a queued cue — the others would
+   * otherwise keep the floor, judge another block's answers, or ask their own
+   * question over it. Lesson-bench sitting de90b50f9e1b (2026-09-04): ten-frame
+   * left one second into a build item held the bracket, and di-spoken-practice
+   * three blocks down was deaf for 149s — not one activity_start
+   * (qa/di/BACKLOG.md item 31). NOT `enabled`: that falling edge disarms, and a
+   * child who scrolls back should find the item exactly where they left it.
+   */
+  active?: boolean;
   config?: Partial<JudgedLoopConfig>;
   voice?: { config?: Partial<VoiceTurnConfig> };
   /** Every model emission, in order. Progression decisions happen here. */
@@ -157,13 +174,16 @@ export interface JudgedSpeechLoop {
 
 export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpeechLoop {
   const ctx = useLuminaAIContext();
-  const { enabled, listenForVoice = true } = options;
+  const { enabled, listenForVoice = true, active = true } = options;
 
   const config: JudgedLoopConfig = { ...DEFAULT_JUDGED_LOOP_CONFIG, ...options.config };
   const configRef = useRef(config);
   configRef.current = config;
   const callbacksRef = useRef(options);
   callbacksRef.current = options;
+  /** Read at cue-fire time (a timer), so it rides a ref like the rest. */
+  const activeRef = useRef(active);
+  activeRef.current = active;
 
   /**
    * The tutor channel, reached through a ref rather than through `ctx`.
@@ -338,7 +358,10 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       // Blocked: the cue STAYS queued and re-fires on the next release edge.
       // Reported so a run that ends on a block is distinguishable from a run
       // where no cue was ever queued — the two look identical from outside.
-      const blockedBy = audioPlayingRef.current && !offScript ? 'audio'
+      // 'inactive' first: a cue from a block the student is not on would land
+      // on another primitive's floor (item 31). It re-fires on the active edge.
+      const blockedBy = !activeRef.current ? 'inactive'
+        : audioPlayingRef.current && !offScript ? 'audio'
         : voiceActiveRef.current() ? 'voice'
         : loopStateRef.current.attempt != null && !offScript ? 'attempt'
         : null;
@@ -423,15 +446,27 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   });
   // In a lesson the PROVIDER owns the one bracket for every primitive on the
   // page, so a hold has to be asked for rather than taken. `holdVoiceTurns` is
-  // ref-counted there and releases on unmount via this effect's cleanup.
+  // ref-counted there and releases on unmount via this effect's cleanup — and
+  // ALSO when the lesson points elsewhere (item 31): the scroll layout never
+  // unmounts, so "until unmount" was "until the lesson ends" for a block the
+  // student had walked away from mid-build.
+  const sharedTurnsLive = usesSharedVoiceTurns && active;
   useEffect(() => {
-    if (!enabled || !usesSharedVoiceTurns || listenForVoice) return;
+    if (!enabled || !sharedTurnsLive || listenForVoice) return;
     return ctx.holdVoiceTurns();
-  }, [ctx.holdVoiceTurns, enabled, listenForVoice, usesSharedVoiceTurns]);
+  }, [ctx.holdVoiceTurns, enabled, listenForVoice, sharedTurnsLive]);
   useEffect(() => {
-    if (!enabled || !usesSharedVoiceTurns) return;
+    if (!enabled || !sharedTurnsLive) return;
     return ctx.sharedVoiceTurns.subscribe({ onTurnClose: handleVoiceTurnClose });
-  }, [ctx.sharedVoiceTurns?.subscribe, enabled, handleVoiceTurnClose, usesSharedVoiceTurns]);
+  }, [ctx.sharedVoiceTurns?.subscribe, enabled, handleVoiceTurnClose, sharedTurnsLive]);
+  // The floor comes back with the student: a cue held on 'inactive' re-fires
+  // on this edge, exactly as a cue blocked on audio re-fires on audio fall.
+  const previousActiveRef = useRef(active);
+  useEffect(() => {
+    const wasActive = previousActiveRef.current;
+    previousActiveRef.current = active;
+    if (active && !wasActive) schedulePendingCue();
+  }, [active, schedulePendingCue]);
 
   const preserveSharedTransport = useCallback(() => {
     // A judged-run reset must not close conversation or discard calibration.
@@ -447,7 +482,9 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   useEffect(() => {
     const next = ctx.conversation.slice(conversationIndexRef.current);
     conversationIndexRef.current = ctx.conversation.length;
-    if (!enabled) return;
+    // Inactive reads like disabled: the index still advances (another block's
+    // exchange is never replayed into this one on return), nothing dispatches.
+    if (!enabled || !active) return;
     const now = performance.now();
     for (const message of next) {
       if (message.role === 'user') {
@@ -473,7 +510,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
         dispatch({ type: 'tutor-text', text: message.content, at: now });
       }
     }
-  }, [ctx.conversation, enabled, dispatch, clearDeadCueWatch]);
+  }, [ctx.conversation, enabled, active, dispatch, clearDeadCueWatch]);
 
   // Tutor audio falling edge: the response clock + the off-script gate + a
   // cue release edge. The RISING edge is the primary liveness signal for the

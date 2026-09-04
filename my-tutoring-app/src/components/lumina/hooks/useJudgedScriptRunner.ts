@@ -740,9 +740,20 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     setRevealedItemId((held) => (held != null && held !== id ? null : held));
   }, [currentItem]);
 
+  // Item 31 (qa/di/BACKLOG.md, 2026-09-04): in a lesson only the block the
+  // lesson is pointed at owns the floor. `activePrimitiveId` is the viewport's
+  // choice, set synchronously on the switch, and it IS the manifest instanceId
+  // OrderedSection injects into `data` — the same string every consumer hands
+  // this runner. Null = tracking has not started; fail open, never deafen a
+  // pack because the first switch has not landed.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId == null
+    || ctx.activePrimitiveId === options.instanceId;
+
   const loop = useJudgedSpeechLoop({
     enabled: running,
     listenForVoice,
+    active: activeInLesson,
     voice: voiceConfig,
     onEmission: handleEmission,
     onCue: handleCue,

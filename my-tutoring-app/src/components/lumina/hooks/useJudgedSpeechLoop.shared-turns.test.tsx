@@ -3,10 +3,15 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_VOICE_TURN_CONFIG } from './voiceTurnMachine';
 import type { LoopEmission } from './judgedLoopModel';
+import type { CueLogEvent } from './useJudgedSpeechLoop';
 
 let sharedClose: ((event: Record<string, unknown>) => void) | undefined;
 let localEnabled: boolean | undefined;
 let sharedSubscribeCount = 0;
+/** Live holds on the provider's ref-counted bracket (item 31). */
+let holds = 0;
+interface Msg { role: 'user' | 'assistant'; content: string; timestamp: number }
+const ctxState: { conversation: Msg[]; sentTexts: string[] } = { conversation: [], sentTexts: [] };
 const shared = {
   subscribe: (listener: { onTurnClose?: (event: Record<string, unknown>) => void }) => {
     sharedSubscribeCount += 1;
@@ -25,12 +30,21 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
   // flat because nothing here asserts on the orb's spike ring.
   useMicLevel: () => 0,
   useLuminaAIContext: () => ({
-    conversation: [],
+    conversation: ctxState.conversation,
     isAudioPlaying: false,
     sessionMode: 'lesson',
     sessionResumeCount: 0,
     sharedVoiceTurns: shared,
-    sendText: vi.fn(),
+    sendText: (text: string) => { ctxState.sentTexts.push(text); },
+    holdVoiceTurns: () => {
+      holds += 1;
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        holds -= 1;
+      };
+    },
   }),
 }));
 
@@ -257,5 +271,110 @@ describe('useJudgedSpeechLoop shared lesson turns', () => {
     });
 
     expect(emissions.some((event) => event.kind === 'attempt-open')).toBe(false);
+  });
+});
+
+/**
+ * ITEM 31 (qa/di/BACKLOG.md, 2026-09-04) — LESSON FOCUS. The scroll layout
+ * keeps every block mounted, and a run the student scrolled away from keeps
+ * running. Lesson-bench sitting de90b50f9e1b: ten-frame was left one second
+ * into a build item; its gesture hold (ref-counted in the provider, released
+ * only on run end, a voice item, or unmount) outlived the student's attention,
+ * so di-spoken-practice three blocks down was deaf for 149s — not one
+ * activity_start. counting-board, left mid-item on a VOICE item, was still
+ * armed and subscribed, so once the hold lifted a spoken "three" would have
+ * been judged twice. `active` is the runner's word for "the lesson is pointed
+ * at this block"; while false the loop holds nothing, hears nothing, reads
+ * nothing and sends nothing — and takes all four back the moment it is true.
+ */
+describe('lesson focus — item 31', () => {
+  const close = () => ({
+    kind: 'close',
+    startedAt: 100,
+    durationMs: 500,
+    voicedMs: 585,
+    peak: 0.1,
+    duringTutorAudio: false,
+    belowMinVoice: false,
+  });
+  const judged = (emissions: LoopEmission[]) => emissions.filter((event) =>
+    event.kind === 'verdict'
+    || event.kind === 'unanchored-verdict'
+    || event.kind === 'phantom-transcript'
+    || event.kind === 'attempt-open');
+
+  it('a gesture item holds the shared bracket only while its primitive is active', () => {
+    holds = 0;
+    const view = renderHook(
+      ({ active }) => useJudgedSpeechLoop({
+        enabled: true, listenForVoice: false, active, onEmission: () => {},
+      }),
+      { initialProps: { active: true } },
+    );
+    expect(holds).toBe(1);
+
+    act(() => { view.rerender({ active: false }); });
+    expect(holds, 'the student scrolled away and the hold outlived them').toBe(0);
+
+    act(() => { view.rerender({ active: true }); });
+    expect(holds, 'back on the block mid-build: the bracket is held again').toBe(1);
+
+    view.unmount();
+    expect(holds).toBe(0);
+  });
+
+  it('an inactive loop neither consumes shared turns nor the conversation, and takes both back on return', () => {
+    const emissions: LoopEmission[] = [];
+    ctxState.conversation = [];
+    const view = renderHook(
+      ({ active }) => useJudgedSpeechLoop({
+        enabled: true, active, onEmission: (event) => emissions.push(event),
+      }),
+      { initialProps: { active: true } },
+    );
+    act(() => { view.result.current.arm(); });
+
+    act(() => { view.rerender({ active: false }); });
+    expect(sharedClose, 'unsubscribed from the shared turn authority').toBeUndefined();
+
+    // Another block's exchange: the child answers IT and the tutor affirms IT.
+    ctxState.conversation = [
+      { role: 'user', content: 'three', timestamp: 1 },
+      { role: 'assistant', content: 'Yes, three.', timestamp: 2 },
+    ];
+    act(() => { view.rerender({ active: false }); });
+    expect(judged(emissions), "another block's answer was judged here").toHaveLength(0);
+
+    act(() => { view.rerender({ active: true }); });
+    expect(judged(emissions), "the other block's exchange replayed on return").toHaveLength(0);
+    expect(sharedClose).toBeTypeOf('function');
+
+    // Still armed where it left off: the next turn on THIS block is an attempt.
+    act(() => { sharedClose?.(close()); });
+    expect(emissions.some((event) => event.kind === 'attempt-open')).toBe(true);
+  });
+
+  it('a queued cue waits while the primitive is inactive and fires on return', () => {
+    vi.useFakeTimers();
+    try {
+      const cues: CueLogEvent[] = [];
+      ctxState.sentTexts = [];
+      const view = renderHook(
+        ({ active }) => useJudgedSpeechLoop({
+          enabled: true, active, onEmission: () => {}, onCue: (event) => cues.push(event),
+        }),
+        { initialProps: { active: false } },
+      );
+      act(() => { view.result.current.queueCue('[ITEM] next'); });
+      act(() => { vi.advanceTimersByTime(500); });
+      expect(ctxState.sentTexts, 'asked its question over another block').toHaveLength(0);
+      expect(cues.some((cue) => cue.phase === 'blocked' && cue.reason === 'inactive')).toBe(true);
+
+      act(() => { view.rerender({ active: true }); });
+      act(() => { vi.advanceTimersByTime(500); });
+      expect(ctxState.sentTexts).toEqual(['[ITEM] next']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

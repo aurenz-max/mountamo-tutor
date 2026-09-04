@@ -32,6 +32,8 @@ const ctxState = vi.hoisted(() => ({
   isListening: true,
   isAudioPlaying: false,
   sessionMode: 'idle' as 'idle' | 'lesson',
+  /** The block the lesson is pointed at (viewport-driven in production). */
+  activePrimitiveId: null as string | null,
   sessionResumeCount: 0,
   conversation: [] as Array<{ role: string; content: string }>,
 }));
@@ -58,6 +60,7 @@ const loopStub = vi.hoisted(() => {
     onEmission: null as ((emission: LoopEmission) => void) | null,
     onCue: null as ((event: { phase: string; text: string }) => void) | null,
     enabled: false,
+    active: true as boolean | undefined,
     queueCue: vi.fn(),
     sendCueNow: vi.fn(),
     submitGestureAttempt: vi.fn(),
@@ -85,12 +88,14 @@ const loopStub = vi.hoisted(() => {
 vi.mock('./useJudgedSpeechLoop', () => ({
   useJudgedSpeechLoop: (options: {
     enabled: boolean;
+    active?: boolean;
     onEmission?: (e: LoopEmission) => void;
     onCue?: (e: { phase: string; text: string }) => void;
   }) => {
     loopStub.onEmission = options.onEmission ?? null;
     loopStub.onCue = options.onCue ?? null;
     loopStub.enabled = options.enabled;
+    loopStub.active = options.active;
     return loopStub;
   },
 }));
@@ -189,6 +194,7 @@ beforeEach(() => {
   ctxState.isListening = true;
   ctxState.isAudioPlaying = false;
   ctxState.sessionMode = 'idle';
+  ctxState.activePrimitiveId = null;
   refresh = () => {};
 });
 afterEach(cleanup);
@@ -733,5 +739,39 @@ describe('tap-to-hear', () => {
     expect(sendText).toHaveBeenCalledWith('[PRONOUNCE] cat', { silent: true, scripted: true });
     expect(run.stimulusTapped).toBe(true);
     expect(run.currentIndex).toBe(0);
+  });
+});
+
+/**
+ * ITEM 31 (qa/di/BACKLOG.md, 2026-09-04) — the scroll layout keeps every block
+ * mounted, so a lesson holds several live runners at once and only the one the
+ * lesson is pointed at may own the floor. The runner tells the loop which one it
+ * is; the loop does the gating (its own suite covers what "inactive" withholds).
+ * Lesson-bench sitting de90b50f9e1b: ten-frame left mid-build kept the shared
+ * bracket and di-spoken-practice, three blocks down, was deaf for 149s.
+ */
+describe('lesson focus (item 31)', () => {
+  it('tells the loop whether this block is the one the lesson is pointed at', () => {
+    ctxState.sessionMode = 'lesson';
+    ctxState.activePrimitiveId = 'some-other-block';
+    mount([voiceItem('i1', 'cat')]);
+    expect(loopStub.active).toBe(false);
+
+    // The student scrolls to this block: the viewport switch lands.
+    ctxState.activePrimitiveId = 'test-1';
+    refresh();
+    expect(loopStub.active).toBe(true);
+
+    // Tracking has not started (no switch yet): fail OPEN, never deafen a pack.
+    ctxState.activePrimitiveId = null;
+    refresh();
+    expect(loopStub.active).toBe(true);
+  });
+
+  it('is always active outside a lesson, whatever the provider points at', () => {
+    ctxState.sessionMode = 'idle';
+    ctxState.activePrimitiveId = 'some-other-block';
+    mount([voiceItem('i1', 'cat')]);
+    expect(loopStub.active).toBe(true);
   });
 });
