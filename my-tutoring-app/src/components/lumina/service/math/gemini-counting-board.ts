@@ -323,6 +323,8 @@ function buildCountingBoardSchema(count: number): Schema {
  */
 type CountingBoardConfig = {
   objectType?: string;
+  /** Manifest-stamped "number of problems" — NOT an object count. Unused here;
+   *  the per-mode table owns the instance count (see the override block). */
   count?: number;
   arrangement?: string;
   groupSize?: number;
@@ -464,7 +466,6 @@ GROUP-COUNT GUIDELINES (if generating group_count challenges):
 ${(() => {
   const hints: string[] = [];
   if (config?.objectType) hints.push(`- Object type: ${config.objectType}`);
-  if (config?.count) hints.push(`- Suggested starting count: ${config.count}`);
   if (config?.arrangement) hints.push(`- Suggested starting arrangement: ${config.arrangement}`);
   if (config?.groupSize) hints.push(`- Group size: ${config.groupSize}`);
   if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
@@ -732,16 +733,21 @@ Return the complete counting board configuration.
   if (config) {
     if (config.objectType !== undefined) data.objects.type = config.objectType;
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
-    // count/arrangement/groupSize overrides apply per-challenge as defaults
-    if (config.count !== undefined || config.arrangement !== undefined || config.groupSize !== undefined) {
+    // arrangement/groupSize overrides apply per-challenge as defaults.
+    //
+    // `config.count` is deliberately NOT one of them. The manifest stamps
+    // `config.count` on every block as "number of problems to generate"
+    // (gemini-manifest.ts, same field ten-frame receives), and until
+    // 2026-09-03 this loop read it as the per-challenge OBJECT count: a K
+    // "Counting objects to 10" lesson shipped seven challenges of exactly
+    // five bears (lesson-bench package …122953-hxav, found in the rail). The
+    // instance count is owned by the per-mode table (resolveCount) and the
+    // object counts by the topic scope + grade band above — the manifest's
+    // number is neither, so it is ignored here.
+    if (config.arrangement !== undefined || config.groupSize !== undefined) {
       for (const challenge of data.challenges) {
-        if (config.count !== undefined) challenge.count = config.count;
         if (config.arrangement !== undefined) challenge.arrangement = config.arrangement;
         if (config.groupSize !== undefined) challenge.groupSize = config.groupSize;
-        // Re-force targetAnswer after override
-        if (['count_all', 'group_count', 'count_on', 'subitize'].includes(challenge.type)) {
-          challenge.targetAnswer = challenge.count;
-        }
       }
     }
   }
