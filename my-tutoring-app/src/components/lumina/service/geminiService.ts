@@ -14,6 +14,7 @@ import { ai } from "./geminiClient";
 
 // Content Registry (Phase 1 Refactor)
 import { getGenerator } from "./registry/contentRegistry";
+import { assembleExhibitFromContent, type GeneratedContent } from "./exhibitAssembly";
 import { USE_CONTENT_REGISTRY, DEBUG_CONTENT_REGISTRY } from "../config/featureFlags";
 // Import all generators for side-effect registration
 import "./registry/generators";
@@ -216,71 +217,17 @@ export const buildCompleteExhibitFromManifest = async (
   const validComponents = components.filter(c => !c._failed);
   console.log(`✅ Generated ${validComponents.length}/${componentsToGenerate.length} components successfully`);
 
-  // PHASE 3: Assemble into Complete Exhibit Structure
+  // PHASE 3: Assemble into Complete Exhibit Structure — shared with the
+  // Lesson Bench replay (service/exhibitAssembly.ts), so a replayed package
+  // renders through exactly this code path.
   console.log('🏗️ Phase 3: Assembling exhibit...');
-
-  const exhibit: any = {
-    topic: manifest.topic,
-    themeColor: manifest.themeColor,
-    manifest: manifest, // Include the manifest for objective mapping
-    introBriefing: curatorBrief, // Use pre-generated curator brief
-    intro: {
-      hook: curatorBrief.hook.content,
-      objectives: curatorBrief.objectives.map((obj: any) => obj.text)
-    },
-    // NEW: Ordered components array preserving manifest layout order
-    orderedComponents: [],
-    // Legacy arrays kept for backward compatibility
-    cards: [],
-    featureExhibit: null,
-    comparison: null,
-    tables: [],
-    graphBoards: [],
-    scaleSpectrums: [],
-    annotatedExamples: [],
-    nestedHierarchies: [],
-    imagePanels: [],
-    takeHomeActivities: [],
-    knowledgeCheck: null,
-    specializedExhibits: [],
-    relatedTopics: []
-  };
-
-  // Build the orderedComponents array from manifest layout order
-  // Create a map of instanceId -> generated content for quick lookup
-  const contentMap = new Map<string, any>();
+  const contentMap = new Map<string, GeneratedContent>();
   for (const component of validComponents) {
     if (component && component.instanceId) {
-      contentMap.set(component.instanceId, component);
+      contentMap.set(component.instanceId, { instanceId: component.instanceId, data: component.data });
     }
   }
-
-  // Iterate through manifest.layout to build orderedComponents in manifest order
-  for (const layoutItem of manifest.layout) {
-    if (layoutItem.componentId === 'curator-brief') {
-      // Add curator brief as first component
-      exhibit.orderedComponents.push({
-        componentId: 'curator-brief',
-        instanceId: layoutItem.instanceId,
-        title: layoutItem.title,
-        data: curatorBrief,
-        objectiveIds: layoutItem.objectiveIds || []
-      });
-    } else {
-      // Look up generated content by instanceId
-      const generatedContent = contentMap.get(layoutItem.instanceId);
-      if (generatedContent && !generatedContent._failed) {
-        exhibit.orderedComponents.push({
-          componentId: layoutItem.componentId,
-          instanceId: layoutItem.instanceId,
-          title: layoutItem.title,
-          data: { ...generatedContent.data, __instanceId: layoutItem.instanceId },
-          objectiveIds: layoutItem.objectiveIds || []
-        });
-      }
-    }
-  }
-
+  const exhibit = assembleExhibitFromContent(manifest, curatorBrief, contentMap);
   console.log('🎉 Exhibit assembly complete from manifest!');
   return exhibit;
 };

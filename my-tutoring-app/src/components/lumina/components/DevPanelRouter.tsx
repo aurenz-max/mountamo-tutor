@@ -32,6 +32,8 @@ import DirectInstructionPrimitivesTester from './DirectInstructionPrimitivesTest
 import HistoryPrimitivesTester from './HistoryPrimitivesTester';
 import DesignStudio from './DesignStudio';
 import DiagnosisLab from './DiagnosisLab';
+import LessonBenchPanel from './LessonBenchPanel';
+import type { LessonPackage } from '../service/qa/lessonBench/lessonPackage';
 import { PlannerDashboard } from './PlannerDashboard';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { VisualPrimitivesGallery } from './VisualPrimitivesGallery';
@@ -82,6 +84,8 @@ interface DevPanelRouterProps {
   practiceTopic: string;
   onBack: () => void;
   onNavigate: (panel: string) => void;
+  /** Lesson Bench: play a dropped package through the one launch verb. */
+  onReplay: (pkg: LessonPackage) => void;
 }
 
 /**
@@ -94,6 +98,7 @@ export const DevPanelRouter: React.FC<DevPanelRouterProps> = ({
   practiceTopic,
   onBack,
   onNavigate,
+  onReplay,
 }) => {
   const { studentId, ready } = useStudent();
 
@@ -126,6 +131,10 @@ export const DevPanelRouter: React.FC<DevPanelRouterProps> = ({
 
   if (activePanel === 'diagnosis-lab') {
     return <DiagnosisLab onBack={onBack} studentId={ready ? studentId : null} />;
+  }
+
+  if (activePanel === 'lesson-bench') {
+    return <LessonBenchPanel onBack={onBack} onReplay={onReplay} />;
   }
 
   if (activePanel === 'practice-mode') {

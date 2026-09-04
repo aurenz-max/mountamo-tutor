@@ -10,6 +10,8 @@ import type { CurriculumContext } from './components/CurriculumBrowser';
 import { IdleScreen } from './components/IdleScreen';
 import { LessonScreen } from './components/LessonScreen';
 import { DevPanelRouter } from './components/DevPanelRouter';
+import { LessonBenchRail } from './components/LessonBenchRail';
+import type { LessonPackage } from './service/qa/lessonBench/lessonPackage';
 import { GeneratingScreen } from './components/GeneratingScreen';
 import { GenerationErrorScreen } from './components/GenerationErrorScreen';
 import { DailyLessonPlan } from './DailyLessonPlan';
@@ -68,6 +70,11 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
     lastGenerateRef.current = options;
     void generate(options);
   }, [generate]);
+
+  // Lesson Bench: a dropped package replays through the same launch verb.
+  const handleReplayPackage = useCallback((pkg: LessonPackage) => {
+    startGenerate({ topic: pkg.manifest.topic, gradeLevel, replay: pkg });
+  }, [startGenerate, gradeLevel]);
 
   // Topic handed in from the landing page (`/lumina?topic=…`) → start the
   // lesson straight away, exactly once, skipping the home screen.
@@ -523,6 +530,7 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
             practiceTopic={practiceTopic}
             onBack={handleBackFromPanel}
             onNavigate={setActivePanel}
+            onReplay={handleReplayPackage}
           />
         )}
 
@@ -561,6 +569,9 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
             onBack={reset}
           />
         )}
+
+        {/* LESSON BENCH RAIL — renders nothing unless a package is being replayed */}
+        {phase === GameState.PLAYING && exhibit && <LessonBenchRail />}
 
         {/* EXHIBIT STATE */}
         {phase === GameState.PLAYING && exhibit && (

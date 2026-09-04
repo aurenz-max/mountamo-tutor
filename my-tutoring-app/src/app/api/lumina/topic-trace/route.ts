@@ -9,7 +9,8 @@ import {
   generateIntroBriefing,
 } from '@/components/lumina/service/geminiService';
 import { getComponentById } from '@/components/lumina/service/manifest/catalog';
-import type { ExhibitManifest, ManifestItem } from '@/components/lumina/types';
+import type { ExhibitManifest, IntroBriefingData, ManifestItem } from '@/components/lumina/types';
+import { buildLessonPackage } from '@/components/lumina/service/qa/lessonBench/lessonPackage';
 import type { StudentGenerationContext } from '@/components/lumina/service/studentContext/types';
 
 // Full pipeline (brief → manifest → N generators) can take a while.
@@ -155,6 +156,9 @@ interface TraceParams {
   useObjectives: boolean;
   keepImages: boolean;
   manifestOnly: boolean;
+  /** Also emit a Lesson Bench package: manifest + full brief + every generated
+   *  block, images kept, componentId filter ignored. Replayable as-is. */
+  emitPackage: boolean;
   /** Fixed objectives — when provided, the brief is skipped entirely */
   fixedObjectives: Array<{ id: string; text: string; verb: string; icon: string }> | null;
   studentContext: StudentGenerationContext | null;
@@ -168,6 +172,7 @@ async function runTrace(params: TraceParams) {
     useObjectives,
     keepImages,
     manifestOnly,
+    emitPackage,
     fixedObjectives,
     studentContext,
   } = params;
@@ -219,7 +224,7 @@ async function runTrace(params: TraceParams) {
   // The flattened layout already has objective context injected into config.
   const layout: ManifestItem[] = manifest.layout || [];
   let itemsToTrace = layout.filter((i) => i.componentId !== 'curator-brief');
-  if (componentIdFilter) {
+  if (componentIdFilter && !emitPackage) {
     itemsToTrace = itemsToTrace.filter((i) => i.componentId === componentIdFilter);
   }
 
@@ -299,7 +304,7 @@ async function runTrace(params: TraceParams) {
         );
         const duration = Date.now() - t0;
         const rawData = result && typeof result === 'object' && 'data' in result ? result.data : result;
-        const data = keepImages ? rawData : stripImageData(rawData);
+        const data = keepImages || emitPackage ? rawData : stripImageData(rawData);
 
         return {
           componentId: item.componentId,
@@ -341,6 +346,19 @@ async function runTrace(params: TraceParams) {
     totalDuration: Date.now() - startTime,
     componentCount: components.length,
     components,
+    // Lesson Bench package — save this field as a .json and drop it on the panel.
+    ...(emitPackage
+      ? {
+          package: buildLessonPackage({
+            manifest,
+            curatorBrief: brief as unknown as IntroBriefingData | null,
+            components: components
+              .filter((c) => c.status === 'ok')
+              .map((c) => ({ instanceId: c.instanceId, componentId: c.componentId, data: c.data })),
+            source: 'topic-trace',
+          }),
+        }
+      : {}),
   };
 }
 
@@ -358,6 +376,7 @@ export async function GET(request: NextRequest) {
         componentId: 'optional — only trace components with this id (focus one generator)',
         objectives: 'optional — "false" to skip the curator brief',
         manifestOnly: 'optional — "true" to stop after the manifest (fast)',
+        package: 'optional — "true" to also return a Lesson Bench package (manifest + brief + every block, images kept) under `package`; save it as .json and drop it on the Lesson Bench dev panel',
       },
       post: {
         body: '{ topic, gradeLevel?, componentId?, manifestOnly?, objectives?: [{id,text,verb,icon}], studentContext?: <generation-context response> }',
@@ -376,6 +395,7 @@ export async function GET(request: NextRequest) {
       useObjectives: searchParams.get('objectives') !== 'false',
       keepImages: searchParams.get('images') === 'keep',
       manifestOnly: searchParams.get('manifestOnly') === 'true',
+      emitPackage: searchParams.get('package') === 'true',
       fixedObjectives: null,
       studentContext: null,
     });
@@ -415,6 +435,7 @@ export async function POST(request: NextRequest) {
       useObjectives: body.objectives !== false,
       keepImages: body.images === 'keep',
       manifestOnly: body.manifestOnly === true,
+      emitPackage: body.package === true,
       fixedObjectives: Array.isArray(body.objectives)
         ? (body.objectives as TraceParams['fixedObjectives'])
         : null,

@@ -1,0 +1,1332 @@
+{
+ "benchVersion": 1,
+ "id": "elementary-grades-1-5-counting-objects-to-10-20260903122648-ybwp",
+ "subskill": null,
+ "provenance": {
+  "generatedAt": "2026-09-03T12:26:48.934Z",
+  "source": "topic-trace",
+  "topic": "Counting objects to 10",
+  "gradeLevel": "elementary (grades 1-5)",
+  "gitSha": null,
+  "promptHash": null
+ },
+ "manifest": {
+  "topic": "Counting objects to 10",
+  "gradeLevel": "elementary (grades 1-5)",
+  "subject": "MATHEMATICS",
+  "themeColor": "#22c55e",
+  "curatorBrief": {
+   "instanceId": "brief-counting-10",
+   "title": "Adventures in Counting to 10",
+   "intent": "Welcome early elementary learners to counting up to 10! Introduce one-to-one correspondence by touching each object as we count, understanding that the last number said tells 'how many', and recognizing the numerals 1 through 10 in sequential order."
+  },
+  "objectiveBlocks": [
+   {
+    "objectiveId": "obj1",
+    "objectiveText": "Count a group of up to 10 real objects by touching and counting each one [apply]",
+    "objectiveVerb": "apply",
+    "components": [
+     {
+      "componentId": "annotated-example",
+      "instanceId": "obj1-annotated-example-touch-count",
+      "title": "How to Touch and Count",
+      "intent": "Demonstrate the step-by-step strategy of one-to-one correspondence: touching one object at a time, saying exactly one number name per object, and recognizing that the final number named represents the total quantity in the group.",
+      "config": {
+       "difficulty": "easy"
+      }
+     },
+     {
+      "componentId": "counting-board",
+      "instanceId": "obj1-counting-board-practice",
+      "title": "Touch & Count Playground",
+      "intent": "Provide interactive practice where students tap objects like stars, apples, and bears arranged in lines and scattered groups up to 10, counting aloud with tutor guidance to reinforce one-to-one correspondence and cardinality.",
+      "config": {
+       "count": 5,
+       "difficulty": "easy",
+       "targetEvalMode": "count"
+      }
+     },
+     {
+      "componentId": "ten-frame",
+      "instanceId": "obj1-ten-frame-counters",
+      "title": "Filling the Ten-Frame",
+      "intent": "Have students place counters one by one onto a single 10-frame grid to represent quantities up to 10, bridging tactile counting to organized visual structures.",
+      "config": {
+       "count": 4,
+       "difficulty": "medium",
+       "targetEvalMode": "build"
+      }
+     }
+    ]
+   },
+   {
+    "objectiveId": "obj2",
+    "objectiveText": "Identify the written numbers 1 through 10 in order [identify]",
+    "objectiveVerb": "identify",
+    "components": [
+     {
+      "componentId": "foundation-explorer",
+      "instanceId": "obj2-foundation-numerals",
+      "title": "Meet the Numbers 1 to 10",
+      "intent": "Introduce numerals 1 through 10 with clear visual cards showing the written numeral, its word name, and a corresponding set of dots so students learn to identify each numeral and its position.",
+      "config": {
+       "difficulty": "easy"
+      }
+     },
+     {
+      "componentId": "number-sequencer",
+      "instanceId": "obj2-number-sequencer-train",
+      "title": "Number Train: 1 to 10",
+      "intent": "Engage students in ordering numerals 1 to 10, filling in missing numbers on the train cars, and finding which number comes before or after a given number within the 1-10 range.",
+      "config": {
+       "count": 5,
+       "difficulty": "easy",
+       "targetEvalMode": "count_from|before_after|order_cards|fill_missing"
+      }
+     },
+     {
+      "componentId": "hundreds-chart",
+      "instanceId": "obj2-mini-chart-order",
+      "title": "Counting in Order: 1 to 10",
+      "intent": "Use a focused 1-10 grid board where students highlight numerals in sequential order from 1 through 10 and identify missing numerals in short counting sequences.",
+      "config": {
+       "count": 4,
+       "difficulty": "medium",
+       "targetEvalMode": "highlight_sequence|complete_sequence"
+      }
+     }
+    ]
+   }
+  ],
+  "finalAssessment": {
+   "componentId": "knowledge-check",
+   "instanceId": "final-counting-check",
+   "title": "Counting to 10 Champion Check",
+   "intent": "Check student mastery of both counting objects up to 10 using one-to-one correspondence and identifying the written numerals 1 through 10 in sequential order.",
+   "config": {
+    "count": 5,
+    "targetEvalMode": "recall|apply"
+   }
+  },
+  "layout": [
+   {
+    "componentId": "curator-brief",
+    "instanceId": "brief-counting-10",
+    "title": "Adventures in Counting to 10",
+    "intent": "Welcome early elementary learners to counting up to 10! Introduce one-to-one correspondence by touching each object as we count, understanding that the last number said tells 'how many', and recognizing the numerals 1 through 10 in sequential order.",
+    "objectiveIds": [
+     "obj1",
+     "obj2"
+    ]
+   },
+   {
+    "componentId": "annotated-example",
+    "instanceId": "obj1-annotated-example-touch-count",
+    "title": "How to Touch and Count",
+    "intent": "Demonstrate the step-by-step strategy of one-to-one correspondence: touching one object at a time, saying exactly one number name per object, and recognizing that the final number named represents the total quantity in the group.",
+    "config": {
+     "difficulty": "easy",
+     "objectiveId": "obj1",
+     "objectiveText": "Count a group of up to 10 real objects by touching and counting each one",
+     "objectiveVerb": "apply",
+     "objectiveGrade": "elementary (grades 1-5)",
+     "intent": "Demonstrate the step-by-step strategy of one-to-one correspondence: touching one object at a time, saying exactly one number name per object, and recognizing that the final number named represents the total quantity in the group."
+    },
+    "objectiveIds": [
+     "obj1"
+    ]
+   },
+   {
+    "componentId": "counting-board",
+    "instanceId": "obj1-counting-board-practice",
+    "title": "Touch & Count Playground",
+    "intent": "Provide interactive practice where students tap objects like stars, apples, and bears arranged in lines and scattered groups up to 10, counting aloud with tutor guidance to reinforce one-to-one correspondence and cardinality.",
+    "config": {
+     "count": 5,
+     "difficulty": "easy",
+     "targetEvalMode": "count",
+     "objectiveId": "obj1",
+     "objectiveText": "Count a group of up to 10 real objects by touching and counting each one",
+     "objectiveVerb": "apply",
+     "objectiveGrade": "elementary (grades 1-5)",
+     "intent": "Provide interactive practice where students tap objects like stars, apples, and bears arranged in lines and scattered groups up to 10, counting aloud with tutor guidance to reinforce one-to-one correspondence and cardinality."
+    },
+    "objectiveIds": [
+     "obj1"
+    ]
+   },
+   {
+    "componentId": "ten-frame",
+    "instanceId": "obj1-ten-frame-counters",
+    "title": "Filling the Ten-Frame",
+    "intent": "Have students place counters one by one onto a single 10-frame grid to represent quantities up to 10, bridging tactile counting to organized visual structures.",
+    "config": {
+     "count": 4,
+     "difficulty": "medium",
+     "targetEvalMode": "build",
+     "objectiveId": "obj1",
+     "objectiveText": "Count a group of up to 10 real objects by touching and counting each one",
+     "objectiveVerb": "apply",
+     "objectiveGrade": "elementary (grades 1-5)",
+     "intent": "Have students place counters one by one onto a single 10-frame grid to represent quantities up to 10, bridging tactile counting to organized visual structures."
+    },
+    "objectiveIds": [
+     "obj1"
+    ]
+   },
+   {
+    "componentId": "foundation-explorer",
+    "instanceId": "obj2-foundation-numerals",
+    "title": "Meet the Numbers 1 to 10",
+    "intent": "Introduce numerals 1 through 10 with clear visual cards showing the written numeral, its word name, and a corresponding set of dots so students learn to identify each numeral and its position.",
+    "config": {
+     "difficulty": "easy",
+     "objectiveId": "obj2",
+     "objectiveText": "Identify the written numbers 1 through 10 in order",
+     "objectiveVerb": "identify",
+     "objectiveGrade": "elementary (grades 1-5)",
+     "intent": "Introduce numerals 1 through 10 with clear visual cards showing the written numeral, its word name, and a corresponding set of dots so students learn to identify each numeral and its position."
+    },
+    "objectiveIds": [
+     "obj2"
+    ]
+   },
+   {
+    "componentId": "number-sequencer",
+    "instanceId": "obj2-number-sequencer-train",
+    "title": "Number Train: 1 to 10",
+    "intent": "Engage students in ordering numerals 1 to 10, filling in missing numbers on the train cars, and finding which number comes before or after a given number within the 1-10 range.",
+    "config": {
+     "count": 5,
+     "difficulty": "easy",
+     "targetEvalMode": "count_from|before_after|order_cards|fill_missing",
+     "objectiveId": "obj2",
+     "objectiveText": "Identify the written numbers 1 through 10 in order",
+     "objectiveVerb": "identify",
+     "objectiveGrade": "elementary (grades 1-5)",
+     "intent": "Engage students in ordering numerals 1 to 10, filling in missing numbers on the train cars, and finding which number comes before or after a given number within the 1-10 range."
+    },
+    "objectiveIds": [
+     "obj2"
+    ]
+   },
+   {
+    "componentId": "hundreds-chart",
+    "instanceId": "obj2-mini-chart-order",
+    "title": "Counting in Order: 1 to 10",
+    "intent": "Use a focused 1-10 grid board where students highlight numerals in sequential order from 1 through 10 and identify missing numerals in short counting sequences.",
+    "config": {
+     "count": 4,
+     "difficulty": "medium",
+     "targetEvalMode": "highlight_sequence|complete_sequence",
+     "objectiveId": "obj2",
+     "objectiveText": "Identify the written numbers 1 through 10 in order",
+     "objectiveVerb": "identify",
+     "objectiveGrade": "elementary (grades 1-5)",
+     "intent": "Use a focused 1-10 grid board where students highlight numerals in sequential order from 1 through 10 and identify missing numerals in short counting sequences."
+    },
+    "objectiveIds": [
+     "obj2"
+    ]
+   },
+   {
+    "componentId": "knowledge-check",
+    "instanceId": "final-counting-check",
+    "title": "Counting to 10 Champion Check",
+    "intent": "Check student mastery of both counting objects up to 10 using one-to-one correspondence and identifying the written numerals 1 through 10 in sequential order.",
+    "config": {
+     "count": 5,
+     "targetEvalMode": "recall|apply",
+     "objectiveGrade": "elementary (grades 1-5)",
+     "lessonObjectives": [
+      {
+       "id": "obj1",
+       "text": "Count a group of up to 10 real objects by touching and counting each one",
+       "grade": "elementary (grades 1-5)"
+      },
+      {
+       "id": "obj2",
+       "text": "Identify the written numbers 1 through 10 in order",
+       "grade": "elementary (grades 1-5)"
+      }
+     ]
+    },
+    "objectiveIds": [
+     "obj1",
+     "obj2"
+    ]
+   }
+  ]
+ },
+ "curatorBrief": {
+  "primitive": "intro_briefing",
+  "topic": "Counting objects to 10",
+  "subject": "General",
+  "gradeLevel": "Kindergarten",
+  "estimatedTime": "15-20 minutes",
+  "hook": {
+   "type": "scenario",
+   "content": "Imagine you are opening a magical toy box and pulling out bouncy balls, shiny blocks, and friendly teddy bears. Let's find out how many fun toys are hiding inside!",
+   "visual": "\ud83e\uddee"
+  },
+  "bigIdea": {
+   "statement": "We can count groups of real objects up to 10 to find out exactly how many there are.",
+   "whyItMatters": "Counting helps us share toys with friends, set the table for a snack, and figure out how many things we have all around us!"
+  },
+  "objectives": [
+   {
+    "id": "obj1",
+    "text": "Count a group of up to 10 real objects by touching and counting each one",
+    "verb": "apply",
+    "icon": "check"
+   },
+   {
+    "id": "obj2",
+    "text": "Identify the written numbers 1 through 10 in order",
+    "verb": "identify",
+    "icon": "search"
+   }
+  ],
+  "prerequisites": {
+   "shouldKnow": [
+    "Saying numbers in order from 1 to 10",
+    "Pointing at objects one at a time"
+   ],
+   "quickCheck": {
+    "question": "Can you point to your nose and say the number 1?",
+    "answer": "Touching the nose while saying 1",
+    "hint": "Try touching just one thing and saying the very first number we use when counting!"
+   }
+  },
+  "roadmap": [
+   {
+    "phase": "Explore",
+    "description": "Touch and count real objects together",
+    "activities": [
+     "Touch and count toy blocks",
+     "Line up counting bears"
+    ]
+   },
+   {
+    "phase": "Learn",
+    "description": "Connect counted objects to their written number symbols",
+    "activities": [
+     "Match groups of items to number cards",
+     "Trace numbers in the air"
+    ]
+   },
+   {
+    "phase": "Practice",
+    "description": "Show what you know by counting fun items independently",
+    "activities": [
+     "Count the fingers on your hand",
+     "Solve a quick counting puzzle"
+    ]
+   }
+  ],
+  "connections": {
+   "buildingFrom": [
+    "Reciting numbers from memory",
+    "Recognizing shapes and colors"
+   ],
+   "leadingTo": [
+    "Comparing groups to see which has more or less",
+    "Adding and subtracting numbers up to 10"
+   ],
+   "realWorld": [
+    "Counting crackers for snack time",
+    "Counting steps while walking to the door"
+   ]
+  },
+  "mindset": {
+   "encouragement": "Sometimes we might count a toy twice by accident, and that is okay! Everyone makes mistakes when they are learning, and fixing it makes us super smart.",
+   "growthTip": "Use your finger to point at each object slowly so your eyes and finger work together as a team."
+  }
+ },
+ "components": [
+  {
+   "instanceId": "obj1-annotated-example-touch-count",
+   "componentId": "annotated-example",
+   "data": {
+    "title": "Counting with One-to-One Correspondence on a Number Line",
+    "subject": "Elementary Mathematics",
+    "problem": {
+     "statement": "Count the correspondence for 1 object shown on the number line by touching it and saying its number name to find the total quantity.",
+     "inset": {
+      "insetType": "number-line",
+      "min": 0,
+      "max": 5,
+      "ticks": [
+       0,
+       1,
+       2,
+       3,
+       4,
+       5
+      ],
+      "label": "Figure 1",
+      "points": [
+       {
+        "value": 1,
+        "label": "1"
+       }
+      ]
+     }
+    },
+    "solutionStrategy": "Use one-to-one correspondence by pairing the object shown on the number line with exactly one counting word. Touching the point while saying its number name ensures every item is accounted for without skipping or double-counting. The final number name spoken tells us the total quantity of objects in the set.",
+    "steps": [
+     {
+      "id": 1,
+      "title": "Locate point on number line",
+      "content": {
+       "type": "diagram",
+       "imagePrompt": "A clean, colorful educational diagram for elementary students showing a horizontal number line from 0 to 5. Clearly labeled tick marks are present at 0, 1, 2, 3, 4, and 5. A bright blue dot is plotted directly above the number 1. A friendly pointing hand icon points directly to the dot above 1. The background is a clean light grid, optimized for primary school math instruction.",
+       "altText": "A number line from 0 to 5 with a single dot above the number 1, and a pointing hand indicating the dot.",
+       "labels": [
+        {
+         "text": "Number Line",
+         "description": "A line marked with evenly spaced numbers from 0 to 5, going from left to right."
+        },
+        {
+         "text": "Plotted Object",
+         "description": "A single dot placed directly above the tick mark for 1."
+        }
+       ]
+      },
+      "annotations": {
+       "steps": "Scan the number line from left to right and touch the single point located directly above tick mark 1.",
+       "strategy": "I notice that scanning the number line from left to right helps me find all the marked objects carefully before I start counting.",
+       "misconceptions": "Students often start counting from the middle of the number line or skip the zero mark, which leads to missing objects or miscounting.",
+       "connections": "This builds the foundational skill of sequential tracking and one-to-one correspondence needed for all future measurement and addition.",
+       "narrative": "Look at [Figure 1], which displays a number line marked from $0$ to $5$ with tick marks at $\\{0, 1, 2, 3, 4, 5\\}$. Scan the line from left to right to find any marked objects: there is a single point plotted directly above tick mark $1$ (recorded as $1@1$)."
+      }
+     },
+     {
+      "id": 2,
+      "title": "Pair point with number name",
+      "content": {
+       "type": "algebra",
+       "transitions": [
+        {
+         "from": {
+          "latex": "1 \\text{ (point on number line)}"
+         },
+         "to": {
+          "latex": "\\text{1 object} \\to \\text{\"one\"}"
+         },
+         "operation": "assign one number name to the object",
+         "challenge": {
+          "hide": "to",
+          "prompt": "When touching the point on the number line to count it, which pairing shows the correct one-to-one correspondence?",
+          "acceptableAnswers": [
+           "\\text{1 object} \\to \\text{\"one\"}"
+          ],
+          "rationale": "One-to-one correspondence pairs the single object with exactly one counting word ('one'), starting at one rather than zero and not saying multiple words for one object.",
+          "distractors": [
+           "\\text{1 object} \\to \\text{\"zero\"}",
+           "\\text{1 object} \\to \\text{\"one, two\"}"
+          ]
+         }
+        }
+       ],
+       "result": "\\text{Total quantity} = 1"
+      },
+      "annotations": {
+       "steps": "Touch the point at tick mark 1 and clearly say the number name \"one\" out loud.",
+       "strategy": "I notice that using one-to-one correspondence helps me pair the object with exactly one counting word so I do not skip or double-count.",
+       "misconceptions": "A common error is saying multiple number names for a single object or rushing ahead before touching the point, which leads to an incorrect total count.",
+       "connections": "This builds the foundational baseline for all future counting, cardinality, and arithmetic operations.",
+       "narrative": "Apply one-to-one correspondence by pairing a physical action with a number name. Gently touch the point located at tick mark $1$ with your finger, and as you touch it, say the number name clearly out loud: **\"one\"** ($1$)."
+      }
+     },
+     {
+      "id": 3,
+      "title": "Determine the total quantity",
+      "content": {
+       "type": "algebra",
+       "transitions": [
+        {
+         "from": {
+          "latex": "text: \\text{Last number spoken} = \\text{one}"
+         },
+         "to": {
+          "latex": "1"
+         },
+         "operation": "apply cardinality principle",
+         "challenge": {
+          "hide": "to",
+          "prompt": "Since 'one' was the last number name spoken, what is the total quantity of objects?",
+          "acceptableAnswers": [
+           "1"
+          ],
+          "rationale": "By the cardinality principle, the last number name spoken ('one') represents the total count of 1 object, rather than mistaking the 0 tick mark for a counted item or recounting to 2.",
+          "distractors": [
+           "0",
+           "2"
+          ]
+         }
+        }
+       ],
+       "result": "1"
+      },
+      "annotations": {
+       "steps": "Identify the final number name spoken during counting to determine the total quantity of objects shown on the number line.",
+       "strategy": "I notice that the counting sequence has ended with the word 'one' and there are no more points left to touch, so I can use the cardinality principle to conclude that this final number represents the total quantity.",
+       "misconceptions": "A student might mistakenly recount the object or think the total is higher because they confuse the number line position label with a running addition rather than a final count.",
+       "connections": "This reinforces the cardinality principle, which connects sequential counting to set size and forms the foundation for all future addition and quantity comparison work.",
+       "narrative": "Connect the counting sequence to the total quantity using the cardinality principle. Because there are no other points to touch on the number line, the last number you spoke was \"one,\" meaning the total quantity of objects shown on the number line is $1$."
+      }
+     }
+    ],
+    "solverDebug": {
+     "problemEcho": "Count the correspondence for 1 object shown on the number line by touching it and saying its number name to find the total quantity.",
+     "body": "Look at [Figure 1], which displays a number line marked from $0$ to $5$ with tick marks at $\\{0, 1, 2, 3, 4, 5\\}$. Scan the line from left to right to find any marked objects: there is a single point plotted directly above tick mark $1$ (recorded as $1@1$).\n---\nApply one-to-one correspondence by pairing a physical action with a number name. Gently touch the point located at tick mark $1$ with your finger, and as you touch it, say the number name clearly out loud: **\"one\"** ($1$).\n---\nConnect the counting sequence to the total quantity using the cardinality principle. Because there are no other points to touch on the number line, the last number you spoke was \"one,\" meaning the total quantity of objects shown on the number line is $1$.",
+     "separatorCount": 2,
+     "blocks": [
+      {
+       "index": 0,
+       "prose": "Look at [Figure 1], which displays a number line marked from $0$ to $5$ with tick marks at $\\{0, 1, 2, 3, 4, 5\\}$. Scan the line from left to right to find any marked objects: there is a single point plotted directly above tick mark $1$ (recorded as $1@1$)."
+      },
+      {
+       "index": 1,
+       "prose": "Apply one-to-one correspondence by pairing a physical action with a number name. Gently touch the point located at tick mark $1$ with your finger, and as you touch it, say the number name clearly out loud: **\"one\"** ($1$)."
+      },
+      {
+       "index": 2,
+       "prose": "Connect the counting sequence to the total quantity using the cardinality principle. Because there are no other points to touch on the number line, the last number you spoke was \"one,\" meaning the total quantity of objects shown on the number line is $1$."
+      }
+     ],
+     "planner": {
+      "specs": [
+       {
+        "stepType": "diagram",
+        "title": "Locate point on number line",
+        "pedagogicalGoal": "Teach students how to scan a number line from left to right to identify marked objects before counting.",
+        "groundingBlockIndices": [
+         0
+        ],
+        "seedNotes": "Depict a horizontal number line marked from 0 to 5 with tick marks at {0, 1, 2, 3, 4, 5} and a single dot plotted directly above tick mark 1."
+       },
+       {
+        "stepType": "algebra",
+        "title": "Pair point with number name",
+        "pedagogicalGoal": "Demonstrate one-to-one correspondence by assigning exactly one number word to each physical item.",
+        "groundingBlockIndices": [
+         1
+        ],
+        "seedNotes": "Show the correspondence mapping the point at tick mark 1 to the spoken word \"one\" and digit 1."
+       },
+       {
+        "stepType": "algebra",
+        "title": "Determine the total quantity",
+        "pedagogicalGoal": "Reinforce the cardinality principle that the final counting word spoken represents the set's total quantity.",
+        "groundingBlockIndices": [
+         2
+        ],
+        "seedNotes": "Conclude that because the count ended at \"one\", the total quantity of marked objects is 1."
+       }
+      ],
+      "unusedBlockIndices": [],
+      "injectedCount": 0,
+      "mergedCount": 0,
+      "fallback": false
+     },
+     "challenger": {
+      "assignments": [
+       {
+        "kind": "transition",
+        "stepIndex": 1,
+        "prompt": "When touching the point on the number line to count it, which pairing shows the correct one-to-one correspondence?",
+        "acceptableAnswers": [
+         "\\text{1 object} \\to \\text{\"one\"}"
+        ],
+        "distractors": [
+         "\\text{1 object} \\to \\text{\"zero\"}",
+         "\\text{1 object} \\to \\text{\"one, two\"}"
+        ],
+        "rationale": "One-to-one correspondence pairs the single object with exactly one counting word ('one'), starting at one rather than zero and not saying multiple words for one object.",
+        "transitionIndex": 0,
+        "hide": "to"
+       },
+       {
+        "kind": "transition",
+        "stepIndex": 2,
+        "prompt": "Since 'one' was the last number name spoken, what is the total quantity of objects?",
+        "acceptableAnswers": [
+         "1"
+        ],
+        "distractors": [
+         "0",
+         "2"
+        ],
+        "rationale": "By the cardinality principle, the last number name spoken ('one') represents the total count of 1 object, rather than mistaking the 0 tick mark for a counted item or recounting to 2.",
+        "transitionIndex": 0,
+        "hide": "to"
+       }
+      ],
+      "dropped": [],
+      "failed": false
+     }
+    }
+   }
+  },
+  {
+   "instanceId": "obj1-counting-board-practice",
+   "componentId": "counting-board",
+   "data": {
+    "title": "Count the Blocks!",
+    "description": "Learn to count objects up to 10 by tapping each one carefully.",
+    "objects": {
+     "type": "blocks"
+    },
+    "challenges": [
+     {
+      "id": "c1",
+      "type": "count_all",
+      "instruction": "Can you count all the blocks in a circle? Touch each one!",
+      "targetAnswer": 5,
+      "count": 5,
+      "arrangement": "line",
+      "hint": "Try tapping them one by one as you go around the circle.",
+      "narration": "Let's start by counting these blocks arranged in a circle. Tap each block to count!"
+     },
+     {
+      "id": "c2",
+      "type": "count_all",
+      "instruction": "Let's count these blocks lined up in a row!",
+      "targetAnswer": 5,
+      "count": 5,
+      "arrangement": "line",
+      "hint": "Go slowly from left to right, touching every block.",
+      "narration": "Now they are in a straight line. Touch each block as we count together."
+     },
+     {
+      "id": "c3",
+      "type": "count_all",
+      "instruction": "Can you count all these scattered blocks?",
+      "targetAnswer": 5,
+      "count": 5,
+      "arrangement": "line",
+      "hint": "Take your time and tap each block so you don't miss any.",
+      "narration": "Look at these scattered blocks! Tap them one by one to find out how many there are."
+     },
+     {
+      "id": "c4",
+      "type": "count_all",
+      "instruction": "Here is another line of blocks. Let's count them!",
+      "targetAnswer": 5,
+      "count": 5,
+      "arrangement": "line",
+      "hint": "Count along the line from start to finish.",
+      "narration": "Let's count this longer line of blocks together."
+     },
+     {
+      "id": "c5",
+      "type": "count_all",
+      "instruction": "Can you count these blocks in groups?",
+      "targetAnswer": 5,
+      "count": 5,
+      "arrangement": "line",
+      "hint": "Count the blocks in one group, then keep going to the next group.",
+      "narration": "These blocks are in groups. Let's count every single one!",
+      "groupSize": 5
+     },
+     {
+      "id": "c6",
+      "type": "count_all",
+      "instruction": "Let's count this fun circle of blocks!",
+      "targetAnswer": 5,
+      "count": 5,
+      "arrangement": "line",
+      "hint": "Remember which block you started with as you go around.",
+      "narration": "Around and around we go! Tap each block in the circle."
+     },
+     {
+      "id": "c7",
+      "type": "count_all",
+      "instruction": "Can you count all the blocks?",
+      "targetAnswer": 5,
+      "count": 5,
+      "arrangement": "line",
+      "hint": "Count all the way to the end of the line!",
+      "narration": "This is our last line of blocks. Let's count up to ten!"
+     }
+    ],
+    "showOptions": {
+     "showRunningCount": true,
+     "showGroupCircles": false,
+     "highlightOnTap": true,
+     "showLastNumber": true
+    },
+    "gradeBand": "K"
+   }
+  },
+  {
+   "instanceId": "obj1-ten-frame-counters",
+   "componentId": "ten-frame",
+   "data": {
+    "title": "Counting Objects to 10",
+    "description": "Practice counting real objects up to 10 by placing counters one by one onto a single ten-frame grid.",
+    "mode": "single",
+    "counters": {
+     "count": 0,
+     "color": "red",
+     "positions": []
+    },
+    "challenges": [
+     {
+      "id": "c1",
+      "type": "build",
+      "targetCount": 2,
+      "hint": "Try placing two counters on the top row of the frame.",
+      "narration": "Let us start by placing two counters on the frame, one at a time.",
+      "instruction": "Put 2 counters on the ten frame!"
+     },
+     {
+      "id": "c2",
+      "type": "build",
+      "targetCount": 4,
+      "hint": "Count slowly as you place four counters on the frame.",
+      "narration": "Now let us count out four counters to build our quantity.",
+      "instruction": "Put 4 counters on the ten frame!"
+     },
+     {
+      "id": "c3",
+      "type": "build",
+      "targetCount": 5,
+      "hint": "Can you fill the entire top row of the ten frame?",
+      "narration": "Let us place five counters to completely fill the top row.",
+      "instruction": "Put 5 counters on the ten frame!"
+     },
+     {
+      "id": "c4",
+      "type": "build",
+      "targetCount": 6,
+      "hint": "Five fill the top row, so six means one more on the bottom row.",
+      "narration": "Let us build six. Remember that five fills the top, and one goes on the bottom.",
+      "instruction": "Put 6 counters on the ten frame!"
+     },
+     {
+      "id": "c5",
+      "type": "build",
+      "targetCount": 7,
+      "hint": "Place seven counters by filling the top row and adding two on the bottom row.",
+      "narration": "Can you show me seven counters on your frame?",
+      "instruction": "Put 7 counters on the ten frame!"
+     },
+     {
+      "id": "c6",
+      "type": "build",
+      "targetCount": 8,
+      "hint": "Eight counters will leave only two empty spaces on the frame.",
+      "narration": "Let us place eight counters onto the frame.",
+      "instruction": "Put 8 counters on the ten frame!"
+     },
+     {
+      "id": "c7",
+      "type": "build",
+      "targetCount": 10,
+      "hint": "Ten counters will completely fill every space on the ten frame.",
+      "narration": "For our final challenge, let us fill the entire frame to make ten!",
+      "instruction": "Put 10 counters on the ten frame!"
+     }
+    ],
+    "showOptions": {
+     "showCount": false,
+     "showEquation": false,
+     "showEmptyCount": false,
+     "allowFlip": false
+    },
+    "gradeBand": "K",
+    "twoColorMode": {
+     "enabled": false,
+     "color1Count": 0,
+     "color2Count": 0,
+     "color1": "red",
+     "color2": "yellow"
+    }
+   }
+  },
+  {
+   "instanceId": "obj2-foundation-numerals",
+   "componentId": "foundation-explorer",
+   "data": {
+    "objectiveId": "obj2",
+    "objectiveText": "Identify the written numbers 1 through 10 in order",
+    "objectiveVerb": "identify",
+    "diagram": {
+     "description": "A clean educational number path showing the written numbers 1 through 10 arranged in sequential order from left to right.",
+     "imagePrompt": "Clean educational schematic diagram of a horizontal number track for elementary school: ten connected square tiles labeled with written numbers 1 through 10 from left to right. Tile 1 is highlighted in blue and labeled 'START: 1', tiles 2 through 9 are highlighted in green and labeled 'ORDER: 2 to 9', and tile 10 is highlighted in amber and labeled 'END: 10'. Directional arrow below pointing from 1 to 10 labeled 'COUNT FORWARD'. High contrast schematic style, dark navy background, bold white numerals, clear colored borders.",
+     "style": "schematic"
+    },
+    "concepts": [
+     {
+      "id": "start-number-one",
+      "name": "Starting Number: 1",
+      "briefDefinition": "The number 1 is the first written numeral in the counting sequence.",
+      "diagramHighlight": "The first blue square on the far left showing the numeral 1.",
+      "inContext": {
+       "scenario": "At the start of a running race, you look for the starting lane marker.",
+       "whereToFind": "The numeral 1 is written on the very first lane at the starting line."
+      },
+      "selfCheck": {
+       "prompt": "Which written numeral marks the starting point of the 1 to 10 sequence?",
+       "options": [
+        "The numeral 1 on the far left",
+        "The numeral 5 in the center",
+        "The numeral 10 on the far right"
+       ],
+       "correctIndex": 0,
+       "hint": "Find the very first square on the left side of the number track."
+      },
+      "color": "#3B82F6"
+     },
+     {
+      "id": "middle-sequence",
+      "name": "In-Order Sequence (2 to 9)",
+      "briefDefinition": "These written numerals follow consecutively from left to right, each one being one more than the number before it.",
+      "diagramHighlight": "The green row of squares labeled 2 through 9 connecting the start and finish.",
+      "inContext": {
+       "scenario": "When hopping along a sidewalk hopscotch game, you step forward onto each square.",
+       "whereToFind": "The written numerals 2, 3, 4, 5, 6, 7, 8, and 9 appear one after another in a line."
+      },
+      "selfCheck": {
+       "prompt": "Which written number comes immediately after 4 when reading across the path in order?",
+       "options": [
+        "3",
+        "5",
+        "7"
+       ],
+       "correctIndex": 1,
+       "hint": "Locate 4 on the path and identify the very next numeral to its right."
+      },
+      "color": "#10B981"
+     },
+     {
+      "id": "ending-number-ten",
+      "name": "Ending Number: 10",
+      "briefDefinition": "The number 10 is the final two-digit numeral that finishes the 1 through 10 sequence.",
+      "diagramHighlight": "The last amber square on the far right showing digits 1 and 0 written together.",
+      "inContext": {
+       "scenario": "When counting ten bowling pins set up at the alley, you finish your count on the last pin.",
+       "whereToFind": "The numeral 10 is the final score printed on the right side of the sheet."
+      },
+      "selfCheck": {
+       "prompt": "Which written numeral identifies the end of the 1 through 10 number line?",
+       "options": [
+        "The numeral 0",
+        "The numeral 9",
+        "The numeral 10"
+       ],
+       "correctIndex": 2,
+       "hint": "Look at the final tile at the far right of the number path made of two digits."
+      },
+      "color": "#F59E0B"
+     }
+    ],
+    "themeColor": "#3B82F6"
+   }
+  },
+  {
+   "instanceId": "obj2-number-sequencer-train",
+   "componentId": "number-sequencer",
+   "data": {
+    "title": "Counting Train Fun: 1 to 10",
+    "description": "Join the adventure to practice ordering numerals from 1 to 10, filling in missing train cars, and finding numbers that come before and after!",
+    "challenges": [
+     {
+      "id": "seq1",
+      "type": "count-from",
+      "instruction": "Let's start at 1 and count forward up to 5!",
+      "sequence": [
+       1
+      ],
+      "correctAnswers": [
+       2,
+       3,
+       4
+      ],
+      "rangeMin": 1,
+      "rangeMax": 4,
+      "direction": "forward",
+      "startNumber": 1
+     },
+     {
+      "id": "seq2",
+      "type": "before-after",
+      "instruction": "What number comes right after 4?",
+      "sequence": [
+       4,
+       null
+      ],
+      "correctAnswers": [
+       5
+      ],
+      "rangeMin": 4,
+      "rangeMax": 5
+     },
+     {
+      "id": "seq3",
+      "type": "fill-missing",
+      "instruction": "Oh no! A number fell off the train track. Can you fill in the missing number?",
+      "sequence": [
+       2,
+       null,
+       4,
+       5,
+       6
+      ],
+      "correctAnswers": [
+       3
+      ],
+      "rangeMin": 2,
+      "rangeMax": 6
+     },
+     {
+      "id": "seq4",
+      "type": "before-after",
+      "instruction": "What number comes right before 8?",
+      "sequence": [
+       null,
+       8
+      ],
+      "correctAnswers": [
+       7
+      ],
+      "rangeMin": 7,
+      "rangeMax": 8
+     },
+     {
+      "id": "seq5",
+      "type": "order-cards",
+      "instruction": "Put these number cards in order from smallest to largest!",
+      "sequence": [
+       8,
+       6,
+       7
+      ],
+      "correctAnswers": [
+       6,
+       7,
+       8
+      ],
+      "rangeMin": 6,
+      "rangeMax": 8
+     }
+    ],
+    "gradeBand": "1",
+    "showNumberLine": true,
+    "showDotArrays": true,
+    "supportTier": "easy"
+   }
+  },
+  {
+   "instanceId": "obj2-mini-chart-order",
+   "componentId": "hundreds-chart",
+   "data": {
+    "title": "Little Number Trail!",
+    "description": "Join the fun adventure to explore counting and number patterns from one to ten.",
+    "challenges": [
+     {
+      "id": "c1",
+      "type": "highlight_sequence",
+      "instruction": "Tap every number in order, all the way to 10.",
+      "skipValue": 1,
+      "startNumber": 1,
+      "givenCells": [],
+      "correctCells": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Try following the numbers one right after the other in order.",
+      "supportTier": "medium"
+     },
+     {
+      "id": "c2",
+      "type": "complete_sequence",
+      "instruction": "The first 3 numbers are highlighted. Tap all the remaining numbers in the pattern up to 10.",
+      "skipValue": 2,
+      "startNumber": 2,
+      "givenCells": [
+       2,
+       4,
+       6
+      ],
+      "correctCells": [
+       8,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Look at the gap between the numbers to find the next step.",
+      "supportTier": "medium"
+     },
+     {
+      "id": "c3",
+      "type": "identify_pattern",
+      "instruction": "Look at the highlighted cells. Which description best matches the visual pattern on the grid?",
+      "skipValue": 1,
+      "startNumber": 1,
+      "givenCells": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "correctCells": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "correctAnswer": "They fill every row completely",
+      "options": [
+       "They fill every row completely",
+       "Every other cell in each row",
+       "They are scattered randomly",
+       "A single diagonal line"
+      ],
+      "hint": "Observe how the highlighted blocks march across the board.",
+      "supportTier": "medium"
+     },
+     {
+      "id": "c4",
+      "type": "find_skip_value",
+      "instruction": "Look at the highlighted numbers. What is the skip value (how much is added each step)?",
+      "skipValue": 2,
+      "startNumber": 2,
+      "givenCells": [
+       2,
+       4,
+       6,
+       8
+      ],
+      "correctCells": [
+       2,
+       4,
+       6,
+       8
+      ],
+      "correctAnswer": "2",
+      "options": [
+       "5",
+       "10",
+       "3",
+       "2"
+      ],
+      "hint": "Count how many spaces are jumped from one number to the next.",
+      "supportTier": "medium"
+     },
+     {
+      "id": "c5",
+      "type": "highlight_sequence",
+      "instruction": "Tap every number in the skip-counting-by-2s pattern, all the way to 10.",
+      "skipValue": 2,
+      "startNumber": 2,
+      "givenCells": [],
+      "correctCells": [
+       2,
+       4,
+       6,
+       8,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Step carefully and skip every other number on your path.",
+      "supportTier": "medium"
+     },
+     {
+      "id": "c6",
+      "type": "complete_sequence",
+      "instruction": "The first 3 numbers are highlighted. Tap all the remaining numbers in the pattern up to 10.",
+      "skipValue": 1,
+      "startNumber": 1,
+      "givenCells": [
+       1,
+       2,
+       3
+      ],
+      "correctCells": [
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Keep going one step at a time without missing any numbers.",
+      "supportTier": "medium"
+     },
+     {
+      "id": "c7",
+      "type": "identify_pattern",
+      "instruction": "Look at the highlighted cells. Which description best matches the visual pattern on the grid?",
+      "skipValue": 2,
+      "startNumber": 2,
+      "givenCells": [
+       2,
+       4,
+       6,
+       8,
+       10
+      ],
+      "correctCells": [
+       2,
+       4,
+       6,
+       8,
+       10
+      ],
+      "correctAnswer": "Every other cell in each row",
+      "options": [
+       "They are scattered randomly",
+       "Every other cell in each row",
+       "A checkerboard pattern",
+       "They fill every row completely"
+      ],
+      "hint": "Check if every other square lights up along the track.",
+      "supportTier": "medium"
+     }
+    ],
+    "gridMax": 10,
+    "gradeBand": "2"
+   }
+  },
+  {
+   "instanceId": "final-counting-check",
+   "componentId": "knowledge-check",
+   "data": {
+    "problems": [
+     {
+      "type": "multiple_choice",
+      "id": "mc_1",
+      "difficulty": "easy",
+      "gradeLevel": "elementary",
+      "question": "What is the total number of apples shown here? \ud83c\udf4e \ud83c\udf4e \ud83c\udf4e \ud83c\udf4e",
+      "options": [
+       {
+        "id": "A",
+        "text": "3"
+       },
+       {
+        "id": "B",
+        "text": "4"
+       },
+       {
+        "id": "C",
+        "text": "5"
+       },
+       {
+        "id": "D",
+        "text": "6"
+       }
+      ],
+      "correctOptionId": "B",
+      "rationale": "When we count each apple one by one, we say 1, 2, 3, 4. The last number we say tells us that there are 4 apples in total.",
+      "teachingNote": "Have students touch or point to each apple as they count aloud to build one-to-one correspondence.",
+      "successCriteria": [
+       "Count a collection of up to 5 objects accurately",
+       "Identify the number symbol that represents a counted group of objects"
+      ],
+      "objectiveId": "obj1",
+      "subject": "MATHEMATICS"
+     },
+     {
+      "type": "fill_in_blanks",
+      "id": "fib_1",
+      "difficulty": "easy",
+      "gradeLevel": "elementary",
+      "textWithBlanks": "Looking at the toy cars on the shelf shown in Figure 1, point A represents the number [blank_1] of toy cars.",
+      "blanks": [
+       {
+        "id": "blank_1",
+        "correctAnswer": "3",
+        "caseSensitive": false
+       }
+      ],
+      "wordBank": [
+       "3",
+       "2",
+       "4",
+       "5"
+      ],
+      "rationale": "Point A is located at the tick mark for 3 on the number line, which shows the exact count of toy cars on the shelf.",
+      "teachingNote": "Make sure to align the position of the point with the corresponding number on the tick marks.",
+      "successCriteria": [
+       "Identify the correct number corresponding to a labeled point on a number line.",
+       "Count objects up to 5 using a visual aid."
+      ],
+      "inset": {
+       "insetType": "number-line",
+       "min": 1,
+       "max": 5,
+       "ticks": [
+        1,
+        2,
+        3,
+        4,
+        5
+       ],
+       "label": "Figure 1",
+       "points": [
+        {
+         "value": 3,
+         "label": "A"
+        }
+       ]
+      },
+      "objectiveId": "obj2",
+      "subject": "MATHEMATICS"
+     },
+     {
+      "type": "matching_activity",
+      "id": "match_count_1",
+      "difficulty": "easy",
+      "gradeLevel": "elementary",
+      "prompt": "Match each number to its correct word name.",
+      "leftItems": [
+       {
+        "id": "L1",
+        "text": "3"
+       },
+       {
+        "id": "L2",
+        "text": "6"
+       },
+       {
+        "id": "L3",
+        "text": "8"
+       },
+       {
+        "id": "L4",
+        "text": "10"
+       }
+      ],
+      "rightItems": [
+       {
+        "id": "R1",
+        "text": "eight"
+       },
+       {
+        "id": "R2",
+        "text": "three"
+       },
+       {
+        "id": "R3",
+        "text": "ten"
+       },
+       {
+        "id": "R4",
+        "text": "six"
+       }
+      ],
+      "mappings": [
+       {
+        "leftId": "L1",
+        "rightIds": [
+         "R2"
+        ]
+       },
+       {
+        "leftId": "L2",
+        "rightIds": [
+         "R4"
+        ]
+       },
+       {
+        "leftId": "L3",
+        "rightIds": [
+         "R1"
+        ]
+       },
+       {
+        "leftId": "L4",
+        "rightIds": [
+         "R3"
+        ]
+       }
+      ],
+      "rationale": "Every digit represents a quantity that can also be written with letters as a number word. Recognizing that 3 is 'three', 6 is 'six', 8 is 'eight', and 10 is 'ten' connects numeral symbols to spoken and written language. Practicing these basic connections helps build strong number sense and early reading skills.",
+      "teachingNote": "Have students practice reading each word aloud while holding up the matching number of fingers to reinforce the quantity.",
+      "successCriteria": [
+       "Read and recognize written number words up to 10",
+       "Directly recall the correct word name for a given digit"
+      ],
+      "objectiveId": "obj2",
+      "subject": "MATHEMATICS"
+     },
+     {
+      "type": "true_false",
+      "id": "tf_1",
+      "difficulty": "easy",
+      "gradeLevel": "elementary",
+      "statement": "True or false: When you point to and count a group of 7 stars, the correct count is 8 stars if you accidentally count one star twice.",
+      "correct": false,
+      "rationale": "This statement is false because counting an object twice gives an incorrect, higher number than what is actually there. When there are 7 stars in total, making a double-counting error will make the final count 8, but the true number of stars is still 7.",
+      "teachingNote": "Remind students to touch each object only once and move them or cross them out mentally to avoid double-counting.",
+      "successCriteria": [
+       "Accurately count a collection of up to 10 objects",
+       "Understand the effect of double-counting on a final count"
+      ],
+      "objectiveId": "obj1",
+      "subject": "MATHEMATICS"
+     },
+     {
+      "type": "sequencing_activity",
+      "id": "seq_1",
+      "difficulty": "easy",
+      "gradeLevel": "elementary",
+      "instruction": "Put the counted groups in order from 1 to 6, starting with the smallest amount.",
+      "items": [
+       "1 block",
+       "2 blocks",
+       "3 blocks",
+       "4 blocks",
+       "5 blocks",
+       "6 blocks"
+      ],
+      "rationale": "When counting objects, we always count forward by adding one more each time. The sequence starts at 1 and increases by one to 2, 3, 4, 5, and then 6. Placing these groups in this order follows the standard counting sequence from smallest to largest.",
+      "teachingNote": "Young learners sometimes confuse adjacent numbers like 4 and 5 or skip a step. Encourage students to count out loud as they move each group to check the sequence.",
+      "successCriteria": [
+       "Recall the standard forward counting sequence from 1 to 6.",
+       "Order quantities correctly from least to greatest."
+      ],
+      "objectiveId": "obj2",
+      "subject": "MATHEMATICS"
+     }
+    ],
+    "problemType": "orchestrated",
+    "topic": "Counting objects to 10",
+    "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+   }
+  }
+ ],
+ "scores": null,
+ "human": null
+}

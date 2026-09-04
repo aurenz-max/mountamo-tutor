@@ -10,6 +10,8 @@ import type { GradeLevel } from '../components/GradeLevelSelector';
 import { fetchGenerationContext, fetchStudentPersona } from '../service/studentContext/fetchGenerationContext';
 import type { StudentGenerationContext } from '../service/studentContext/types';
 import { buildPulseCheckManifest, buildPulseBrief } from '../service/manifest/pulse-check-manifest';
+import { exhibitFromPackage, type LessonPackage } from '../service/qa/lessonBench/lessonPackage';
+import { setActiveLessonPackage } from '../service/qa/lessonBench/lessonBenchSession';
 
 export interface ComponentStatus {
   id: string;
@@ -65,6 +67,14 @@ export interface GenerateOptions {
    * are suppressed — the day is already in motion.
    */
   sessionHandoff?: string;
+  /**
+   * Lesson Bench REPLAY. A saved package (manifest + curator brief + every
+   * generated block) renders as-is: no brief, no manifest, no generators.
+   * Same launch verb, same exhibit shape, and the live tutor still connects
+   * at mount exactly as in production. `topic`/`gradeLevel` are ignored in
+   * favour of the package's own. See service/qa/lessonBench/lessonPackage.ts.
+   */
+  replay?: LessonPackage;
 }
 
 export interface ExhibitSession {
@@ -101,6 +111,28 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
 
   const generate = useCallback(async (options: GenerateOptions) => {
     const { topic, gradeLevel, preBuiltObjectives, curriculumContext } = options;
+    // LESSON BENCH REPLAY — the package IS the lesson. Assemble through the
+    // production assembly step and go straight to PLAYING.
+    if (options.replay) {
+      const pkg = options.replay;
+      setPhase(GameState.GENERATING);
+      setMessage(`Replaying lesson package: ${pkg.id}`);
+      setThoughts([]);
+      setComponentStatuses([]);
+      try {
+        const data = exhibitFromPackage(pkg);
+        setBrief(pkg.curatorBrief);
+        setActiveLessonPackage(pkg);
+        setExhibit(data);
+        setPhase(GameState.PLAYING);
+      } catch (error) {
+        console.error(error);
+        setActiveLessonPackage(null);
+        setPhase(GameState.ERROR);
+      }
+      return;
+    }
+
     if (!topic.trim()) return;
 
     setPhase(GameState.GENERATING);
@@ -318,6 +350,7 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
   }, [studentId]);
 
   const reset = useCallback(() => {
+    setActiveLessonPackage(null);
     setPhase(GameState.IDLE);
     setBrief(null);
     setExhibit(null);
