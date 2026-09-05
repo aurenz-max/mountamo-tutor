@@ -515,7 +515,12 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Render helpers
   // -------------------------------------------------------------------------
-  const renderChoiceButtons = (options: string[]) => (
+  const renderChoiceButtons = (options: string[]) => {
+    // Picture buttons (the pre-reader answer surface the generator emits below
+    // Grade 1 — reader-fit PRE 2026-09-05): when no option carries a letter or
+    // digit, render them large so an emoji reads as a picture, not a glyph.
+    const glyphOnly = options.length > 0 && options.every((o) => !/[A-Za-z0-9\u00C0-\u024F]/.test(o));
+    return (
     <div className="flex flex-wrap justify-center gap-3">
       {options.map((opt) => {
         const isSelected = selectedAnswer === opt;
@@ -535,7 +540,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
           <LuminaAnswerChoice
             key={opt}
             state={state}
-            className={`min-w-16 w-auto h-14 text-lg font-bold px-6 text-center flex items-center justify-center ${
+            className={`${glyphOnly ? 'min-w-20 h-20 text-4xl px-5' : 'min-w-16 h-14 text-lg px-6'} w-auto font-bold text-center flex items-center justify-center ${
               showAsCorrect ? 'scale-110' : showAsWrong ? 'animate-pulse' : ''
             }`}
             onClick={() => handleSelectOption(opt)}
@@ -546,7 +551,8 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         );
       })}
     </div>
-  );
+    );
+  };
 
   // -------------------------------------------------------------------------
   // Render

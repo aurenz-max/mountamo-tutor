@@ -222,12 +222,32 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
     supportTier: currentChallenge?.supportTier ?? '',
   }), [title, currentChallenge, currentAttempts, selectedCells.size]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'hundreds-chart',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel,
   });
+
+  // ORIENT beat (reader-fit PRE, 2026-09-05). Every other K math drill fires an
+  // [ACTIVITY_START] so the tutor SAYS the first instruction; this one never
+  // did, so on a standalone 1-10 board a non-reader met "Tap every number in
+  // order" as on-screen text only ([NEXT_ITEM] already covers challenges 2+).
+  // The catalog aiDirective carries the same beat into the lesson greeting /
+  // [PRIMITIVE SWITCH] path, where a component clause alone would be dropped.
+  // Silent: claims no focus, never renders as chat.
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Hundreds chart, numbers 1 to ${gridMax}, ${gradeLevel}. `
+      + `${challenges.length} challenges. First challenge (${currentChallenge.type}): "${currentChallenge.instruction}". `
+      + `Say what to do in the child's own words — on a board that ends at 10 or 20 this is counting in order, one tap per number. `
+      + `One or two short sentences; never ask them to read the screen.`,
+      { silent: true },
+    );
+  }, [isConnected, currentChallenge, challenges.length, gridMax, gradeLevel, sendText]);
 
   // -------------------------------------------------------------------------
   // Grid

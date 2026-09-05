@@ -844,6 +844,23 @@ export const generateFastFact = async (
       + ` A phase is a place in the drill, not a task type.`
     : '';
 
+  // Pre-reader answer surface (reader-fit PRE, 2026-09-05). The option buttons are
+  // the one thing on this screen nobody reads aloud: the tutor speaks the question,
+  // but a five-year-old decodes the options alone. Counting topics already came out
+  // as numerals; shapes and colours came out as words ("Circle", "Yellow"), which a
+  // pre-reader cannot tap on purpose. So below Grade 1 every option must be a
+  // numeral, a single letter, or one emoji — a picture button, StoryTalk-style.
+  const preReaderSection = ['Toddler', 'Preschool', 'Kindergarten'].includes(gradeLevel)
+    ? `
+## PRE-READER ANSWER SURFACE (hard rule at this age — the student cannot read):
+- Every option must be something a non-reader recognises on its own: a numeral (3, 10), a single letter (m, B), or ONE emoji (🔴, 🍌). NEVER a word or phrase — "Circle", "Yellow", "Square" are unreadable buttons to a five-year-old.
+- Turn name-it questions into find-it questions. Instead of showing a circle and asking "What shape is this?" with word options, ask "Which one is a circle?" with options 🔴 / ⬛ / 🔺 and visualType "none". Instead of "What color is a banana?" with word options, ask "Which one is yellow?" with 🍌 / 🍎 / 🥦 — or show 🍌 and offer 🟡 / 🔵 / 🔴.
+- Each emoji option must be a DIFFERENT, unambiguous picture of a real answer; the correct one must be the only option that fits.
+- The question is spoken to the student by a tutor, so promptText may stay a short sentence. The options are what the student must decode alone.
+- Only exception: when the skill being drilled IS reading (sight words, decoding), the target-word options stay words.
+`
+    : '';
+
   const prompt = `You are a curriculum expert creating fluency drill challenges.
 
 TOPIC / LEARNING OBJECTIVE: ${topic}
@@ -888,7 +905,7 @@ visualContent must NEVER equal correctAnswer, and must never be a spelling, casi
 - Math facts: show the expression and ask for the result. Never show the result.
 - Use visualType: "none" whenever a visual would carry the answer. No visual is always better than a revealing one, and most challenges need none.
 - visualAlt describes what is drawn (e.g. "15 stars") so the visual is accessible.
-
+${preReaderSection}
 ## Difficulty:
 - Adjust difficulty for the grade level. The drill is UNTIMED — there is no countdown and no deadline. Never reference speed, timers, or "answer quickly" anywhere in the content.
 - targetResponseTime is a SILENT automaticity signal (never shown to the student): K-2 / Preschool / Kindergarten 8, grades 3-5 / Elementary 6, grades 6-8 / Middle School 5, grades 9+ / High School and above 4.
