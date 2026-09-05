@@ -1,699 +1,234 @@
-import { Type, Schema } from "@google/genai";
-import { ThreeDShapeExplorerData } from "../../primitives/visual-primitives/math/ThreeDShapeExplorer";
-import { ai } from "../geminiClient";
-import type { GenerationContext } from "../generation/generationContext";
-import { buildScopePromptSection } from "../scopeContext";
+import { Type, type Schema } from '@google/genai';
+import type { ThreeDShapeExplorerData } from '../../primitives/visual-primitives/math/ThreeDShapeExplorer';
 import {
-  resolveEvalModeConstraint,
-  constrainChallengeTypeEnum,
+  COLLECTION_ITEM_CAP,
+  SHAPE_FACTS,
+  buildThreeDShapeItems,
+  canonicalPropertiesFor,
+  canonicalRiddleCluesFor,
+  gateThreeDShapeChallenge,
+  propertyAnswerFor,
+  wrapperTextForSession,
+  type PropertyKey,
+  type ThreeDShapeChallengeLike,
+  type ThreeDShapeMode,
+  type ThreeDShapeName,
+  type ThreeDShapeTier,
+} from '../../primitives/visual-primitives/math/threeDShapeExplorerScript';
+import { ai } from '../geminiClient';
+import type { GenerationContext } from '../generation/generationContext';
+import { buildScopePromptSection } from '../scopeContext';
+import {
   buildChallengeTypePromptSection,
+  constrainChallengeTypeEnum,
   logEvalModeResolution,
+  resolveEvalModeConstraint,
   type ChallengeTypeDoc,
-} from "../evalMode";
-
-// ---------------------------------------------------------------------------
-// Challenge type documentation registry
-// ---------------------------------------------------------------------------
+} from '../evalMode';
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'identify-3d': {
-    promptDoc:
-      `"identify-3d": Show a 3D shape, student picks its name from options. `
-      + `Set shape3d to the shape name. Provide 3-4 options including the correct answer. `
-      + `Great for introducing shape vocabulary. Concrete identification task.`,
-    schemaDescription: "'identify-3d' (name the 3D shape)",
+    promptDoc: '"identify-3d": Choose one target solid. The child will see it unlabeled and SAY its mathematical name.',
+    schemaDescription: "'identify-3d' (say the solid name)",
   },
   'match-to-real-world': {
-    promptDoc:
-      `"match-to-real-world": Match real-world objects to their 3D shapes. `
-      + `Provide 3-5 matchPairs with realWorldObject, emoji, and shape3d. `
-      + `Use kid-friendly objects (basketball=sphere, dice=cube, can=cylinder, party hat=cone, shoebox=rectangular-prism).`,
-    schemaDescription: "'match-to-real-world' (connect shapes to objects)",
+    promptDoc: '"match-to-real-world": Supply 2-4 familiar, short object names and their target solids. The child will see one object and SAY its solid-shape name. Never use an object name containing the answer (use party hat, not ice cream cone).',
+    schemaDescription: "'match-to-real-world' (say an object's solid shape)",
   },
   '2d-vs-3d': {
-    promptDoc:
-      `"2d-vs-3d": Show a mix of flat (2D) and solid (3D) shapes, student sorts them. `
-      + `Provide 4-6 mixedShapes with name, emoji, and is3d flag. `
-      + `Include 2D shapes: circle, square, triangle, rectangle. `
-      + `Include 3D shapes: cube, sphere, cylinder, cone. `
-      + `Use clear emojis.`,
-    schemaDescription: "'2d-vs-3d' (sort flat vs solid)",
+    promptDoc: '"2d-vs-3d": Supply 2-4 canonical flat or solid shapes. The child sees one code-drawn shape and SAYS flat or solid. is3d must agree with the name.',
+    schemaDescription: "'2d-vs-3d' (say flat or solid)",
   },
   'faces-and-properties': {
-    promptDoc:
-      `"faces-and-properties": Explore a shape's properties. `
-      + `Set displayShape to the shape. `
-      + `Provide accurate properties (flatFaces, curvedSurfaces, faceShapes, canRoll, canStack, canSlide). `
-      + `Provide 2-4 propertyQuestions with answerType: "boolean"/"number"/"choice", correctAnswer as string, `
-      + `and options array for "choice" type. `
-      + `CORRECT PROPERTIES: cube: 6 flat, 0 curved, ["square"]; sphere: 0 flat, 1 curved, []; `
-      + `cylinder: 2 flat, 1 curved, ["circle"]; cone: 1 flat, 1 curved, ["circle"]; `
-      + `rectangular-prism: 6 flat, 0 curved, ["rectangle"].`,
-    schemaDescription: "'faces-and-properties' (explore shape properties)",
+    promptDoc: '"faces-and-properties": Choose one target solid and 2-4 explicit propertyKey values. Code owns all geometry facts and answers. Allowed keys: flatFaces, curvedSurfaces, faceShape, canRoll, canStack, canSlide. Do not write facts or answer keys.',
+    schemaDescription: "'faces-and-properties' (say one property answer)",
   },
   'shape-riddle': {
-    promptDoc:
-      `"shape-riddle": A mystery shape detective challenge! Give clues, student guesses the shape. `
-      + `Set shape3d to the correct answer shape. Provide 3-4 options including the correct answer. `
-      + `Provide 3-4 clues describing properties without naming the shape. `
-      + `Clues should reference faces, rolling, stacking, real-world look-alikes. `
-      + `NEVER include the shape name in any clue!`,
-    schemaDescription: "'shape-riddle' (guess mystery shape from clues)",
+    promptDoc: '"shape-riddle": Choose one target solid only. Code supplies the true, answer-free, uniquely identifying clue set; the child SAYS the mystery solid name.',
+    schemaDescription: "'shape-riddle' (say the mystery solid name)",
   },
 };
 
-// ---------------------------------------------------------------------------
-// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
-// ---------------------------------------------------------------------------
-// Two-field contract: config.targetEvalMode says WHICH skill (task identity —
-// which solid / which kind of question, chosen by the manifest to match the
-// objective); config.difficulty says how much ANNOTATION SUPPORT the student
-// gets while doing it. The tier NEVER changes which solid is shown (that is the
-// eval-mode axis) — it only withdraws the annotation overlay that helps the
-// student SEE the faces/edges/vertices.
-//   easy   = element labels (face/edge/vertex names) + per-face highlight + rotation guide
-//   medium = rotation guide only, no element labels/highlights
-//   hard   = no annotation overlay at all (student counts unaided from the solid/net)
-//
-// ANSWER-LEAK GUARD: on 'faces-and-properties' the asked answer IS a count
-// ("how many flat faces?"). The easy scaffold may HIGHLIGHT/LABEL each face to
-// aid counting, but the component never prints the TOTAL count — the total lives
-// only in propertyQuestions (the asked question the student answers), decoupled
-// from any display lever. See memory: structural-difficulty-not-numeric.
+const propertyKeys = ['flatFaces', 'curvedSurfaces', 'faceShape', 'canRoll', 'canStack', 'canSlide'];
 
-type SupportTier = 'easy' | 'medium' | 'hard';
-
-const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
-
-/**
- * Read the manifest's support tier. The manifest schema enum-constrains
- * config.difficulty to exactly these values, so this is a STRICT lookup.
- * Unknown/absent → null (no tier applied; grade-band defaults stand).
- */
-function normalizeSupportTier(difficulty?: string): SupportTier | null {
-  const d = difficulty?.toLowerCase().trim() ?? '';
-  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
-}
-
-type ChallengeType =
-  | 'identify-3d'
-  | 'match-to-real-world'
-  | '2d-vs-3d'
-  | 'faces-and-properties'
-  | 'shape-riddle';
-
-interface SupportScaffold {
-  /** Face/edge/vertex NAME labels + element callouts overlaid on the solid. The
-   *  annotation overlay the worklist withdraws at hard. NEVER prints a count total. */
-  showElementLabels: boolean;
-  /** Per-face highlight cue (light up faces one at a time) to aid counting without
-   *  ever stating the total. Only meaningful where a single solid is shown. */
-  showFaceHighlight: boolean;
-  /** The auto-spin / rotation guide that helps the student perceive the 3D form. */
-  showRotationGuide: boolean;
-  /** Prompt guidance describing the annotation level at this tier. */
-  promptLines: string[];
-}
-
-/**
- * Resolve the annotation-overlay support structure for a tier on a pinned mode.
- * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
- * task (same solid) with fewer annotations — never a different solid, never a
- * printed answer count.
- */
-function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
-  const showElementLabels = tier === 'easy';
-  const showFaceHighlight = tier === 'easy';
-  const showRotationGuide = tier !== 'hard';
-
-  const promptLines: string[] = [
-    `Support tier: ${tier.toUpperCase()} — this sets the on-screen ANNOTATION OVERLAY level only (${tier === 'easy' ? 'maximum support: face/edge/vertex labels + per-face highlight + a rotation guide help the student see the solid' : tier === 'medium' ? 'moderate support: only a rotation guide; no element labels or highlights' : 'minimum support: NO annotation overlay — the student counts unaided from the solid/net'}). It NEVER changes WHICH solid is shown or the correct answer — only how much the screen helps the student perceive faces, edges, and vertices.`,
-  ];
-  switch (pinnedType) {
-    case 'identify-3d':
-    case 'match-to-real-world':
-    case '2d-vs-3d':
-      promptLines.push(
-        tier === 'easy'
-          ? 'Keep warm, descriptive language that names visible features (flat faces, curved surfaces, points) so the student can confirm the shape from its parts.'
-          : tier === 'hard'
-            ? 'Use plainer instructions that do NOT enumerate the shape\'s features; the student must perceive the form on their own and name/sort/match it.'
-            : 'Moderately descriptive instructions; mention the kind of features to look for without listing exact counts.',
-      );
-      break;
-    case 'faces-and-properties':
-      promptLines.push(
-        tier === 'easy'
-          ? 'Keep the property questions exactly as the asked task. The on-screen labels/highlights help the student COUNT each face — but NEVER state the total count in the instruction or anywhere outside the question itself (the total is the answer).'
-          : tier === 'hard'
-            ? 'Withdraw all counting aids: no labels, no highlights, no rotation guide. The student counts faces/edges/vertices unaided and justifies their count. NEVER state any count.'
-            : 'A rotation guide is available but faces are not labelled or highlighted; the student tracks the count themselves. NEVER state the total count.',
-      );
-      break;
-    case 'shape-riddle':
-      promptLines.push(
-        tier === 'easy'
-          ? 'This is a deduction task; keep clues property-based. A rotation guide on the answer options helps perception, but never let labels name the mystery shape.'
-          : tier === 'hard'
-            ? 'No annotation overlay on the options; the student deduces the mystery shape from clues alone and justifies the match.'
-            : 'A rotation guide on the options aids perception; no element labels.',
-      );
-      break;
-  }
-  return { showElementLabels, showFaceHighlight, showRotationGuide, promptLines };
-}
-
-// ---------------------------------------------------------------------------
-// Base schema (all challenge types)
-// ---------------------------------------------------------------------------
-
-const threeDShapeExplorerSchema: Schema = {
+const schema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: {
-      type: Type.STRING,
-      description: "Title for the activity (e.g., '3D Shape Adventure!', 'Discover Solid Shapes')"
-    },
-    description: {
-      type: Type.STRING,
-      description: "Brief educational description of what students will learn"
-    },
+    title: { type: Type.STRING, description: 'Neutral title that does not name any target shape' },
+    description: { type: Type.STRING, description: 'Neutral one-sentence description with no target answer names' },
     challenges: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique challenge ID (e.g., 'c1', 'c2')"
-          },
-          type: {
-            type: Type.STRING,
-            description: "Challenge type: 'identify-3d' (name the shape), '2d-vs-3d' (sort flat vs solid), 'match-to-real-world' (connect shapes to objects), 'faces-and-properties' (explore properties), 'shape-riddle' (guess mystery shape from clues)"
-          },
-          instruction: {
-            type: Type.STRING,
-            description: "Student-facing instruction, warm and age-appropriate (e.g., 'What shape is this? It looks like a ball!')"
-          },
-          // identify-3d fields
-          shape3d: {
-            type: Type.STRING,
-            description: "For identify-3d: the 3D shape to identify. One of: 'cube', 'sphere', 'cylinder', 'cone', 'rectangular-prism'"
-          },
-          options: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "For identify-3d: answer options (shape names). The correct answer must be included."
-          },
-          // 2d-vs-3d fields
+          id: { type: Type.STRING, description: 'Unique stable challenge id' },
+          type: { type: Type.STRING, description: 'Challenge type' },
+          shape3d: { type: Type.STRING, description: 'cube, sphere, cylinder, cone, or rectangular-prism' },
+          displayShape: { type: Type.STRING, description: 'Target solid for property mode' },
           mixedShapes: {
             type: Type.ARRAY,
             items: {
               type: Type.OBJECT,
               properties: {
-                name: { type: Type.STRING, description: "Shape name (e.g., 'circle', 'sphere', 'square', 'cube')" },
-                emoji: { type: Type.STRING, description: "Emoji representing the shape (e.g., '⚽', '🟡', '🧊', '📦')" },
-                is3d: { type: Type.BOOLEAN, description: "true if this is a 3D (solid) shape, false if 2D (flat)" }
+                name: { type: Type.STRING }, emoji: { type: Type.STRING }, is3d: { type: Type.BOOLEAN },
               },
-              required: ["name", "emoji", "is3d"]
+              required: ['name', 'emoji', 'is3d'],
             },
-            description: "For 2d-vs-3d: mix of flat and solid shapes for students to sort"
           },
-          // match-to-real-world fields
           matchPairs: {
             type: Type.ARRAY,
             items: {
               type: Type.OBJECT,
               properties: {
-                realWorldObject: { type: Type.STRING, description: "Real-world object name (e.g., 'basketball', 'ice cream cone', 'box')" },
-                emoji: { type: Type.STRING, description: "Emoji for the real-world object (e.g., '🏀', '🍦', '📦')" },
-                shape3d: { type: Type.STRING, description: "The 3D shape it matches: 'cube', 'sphere', 'cylinder', 'cone', 'rectangular-prism'" }
+                realWorldObject: { type: Type.STRING }, emoji: { type: Type.STRING }, shape3d: { type: Type.STRING },
               },
-              required: ["realWorldObject", "emoji", "shape3d"]
+              required: ['realWorldObject', 'emoji', 'shape3d'],
             },
-            description: "For match-to-real-world: pairs of real objects and their 3D shapes"
-          },
-          // faces-and-properties fields
-          displayShape: {
-            type: Type.STRING,
-            description: "For faces-and-properties: the shape to explore. One of: 'cube', 'sphere', 'cylinder', 'cone', 'rectangular-prism'"
-          },
-          properties: {
-            type: Type.OBJECT,
-            properties: {
-              flatFaces: { type: Type.NUMBER, description: "Number of flat faces (e.g., cube=6, cylinder=2, sphere=0)" },
-              curvedSurfaces: { type: Type.NUMBER, description: "Number of curved surfaces (e.g., sphere=1, cylinder=1, cube=0)" },
-              faceShapes: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "Shapes of the flat faces (e.g., ['square'] for cube, ['circle'] for cylinder)"
-              },
-              canRoll: { type: Type.BOOLEAN, description: "Whether the shape can roll" },
-              canStack: { type: Type.BOOLEAN, description: "Whether the shape can be stacked" },
-              canSlide: { type: Type.BOOLEAN, description: "Whether the shape can slide on a flat surface" }
-            },
-            required: ["flatFaces", "curvedSurfaces", "faceShapes", "canRoll", "canStack", "canSlide"],
-            description: "For faces-and-properties: the correct properties of the shape"
           },
           propertyQuestions: {
             type: Type.ARRAY,
             items: {
               type: Type.OBJECT,
-              properties: {
-                question: { type: Type.STRING, description: "A question about the shape's properties (e.g., 'How many flat faces does this shape have?')" },
-                answerType: { type: Type.STRING, description: "The type of answer UI to show: 'boolean' for Yes/No, 'number' for number picker (0-8), 'choice' for multiple choice text options" },
-                correctAnswer: { type: Type.STRING, description: "The correct answer as a string (e.g., '6' for number, 'true'/'false' for boolean, 'square' for choice)" },
-                options: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING },
-                  description: "For 'choice' answerType only: the options to show (e.g., ['circle', 'square', 'rectangle', 'triangle']). Include the correct answer."
-                }
-              },
-              required: ["question", "answerType", "correctAnswer"]
+              properties: { propertyKey: { type: Type.STRING, description: propertyKeys.join(', ') } },
+              required: ['propertyKey'],
             },
-            description: "For faces-and-properties: questions about the shape for students to answer. Use answerType to control UI: 'boolean' for yes/no questions, 'number' for counting questions, 'choice' for naming face shapes."
           },
-          // shape-riddle fields (also uses shape3d + options from identify-3d)
-          clues: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "For shape-riddle: 3-4 detective clues describing the mystery shape's properties (e.g., 'I have no flat faces.', 'I can roll in any direction.', 'I look like a ball!')"
-          }
         },
-        required: ["id", "type", "instruction"]
+        required: ['id', 'type'],
       },
-      description: "Array of 3-5 progressive challenges mixing different challenge types"
+      description: 'Enough source material to yield 4-6 single spoken judged items after collection fan-out',
     },
-    gradeBand: {
-      type: Type.STRING,
-      description: "Grade band: 'K' for Kindergarten, '1' for Grade 1"
-    },
-    showUnfoldAnimation: {
-      type: Type.BOOLEAN,
-      description: "Whether to show net/unfold animation for shapes (Grade 1 feature)"
-    },
-    show3dRotation: {
-      type: Type.BOOLEAN,
-      description: "Whether to enable 3D rotation interaction"
-    }
+    gradeBand: { type: Type.STRING, description: 'K or 1' },
+    showUnfoldAnimation: { type: Type.BOOLEAN },
+    show3dRotation: { type: Type.BOOLEAN },
   },
-  required: ["title", "description", "challenges", "gradeBand", "showUnfoldAnimation", "show3dRotation"]
+  required: ['title', 'description', 'challenges', 'gradeBand', 'showUnfoldAnimation', 'show3dRotation'],
 };
 
-/**
- * Generate 3D Shape Explorer data for interactive geometry activities
- *
- * Grade-aware content:
- * - Kindergarten: identify basic 3D shapes (cube, sphere, cylinder, cone),
- *   sort 2D vs 3D, match shapes to real-world objects
- * - Grade 1: explore faces/properties, compare shapes, deeper understanding
- *   of edges, vertices, and how shapes move (roll, stack, slide)
- *
- * @param topic - The math topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns ThreeDShapeExplorerData with complete configuration
- */
-type ThreeDShapeExplorerConfig = Partial<ThreeDShapeExplorerData> & {
-  /** Target eval mode from the IRT calibration system. */
-  targetEvalMode?: string;
-  /**
-   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-   * Second axis of the two-field contract: targetEvalMode = which skill,
-   * difficulty = how much annotation-overlay support within it. NEVER changes
-   * which solid is shown or the answer.
-   */
-  difficulty?: string;
+const tiers: readonly ThreeDShapeTier[] = ['easy', 'medium', 'hard'];
+const normalizeTier = (value?: string): ThreeDShapeTier | null => {
+  const tier = value?.trim().toLowerCase() ?? '';
+  return tiers.includes(tier as ThreeDShapeTier) ? tier as ThreeDShapeTier : null;
 };
 
-export const generateThreeDShapeExplorer = async (
-  ctx: GenerationContext,
-): Promise<ThreeDShapeExplorerData> => {
-  const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
-  const config = ctx.raw as ThreeDShapeExplorerConfig;
-  // ---------------------------------------------------------------------------
-  // Eval mode resolution
-  // ---------------------------------------------------------------------------
-  const evalConstraint = resolveEvalModeConstraint(
-    '3d-shape-explorer',
-    config?.targetEvalMode,
-    CHALLENGE_TYPE_DOCS,
-  );
+const supportFor = (tier: ThreeDShapeTier | null) => ({
+  supportTier: tier ?? 'medium' as ThreeDShapeTier,
+  showElementLabels: tier === 'easy',
+  showFaceHighlight: tier === 'easy',
+});
+
+/** Code authors truth after Gemini selects only a target/facet. */
+export const materializeThreeDShapeChallenge = (
+  raw: ThreeDShapeChallengeLike,
+  tier: ThreeDShapeTier | null,
+): ThreeDShapeChallengeLike => {
+  const challenge: ThreeDShapeChallengeLike = { ...raw, ...supportFor(tier) };
+  if (challenge.type === '2d-vs-3d') challenge.mixedShapes = (challenge.mixedShapes ?? []).slice(0, COLLECTION_ITEM_CAP);
+  if (challenge.type === 'match-to-real-world') challenge.matchPairs = (challenge.matchPairs ?? []).slice(0, COLLECTION_ITEM_CAP);
+  if (challenge.type === 'faces-and-properties' && typeof challenge.displayShape === 'string' && challenge.displayShape in SHAPE_FACTS) {
+    const shape = challenge.displayShape as ThreeDShapeName;
+    challenge.properties = challenge.properties ?? canonicalPropertiesFor(shape);
+    const chosenQuestions = challenge.propertyQuestions?.length
+      ? challenge.propertyQuestions
+      : [{ propertyKey: 'flatFaces' }, { propertyKey: 'curvedSurfaces' }, { propertyKey: 'canRoll' }, { propertyKey: 'canStack' }];
+    challenge.propertyQuestions = chosenQuestions.slice(0, COLLECTION_ITEM_CAP).map((question) => {
+      const key = question.propertyKey as PropertyKey;
+      const expected = propertyKeys.includes(key) ? propertyAnswerFor(shape, key) : null;
+      return {
+        ...question,
+        answerType: key === 'faceShape' ? 'choice' : typeof expected === 'boolean' || expected === 0 ? 'boolean' : 'number',
+        correctAnswer: question.correctAnswer ?? (expected === null ? '' : String(expected)),
+      };
+    });
+  }
+  if (challenge.type === 'shape-riddle' && typeof challenge.shape3d === 'string' && challenge.shape3d in SHAPE_FACTS && !challenge.clues) {
+    challenge.clues = canonicalRiddleCluesFor(challenge.shape3d as ThreeDShapeName);
+  }
+  return challenge;
+};
+
+const FALLBACKS: Record<ThreeDShapeMode, ThreeDShapeChallengeLike[]> = {
+  'identify-3d': ['sphere','cube','cylinder','cone'].map((shape, index) => ({ id: `fallback-identify-${index}`, type: 'identify-3d', shape3d: shape })),
+  '2d-vs-3d': [{ id: 'fallback-dimension', type: '2d-vs-3d', mixedShapes: [
+    { name: 'circle', emoji: '', is3d: false }, { name: 'sphere', emoji: '', is3d: true },
+    { name: 'square', emoji: '', is3d: false }, { name: 'cube', emoji: '', is3d: true },
+  ] }],
+  'match-to-real-world': [{ id: 'fallback-match', type: 'match-to-real-world', matchPairs: [
+    { realWorldObject: 'ball', emoji: '⚽', shape3d: 'sphere' }, { realWorldObject: 'toy block', emoji: '🧱', shape3d: 'cube' },
+    { realWorldObject: 'soup can', emoji: '🥫', shape3d: 'cylinder' }, { realWorldObject: 'party hat', emoji: '🥳', shape3d: 'cone' },
+  ] }],
+  'faces-and-properties': [{ id: 'fallback-properties', type: 'faces-and-properties', displayShape: 'cylinder', propertyQuestions: [
+    { propertyKey: 'flatFaces' }, { propertyKey: 'curvedSurfaces' }, { propertyKey: 'faceShape' }, { propertyKey: 'canStack' },
+  ] }],
+  'shape-riddle': ['sphere','cylinder','cone','rectangular-prism'].map((shape, index) => ({ id: `fallback-riddle-${index}`, type: 'shape-riddle', shape3d: shape })),
+};
+
+const challengeModes: ThreeDShapeMode[] = ['identify-3d','2d-vs-3d','match-to-real-world','faces-and-properties','shape-riddle'];
+
+type Config = Partial<ThreeDShapeExplorerData> & { targetEvalMode?: string; difficulty?: string };
+
+export const generateThreeDShapeExplorer = async (ctx: GenerationContext): Promise<ThreeDShapeExplorerData> => {
+  const config = ctx.raw as Config;
+  const evalConstraint = resolveEvalModeConstraint('3d-shape-explorer', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('3DShapeExplorer', config?.targetEvalMode, evalConstraint);
-
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(threeDShapeExplorerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : threeDShapeExplorerSchema;
+    ? constrainChallengeTypeEnum(schema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : schema;
+  const tier = normalizeTier(config?.difficulty);
+  const scope = buildScopePromptSection(ctx.scope);
+  const typeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
-    CHALLENGE_TYPE_DOCS,
-  );
+  const prompt = `Create a Kindergarten/Grade 1 solid-shape activity about "${ctx.topic}" for ${ctx.gradeContext}.
+${scope}
+${typeSection}
+The five canonical solids are cube, sphere, cylinder, cone, rectangular-prism. The flat names are circle, square, triangle, rectangle.
+Generate enough source material for 4-6 JUDGED OPPORTUNITIES after fan-out. Each collection yields at most ${COLLECTION_ITEM_CAP} items.
+${evalConstraint ? 'Use only the allowed challenge type.' : 'Mix useful challenge types, keeping equal actions together.'}
+Gemini chooses targets, object names, and property facets only. Do not invent geometry facts, property answers, riddles, teaching lines, or answer options; code owns them.
+Every property question must carry one explicit propertyKey. Object names must be 1-4 child-owned words and must not contain the target shape name.
+Use neutral wrapper text that does not name any target answer. Difficulty ${tier ?? 'medium'} changes visual support only, never the mathematical demand.`;
 
-  // Authoritative pedagogical scope (topic + objective + intent), resolved once at
-  // the registry boundary. The LLM authors which solids appear, so this binds the
-  // intent's focus (e.g. "cylinders and cones") to the shapes shown — the proven
-  // scope-context-contract wire, same as base-ten-blocks/counting-board.
-  const scopeSection = buildScopePromptSection(ctx.scope);
-
-  // ── Within-mode support tier (annotation-overlay scaffolding only) ──
-  // supportTier is the STUDENT's tier — it DRIVES the per-challenge application.
-  // pinnedType is ONLY for the prompt tone (a single pinned mode has one task to
-  // describe to the LLM); a blended session still applies the tier per challenge.
-  const supportTier = normalizeSupportTier(config?.difficulty);
-  const pinnedType =
-    evalConstraint?.allowedTypes.length === 1
-      ? (evalConstraint.allowedTypes[0] as ChallengeType)
-      : undefined;
-  const tierScaffold =
-    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (annotation level — NOT which solid is shown)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
-    : '';
-
-  const prompt = `
-Create an educational 3D shape exploration activity for teaching "${topic}" to ${gradeLevel} students.
-${scopeSection}
-CONTEXT:
-- Students explore 3D (solid) shapes: cube, sphere, cylinder, cone, rectangular-prism
-- Activities build understanding of 2D vs 3D shapes, shape properties, and real-world connections
-- This is for young children (Kindergarten and Grade 1) so use warm, fun language
-
-AVAILABLE 3D SHAPES (use these exact names):
-- "cube" (like a block or dice)
-- "sphere" (like a ball)
-- "cylinder" (like a can)
-- "cone" (like an ice cream cone)
-- "rectangular-prism" (like a cereal box)
-
-${challengeTypeSection}
-${tierSection}
-${!evalConstraint ? `GUIDELINES FOR GRADE LEVELS:
-- Kindergarten (gradeBand "K"):
-  * Focus on identify-3d, 2d-vs-3d, and match-to-real-world
-  * Use very simple language ("This shape looks like a ball!")
-  * 3-4 challenges, mostly identification and sorting
-  * showUnfoldAnimation: false, show3dRotation: true
-
-- Grade 1 (gradeBand "1"):
-  * Include faces-and-properties and shape-riddle challenges
-  * Slightly more academic language but still warm
-  * 4-5 challenges with variety of types
-  * showUnfoldAnimation: true, show3dRotation: true
-` : ''}
-${config ? `
-CONFIGURATION HINTS:
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.showUnfoldAnimation !== undefined ? `- Show unfold animation: ${config.showUnfoldAnimation}` : ''}
-${config.show3dRotation !== undefined ? `- Show 3D rotation: ${config.show3dRotation}` : ''}
-` : ''}
-
-REQUIREMENTS:
-1. Generate 3-5 challenges that progress from easier to harder
-2. ${evalConstraint ? `ALL challenges must use ONLY the allowed challenge type(s)` : 'Mix challenge types appropriate for the grade level'}
-3. Use warm, encouraging language for young children
-4. Shape names MUST be exactly: "cube", "sphere", "cylinder", "cone", "rectangular-prism"
-5. For identify-3d challenges, the correct shape name MUST be in the options array
-6. For faces-and-properties, properties MUST be factually accurate
-7. For 2d-vs-3d, include a balanced mix of 2D and 3D shapes
-8. For match-to-real-world, use objects kids recognize from everyday life
-9. For shape-riddle, NEVER include the shape name in any clue — clues must describe properties only
-10. Every propertyQuestion MUST have answerType set to "boolean", "number", or "choice". correctAnswer must be a string. "choice" questions MUST include an options array with the correct answer included.
-
-Return the complete 3D shape explorer configuration.
-`;
-
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
+  const response = await ai.models.generateContent({
+    model: 'gemini-flash-lite-latest', contents: prompt,
+    config: { responseMimeType: 'application/json', responseSchema: activeSchema },
   });
+  const parsed = response.text ? JSON.parse(response.text) as Record<string, unknown> : null;
+  if (!parsed) throw new Error('No valid 3D shape explorer data returned from Gemini API');
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  const rawChallenges = Array.isArray(parsed.challenges) ? parsed.challenges as ThreeDShapeChallengeLike[] : [];
+  const dropped: Array<{ id: string; reasons: string[] }> = [];
+  let challenges = rawChallenges
+    .filter((challenge) => challengeModes.includes(challenge.type as ThreeDShapeMode))
+    .map((challenge) => materializeThreeDShapeChallenge(challenge, tier))
+    .filter((challenge) => {
+      const reasons = gateThreeDShapeChallenge(challenge);
+      if (reasons.length) dropped.push({ id: challenge.id ?? '(missing)', reasons });
+      // The same item builder used by the component is authoritative. A
+      // collection may keep its good children while logging every bad child;
+      // an atomic challenge with no defensible item is dropped wholesale.
+      return buildThreeDShapeItems([challenge]).items.length > 0;
+    });
 
-  if (!data) {
-    throw new Error('No valid 3D shape explorer data returned from Gemini API');
+  let build = buildThreeDShapeItems(challenges);
+  if (!build.items.length) {
+    const fallbackMode = (evalConstraint?.allowedTypes[0] as ThreeDShapeMode | undefined) ?? 'identify-3d';
+    challenges = FALLBACKS[fallbackMode].map((challenge) => materializeThreeDShapeChallenge(challenge, tier));
+    challenges = challenges.filter((challenge) => gateThreeDShapeChallenge(challenge).length === 0);
+    build = buildThreeDShapeItems(challenges);
   }
 
-  // Validation: ensure gradeBand is valid
-  if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
-    data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
-  }
-
-  // Validation: ensure boolean display options have defaults
-  if (typeof data.showUnfoldAnimation !== 'boolean') {
-    data.showUnfoldAnimation = data.gradeBand === '1';
-  }
-  if (typeof data.show3dRotation !== 'boolean') {
-    data.show3dRotation = true;
-  }
-
-  // Valid shape names
-  const validShapes = ['cube', 'sphere', 'cylinder', 'cone', 'rectangular-prism'];
-  const validChallengeTypes = ['identify-3d', '2d-vs-3d', 'match-to-real-world', 'faces-and-properties', 'shape-riddle'];
-
-  // Filter out invalid challenge types
-  data.challenges = (data.challenges || []).filter(
-    (c: { type: string }) => validChallengeTypes.includes(c.type)
-  );
-
-  // Per-challenge validation
-  for (const challenge of data.challenges) {
-    // Validate identify-3d challenges
-    if (challenge.type === 'identify-3d') {
-      if (challenge.shape3d && !validShapes.includes(challenge.shape3d)) {
-        challenge.shape3d = 'cube';
-      }
-      if (!challenge.options || challenge.options.length < 2) {
-        challenge.options = ['cube', 'sphere', 'cylinder', 'cone'];
-      }
-      // Ensure correct answer is in options
-      if (challenge.shape3d && !challenge.options.includes(challenge.shape3d)) {
-        challenge.options[0] = challenge.shape3d;
-      }
-    }
-
-    // Validate 2d-vs-3d challenges
-    if (challenge.type === '2d-vs-3d') {
-      if (!challenge.mixedShapes || challenge.mixedShapes.length < 2) {
-        challenge.mixedShapes = [
-          { name: 'circle', emoji: '🟡', is3d: false },
-          { name: 'sphere', emoji: '⚽', is3d: true },
-          { name: 'square', emoji: '🟧', is3d: false },
-          { name: 'cube', emoji: '🧊', is3d: true },
-        ];
-      }
-    }
-
-    // Validate match-to-real-world challenges
-    if (challenge.type === 'match-to-real-world') {
-      if (challenge.matchPairs) {
-        for (const pair of challenge.matchPairs) {
-          if (!validShapes.includes(pair.shape3d)) {
-            pair.shape3d = 'cube';
-          }
-        }
-      } else {
-        challenge.matchPairs = [
-          { realWorldObject: 'basketball', emoji: '🏀', shape3d: 'sphere' },
-          { realWorldObject: 'dice', emoji: '🎲', shape3d: 'cube' },
-          { realWorldObject: 'can of soup', emoji: '🥫', shape3d: 'cylinder' },
-        ];
-      }
-    }
-
-    // Validate faces-and-properties challenges
-    if (challenge.type === 'faces-and-properties') {
-      if (challenge.displayShape && !validShapes.includes(challenge.displayShape)) {
-        challenge.displayShape = 'cube';
-      }
-      // Ensure properties exist with reasonable defaults
-      if (!challenge.properties) {
-        const shapeProps: Record<string, typeof challenge.properties> = {
-          cube: { flatFaces: 6, curvedSurfaces: 0, faceShapes: ['square'], canRoll: false, canStack: true, canSlide: true },
-          sphere: { flatFaces: 0, curvedSurfaces: 1, faceShapes: [], canRoll: true, canStack: false, canSlide: false },
-          cylinder: { flatFaces: 2, curvedSurfaces: 1, faceShapes: ['circle'], canRoll: true, canStack: true, canSlide: true },
-          cone: { flatFaces: 1, curvedSurfaces: 1, faceShapes: ['circle'], canRoll: true, canStack: false, canSlide: true },
-          'rectangular-prism': { flatFaces: 6, curvedSurfaces: 0, faceShapes: ['rectangle'], canRoll: false, canStack: true, canSlide: true },
-        };
-        challenge.properties = shapeProps[challenge.displayShape || 'cube'] || shapeProps.cube;
-      }
-      if (!challenge.propertyQuestions || challenge.propertyQuestions.length === 0) {
-        const props = challenge.properties;
-        challenge.propertyQuestions = [
-          { question: 'How many flat faces does this shape have?', answerType: 'number', correctAnswer: String(props.flatFaces) },
-          { question: 'Can this shape roll?', answerType: 'boolean', correctAnswer: String(props.canRoll) },
-          { question: 'Can this shape stack?', answerType: 'boolean', correctAnswer: String(props.canStack) },
-        ];
-        if (props.faceShapes && props.faceShapes.length > 0) {
-          challenge.propertyQuestions.push({
-            question: 'What shape are the flat faces?',
-            answerType: 'choice',
-            correctAnswer: props.faceShapes[0],
-            options: ['circle', 'square', 'rectangle', 'triangle'],
-          });
-        }
-      }
-      // Ensure all correctAnswer values are strings and answerType is valid
-      const validAnswerTypes = ['boolean', 'number', 'choice'];
-      for (const q of challenge.propertyQuestions) {
-        q.correctAnswer = String(q.correctAnswer);
-        if (!validAnswerTypes.includes(q.answerType)) {
-          // Infer answerType from correctAnswer content
-          if (q.correctAnswer === 'true' || q.correctAnswer === 'false') {
-            q.answerType = 'boolean';
-          } else if (!isNaN(Number(q.correctAnswer))) {
-            q.answerType = 'number';
-          } else {
-            q.answerType = 'choice';
-            if (!q.options || q.options.length < 2) {
-              q.options = ['circle', 'square', 'rectangle', 'triangle'];
-            }
-          }
-        }
-        // Ensure choice questions have options with the correct answer included
-        if (q.answerType === 'choice') {
-          if (!q.options || q.options.length < 2) {
-            q.options = ['circle', 'square', 'rectangle', 'triangle'];
-          }
-          if (!q.options.includes(q.correctAnswer)) {
-            q.options[0] = q.correctAnswer;
-          }
-        }
-      }
-    }
-
-    // Validate shape-riddle challenges
-    if (challenge.type === 'shape-riddle') {
-      if (challenge.shape3d && !validShapes.includes(challenge.shape3d)) {
-        challenge.shape3d = 'sphere';
-      }
-      if (!challenge.options || challenge.options.length < 2) {
-        challenge.options = ['cube', 'sphere', 'cylinder', 'cone'];
-      }
-      if (challenge.shape3d && !challenge.options.includes(challenge.shape3d)) {
-        challenge.options[0] = challenge.shape3d;
-      }
-      if (!challenge.clues || challenge.clues.length === 0) {
-        const fallbackClues: Record<string, string[]> = {
-          cube: ['I have 6 flat faces.', 'All my faces are squares.', 'I cannot roll.', 'I look like a dice!'],
-          sphere: ['I have no flat faces.', 'I can roll in any direction.', 'I have one curved surface.', 'I look like a ball!'],
-          cylinder: ['I have 2 flat faces.', 'My flat faces are circles.', 'I can roll and stack.', 'I look like a can!'],
-          cone: ['I have 1 flat face.', 'I have a point at the top.', 'My flat face is a circle.', 'I look like a party hat!'],
-          'rectangular-prism': ['I have 6 flat faces.', 'My faces are rectangles.', 'I cannot roll.', 'I look like a cereal box!'],
-        };
-        challenge.clues = fallbackClues[challenge.shape3d || 'sphere'] || fallbackClues.sphere;
-      }
-      // Strip any clues that accidentally contain the shape name
-      const shapeName = (challenge.shape3d || '').replace('-', ' ');
-      challenge.clues = challenge.clues.map((clue: string) =>
-        clue.toLowerCase().includes(shapeName) ? clue.replace(new RegExp(shapeName, 'gi'), '???') : clue
-      );
-    }
-  }
-
-  // Ensure at least one challenge
-  if (data.challenges.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'identify-3d';
-    if (fallbackType === 'identify-3d') {
-      data.challenges = [{
-        id: 'c1',
-        type: 'identify-3d',
-        instruction: 'What shape is this? It looks like a ball!',
-        shape3d: 'sphere',
-        options: ['cube', 'sphere', 'cylinder', 'cone'],
-      }];
-    } else if (fallbackType === 'match-to-real-world') {
-      data.challenges = [{
-        id: 'c1',
-        type: 'match-to-real-world',
-        instruction: 'Can you match each object to its 3D shape?',
-        matchPairs: [
-          { realWorldObject: 'basketball', emoji: '🏀', shape3d: 'sphere' },
-          { realWorldObject: 'dice', emoji: '🎲', shape3d: 'cube' },
-          { realWorldObject: 'can of soup', emoji: '🥫', shape3d: 'cylinder' },
-        ],
-      }];
-    } else if (fallbackType === '2d-vs-3d') {
-      data.challenges = [{
-        id: 'c1',
-        type: '2d-vs-3d',
-        instruction: 'Can you sort the flat shapes from the solid shapes?',
-        mixedShapes: [
-          { name: 'circle', emoji: '🟡', is3d: false },
-          { name: 'sphere', emoji: '⚽', is3d: true },
-          { name: 'square', emoji: '🟧', is3d: false },
-          { name: 'cube', emoji: '🧊', is3d: true },
-        ],
-      }];
-    } else if (fallbackType === 'faces-and-properties') {
-      data.challenges = [{
-        id: 'c1',
-        type: 'faces-and-properties',
-        instruction: 'Let\'s explore the properties of a cube!',
-        displayShape: 'cube',
-        properties: { flatFaces: 6, curvedSurfaces: 0, faceShapes: ['square'], canRoll: false, canStack: true, canSlide: true },
-        propertyQuestions: [
-          { question: 'How many flat faces does this shape have?', answerType: 'number', correctAnswer: '6' },
-          { question: 'Can this shape roll?', answerType: 'boolean', correctAnswer: 'false' },
-        ],
-      }];
-    } else {
-      data.challenges = [{
-        id: 'c1',
-        type: 'shape-riddle',
-        instruction: 'Can you guess the mystery shape from the clues?',
-        shape3d: 'sphere',
-        options: ['cube', 'sphere', 'cylinder', 'cone'],
-        clues: ['I have no flat faces.', 'I can roll in any direction.', 'I have one curved surface.', 'I look like a ball!'],
-      }];
-    }
-  }
-
-  // Apply explicit config overrides
-  if (config) {
-    if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
-    if (config.showUnfoldAnimation !== undefined) data.showUnfoldAnimation = config.showUnfoldAnimation;
-    if (config.show3dRotation !== undefined) data.show3dRotation = config.show3dRotation;
-    if (config.title !== undefined) data.title = config.title;
-    if (config.description !== undefined) data.description = config.description;
-  }
-
-  // ── Apply the within-mode support tier deterministically (annotation only) ──
-  // Runs LAST, after all config overrides. Gated ONLY on a tier being present so
-  // blended/auto sessions get the student's tier too; each challenge resolves its
-  // OWN scaffold from its own mode (ch.type). Code owns the annotation structure;
-  // the LLM only chose the solid + the (asked) questions. The COUNT total is never
-  // written to a display field — it lives only in propertyQuestions, so withdrawing
-  // labels/highlights at harder tiers can neither leak nor invalidate the answer.
-  if (supportTier) {
-    for (const ch of data.challenges as Array<{ type: string; showElementLabels?: boolean; showFaceHighlight?: boolean; supportTier?: string }>) {
-      const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
-      ch.showElementLabels = sc.showElementLabels;
-      ch.showFaceHighlight = sc.showFaceHighlight;
-      ch.supportTier = supportTier;
-    }
-    // The rotation guide is a global display field on the activity; withdraw it at hard.
-    // (Only when a tier is pinned — single-mode tone uses pinnedType's scaffold; for
-    //  blended sessions the tier still governs the global rotation guide uniformly.)
-    const rotation = pinnedType
-      ? resolveSupportStructure(pinnedType, supportTier).showRotationGuide
-      : supportTier !== 'hard';
-    data.show3dRotation = rotation;
-    console.log(
-      `[3DShapeExplorer] Support tier "${supportTier}" applied per-challenge `
-      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → `
-      + `labels=${supportTier === 'easy'}, faceHighlight=${supportTier === 'easy'}, rotationGuide=${rotation}`,
-    );
-  }
-
-  // Final summary log (matches pattern from other generators)
-  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
-  console.log(`[3DShapeExplorer] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
-
+  const gradeBand = config.gradeBand === 'K' || config.gradeBand === '1'
+    ? config.gradeBand
+    : parsed.gradeBand === 'K' ? 'K' : '1';
+  const wrapper = wrapperTextForSession(config.title ?? parsed.title, config.description ?? parsed.description, build.items);
+  const data: ThreeDShapeExplorerData = {
+    ...wrapper,
+    challenges: challenges as ThreeDShapeExplorerData['challenges'],
+    gradeBand,
+    showUnfoldAnimation: config.showUnfoldAnimation ?? (typeof parsed.showUnfoldAnimation === 'boolean' ? parsed.showUnfoldAnimation : gradeBand === '1'),
+    show3dRotation: config.show3dRotation ?? (tier !== 'hard'),
+  };
+  console.log(`[3DShapeExplorer] ${challenges.length} source challenge(s), ${build.items.length} judged item(s), ${build.droppedChallenges} total source drop(s), ${build.droppedItems.length} child drop(s), ${dropped.length} generated gate drop(s).`);
+  if (dropped.length) console.warn('[3DShapeExplorer] Dropped generated content:', dropped);
   return data;
 };

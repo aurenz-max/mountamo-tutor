@@ -1,73 +1,24 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  LuminaCard,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaCardContent,
-  LuminaBadge,
-  LuminaPanel,
-  LuminaActionButton,
+  LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle,
+  LuminaChallengeCounter, LuminaPanel, LuminaReadAloudGlyph,
 } from '../../../ui';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ThreeDShapeExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import { SoundManager } from '../../../utils/SoundManager';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { useJudgedScriptRunner, type JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import {
+  SHAPE_LABELS, buildThreeDShapeItems, supportForItem, threeDShapeExplorerPackBase,
+  wrapperTextForSession, type PropertyKey, type ThreeDShapeChallengeLike,
+  type ThreeDShapeItem, type ThreeDShapeMode,
+} from './threeDShapeExplorerScript';
 
-// ============================================================================
-// Data Types (Single Source of Truth)
-// ============================================================================
-
-export interface ThreeDShapeExplorerChallenge {
-  id: string;
-  type: 'identify-3d' | '2d-vs-3d' | 'match-to-real-world' | 'faces-and-properties' | 'shape-riddle';
-  instruction: string;
-  // identify-3d
-  shape3d?: string;
-  options?: string[];
-  // 2d-vs-3d
-  mixedShapes?: Array<{ name: string; emoji: string; is3d: boolean }>;
-  // match-to-real-world
-  matchPairs?: Array<{ realWorldObject: string; emoji: string; shape3d: string }>;
-  // faces-and-properties
-  displayShape?: string;
-  properties?: {
-    flatFaces: number;
-    curvedSurfaces: number;
-    faceShapes: string[];
-    canRoll: boolean;
-    canStack: boolean;
-    canSlide: boolean;
-  };
-  propertyQuestions?: Array<{
-    question: string;
-    answerType: 'boolean' | 'number' | 'choice';
-    correctAnswer: string | number | boolean;
-    options?: string[];  // for 'choice' type
-  }>;
-  // shape-riddle (reuses shape3d + options from identify-3d)
-  clues?: string[];
-
-  // ── Within-mode support tier (annotation-overlay scaffolding) ──
-  // Set by the generator from config.difficulty. Withdraws the annotation overlay
-  // as the tier hardens; NEVER changes the solid or the answer. The face/edge/vertex
-  // COUNT is never displayed — only element NAME labels + per-face highlight cues.
-  /** Support tier this challenge was generated at ('easy' | 'medium' | 'hard'). */
-  supportTier?: 'easy' | 'medium' | 'hard';
-  /** Show face/edge/vertex NAME labels overlaid on the solid (easy only). */
-  showElementLabels?: boolean;
-  /** Highlight each flat face one at a time to aid counting — never shows a total (easy only). */
-  showFaceHighlight?: boolean;
-}
+export interface ThreeDShapeExplorerChallenge extends ThreeDShapeChallengeLike {}
 
 export interface ThreeDShapeExplorerData {
   title: string;
@@ -76,8 +27,6 @@ export interface ThreeDShapeExplorerData {
   gradeBand?: 'K' | '1';
   showUnfoldAnimation?: boolean;
   show3dRotation?: boolean;
-
-  // Evaluation props
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -86,1098 +35,156 @@ export interface ThreeDShapeExplorerData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<ThreeDShapeExplorerMetrics>) => void;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'identify-3d':        { label: 'Identify 3D',       icon: '🔷', accentColor: 'blue' },
-  '2d-vs-3d':           { label: '2D vs 3D',          icon: '📐', accentColor: 'purple' },
-  'match-to-real-world': { label: 'Real World Match', icon: '🌍', accentColor: 'emerald' },
-  'faces-and-properties': { label: 'Properties',      icon: '🔍', accentColor: 'amber' },
-  'shape-riddle':       { label: 'Shape Riddle',        icon: '🔎', accentColor: 'cyan' },
+const MODE_META: Record<ThreeDShapeMode, {
+  label: string; icon: string; accent: 'blue' | 'purple' | 'emerald' | 'amber' | 'cyan';
+}> = {
+  'identify-3d': { label: 'Identify 3D', icon: '🔷', accent: 'blue' },
+  '2d-vs-3d': { label: 'Flat or Solid', icon: '📐', accent: 'purple' },
+  'match-to-real-world': { label: 'Real World', icon: '🌍', accent: 'emerald' },
+  'faces-and-properties': { label: 'Properties', icon: '🔍', accent: 'amber' },
+  'shape-riddle': { label: 'Shape Riddle', icon: '🕵️', accent: 'cyan' },
 };
 
-const SHAPE_LABELS: Record<string, string> = {
-  cube: 'Cube',
-  sphere: 'Sphere',
-  cylinder: 'Cylinder',
-  cone: 'Cone',
-  'rectangular-prism': 'Rectangular Prism',
+const elementLabels: Record<string, string[]> = {
+  cube: ['flat faces', 'edges', 'corners'], sphere: ['curved surface'],
+  cylinder: ['flat circular faces', 'curved surface', 'edges'],
+  cone: ['flat circular face', 'curved surface', 'point'],
+  'rectangular-prism': ['flat rectangular faces', 'edges', 'corners'],
 };
 
-// ============================================================================
-// SVG 3D Shape Renderer
-// ============================================================================
-
-function Shape3DSVG({ shape, size = 120, className }: { shape: string; size?: number; className?: string }) {
-  const cx = size / 2;
-  const cy = size / 2;
-  const s = size * 0.35; // scale factor
-
+/** The existing pseudo-3D solid remains the visual stimulus. */
+export function Shape3DSVG({ shape, size = 180, className }: { shape: string; size?: number; className?: string }) {
+  const cx = size / 2, cy = size / 2, s = size * 0.35, id = `${shape}-${size}`;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={className}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={className} role="img" aria-label="Solid shape">
       <defs>
-        <radialGradient id={`sphere-grad-${size}`} cx="35%" cy="30%">
-          <stop offset="0%" stopColor="#93c5fd" />
-          <stop offset="70%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#1e3a8a" />
-        </radialGradient>
-        <linearGradient id={`cube-top-${size}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#a78bfa" />
-          <stop offset="100%" stopColor="#7c3aed" />
-        </linearGradient>
-        <linearGradient id={`cube-left-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7c3aed" />
-          <stop offset="100%" stopColor="#5b21b6" />
-        </linearGradient>
-        <linearGradient id={`cube-right-${size}`} x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#6d28d9" />
-          <stop offset="100%" stopColor="#4c1d95" />
-        </linearGradient>
-        <linearGradient id={`cyl-body-${size}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#2dd4bf" />
-          <stop offset="50%" stopColor="#14b8a6" />
-          <stop offset="100%" stopColor="#0f766e" />
-        </linearGradient>
-        <linearGradient id={`cone-body-${size}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#fbbf24" />
-          <stop offset="50%" stopColor="#f59e0b" />
-          <stop offset="100%" stopColor="#b45309" />
-        </linearGradient>
-        <linearGradient id={`prism-top-${size}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#f472b6" />
-          <stop offset="100%" stopColor="#ec4899" />
-        </linearGradient>
-        <linearGradient id={`prism-left-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#ec4899" />
-          <stop offset="100%" stopColor="#be185d" />
-        </linearGradient>
-        <linearGradient id={`prism-right-${size}`} x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#db2777" />
-          <stop offset="100%" stopColor="#9d174d" />
-        </linearGradient>
+        <radialGradient id={`sphere-${id}`} cx="35%" cy="30%"><stop offset="0%" stopColor="#93c5fd" /><stop offset="70%" stopColor="#3b82f6" /><stop offset="100%" stopColor="#1e3a8a" /></radialGradient>
+        <linearGradient id={`purple-${id}`} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#a78bfa" /><stop offset="100%" stopColor="#4c1d95" /></linearGradient>
+        <linearGradient id={`teal-${id}`} x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#2dd4bf" /><stop offset="50%" stopColor="#14b8a6" /><stop offset="100%" stopColor="#0f766e" /></linearGradient>
+        <linearGradient id={`amber-${id}`} x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#b45309" /></linearGradient>
+        <linearGradient id={`pink-${id}`} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f472b6" /><stop offset="100%" stopColor="#9d174d" /></linearGradient>
       </defs>
-
-      {shape === 'sphere' && (
-        <>
-          <circle cx={cx} cy={cy} r={s} fill={`url(#sphere-grad-${size})`} />
-          <ellipse cx={cx} cy={cy} rx={s} ry={s * 0.15}
-            fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={1} strokeDasharray="4 3" />
-          <ellipse cx={cx - s * 0.15} cy={cy - s * 0.2} rx={s * 0.15} ry={s * 0.08}
-            fill="rgba(255,255,255,0.25)" />
-        </>
-      )}
-
+      {shape === 'sphere' && <><circle cx={cx} cy={cy} r={s} fill={`url(#sphere-${id})`} /><ellipse cx={cx} cy={cy} rx={s} ry={s * .15} fill="none" stroke="rgba(255,255,255,.2)" strokeDasharray="4 3" /><ellipse cx={cx-s*.15} cy={cy-s*.2} rx={s*.15} ry={s*.08} fill="rgba(255,255,255,.25)" /></>}
       {shape === 'cube' && (() => {
-        const h = s * 0.8;
-        const dx = s * 0.5;
-        const dy = s * 0.3;
-        // top face
-        const top = `M${cx},${cy - h} L${cx + dx},${cy - h + dy} L${cx},${cy - h + 2 * dy} L${cx - dx},${cy - h + dy} Z`;
-        // left face
-        const left = `M${cx - dx},${cy - h + dy} L${cx},${cy - h + 2 * dy} L${cx},${cy + dy} L${cx - dx},${cy} Z`;
-        // right face
-        const right = `M${cx + dx},${cy - h + dy} L${cx},${cy - h + 2 * dy} L${cx},${cy + dy} L${cx + dx},${cy} Z`;
-        return (
-          <>
-            <path d={left} fill={`url(#cube-left-${size})`} />
-            <path d={right} fill={`url(#cube-right-${size})`} />
-            <path d={top} fill={`url(#cube-top-${size})`} />
-            <path d={left} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} />
-            <path d={right} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} />
-            <path d={top} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} />
-          </>
-        );
+        const h=s*.8, dx=s*.6, dy=s*.35;
+        const top=`${cx},${cy-h} ${cx+dx},${cy-h+dy} ${cx},${cy-h+2*dy} ${cx-dx},${cy-h+dy}`;
+        const left=`${cx-dx},${cy-h+dy} ${cx},${cy-h+2*dy} ${cx},${cy+dy} ${cx-dx},${cy}`;
+        const right=`${cx+dx},${cy-h+dy} ${cx},${cy-h+2*dy} ${cx},${cy+dy} ${cx+dx},${cy}`;
+        return <><polygon points={left} fill="#5b21b6" /><polygon points={right} fill="#4c1d95" /><polygon points={top} fill={`url(#purple-${id})`} /></>;
       })()}
-
-      {shape === 'cylinder' && (() => {
-        const rh = s * 0.7; // horizontal radius
-        const rv = s * 0.2;  // vertical radius of ellipses
-        const bodyH = s * 1.0;
-        const topY = cy - bodyH / 2;
-        const botY = cy + bodyH / 2;
-        return (
-          <>
-            <rect x={cx - rh} y={topY} width={rh * 2} height={bodyH}
-              fill={`url(#cyl-body-${size})`} />
-            <ellipse cx={cx} cy={botY} rx={rh} ry={rv} fill="#0f766e" />
-            <ellipse cx={cx} cy={botY} rx={rh} ry={rv} fill="none"
-              stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} />
-            <ellipse cx={cx} cy={topY} rx={rh} ry={rv} fill="#5eead4" />
-            <ellipse cx={cx} cy={topY} rx={rh} ry={rv} fill="none"
-              stroke="rgba(255,255,255,0.2)" strokeWidth={0.5} />
-          </>
-        );
-      })()}
-
-      {shape === 'cone' && (() => {
-        const rh = s * 0.7;
-        const rv = s * 0.2;
-        const botY = cy + s * 0.5;
-        const tipY = cy - s * 0.8;
-        return (
-          <>
-            <path d={`M${cx - rh},${botY} Q${cx},${botY + rv * 2} ${cx + rh},${botY} L${cx},${tipY} Z`}
-              fill={`url(#cone-body-${size})`} />
-            <ellipse cx={cx} cy={botY} rx={rh} ry={rv} fill="#92400e" />
-            <ellipse cx={cx} cy={botY} rx={rh} ry={rv} fill="none"
-              stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} />
-            <line x1={cx} y1={tipY} x2={cx - rh} y2={botY}
-              stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} />
-            <line x1={cx} y1={tipY} x2={cx + rh} y2={botY}
-              stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} />
-          </>
-        );
-      })()}
-
+      {shape === 'cylinder' && (() => { const rx=s*.7, ry=s*.2, top=cy-s*.5, bottom=cy+s*.5; return <><rect x={cx-rx} y={top} width={rx*2} height={s} fill={`url(#teal-${id})`} /><ellipse cx={cx} cy={bottom} rx={rx} ry={ry} fill="#0f766e" /><ellipse cx={cx} cy={top} rx={rx} ry={ry} fill="#5eead4" /></>; })()}
+      {shape === 'cone' && (() => { const rx=s*.7, ry=s*.2, bottom=cy+s*.5, tip=cy-s*.8; return <><path d={`M${cx-rx},${bottom} Q${cx},${bottom+ry*2} ${cx+rx},${bottom} L${cx},${tip} Z`} fill={`url(#amber-${id})`} /><ellipse cx={cx} cy={bottom} rx={rx} ry={ry} fill="#92400e" /></>; })()}
       {shape === 'rectangular-prism' && (() => {
-        const w = s * 0.6;
-        const h = s * 0.5;
-        const dx = s * 0.4;
-        const dy = s * 0.25;
-        const top = `M${cx - w + dx},${cy - h} L${cx + dx},${cy - h} L${cx + dx - dx},${cy - h + dy} L${cx - w},${cy - h + dy} Z`;
-        const left = `M${cx - w},${cy - h + dy} L${cx - w + dx},${cy - h} L${cx - w + dx},${cy + h - dy} L${cx - w},${cy + h} Z`;
-        const front = `M${cx - w},${cy - h + dy} L${cx},${cy - h + dy} L${cx},${cy + h} L${cx - w},${cy + h} Z`;
-        const right = `M${cx},${cy - h + dy} L${cx + dx},${cy - h} L${cx + dx},${cy + h - dy} L${cx},${cy + h} Z`;
-        const topFace = `M${cx - w + dx},${cy - h} L${cx + dx},${cy - h} L${cx},${cy - h + dy} L${cx - w},${cy - h + dy} Z`;
-        return (
-          <>
-            <path d={front} fill={`url(#prism-left-${size})`} />
-            <path d={right} fill={`url(#prism-right-${size})`} />
-            <path d={topFace} fill={`url(#prism-top-${size})`} />
-            <path d={front} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} />
-            <path d={right} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} />
-            <path d={topFace} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} />
-          </>
-        );
+        const left=`${cx-s},${cy-s*.35} ${cx+s*.35},${cy-s*.35} ${cx+s*.35},${cy+s*.55} ${cx-s},${cy+s*.55}`;
+        const top=`${cx-s},${cy-s*.35} ${cx-s*.55},${cy-s*.7} ${cx+s*.8},${cy-s*.7} ${cx+s*.35},${cy-s*.35}`;
+        const right=`${cx+s*.35},${cy-s*.35} ${cx+s*.8},${cy-s*.7} ${cx+s*.8},${cy+s*.2} ${cx+s*.35},${cy+s*.55}`;
+        return <><polygon points={left} fill="#be185d" /><polygon points={right} fill="#9d174d" /><polygon points={top} fill={`url(#pink-${id})`} /></>;
       })()}
     </svg>
   );
 }
 
-// 2D shape renderer for the 2d-vs-3d sorting
-function Shape2DSVG({ shape, size = 60 }: { shape: string; size?: number }) {
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size * 0.35;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {shape === 'circle' && <circle cx={cx} cy={cy} r={r} fill="#60a5fa" stroke="#93c5fd" strokeWidth={1.5} />}
-      {shape === 'square' && <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill="#a78bfa" stroke="#c4b5fd" strokeWidth={1.5} />}
-      {shape === 'triangle' && (
-        <polygon points={`${cx},${cy - r} ${cx + r},${cy + r} ${cx - r},${cy + r}`} fill="#34d399" stroke="#6ee7b7" strokeWidth={1.5} />
-      )}
-      {shape === 'rectangle' && <rect x={cx - r * 1.3} y={cy - r * 0.7} width={r * 2.6} height={r * 1.4} fill="#f472b6" stroke="#f9a8d4" strokeWidth={1.5} />}
-    </svg>
-  );
+/** Code-owned 2D drawings replace the old semantic-emoji shortcut. */
+export function Shape2DSVG({ shape, size = 150 }: { shape: string; size?: number }) {
+  const c=size/2, r=size*.35;
+  return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Flat shape">
+    {shape === 'circle' && <circle cx={c} cy={c} r={r} fill="#60a5fa" stroke="#93c5fd" strokeWidth={3} />}
+    {shape === 'square' && <rect x={c-r} y={c-r} width={r*2} height={r*2} fill="#a78bfa" stroke="#c4b5fd" strokeWidth={3} />}
+    {shape === 'triangle' && <polygon points={`${c},${c-r} ${c+r},${c+r} ${c-r},${c+r}`} fill="#34d399" stroke="#6ee7b7" strokeWidth={3} />}
+    {shape === 'rectangle' && <rect x={c-r*1.3} y={c-r*.7} width={r*2.6} height={r*1.4} fill="#f472b6" stroke="#f9a8d4" strokeWidth={3} />}
+  </svg>;
 }
 
-// ============================================================================
-// Element-label overlay (annotation scaffold — easy tier only)
-// ============================================================================
-// Names the kinds of elements a solid has (flat face, curved surface, edge,
-// vertex/point) as qualitative callouts that AID counting. CRITICAL: it never
-// prints a COUNT — on a "how many faces?" task the count is the answer, so the
-// scaffold may highlight/name elements but the total stays only in the question.
+const propertyLabel = (key?: PropertyKey) => ({ flatFaces: 'flat faces', curvedSurfaces: 'curved surfaces', faceShape: 'flat-face shape', canRoll: 'rolling', canStack: 'stacking', canSlide: 'sliding' }[key ?? 'flatFaces']);
 
-const SHAPE_ELEMENTS: Record<string, string[]> = {
-  cube: ['flat faces', 'edges', 'vertices (corners)'],
-  'rectangular-prism': ['flat faces', 'edges', 'vertices (corners)'],
-  cylinder: ['flat faces (circles)', 'curved surface', 'edges'],
-  cone: ['flat face (circle)', 'curved surface', 'point (apex)'],
-  sphere: ['curved surface'],
+const averageFor = (summary: JudgedRunSummary, items: readonly ThreeDShapeItem[], predicate: (item: ThreeDShapeItem) => boolean): number | null => {
+  const subset = items.filter(predicate);
+  if (!subset.length) return null;
+  return Math.round(subset.reduce((sum, item) => sum + (summary.outcomes.find((o) => o.id === item.id)?.score ?? 0), 0) / subset.length);
 };
 
-function ShapeElementLabels({ shape }: { shape: string }) {
-  const elements = SHAPE_ELEMENTS[shape];
-  if (!elements || elements.length === 0) return null;
-  return (
-    <div className="flex flex-wrap gap-1.5 justify-center mt-1" aria-label="shape element guide">
-      {elements.map((el) => (
-        <Badge
-          key={el}
-          className="bg-blue-500/10 border-blue-400/30 text-blue-200 text-[10px] font-normal"
-        >
-          {el}
-        </Badge>
-      ))}
-    </div>
-  );
-}
-
-// ============================================================================
-// Props
-// ============================================================================
-
-interface ThreeDShapeExplorerProps {
-  data: ThreeDShapeExplorerData;
-  className?: string;
-}
-
-// ============================================================================
-// Component
-// ============================================================================
+interface ThreeDShapeExplorerProps { data: ThreeDShapeExplorerData; className?: string }
 
 const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, className }) => {
-  const {
-    title,
-    description,
-    challenges = [],
-    gradeBand = 'K',
-    show3dRotation = true,
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
-
-  // ── State ──────────────────────────────────────────────────────
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
-
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: CHALLENGE_TYPE_CONFIG,
-  });
-
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
-
-  // Challenge-specific state
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [sortedShapes, setSortedShapes] = useState<Map<string, '2d' | '3d'>>(new Map());
-  const [matchSelections, setMatchSelections] = useState<Map<string, string>>(new Map());
-  const [selectedMatchObject, setSelectedMatchObject] = useState<string | null>(null);
-  const [propertyAnswers, setPropertyAnswers] = useState<Map<number, string | number | boolean>>(new Map());
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-
-  // Shuffle the right-side shapes so positional matching doesn't give away answers
-  const shuffledMatchShapes = useMemo(() => {
-    if (currentChallenge?.type !== 'match-to-real-world' || !currentChallenge.matchPairs) return [];
-    const unique = Array.from(new Set(currentChallenge.matchPairs.map(p => p.shape3d)));
-    // Fisher-Yates shuffle
-    const arr = [...unique];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }, [currentChallenge?.id]);
-
-  // Refs
+  const { challenges=[], gradeBand='K', show3dRotation=true, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const stableInstanceIdRef = useRef(instanceId || `3d-shape-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  // ── Evaluation ─────────────────────────────────────────────────
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<ThreeDShapeExplorerMetrics>({
-    primitiveType: '3d-shape-explorer',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  const build = useMemo(() => buildThreeDShapeItems(challenges), [challenges]);
+  const items = build.items;
+  const wrapper = useMemo(() => wrapperTextForSession(data.title, data.description, items), [data.title, data.description, items]);
+  const [revealedItemId, setRevealedItemId] = useState<string | null>(null);
+  const evaluation = usePrimitiveEvaluation<ThreeDShapeExplorerMetrics>({
+    primitiveType: '3d-shape-explorer', instanceId: resolvedInstanceId, skillId, subskillId,
+    objectiveId, exhibitId, onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring ────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    challengeType: currentChallenge?.type ?? 'identify-3d',
-    shape3d: currentChallenge?.shape3d ?? currentChallenge?.displayShape ?? '',
-    displayShape: currentChallenge?.displayShape ?? '',
-    properties: currentChallenge?.properties ?? null,
-    attemptNumber: currentAttempts + 1,
-    instruction: currentChallenge?.instruction ?? '',
-    supportTier: currentChallenge?.supportTier ?? null,
-  }), [
-    gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts,
-  ]);
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const identification = averageFor(summary, items, (item) => ['identify_shape','classify_dimension','solve_riddle'].includes(item.kind));
+    const property = averageFor(summary, items, (item) => ['count_property','judge_property','name_face_shape'].includes(item.kind));
+    const realWorld = averageFor(summary, items, (item) => item.kind === 'match_object');
+    const metrics: ThreeDShapeExplorerMetrics = {
+      type: '3d-shape-explorer', identificationAccuracy: identification ?? 100,
+      // The legacy public booleans have no not-observed state. These neutral
+      // values are explicitly marked in details instead of fabricating evidence.
+      propertyKnowledge: property == null ? true : property >= 60,
+      realWorldConnections: realWorld == null ? true : realWorld >= 60,
+      attemptsCount: summary.attemptsCount,
+    };
+    evaluation.submitResult(summary.passed, summary.accuracy, metrics, {
+      challengeResults: summary.outcomes, hearTaps: summary.hearTaps,
+      observedMetrics: { identification: identification != null, property: property != null, realWorld: realWorld != null },
+      droppedChallenges: build.droppedChallenges, droppedItems: build.droppedItems,
+    }, undefined, summary.diagnosisEvidence);
+  }, [build.droppedChallenges, build.droppedItems, evaluation, items]);
 
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: '3d-shape-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+  const pack = useMemo<JudgedScriptPack<ThreeDShapeItem>>(() => ({
+    ...threeDShapeExplorerPackBase(items),
+    statusLines: { idle: 'Tap the microphone to start.', ready: () => 'Look or listen, then say your answer out loud.', retry: () => 'Try the same shape again out loud.', noVerdict: () => 'Say one clear answer out loud.', done: 'Great solid-shape work!' },
+    diagnosisObservation: (item, { lastHeard }) => ({ challenge: `${item.kind} from the visible or spoken stimulus`, expected: `Say "${item.answer}" aloud.`, observed: lastHeard?.trim() ? `Said "${lastHeard.trim()}".` : 'No matching answer was heard.' }),
+  }), [items]);
+
+  const runner = useJudgedScriptRunner<ThreeDShapeItem>({
+    pack, instanceId: resolvedInstanceId, gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1', exhibitId,
+    onFinished: handleFinished, onAffirmed: (item) => setRevealedItemId(item.id),
   });
+  const revealItem = runner.revealHeld ? items.find((entry) => entry.id === revealedItemId) ?? null : null;
+  const item = revealItem ?? runner.currentItem;
+  const displayedIndex = item ? items.findIndex((entry) => entry.id === item.id) : 0;
+  const meta = MODE_META[item?.sourceMode ?? 'identify-3d'];
+  const support = item ? supportForItem(item, !!revealItem) : null;
+  const phases = useMemo<PhaseResult[]>(() => evaluation.hasSubmitted
+    ? phaseResultsFromSummary(items, runner.summary, (entry) => ({ label: MODE_META[entry.sourceMode].label, icon: MODE_META[entry.sourceMode].icon, accentColor: MODE_META[entry.sourceMode].accent }))
+    : [], [evaluation.hasSubmitted, items, runner.summary]);
 
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] 3D Shape Explorer for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges covering 3D shape identification, sorting, matching, properties, and comparison. `
-      + `First challenge: "${currentChallenge?.instruction}". `
-      + `Introduce warmly: "Today we're going to explore solid shapes — shapes you can hold in your hand!"`,
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
+  if (!items.length) return <LuminaCard className={className}><LuminaCardContent className="p-8 text-center text-slate-300">These shape challenges could not make a safe spoken activity. Please generate them again.</LuminaCardContent></LuminaCard>;
 
-  // ── Reset state on challenge change ────────────────────────────
-  const resetChallengeState = useCallback(() => {
-    setSelectedOption(null);
-    setSortedShapes(new Map());
-    setMatchSelections(new Map());
-    setSelectedMatchObject(null);
-    setPropertyAnswers(new Map());
-    setFeedback('');
-    setFeedbackType('');
-  }, []);
+  const renderStimulus = (current: ThreeDShapeItem) => {
+    if (current.kind === 'match_object') return <LuminaPanel className="mx-auto max-w-sm p-6 text-center"><div className="text-7xl" aria-hidden>{current.emoji || '🧩'}</div><p className="mt-3 text-xl font-semibold text-slate-100">{current.objectName}</p></LuminaPanel>;
+    if (current.kind === 'solve_riddle' && !revealItem) return <LuminaPanel className="mx-auto max-w-lg p-5"><div className="mb-3 text-center text-6xl" aria-hidden>?</div><ul className="space-y-2 text-base text-slate-200">{(current.clues ?? []).map((clue) => <li key={clue}>• {clue}</li>)}</ul></LuminaPanel>;
+    if (current.kind === 'classify_dimension' && current.shape && !current.is3d) return <div className="flex justify-center"><Shape2DSVG shape={current.shape} /></div>;
+    const shape = current.shape3d ?? (current.shape as string | undefined);
+    return <div className="text-center">
+      <div className={`mx-auto w-fit rounded-full ${support?.showFaceHighlight ? 'ring-4 ring-amber-300/70 shadow-[0_0_28px_rgba(251,191,36,.35)]' : ''}`}><Shape3DSVG shape={shape ?? ''} /></div>
+      {current.sourceMode === 'faces-and-properties' && <p className="mt-1 text-base font-semibold capitalize text-slate-100">{SHAPE_LABELS[current.shape3d!]}</p>}
+      {support?.showElementLabels && shape && <div className="mt-2 flex flex-wrap justify-center gap-2" aria-label="Revealed shape properties">{(elementLabels[shape] ?? []).map((label) => <LuminaBadge key={label}>{label}</LuminaBadge>)}</div>}
+    </div>;
+  };
 
-  // ── Tier-aware tutor reveal clause ─────────────────────────────
-  // Keeps the AI tutor in sync with the annotation tier so it cannot leak what a
-  // harder tier withheld on screen. For faces-and-properties the COUNT is the
-  // answer, so at every tier the tutor never states the count — at hard it must
-  // also withhold the named strategy and ask the student to count a face at a time.
-  const tutorRevealClause = useCallback((type?: string): string => {
-    const tier = currentChallenge?.supportTier;
-    const isCountTask = type === 'faces-and-properties';
-    if (isCountTask) {
-      if (tier === 'hard') {
-        return ' SUPPORT TIER HARD: do NOT state the face/edge/vertex counts and do NOT name a counting strategy. '
-          + 'Ask the student to count just ONE face/edge at a time and tell you what they see. Never reveal the answer count.';
-      }
-      if (tier === 'medium') {
-        return ' SUPPORT TIER MEDIUM: do NOT state the total count. Nudge the student to track their count as they go. Never reveal the answer count.';
-      }
-      return ' SUPPORT TIER EASY: you may name which faces to look at (top, bottom, sides), but NEVER state the total count — let the student count and answer.';
-    }
-    if (tier === 'hard') {
-      return ' SUPPORT TIER HARD: the shape is shown with no labels; ask what the student perceives and have them justify, do not enumerate its features. Never reveal the answer.';
-    }
-    if (tier === 'medium') {
-      return ' SUPPORT TIER MEDIUM: nudge toward the relevant features without listing them all. Never reveal the answer.';
-    }
-    return ' SUPPORT TIER EASY: you may name the visible features (flat faces, curved surfaces, points) to help, but never name the answer outright.';
-  }, [currentChallenge?.supportTier]);
-
-  // ── Check Handlers ─────────────────────────────────────────────
-
-  const checkIdentify3D = useCallback(() => {
-    if (!currentChallenge || !selectedOption) return false;
-    const correct = selectedOption.toLowerCase() === currentChallenge.shape3d?.toLowerCase();
-    incrementAttempts();
-
-    if (correct) {
-      setFeedback(`Yes! That's a ${SHAPE_LABELS[currentChallenge.shape3d || ''] || currentChallenge.shape3d}!`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student correctly identified "${currentChallenge.shape3d}". `
-        + `Congratulate: "Great job! You know your 3D shapes!"`,
-        { silent: true }
-      );
-    } else {
-      setFeedback(`Not quite. Look at the shape carefully and try again!`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedOption}" but correct is "${currentChallenge.shape3d}". `
-        + `Attempt ${currentAttempts + 1}. Give a hint about the shape's features without revealing the answer.`
-        + tutorRevealClause('identify-3d'),
-        { silent: true }
-      );
-    }
-    return correct;
-  }, [currentChallenge, selectedOption, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
-
-  const check2DVs3D = useCallback(() => {
-    if (!currentChallenge?.mixedShapes) return false;
-    incrementAttempts();
-    const allShapes = currentChallenge.mixedShapes;
-    let allCorrect = true;
-
-    for (const shape of allShapes) {
-      const sorted = sortedShapes.get(shape.name);
-      const expected = shape.is3d ? '3d' : '2d';
-      if (sorted !== expected) {
-        allCorrect = false;
-        break;
-      }
-    }
-
-    if (allCorrect) {
-      setFeedback('Perfect! You sorted all shapes correctly!');
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student correctly sorted all shapes into 2D and 3D. `
-        + `Celebrate: "Amazing! You can tell flat shapes from solid shapes!"`,
-        { silent: true }
-      );
-    } else {
-      const unsorted = allShapes.filter(s => !sortedShapes.has(s.name));
-      const misplaced = allShapes.filter(s => {
-        const sorted = sortedShapes.get(s.name);
-        return sorted && sorted !== (s.is3d ? '3d' : '2d');
-      });
-      setFeedback(
-        unsorted.length > 0
-          ? `Sort all shapes first! ${unsorted.length} still unsorted.`
-          : `Some shapes are in the wrong group. Remember: flat shapes are 2D, solid shapes are 3D!`
-      );
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Sorting errors. Misplaced: ${misplaced.map(s => s.name).join(', ')}. `
-        + `Unsorted: ${unsorted.map(s => s.name).join(', ')}. `
-        + `Hint: "Can you pick up a circle? No, it's flat! But you can hold a sphere — it's solid!"`
-        + tutorRevealClause('2d-vs-3d'),
-        { silent: true }
-      );
-    }
-    return allCorrect;
-  }, [currentChallenge, sortedShapes, sendText, incrementAttempts, tutorRevealClause]);
-
-  const checkMatchToRealWorld = useCallback(() => {
-    if (!currentChallenge?.matchPairs) return false;
-    incrementAttempts();
-
-    let correctCount = 0;
-    for (const pair of currentChallenge.matchPairs) {
-      if (matchSelections.get(pair.realWorldObject) === pair.shape3d) {
-        correctCount++;
-      }
-    }
-
-    const allCorrect = correctCount === currentChallenge.matchPairs.length;
-    if (allCorrect) {
-      setFeedback('All matched! You know your real-world shapes!');
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student matched all real-world objects to their 3D shapes correctly. `
-        + `Celebrate: "You can see shapes everywhere in the real world!"`,
-        { silent: true }
-      );
-    } else {
-      const unmatched = currentChallenge.matchPairs.filter(p => !matchSelections.has(p.realWorldObject));
-      setFeedback(
-        unmatched.length > 0
-          ? `Match all objects first! ${unmatched.length} left.`
-          : `${correctCount} of ${currentChallenge.matchPairs.length} correct. Try looking at the shape of each object again!`
-      );
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] ${correctCount}/${currentChallenge.matchPairs.length} correct. `
-        + `Give a hint connecting a real-world object to its shape.`
-        + tutorRevealClause('match-to-real-world'),
-        { silent: true }
-      );
-    }
-    return allCorrect;
-  }, [currentChallenge, matchSelections, sendText, incrementAttempts, tutorRevealClause]);
-
-  const checkFacesAndProperties = useCallback(() => {
-    if (!currentChallenge?.propertyQuestions) return false;
-    incrementAttempts();
-
-    let correctCount = 0;
-    for (let i = 0; i < currentChallenge.propertyQuestions.length; i++) {
-      const q = currentChallenge.propertyQuestions[i];
-      const answer = propertyAnswers.get(i);
-      if (answer === undefined) continue;
-
-      if (q.answerType === 'boolean') {
-        const expected = typeof q.correctAnswer === 'string'
-          ? q.correctAnswer === 'true'
-          : !!q.correctAnswer;
-        if (answer === expected) correctCount++;
-      } else if (q.answerType === 'number') {
-        if (Number(answer) === Number(q.correctAnswer)) correctCount++;
-      } else {
-        if (String(answer).toLowerCase() === String(q.correctAnswer).toLowerCase()) correctCount++;
-      }
-    }
-
-    const total = currentChallenge.propertyQuestions.length;
-    const allCorrect = correctCount === total;
-
-    if (allCorrect) {
-      setFeedback(`Perfect! You know all about the ${SHAPE_LABELS[currentChallenge.displayShape || ''] || currentChallenge.displayShape}!`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student answered all ${total} property questions for "${currentChallenge.displayShape}" correctly. `
-        + `Celebrate their knowledge of 3D shape properties!`,
-        { silent: true }
-      );
-    } else {
-      const unanswered = total - propertyAnswers.size;
-      setFeedback(
-        unanswered > 0
-          ? `Answer all questions first! ${unanswered} left.`
-          : `${correctCount} of ${total} correct. Think about the shape's flat faces and curved parts!`
-      );
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] ${correctCount}/${total} correct for "${currentChallenge.displayShape}". `
-        + `Attempt ${currentAttempts + 1}. Give a specific hint about one wrong property.`
-        + tutorRevealClause('faces-and-properties'),
-        { silent: true }
-      );
-    }
-    return allCorrect;
-  }, [currentChallenge, propertyAnswers, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
-
-  const checkShapeRiddle = useCallback(() => {
-    if (!currentChallenge || !selectedOption) return false;
-    const correct = selectedOption.toLowerCase() === currentChallenge.shape3d?.toLowerCase();
-    incrementAttempts();
-
-    if (correct) {
-      setFeedback(`You solved the riddle! It's a ${SHAPE_LABELS[currentChallenge.shape3d || ''] || currentChallenge.shape3d}!`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student solved the shape riddle — correctly identified "${currentChallenge.shape3d}" from clues. `
-        + `Celebrate: "Amazing detective work! You used the clues to find the mystery shape!"`,
-        { silent: true }
-      );
-    } else {
-      setFeedback(`Not quite! Read the clues again carefully.`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Shape riddle: student guessed "${selectedOption}" but answer is "${currentChallenge.shape3d}". `
-        + `Attempt ${currentAttempts + 1}. Re-read one clue and give a hint without revealing the answer.`
-        + tutorRevealClause('shape-riddle'),
-        { silent: true }
-      );
-    }
-    return correct;
-  }, [currentChallenge, selectedOption, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
-
-  // ── Main Check Handler ─────────────────────────────────────────
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
-
-    let correct = false;
-    switch (currentChallenge.type) {
-      case 'identify-3d':
-        correct = checkIdentify3D();
-        break;
-      case '2d-vs-3d':
-        correct = check2DVs3D();
-        break;
-      case 'match-to-real-world':
-        correct = checkMatchToRealWorld();
-        break;
-      case 'faces-and-properties':
-        correct = checkFacesAndProperties();
-        break;
-      case 'shape-riddle':
-        correct = checkShapeRiddle();
-        break;
-    }
-
-    if (correct) {
-      SoundManager.playCorrect();
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-    } else {
-      SoundManager.playIncorrect();
-    }
-  }, [
-    currentChallenge, hasSubmittedEvaluation, currentAttempts,
-    checkIdentify3D, check2DVs3D, checkMatchToRealWorld, checkFacesAndProperties, checkShapeRiddle,
-    recordResult,
-  ]);
-
-  // ── Challenge Navigation ───────────────────────────────────────
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All complete
-      const phaseScoreStr = phaseResults
-        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter(r => r.correct).length / challenges.length) * 100
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their 3D shape knowledge!`,
-        { silent: true }
-      );
-
-      if (!hasSubmittedEvaluation) {
-        const correct = challengeResults.filter(r => r.correct).length;
-        const accuracy = Math.round((correct / challenges.length) * 100);
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-
-        const metrics: ThreeDShapeExplorerMetrics = {
-          type: '3d-shape-explorer',
-          identificationAccuracy: accuracy,
-          propertyKnowledge: accuracy >= 80,
-          realWorldConnections: accuracy >= 70,
-          attemptsCount: totalAttempts,
-        };
-
-        submitEvaluation(correct === challenges.length, accuracy, metrics, { challengeResults });
-      }
-      return;
-    }
-
-    resetChallengeState();
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Introduce it briefly.`,
-      { silent: true }
-    );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, resetChallengeState, currentChallengeIndex,
-  ]);
-
-  // Auto-submit on complete
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
-
-  const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct
-  );
-
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    return Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
-
-  // ── Sorting handler (2d-vs-3d) ────────────────────────────────
-  const handleSort = useCallback((shapeName: string, bin: '2d' | '3d') => {
-    if (hasSubmittedEvaluation || isCurrentChallengeComplete) return;
-    SoundManager.snap();
-    setSortedShapes(prev => {
-      const next = new Map(prev);
-      if (next.get(shapeName) === bin) {
-        next.delete(shapeName);
-      } else {
-        next.set(shapeName, bin);
-      }
-      return next;
-    });
-  }, [hasSubmittedEvaluation, isCurrentChallengeComplete]);
-
-  // ── Matching handler ──────────────────────────────────────────
-  const handleMatchSelect = useCallback((shape3d: string) => {
-    if (!selectedMatchObject || hasSubmittedEvaluation || isCurrentChallengeComplete) return;
-    SoundManager.snap();
-    setMatchSelections(prev => {
-      const next = new Map(prev);
-      next.set(selectedMatchObject, shape3d);
-      return next;
-    });
-    setSelectedMatchObject(null);
-  }, [selectedMatchObject, hasSubmittedEvaluation, isCurrentChallengeComplete]);
-
-  // ── Property answer handler ───────────────────────────────────
-  const handlePropertyAnswer = useCallback((qIndex: number, answer: string | number | boolean) => {
-    if (hasSubmittedEvaluation || isCurrentChallengeComplete) return;
-    SoundManager.select();
-    setPropertyAnswers(prev => {
-      const next = new Map(prev);
-      next.set(qIndex, answer);
-      return next;
-    });
-  }, [hasSubmittedEvaluation, isCurrentChallengeComplete]);
-
-  // ── Can check? ─────────────────────────────────────────────────
-  const canCheck = useMemo(() => {
-    if (!currentChallenge || isCurrentChallengeComplete || hasSubmittedEvaluation) return false;
-    switch (currentChallenge.type) {
-      case 'identify-3d': return !!selectedOption;
-      case '2d-vs-3d': return sortedShapes.size === (currentChallenge.mixedShapes?.length ?? 0);
-      case 'match-to-real-world': return matchSelections.size === (currentChallenge.matchPairs?.length ?? 0);
-      case 'faces-and-properties': return propertyAnswers.size === (currentChallenge.propertyQuestions?.length ?? 0);
-      case 'shape-riddle': return !!selectedOption;
-      default: return false;
-    }
-  }, [
-    currentChallenge, isCurrentChallengeComplete, hasSubmittedEvaluation,
-    selectedOption, sortedShapes, matchSelections, propertyAnswers,
-  ]);
-
-  // ── Render ─────────────────────────────────────────────────────
-  return (
-    <LuminaCard className={`shadow-2xl ${className || ''}`}>
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <LuminaBadge accent="blue" className="text-xs">
-            {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-          </LuminaBadge>
-        </div>
-        {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </LuminaCardHeader>
-
-      <LuminaCardContent className="space-y-4">
-        {/* Progress */}
-        {challenges.length > 1 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(CHALLENGE_TYPE_CONFIG).map(([type, config]) => {
-              const hasType = challenges.some(c => c.type === type);
-              if (!hasType) return null;
-              return (
-                <Badge
-                  key={type}
-                  className={`text-xs ${
-                    currentChallenge?.type === type
-                      ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
-                      : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                  }`}
-                >
-                  {config.icon} {config.label}
-                </Badge>
-              );
-            })}
-            <span className="text-slate-500 text-xs ml-auto">
-              {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-            </span>
-          </div>
-        )}
-
-        {/* Instruction */}
-        {currentChallenge && !allChallengesComplete && (
-          <LuminaPanel className="p-3">
-            <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-          </LuminaPanel>
-        )}
-
-        {/* ── Challenge-specific UI ──────────────────── */}
-        {currentChallenge && !allChallengesComplete && (
-          <>
-            {/* IDENTIFY-3D */}
-            {currentChallenge.type === 'identify-3d' && currentChallenge.shape3d && (
-              <div className="space-y-4">
-                <div className="flex flex-col items-center">
-                  <div className={`${currentChallenge.showFaceHighlight ? 'rounded-full ring-2 ring-blue-400/40 ring-offset-2 ring-offset-transparent' : ''} ${show3dRotation ? 'animate-pulse' : ''}`}
-                    style={show3dRotation ? { animation: 'spin 8s linear infinite', animationName: undefined } : undefined}
-                  >
-                    <Shape3DSVG shape={currentChallenge.shape3d} size={160} />
-                  </div>
-                  {currentChallenge.showElementLabels && <ShapeElementLabels shape={currentChallenge.shape3d} />}
-                </div>
-                <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
-                  {currentChallenge.options?.map(opt => (
-                    <Button
-                      key={opt}
-                      variant="ghost"
-                      className={`border ${
-                        selectedOption === opt
-                          ? 'bg-blue-500/20 border-blue-400/50 text-blue-200'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                      }`}
-                      onClick={() => { SoundManager.select(); setSelectedOption(opt); }}
-                      disabled={isCurrentChallengeComplete}
-                    >
-                      {SHAPE_LABELS[opt] || opt}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 2D VS 3D */}
-            {currentChallenge.type === '2d-vs-3d' && currentChallenge.mixedShapes && (
-              <div className="space-y-4">
-                {/* Bins */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-800/30 rounded-lg p-3 border border-purple-500/20 min-h-[100px]">
-                    <p className="text-purple-300 text-xs font-medium mb-2 text-center">Flat Shapes (2D)</p>
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {currentChallenge.mixedShapes.filter(s => sortedShapes.get(s.name) === '2d').map(s => (
-                        <Badge key={s.name} className="bg-purple-500/20 border-purple-400/30 text-purple-200 text-xs cursor-pointer"
-                          onClick={() => handleSort(s.name, '2d')}>
-                          {s.emoji} {s.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="bg-slate-800/30 rounded-lg p-3 border border-blue-500/20 min-h-[100px]">
-                    <p className="text-blue-300 text-xs font-medium mb-2 text-center">Solid Shapes (3D)</p>
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {currentChallenge.mixedShapes.filter(s => sortedShapes.get(s.name) === '3d').map(s => (
-                        <Badge key={s.name} className="bg-blue-500/20 border-blue-400/30 text-blue-200 text-xs cursor-pointer"
-                          onClick={() => handleSort(s.name, '3d')}>
-                          {s.emoji} {s.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {/* Unsorted shapes */}
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {currentChallenge.mixedShapes.filter(s => !sortedShapes.has(s.name)).map(s => (
-                    <div key={s.name} className="flex flex-col items-center gap-1">
-                      <span className="text-2xl">{s.emoji}</span>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm"
-                          className="bg-purple-500/10 border border-purple-400/30 hover:bg-purple-500/20 text-purple-300 text-xs px-2 py-0.5 h-auto"
-                          onClick={() => handleSort(s.name, '2d')}>
-                          2D
-                        </Button>
-                        <Button variant="ghost" size="sm"
-                          className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300 text-xs px-2 py-0.5 h-auto"
-                          onClick={() => handleSort(s.name, '3d')}>
-                          3D
-                        </Button>
-                      </div>
-                      <span className="text-slate-400 text-xs">{s.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* MATCH TO REAL WORLD */}
-            {currentChallenge.type === 'match-to-real-world' && currentChallenge.matchPairs && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Objects column */}
-                  <div className="space-y-2">
-                    <p className="text-slate-400 text-xs font-medium text-center mb-1">Real-World Objects</p>
-                    {currentChallenge.matchPairs.map(pair => {
-                      const matched = matchSelections.get(pair.realWorldObject);
-                      return (
-                        <Button
-                          key={pair.realWorldObject}
-                          variant="ghost"
-                          className={`w-full border ${
-                            selectedMatchObject === pair.realWorldObject
-                              ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
-                              : matched
-                              ? 'bg-slate-700/30 border-slate-600/30 text-slate-400'
-                              : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                          }`}
-                          onClick={() => { SoundManager.select(); setSelectedMatchObject(
-                            selectedMatchObject === pair.realWorldObject ? null : pair.realWorldObject
-                          ); }}
-                          disabled={isCurrentChallengeComplete}
-                        >
-                          <span className="mr-2">{pair.emoji}</span>
-                          {pair.realWorldObject}
-                          {matched && <span className="ml-1 text-xs text-slate-500">→ {SHAPE_LABELS[matched] || matched}</span>}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  {/* Shapes column */}
-                  <div className="space-y-2">
-                    <p className="text-slate-400 text-xs font-medium text-center mb-1">3D Shapes</p>
-                    {shuffledMatchShapes.map(shape => (
-                      <Button
-                        key={shape}
-                        variant="ghost"
-                        className={`w-full border ${
-                          selectedMatchObject
-                            ? 'bg-white/5 border-emerald-400/30 hover:bg-emerald-500/10 text-slate-300'
-                            : 'bg-white/5 border-white/10 text-slate-500'
-                        }`}
-                        onClick={() => handleMatchSelect(shape)}
-                        disabled={!selectedMatchObject || isCurrentChallengeComplete}
-                      >
-                        <Shape3DSVG shape={shape} size={28} className="mr-2 inline-block" />
-                        {SHAPE_LABELS[shape] || shape}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* FACES AND PROPERTIES */}
-            {currentChallenge.type === 'faces-and-properties' && currentChallenge.displayShape && (
-              <div className="space-y-4">
-                <div className="flex flex-col items-center">
-                  <div className={`${currentChallenge.showFaceHighlight ? 'rounded-lg ring-2 ring-amber-400/40 ring-offset-2 ring-offset-transparent' : ''} ${show3dRotation ? 'animate-pulse' : ''}`}
-                    style={show3dRotation ? { animation: 'spin 8s linear infinite', animationName: undefined } : undefined}
-                  >
-                    <Shape3DSVG shape={currentChallenge.displayShape} size={140} />
-                  </div>
-                  {/* Element NAME labels only — never a count total (the count is the asked answer). */}
-                  {currentChallenge.showElementLabels && <ShapeElementLabels shape={currentChallenge.displayShape} />}
-                </div>
-                <p className="text-center text-slate-300 text-sm font-medium">
-                  {SHAPE_LABELS[currentChallenge.displayShape] || currentChallenge.displayShape}
-                </p>
-                <div className="space-y-3 max-w-md mx-auto">
-                  {currentChallenge.propertyQuestions?.map((q, i) => (
-                    <div key={i} className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-                      <p className="text-slate-200 text-sm mb-2">{q.question}</p>
-                      {q.answerType === 'boolean' ? (
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm"
-                            className={`border ${propertyAnswers.get(i) === true
-                              ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
-                              : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                            }`}
-                            onClick={() => handlePropertyAnswer(i, true)}
-                            disabled={isCurrentChallengeComplete}>
-                            Yes
-                          </Button>
-                          <Button variant="ghost" size="sm"
-                            className={`border ${propertyAnswers.get(i) === false
-                              ? 'bg-red-500/20 border-red-400/50 text-red-200'
-                              : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                            }`}
-                            onClick={() => handlePropertyAnswer(i, false)}
-                            disabled={isCurrentChallengeComplete}>
-                            No
-                          </Button>
-                        </div>
-                      ) : q.answerType === 'number' ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {[0, 1, 2, 3, 4, 5, 6, 8].map(n => (
-                            <Button key={n} variant="ghost" size="sm"
-                              className={`border min-w-[36px] ${propertyAnswers.get(i) === n
-                                ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
-                                : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                              }`}
-                              onClick={() => handlePropertyAnswer(i, n)}
-                              disabled={isCurrentChallengeComplete}>
-                              {n}
-                            </Button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {(q.options || ['circle', 'square', 'rectangle', 'triangle']).map(opt => (
-                            <Button key={opt} variant="ghost" size="sm"
-                              className={`border capitalize ${
-                                String(propertyAnswers.get(i)).toLowerCase() === opt.toLowerCase()
-                                  ? 'bg-amber-500/20 border-amber-400/50 text-amber-200'
-                                  : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                              }`}
-                              onClick={() => handlePropertyAnswer(i, opt)}
-                              disabled={isCurrentChallengeComplete}>
-                              {opt}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* SHAPE RIDDLE */}
-            {currentChallenge.type === 'shape-riddle' && currentChallenge.clues && (
-              <div className="space-y-4">
-                <div className="flex justify-center">
-                  <div className="bg-slate-800/40 rounded-xl p-5 border border-cyan-500/20 max-w-sm w-full">
-                    <p className="text-cyan-300 text-xs font-medium mb-3 text-center">Clues</p>
-                    <ul className="space-y-2">
-                      {currentChallenge.clues.map((clue, i) => (
-                        <li key={i} className="flex items-start gap-2 text-slate-200 text-sm">
-                          <span className="text-cyan-400 mt-0.5 shrink-0">{i + 1}.</span>
-                          <span>{clue}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
-                  {currentChallenge.options?.map(opt => (
-                    <Button
-                      key={opt}
-                      variant="ghost"
-                      className={`border flex flex-col items-center gap-1 py-3 ${
-                        selectedOption === opt
-                          ? 'bg-cyan-500/20 border-cyan-400/50 text-cyan-200'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                      }`}
-                      onClick={() => { SoundManager.select(); setSelectedOption(opt); }}
-                      disabled={isCurrentChallengeComplete}
-                    >
-                      <Shape3DSVG shape={opt} size={48} />
-                      <span className="text-xs">{SHAPE_LABELS[opt] || opt}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Feedback */}
-        {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' : 'text-slate-300'
-          }`}>
-            {feedback}
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        {challenges.length > 0 && (
-          <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton
-                action="check"
-                onClick={handleCheckAnswer}
-                disabled={!canCheck}
-              />
-            )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton
-                action="next"
-                onClick={advanceToNextChallenge}
-              >
-                Next Challenge
-              </LuminaActionButton>
-            )}
-            {allChallengesComplete && (
-              <div className="text-center">
-                <p className="text-emerald-400 text-sm font-medium mb-2">All challenges complete!</p>
-                <p className="text-slate-400 text-xs">
-                  {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Phase Summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Shape Explorer Complete!"
-            celebrationMessage={`You explored all ${challenges.length} 3D shape challenges!`}
-            className="mt-4"
-          />
-        )}
-      </LuminaCardContent>
-    </LuminaCard>
-  );
+  return <LuminaCard className={className}>
+    <LuminaCardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><LuminaCardTitle className="text-lg">{wrapper.title}</LuminaCardTitle>{wrapper.description && <p className="mt-1 text-sm text-slate-400">{wrapper.description}</p>}</div>{!evaluation.hasSubmitted && <div className="flex gap-2"><LuminaBadge className="text-xs">Grade {gradeBand}</LuminaBadge><LuminaBadge accent={meta.accent} className="text-xs">{meta.icon} {meta.label}</LuminaBadge></div>}</div></LuminaCardHeader>
+    <LuminaCardContent className="space-y-5">
+      {!evaluation.hasSubmitted && item && <>
+        <div className="flex items-center justify-center gap-4"><LuminaChallengeCounter current={Math.max(1, displayedIndex + 1)} total={items.length} variant="dots" /><button type="button" onClick={runner.hearStimulus} className={`flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-500/30 bg-amber-500/15 transition hover:bg-amber-500/25 ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`} aria-label="Hear the question again"><span aria-hidden>🔁</span></button></div>
+        {renderStimulus(item)}
+        {item.sourceMode === 'faces-and-properties' && !revealItem && <p className="text-center text-xs uppercase tracking-wide text-slate-500">Look for: {propertyLabel(item.propertyKey)}</p>}
+        {show3dRotation && item.shape3d && item.supportTier !== 'hard' && <p className="text-center text-xs text-slate-500">Look all the way around the solid.</p>}
+        <div className="flex justify-center"><LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} /></div>
+        {revealItem && <p className="text-center text-xl font-semibold capitalize text-emerald-300">{revealItem.answer}</p>}
+        <JudgedMicPanel run={runner} />
+      </>}
+      {evaluation.hasSubmitted && phases.length > 0 && <PhaseSummaryPanel phases={phases} overallScore={evaluation.submittedResult?.score} durationMs={evaluation.elapsedMs} heading="Solid Shape Lab Complete!" celebrationMessage="Great shape work - you told me every answer out loud!" />}
+    </LuminaCardContent>
+  </LuminaCard>;
 };
 
 export default ThreeDShapeExplorer;

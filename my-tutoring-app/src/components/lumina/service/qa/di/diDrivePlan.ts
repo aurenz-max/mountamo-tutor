@@ -226,6 +226,13 @@ import {
   type ShapeSorterItem,
 } from '@/components/lumina/primitives/visual-primitives/math/shapeSorterScript';
 import {
+  buildThreeDShapeItems,
+  threeDShapeExplorerHarnessAnswers,
+  threeDShapeExplorerPackBase,
+  type ThreeDShapeChallengeLike,
+  type ThreeDShapeItem,
+} from '@/components/lumina/primitives/visual-primitives/math/threeDShapeExplorerScript';
+import {
   itemsFromChallenge as wordSorterItemsFromChallenge,
   itemsFromChallenges as wordSorterItems,
   wordSorterHarnessAnswers,
@@ -1234,6 +1241,20 @@ const shapeSorterAdapter: DiPortAdapter<ShapeSorterItem> = {
   answersFor: shapeSorterHarnessAnswers,
 };
 
+/** 3d-shape-explorer is all voice: the solid is stimulus, never a gesture cue. */
+const threeDShapeExplorerAdapter: DiPortAdapter<ThreeDShapeItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as ThreeDShapeChallengeLike[];
+    const build = buildThreeDShapeItems(challenges);
+    return {
+      items: build.items,
+      dropped: build.droppedChallenges,
+      surface: threeDShapeExplorerPackBase(build.items),
+    };
+  },
+  answersFor: threeDShapeExplorerHarnessAnswers,
+};
+
 const wordSorterAdapter: DiPortAdapter<WordSorterItem> = {
   build: (data) => {
     const challenges = (data.challenges ?? []) as WordSorterChallengeLike[];
@@ -1844,6 +1865,8 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'word-workout': wordWorkoutAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'word-sorter': wordSorterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'shape-sorter': shapeSorterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  '3d-shape-explorer':
+    threeDShapeExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'text-structure-analyzer':
     textStructureAnalyzerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'genre-explorer': genreExplorerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
