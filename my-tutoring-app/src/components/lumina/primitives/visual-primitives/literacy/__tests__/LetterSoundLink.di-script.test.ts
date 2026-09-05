@@ -143,27 +143,34 @@ describe('letter-sound-link pack · structural gates', () => {
     for (const item of ITEMS) expect(item.action).toBe(item.mode);
   });
 
-  it('a pack that targets a stop in see-hear is REFUSED by the gate, not judged', () => {
-    // The generator retargets these; if one ever slipped through, the class
-    // check is what stops a child being asked for an unbenched sound. `/t/` is
-    // the sound this fixture would demand.
-    expect(canProduceSound('t')).toBe(false);
+  it('a pack that targets a GLIDE in see-hear is REFUSED by the gate, not judged', () => {
+    // Stops are producible since the 2026-09-05 ruling (clipped sounds, bench
+    // HUMAN-CHECKS #133); the gate now holds the line at affricates, glides and
+    // clusters. If one ever slipped through, the class check is what stops a
+    // child being asked for an unbenched sound.
+    expect(canProduceSound('t')).toBe(true);
+    expect(canProduceSound('w')).toBe(false);
   });
 });
 
 // ── 2. The continuant gate (standing gate 1, as content) ────────────────────
 
 describe('letter-sound-link pack · the continuant gate', () => {
-  it('admits exactly the held sounds and the short vowels', () => {
+  it('admits exactly the held sounds, the short vowels and the clipped stops', () => {
     expect([...PRODUCIBLE_LETTERS].sort()).toEqual(
-      ['a', 'e', 'f', 'i', 'l', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'z'].sort(),
+      ['a', 'e', 'f', 'i', 'l', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'z', 't', 'p', 'c', 'k', 'h', 'd', 'g', 'b'].sort(),
     );
   });
 
-  it('refuses every stop, affricate, glide and cluster', () => {
-    for (const letter of ['t', 'p', 'c', 'k', 'd', 'g', 'b', 'j', 'w', 'y', 'h', 'x', 'qu']) {
+  it('refuses every affricate, glide and cluster', () => {
+    for (const letter of ['j', 'w', 'y', 'x', 'qu']) {
       expect(canProduceSound(letter)).toBe(false);
     }
+  });
+
+  it('a stop speaks as slash notation, never as a bare glyph the voice would name', () => {
+    expect(spokenSoundFor('t', '/t/')).toBe('/t/');
+    expect(spokenSoundFor('c', '/k/')).toBe('/k/');
   });
 
   it('stretches held sounds for the voice and never hands it a bare glyph', () => {

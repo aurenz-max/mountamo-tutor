@@ -8,11 +8,22 @@
  * prompt, pictures/attachments in code), because flash-lite is unreliable at
  * emitting nested per-item content and structured output is convergent on values.
  *
- * SCOPE (the benched class): continuous, stretchable letter SOUNDS + short
- * vowels via keyword elicitation. Deliberately EXCLUDED: letter NAMES (blocked —
- * homophone ruling), digraphs/blends, and stop consonants (b/t/p/d/k/g can't be
- * held; a later benched item). No DEFAULT_ITEMS-style content ships from the
- * component; all items originate here, scoped to the objective.
+ * SCOPE: continuous, stretchable letter SOUNDS, short vowels via keyword
+ * elicitation, and — since 2026-09-05 — the eight stops of Letter-Sound
+ * Groups 1-3 (t p c k h d g b) as CLIPPED sounds (`articulation: 'clipped'`).
+ * The stops were withheld as "a later benched item"; the lesson-coverage judge
+ * then showed that every phonics lesson named them and none could ask for
+ * them (`unaskableLetters` on every run). User ruling: a stop's sound is
+ * evidenced by the clipped sound OR the keyword onset — the script's judging
+ * target says exactly that. Live bench: HUMAN-CHECKS #133. Still EXCLUDED:
+ * letter NAMES (blocked — homophone ruling), digraphs/blends, j w y x qu.
+ * No DEFAULT_ITEMS-style content ships from the component; all items
+ * originate here, scoped to the objective.
+ *
+ * SET COVERAGE (2026-09-05): a named cumulative set is drilled ONCE EACH, up to
+ * SET_COVERAGE_CAP, whatever the manifest's count — the 13- and 19-letter
+ * review sets were being cut to the count (4-6) and the review letters simply
+ * vanished from the lesson (`scripts/lesson-coverage-replicate.mjs truth`).
  *
  * EVAL MODES (L1) — task identities, resolved from intent or pinned by the
  * tester/curator, then built HERE (Fork A: Gemini never emits the challenge
@@ -84,6 +95,8 @@ interface MenuEntry {
   keyword: string;
   emoji: string;
   elicitation: 'isolated' | 'keyword';
+  /** Stops release once; absent = a held continuant (see the script's field). */
+  articulation?: 'clipped';
   asrAliases: string[];
 }
 
@@ -108,18 +121,37 @@ const LETTER_SOUND_MENU: Record<string, MenuEntry> = {
   i: { letter: 'i', spoken: 'iii', keyword: 'igloo', emoji: '🧊', elicitation: 'keyword', asrAliases: ['igloo', 'i'] },
   o: { letter: 'o', spoken: 'ooo', keyword: 'octopus', emoji: '🐙', elicitation: 'keyword', asrAliases: ['octopus', 'o'] },
   u: { letter: 'u', spoken: 'uuu', keyword: 'umbrella', emoji: '☂️', elicitation: 'keyword', asrAliases: ['umbrella', 'u'] },
+  // ── Stops (clipped — released once, never held) ───────────────────
+  // Slash notation is what the voice reads correctly for an ASCII consonant
+  // (phonemeVoice rule 1, proven live on letter-sound-link); the keywords are
+  // letter-sound-link's own LETTER_KEYWORDS so a child meets ONE anchor per
+  // letter across both packs. Aliases include the schwa release and the
+  // keyword — the ruling's two accepted forms — never the letter NAME.
+  t: { letter: 't', spoken: '/t/', keyword: 'tent', emoji: '⛺', elicitation: 'isolated', articulation: 'clipped', asrAliases: ['t', 'tuh', 'ta', 'tent'] },
+  p: { letter: 'p', spoken: '/p/', keyword: 'pig', emoji: '🐷', elicitation: 'isolated', articulation: 'clipped', asrAliases: ['p', 'puh', 'pa', 'pig'] },
+  c: { letter: 'c', spoken: '/k/', keyword: 'cat', emoji: '🐱', elicitation: 'isolated', articulation: 'clipped', asrAliases: ['k', 'c', 'kuh', 'ka', 'cat'] },
+  k: { letter: 'k', spoken: '/k/', keyword: 'kite', emoji: '🪁', elicitation: 'isolated', articulation: 'clipped', asrAliases: ['k', 'kuh', 'ka', 'kite'] },
+  h: { letter: 'h', spoken: '/h/', keyword: 'hat', emoji: '🎩', elicitation: 'isolated', articulation: 'clipped', asrAliases: ['h', 'huh', 'ha', 'hat'] },
+  d: { letter: 'd', spoken: '/d/', keyword: 'dog', emoji: '🐶', elicitation: 'isolated', articulation: 'clipped', asrAliases: ['d', 'duh', 'da', 'dog'] },
+  g: { letter: 'g', spoken: '/g/', keyword: 'goat', emoji: '🐐', elicitation: 'isolated', articulation: 'clipped', asrAliases: ['g', 'guh', 'ga', 'goat'] },
+  b: { letter: 'b', spoken: '/b/', keyword: 'bat', emoji: '🦇', elicitation: 'isolated', articulation: 'clipped', asrAliases: ['b', 'buh', 'ba', 'bat'] },
 };
 
 const MENU_LETTERS = Object.keys(LETTER_SOUND_MENU);
-/** Continuants only — onset isolation and confusable-free review lean on these. */
-const CONTINUANT_LETTERS = MENU_LETTERS.filter((l) => LETTER_SOUND_MENU[l].elicitation === 'isolated');
+/** Held continuants only — onset isolation and confusable-free review lean on these. */
+const CONTINUANT_LETTERS = MENU_LETTERS.filter((l) => LETTER_SOUND_MENU[l].elicitation === 'isolated' && LETTER_SOUND_MENU[l].articulation !== 'clipped');
 const DEFAULT_INSTANCE_COUNT = 4;
 const MAX_INSTANCE_COUNT = 6;
+/** A named set is drilled once each up to this many items: a brisk spoken
+ *  review at ~8 s an item keeps a 19-letter cumulative set under three minutes.
+ *  A cap below the objective's intent is a bug (user ruling), so this is the
+ *  ceiling of a K attention span, not a schema convenience. */
+const SET_COVERAGE_CAP = 20;
 /** Sensible starter set when the objective names no menu letters. */
 const DEFAULT_LETTERS = ['m', 's', 'a', 'f'];
 /** Cumulative-review walk: continuants and vowels interleaved, widest-first, so
  *  a review session spreads across the menu instead of hugging the focus cluster. */
-const REVIEW_SPREAD_ORDER = ['m', 's', 'a', 'f', 'r', 'i', 'n', 'l', 'o', 'v', 'z', 'u', 'e'];
+const REVIEW_SPREAD_ORDER = ['m', 's', 'a', 'f', 'r', 'i', 'n', 'l', 'o', 'v', 'z', 'u', 'e', 't', 'p', 'c', 'k', 'h', 'd', 'g', 'b'];
 
 // Misconception remediation: deterministic letter-menu emphasis.
 export type DiLetterSoundsRemediationMove = 'name_for_sound' | 'confusable_sound_pair';
@@ -471,6 +503,7 @@ const buildChallenge = (
     keyword: entry.keyword,
     emoji: entry.emoji,
     elicitation: entry.elicitation,
+    ...(entry.articulation ? { articulation: entry.articulation } : {}),
     asrAliases: entry.asrAliases,
   };
 };
@@ -554,7 +587,10 @@ export const generateDiLetterSounds = async (
   const scopeMenu = scopeLetters.filter((l) => l in LETTER_SOUND_MENU);
   const unaskableLetters = scopeLetters.filter((l) => !(l in LETTER_SOUND_MENU));
   const scope = scopeMenu.length > 0 ? scopeMenu : undefined;
-  const count = scope ? Math.min(requestedCount, scope.length) : requestedCount;
+  // A named set is drilled ONCE EACH (capped), never cut to the manifest's
+  // count: "N letters = N problems" — the review letters of a 13/19-letter
+  // cumulative set were vanishing at count 4-6 (lesson-coverage, 2026-09-05).
+  const count = scope ? Math.min(scope.length, SET_COVERAGE_CAP) : requestedCount;
 
   // Resolve which eval-mode SKILL(s) this objective calls for. Fork A: the
   // resolution drives which challenge types we BUILD (no schema enum exists).
@@ -580,7 +616,7 @@ export const generateDiLetterSounds = async (
 
 TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}
 
-You may ONLY choose from these letters (each has a continuous, stretchable sound a child can hold, or a short vowel):
+You may ONLY choose from these letters (a held continuant, a short vowel, or a clipped stop like t):
 ${MENU_LETTERS.join(', ')}
 
 RULES:
@@ -648,6 +684,23 @@ Return the wrapper JSON only.`;
   if (modeTypes.length === 1) {
     challenges = lettersForType(modeTypes[0], focusLetters, count, scope)
       .map((letter, i) => buildChallenge(letter, i, modeTypes[0]));
+  } else if (scope) {
+    // Scoped mixed session: the named set IS the composition (honest
+    // saturation), so each letter appears exactly once rather than being
+    // distributed-then-deduped — the distribute/interleave path could drop a
+    // named letter and backfill an out-of-set one under the tier's shaper
+    // (the review letters of a 13/19-set were vanishing, 2026-09-05). Modes
+    // still vary by cycling; the onset mode only receives letters it can ask
+    // for (held continuants), a stop or vowel drawn there falls to a non-onset
+    // mode. A letter no present mode can ask for is reported below, not smuggled.
+    const nonOnset = modeTypes.find((t) => t !== 'first_sound_in_word');
+    challenges = scope.slice(0, count).map((letter, i) => {
+      let type = modeTypes[i % modeTypes.length];
+      if (type === 'first_sound_in_word' && !CONTINUANT_LETTERS.includes(letter)) {
+        type = nonOnset ?? type;
+      }
+      return buildChallenge(letter, i, type);
+    });
   } else {
     const shares = distribute(count, modeTypes.length);
     // Stagger each mode's pool by its index so the interleave alternates letters
@@ -665,6 +718,23 @@ Return the wrapper JSON only.`;
     challenges = interleaved
       .slice(0, count)
       .map(({ letter, type }, i) => buildChallenge(letter, i, type));
+  }
+
+  // Set coverage: every named menu letter gets an item, whatever the mode split
+  // did (a mixed session's onset share cannot take a stop or a vowel). A session
+  // whose only mode is onset isolation genuinely cannot ask for them — those are
+  // reported, never smuggled in under a different mode.
+  if (scope) {
+    const seen = new Set(challenges.map((c) => c.letter));
+    const missing = scope.filter((l) => !seen.has(l));
+    const fillType = modeTypes.find((t) => t !== 'first_sound_in_word');
+    if (fillType) {
+      for (const l of missing.slice(0, Math.max(0, SET_COVERAGE_CAP - challenges.length))) {
+        challenges.push(buildChallenge(l, challenges.length, fillType));
+      }
+    } else {
+      unaskableLetters.push(...missing.filter((l) => !unaskableLetters.includes(l)));
+    }
   }
 
   // Guarantee a runnable session even if every backfill emptied out.
@@ -746,7 +816,7 @@ Return the wrapper JSON only.`;
   };
   if (unaskableLetters.length > 0) {
     console.warn(
-      `[DiLetterSounds] objective names ${unaskableLetters.join(', ')} but the continuant menu cannot drill `
+      `[DiLetterSounds] objective names ${unaskableLetters.join(', ')} but no mode in this session can drill `
       + `${unaskableLetters.length === 1 ? 'it' : 'them'} — reported as unaskableLetters, not swapped for out-of-set letters`,
     );
   }

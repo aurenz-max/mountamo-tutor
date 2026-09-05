@@ -109,7 +109,7 @@ import {
   type JudgedScriptItem,
   type ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
-import { canProduceSound, spokenSoundFor } from './letterSoundLinkScript';
+import { canProduceSound, isClippedSound, spokenSoundFor } from './letterSoundLinkScript';
 
 // Re-exported so the generator imports its build gates from ONE address (the
 // decodable-reader precedent) — both sides of the wire must agree on what is
@@ -174,8 +174,11 @@ export const responseClassFor = (mode: LetterSpotterMode): ResponseClassId =>
  * unmapped glyph in a five-year-old's ear is the failure `phonemeVoice` exists
  * to prevent, so the correction degrades to word-emphasis instead (below).
  */
+// Only a HELD sound can be stretched into the remodel ("Sss … sun"); a clipped
+// stop's rendering is slash notation ("/t/"), which reads as noise aloud, so
+// letter-spotter degrades those to word-emphasis exactly as an unmapped glyph.
 const heldSoundFor = (letter: string): string | null =>
-  canProduceSound(letter) ? spokenSoundFor(letter, '') : null;
+  canProduceSound(letter) && !isClippedSound(letter) ? spokenSoundFor(letter, '') : null;
 
 // ── Build gates — DROP an unaskable item, never repair it into one ──────────
 

@@ -162,7 +162,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"see-hear": Student sees a letter and SAYS ALOUD the sound it makes; the live tutor judges the audio. `
       + `2-3 challenges per session. Emit NO options for this mode — there is nothing to pick from. `
       + `targetLetter MUST be one of: ${PRODUCIBLE_LETTERS.join(', ')} — these are the only sounds a `
-      + `kindergartener can be asked to hold and produce alone. Never target t, p, c, k, d, g, b, j, w, y, h, x or qu here.`,
+      + `kindergartener can be asked to produce alone (held sounds, short vowels, and the clipped stops t p c k h d g b). Never target j, w, y, x or qu here.`,
     schemaDescription: "'see-hear' (see letter, SAY its sound aloud)",
   },
   'hear-see': {
@@ -319,10 +319,11 @@ const SHARED_SOUND_MAP: Record<string, string[]> = {
 // ruling), and a single illegal draw here is a child asked for a sound no
 // judge has been benched on.
 //
-//  · see-hear      the child PRODUCES the sound → held sounds only. Stops,
-//                  affricates, glides and clusters (t p c k d g b j w y h x qu)
-//                  are unbenched for child production — standing gate 1. They
-//                  are not lost: they keep full coverage in the other two
+//  · see-hear      the child PRODUCES the sound → held sounds, short vowels,
+//                  and (2026-09-05 ruling) the clipped stops t p c k h d g b.
+//                  Affricates, glides and clusters (j w y x qu) stay unbenched
+//                  for child production — standing gate 1, narrowed. They are
+//                  not lost: they keep full coverage in the other two
 //                  directions, where the TUTOR makes the sound and the child
 //                  taps or says a whole word. `PRODUCIBLE_LETTERS` is the same
 //                  list the script speaks from, imported rather than copied.

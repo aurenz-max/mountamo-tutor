@@ -100,22 +100,54 @@ const GROUP_2 = `Letter-Sound Group 2: c, k, e, h, r, m, d
 s, a, t, i, p, n, c, k, e, h, r, m, d`;
 
 describe('di-letter-sounds reads the objective it was handed', () => {
-  it('Group 1 at easy drills the set\'s menu letters only and reports the stops', async () => {
+  it('Group 1 at easy drills EVERY named letter once — the stops as clipped sounds (ruling 2026-09-05)', async () => {
     const data = await generateDiLetterSounds('Phonics 1', 'kindergarten', {
       intent: 'Letter-Sound Group 1', objectiveText: GROUP_1, targetEvalMode: 'letter_sound', difficulty: 'easy', count: 6,
     });
     const letters = data.challenges.map((c) => c.letter);
-    expect(letters.sort()).toEqual(['a', 'i', 'n', 's']);
-    expect(data.unaskableLetters).toEqual(['t', 'p']);
+    expect([...letters].sort()).toEqual(['a', 'i', 'n', 'p', 's', 't']);
+    expect(data.unaskableLetters).toBeUndefined();
+    const t = data.challenges.find((c) => c.letter === 't')!;
+    expect(t).toMatchObject({ elicitation: 'isolated', articulation: 'clipped', spoken: '/t/', keyword: 'tent' });
+    expect(t.asrAliases).not.toContain('tee'); // the letter NAME is never an accepted form
+    expect(data.challenges.find((c) => c.letter === 's')!.articulation).toBeUndefined();
     expect(data.challenges.every((c) => c.supportTier === 'easy')).toBe(true);
+  });
+  it('a 13-letter cumulative set is drilled once each whatever the manifest count (N letters = N problems)', async () => {
+    const data = await generateDiLetterSounds('Phonics 2', 'kindergarten', {
+      intent: 'Letter-Sound Group 2', objectiveText: GROUP_2, targetEvalMode: 'letter_sound_review', difficulty: 'medium', count: 4,
+    });
+    const letters = data.challenges.map((c) => c.letter);
+    expect(letters).toHaveLength(13);
+    expect(new Set(letters).size).toBe(13);
+    expect([...letters].sort()).toEqual(['a', 'c', 'd', 'e', 'h', 'i', 'k', 'm', 'n', 'p', 'r', 's', 't']);
+    expect(data.challenges.every((c) => c.challengeType === 'letter_sound_review')).toBe(true);
+  });
+  it('mixed mode still covers the whole set — the onset share cannot take stops or vowels, so the rest backfills', async () => {
+    const data = await generateDiLetterSounds('Phonics 1', 'kindergarten', {
+      intent: 'Letter-Sound Group 1', objectiveText: GROUP_1, targetEvalMode: 'mixed', difficulty: 'medium', count: 4,
+    });
+    const letters = new Set(data.challenges.map((c) => c.letter));
+    expect(letters).toEqual(new Set(['s', 'a', 't', 'i', 'p', 'n']));
+    for (const c of data.challenges.filter((x) => x.challengeType === 'first_sound_in_word')) {
+      expect(['s', 'n']).toContain(c.letter);
+    }
+    expect(data.unaskableLetters).toBeUndefined();
+  });
+  it('a pure onset session cannot ask for stops or vowels and says so', async () => {
+    const data = await generateDiLetterSounds('Phonics 1', 'kindergarten', {
+      intent: 'Letter-Sound Group 1', objectiveText: GROUP_1, targetEvalMode: 'first_sound_in_word', count: 6,
+    });
+    expect(data.challenges.every((c) => ['s', 'n'].includes(c.letter))).toBe(true);
+    expect([...(data.unaskableLetters ?? [])].sort()).toEqual(['a', 'i', 'p', 't']);
   });
   it('Group 2 at hard never leaves the cumulative set for a confusable pair', async () => {
     const data = await generateDiLetterSounds('Phonics 2', 'kindergarten', {
       intent: 'Letter-Sound Group 2', objectiveText: GROUP_2, targetEvalMode: 'letter_sound', difficulty: 'hard', count: 6,
     });
     const letters = data.challenges.map((c) => c.letter);
-    expect(letters).toHaveLength(6);
-    expect(letters.every((l) => ['s', 'a', 'i', 'n', 'e', 'r', 'm'].includes(l))).toBe(true);
+    expect(letters).toHaveLength(13); // the whole cumulative set, once each
+    expect(letters.every((l) => ['s', 'a', 't', 'i', 'p', 'n', 'c', 'k', 'e', 'h', 'r', 'm', 'd'].includes(l))).toBe(true);
     expect(letters).not.toContain('v');
     expect(letters).not.toContain('f');
   });

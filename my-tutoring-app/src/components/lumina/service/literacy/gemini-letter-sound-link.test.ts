@@ -17,9 +17,11 @@ describe('LetterSoundLink DI content gate', () => {
   const GROUP_1 = ['s', 'a', 't', 'i', 'p', 'n'];
   const GROUP_4 = [...GROUP_1, 'c', 'k', 'e', 'h', 'r', 'm', 'd', 'g', 'o', 'u', 'l', 'f', 'b', 'j', 'z', 'w', 'v', 'y', 'x', 'qu'];
 
-  it('refuses stops in see-hear and admits them everywhere else', () => {
-    expect(isTargetableInMode('see-hear', 't')).toBe(false);
+  it('admits stops in see-hear as clipped sounds (ruling 2026-09-05); glides and affricates stay out', () => {
+    expect(isTargetableInMode('see-hear', 't')).toBe(true);
     expect(isTargetableInMode('see-hear', 's')).toBe(true);
+    expect(isTargetableInMode('see-hear', 'j')).toBe(false);
+    expect(isTargetableInMode('see-hear', 'w')).toBe(false);
     // The tutor makes the sound in hear-see, so a stop is fine there — this is
     // the coverage that makes the primitive more than a di-letter-sounds twin.
     expect(isTargetableInMode('hear-see', 't')).toBe(true);
@@ -41,7 +43,7 @@ describe('LetterSoundLink DI content gate', () => {
     expect(isTargetableInMode('hear-see', 'i')).toBe(true);
   });
 
-  it('retargets a stop draw onto a held sound inside the same group', () => {
+  it('retargets a draw onto a producible letter inside the same group', () => {
     const replacement = retargetForMode('see-hear', GROUP_1, new Set());
     expect(replacement).not.toBeNull();
     expect(isTargetableInMode('see-hear', replacement!)).toBe(true);
@@ -49,7 +51,7 @@ describe('LetterSoundLink DI content gate', () => {
   });
 
   it('prefers a letter the session has not used yet (N challenges = N problems)', () => {
-    expect(retargetForMode('see-hear', GROUP_1, new Set(['s', 'a']))).toBe('i');
+    expect(retargetForMode('see-hear', GROUP_1, new Set(['s', 'a']))).toBe('t'); // t is producible now; group order wins
     expect(retargetForMode('keyword-match', GROUP_4, new Set(['s']))).toBe('a');
   });
 
@@ -60,8 +62,8 @@ describe('LetterSoundLink DI content gate', () => {
   });
 
   it('leaves the challenge alone when a mode has no legal target in the group', () => {
-    // A group of nothing but stops has no see-hear item to offer.
-    expect(retargetForMode('see-hear', ['t', 'p', 'b'], new Set())).toBeNull();
+    // A group of nothing but glides/affricates has no see-hear item to offer.
+    expect(retargetForMode('see-hear', ['j', 'w', 'y'], new Set())).toBeNull();
   });
 });
 

@@ -115,17 +115,30 @@ export type LetterSoundTier = 'easy' | 'medium' | 'hard';
  * `/ă/` reads nothing at all. The short-vowel spellings are di-letter-sounds'
  * own, so a child hears one consistent rendering across both families.
  *
- * The set is the classic DISTAR "continuous sounds" list plus the short
- * vowels. Everything absent — stops (t p c k d g b), affricates (j), glides
- * (w y), /h/, and the clusters (x qu) — is unbenched for CHILD production and
- * is therefore never a `see-hear` target. Those letters keep full coverage in
- * `hear-see` and `keyword-match`, where the child's answer is a tap or a whole
- * word.
+ * The set is the classic DISTAR "continuous sounds" list, the short vowels,
+ * and — since 2026-09-05 — the eight stops of Letter-Sound Groups 1-3
+ * (t p c k h d g b) as CLIPPED sounds. Standing gate 1 kept them out as
+ * "unbenched for child production"; the lesson-coverage judge then showed the
+ * phonics objectives naming them on every run with no block able to ask
+ * (`unaskableLetters`). User ruling: the clipped sound OR the keyword onset
+ * is evidence — `acceptClauseFor` says so for these letters. Live bench:
+ * HUMAN-CHECKS #133. Still absent — affricates (j), glides (w y) and the
+ * clusters (x qu) — keep full coverage in `hear-see` and `keyword-match`,
+ * where the child's answer is a tap or a whole word.
  */
 const SPOKEN_SOUNDS: Record<string, string> = {
   s: 'sss', n: 'nnn', m: 'mmm', f: 'fff', l: 'lll', r: 'rrr', v: 'vvv', z: 'zzz',
   a: 'aaa', e: 'eee', i: 'iii', o: 'ooo', u: 'uuu',
+  // Stops: slash notation is the reading a voice gets right for an ASCII
+  // consonant (phonemeVoice rule 1, proven on this primitive's live lesson).
+  t: '/t/', p: '/p/', c: '/k/', k: '/k/', h: '/h/', d: '/d/', g: '/g/', b: '/b/',
 };
+
+/** The clipped (stop) subset of the producible letters: one short release,
+ *  never held. The judge's accept clause is wider for these — see
+ *  `acceptClauseFor` — because the schwa and the keyword onset both count. */
+const CLIPPED_SOUNDS: ReadonlySet<string> = new Set(['t', 'p', 'c', 'k', 'h', 'd', 'g', 'b']);
+export const isClippedSound = (letter: string): boolean => CLIPPED_SOUNDS.has(letter.trim().toLowerCase());
 
 /** May a child be asked to PRODUCE this letter's sound alone? Standing gate 1. */
 export const canProduceSound = (letter: string): boolean =>
@@ -436,8 +449,11 @@ const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
  *  the judging contract, which must name that utterance as a miss, and as the
  *  harness's signature wrong, which is the same utterance. */
 const childVoicedSound = (item: LetterSoundItem): string =>
-  canProduceSound(item.letter)
+  canProduceSound(item.letter) && !isClippedSound(item.letter)
     ? item.spoken
+    // A stop is produced with the schwa a five-year-old adds ("tuh"), not its
+    // slash notation — this is the utterance the keyword-match judge must name
+    // as a miss, so it has to read as a child would say it.
     : `${item.sound.replace(/\//g, '').trim()}uh`;
 
 // ── How-to-play — inside the quoted line (SWAP-1), re-spoken on action change ─
@@ -570,6 +586,9 @@ const targetFor = (item: LetterSoundItem): string =>
 const acceptClauseFor = (item: LetterSoundItem): string =>
   item.mode === 'see-hear'
     ? `A short, clipped try counts, and so does a little "uh" on the end — a five-year-old's mouth is still learning. `
+      // A stop cannot be held, so the ruling widens what proves the link: the
+      // keyword (or any word) starting with the sound is the same evidence.
+      + (isClippedSound(item.letter) ? `A word that starts with that sound — "${item.keyword}" or another — counts too. ` : '')
     // The leniency is about WHICH WORD, never about whether a word was said —
     // see `wrongClauseFor`. Unbounded, this clause is what made the tutor read
     // "tuh" as a shot at "tent".
@@ -844,6 +863,7 @@ export const leakExemptSpanFor = (item: LetterSoundItem): string | undefined => 
 const LETTER_NAMES: Record<string, string> = {
   s: 'ess', n: 'en', m: 'em', f: 'eff', l: 'ell', r: 'ar', v: 'vee', z: 'zee',
   a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'you',
+  t: 'tee', p: 'pee', c: 'see', k: 'kay', h: 'aitch', d: 'dee', g: 'gee', b: 'bee',
 };
 
 /** Held sounds a wrong child reaches for. Off the target by construction. */
@@ -908,7 +928,10 @@ export const letterSoundLinkHarnessAnswers = (
       // letter is the answer (`tapContract` withholds it and `stimulusFor`
       // pushes only the sound), so a leak here has to be inferred rather than
       // repeated.
-      leakTokens: canProduceSound(letter) ? [item.answer] : [],
+      // A clipped stop's stimulus IS its notation ("/t/" → "t"), so it collides
+      // with the answer token exactly like the thirteen held sounds never do —
+      // scan only when the sound is spoken stretched (held/vowel), not clipped.
+      leakTokens: canProduceSound(letter) && !isClippedSound(letter) ? [item.answer] : [],
     };
   }
 

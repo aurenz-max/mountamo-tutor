@@ -9,9 +9,10 @@
  * Ported SHAPE from the DI bench's diScript.ts (proven across four bench runs:
  * open-mic, probe, hook-parity, engine-gate). Differences from the bench:
  * - No hardcoded DEFAULT_ITEMS — items arrive from the generator as challenges.
- * - Scope is continuous letter SOUNDS only. Letter NAMES stay BLOCKED
- *   (LetterSpotter homophone ruling); digraphs/blends/stop consonants are
- *   deliberately excluded (a later benched item).
+ * - Scope is letter SOUNDS: held continuants, short vowels (keyword
+ *   elicitation) and — since 2026-09-05 — the eight stops of Groups 1-3 as
+ *   CLIPPED sounds (`articulation`). Letter NAMES stay BLOCKED (LetterSpotter
+ *   homophone ruling); digraphs/blends and j w y x qu are still excluded.
  *
  * Sentinels are the engine defaults (DI_SENTINELS: affirm "Yes", correct
  * "My turn") — collision-checked against every line below: no model/guide/test
@@ -103,6 +104,17 @@ export interface DiLetterSoundChallenge {
   /** Vowels elicit through the keyword ("say apple"); continuants elicit the
    *  isolated sound ("what sound?"). */
   elicitation: 'isolated' | 'keyword';
+  /**
+   * How an isolated sound is made: `held` (a continuant the child stretches —
+   * the L0 benched class) or `clipped` (a stop — t p c k h d g b — released
+   * once; a small "uh" after it is tolerated, and the keyword or any word
+   * starting with the sound also counts). Absent = held. Added 2026-09-05
+   * under the user's ruling that a stop's sound is evidenced by the clipped
+   * sound OR the keyword onset — the phonics objectives name these letters and
+   * the lesson-coverage judge found they had no production surface at all.
+   * Benched live at HUMAN-CHECKS #133.
+   */
+  articulation?: 'held' | 'clipped';
   /** Whole-token ASR aliases — passive cross-check only, never the judge. */
   asrAliases?: string[];
 }
@@ -164,7 +176,13 @@ const targetDescription = (it: DiLetterSoundChallenge) =>
     ? `the first sound in "${it.keyword}" (the continuous sound ${it.spoken})`
     : it.elicitation === 'keyword'
       ? `the word "${it.keyword}"`
-      : `the continuous sound ${it.spoken}`;
+      : it.articulation === 'clipped'
+        // A stop cannot be held: the judge hears one short release. The
+        // curriculum wants it crisp ("not tuh"), but a five-year-old's schwa
+        // is not a wrong sound, and a word that starts with the sound proves
+        // the same grapheme→phoneme link (the ruling this branch ships under).
+        ? `the short, clipped sound ${it.spoken} as at the start of "${it.keyword}" — a little "uh" after it counts, and so does "${it.keyword}" or another word that starts with that sound; the letter's NAME does not`
+        : `the continuous sound ${it.spoken}`;
 
 /**
  * The in-band judging contract for one item. The Live tutor hears the raw
