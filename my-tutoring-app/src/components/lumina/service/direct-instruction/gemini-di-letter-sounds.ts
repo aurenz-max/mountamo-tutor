@@ -29,6 +29,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { resolveEvalModes, type ChallengeTypeDoc } from "../evalMode";
+import { asksIndependentProduction, lettersNamedIn } from "../literacy/letterGroups";
 import type {
   DiLetterSoundsData,
   DiLetterSoundChallenge,
@@ -256,9 +257,16 @@ const enforceProblemShape = (
   challenges: DiLetterSoundChallenge[],
   focusLetters: string[],
   shape: DiLetterSoundsProblemShape,
+  /** Objective-named letters: pre-placed, exempt from the caps, never evicted. */
+  protectedLetters: readonly string[] = [],
 ): DiLetterSoundChallenge[] => {
   const incoming = challenges.map((ch) => ch.letter);
-  if (meetsProblemShape(incoming, shape)) return challenges;
+  const guard = new Set(protectedLetters.filter((l) => incoming.includes(l)));
+  const unique = new Set(incoming).size === incoming.length;
+  // A fully scoped session has nothing left for the tier to shape — the
+  // composition IS the objective's set (honest saturation).
+  if (guard.size > 0 && unique && guard.size === incoming.length) return challenges;
+  if (guard.size === 0 && meetsProblemShape(incoming, shape)) return challenges;
 
   const preferred = takeUnique([
     ...incoming,
@@ -270,7 +278,13 @@ const enforceProblemShape = (
   const result: Array<string | null> = Array(challenges.length).fill(null);
   const used = new Set<string>();
 
+  // Guarded letters keep their slots before any requirement or backfill runs.
+  incoming.forEach((letter, i) => {
+    if (guard.has(letter) && !used.has(letter)) { result[i] = letter; used.add(letter); }
+  });
+
   const placeRequired = (letter: string, requireNonOnset = false): void => {
+    if (used.has(letter)) return;
     const matching = challenges.findIndex((ch, i) =>
       result[i] === null
       && ch.letter === letter
@@ -310,7 +324,8 @@ const enforceProblemShape = (
   for (let i = 0; i < result.length; i++) {
     if (result[i] !== null) continue;
     const onsetOnly = challenges[i].challengeType === 'first_sound_in_word';
-    const vowelCount = () => Array.from(used).filter((l) => SHORT_VOWELS.includes(l)).length;
+    // Caps bind the BACKFILL only: a guarded vowel never spends the tier's cap.
+    const vowelCount = () => Array.from(used).filter((l) => SHORT_VOWELS.includes(l) && !guard.has(l)).length;
     const candidate = preferred.find((letter) => {
       if (used.has(letter)) return false;
       if (onsetOnly && SHORT_VOWELS.includes(letter)) return false;
@@ -417,20 +432,23 @@ const lettersForType = (
   type: DiLetterSoundChallengeType,
   focusLetters: string[],
   n: number,
+  /** The objective's named set — when present, no pool may leave it. */
+  scope?: readonly string[],
 ): string[] => {
+  const within = (pool: string[]) => (scope ? pool.filter((l) => scope.includes(l)) : pool);
   switch (type) {
     case 'letter_sound_review': {
       const anchors = focusLetters.slice(0, 2); // recently-taught, kept in the mix
       const broaden = REVIEW_SPREAD_ORDER.filter((l) => !focusLetters.includes(l));
-      return takeUnique([...anchors, ...broaden, ...REVIEW_SPREAD_ORDER, ...MENU_LETTERS], n);
+      return takeUnique(within([...anchors, ...broaden, ...REVIEW_SPREAD_ORDER, ...MENU_LETTERS]), n);
     }
     case 'first_sound_in_word': {
       const focusContinuants = focusLetters.filter((l) => CONTINUANT_LETTERS.includes(l));
-      return takeUnique([...focusContinuants, ...CONTINUANT_LETTERS], n);
+      return takeUnique(within([...focusContinuants, ...CONTINUANT_LETTERS]), n);
     }
     case 'letter_sound':
     default:
-      return takeUnique([...focusLetters, ...DEFAULT_LETTERS, ...MENU_LETTERS], n);
+      return takeUnique(within([...focusLetters, ...DEFAULT_LETTERS, ...MENU_LETTERS]), n);
   }
 };
 
@@ -520,10 +538,23 @@ export const generateDiLetterSounds = async (
 ): Promise<DiLetterSoundsData> => {
   const intent = config?.intent;
   const remediationFocus = config?.remediationFocus;
-  const count = Math.min(
+  const requestedCount = Math.min(
     MAX_INSTANCE_COUNT,
-    Math.max(3, config?.challengeCount ?? DEFAULT_INSTANCE_COUNT),
+    // The manifest stamps `count`; `challengeCount` is the tester's name for it.
+    Math.max(3, config?.challengeCount ?? (Number(config?.count) || DEFAULT_INSTANCE_COUNT)),
   );
+  // ── The objective is the scope contract (2026-09-05 journey ruling) ──
+  // A letter SET the objective names (a comma list, "Group N") is drilled as
+  // named: menu letters in it come first and are never evicted by a tier's
+  // composition rule; letters the continuant menu cannot drill (stops) are
+  // REPORTED as `unaskableLetters`, never swapped for out-of-set letters. A
+  // loose mention ("the /m/ sound") stays a preference, handled below.
+  const objectiveText = [config?.objectiveText, intent, topic].filter(Boolean).join('\n');
+  const scopeLetters = lettersNamedIn(objectiveText);
+  const scopeMenu = scopeLetters.filter((l) => l in LETTER_SOUND_MENU);
+  const unaskableLetters = scopeLetters.filter((l) => !(l in LETTER_SOUND_MENU));
+  const scope = scopeMenu.length > 0 ? scopeMenu : undefined;
+  const count = scope ? Math.min(requestedCount, scope.length) : requestedCount;
 
   // Resolve which eval-mode SKILL(s) this objective calls for. Fork A: the
   // resolution drives which challenge types we BUILD (no schema enum exists).
@@ -534,7 +565,14 @@ export const generateDiLetterSounds = async (
   );
   const modeTypes: DiLetterSoundChallengeType[] = (resolution?.allowedTypes as DiLetterSoundChallengeType[] | undefined)
     ?? ['letter_sound', 'letter_sound_review', 'first_sound_in_word']; // mixed = all three
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  const requestedTier = normalizeSupportTier(config?.difficulty);
+  // "Assess without first saying its sound" — the objective withdraws the model
+  // line whatever the manifest's student-property tier says.
+  const coldAsk = asksIndependentProduction(objectiveText);
+  const supportTier: SupportTier | null = coldAsk ? 'hard' : requestedTier;
+  if (coldAsk && requestedTier !== 'hard') {
+    console.log(`[DiLetterSounds] objective asks for independent production — support tier ${requestedTier ?? 'unset'} → hard`);
+  }
   const shapeMode: ShapeMode = modeTypes.length === 1 ? modeTypes[0] : 'mixed';
   const sessionShape = supportTier ? resolveProblemShape(shapeMode, supportTier, count) : null;
 
@@ -597,21 +635,24 @@ Return the wrapper JSON only.`;
   if (selected.length === 0) {
     selected = [...DEFAULT_LETTERS];
   }
-  // The focused objective cluster (deduped, order preserved).
-  const focusLetters = takeUnique(selected, MENU_LETTERS.length);
+  // The focused objective cluster (deduped, order preserved). A named SET
+  // outranks the model's pick: the model may only order letters within it.
+  const focusLetters = scope
+    ? takeUnique([...selected.filter((l) => scope.includes(l)), ...scope], MENU_LETTERS.length)
+    : takeUnique(selected, MENU_LETTERS.length);
   const namedAnchors = scanLettersFromText(`${intent ?? ''} ${config?.objectiveText ?? ''} ${topic}`);
 
   // Build the challenge set from the resolved mode(s). Single mode → all one
   // type; blend/mixed → an interleaved spread so every mode appears (SP-21).
   let challenges: DiLetterSoundChallenge[];
   if (modeTypes.length === 1) {
-    challenges = lettersForType(modeTypes[0], focusLetters, count)
+    challenges = lettersForType(modeTypes[0], focusLetters, count, scope)
       .map((letter, i) => buildChallenge(letter, i, modeTypes[0]));
   } else {
     const shares = distribute(count, modeTypes.length);
     // Stagger each mode's pool by its index so the interleave alternates letters
     // (otherwise every mode starts at focus[0] and round 0 stacks one keyword).
-    const perModeLetters = modeTypes.map((t, i) => lettersForType(t, rotate(focusLetters, i), shares[i]));
+    const perModeLetters = modeTypes.map((t, i) => lettersForType(t, rotate(focusLetters, i), shares[i], scope));
     // Round-robin interleave so the session alternates skills.
     const interleaved: Array<{ letter: string; type: DiLetterSoundChallengeType }> = [];
     const maxLen = Math.max(...perModeLetters.map((ls) => ls.length));
@@ -641,7 +682,7 @@ Return the wrapper JSON only.`;
   // authoritative after objective selection + mixed-mode rotation. The tier
   // may change composition, but never count, menu, or eval-mode slot.
   if (supportTier) {
-    challenges = enforceProblemShape(challenges, focusLetters, sessionShape!);
+    challenges = enforceProblemShape(challenges, focusLetters, sessionShape!, scope ?? []);
   }
 
   const remediationMove = resolveDiRemediationMove(
@@ -701,7 +742,14 @@ Return the wrapper JSON only.`;
     // (catalog contextKey `letters`) — present from the first auth-time
     // prompt, before the component's live context sync takes over.
     letters: challenges.map((c) => c.letter).join(', '),
+    ...(unaskableLetters.length > 0 ? { unaskableLetters } : {}),
   };
+  if (unaskableLetters.length > 0) {
+    console.warn(
+      `[DiLetterSounds] objective names ${unaskableLetters.join(', ')} but the continuant menu cannot drill `
+      + `${unaskableLetters.length === 1 ? 'it' : 'them'} — reported as unaskableLetters, not swapped for out-of-set letters`,
+    );
+  }
 
   console.log("DI Letter Sounds Generated:", {
     title: data.title,
@@ -709,6 +757,8 @@ Return the wrapper JSON only.`;
     types: challenges.map((c) => c.challengeType),
     letters: challenges.map((c) => c.letter),
     count: challenges.length,
+    scope: scope ?? null,
+    unaskable: unaskableLetters,
   });
 
   return data;

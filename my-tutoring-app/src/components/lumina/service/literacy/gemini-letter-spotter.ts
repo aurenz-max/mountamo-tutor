@@ -16,6 +16,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { resolveObjectiveLetterGroup } from './letterGroups';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -635,9 +636,11 @@ export const generateLetterSpotter = async (
   // Letter group setup — resolved BEFORE the schema, which enum-locks every
   // letter field to this group's alphabet.
   // -------------------------------------------------------------------------
-  const letterGroup = (config?.letterGroup && config.letterGroup >= 1 && config.letterGroup <= 4)
-    ? config.letterGroup
-    : 1;
+  // The manifest never stamps `letterGroup`; the objective names it, so the
+  // generator reads it (a Group 3 objective was getting Group 1 grids).
+  const groupResolution = resolveObjectiveLetterGroup(config?.letterGroup, [ctx.objective?.text, intent, topic]);
+  const letterGroup = groupResolution.group;
+  console.log(`[letter-spotter] letter group ${letterGroup} (${groupResolution.source})`);
 
   const cumulativeLetters = LETTER_GROUPS[letterGroup];
   const newLetters = NEW_LETTERS[letterGroup];

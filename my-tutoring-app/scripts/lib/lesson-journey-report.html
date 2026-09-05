@@ -1,0 +1,525 @@
+<title>__TITLE__</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Andika:wght@400;700&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --ground:#f3f5f8;--surface:#ffffff;--surface-2:#eaeef3;--line:#d6dde5;--line-strong:#b9c3ce;
+  --ink:#17202a;--ink-2:#3d4a57;--muted:#5c6a77;--faint:#8b97a3;
+  --accent:#2f4f7a;--accent-ink:#ffffff;--focus:#2f4f7a;
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--neutral:#b8c1cb;
+  --good:#0ca30c;--warn:#fab219;--serious:#ec835a;--critical:#d03b3b;
+  --seq100:#cde2fb;--seq200:#9ec5f4;--seq300:#6da7ec;--seq400:#3987e5;--seq500:#256abf;--seq600:#184f95;--seq700:#0d366b;
+  --child:#f8f4ea;--child-ink:#2a2418;--child-line:#e2d9c4;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",Consolas,"Courier New",monospace;
+  --kid:"Andika","Comic Neue","Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#141a21;--surface:#1c242d;--surface-2:#242e39;--line:#2c3742;--line-strong:#3d4a58;
+    --ink:#e9eef3;--ink-2:#c5cfd9;--muted:#9ba8b5;--faint:#6f7d8b;
+    --accent:#8fb3e6;--accent-ink:#0f1a28;--focus:#8fb3e6;
+    --s1:#3987e5;--s2:#d95926;--s3:#199e70;--neutral:#4d5a67;
+    --seq100:#1d2f47;--seq200:#1f3f68;--seq300:#22508a;--seq400:#2a63ab;--seq500:#3987e5;--seq600:#6da7ec;--seq700:#9ec5f4;
+    --child:#2a2620;--child-ink:#f1e9d6;--child-line:#463f33;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#141a21;--surface:#1c242d;--surface-2:#242e39;--line:#2c3742;--line-strong:#3d4a58;
+  --ink:#e9eef3;--ink-2:#c5cfd9;--muted:#9ba8b5;--faint:#6f7d8b;
+  --accent:#8fb3e6;--accent-ink:#0f1a28;--focus:#8fb3e6;
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--neutral:#4d5a67;
+  --seq100:#1d2f47;--seq200:#1f3f68;--seq300:#22508a;--seq400:#2a63ab;--seq500:#3987e5;--seq600:#6da7ec;--seq700:#9ec5f4;
+  --child:#2a2620;--child-ink:#f1e9d6;--child-line:#463f33;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding:28px 28px 80px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font:600 40px/1.05 var(--display);letter-spacing:-.01em}
+h2{font:600 24px/1.2 var(--display)}
+h3{font:600 15px/1.3 var(--body)}
+.eyebrow{font:500 11.5px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--mono);font-size:12.5px}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.kid{font-family:var(--kid)}
+
+/* header */
+.masthead{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.masthead p{max-width:64ch;margin:10px 0 0;color:var(--ink-2)}
+.prov{display:grid;gap:4px;justify-items:end;text-align:right;color:var(--muted);font-size:12.5px}
+.prov b{color:var(--ink);font-weight:500}
+
+/* headline numbers */
+.head-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0 8px}
+.tile-n{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.tile-n b{display:block;font:600 34px/1 var(--display);margin-bottom:6px;font-variant-numeric:tabular-nums}
+.tile-n span{color:var(--muted);font-size:13px;line-height:1.35;display:block}
+
+/* sections */
+section{margin-top:34px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.sec-head p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+
+/* readiness matrix */
+.matrix{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:8px 12px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--line);font-size:13.5px}
+th{font-weight:500;color:var(--muted);font-size:12px;letter-spacing:.04em;text-transform:uppercase;background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td.persona{font-weight:500;white-space:nowrap}
+td.persona small{display:block;color:var(--faint);font-weight:400;font-family:var(--mono);font-size:11px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 7px;border-radius:999px;font-size:12px;font-weight:500;border:1px solid transparent;white-space:nowrap}
+.chip i{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.chip.blocked{background:color-mix(in srgb,var(--critical) 12%,var(--surface));border-color:color-mix(in srgb,var(--critical) 40%,transparent)}
+.chip.blocked i{background:var(--critical)}
+.chip.remediate{background:color-mix(in srgb,var(--serious) 14%,var(--surface));border-color:color-mix(in srgb,var(--serious) 45%,transparent)}
+.chip.remediate i{background:var(--serious)}
+.chip.review{background:color-mix(in srgb,var(--warn) 16%,var(--surface));border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
+.chip.review i{background:var(--warn)}
+.chip.advance{background:color-mix(in srgb,var(--good) 12%,var(--surface));border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.chip.advance i{background:var(--good)}
+.chip.insufficient{background:var(--surface-2);border-color:var(--line-strong)}
+.chip.insufficient i{background:var(--faint)}
+.cell-run{display:grid;gap:4px}
+.probe-frac{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.route-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:2px;width:120px;background:transparent}
+.route-bar span{display:block;height:100%}
+.route-bar .k{background:var(--s1)}.route-bar .e{background:var(--s2)}.route-bar .g{background:var(--s3)}.route-bar .x{background:repeating-linear-gradient(45deg,var(--neutral) 0 2px,transparent 2px 4px)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:2px;display:inline-block}
+.legend .k{background:var(--s1)}.legend .e{background:var(--s2)}.legend .g{background:var(--s3)}.legend .x{background:repeating-linear-gradient(45deg,var(--neutral) 0 2px,transparent 2px 4px);border:1px solid var(--neutral)}
+tr.sel td{background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.matrix tbody tr{cursor:pointer}
+.matrix tbody tr:hover td{background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+
+/* lesson tabs */
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px;flex-wrap:wrap}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px 12px;cursor:pointer;color:var(--muted);display:grid;gap:2px;text-align:left}
+.tab b{font:600 18px/1.1 var(--display);color:var(--ink)}
+.tab .kid{font-size:14px;letter-spacing:.14em}
+.tab[aria-selected="true"]{border-bottom-color:var(--accent);color:var(--ink)}
+.tab .chip{justify-self:start;margin-top:4px}
+
+/* two-column lesson body */
+.lesson-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+@media (max-width:1000px){.lesson-grid{grid-template-columns:1fr}.rail{position:static}}
+.rail{position:sticky;top:16px;display:grid;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.panel h3{margin-bottom:10px}
+.panel .eyebrow{margin-bottom:6px}
+
+/* coverage tiles */
+.cov{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
+.tile{width:92px;border-radius:6px;border:1.5px solid var(--line-strong);background:var(--surface);display:grid;justify-items:center;padding:8px 4px 7px;gap:3px;position:relative;cursor:default}
+.tile .g{font:700 34px/1 var(--kid);color:var(--ink)}
+.tile .c{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
+.tile .lab{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.tile.NO_SURFACE{border-color:var(--critical);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--critical) 16%,var(--surface)) 0 4px,var(--surface) 4px 9px)}
+.tile.NO_SURFACE .lab{color:var(--critical)}
+.tile.NOT_SELECTED{border-color:var(--critical);border-style:dashed}
+.tile.NOT_SELECTED .lab{color:var(--critical)}
+.tile.NEVER_COLD{border-color:var(--serious);background:color-mix(in srgb,var(--serious) 10%,var(--surface))}
+.tile.NEVER_COLD .lab{color:color-mix(in srgb,var(--serious) 80%,var(--ink))}
+.tile.THIN{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--surface))}
+.tile.THIN .lab{color:color-mix(in srgb,var(--warn) 60%,var(--ink))}
+.tile.OK{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--surface))}
+.tile.OK .lab{color:var(--good)}
+.tile.new::after{content:"new";position:absolute;top:-8px;right:-6px;font:600 9px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);padding:3px 5px;border-radius:3px}
+.gap-key{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 18px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.gap-key b{color:var(--ink);font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:inline-block;min-width:96px}
+.flags{display:grid;gap:6px;margin-top:12px;font-size:13.5px}
+.flag{display:flex;gap:10px;align-items:flex-start}
+.flag i{flex:none;width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--critical)}
+.flag.warn i{background:var(--warn)}
+.flag.info i{background:var(--faint)}
+.flag code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:3px}
+
+/* storyboard */
+.board{display:grid;gap:12px}
+.block{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.block-h{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 14px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.block-h .pos{font:600 13px/1 var(--display);color:var(--muted);width:22px;text-align:center}
+.block-h .name{display:grid;gap:2px}
+.block-h .name b{font-weight:600}
+.block-h .name span{color:var(--muted);font-size:12.5px}
+.block-h .name span code{font-family:var(--mono);font-size:11.5px}
+.stat{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:3px;white-space:nowrap}
+.stat.events{color:var(--good);border:1px solid color-mix(in srgb,var(--good) 45%,transparent)}
+.stat.unknown{color:var(--muted);border:1px solid var(--line-strong)}
+.stat.missing{color:var(--critical);border:1px solid color-mix(in srgb,var(--critical) 50%,transparent)}
+.stat.unsupported{color:var(--serious);border:1px solid color-mix(in srgb,var(--serious) 50%,transparent)}
+.stat.skipped{color:var(--faint);border:1px dashed var(--line-strong)}
+.stat.exposure{color:var(--muted);border:1px solid var(--line-strong);background:var(--surface-2)}
+.banner{margin:14px 0 0;padding:10px 14px;border-radius:6px;background:color-mix(in srgb,var(--warn) 16%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 50%,transparent);font-size:13.5px}
+.block.dim .block-h{background:var(--surface)}
+.block-note{padding:10px 14px;color:var(--muted);font-size:13px}
+.items{display:grid}
+.item{display:grid;grid-template-columns:52px minmax(0,1fr) 150px 190px;gap:14px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+@media (max-width:760px){.item{grid-template-columns:52px 1fr;grid-auto-rows:auto}.item .resp,.item .distar{grid-column:2}}
+.glyph{width:52px;height:52px;border-radius:6px;background:var(--child);border:1.5px solid var(--child-line);color:var(--child-ink);display:grid;place-items:center;font:700 30px/1 var(--kid)}
+.glyph.word{font-size:20px;letter-spacing:.04em}
+.glyph.off{border-color:var(--critical);border-style:dashed}
+.cue{font:400 15px/1.45 var(--kid);color:var(--ink)}
+.cue q{quotes:"\201C" "\201D"}
+.cue small{display:block;font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:3px}
+.distar{display:flex;gap:4px;flex-wrap:wrap;align-content:center}
+.beat{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;padding:3px 6px;border-radius:3px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.beat.on{color:var(--ink);border-color:var(--line-strong)}
+.beat.cold{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,transparent);background:color-mix(in srgb,var(--good) 8%,var(--surface))}
+.beat.echo{color:var(--s2);border-color:color-mix(in srgb,var(--s2) 45%,transparent);background:color-mix(in srgb,var(--s2) 8%,var(--surface))}
+.beat.scope{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 45%,transparent)}
+.resp{display:grid;gap:5px;font-size:12.5px}
+.resp .r{display:flex;align-items:center;gap:7px}
+.resp .r i{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none}
+.resp .k i{background:var(--s1)}.resp .e i{background:var(--s2)}.resp .g i{background:var(--s3)}.resp .x i{background:repeating-linear-gradient(45deg,var(--neutral) 0 2px,transparent 2px 4px);border:1px solid var(--neutral)}
+.pbar{position:relative;height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.pbar b{position:absolute;left:0;top:0;bottom:0;background:var(--seq400);border-radius:4px}
+.pbar s{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.55}
+.resp .pl{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.resp .na{color:var(--faint);font-style:italic}
+
+/* rail: verdict */
+.verdict{display:grid;gap:10px}
+.verdict .chip{justify-self:start;font-size:13px;padding:5px 12px 5px 9px}
+.reasons{margin:0;padding-left:18px;color:var(--ink-2);font-size:13px;display:grid;gap:4px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.controls label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+select{background:var(--surface);border:1px solid var(--line-strong);border-radius:4px;padding:7px 8px;width:100%}
+.persona-note{font-size:12px;color:var(--muted);margin-top:8px;font-family:var(--mono)}
+
+/* rail: knowledge tiles */
+.know{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.kt{width:58px;border-radius:5px;display:grid;justify-items:center;padding:6px 3px 5px;gap:3px;border:1px solid var(--line)}
+.kt .g{font:700 24px/1 var(--kid)}
+.kt .p{font-family:var(--mono);font-size:10.5px}
+.dots{display:flex;gap:3px}
+.dots i{width:8px;height:8px;border-radius:50%;display:inline-block;border:1px solid currentColor;opacity:.9}
+.dots i.hit{background:currentColor}
+.dots i.na{border-style:dotted;opacity:.4}
+.know-key{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+.ramp{display:inline-flex;height:9px;width:110px;border-radius:2px;overflow:hidden;vertical-align:middle;margin:0 6px}
+.ramp span{flex:1}
+
+/* rail: production */
+.prod{display:grid;gap:10px;font-size:13px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:baseline}
+.kv dt{color:var(--muted);margin:0}
+.kv dd{margin:0;font-family:var(--mono);font-size:12.5px;text-align:right}
+.contrast{border-left:3px solid var(--serious);padding:8px 12px;background:color-mix(in srgb,var(--serious) 9%,var(--surface));border-radius:0 4px 4px 0;font-size:13px;line-height:1.45}
+.contrast.ok{border-left-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--surface))}
+.subs{display:grid;gap:6px}
+.sub{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:12.5px;align-items:center}
+.sub .bar{display:flex;gap:2px;height:6px;width:90px;border-radius:3px;overflow:hidden}
+.sub .bar span{display:block}
+.sub .bar .ind{background:var(--s1)}.sub .bar .ech{background:var(--s2)}
+.sub code{font-family:var(--mono);font-size:11.5px}
+
+/* footer */
+.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;display:grid;gap:6px;max-width:80ch}
+.foot p{margin:0}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--ground);padding:7px 10px;border-radius:4px;font-size:12.5px;max-width:320px;z-index:9;display:none;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.tip.show{display:block}
+@media (prefers-reduced-motion:no-preference){.tab,.tile,.chip{transition:background-color .15s,border-color .15s}}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Lesson journey · synthetic learners · __CURRICULUM__</div>
+      <h1 style="margin-top:8px">__TITLE__</h1>
+      <p id="claim"></p>
+    </div>
+    <div class="prov" id="prov"></div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+  <div class="head-nums" id="headnums"></div>
+
+  <section>
+    <div class="sec-head">
+      <div><h2>Readiness across every learner</h2><p>Six personas, three seeds each, walking Phonics 1 → 2 → 3 in order. A lesson advances only on independent in-lesson attempts plus cold and delayed probes. Click a row to follow that learner below.</p></div>
+    </div>
+    <div class="matrix"><table id="matrix"></table></div>
+    <div class="legend"><span><i class="k"></i>answered from knowledge</span><span><i class="e"></i>echoed the tutor</span><span><i class="g"></i>guessed (tap)</span><span><i class="x"></i>could not access</span><span class="mono" style="margin-left:auto">post / delayed = cold probes correct</span></div>
+  </section>
+
+  <section>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="lesson-grid">
+      <div>
+        <div class="panel" style="margin-bottom:14px">
+          <div class="eyebrow">Can this lesson teach what it promises?</div>
+          <h3 id="covTitle"></h3>
+          <div class="cov" id="cov"></div>
+          <div class="gap-key">
+            <div><b>no surface</b> No primitive can ask a child to produce this sound. Both production surfaces gate stop consonants out by design.</div>
+            <div><b>not asked</b> A primitive could have asked for it; the generated lesson never did.</div>
+            <div><b>echo only</b> Asked, but the tutor said the sound first every time. Echoing is not evidence.</div>
+            <div><b>thin</b> Asked cold, but fewer than the contract's minimum independent items.</div>
+            <div><b>covered</b> Enough independent asks to count.</div>
+          </div>
+          <div class="flags" id="flags"></div>
+        </div>
+        <div class="sec-head" style="margin-top:20px"><div><h2 style="font-size:20px">What the child hears and does</h2><p id="boardNote"></p></div></div>
+        <div class="board" id="board"></div>
+      </div>
+      <aside class="rail">
+        <div class="panel">
+          <div class="controls">
+            <label>Learner <select id="profile"></select></label>
+            <label>Seed <select id="seed"></select></label>
+          </div>
+          <div class="persona-note" id="personaNote"></div>
+        </div>
+        <div class="panel verdict" id="verdict"></div>
+        <div class="panel">
+          <div class="eyebrow">After the lesson</div>
+          <h3>What the child can produce</h3>
+          <div class="know" id="know"></div>
+          <div class="know-key">Tile fill = modeled probability of producing the sound after the lesson <span class="ramp"><span style="background:var(--seq100)"></span><span style="background:var(--seq200)"></span><span style="background:var(--seq300)"></span><span style="background:var(--seq400)"></span><span style="background:var(--seq500)"></span><span style="background:var(--seq600)"></span><span style="background:var(--seq700)"></span></span> 0 → 1. Dots = cold probes before · after · <span id="retLabel"></span> later (filled = correct).</div>
+        </div>
+        <div class="panel">
+          <div class="eyebrow">Meanwhile, in production</div>
+          <h3>What the mastery engine recorded</h3>
+          <div class="prod" id="prod"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <footer class="foot" id="foot"></footer>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const D = __DATA__;
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const tip = $('tip');
+function attachTip(node, text) {
+  node.addEventListener('mousemove', (ev) => { tip.textContent = text; tip.classList.add('show'); const x = Math.min(ev.clientX + 14, innerWidth - 330); tip.style.left = x + 'px'; tip.style.top = (ev.clientY + 16) + 'px'; });
+  node.addEventListener('mouseleave', () => tip.classList.remove('show'));
+}
+const DEC = { ADVANCE: ['advance', 'Advance'], REVIEW: ['review', 'Review'], REMEDIATE: ['remediate', 'Remediate'], INSUFFICIENT_EVIDENCE: ['insufficient', 'Insufficient evidence'], BLOCKED: ['blocked', 'Blocked'] };
+const GAP = { NO_SURFACE: 'no surface', NOT_SELECTED: 'not asked', NEVER_COLD: 'echo only', THIN: 'thin', OK: 'covered' };
+const chip = (decision) => { const [cls, label] = DEC[decision]; const c = el('span', 'chip ' + cls); c.append(el('i'), document.createTextNode(label)); return c; };
+const frac = (rows, i) => { const v = rows.filter((r) => r[i] != null); return v.length ? `${v.filter((r) => r[i] === 1).length}/${v.length}` : '—'; };
+const prettyLesson = (l) => { const m = l.title.match(/^(Phonics \d+):.*Group (\d+):\s*(.*)$/); return m ? { n: m[1], g: 'Group ' + m[2], letters: m[3].replace(/,\s*/g, ' ') } : { n: l.id, g: '', letters: l.allowed.join(' ') }; };
+const state = { lesson: 0, profile: D.runs[0].profile, seed: D.runs[0].seed };
+const currentRun = () => D.runs.find((r) => r.profile === state.profile && r.seed === state.seed);
+
+// ── header ──────────────────────────────────────────────────────────
+$('claim').textContent = D.meta.claim + ' The learner is a content-opportunity model, not a fitted child.';
+if (D.meta.waivePrerequisites) { $('banner').hidden = false; $('banner').textContent = 'Audit run: prerequisites were waived, so every lesson ran from the retained state of the one before. No decision on this page is a readiness claim.'; }
+{
+  const p = $('prov');
+  const rows = [['Run', D.meta.generated + ' UTC'], ['Scenario', D.meta.scenario], ['Commit', (D.meta.gitSha || 'dirty tree').slice(0, 10)], ['Model', D.meta.model], ['Contract', `≥${D.meta.minIndependent} independent · ≥${Math.round(D.meta.minAccuracy * 100)}% cold · ${D.meta.retentionDays}-day retention`]];
+  rows.forEach(([k, v]) => { const d = el('div'); d.append(el('span', null, k + ' '), el('b', null, v)); p.append(d); });
+}
+// ── headline numbers ────────────────────────────────────────────────
+{
+  const all = D.runs.flatMap((r) => r.lessons);
+  const advanced = all.filter((l) => l.decision === 'ADVANCE').length;
+  const first = D.lessons[0];
+  const noSurface = first.coverage.filter((c) => c.gap === 'NO_SURFACE');
+  const attempted = D.runs.flatMap((r) => r.lessons.filter((l) => l.attempts.length));
+  const indep = attempted.reduce((n, l) => n + l.independent, 0);
+  const totalAttempts = attempted.reduce((n, l) => n + l.attempts.length, 0);
+  const gatePasses = D.runs.filter((r) => r.lessons[0].production?.lifecycle?.passes > 0).length;
+  const hearing = D.runs.filter((r) => D.profiles.find((p) => p.id === r.profile).hearsTutor).length;
+  const chained = all.filter((l) => l.decision === 'BLOCKED' && !l.attempts.length).length;
+  const tiles = [
+    [`${advanced} / ${all.length}`, `lesson runs reached ADVANCE.${chained ? ` ${chained} were blocked by an earlier lesson and never ran.` : ''}`],
+    [`${noSurface.length} of ${first.coverage.length}`, `${first.title.split(':')[0]} letters have no production surface at all (${noSurface.map((c) => c.target).join(', ')}). The curriculum names them; no primitive can ask for them.`],
+    [`${indep} / ${totalAttempts}`, 'in-lesson attempts were independent across every learner. The rest echoed a sound the tutor had just said.'],
+    [`${gatePasses} / ${D.runs.length}`, `learners passed gate 1 in the production mastery engine on those same echoes (${hearing} could hear the tutor).`],
+  ];
+  tiles.forEach(([n, t]) => { const d = el('div', 'tile-n'); d.append(el('b', 'num', n), el('span', null, t)); $('headnums').append(d); });
+}
+// ── readiness matrix ────────────────────────────────────────────────
+function drawMatrix() {
+  const t = $('matrix'); t.replaceChildren();
+  const thead = el('thead'); const hr = el('tr'); hr.append(el('th', null, 'Learner'), el('th', null, 'Seed'));
+  D.lessons.forEach((l) => { const p = prettyLesson(l); hr.append(el('th', null, `${p.n} · ${p.letters}`)); });
+  thead.append(hr); t.append(thead);
+  const tb = el('tbody');
+  D.runs.forEach((r) => {
+    const tr = el('tr'); if (r.profile === state.profile && r.seed === state.seed) tr.classList.add('sel');
+    const prof = D.profiles.find((p) => p.id === r.profile);
+    const td = el('td', 'persona', r.profile); td.append(el('small', null, `rate ${prof.learningRate} · decay ${prof.decay} · echo ${prof.echo}${prof.hearsTutor ? '' : ' · no audio'}`)); tr.append(td);
+    tr.append(el('td', 'mono num', String(r.seed)));
+    r.lessons.forEach((l) => {
+      const c = el('td'); const g = el('div', 'cell-run'); g.append(chip(l.decision));
+      if (l.attempts.length) {
+        const bar = el('div', 'route-bar'); const counts = { k: 0, e: 0, g: 0, x: 0 }; l.attempts.forEach((a) => counts[a[0]]++);
+        for (const k of ['k', 'e', 'g', 'x']) if (counts[k]) { const s = el('span', k); s.style.flex = counts[k]; bar.append(s); }
+        attachTip(bar, `${l.attempts.length} attempts — knowledge ${counts.k}, echo ${counts.e}, guess ${counts.g}, inaccessible ${counts.x}; ${l.independent} independent`);
+        g.append(bar, el('div', 'probe-frac', `post ${frac(l.probes, 3)} · delayed ${frac(l.probes, 5)}`));
+      } else g.append(el('div', 'probe-frac', 'not attempted'));
+      c.append(g); tr.append(c);
+    });
+    tr.addEventListener('click', () => { state.profile = r.profile; state.seed = r.seed; syncSelects(); render(); });
+    tb.append(tr);
+  });
+  t.append(tb);
+}
+// ── tabs ────────────────────────────────────────────────────────────
+function drawTabs() {
+  const t = $('tabs'); t.replaceChildren();
+  D.lessons.forEach((l, i) => {
+    const p = prettyLesson(l); const b = el('button', 'tab'); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(i === state.lesson));
+    b.append(el('b', null, `${p.n} · ${p.g}`), el('span', 'kid', p.letters));
+    const run = currentRun(); b.append(chip(run.lessons[i].decision));
+    b.addEventListener('click', () => { state.lesson = i; render(); });
+    t.append(b);
+  });
+}
+// ── coverage ────────────────────────────────────────────────────────
+function drawCoverage(L) {
+  const p = prettyLesson(L);
+  $('covTitle').textContent = `${p.n}: produce the sound of each of ${L.coverage.length} letters when shown the grapheme`;
+  const c = $('cov'); c.replaceChildren();
+  L.coverage.forEach((row) => {
+    const t = el('div', 'tile ' + row.gap); if (L.newLetters.includes(row.target)) t.classList.add('new');
+    t.append(el('span', 'g', row.target), el('span', 'c', row.delivered ? `${row.independent} cold · ${row.modeled} echo` : 'never asked'), el('span', 'lab', GAP[row.gap]));
+    attachTip(t, row.delivered ? `${row.target}: asked ${row.delivered}× in ${row.blocks.join(', ')} — ${row.modeled} modeled first, ${row.independent} independent` : row.gap === 'NO_SURFACE' ? `${row.target}: a stop consonant — di-letter-sounds and letter-sound-link (see-hear) both refuse it for child production` : `${row.target}: producible, but no block in this lesson asked for it`);
+    c.append(t);
+  });
+  const f = $('flags'); f.replaceChildren();
+  const add = (cls, html) => { const d = el('div', 'flag ' + cls); d.append(el('i')); const s = el('span'); s.innerHTML = html; d.append(s); f.append(d); };
+  L.offScope.forEach((o) => add('', `<code>${o.block}</code> drills a letter outside this group — ${o.note.replace('Untaught/out-of-contract graphemes: ', '')}. The learner earns no credit for it and the lesson is blocked until the generator honours the set.`));
+  L.otherFindings.forEach((o) => add('', `<code>${o.block}</code> ${o.code.replace(/_/g, ' ').toLowerCase()}: ${o.note}`));
+  L.offTarget.forEach((b) => { const blk = L.blocks.find((x) => x.id === b); add('warn', `<code>${b}</code> (${blk.componentId}) asks for ${blk.capabilities.join(' + ').replace(/-/g, ' ')}, which this lesson's contract does not target. Useful, but it is not evidence for the objective.`); });
+  L.blocks.filter((b) => b.status === 'exposure').forEach((b) => add('info', `<code>${b.id}</code> (${b.componentId}) is shown only — nothing is asked of the child, so nothing is credited.`));
+  L.unknownBlocks.forEach((u) => add('info', `<code>${u.block}</code> (${u.component}) has no content adapter yet, so nothing it does can count. ${u.component === 'knowledge-check' || u.component === 'fast-fact' ? 'Its items ask "which word starts with…" — onset recognition by tap, not sound production.' : u.component === 'letter-spotter' ? 'Its items are find-the-letterform — recognition, not sound.' : ''}`));
+}
+// ── storyboard ──────────────────────────────────────────────────────
+function drawBoard(L, run, RL) {
+  const attempts = RL.attempts; const attempted = attempts.length > 0;
+  $('boardNote').textContent = attempted
+    ? `Every block in manifest order. Spoken lines are the production cue builders' openings; the private judging contract never reaches the learner. Right-hand column: how ${run.profile} (seed ${run.seed}) responded.`
+    : `Every block in manifest order. ${run.profile} (seed ${run.seed}) never reached this lesson — it was blocked by an earlier one — so no responses are shown.`;
+  const b = $('board'); b.replaceChildren();
+  let evIndex = 0;
+  L.blocks.forEach((blk, i) => {
+    const box = el('div', 'block'); if (blk.status !== 'events') box.classList.add('dim');
+    const h = el('div', 'block-h'); h.append(el('span', 'pos', String(i + 1)));
+    const name = el('div', 'name'); name.append(el('b', null, blk.title || blk.id));
+    const meta = el('span'); meta.innerHTML = `<code>${blk.componentId}</code>${blk.mode ? ` · ${blk.mode}` : ''}${blk.difficulty ? ` · ${blk.difficulty} tier` : ''}${blk.tiers.length && blk.tiers.join() !== (blk.difficulty || '') ? ` (items at ${blk.tiers.join('/')})` : ''}${blk.items ? ` · ${blk.items} items` : ''}${blk.objective ? ` · ${blk.objective}` : ''}`;
+    name.append(meta); h.append(name);
+    const statusText = { events: 'observed', unknown: 'no adapter', missing: 'no payload', unsupported: 'unsupported', exposure: 'shown only', skipped: blk.componentId === 'take-home-activity' ? 'for a grown-up' : 'narration' }[blk.status];
+    h.append(el('span', 'stat ' + blk.status, statusText));
+    box.append(h);
+    const evs = L.events.filter((e) => e.block === blk.id);
+    if (blk.status === 'events') {
+      const items = el('div', 'items');
+      evs.forEach((e) => {
+        const idx = L.events.indexOf(e); const a = attempted ? attempts[idx] : null;
+        const row = el('div', 'item');
+        const g = el('div', 'glyph' + (e.cap === 'decode' ? ' word' : '') + (e.inScope ? '' : ' off'), e.target); row.append(g);
+        const cue = el('div', 'cue'); const q = el('q', null, e.cue); cue.append(q); cue.append(el('small', null, `${e.item} · asks for ${e.cap.replace('-', ' ')} of ${e.target}${e.modality === 'tap' ? ' by tap' : ' out loud'}`)); row.append(cue);
+        const d = el('div', 'distar');
+        d.append(el('span', 'beat' + (e.modeled ? ' on' : ''), 'my turn'), el('span', 'beat' + (e.guided ? ' on' : ''), 'together'), el('span', 'beat on', 'your turn'));
+        d.append(el('span', 'beat ' + (e.independent ? 'cold' : 'echo'), e.independent ? 'cold ask' : e.modeled ? 'sound given first' : 'just heard it'));
+        if (!e.inScope) d.append(el('span', 'beat scope', 'outside group'));
+        row.append(d);
+        const resp = el('div', 'resp');
+        if (a) {
+          const label = { k: 'answered from knowledge', e: 'echoed the tutor', g: 'guessed', x: 'could not access' }[a[0]];
+          const r = el('div', 'r ' + a[0]); r.append(el('i'), document.createTextNode(`${label} · ${a[1] ? 'right' : 'wrong'} first${!a[1] && a[6] ? (a[2] ? ', fixed after correction' : ', still wrong') : ''}`)); resp.append(r);
+          const bar = el('div', 'pbar'); const fill = el('b'); fill.style.width = (a[4] * 100) + '%'; const mark = el('s'); mark.style.left = (a[3] * 100) + '%'; bar.append(fill, mark); resp.append(bar);
+          resp.append(el('span', 'pl', `P(produce ${e.target}) ${a[3].toFixed(2)} → ${a[4].toFixed(2)}`));
+          attachTip(bar, `Before this item the model gave ${run.profile} a ${a[3].toFixed(2)} chance of producing ${e.target} unaided; after it, ${a[4].toFixed(2)}.`);
+        } else resp.append(el('span', 'na', 'not reached'));
+        row.append(resp);
+        items.append(row);
+      });
+      box.append(items);
+    } else if (blk.status === 'skipped') {
+      box.append(el('div', 'block-note', blk.componentId === 'curator-brief' ? 'The tutor introduces the objectives. No response is asked for.' : 'A parent card, placed after the lesson. Nothing here is the child\'s work.'));
+    } else {
+      box.append(el('div', 'block-note', blk.note || 'No playable payload was generated for this block.'));
+    }
+    b.append(box);
+  });
+}
+// ── rail: verdict, knowledge, production ────────────────────────────
+function drawRail(L, run, RL) {
+  const prof = D.profiles.find((p) => p.id === run.profile);
+  $('personaNote').textContent = `learning rate ${prof.learningRate} · forgetting ${prof.decay}/day · echo ${prof.echo} · slip ${prof.slip} · ${prof.hearsTutor ? 'hears the tutor' : 'cannot hear the tutor'} · reads: ${prof.reader}`;
+  const v = $('verdict'); v.replaceChildren();
+  v.append(el('div', 'eyebrow', `${prettyLesson(L).n} · ${run.profile} · seed ${run.seed}`)); v.append(chip(RL.decision));
+  const ul = el('ul', 'reasons'); RL.reasons.forEach((r) => ul.append(el('li', null, r.replace(/sound-production:/g, 'producing '))));
+  v.append(ul);
+  if (RL.attempts.length) v.append(el('div', 'probe-frac', `independent items ${RL.independent} · cold probes before ${frac(RL.probes, 1)} · after ${frac(RL.probes, 3)} · delayed ${frac(RL.probes, 5)}`));
+  const k = $('know'); k.replaceChildren();
+  $('retLabel').textContent = `${D.meta.retentionDays} days`;
+  L.coverage.forEach((row) => {
+    const p = RL.knowledge[row.key] ?? 0;
+    const step = [100, 200, 300, 400, 500, 600, 700][Math.min(6, Math.floor(p * 7))];
+    const t = el('div', 'kt'); t.style.background = `var(--seq${step})`;
+    const dark = step >= 400; t.style.color = dark ? '#ffffff' : 'var(--ink)';
+    if (getComputedStyle(document.documentElement).colorScheme === 'dark') t.style.color = step >= 500 ? '#0f1a28' : 'var(--ink)';
+    t.append(el('span', 'g', row.target), el('span', 'p', RL.attempts.length ? p.toFixed(2) : '—'));
+    const dots = el('div', 'dots');
+    const probes = RL.probes.filter((x) => L.probes.find((q) => q.id === x[0])?.target === row.target);
+    [1, 3, 5].forEach((i) => { const hits = probes.filter((x) => x[i] === 1).length; const n = probes.filter((x) => x[i] != null).length; const d = el('i'); if (!n) d.classList.add('na'); else if (hits / n >= .5) d.classList.add('hit'); dots.append(d); });
+    t.append(dots);
+    attachTip(t, RL.attempts.length ? `${row.target}: P(produce) ${p.toFixed(2)} after the lesson. Cold probes correct — before ${frac(probes, 1)}, after ${frac(probes, 3)}, ${D.meta.retentionDays} days later ${frac(probes, 5)}.` : `${row.target}: this learner never reached the lesson.`);
+    k.append(t);
+  });
+  const pr = $('prod'); pr.replaceChildren();
+  const P = RL.production;
+  if (!P) { pr.append(el('div', 'muted', 'Production replay not requested for this run.')); return; }
+  if (!P.submissions.length) {
+    pr.append(el('div', 'muted', RL.decision === 'BLOCKED' && !RL.attempts.length ? 'Nothing was submitted: the journey stopped at the earlier lesson, so production never saw this one.' : 'No block completions reached the mastery engine.'));
+    if (P.lifecycle) { const dl = el('dl', 'kv'); [['Gate (carried)', P.lifecycle.gate], ['θ at gate entry', P.lifecycle.theta], ['Passes / fails', `${P.lifecycle.passes} / ${P.lifecycle.fails}`]].forEach(([a, b]) => { dl.append(el('dt', null, a), el('dd', null, String(b))); }); pr.append(dl); }
+    return;
+  }
+  const subs = el('div', 'subs');
+  P.submissions.forEach((s) => {
+    const row = el('div', 'sub'); const left = el('div'); left.innerHTML = `<code>${s[0]}</code> · ${s[5]} · score <b class="num">${s[1]}</b>/10`; row.append(left);
+    const bar = el('div', 'bar'); if (s[3]) { const i = el('span', 'ind'); i.style.flex = s[3]; bar.append(i); } if (s[4]) { const e = el('span', 'ech'); e.style.flex = s[4]; bar.append(e); }
+    attachTip(bar, `${s[2]} parts scored: ${s[3]} independent, ${s[4]} echoed`); row.append(bar); subs.append(row);
+  });
+  pr.append(subs);
+  const lc = P.lifecycle; const dl = el('dl', 'kv');
+  const kv = [['Gate after this lesson', lc ? `gate ${lc.gate} · ${lc.passes} pass / ${lc.fails} fail` : '—'], ['θ at gate entry', lc?.theta != null ? `${lc.theta} (σ ${lc.sigma}) vs threshold ${lc.threshold}` : '—'], ['Retention state', lc ? `${lc.retention} · stability ${lc.stability}` : '—'], ['Roll-up parity', run.parity == null ? '—' : run.parity ? 'matches' : 'MISMATCH']];
+  kv.forEach(([a, b]) => { dl.append(el('dt', null, a), el('dd', null, b)); }); pr.append(dl);
+  if (P.next) { const n = el('div'); n.innerHTML = `<div class="eyebrow" style="margin-bottom:4px">Selector's next target</div><div>${P.next.sameSubskill ? 'This same subskill' : 'Another subskill'} · <b>${P.next.kind || P.next.verb}</b>${P.next.pCorrect != null ? ` · P(correct) <b class="num">${P.next.pCorrect}</b>` : ''}</div><div class="muted" style="font-size:12px;margin-top:2px">${P.next.reason || ''}</div>`; pr.append(n); }
+  const echoes = P.submissions.reduce((n, s) => n + s[4], 0), indep = P.submissions.reduce((n, s) => n + s[3], 0);
+  const c = el('div', 'contrast' + (RL.decision === 'ADVANCE' ? ' ok' : ''));
+  c.textContent = RL.decision === 'ADVANCE'
+    ? `Production and the evidence contract agree: this learner earned the gate.`
+    : `Production scored ${P.submissions.map((s) => s[1]).join(' and ')} out of 10 on ${echoes} echoed parts and ${indep} independent ones${P.unsupported ? ', and the selector now proposes confirming the gate' : ''}. The evidence contract says ${DEC[RL.decision][1].toLowerCase()}: ${RL.independent} independent attempts, ${frac(RL.probes, 3)} cold probes after, ${frac(RL.probes, 5)} ${D.meta.retentionDays} days later.`;
+  pr.append(c);
+}
+// ── selects + render ────────────────────────────────────────────────
+function syncSelects() {
+  const ps = $('profile'), ss = $('seed');
+  if (!ps.options.length) { D.profiles.forEach((p) => { const o = el('option', null, p.id); o.value = p.id; ps.append(o); }); D.meta.seeds.forEach((s) => { const o = el('option', null, String(s)); o.value = s; ss.append(o); }); }
+  ps.value = state.profile; ss.value = String(state.seed);
+}
+$('profile').addEventListener('change', (e) => { state.profile = e.target.value; render(); });
+$('seed').addEventListener('change', (e) => { state.seed = Number(e.target.value); render(); });
+function render() {
+  const L = D.lessons[state.lesson]; const run = currentRun(); const RL = run.lessons[state.lesson];
+  drawMatrix(); drawTabs(); drawCoverage(L); drawBoard(L, run, RL); drawRail(L, run, RL);
+}
+{
+  const f = $('foot');
+  f.append(el('p', null, `Source: ${D.meta.runFile} with its packages (${D.lessons.map((l) => l.packageId).join('; ')}). Curriculum: ${D.meta.curriculum}.`));
+  f.append(el('p', null, `Producible-sound gate used for "no surface": ${D.meta.producible.join(' ')} — the shared continuant + short-vowel list in diLetterSoundsScript and letterSoundLinkScript. ${D.meta.productionScope || ''}`));
+}
+syncSelects(); render();
+</script>

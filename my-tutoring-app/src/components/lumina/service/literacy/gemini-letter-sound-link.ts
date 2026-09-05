@@ -13,6 +13,7 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
+import { asksIndependentProduction, lettersNamedIn, resolveObjectiveLetterGroup } from './letterGroups';
 import {
   canProduceSound,
   keywordFor,
@@ -502,7 +503,16 @@ export const generateLetterSoundLink = async (
   // Normalized upstream in resolveGenerationContext (never re-parsed here).
   // Support tier NEVER enters the prompt — it is stamped in code post-parse so
   // it cannot steer which letters/sounds/keywords Gemini picks.
-  const supportTier = ctx.supportTier;
+  // The OBJECTIVE outranks the manifest's tier on one axis: "assess without
+  // first saying its sound" / "independently produce" means the model line is
+  // withdrawn (hard), whatever the student-property tier says. The manifest
+  // passed the objective; the generator reads it (2026-09-05 journey ruling).
+  const objectiveText = [ctx.objective?.text, intent, topic].filter(Boolean).join('\n');
+  const coldAsk = asksIndependentProduction(objectiveText);
+  const supportTier = coldAsk ? 'hard' : ctx.supportTier;
+  if (coldAsk && ctx.supportTier !== 'hard') {
+    console.log(`[letter-sound-link] objective asks for independent production — support tier ${ctx.supportTier ?? 'unset'} → hard`);
+  }
 
   // -------------------------------------------------------------------------
   // Eval mode resolution
@@ -523,9 +533,11 @@ export const generateLetterSoundLink = async (
   // -------------------------------------------------------------------------
   // Letter group setup
   // -------------------------------------------------------------------------
-  const letterGroup = (config?.letterGroup && config.letterGroup >= 1 && config.letterGroup <= 4)
-    ? config.letterGroup
-    : 1;
+  // The manifest never stamps `letterGroup`; the objective names the group
+  // ("Letter-Sound Group 2: c, k, e, h, r, m, d"), so the generator reads it.
+  const groupResolution = resolveObjectiveLetterGroup(config?.letterGroup, [ctx.objective?.text, intent, topic]);
+  const letterGroup = groupResolution.group;
+  console.log(`[letter-sound-link] letter group ${letterGroup} (${groupResolution.source})`);
 
   const cumulativeLetters = LETTER_GROUPS[letterGroup];
 
@@ -761,6 +773,23 @@ LETTER GROUP DATA:
       });
 
       result.challenges = kept;
+
+      // Objective letters NO mode in this session can ask for (stops under a
+      // pinned see-hear). Reported in the data, never silently dropped: the
+      // lesson bench / journey reads it as "no surface" from the generator's
+      // own mouth rather than from a copied list.
+      const sessionModes = new Set<LetterSoundMode>(kept.map((ch) => ch.mode as LetterSoundMode));
+      if (sessionModes.size === 0 && pinnedMode) sessionModes.add(pinnedMode);
+      const unaskableLetters = lettersNamedIn(objectiveText)
+        .filter((l) => cumulativeLetters.includes(l))
+        .filter((l) => !Array.from(sessionModes).some((m) => MODE_TARGETABLE[m]?.(l)));
+      if (unaskableLetters.length > 0) {
+        result.unaskableLetters = unaskableLetters;
+        console.warn(
+          `[letter-sound-link] objective names ${unaskableLetters.join(', ')} but no mode in this session `
+          + `(${Array.from(sessionModes).join('/')}) can ask a child for them — reported as unaskableLetters`,
+        );
+      }
 
       if (retargeted.length > 0) {
         console.log(

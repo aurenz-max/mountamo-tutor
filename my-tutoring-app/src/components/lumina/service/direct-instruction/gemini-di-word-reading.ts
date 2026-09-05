@@ -410,7 +410,8 @@ export const generateDiWordReading = async (
   const remediationFocus = config?.remediationFocus;
   const count = Math.min(
     MAX_INSTANCE_COUNT,
-    Math.max(3, config?.challengeCount ?? DEFAULT_INSTANCE_COUNT),
+    // The manifest stamps `count`; `challengeCount` is the tester's name for it.
+    Math.max(3, config?.challengeCount ?? (Number(config?.count) || DEFAULT_INSTANCE_COUNT)),
   );
 
   // The objective's phonics scope, resolved from ALL the text we have and

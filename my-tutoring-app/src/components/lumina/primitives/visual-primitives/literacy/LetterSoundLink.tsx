@@ -117,6 +117,10 @@ export interface LetterSoundLinkData {
   supportTier?: LetterSoundTier;
   /** Attempts before an item is closed. Absent ⇒ legacy 3 (⇒ 2 corrections). */
   maxAttempts?: number;
+  /** Letters the OBJECTIVE names that no mode in this session can ask a child
+   *  for (stop consonants under see-hear). The generator reports the residual
+   *  instead of dropping it silently; the bench reads it as "no surface". */
+  unaskableLetters?: string[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;

@@ -82,3 +82,53 @@ describe('di-letter-sounds L3 support tier (config.difficulty)', () => {
     expect(data.challenges.every((c) => !('supportTier' in c))).toBe(true);
   });
 });
+
+// ── The objective is the scope contract (2026-09-05) ──────────────────────
+// A lesson-journey run found a Group 1 objective ("s, a, t, i, p, n") drilling
+// s, n, f, r: the easy tier evicted a and i, the count came from a default, and
+// the backfill left the set. The manifest passed the objective; the generator
+// now reads it.
+const GROUP_1 = `Letter-Sound Group 1: s, a, t, i, p, n
+
+**Full Practice Set (Cumulative):**
+s, a, t, i, p, n
+
+**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme. For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not "tuh").`;
+const GROUP_2 = `Letter-Sound Group 2: c, k, e, h, r, m, d
+
+**Full Practice Set (Cumulative):**
+s, a, t, i, p, n, c, k, e, h, r, m, d`;
+
+describe('di-letter-sounds reads the objective it was handed', () => {
+  it('Group 1 at easy drills the set\'s menu letters only and reports the stops', async () => {
+    const data = await generateDiLetterSounds('Phonics 1', 'kindergarten', {
+      intent: 'Letter-Sound Group 1', objectiveText: GROUP_1, targetEvalMode: 'letter_sound', difficulty: 'easy', count: 6,
+    });
+    const letters = data.challenges.map((c) => c.letter);
+    expect(letters.sort()).toEqual(['a', 'i', 'n', 's']);
+    expect(data.unaskableLetters).toEqual(['t', 'p']);
+    expect(data.challenges.every((c) => c.supportTier === 'easy')).toBe(true);
+  });
+  it('Group 2 at hard never leaves the cumulative set for a confusable pair', async () => {
+    const data = await generateDiLetterSounds('Phonics 2', 'kindergarten', {
+      intent: 'Letter-Sound Group 2', objectiveText: GROUP_2, targetEvalMode: 'letter_sound', difficulty: 'hard', count: 6,
+    });
+    const letters = data.challenges.map((c) => c.letter);
+    expect(letters).toHaveLength(6);
+    expect(letters.every((l) => ['s', 'a', 'i', 'n', 'e', 'r', 'm'].includes(l))).toBe(true);
+    expect(letters).not.toContain('v');
+    expect(letters).not.toContain('f');
+  });
+  it('an "assess without first saying its sound" objective withdraws the model whatever the manifest tier says', async () => {
+    const data = await generateDiLetterSounds('Phonics 1', 'kindergarten', {
+      intent: 'assess', targetEvalMode: 'letter_sound', difficulty: 'medium', count: 4,
+      objectiveText: 'Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.',
+    });
+    expect(data.challenges.every((c) => c.supportTier === 'hard')).toBe(true);
+  });
+  it('honors the manifest\'s `count` when no set is named', async () => {
+    const data = await generateDiLetterSounds('letter sounds', 'kindergarten', { intent: 'letter sounds', targetEvalMode: 'letter_sound', count: 6 });
+    expect(data.challenges).toHaveLength(6);
+    expect(data.unaskableLetters).toBeUndefined();
+  });
+});

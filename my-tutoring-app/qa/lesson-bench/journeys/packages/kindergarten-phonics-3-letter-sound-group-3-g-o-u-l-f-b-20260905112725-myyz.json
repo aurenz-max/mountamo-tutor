@@ -1,0 +1,1234 @@
+{
+  "benchVersion": 1,
+  "id": "kindergarten-phonics-3-letter-sound-group-3-g-o-u-l-f-b-20260905112725-myyz",
+  "subskill": null,
+  "provenance": {
+    "generatedAt": "2026-09-05T11:27:25.480Z",
+    "source": "topic-trace",
+    "topic": "Phonics 3: Letter-Sound Group 3: g, o, u, l, f, b",
+    "gradeLevel": "Kindergarten",
+    "gitSha": null,
+    "promptHash": null,
+    "generationRequest": {
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+          "verb": "identify",
+          "icon": "ear",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+          "grade": "K"
+        },
+        {
+          "id": "obj2",
+          "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+          "verb": "apply",
+          "icon": "voice",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+          "grade": "K"
+        }
+      ],
+      "curatorBrief": {
+        "primitive": "intro_briefing",
+        "topic": "Phonics 3: Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+        "subject": "Language Arts",
+        "gradeLevel": "Kindergarten",
+        "estimatedTime": "15 min",
+        "hook": {
+          "content": "Let us practice our letter sounds."
+        },
+        "bigIdea": {},
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+            "verb": "identify",
+            "icon": "ear",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "grade": "K"
+          },
+          {
+            "id": "obj2",
+            "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+            "verb": "apply",
+            "icon": "voice",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "grade": "K"
+          }
+        ],
+        "prerequisites": {},
+        "roadmap": [],
+        "connections": {},
+        "mindset": {}
+      },
+      "topic": "Phonics 3: Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+      "gradeLevel": "kindergarten",
+      "package": true
+    }
+  },
+  "manifest": {
+    "topic": "Phonics 3: Letter-Sound Group 3: g, o, u, l, f, b",
+    "gradeLevel": "Kindergarten",
+    "subject": "LANGUAGE_ARTS",
+    "themeColor": "#0ea5e9",
+    "curatorBrief": {
+      "instanceId": "brief-letter-group-3",
+      "title": "Welcome to Letter-Sound Group 3!",
+      "intent": "Welcome Kindergarten learners to new letter sounds /g/, /ŏ/, /ŭ/, /l/, /f/, and /b/, while weaving in cumulative review of our previously learned 13 sounds (s, a, t, i, p, n, c, k, e, h, r, m, d) to build a robust 19-sound foundation."
+    },
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Introduce and identify Letter-Sound Group 3: g, o, u, l, f, b while cumulatively reviewing the 13 prior sounds across the 19-letter set.",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "foundation-explorer",
+            "instanceId": "obj1-foundation-explorer",
+            "title": "Meet the New Letter Sounds",
+            "intent": "Introduce the 6 new letter sounds (/g/ as in gate, /ŏ/ as in octopus, /ŭ/ as in umbrella, /l/ as in lion, /f/ as in fan, /b/ as in bat) with clear visual anchors, child-friendly pictures, and audio cues.",
+            "config": {
+              "difficulty": "easy"
+            }
+          },
+          {
+            "componentId": "letter-spotter",
+            "instanceId": "obj1-letter-spotter",
+            "title": "Find the Letters!",
+            "intent": "Engage students in letter recognition drills discriminating new Group 3 letters (g, o, u, l, f, b) alongside the cumulative pool of 13 previously mastered letters.",
+            "config": {
+              "count": 6,
+              "difficulty": "easy",
+              "targetEvalMode": "find_it"
+            }
+          },
+          {
+            "componentId": "letter-sound-link",
+            "instanceId": "obj1-letter-sound-link",
+            "title": "Sound and Letter Connection",
+            "intent": "Practice phoneme-to-grapheme matching and initial word sound identification focusing on Group 3 letters (g, o, u, l, f, b) and cumulative review items from groups 1 and 2.",
+            "config": {
+              "count": 6,
+              "difficulty": "medium",
+              "targetEvalMode": "hear_see"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj2",
+        "objectiveText": "Independently produce the most common sound for each letter in this cumulative set (s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b) when shown its grapheme without hearing the sound first.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "di-letter-sounds",
+            "instanceId": "obj2-di-letter-sounds",
+            "title": "Say the Continuous Sounds Aloud",
+            "intent": "Direct instruction voice practice where students see a letter grapheme and speak its continuous phoneme out loud into the microphone, targeting /l/, /f/, /ŏ/, /ŭ/ alongside cumulative continuous sounds /s/, /m/, /n/, /r/.",
+            "config": {
+              "count": 6,
+              "difficulty": "easy",
+              "targetEvalMode": "letter_sound_review"
+            }
+          },
+          {
+            "componentId": "phonics-blender",
+            "instanceId": "obj2-phonics-blender",
+            "title": "Blend Sounds to Build Words",
+            "intent": "Apply cumulative letter-sound knowledge by sounding out and blending simple CVC words built strictly from the 19 cumulative letters (such as 'bug', 'fog', 'leg', 'sun', 'bat').",
+            "config": {
+              "count": 6,
+              "difficulty": "medium",
+              "targetEvalMode": "cvc"
+            }
+          },
+          {
+            "componentId": "fast-fact",
+            "instanceId": "obj2-fast-fact",
+            "title": "Letter-Sound Automaticity Sprint",
+            "intent": "Provide untimed fluency challenges prompting students to rapidly identify the correct sound or letter match from the full 19-letter cumulative set.",
+            "config": {
+              "count": 8,
+              "difficulty": "medium",
+              "targetEvalMode": "recognize"
+            }
+          }
+        ]
+      }
+    ],
+    "finalAssessment": {
+      "componentId": "knowledge-check",
+      "instanceId": "final-knowledge-check",
+      "title": "Cumulative Letter-Sound Check",
+      "intent": "Assess student mastery in identifying graphemes and matching phonemes across all 19 cumulative letters (s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b).",
+      "config": {
+        "count": 6,
+        "targetEvalMode": "mixed"
+      }
+    },
+    "layout": [
+      {
+        "componentId": "curator-brief",
+        "instanceId": "brief-letter-group-3",
+        "title": "Welcome to Letter-Sound Group 3!",
+        "intent": "Welcome Kindergarten learners to new letter sounds /g/, /ŏ/, /ŭ/, /l/, /f/, and /b/, while weaving in cumulative review of our previously learned 13 sounds (s, a, t, i, p, n, c, k, e, h, r, m, d) to build a robust 19-sound foundation.",
+        "objectiveIds": [
+          "obj1",
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "foundation-explorer",
+        "instanceId": "obj1-foundation-explorer",
+        "title": "Meet the New Letter Sounds",
+        "intent": "Introduce the 6 new letter sounds (/g/ as in gate, /ŏ/ as in octopus, /ŭ/ as in umbrella, /l/ as in lion, /f/ as in fan, /b/ as in bat) with clear visual anchors, child-friendly pictures, and audio cues.",
+        "config": {
+          "difficulty": "easy",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Introduce the 6 new letter sounds (/g/ as in gate, /ŏ/ as in octopus, /ŭ/ as in umbrella, /l/ as in lion, /f/ as in fan, /b/ as in bat) with clear visual anchors, child-friendly pictures, and audio cues."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "letter-spotter",
+        "instanceId": "obj1-letter-spotter",
+        "title": "Find the Letters!",
+        "intent": "Engage students in letter recognition drills discriminating new Group 3 letters (g, o, u, l, f, b) alongside the cumulative pool of 13 previously mastered letters.",
+        "config": {
+          "count": 6,
+          "difficulty": "easy",
+          "targetEvalMode": "find_it",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Engage students in letter recognition drills discriminating new Group 3 letters (g, o, u, l, f, b) alongside the cumulative pool of 13 previously mastered letters."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "letter-sound-link",
+        "instanceId": "obj1-letter-sound-link",
+        "title": "Sound and Letter Connection",
+        "intent": "Practice phoneme-to-grapheme matching and initial word sound identification focusing on Group 3 letters (g, o, u, l, f, b) and cumulative review items from groups 1 and 2.",
+        "config": {
+          "count": 6,
+          "difficulty": "medium",
+          "targetEvalMode": "hear_see",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Practice phoneme-to-grapheme matching and initial word sound identification focusing on Group 3 letters (g, o, u, l, f, b) and cumulative review items from groups 1 and 2."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "di-letter-sounds",
+        "instanceId": "obj2-di-letter-sounds",
+        "title": "Say the Continuous Sounds Aloud",
+        "intent": "Direct instruction voice practice where students see a letter grapheme and speak its continuous phoneme out loud into the microphone, targeting /l/, /f/, /ŏ/, /ŭ/ alongside cumulative continuous sounds /s/, /m/, /n/, /r/.",
+        "config": {
+          "count": 6,
+          "difficulty": "easy",
+          "targetEvalMode": "letter_sound_review",
+          "objectiveId": "obj2",
+          "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+          "objectiveVerb": "apply",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Direct instruction voice practice where students see a letter grapheme and speak its continuous phoneme out loud into the microphone, targeting /l/, /f/, /ŏ/, /ŭ/ alongside cumulative continuous sounds /s/, /m/, /n/, /r/."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "phonics-blender",
+        "instanceId": "obj2-phonics-blender",
+        "title": "Blend Sounds to Build Words",
+        "intent": "Apply cumulative letter-sound knowledge by sounding out and blending simple CVC words built strictly from the 19 cumulative letters (such as 'bug', 'fog', 'leg', 'sun', 'bat').",
+        "config": {
+          "count": 6,
+          "difficulty": "medium",
+          "targetEvalMode": "cvc",
+          "objectiveId": "obj2",
+          "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+          "objectiveVerb": "apply",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Apply cumulative letter-sound knowledge by sounding out and blending simple CVC words built strictly from the 19 cumulative letters (such as 'bug', 'fog', 'leg', 'sun', 'bat')."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "fast-fact",
+        "instanceId": "obj2-fast-fact",
+        "title": "Letter-Sound Automaticity Sprint",
+        "intent": "Provide untimed fluency challenges prompting students to rapidly identify the correct sound or letter match from the full 19-letter cumulative set.",
+        "config": {
+          "count": 8,
+          "difficulty": "medium",
+          "targetEvalMode": "recognize",
+          "objectiveId": "obj2",
+          "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+          "objectiveVerb": "apply",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Provide untimed fluency challenges prompting students to rapidly identify the correct sound or letter match from the full 19-letter cumulative set."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "final-knowledge-check",
+        "title": "Cumulative Letter-Sound Check",
+        "intent": "Assess student mastery in identifying graphemes and matching phonemes across all 19 cumulative letters (s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b).",
+        "config": {
+          "count": 6,
+          "targetEvalMode": "mixed",
+          "objectiveGrade": "K",
+          "lessonObjectives": [
+            {
+              "id": "obj1",
+              "text": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "grade": "K"
+            },
+            {
+              "id": "obj2",
+              "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "grade": "K"
+            }
+          ]
+        },
+        "objectiveIds": [
+          "obj1",
+          "obj2"
+        ]
+      }
+    ]
+  },
+  "curatorBrief": {
+    "primitive": "intro_briefing",
+    "topic": "Phonics 3: Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+    "subject": "Language Arts",
+    "gradeLevel": "Kindergarten",
+    "estimatedTime": "15 min",
+    "hook": {
+      "content": "Let us practice our letter sounds."
+    },
+    "bigIdea": {},
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+        "verb": "identify",
+        "icon": "ear",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+        "grade": "K"
+      },
+      {
+        "id": "obj2",
+        "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+        "verb": "apply",
+        "icon": "voice",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+        "grade": "K"
+      }
+    ],
+    "prerequisites": {},
+    "roadmap": [],
+    "connections": {},
+    "mindset": {}
+  },
+  "components": [
+    {
+      "instanceId": "obj1-foundation-explorer",
+      "componentId": "foundation-explorer",
+      "data": {
+        "objectiveId": "obj1",
+        "objectiveText": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+        "objectiveVerb": "identify",
+        "diagram": {
+          "description": "A clear phonics sound chart displaying letters G, O, and B paired with child-friendly picture keys.",
+          "imagePrompt": "Clean educational schematic phonics diagram on a warm light background: three distinct colored panels displayed side-by-side. Left panel shows blue letter 'G g' with a simple line-art goat labeled 'goat'. Center panel shows amber letter 'O o' with a cute round octopus labeled 'octopus'. Right panel shows green letter 'B b' with a bouncing red ball labeled 'ball'. Crisp vector outlines, bold friendly lettering, high-contrast early childhood layout.",
+          "style": "schematic"
+        },
+        "concepts": [
+          {
+            "id": "letter-g",
+            "name": "Letter G",
+            "briefDefinition": "Letter G makes the gulping sound /g/ like in goat.",
+            "diagramHighlight": "The blue letter G next to the friendly goat",
+            "inContext": {
+              "scenario": "A fluffy little goat is chewing green grass outside.",
+              "whereToFind": "Goat starts with the /g/ sound for letter G."
+            },
+            "selfCheck": {
+              "prompt": "Which animal starts with the /g/ sound?",
+              "options": [
+                "A smiling goat",
+                "A swimming octopus",
+                "A red ball"
+              ],
+              "correctIndex": 0,
+              "hint": "Listen for the sound at the beginning of goat, /g/.",
+              "optionEmojis": [
+                "🐐",
+                "🐙",
+                "⚽"
+              ]
+            },
+            "color": "#3B82F6"
+          },
+          {
+            "id": "letter-o",
+            "name": "Letter O",
+            "briefDefinition": "Letter O makes the open sound /ŏ/ like in octopus.",
+            "diagramHighlight": "The round amber letter O next to the octopus",
+            "inContext": {
+              "scenario": "An octopus wiggles eight arms deep under ocean water.",
+              "whereToFind": "Octopus starts with the /ŏ/ sound for letter O."
+            },
+            "selfCheck": {
+              "prompt": "Which thing starts with the /ŏ/ sound?",
+              "options": [
+                "A big goat",
+                "A cute octopus",
+                "A bouncing ball"
+              ],
+              "correctIndex": 1,
+              "hint": "Open your mouth wide like an O to say /ŏ/.",
+              "optionEmojis": [
+                "🐐",
+                "🐙",
+                "⚽"
+              ]
+            },
+            "color": "#F59E0B"
+          },
+          {
+            "id": "letter-b",
+            "name": "Letter B",
+            "briefDefinition": "Letter B makes the bouncing sound /b/ like in bat.",
+            "diagramHighlight": "The green letter B next to the bouncing ball",
+            "inContext": {
+              "scenario": "You kick a big ball across the soft grass.",
+              "whereToFind": "Ball starts with the /b/ sound for letter B."
+            },
+            "selfCheck": {
+              "prompt": "Which toy starts with the /b/ sound?",
+              "options": [
+                "A swimming octopus",
+                "A green goat",
+                "A bouncing ball"
+              ],
+              "correctIndex": 2,
+              "hint": "Press your lips together and pop out the /b/ sound.",
+              "optionEmojis": [
+                "🐙",
+                "🐐",
+                "⚽"
+              ]
+            },
+            "color": "#10B981"
+          }
+        ],
+        "themeColor": "#3B82F6",
+        "gradeLevel": "K"
+      }
+    },
+    {
+      "instanceId": "obj1-letter-spotter",
+      "componentId": "letter-spotter",
+      "data": {
+        "title": "Spot the Letters - Group 1",
+        "challenges": [
+          {
+            "id": "ch1",
+            "mode": "find-it",
+            "targetLetter": "s",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "T",
+              "P",
+              "P",
+              "T",
+              "I",
+              "I",
+              "A",
+              "N",
+              "S",
+              "T",
+              "A",
+              "A",
+              "I",
+              "N",
+              "N",
+              "P"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch2",
+            "mode": "find-it",
+            "targetLetter": "a",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "P",
+              "N",
+              "T",
+              "N",
+              "P",
+              "I",
+              "I",
+              "A",
+              "P",
+              "S",
+              "N",
+              "S",
+              "I",
+              "S",
+              "T",
+              "T"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch3",
+            "mode": "find-it",
+            "targetLetter": "t",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "N",
+              "P",
+              "I",
+              "N",
+              "S",
+              "A",
+              "A",
+              "P",
+              "S",
+              "P",
+              "A",
+              "I",
+              "S",
+              "T",
+              "N",
+              "I"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch4",
+            "mode": "find-it",
+            "targetLetter": "i",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "N",
+              "I",
+              "A",
+              "S",
+              "S",
+              "T",
+              "A",
+              "S",
+              "N",
+              "P",
+              "N",
+              "P",
+              "T",
+              "T",
+              "P",
+              "A"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch5",
+            "mode": "find-it",
+            "targetLetter": "p",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "I",
+              "S",
+              "S",
+              "S",
+              "N",
+              "T",
+              "I",
+              "T",
+              "A",
+              "T",
+              "I",
+              "N",
+              "A",
+              "N",
+              "A",
+              "P"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch6",
+            "mode": "find-it",
+            "targetLetter": "n",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "I",
+              "A",
+              "S",
+              "P",
+              "I",
+              "T",
+              "S",
+              "P",
+              "A",
+              "T",
+              "N",
+              "A",
+              "P",
+              "T",
+              "S",
+              "I"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          }
+        ],
+        "letterGroup": 1,
+        "cumulativeLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n"
+        ],
+        "newLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n"
+        ],
+        "supportTier": "easy"
+      }
+    },
+    {
+      "instanceId": "obj1-letter-sound-link",
+      "componentId": "letter-sound-link",
+      "data": {
+        "title": "Letter Sounds - Group 1!",
+        "letterGroup": 1,
+        "cumulativeLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n"
+        ],
+        "challenges": [
+          {
+            "id": "ch1",
+            "mode": "hear-see",
+            "targetLetter": "s",
+            "targetSound": "/s/",
+            "keywordWord": "sun",
+            "keywordImage": "sun",
+            "options": [
+              {
+                "letter": "t",
+                "isCorrect": false
+              },
+              {
+                "letter": "s",
+                "isCorrect": true
+              }
+            ],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Tap to hear the sound, then find the letter!",
+            "protocolHint": null,
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch2",
+            "mode": "hear-see",
+            "targetLetter": "a",
+            "targetSound": "/ă/",
+            "keywordWord": "apple",
+            "keywordImage": "apple",
+            "options": [
+              {
+                "letter": "a",
+                "isCorrect": true
+              },
+              {
+                "letter": "i",
+                "isCorrect": false
+              }
+            ],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Tap to hear the sound, then find the letter!",
+            "protocolHint": null,
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch3",
+            "mode": "hear-see",
+            "targetLetter": "t",
+            "targetSound": "/t/",
+            "keywordWord": "tent",
+            "keywordImage": "tent",
+            "options": [
+              {
+                "letter": "p",
+                "isCorrect": false
+              },
+              {
+                "letter": "t",
+                "isCorrect": true
+              }
+            ],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Tap to hear the sound, then find the letter!",
+            "protocolHint": null,
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch4",
+            "mode": "hear-see",
+            "targetLetter": "i",
+            "targetSound": "/ĭ/",
+            "keywordWord": "itch",
+            "keywordImage": "itch",
+            "options": [
+              {
+                "letter": "i",
+                "isCorrect": true
+              },
+              {
+                "letter": "n",
+                "isCorrect": false
+              }
+            ],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Tap to hear the sound, then find the letter!",
+            "protocolHint": null,
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch5",
+            "mode": "hear-see",
+            "targetLetter": "p",
+            "targetSound": "/p/",
+            "keywordWord": "pig",
+            "keywordImage": "pig",
+            "options": [
+              {
+                "letter": "n",
+                "isCorrect": false
+              },
+              {
+                "letter": "p",
+                "isCorrect": true
+              }
+            ],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Tap to hear the sound, then find the letter!",
+            "protocolHint": null,
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          }
+        ],
+        "gradeLevel": "K",
+        "supportTier": "medium",
+        "maxAttempts": 3
+      }
+    },
+    {
+      "instanceId": "obj2-di-letter-sounds",
+      "componentId": "di-letter-sounds",
+      "data": {
+        "title": "Super Sound Practice!",
+        "description": "Let us look at some letters together and say their sounds out loud!",
+        "challengeType": "letter_sound_review",
+        "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+        "challenges": [
+          {
+            "id": "dils-1-s",
+            "challengeType": "letter_sound_review",
+            "letter": "s",
+            "spoken": "sss",
+            "keyword": "sun",
+            "emoji": "☀️",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "s",
+              "ss",
+              "sss",
+              "ess",
+              "sh",
+              "shh",
+              "hiss"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "dils-2-m",
+            "challengeType": "letter_sound_review",
+            "letter": "m",
+            "spoken": "mmm",
+            "keyword": "moon",
+            "emoji": "🌙",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "m",
+              "mm",
+              "mmm",
+              "hm",
+              "hmm",
+              "mhm",
+              "um"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "dils-3-f",
+            "challengeType": "letter_sound_review",
+            "letter": "f",
+            "spoken": "fff",
+            "keyword": "fish",
+            "emoji": "🐟",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "f",
+              "ff",
+              "fff",
+              "ef",
+              "huff"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "dils-4-l",
+            "challengeType": "letter_sound_review",
+            "letter": "l",
+            "spoken": "lll",
+            "keyword": "leaf",
+            "emoji": "🍃",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "l",
+              "ll",
+              "lll",
+              "el",
+              "ull"
+            ],
+            "supportTier": "easy"
+          }
+        ],
+        "letters": "s, m, f, l"
+      }
+    },
+    {
+      "instanceId": "obj2-phonics-blender",
+      "componentId": "phonics-blender",
+      "data": {
+        "title": "Blend CVC Words with Group 3: g, o, u, l, f, b",
+        "gradeLevel": "K",
+        "patternType": "cvc",
+        "words": [
+          {
+            "id": "w1",
+            "targetWord": "bug",
+            "phonemes": [
+              {
+                "id": "w1_p1",
+                "sound": "/b/",
+                "letters": "b"
+              },
+              {
+                "id": "w1_p2",
+                "sound": "/ŭ/",
+                "letters": "u"
+              },
+              {
+                "id": "w1_p3",
+                "sound": "/g/",
+                "letters": "g"
+              }
+            ],
+            "emoji": "🐛",
+            "imageDescription": "a small crawling insect"
+          },
+          {
+            "id": "w2",
+            "targetWord": "fog",
+            "phonemes": [
+              {
+                "id": "w2_p1",
+                "sound": "/f/",
+                "letters": "f"
+              },
+              {
+                "id": "w2_p2",
+                "sound": "/ŏ/",
+                "letters": "o"
+              },
+              {
+                "id": "w2_p3",
+                "sound": "/g/",
+                "letters": "g"
+              }
+            ],
+            "emoji": "🌫️",
+            "imageDescription": "thick mist near the ground"
+          },
+          {
+            "id": "w3",
+            "targetWord": "leg",
+            "phonemes": [
+              {
+                "id": "w3_p1",
+                "sound": "/l/",
+                "letters": "l"
+              },
+              {
+                "id": "w3_p2",
+                "sound": "/ĕ/",
+                "letters": "e"
+              },
+              {
+                "id": "w3_p3",
+                "sound": "/g/",
+                "letters": "g"
+              }
+            ],
+            "emoji": "🦵",
+            "imageDescription": "a human leg"
+          },
+          {
+            "id": "w4",
+            "targetWord": "sun",
+            "phonemes": [
+              {
+                "id": "w4_p1",
+                "sound": "/s/",
+                "letters": "s"
+              },
+              {
+                "id": "w4_p2",
+                "sound": "/ŭ/",
+                "letters": "u"
+              },
+              {
+                "id": "w4_p3",
+                "sound": "/n/",
+                "letters": "n"
+              }
+            ],
+            "emoji": "☀️",
+            "imageDescription": "bright yellow sun shining"
+          },
+          {
+            "id": "w5",
+            "targetWord": "bat",
+            "phonemes": [
+              {
+                "id": "w5_p1",
+                "sound": "/b/",
+                "letters": "b"
+              },
+              {
+                "id": "w5_p2",
+                "sound": "/ă/",
+                "letters": "a"
+              },
+              {
+                "id": "w5_p3",
+                "sound": "/t/",
+                "letters": "t"
+              }
+            ],
+            "emoji": "🦇",
+            "imageDescription": "a flying nocturnal animal"
+          }
+        ],
+        "count": 6,
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "supportTier": "medium",
+        "showBlendPreview": "word",
+        "showSlotCount": true,
+        "showTileLetters": true,
+        "nameTargetPhonemes": true
+      }
+    },
+    {
+      "instanceId": "final-knowledge-check",
+      "componentId": "knowledge-check",
+      "data": {
+        "problems": [
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which word starts with the short o sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "goat",
+                "emoji": "🐐"
+              },
+              {
+                "id": "B",
+                "text": "octopus",
+                "emoji": "🐙"
+              },
+              {
+                "id": "C",
+                "text": "umbrella",
+                "emoji": "☂️"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Octopus starts with the letter o, which makes the short /ŏ/ sound. Goat begins with the /g/ sound, and umbrella begins with the /ŭ/ sound. Remembering that letter o makes the /ŏ/ sound helps us identify words like octopus.",
+            "teachingNote": "When teaching letter-sound group 3 (g, o, u, l, f, b), have students shape their mouths like the letter 'o' to produce the short /ŏ/ sound heard at the beginning of octopus.",
+            "successCriteria": [
+              "Identify the short vowel sound /ŏ/ at the beginning of a spoken word",
+              "Distinguish the /ŏ/ sound from other group 3 sounds like /g/ and /ŭ/"
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which animal starts with the /f/ sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Lion",
+                "emoji": "🦁"
+              },
+              {
+                "id": "B",
+                "text": "Fish",
+                "emoji": "🐟"
+              },
+              {
+                "id": "C",
+                "text": "Bear",
+                "emoji": "🐻"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Fish begins with the /f/ sound made by the letter f. Lion starts with the /l/ sound, and bear starts with the /b/ sound. Practicing the first sound in words helps children connect spoken sounds to letter symbols.",
+            "teachingNote": "Prompt learners to gently touch their top teeth to their lower lip to feel the breath flow as they make the /f/ sound in fish.",
+            "successCriteria": [
+              "Identify the initial /f/ sound in familiar spoken words",
+              "Distinguish the /f/ sound from other Group 3 consonant sounds like /l/ and /b/"
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which word starts with the /b/ sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Boat",
+                "emoji": "⛵"
+              },
+              {
+                "id": "B",
+                "text": "Sun",
+                "emoji": "☀️"
+              },
+              {
+                "id": "C",
+                "text": "Hat",
+                "emoji": "🧢"
+              }
+            ],
+            "correctOptionId": "A",
+            "rationale": "Boat begins with the /b/ sound, just like ball and bear. Sun begins with the /s/ sound, and hat begins with the /h/ sound. Identifying the very first sound you hear helps you connect speech to letters.",
+            "teachingNote": "Have children gently press their lips together to feel how the /b/ sound pops out when saying 'boat.'",
+            "successCriteria": [
+              "Identify the initial /b/ sound in a familiar spoken word."
+            ],
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which animal starts with the letter G sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "goat",
+                "emoji": "🐐"
+              },
+              {
+                "id": "B",
+                "text": "duck",
+                "emoji": "🦆"
+              },
+              {
+                "id": "C",
+                "text": "fish",
+                "emoji": "🐟"
+              }
+            ],
+            "correctOptionId": "A",
+            "rationale": "Goat starts with the letter G, making the 'guh' sound at the beginning. Duck starts with the /d/ sound, and fish starts with the /f/ sound. Listening for the first sound in a word helps us connect it to the right letter!",
+            "teachingNote": "Prompt learners to gently touch their throat to feel the vibration when making the hard /g/ sound in 'goat'.",
+            "successCriteria": [
+              "Identify the initial /g/ sound in a spoken word.",
+              "Distinguish the letter G sound from other consonant sounds."
+            ],
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which word starts with a new Group Three sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Sun",
+                "emoji": "☀️"
+              },
+              {
+                "id": "B",
+                "text": "Fish",
+                "emoji": "🐟"
+              },
+              {
+                "id": "C",
+                "text": "Turtle",
+                "emoji": "🐢"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Fish begins with the /f/ sound, which belongs to our new Group 3 sounds (g, o, u, l, f, b). Sun starts with /s/ and turtle starts with /t/, which are older sounds we learned in earlier groups. Recognizing our new /f/ sound helps us build words with our latest letters!",
+            "teachingNote": "Have children isolate and say the beginning sound of each word aloud (/s/, /f/, /t/). Guide them to recognize that /f/ is one of the new letter-sounds introduced in Group 3, while /s/ and /t/ are cumulative review sounds.",
+            "successCriteria": [
+              "Identify the initial letter-sound in familiar spoken words",
+              "Distinguish new Group 3 sounds from previously learned cumulative sounds"
+            ],
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "medium",
+            "gradeLevel": "kindergarten",
+            "question": "Which word does not start with a Group Three sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Lion",
+                "emoji": "🦁"
+              },
+              {
+                "id": "B",
+                "text": "Mouse",
+                "emoji": "🐭"
+              },
+              {
+                "id": "C",
+                "text": "Fish",
+                "emoji": "🐟"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Mouse starts with the sound /m/, which is from an earlier letter group. Lion starts with /l/ and fish starts with /f/, which are both new Group Three sounds. This means mouse does not start with a new sound.",
+            "teachingNote": "Pronounce each word clearly, emphasizing the beginning phonemes (/l/-ion, /m/-ouse, /f/-ish), to help students isolate the initial sounds and connect them to their respective letter groups.",
+            "successCriteria": [
+              "Differentiate new Group 3 letter sounds from previously learned sounds",
+              "Identify the beginning sound of a spoken word"
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          }
+        ],
+        "problemType": "orchestrated",
+        "topic": "Phonics 3: Letter-Sound Group 3: g, o, u, l, f, b",
+        "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+      }
+    }
+  ],
+  "scores": null,
+  "human": null
+}

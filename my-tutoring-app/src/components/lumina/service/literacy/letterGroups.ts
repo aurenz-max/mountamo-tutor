@@ -97,3 +97,73 @@ export const smallestGroupContaining = (letter: string): LetterGroup | null => {
   }
   return null;
 };
+
+// ============================================================================
+// Objective-text readers (2026-09-05). The manifest passes the objective
+// through unchanged; the GENERATOR reads it. Nothing here asks the curator to
+// remember a field — a lesson-journey run found letter-sound-link and
+// letter-spotter defaulting to Group 1 for a "Letter-Sound Group 2" objective
+// because the group was only ever read from `config.letterGroup`.
+// ============================================================================
+
+/**
+ * Letters an objective NAMES as a set: comma lists ("s, a, t, i, p, n"), a
+ * quoted letter ('a'), or the expansion of "Group N". Deliberately NOT a loose
+ * single-letter scan — the article "a" and "I" would poison it. Lowercase,
+ * deduped, in order of first mention.
+ */
+export const lettersNamedIn = (text: string): string[] => {
+  const t = text.toLowerCase();
+  const hits: Array<{ at: number; letters: string[] }> = [];
+  for (const m of Array.from(t.matchAll(/(?:^|[^a-z])([a-z](?:\s*,\s*(?:and\s+)?[a-z])+)(?![a-z])/g))) {
+    hits.push({ at: m.index ?? 0, letters: m[1].replace(/\band\b/g, '').split(',').map((l) => l.replace(/[^a-z]/g, '')) });
+  }
+  for (const m of Array.from(t.matchAll(/['"‘“]([a-z])['"’”]/g))) hits.push({ at: m.index ?? 0, letters: [m[1]] });
+  for (const m of Array.from(t.matchAll(/\bgroup\s*([1-4])\b/g))) hits.push({ at: m.index ?? 0, letters: [...LETTER_GROUPS[Number(m[1]) as LetterGroup]] });
+  const found: string[] = [];
+  for (const hit of hits.sort((a, b) => a.at - b.at)) {
+    for (const l of hit.letters) if (/^[a-z]$/.test(l) && !found.includes(l)) found.push(l);
+  }
+  return found;
+};
+
+/** The smallest cumulative group that contains every letter the text names. */
+export const letterGroupFromText = (text: string): LetterGroup | null => {
+  let group: LetterGroup | null = null;
+  for (const m of Array.from(text.toLowerCase().matchAll(/\bgroup\s*([1-4])\b/g))) {
+    const g = Number(m[1]) as LetterGroup;
+    if (!group || g > group) group = g;
+  }
+  for (const letter of lettersNamedIn(text)) {
+    const needed = smallestGroupContaining(letter);
+    if (needed && (!group || needed > group)) group = needed;
+  }
+  return group;
+};
+
+/**
+ * The group a generator should use: an explicit manifest value is honored,
+ * the objective/intent/topic text can only RAISE it (a cap below stated
+ * intent is a bug — `resolveCvcLetterGroup`'s rule), and the fallback is the
+ * legacy Group 1. `source` says which won, for the generator's log line.
+ */
+export const resolveObjectiveLetterGroup = (
+  configured: unknown,
+  texts: ReadonlyArray<string | undefined | null>,
+): { group: LetterGroup; source: 'config' | 'objective' | 'default' } => {
+  const explicit = normalizeLetterGroup(configured);
+  const fromText = letterGroupFromText(texts.filter(Boolean).join('\n'));
+  if (fromText && (!explicit || fromText > explicit)) return { group: fromText, source: 'objective' };
+  if (explicit) return { group: explicit, source: 'config' };
+  return { group: 1, source: 'default' };
+};
+
+/**
+ * Does the objective ask for a COLD attempt — production without the tutor
+ * saying the sound first? ("Independently produce…", "Assess without first
+ * saying its sound"). A generator that reads this withdraws its model line
+ * regardless of the manifest's support tier: the tier is a student property,
+ * the objective is the contract.
+ */
+export const asksIndependentProduction = (text: string | undefined | null): boolean =>
+  /\b(independently|unprompted|without\s+(?:first\s+)?(?:saying|modeling|modelling|telling|giving|hearing))\b/i.test(text ?? '');

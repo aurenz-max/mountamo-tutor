@@ -1,0 +1,1475 @@
+{
+  "version": 1,
+  "id": "phonics-starter",
+  "curriculumSource": "Published K Language Arts b6e9a89e-0677-42d8-9b24-cb7900b0f765; Letter-Sound Groups 1-3 in published subskill order. This campaign tests grapheme-to-sound production; it does not certify letter naming or word decoding.",
+  "lessons": [
+    {
+      "id": "phonics-1",
+      "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+      "gradeLevel": "kindergarten",
+      "requires": [],
+      "targets": [
+        {
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        }
+      ],
+      "allowedGraphemes": [
+        "s",
+        "a",
+        "t",
+        "i",
+        "p",
+        "n"
+      ],
+      "probes": [
+        {
+          "id": "s-0",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "s-1",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "s-2",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "a-0",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "a-1",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "a-2",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "t-0",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "t-1",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "t-2",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "i-0",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "i-1",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "i-2",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "p-0",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "p-1",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "p-2",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "n-0",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "id": "n-1",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "id": "n-2",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        }
+      ],
+      "objectiveScope": {
+        "obj1": {
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9"
+        },
+        "obj2": {
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9"
+        }
+      },
+      "packagePath": "packages/phonics-1.json",
+      "generationRequest": {
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+            "verb": "identify",
+            "icon": "ear",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "grade": "K"
+          },
+          {
+            "id": "obj2",
+            "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+            "verb": "apply",
+            "icon": "voice",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "grade": "K"
+          }
+        ],
+        "curatorBrief": {
+          "primitive": "intro_briefing",
+          "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+          "subject": "Language Arts",
+          "gradeLevel": "Kindergarten",
+          "estimatedTime": "15 min",
+          "hook": {
+            "content": "Let us practice our letter sounds."
+          },
+          "bigIdea": {},
+          "objectives": [
+            {
+              "id": "obj1",
+              "text": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+              "verb": "identify",
+              "icon": "ear",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+              "grade": "K"
+            },
+            {
+              "id": "obj2",
+              "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+              "verb": "apply",
+              "icon": "voice",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+              "grade": "K"
+            }
+          ],
+          "prerequisites": {},
+          "roadmap": [],
+          "connections": {},
+          "mindset": {}
+        }
+      }
+    },
+    {
+      "id": "phonics-2",
+      "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+      "gradeLevel": "kindergarten",
+      "requires": [
+        "phonics-1"
+      ],
+      "targets": [
+        {
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "c",
+          "graphemes": [
+            "c"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "k",
+          "graphemes": [
+            "k"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "e",
+          "graphemes": [
+            "e"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "h",
+          "graphemes": [
+            "h"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "r",
+          "graphemes": [
+            "r"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "m",
+          "graphemes": [
+            "m"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "d",
+          "graphemes": [
+            "d"
+          ]
+        }
+      ],
+      "allowedGraphemes": [
+        "s",
+        "a",
+        "t",
+        "i",
+        "p",
+        "n",
+        "c",
+        "k",
+        "e",
+        "h",
+        "r",
+        "m",
+        "d"
+      ],
+      "probes": [
+        {
+          "id": "s-0",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "s-1",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "s-2",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "a-0",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "a-1",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "a-2",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "t-0",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "t-1",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "t-2",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "i-0",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "i-1",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "i-2",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "p-0",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "p-1",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "p-2",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "n-0",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "id": "n-1",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "id": "n-2",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "id": "c-0",
+          "capability": "sound-production",
+          "target": "c",
+          "graphemes": [
+            "c"
+          ]
+        },
+        {
+          "id": "c-1",
+          "capability": "sound-production",
+          "target": "c",
+          "graphemes": [
+            "c"
+          ]
+        },
+        {
+          "id": "c-2",
+          "capability": "sound-production",
+          "target": "c",
+          "graphemes": [
+            "c"
+          ]
+        },
+        {
+          "id": "k-0",
+          "capability": "sound-production",
+          "target": "k",
+          "graphemes": [
+            "k"
+          ]
+        },
+        {
+          "id": "k-1",
+          "capability": "sound-production",
+          "target": "k",
+          "graphemes": [
+            "k"
+          ]
+        },
+        {
+          "id": "k-2",
+          "capability": "sound-production",
+          "target": "k",
+          "graphemes": [
+            "k"
+          ]
+        },
+        {
+          "id": "e-0",
+          "capability": "sound-production",
+          "target": "e",
+          "graphemes": [
+            "e"
+          ]
+        },
+        {
+          "id": "e-1",
+          "capability": "sound-production",
+          "target": "e",
+          "graphemes": [
+            "e"
+          ]
+        },
+        {
+          "id": "e-2",
+          "capability": "sound-production",
+          "target": "e",
+          "graphemes": [
+            "e"
+          ]
+        },
+        {
+          "id": "h-0",
+          "capability": "sound-production",
+          "target": "h",
+          "graphemes": [
+            "h"
+          ]
+        },
+        {
+          "id": "h-1",
+          "capability": "sound-production",
+          "target": "h",
+          "graphemes": [
+            "h"
+          ]
+        },
+        {
+          "id": "h-2",
+          "capability": "sound-production",
+          "target": "h",
+          "graphemes": [
+            "h"
+          ]
+        },
+        {
+          "id": "r-0",
+          "capability": "sound-production",
+          "target": "r",
+          "graphemes": [
+            "r"
+          ]
+        },
+        {
+          "id": "r-1",
+          "capability": "sound-production",
+          "target": "r",
+          "graphemes": [
+            "r"
+          ]
+        },
+        {
+          "id": "r-2",
+          "capability": "sound-production",
+          "target": "r",
+          "graphemes": [
+            "r"
+          ]
+        },
+        {
+          "id": "m-0",
+          "capability": "sound-production",
+          "target": "m",
+          "graphemes": [
+            "m"
+          ]
+        },
+        {
+          "id": "m-1",
+          "capability": "sound-production",
+          "target": "m",
+          "graphemes": [
+            "m"
+          ]
+        },
+        {
+          "id": "m-2",
+          "capability": "sound-production",
+          "target": "m",
+          "graphemes": [
+            "m"
+          ]
+        },
+        {
+          "id": "d-0",
+          "capability": "sound-production",
+          "target": "d",
+          "graphemes": [
+            "d"
+          ]
+        },
+        {
+          "id": "d-1",
+          "capability": "sound-production",
+          "target": "d",
+          "graphemes": [
+            "d"
+          ]
+        },
+        {
+          "id": "d-2",
+          "capability": "sound-production",
+          "target": "d",
+          "graphemes": [
+            "d"
+          ]
+        }
+      ],
+      "objectiveScope": {
+        "obj1": {
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil"
+        },
+        "obj2": {
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil"
+        }
+      },
+      "packagePath": "packages/phonics-2.json",
+      "generationRequest": {
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+            "verb": "identify",
+            "icon": "ear",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "grade": "K"
+          },
+          {
+            "id": "obj2",
+            "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+            "verb": "apply",
+            "icon": "voice",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "grade": "K"
+          }
+        ],
+        "curatorBrief": {
+          "primitive": "intro_briefing",
+          "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+          "subject": "Language Arts",
+          "gradeLevel": "Kindergarten",
+          "estimatedTime": "15 min",
+          "hook": {
+            "content": "Let us practice our letter sounds."
+          },
+          "bigIdea": {},
+          "objectives": [
+            {
+              "id": "obj1",
+              "text": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+              "verb": "identify",
+              "icon": "ear",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+              "grade": "K"
+            },
+            {
+              "id": "obj2",
+              "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+              "verb": "apply",
+              "icon": "voice",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+              "grade": "K"
+            }
+          ],
+          "prerequisites": {},
+          "roadmap": [],
+          "connections": {},
+          "mindset": {}
+        }
+      }
+    },
+    {
+      "id": "phonics-3",
+      "topic": "Phonics 3: Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+      "gradeLevel": "kindergarten",
+      "requires": [
+        "phonics-2"
+      ],
+      "targets": [
+        {
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "c",
+          "graphemes": [
+            "c"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "k",
+          "graphemes": [
+            "k"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "e",
+          "graphemes": [
+            "e"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "h",
+          "graphemes": [
+            "h"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "r",
+          "graphemes": [
+            "r"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "m",
+          "graphemes": [
+            "m"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "d",
+          "graphemes": [
+            "d"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "g",
+          "graphemes": [
+            "g"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "o",
+          "graphemes": [
+            "o"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "u",
+          "graphemes": [
+            "u"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "l",
+          "graphemes": [
+            "l"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "f",
+          "graphemes": [
+            "f"
+          ]
+        },
+        {
+          "capability": "sound-production",
+          "target": "b",
+          "graphemes": [
+            "b"
+          ]
+        }
+      ],
+      "allowedGraphemes": [
+        "s",
+        "a",
+        "t",
+        "i",
+        "p",
+        "n",
+        "c",
+        "k",
+        "e",
+        "h",
+        "r",
+        "m",
+        "d",
+        "g",
+        "o",
+        "u",
+        "l",
+        "f",
+        "b"
+      ],
+      "probes": [
+        {
+          "id": "s-0",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "s-1",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "s-2",
+          "capability": "sound-production",
+          "target": "s",
+          "graphemes": [
+            "s"
+          ]
+        },
+        {
+          "id": "a-0",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "a-1",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "a-2",
+          "capability": "sound-production",
+          "target": "a",
+          "graphemes": [
+            "a"
+          ]
+        },
+        {
+          "id": "t-0",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "t-1",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "t-2",
+          "capability": "sound-production",
+          "target": "t",
+          "graphemes": [
+            "t"
+          ]
+        },
+        {
+          "id": "i-0",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "i-1",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "i-2",
+          "capability": "sound-production",
+          "target": "i",
+          "graphemes": [
+            "i"
+          ]
+        },
+        {
+          "id": "p-0",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "p-1",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "p-2",
+          "capability": "sound-production",
+          "target": "p",
+          "graphemes": [
+            "p"
+          ]
+        },
+        {
+          "id": "n-0",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "id": "n-1",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "id": "n-2",
+          "capability": "sound-production",
+          "target": "n",
+          "graphemes": [
+            "n"
+          ]
+        },
+        {
+          "id": "c-0",
+          "capability": "sound-production",
+          "target": "c",
+          "graphemes": [
+            "c"
+          ]
+        },
+        {
+          "id": "c-1",
+          "capability": "sound-production",
+          "target": "c",
+          "graphemes": [
+            "c"
+          ]
+        },
+        {
+          "id": "c-2",
+          "capability": "sound-production",
+          "target": "c",
+          "graphemes": [
+            "c"
+          ]
+        },
+        {
+          "id": "k-0",
+          "capability": "sound-production",
+          "target": "k",
+          "graphemes": [
+            "k"
+          ]
+        },
+        {
+          "id": "k-1",
+          "capability": "sound-production",
+          "target": "k",
+          "graphemes": [
+            "k"
+          ]
+        },
+        {
+          "id": "k-2",
+          "capability": "sound-production",
+          "target": "k",
+          "graphemes": [
+            "k"
+          ]
+        },
+        {
+          "id": "e-0",
+          "capability": "sound-production",
+          "target": "e",
+          "graphemes": [
+            "e"
+          ]
+        },
+        {
+          "id": "e-1",
+          "capability": "sound-production",
+          "target": "e",
+          "graphemes": [
+            "e"
+          ]
+        },
+        {
+          "id": "e-2",
+          "capability": "sound-production",
+          "target": "e",
+          "graphemes": [
+            "e"
+          ]
+        },
+        {
+          "id": "h-0",
+          "capability": "sound-production",
+          "target": "h",
+          "graphemes": [
+            "h"
+          ]
+        },
+        {
+          "id": "h-1",
+          "capability": "sound-production",
+          "target": "h",
+          "graphemes": [
+            "h"
+          ]
+        },
+        {
+          "id": "h-2",
+          "capability": "sound-production",
+          "target": "h",
+          "graphemes": [
+            "h"
+          ]
+        },
+        {
+          "id": "r-0",
+          "capability": "sound-production",
+          "target": "r",
+          "graphemes": [
+            "r"
+          ]
+        },
+        {
+          "id": "r-1",
+          "capability": "sound-production",
+          "target": "r",
+          "graphemes": [
+            "r"
+          ]
+        },
+        {
+          "id": "r-2",
+          "capability": "sound-production",
+          "target": "r",
+          "graphemes": [
+            "r"
+          ]
+        },
+        {
+          "id": "m-0",
+          "capability": "sound-production",
+          "target": "m",
+          "graphemes": [
+            "m"
+          ]
+        },
+        {
+          "id": "m-1",
+          "capability": "sound-production",
+          "target": "m",
+          "graphemes": [
+            "m"
+          ]
+        },
+        {
+          "id": "m-2",
+          "capability": "sound-production",
+          "target": "m",
+          "graphemes": [
+            "m"
+          ]
+        },
+        {
+          "id": "d-0",
+          "capability": "sound-production",
+          "target": "d",
+          "graphemes": [
+            "d"
+          ]
+        },
+        {
+          "id": "d-1",
+          "capability": "sound-production",
+          "target": "d",
+          "graphemes": [
+            "d"
+          ]
+        },
+        {
+          "id": "d-2",
+          "capability": "sound-production",
+          "target": "d",
+          "graphemes": [
+            "d"
+          ]
+        },
+        {
+          "id": "g-0",
+          "capability": "sound-production",
+          "target": "g",
+          "graphemes": [
+            "g"
+          ]
+        },
+        {
+          "id": "g-1",
+          "capability": "sound-production",
+          "target": "g",
+          "graphemes": [
+            "g"
+          ]
+        },
+        {
+          "id": "g-2",
+          "capability": "sound-production",
+          "target": "g",
+          "graphemes": [
+            "g"
+          ]
+        },
+        {
+          "id": "o-0",
+          "capability": "sound-production",
+          "target": "o",
+          "graphemes": [
+            "o"
+          ]
+        },
+        {
+          "id": "o-1",
+          "capability": "sound-production",
+          "target": "o",
+          "graphemes": [
+            "o"
+          ]
+        },
+        {
+          "id": "o-2",
+          "capability": "sound-production",
+          "target": "o",
+          "graphemes": [
+            "o"
+          ]
+        },
+        {
+          "id": "u-0",
+          "capability": "sound-production",
+          "target": "u",
+          "graphemes": [
+            "u"
+          ]
+        },
+        {
+          "id": "u-1",
+          "capability": "sound-production",
+          "target": "u",
+          "graphemes": [
+            "u"
+          ]
+        },
+        {
+          "id": "u-2",
+          "capability": "sound-production",
+          "target": "u",
+          "graphemes": [
+            "u"
+          ]
+        },
+        {
+          "id": "l-0",
+          "capability": "sound-production",
+          "target": "l",
+          "graphemes": [
+            "l"
+          ]
+        },
+        {
+          "id": "l-1",
+          "capability": "sound-production",
+          "target": "l",
+          "graphemes": [
+            "l"
+          ]
+        },
+        {
+          "id": "l-2",
+          "capability": "sound-production",
+          "target": "l",
+          "graphemes": [
+            "l"
+          ]
+        },
+        {
+          "id": "f-0",
+          "capability": "sound-production",
+          "target": "f",
+          "graphemes": [
+            "f"
+          ]
+        },
+        {
+          "id": "f-1",
+          "capability": "sound-production",
+          "target": "f",
+          "graphemes": [
+            "f"
+          ]
+        },
+        {
+          "id": "f-2",
+          "capability": "sound-production",
+          "target": "f",
+          "graphemes": [
+            "f"
+          ]
+        },
+        {
+          "id": "b-0",
+          "capability": "sound-production",
+          "target": "b",
+          "graphemes": [
+            "b"
+          ]
+        },
+        {
+          "id": "b-1",
+          "capability": "sound-production",
+          "target": "b",
+          "graphemes": [
+            "b"
+          ]
+        },
+        {
+          "id": "b-2",
+          "capability": "sound-production",
+          "target": "b",
+          "graphemes": [
+            "b"
+          ]
+        }
+      ],
+      "objectiveScope": {
+        "obj1": {
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e"
+        },
+        "obj2": {
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e"
+        }
+      },
+      "packagePath": "packages/phonics-3.json",
+      "generationRequest": {
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+            "verb": "identify",
+            "icon": "ear",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "grade": "K"
+          },
+          {
+            "id": "obj2",
+            "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+            "verb": "apply",
+            "icon": "voice",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+            "grade": "K"
+          }
+        ],
+        "curatorBrief": {
+          "primitive": "intro_briefing",
+          "topic": "Phonics 3: Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+          "subject": "Language Arts",
+          "gradeLevel": "Kindergarten",
+          "estimatedTime": "15 min",
+          "hook": {
+            "content": "Let us practice our letter sounds."
+          },
+          "bigIdea": {},
+          "objectives": [
+            {
+              "id": "obj1",
+              "text": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+              "verb": "identify",
+              "icon": "ear",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+              "grade": "K"
+            },
+            {
+              "id": "obj2",
+              "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b.",
+              "verb": "apply",
+              "icon": "voice",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+              "grade": "K"
+            }
+          ],
+          "prerequisites": {},
+          "roadmap": [],
+          "connections": {},
+          "mindset": {}
+        }
+      }
+    }
+  ],
+  "minIndependentItems": 2,
+  "minProbeAccuracy": 0.8,
+  "retentionDays": 2,
+  "seeds": [
+    17,
+    42,
+    101
+  ]
+}

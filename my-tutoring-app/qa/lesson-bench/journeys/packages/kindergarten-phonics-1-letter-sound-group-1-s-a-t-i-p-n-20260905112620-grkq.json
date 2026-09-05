@@ -1,0 +1,1462 @@
+{
+  "benchVersion": 1,
+  "id": "kindergarten-phonics-1-letter-sound-group-1-s-a-t-i-p-n-20260905112620-grkq",
+  "subskill": null,
+  "provenance": {
+    "generatedAt": "2026-09-05T11:26:20.833Z",
+    "source": "topic-trace",
+    "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n",
+    "gradeLevel": "Kindergarten",
+    "gitSha": null,
+    "promptHash": null,
+    "generationRequest": {
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+          "verb": "identify",
+          "icon": "ear",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+          "grade": "K"
+        },
+        {
+          "id": "obj2",
+          "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+          "verb": "apply",
+          "icon": "voice",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+          "grade": "K"
+        }
+      ],
+      "curatorBrief": {
+        "primitive": "intro_briefing",
+        "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+        "subject": "Language Arts",
+        "gradeLevel": "Kindergarten",
+        "estimatedTime": "15 min",
+        "hook": {
+          "content": "Let us practice our letter sounds."
+        },
+        "bigIdea": {},
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+            "verb": "identify",
+            "icon": "ear",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "grade": "K"
+          },
+          {
+            "id": "obj2",
+            "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+            "verb": "apply",
+            "icon": "voice",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "grade": "K"
+          }
+        ],
+        "prerequisites": {},
+        "roadmap": [],
+        "connections": {},
+        "mindset": {}
+      },
+      "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+      "gradeLevel": "kindergarten",
+      "package": true
+    }
+  },
+  "manifest": {
+    "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n",
+    "gradeLevel": "Kindergarten",
+    "subject": "LANGUAGE_ARTS",
+    "themeColor": "#0284c7",
+    "curatorBrief": {
+      "instanceId": "curator-brief-1",
+      "title": "Welcome to Letter Sounds: s, a, t, i, p, n",
+      "intent": "Welcome kindergarteners to their first group of letter sounds: s, a, t, i, p, and n. Introduce the concept that letters make specific, crisp sounds without adding extra 'uh' sounds (e.g., crisp /t/, not 'tuh'). Set expectations for interactive spoken and visual practice."
+    },
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Letter-Sound Group 1: s, a, t, i, p, n. Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape), emphasizing crisp, clean pronunciation.",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "foundation-explorer",
+            "instanceId": "obj1-foundation-explorer",
+            "title": "Explore the Letter Sounds: s, a, t, i, p, n",
+            "intent": "Introduce the 6 foundational graphemes (s, a, t, i, p, n) alongside visual keyword anchors (snake /s/, apple /ă/, tiger /t/, igloo /ĭ/, pan /p/, net /n/). Provide clear audio models demonstrating pure, unvoiced or crisp phonemes without 'schwa' endings.",
+            "config": {
+              "difficulty": "easy"
+            }
+          },
+          {
+            "componentId": "di-letter-sounds",
+            "instanceId": "obj1-di-letter-sounds",
+            "title": "Listen and Say the Letter Sounds",
+            "intent": "Guide oral letter-sound practice with the Live tutor modeling continuous sounds and short vowels (/s/, /ă/, /ĭ/, /n/), prompting the student to speak each target sound cleanly into the microphone with instant affirmative coaching.",
+            "config": {
+              "count": 6,
+              "difficulty": "easy",
+              "targetEvalMode": "letter_sound"
+            }
+          },
+          {
+            "componentId": "letter-spotter",
+            "instanceId": "obj1-letter-spotter",
+            "title": "Letter Shape Spotter",
+            "intent": "Reinforce grapheme recognition for Group 1 (s, a, t, i, p, n) through visual discrimination tasks where students spot target letterforms and match uppercase and lowercase shapes.",
+            "config": {
+              "count": 6,
+              "difficulty": "medium",
+              "targetEvalMode": "find_it"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj2",
+        "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "letter-sound-link",
+            "instanceId": "obj2-letter-sound-link",
+            "title": "Say the Sound for Each Letter",
+            "intent": "Assess independent production across Group 1 letters (s, a, t, i, p, n). The child sees the printed grapheme cold and says its corresponding pure sound or selects the matching letter upon hearing the target crisp sound.",
+            "config": {
+              "count": 6,
+              "difficulty": "medium",
+              "targetEvalMode": "see_hear"
+            }
+          },
+          {
+            "componentId": "fast-fact",
+            "instanceId": "obj2-fast-fact",
+            "title": "Letter-Sound Quick Match",
+            "intent": "Provide untimed fluency recall pairing graphemes (s, a, t, i, p, n) with picture prompts starting with their crisp sounds, reinforcing automaticity without pressure.",
+            "config": {
+              "count": 8,
+              "difficulty": "medium",
+              "targetEvalMode": "recall"
+            }
+          },
+          {
+            "componentId": "take-home-activity",
+            "instanceId": "obj2-take-home-activity",
+            "title": "Letter-Sound Scavenger Hunt",
+            "intent": "Caregiver-guided kinesthetic activity where the kindergarten student searches for household objects beginning with s, a, t, i, p, n and practices making the crisp sound for each item found.",
+            "config": {
+              "difficulty": "easy"
+            }
+          }
+        ]
+      }
+    ],
+    "finalAssessment": {
+      "componentId": "knowledge-check",
+      "instanceId": "final-assessment-check",
+      "title": "Sound Master Review: Group 1",
+      "intent": "Cumulative spoken-first check assessing accurate letter-sound identification for s, a, t, i, p, n. Evaluates both phoneme-to-grapheme matching and crisp sound recognition.",
+      "config": {
+        "count": 6,
+        "targetEvalMode": "recall"
+      }
+    },
+    "layout": [
+      {
+        "componentId": "curator-brief",
+        "instanceId": "curator-brief-1",
+        "title": "Welcome to Letter Sounds: s, a, t, i, p, n",
+        "intent": "Welcome kindergarteners to their first group of letter sounds: s, a, t, i, p, and n. Introduce the concept that letters make specific, crisp sounds without adding extra 'uh' sounds (e.g., crisp /t/, not 'tuh'). Set expectations for interactive spoken and visual practice.",
+        "objectiveIds": [
+          "obj1",
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "foundation-explorer",
+        "instanceId": "obj1-foundation-explorer",
+        "title": "Explore the Letter Sounds: s, a, t, i, p, n",
+        "intent": "Introduce the 6 foundational graphemes (s, a, t, i, p, n) alongside visual keyword anchors (snake /s/, apple /ă/, tiger /t/, igloo /ĭ/, pan /p/, net /n/). Provide clear audio models demonstrating pure, unvoiced or crisp phonemes without 'schwa' endings.",
+        "config": {
+          "difficulty": "easy",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Introduce the 6 foundational graphemes (s, a, t, i, p, n) alongside visual keyword anchors (snake /s/, apple /ă/, tiger /t/, igloo /ĭ/, pan /p/, net /n/). Provide clear audio models demonstrating pure, unvoiced or crisp phonemes without 'schwa' endings."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "di-letter-sounds",
+        "instanceId": "obj1-di-letter-sounds",
+        "title": "Listen and Say the Letter Sounds",
+        "intent": "Guide oral letter-sound practice with the Live tutor modeling continuous sounds and short vowels (/s/, /ă/, /ĭ/, /n/), prompting the student to speak each target sound cleanly into the microphone with instant affirmative coaching.",
+        "config": {
+          "count": 6,
+          "difficulty": "easy",
+          "targetEvalMode": "letter_sound",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Guide oral letter-sound practice with the Live tutor modeling continuous sounds and short vowels (/s/, /ă/, /ĭ/, /n/), prompting the student to speak each target sound cleanly into the microphone with instant affirmative coaching."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "letter-spotter",
+        "instanceId": "obj1-letter-spotter",
+        "title": "Letter Shape Spotter",
+        "intent": "Reinforce grapheme recognition for Group 1 (s, a, t, i, p, n) through visual discrimination tasks where students spot target letterforms and match uppercase and lowercase shapes.",
+        "config": {
+          "count": 6,
+          "difficulty": "medium",
+          "targetEvalMode": "find_it",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Reinforce grapheme recognition for Group 1 (s, a, t, i, p, n) through visual discrimination tasks where students spot target letterforms and match uppercase and lowercase shapes."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "letter-sound-link",
+        "instanceId": "obj2-letter-sound-link",
+        "title": "Say the Sound for Each Letter",
+        "intent": "Assess independent production across Group 1 letters (s, a, t, i, p, n). The child sees the printed grapheme cold and says its corresponding pure sound or selects the matching letter upon hearing the target crisp sound.",
+        "config": {
+          "count": 6,
+          "difficulty": "medium",
+          "targetEvalMode": "see_hear",
+          "objectiveId": "obj2",
+          "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+          "objectiveVerb": "apply",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Assess independent production across Group 1 letters (s, a, t, i, p, n). The child sees the printed grapheme cold and says its corresponding pure sound or selects the matching letter upon hearing the target crisp sound."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "fast-fact",
+        "instanceId": "obj2-fast-fact",
+        "title": "Letter-Sound Quick Match",
+        "intent": "Provide untimed fluency recall pairing graphemes (s, a, t, i, p, n) with picture prompts starting with their crisp sounds, reinforcing automaticity without pressure.",
+        "config": {
+          "count": 8,
+          "difficulty": "medium",
+          "targetEvalMode": "recall",
+          "objectiveId": "obj2",
+          "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+          "objectiveVerb": "apply",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Provide untimed fluency recall pairing graphemes (s, a, t, i, p, n) with picture prompts starting with their crisp sounds, reinforcing automaticity without pressure."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "take-home-activity",
+        "instanceId": "obj2-take-home-activity",
+        "title": "Letter-Sound Scavenger Hunt",
+        "intent": "Caregiver-guided kinesthetic activity where the kindergarten student searches for household objects beginning with s, a, t, i, p, n and practices making the crisp sound for each item found.",
+        "config": {
+          "difficulty": "easy",
+          "objectiveId": "obj2",
+          "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+          "objectiveVerb": "apply",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Caregiver-guided kinesthetic activity where the kindergarten student searches for household objects beginning with s, a, t, i, p, n and practices making the crisp sound for each item found."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "final-assessment-check",
+        "title": "Sound Master Review: Group 1",
+        "intent": "Cumulative spoken-first check assessing accurate letter-sound identification for s, a, t, i, p, n. Evaluates both phoneme-to-grapheme matching and crisp sound recognition.",
+        "config": {
+          "count": 6,
+          "targetEvalMode": "recall",
+          "objectiveGrade": "K",
+          "lessonObjectives": [
+            {
+              "id": "obj1",
+              "text": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "grade": "K"
+            },
+            {
+              "id": "obj2",
+              "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "grade": "K"
+            }
+          ]
+        },
+        "objectiveIds": [
+          "obj1",
+          "obj2"
+        ]
+      }
+    ]
+  },
+  "curatorBrief": {
+    "primitive": "intro_briefing",
+    "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+    "subject": "Language Arts",
+    "gradeLevel": "Kindergarten",
+    "estimatedTime": "15 min",
+    "hook": {
+      "content": "Let us practice our letter sounds."
+    },
+    "bigIdea": {},
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+        "verb": "identify",
+        "icon": "ear",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+        "grade": "K"
+      },
+      {
+        "id": "obj2",
+        "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n.",
+        "verb": "apply",
+        "icon": "voice",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+        "grade": "K"
+      }
+    ],
+    "prerequisites": {},
+    "roadmap": [],
+    "connections": {},
+    "mindset": {}
+  },
+  "components": [
+    {
+      "instanceId": "obj1-foundation-explorer",
+      "componentId": "foundation-explorer",
+      "data": {
+        "objectiveId": "obj1",
+        "objectiveText": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+        "objectiveVerb": "identify",
+        "diagram": {
+          "description": "A colorful phonics sound chart showing three letters s, a, and t with matching picture cues: a slithering snake, a red apple, and a ticking tennis ball.",
+          "imagePrompt": "Clean educational schematic chart for kindergarten phonics. Three distinct panels side-by-side on a light pastel background. Panel one shows lowercase letter 's' in green with a cartoon snake. Panel two shows lowercase letter 'a' in red with a bright red apple. Panel three shows lowercase letter 't' in blue with a tennis ball on a racket. Clear large letter shapes, crisp simple outlines, bold friendly colors.",
+          "style": "schematic"
+        },
+        "concepts": [
+          {
+            "id": "sound-s",
+            "name": "Letter S (/s/)",
+            "briefDefinition": "The curvy letter 's' makes a hissing /s/ sound.",
+            "diagramHighlight": "The green curvy letter 's' next to the snake",
+            "inContext": {
+              "scenario": "You hear a hissing snake in the grass.",
+              "whereToFind": "The snake starts with the sound /s/."
+            },
+            "selfCheck": {
+              "prompt": "Which picture starts with the /s/ sound?",
+              "options": [
+                "Hissing snake",
+                "Red apple",
+                "Tennis racket"
+              ],
+              "correctIndex": 0,
+              "hint": "Listen for the hissing sound at the start.",
+              "optionEmojis": [
+                "🐍",
+                "🍎",
+                "🎾"
+              ]
+            },
+            "color": "#10B981"
+          },
+          {
+            "id": "sound-a",
+            "name": "Letter A (/ă/)",
+            "briefDefinition": "The round letter 'a' makes a short /ă/ sound.",
+            "diagramHighlight": "The round red letter 'a' next to the apple",
+            "inContext": {
+              "scenario": "You crunch into a yummy red fruit at snack time.",
+              "whereToFind": "The word apple starts with the sound /ă/."
+            },
+            "selfCheck": {
+              "prompt": "Which picture starts with the /ă/ sound?",
+              "options": [
+                "Tennis racket",
+                "Crisp apple",
+                "Hissing snake"
+              ],
+              "correctIndex": 1,
+              "hint": "Think of the fruit you eat for snack.",
+              "optionEmojis": [
+                "🎾",
+                "🍎",
+                "🐍"
+              ]
+            },
+            "color": "#EF4444"
+          },
+          {
+            "id": "sound-t",
+            "name": "Letter T (/t/)",
+            "briefDefinition": "The tall letter 't' makes a quick, crisp /t/ sound.",
+            "diagramHighlight": "The tall blue letter 't' next to the tennis ball",
+            "inContext": {
+              "scenario": "A clock makes a steady ticking sound on the wall.",
+              "whereToFind": "The ticking sound begins with /t/."
+            },
+            "selfCheck": {
+              "prompt": "Which picture starts with the /t/ sound?",
+              "options": [
+                "Crisp apple",
+                "Hissing snake",
+                "Tennis ball"
+              ],
+              "correctIndex": 2,
+              "hint": "Listen for the quick tapping sound at the start.",
+              "optionEmojis": [
+                "🍎",
+                "🐍",
+                "🎾"
+              ]
+            },
+            "color": "#3B82F6"
+          }
+        ],
+        "themeColor": "#3B82F6",
+        "gradeLevel": "K"
+      }
+    },
+    {
+      "instanceId": "obj1-di-letter-sounds",
+      "componentId": "di-letter-sounds",
+      "data": {
+        "title": "Super Sound Check!",
+        "description": "Get ready to say some fun sounds out loud together!",
+        "challengeType": "letter_sound",
+        "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+        "challenges": [
+          {
+            "id": "dils-1-s",
+            "challengeType": "letter_sound",
+            "letter": "s",
+            "spoken": "sss",
+            "keyword": "sun",
+            "emoji": "☀️",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "s",
+              "ss",
+              "sss",
+              "ess",
+              "sh",
+              "shh",
+              "hiss"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "dils-2-n",
+            "challengeType": "letter_sound",
+            "letter": "n",
+            "spoken": "nnn",
+            "keyword": "nest",
+            "emoji": "🪺",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "n",
+              "nn",
+              "nnn",
+              "en",
+              "un"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "dils-3-f",
+            "challengeType": "letter_sound",
+            "letter": "f",
+            "spoken": "fff",
+            "keyword": "fish",
+            "emoji": "🐟",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "f",
+              "ff",
+              "fff",
+              "ef",
+              "huff"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "dils-4-r",
+            "challengeType": "letter_sound",
+            "letter": "r",
+            "spoken": "rrr",
+            "keyword": "ring",
+            "emoji": "💍",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "r",
+              "rr",
+              "rrr",
+              "ar",
+              "are",
+              "er"
+            ],
+            "supportTier": "easy"
+          }
+        ],
+        "letters": "s, n, f, r"
+      }
+    },
+    {
+      "instanceId": "obj1-letter-spotter",
+      "componentId": "letter-spotter",
+      "data": {
+        "title": "Spot the Letters - Group 1",
+        "challenges": [
+          {
+            "id": "ch1",
+            "mode": "find-it",
+            "targetLetter": "s",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "I",
+              "N",
+              "S",
+              "T",
+              "A",
+              "T",
+              "I",
+              "P",
+              "P",
+              "P",
+              "T",
+              "N",
+              "A",
+              "I",
+              "A",
+              "N"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch2",
+            "mode": "find-it",
+            "targetLetter": "a",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "P",
+              "I",
+              "A",
+              "T",
+              "T",
+              "N",
+              "N",
+              "P",
+              "S",
+              "P",
+              "I",
+              "T",
+              "I",
+              "S",
+              "S",
+              "N"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch3",
+            "mode": "find-it",
+            "targetLetter": "t",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "N",
+              "P",
+              "P",
+              "S",
+              "N",
+              "A",
+              "I",
+              "P",
+              "A",
+              "T",
+              "S",
+              "I",
+              "A",
+              "S",
+              "N",
+              "I"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch4",
+            "mode": "find-it",
+            "targetLetter": "i",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "N",
+              "P",
+              "I",
+              "P",
+              "S",
+              "P",
+              "A",
+              "T",
+              "N",
+              "S",
+              "S",
+              "N",
+              "A",
+              "A",
+              "T",
+              "T"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch5",
+            "mode": "find-it",
+            "targetLetter": "p",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "I",
+              "A",
+              "I",
+              "S",
+              "A",
+              "T",
+              "T",
+              "N",
+              "A",
+              "S",
+              "N",
+              "P",
+              "S",
+              "N",
+              "T",
+              "I"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch6",
+            "mode": "find-it",
+            "targetLetter": "n",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "I",
+              "I",
+              "S",
+              "P",
+              "I",
+              "S",
+              "T",
+              "T",
+              "T",
+              "A",
+              "P",
+              "P",
+              "A",
+              "S",
+              "A",
+              "N"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          }
+        ],
+        "letterGroup": 1,
+        "cumulativeLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n"
+        ],
+        "newLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n"
+        ],
+        "supportTier": "medium"
+      }
+    },
+    {
+      "instanceId": "obj2-letter-sound-link",
+      "componentId": "letter-sound-link",
+      "data": {
+        "title": "Letter Sounds - Group 1!",
+        "letterGroup": 1,
+        "cumulativeLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n"
+        ],
+        "challenges": [
+          {
+            "id": "ch1",
+            "mode": "see-hear",
+            "targetLetter": "s",
+            "targetSound": "/s/",
+            "keywordWord": "sun",
+            "keywordImage": "sun",
+            "options": [],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Which sound does this letter make?",
+            "protocolHint": "Listen to both, then tap your choice again to keep it.",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch2",
+            "mode": "see-hear",
+            "targetLetter": "a",
+            "targetSound": "/ă/",
+            "keywordWord": "apple",
+            "keywordImage": "apple",
+            "options": [],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Which sound does this letter make?",
+            "protocolHint": "Listen to both, then tap your choice again to keep it.",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch3",
+            "mode": "see-hear",
+            "targetLetter": "i",
+            "targetSound": "/ĭ/",
+            "keywordWord": "itch",
+            "keywordImage": "itch",
+            "options": [],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Which sound does this letter make?",
+            "protocolHint": "Listen to both, then tap your choice again to keep it.",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch4",
+            "mode": "see-hear",
+            "targetLetter": "n",
+            "targetSound": "/n/",
+            "keywordWord": "net",
+            "keywordImage": "net",
+            "options": [],
+            "showKeywordAnchor": "after-miss",
+            "strategyHint": "Which sound does this letter make?",
+            "protocolHint": "Listen to both, then tap your choice again to keep it.",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          }
+        ],
+        "gradeLevel": "K",
+        "supportTier": "medium",
+        "maxAttempts": 3
+      }
+    },
+    {
+      "instanceId": "obj2-fast-fact",
+      "componentId": "fast-fact",
+      "data": {
+        "title": "Letter Sound Power: S, A, T, I, P, N",
+        "description": "Practice the beginning sounds for the letters s, a, t, i, p, and n.",
+        "subject": "Language Arts",
+        "challenges": [
+          {
+            "id": "ls_1",
+            "type": "warm-up",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which word starts with the sound /s/?",
+              "subtext": "Listen to the starting sound",
+              "visual": {
+                "type": "emoji",
+                "emoji": "🐍",
+                "alt": "A snake"
+              }
+            },
+            "correctAnswer": "sun",
+            "responseMode": "choice",
+            "options": [
+              "apple",
+              "tent",
+              "sun",
+              "igloo"
+            ],
+            "explanation": "The word sun starts with the crisp /s/ sound.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_2",
+            "type": "warm-up",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which word starts with the sound /a/?",
+              "subtext": "Listen to the starting sound",
+              "visual": {
+                "type": "emoji",
+                "emoji": "🐜",
+                "alt": "An ant"
+              }
+            },
+            "correctAnswer": "apple",
+            "responseMode": "choice",
+            "options": [
+              "pin",
+              "net",
+              "sit",
+              "apple"
+            ],
+            "explanation": "The word apple starts with the short /a/ sound.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_3",
+            "type": "warm-up",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which word starts with the sound /t/?",
+              "subtext": "Listen to the starting sound",
+              "visual": {
+                "type": "emoji",
+                "emoji": "⛺",
+                "alt": "A tent"
+              }
+            },
+            "correctAnswer": "top",
+            "responseMode": "choice",
+            "options": [
+              "top",
+              "pan",
+              "ant",
+              "sun"
+            ],
+            "explanation": "The word top starts with the crisp /t/ sound.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_4",
+            "type": "core",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which word starts with the sound /i/?",
+              "subtext": "Listen to the starting sound",
+              "visual": {
+                "type": "emoji",
+                "emoji": "🧊",
+                "alt": "An ice cube"
+              }
+            },
+            "correctAnswer": "igloo",
+            "responseMode": "choice",
+            "options": [
+              "net",
+              "igloo",
+              "sit",
+              "tap"
+            ],
+            "explanation": "The word igloo starts with the short /i/ sound.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_5",
+            "type": "core",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which word starts with the sound /p/?",
+              "subtext": "Listen to the starting sound",
+              "visual": {
+                "type": "emoji",
+                "emoji": "🍳",
+                "alt": "A frying pan"
+              }
+            },
+            "correctAnswer": "pig",
+            "responseMode": "choice",
+            "options": [
+              "ant",
+              "net",
+              "pig",
+              "sun"
+            ],
+            "explanation": "The word pig starts with the popping /p/ sound.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_6",
+            "type": "core",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which word starts with the sound /n/?",
+              "subtext": "Listen to the starting sound",
+              "visual": {
+                "type": "emoji",
+                "emoji": "🕸️",
+                "alt": "A spider web"
+              }
+            },
+            "correctAnswer": "net",
+            "responseMode": "choice",
+            "options": [
+              "top",
+              "apple",
+              "pin",
+              "net"
+            ],
+            "explanation": "The word net starts with the nasal /n/ sound.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_7",
+            "type": "mastery",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which picture goes with the letter s?",
+              "subtext": "Match letter to sound",
+              "visual": {
+                "type": "text-large",
+                "largeText": "s",
+                "alt": "Letter s"
+              }
+            },
+            "correctAnswer": "sun",
+            "responseMode": "choice",
+            "options": [
+              "sun",
+              "igloo",
+              "pin",
+              "net"
+            ],
+            "explanation": "The letter s makes the /s/ sound heard at the start of sun.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_8",
+            "type": "mastery",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which picture goes with the letter a?",
+              "subtext": "Match letter to sound",
+              "visual": {
+                "type": "text-large",
+                "largeText": "a",
+                "alt": "Letter a"
+              }
+            },
+            "correctAnswer": "ant",
+            "responseMode": "choice",
+            "options": [
+              "top",
+              "ant",
+              "pig",
+              "sun"
+            ],
+            "explanation": "The letter a makes the /a/ sound heard at the start of ant.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_9",
+            "type": "mastery",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which picture goes with the letter p?",
+              "subtext": "Match letter to sound",
+              "visual": {
+                "type": "text-large",
+                "largeText": "p",
+                "alt": "Letter p"
+              }
+            },
+            "correctAnswer": "pig",
+            "responseMode": "choice",
+            "options": [
+              "net",
+              "igloo",
+              "pig",
+              "apple"
+            ],
+            "explanation": "The letter p makes the /p/ sound heard at the start of pig.",
+            "difficulty": "medium"
+          },
+          {
+            "id": "ls_10",
+            "type": "mastery",
+            "challengeType": "recall",
+            "prompt": {
+              "text": "Which picture goes with the letter i?",
+              "subtext": "Match letter to sound",
+              "visual": {
+                "type": "text-large",
+                "largeText": "i",
+                "alt": "Letter i"
+              }
+            },
+            "correctAnswer": "igloo",
+            "responseMode": "choice",
+            "options": [
+              "sun",
+              "ant",
+              "top",
+              "igloo"
+            ],
+            "explanation": "The letter i makes the /i/ sound heard at the start of igloo.",
+            "difficulty": "medium"
+          }
+        ],
+        "targetResponseTime": 8,
+        "phaseConfig": {
+          "warm-up": {
+            "label": "Warm-Up",
+            "icon": "🌱",
+            "accentColor": "emerald"
+          },
+          "core": {
+            "label": "Core Practice",
+            "icon": "⭐",
+            "accentColor": "blue"
+          },
+          "mastery": {
+            "label": "Mastery",
+            "icon": "🚀",
+            "accentColor": "amber"
+          }
+        },
+        "showStreakCounter": true,
+        "showAccuracy": true,
+        "maxAttemptsPerChallenge": 2,
+        "gradeBand": "K-2"
+      }
+    },
+    {
+      "instanceId": "obj2-take-home-activity",
+      "componentId": "take-home-activity",
+      "data": {
+        "id": "phonics-sound-detective-satipn",
+        "title": "Secret Sound Detective: The SATIPN Treasure Hunt",
+        "subject": "Language Arts",
+        "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n",
+        "gradeRange": "K-2",
+        "estimatedTime": "30-45 minutes",
+        "overview": "Grab your detective magnifying glass and get ready to hunt! In this mission, you will search your home for mystery treasures that begin with the special sounds /s/, /a/, /t/, /i/, /p/, and /n/. By matching real objects to their starting sounds, you will unlock the superpower of reading.",
+        "learningObjectives": [
+          "Produce the distinct, crisp sounds for the target letters: /s/, /a/, /t/, /i/, /p/, and /n/ without adding extra vowel sounds (schwa).",
+          "Identify the initial sound in spoken words representing familiar household objects.",
+          "Sort at least six household objects into corresponding letter-sound categories."
+        ],
+        "materials": [
+          {
+            "item": "Index cards or small squares of paper",
+            "quantity": "6 pieces",
+            "essential": true,
+            "substitutes": [
+              "Post-it notes",
+              "Cut-up cardboard boxes",
+              "Scrap printer paper"
+            ]
+          },
+          {
+            "item": "Crayon, marker, or pencil",
+            "quantity": "1",
+            "essential": true,
+            "substitutes": [
+              "Colored pencil",
+              "Pen"
+            ]
+          },
+          {
+            "item": "Small basket, shoebox, or tote bag",
+            "quantity": "1",
+            "essential": true,
+            "substitutes": [
+              "Pillowcase",
+              "Plastic bowl",
+              "Backpack"
+            ]
+          },
+          {
+            "item": "Small collection of household treasures",
+            "quantity": "6 to 12 items",
+            "essential": true,
+            "examples": [
+              "sock, spoon, sticker for /s/",
+              "apple, toy alligator for /a/",
+              "toothbrush, toy truck, tea bag for /t/",
+              "ice cube, picture of an igloo, toy insect for /i/",
+              "pencil, pasta piece, penny for /p/",
+              "napkin, net, notebook for /n/"
+            ]
+          },
+          {
+            "item": "Paper cups, small bowls, or marked spots on a rug",
+            "quantity": "6",
+            "essential": false,
+            "substitutes": [
+              "Plates",
+              "Chalk circles on the floor"
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "stepNumber": 1,
+            "title": "Create Sound Badges",
+            "instruction": "Work with your adult helper to write one lowercase letter on each paper square: 's', 'a', 't', 'i', 'p', and 'n'. Line them up side by side on the floor or table.",
+            "tip": "Writing in lowercase is best because these are the letter forms young readers encounter most often in books."
+          },
+          {
+            "stepNumber": 2,
+            "title": "Warm Up Your Detective Voice",
+            "instruction": "Touch each letter badge and practice its clean sound with your helper: 's' says /sss/ like a snake, 'a' says /a/ like an apple, 't' says /t/ like a ticking clock, 'i' says /i/ like an itch, 'p' says /p/ like popping popcorn, and 'n' says /nnn/ like a zooming plane.",
+            "scienceNote": "Linguists call crisp sounds without extra breath 'pure phonemes'. Avoid adding 'uh' to the end (say /t/, not 'tuh') so blending sounds into words later is easy!",
+            "tip": "Keep your lips close together and make the sounds quick and punchy."
+          },
+          {
+            "stepNumber": 3,
+            "title": "Launch the Treasure Hunt",
+            "instruction": "Carry your basket around the room and search for small, safe objects that begin with one of your six target sounds. Collect 1 or 2 items for each sound.",
+            "checkpoint": {
+              "question": "How many treasures have you gathered in your detective basket so far?",
+              "type": "count"
+            },
+            "tip": "Check the kitchen, toy bin, or desk with your helper's permission."
+          },
+          {
+            "stepNumber": 4,
+            "title": "Test the First Sound",
+            "instruction": "Pull one object from your basket, say its name aloud clearly, and feel what your mouth does on the very first sound. For example, say 'S-s-spoon!'",
+            "checkpoint": {
+              "question": "Does the first sound match the hiss of /s/, the pop of /p/, or another sound from your badges?",
+              "type": "confirm"
+            },
+            "scienceNote": "Paying attention to how the lips, tongue, and teeth move builds articulatory awareness, which strongly supports early decoding and spelling."
+          },
+          {
+            "stepNumber": 5,
+            "title": "Sort to the Sound Base",
+            "instruction": "Place each object next to its matching letter badge. Repeat this detective process for all the treasures in your basket until every item finds its letter home.",
+            "checkpoint": {
+              "question": "Does each of the six letter badges have at least one treasure parked next to it?",
+              "type": "confirm"
+            }
+          },
+          {
+            "stepNumber": 6,
+            "title": "The Grand Detective Tour",
+            "instruction": "Give your adult helper a tour of your sorted collection. Point to each letter badge, pronounce the clean letter sound, and announce the object name.",
+            "checkpoint": {
+              "question": "Which sound was the easiest to hear in your room, and which one was the trickiest to track down?",
+              "type": "reflection"
+            }
+          }
+        ],
+        "reflectionPrompts": [
+          {
+            "question": "When you said the name of each item, how did your mouth and tongue feel when making the first sound?",
+            "connectionTo": "Produce the distinct, crisp sounds for the target letters: /s/, /a/, /t/, /i/, /p/, and /n/",
+            "hint": "Think about how your lips burst open for /p/ compared to how your teeth gently come together for /s/."
+          },
+          {
+            "question": "If you picked up a toy 'pig', which badge would it visit, and why doesn't it go to the 't' badge?",
+            "connectionTo": "Identify the initial sound in spoken words representing familiar household objects.",
+            "hint": "Say the very beginning sound of 'pig' out loud and listen to whether it pops or taps."
+          },
+          {
+            "question": "Look around you right now. Can you spot someone's name or another room in your home that begins with the /n/ or /a/ sound?",
+            "connectionTo": "Sort at least six household objects into corresponding letter-sound categories.",
+            "hint": "Think about names like Nina or Alex, or places like the attic or nursery."
+          }
+        ],
+        "documentationPrompt": {
+          "instruction": "Take a photo of your letter cards laid out in a row with each of your found household objects neatly sorted beside them.",
+          "suggestedCaption": "I am a Sound Detective! I found a [object name] for /[sound]/ and a [object name] for /[sound]/. My favorite sound was [letter]!"
+        },
+        "extensions": [
+          {
+            "title": "Mystery Bag Touch-and-Say",
+            "description": "Place three objects into an opaque bag. Reach in without peeking, feel an item, guess what it is, and proclaim its starting letter sound before pulling it out to check.",
+            "difficulty": "intermediate"
+          },
+          {
+            "title": "Secret Word Maker",
+            "description": "Pick three items that spell a real word using their initial letters (such as a Spoon, an Apple, and a Toothbrush to spell 'S-A-T'). Tap each item's sound and blend them together to read your secret word!",
+            "difficulty": "advanced"
+          }
+        ],
+        "safetyNotes": [
+          "Adult helper recommended: An adult should supervise item collection to ensure small objects do not present choking hazards.",
+          "Avoid choosing sharp items (such as scissors or metal pins) or fragile glass items during the treasure hunt.",
+          "Keep all items away from pets and infant siblings."
+        ]
+      }
+    },
+    {
+      "instanceId": "final-assessment-check",
+      "componentId": "knowledge-check",
+      "data": {
+        "problems": [
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which thing starts with the s sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Apple",
+                "emoji": "🍎"
+              },
+              {
+                "id": "B",
+                "text": "Sun",
+                "emoji": "☀️"
+              },
+              {
+                "id": "C",
+                "text": "Tiger",
+                "emoji": "🐯"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Sun starts with the /s/ sound, like a hissing snake. Apple begins with the /a/ sound, and tiger begins with the /t/ sound. Hearing the beginning sound helps us connect spoken words to the letter s.",
+            "teachingNote": "Have students make the continuous /s/ sound like a snake while tracing the letter s in the air before identifying starting sounds in familiar words.",
+            "successCriteria": [
+              "Identify the initial /s/ sound in familiar spoken words.",
+              "Distinguish the /s/ sound from other Group 1 phonemes like /a/ and /t/."
+            ],
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "true_false",
+            "id": "tf_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "statement": "True or false: The letter 'a' makes the short 'a' sound /ă/ as in apple.",
+            "correct": true,
+            "rationale": "The letter 'a' in Letter-Sound Group 1 makes the short 'a' sound /ă/ as heard at the beginning of the word apple. Knowing this sound helps young readers blend sounds together to read simple words.",
+            "teachingNote": "Practice saying the short 'a' sound together and have students find things around the room that start with /ă/.",
+            "successCriteria": [
+              "Recall the primary sound of the letter 'a'",
+              "Identify the short 'a' sound in spoken words"
+            ],
+            "inset": {
+              "insetType": "definition-box",
+              "term": "Letter 'a'",
+              "definition": "A vowel letter that makes the short sound /ă/, as in the word apple.",
+              "exampleSentence": "The ant is on the apple.",
+              "label": "Figure 1",
+              "partOfSpeech": "noun"
+            },
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which of the following starts with the sound in tent?",
+            "options": [
+              {
+                "id": "A",
+                "text": "turtle",
+                "emoji": "🐢"
+              },
+              {
+                "id": "B",
+                "text": "pig",
+                "emoji": "🐷"
+              },
+              {
+                "id": "C",
+                "text": "net",
+                "emoji": "🥅"
+              }
+            ],
+            "correctOptionId": "A",
+            "rationale": "Turtle begins with the crisp /t/ sound, just like tent. Pig starts with the /p/ sound, and net starts with the /n/ sound.",
+            "teachingNote": "Encourage students to feel the tip of their tongue tap behind their teeth to make the clean, unvoiced /t/ sound without adding a trailing 'uh'.",
+            "successCriteria": [
+              "Identify the initial /t/ sound in spoken words",
+              "Distinguish the /t/ sound from /p/ and /n/ sounds"
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which letter makes the /ĭ/ sound as in igloo?",
+            "options": [
+              {
+                "id": "A",
+                "text": "i",
+                "emoji": "ℹ️"
+              },
+              {
+                "id": "B",
+                "text": "p",
+                "emoji": "🅿️"
+              },
+              {
+                "id": "C",
+                "text": "n",
+                "emoji": "🅽"
+              }
+            ],
+            "correctOptionId": "A",
+            "rationale": "The letter 'i' makes the short /ĭ/ sound heard at the beginning of 'igloo'. The letter 'p' makes the /p/ sound heard in 'pig', and the letter 'n' makes the /n/ sound in 'nest'. Matching the letter 'i' to its sound is a key step in learning to read simple words!",
+            "teachingNote": "Have students practice tracing the lowercase letter 'i' in the air while repeating the short /ĭ/ sound. Pairing the sound with an action, like pretending to shiver in an igloo, reinforces letter-sound correspondence.",
+            "successCriteria": [
+              "Identify the letter 'i' as the letter that represents the /ĭ/ sound.",
+              "Distinguish the letter 'i' from other group 1 letters like 'p' and 'n'."
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which of the following starts with the p sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Pig",
+                "emoji": "🐷"
+              },
+              {
+                "id": "B",
+                "text": "Nest",
+                "emoji": "🪺"
+              },
+              {
+                "id": "C",
+                "text": "Sun",
+                "emoji": "☀️"
+              }
+            ],
+            "correctOptionId": "A",
+            "rationale": "Pig begins with the popping /p/ sound made by the letter P. Nest begins with the /n/ sound, and sun begins with the /s/ sound. Hearing the opening sound helps us sort words into the right letter group.",
+            "teachingNote": "Demonstrate the quick puff of air made by /p/ using the palm of the hand to help young learners feel the difference between /p/ and /n/.",
+            "successCriteria": [
+              "Identify the initial /p/ sound in a spoken word."
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which of these starts with the /s/ sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Sun",
+                "emoji": "☀️"
+              },
+              {
+                "id": "B",
+                "text": "Pig",
+                "emoji": "🐷"
+              },
+              {
+                "id": "C",
+                "text": "Turtle",
+                "emoji": "🐢"
+              }
+            ],
+            "correctOptionId": "A",
+            "rationale": "Sun begins with the /s/ sound made by the letter 's'. Pig begins with the /p/ sound, and turtle begins with the /t/ sound. When you say 'sun', your tongue makes a hissing /s/ sound right at the start.",
+            "teachingNote": "Have children place their fingers near their mouths to feel the continuous air stream of /s/ compared to the quick puff of air in /p/ and /t/.",
+            "successCriteria": [
+              "Identify the initial /s/ sound in a familiar spoken word",
+              "Distinguish the /s/ sound from other Group 1 consonant sounds like /p/ and /t/"
+            ],
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          }
+        ],
+        "problemType": "orchestrated",
+        "topic": "Phonics 1: Letter-Sound Group 1: s, a, t, i, p, n",
+        "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+      }
+    }
+  ],
+  "scores": null,
+  "human": null
+}

@@ -74,6 +74,9 @@ export interface DiLetterSoundsData {
    *  tutoring scaffold's RUNTIME STATE (catalog contextKey `letters`). */
   letters?: string;
   gradeLevel?: string;
+  /** Letters the OBJECTIVE names that the continuant menu cannot drill (stops
+   *  such as t, p). Reported by the generator, never silently dropped. */
+  unaskableLetters?: string[];
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
