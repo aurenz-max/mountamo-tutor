@@ -967,7 +967,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['read_aloud'],
-        description: 'The printed stimulus IS the utterance — the child reads it aloud. Decoding, not recall.',
+        description: 'Decode printed words or numerals aloud. Naming a displayed symbol or picture is recall: use say_answer. The printed text itself is the utterance.',
       },
       {
         evalMode: 'say_answer',
@@ -975,7 +975,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         beta: 3.0,
         scaffoldingMode: 3,
         challengeTypes: ['say_answer'],
-        description: 'The child meets a stimulus and produces a spoken answer they were not shown. The recall workhorse.',
+        description: 'Name a displayed symbol or picture, or answer a spoken problem. Recall, not decoding. Show visual naming targets without speaking their names or printing answers.',
       },
     ],
     supportsEvaluation: true,

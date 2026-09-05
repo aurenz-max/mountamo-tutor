@@ -108,6 +108,11 @@ export const HOW_TO_PLAY: Record<SpokenPracticeMode, string> = {
 
 export interface SpokenPracticeItem extends JudgedScriptItem {
   mode: SpokenPracticeMode;
+  /** Present on code-planned items; used to verify post-filter session coverage. */
+  targetId?: string;
+  /** A displayed naming target must not be spoken by the ask or tap-to-hear.
+   * Absent on legacy items, whose existing delivery behavior is preserved. */
+  stimulusRole?: 'visual_target';
   stimulusKind: StimulusKind;
   answerSource: AnswerSource;
   /** The stimulus content. Printed when `stimulusKind` is 'text'; spoken by
@@ -297,6 +302,7 @@ export function findArithmeticMismatches(
   const results: ArithmeticMismatch[] = [];
   for (const item of items) {
     if (item.mode !== 'say_answer') continue;
+    if (item.stimulusRole === 'visual_target') continue;
     const match = ARITHMETIC_FACT.exec(item.stimulusText);
     if (!match) continue;
     const a = Number.parseInt(match[1], 10);
@@ -349,6 +355,7 @@ export function findUnspokenStimulus(items: readonly SpokenPracticeItem[]): Unsp
   const results: UnspokenStimulus[] = [];
   for (const item of items) {
     if (item.mode !== 'say_answer') continue;
+    if (item.stimulusRole === 'visual_target') continue;
     if (item.stimulusKind !== 'text' && item.stimulusKind !== 'none') continue;
     const askTokens = new Set(tokenize(item.ask));
     const missing = tokenize(item.stimulusText)
@@ -437,7 +444,7 @@ export const completeCue = (): string =>
  * outright), closed structurally instead of per-pack.
  */
 export const pronounceCue = (item: SpokenPracticeItem): string => {
-  if (item.answerSource === 'decode' || !item.stimulusText.trim()) return '';
+  if (item.answerSource === 'decode' || item.stimulusRole === 'visual_target' || !item.stimulusText.trim()) return '';
   return `[SAY_HEAR] Say exactly: "${item.stimulusText.trim()}" Then stop — say nothing else.`;
 };
 
@@ -465,7 +472,7 @@ export const pronounceCue = (item: SpokenPracticeItem): string => {
  */
 export const contextFor = (item: SpokenPracticeItem): Record<string, string> => {
   const state: Record<string, string> = { challengeType: item.mode };
-  if (item.answerSource !== 'decode') {
+  if (item.answerSource !== 'decode' && item.stimulusRole !== 'visual_target') {
     state.stimulus = item.stimulusText;
   }
   return state;

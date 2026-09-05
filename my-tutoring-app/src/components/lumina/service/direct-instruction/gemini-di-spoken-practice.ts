@@ -41,6 +41,7 @@ import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
 import { createDiscretePool } from '../math/numberPoolService';
+import { planSpokenPractice, modeForSpokenPlan, buildPlannedSpokenItems, hasPlannedCoverage } from './spokenPracticePlan';
 import type { DiSpokenPracticeData } from '../../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
 import {
   deriveResponseClass,
@@ -70,7 +71,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   say_answer: {
     promptDoc:
       '"say_answer": the child meets a stimulus (a printed fact, a word said aloud, a picture) '
-      + 'and SAYS an answer they were not shown. The workhorse recall skill.',
+      + 'and SAYS an answer they were not shown. Includes naming a displayed symbol/picture: '
+      + 'the visual is the question and its name must NOT be spoken before the child answers.',
     schemaDescription: "'say_answer' (produce a spoken answer)",
   },
   read_aloud: {
@@ -124,9 +126,10 @@ const itemSchema: Schema = {
       description:
         'The tutor\'s scripted question, 1-2 short sentences, ending in a hand-over with EXACTLY '
         + 'ONE correct completion. MUST NOT contain the answer or any accepted alternate. '
-        + 'say_answer: the ask must SAY the problem itself — the tutor\'s voice is how the problem '
+        + 'say_answer listening/arithmetic tasks: the ask must SAY the problem itself — the tutor\'s voice is how the problem '
         + 'reaches the child ("Two plus one. What is two plus one?"), never "What is the answer?" '
-        + 'with the problem left on screen. read_aloud: the opposite — the ask must NOT contain the '
+        + 'with the problem left on screen. Visual naming instead asks about the displayed target without naming it. '
+        + 'read_aloud: the opposite — the ask must NOT contain the '
         + 'printed text. Example of an AMBIGUOUS hand-over to avoid: "Your turn. What word?" after '
         + 'the tutor already said the word — prefer "Three what?".',
     },
@@ -237,6 +240,10 @@ const buildItem = (
     ? numberWordFor(stimulusCount)
     : normalizeSpokenAnswer(str(raw.expectedAnswer));
   if (!expectedAnswer) return null;
+  // Reading preserves the printed utterance, including supported numeral → word
+  // normalization. A symbol NAME is recall and cannot be relabeled as decoding.
+  if (mode === 'read_aloud'
+    && normalizeSpokenAnswer(stimulusText).toLowerCase() !== expectedAnswer.toLowerCase()) return null;
 
   const responseClass = deriveResponseClass(mode, expectedAnswer, stimulusText);
   if (!responseClass) return null;
@@ -381,6 +388,7 @@ THE RULES THAT MATTER MOST:
 3. ${count} ITEMS MEANS ${count} DIFFERENT PROBLEMS — never the same problem asked ${count} ways.
    Vary the content first. Commuted twins ("3 + 2" and "2 + 3") are the SAME problem. For a
    number topic, the NUMBER SEEDS section below hands each item its target number — use it.
+   Explicit named sets are allocated separately by code; this call writes open practice.
 
 4. THE ANSWER IS 1-3 SHORT SPOKEN WORDS. If the honest answer to your ask is a sentence or an
    open-ended list, the item does not belong in this format — write a different item.
@@ -411,7 +419,7 @@ Never write a digit anywhere.`
       ? `READING SPECIFICS: "stimulusText" is the exact text the child reads and "expectedAnswer" is that
 same text. The printed words ARE the task here, so they are not a leak — but your "ask" still must
 not contain them ("What word?" / "Read it out loud.").`
-      : `SPEAKING SPECIFICS: the tutor's VOICE is how the problem reaches the child — your "ask" must SAY
+      : `SPEAKING SPECIFICS FOR LISTENING/ARITHMETIC: the tutor's VOICE is how the problem reaches the child — your "ask" must SAY
 the problem itself and then hand it over ("Two plus one. What is two plus one?" / "Listen: cat. Now say it
 without the /k/."). Never write an ask that only points at the screen ("Here is a problem. What is the
 answer?") — a child who cannot read hears a question with no problem in it. The printed stimulus is
@@ -462,9 +470,10 @@ export const generateDiSpokenPractice = async (
   },
 ): Promise<DiSpokenPracticeData> => {
   const intent = config?.intent;
-  const count = Math.min(
+  let count = Math.min(
     MAX_ITEM_COUNT,
-    Math.max(MIN_ITEM_COUNT, config?.challengeCount ?? DEFAULT_ITEM_COUNT),
+    Math.max(MIN_ITEM_COUNT, Number.isFinite(config?.challengeCount)
+      ? Math.floor(config!.challengeCount!) : DEFAULT_ITEM_COUNT),
   );
 
   const resolution = await resolveEvalModes(
@@ -472,12 +481,47 @@ export const generateDiSpokenPractice = async (
     { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
     CHALLENGE_TYPE_DOCS,
   );
-  // Unconstrained ("mixed") resolves to the recall workhorse rather than a
-  // blend: the three modes need different stimuli, and a blended session would
-  // change the ACTION on nearly every item, so the tutor would re-speak the
-  // how-to-play continuously.
-  const mode: SpokenPracticeMode =
+  // One coherent action per session. The plan may choose within an allowed
+  // blend (or an unconstrained request), but cannot override a single-mode pin.
+  let mode: SpokenPracticeMode =
     (resolution?.allowedTypes?.[0] as SpokenPracticeMode | undefined) ?? 'say_answer';
+
+  // The planner owns task interpretation and required membership. A wrong pin
+  // is refused, never silently converted into a different scored mode.
+  const empty = (): DiSpokenPracticeData => ({
+    title: 'Say It Out Loud', description: 'No matching practice is available for this task.',
+    challengeType: mode, gradeLevel, items: [],
+  });
+  let plan;
+  try {
+    plan = await planSpokenPractice(topic, gradeLevel, intent, config?.objectiveText);
+  } catch (error) {
+    console.error('[DiSpokenPractice] incomplete session:', error);
+    return empty();
+  }
+  const plannedMode = modeForSpokenPlan(plan);
+  if (plannedMode && (!resolution || resolution.allowedTypes.includes(plannedMode))) mode = plannedMode;
+  if (plannedMode !== mode) {
+    console.error(`[DiSpokenPractice] task/mode conflict: ${plan.task} cannot run as ${mode}`);
+    return empty();
+  }
+  if (plan.targets.length) {
+    count = Math.max(count, plan.targets.length);
+    // Plans have a six-target ceiling. Every required target is allocated before
+    // repetition, and every dependent field comes from the same checked mapping.
+    const result = dropLeakingItems(buildPlannedSpokenItems(plan, count));
+    if (!hasPlannedCoverage(plan, result.kept, count)) {
+      console.error('[DiSpokenPractice] planned session incomplete after gates:', result.dropped);
+      return empty();
+    }
+    console.log('[DiSpokenPractice] planned session:', {
+      mode, task: plan.task, closedSet: plan.closedSet,
+      targets: plan.targets.map(t => ({ stimulus: t.stimulusText, answer: t.expectedAnswer })),
+      kept: result.kept.length,
+    });
+    return { title: 'Say It Out Loud', description: 'Look, then answer out loud!',
+      challengeType: mode, gradeLevel, items: result.kept };
+  }
 
   let title = 'Say It Out Loud';
   let description = 'Listen to your tutor, then answer out loud!';
@@ -488,12 +532,13 @@ export const generateDiSpokenPractice = async (
   // One retry: a truncated or leaky first pass is common enough on flash-lite
   // that a second ask is cheaper than shipping a short session. The seed pool
   // re-rolls per attempt, so a retry escapes a degenerate first draw too.
-  for (let attempt = 0; attempt < 2 && items.length === 0; attempt++) {
+  for (let attempt = 0; attempt < 2 && items.length < MIN_ITEM_COUNT; attempt++) {
     try {
       const seeded = buildSeedSection(mode);
       seeds = seeded.seeds;
       const parsed = await callModel(
-        buildPrompt(topic, gradeLevel, mode, count, intent, seeded.section),
+        buildPrompt(topic, gradeLevel, mode, count,
+          [config?.objectiveText, intent].filter(Boolean).join(' — ') || undefined, seeded.section),
         count,
       );
       if (typeof parsed.title === 'string' && parsed.title.trim()) title = parsed.title.trim();
@@ -529,6 +574,7 @@ export const generateDiSpokenPractice = async (
       `[DiSpokenPractice] THIN SESSION — ${items.length} of ${count} items survived the gates `
       + `(dropped: ${dropped.join(', ') || 'none for leaks'}); the rest failed the response-class clamp.`,
     );
+    items = [];
   }
 
   console.log('[DiSpokenPractice] generated:', {

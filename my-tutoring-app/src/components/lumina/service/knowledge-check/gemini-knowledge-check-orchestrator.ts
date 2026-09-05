@@ -247,6 +247,7 @@ ${objectives && objectives.length > 0 ? `## Lesson Objectives (tag every problem
 This assessment covers these lesson objectives:
 ${objectives.map(o => `- ${o.id}: "${o.text}"`).join('\n')}
 Set each problem's "objectiveId" to the id of the SINGLE objective it primarily assesses. Spread coverage — every objective should be assessed at least once when the problem count allows.
+Each objective's brief must test THAT objective's own verb and angle — not restate another objective's task with the words swapped. Read each objective's text as naming a DIFFERENT skill: if one objective says "listen and identify a sound" and another says "read a word all the way through," their briefs must produce visibly different tasks (an auditory single-sound judgment vs. a whole-word decode), never the same question shape wearing two objectiveIds. Before finalizing, compare every pair of briefs tagged to different objectives — if two would read as the same question with different words, rewrite the weaker one to actually test its own objective.
 ` : ''}
 ## Rules
 1. **Diversity**: Use at least 2 different problem types for sets of 3+, at least 3 different types for sets of 5+. Don't default to all multiple choice.

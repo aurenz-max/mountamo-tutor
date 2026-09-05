@@ -917,6 +917,28 @@ function reconstructDrawFromDescription(ch: ShapeTracerChallenge, shape: string)
 }
 
 /**
+ * True when >=2 challenges of the same type already name DISTINCT shapes —
+ * a NAMED-SET session (e.g. obj2 "identify circle/square/triangle/rectangle"),
+ * as opposed to a same-shape-family progression the structural ladder was built
+ * for. The ladder maps (mode, tier, gradeBand) to ONE canonical shape, so
+ * applying it here would collapse every challenge of that type onto that one
+ * shape and silently erase the named-set coverage the session exists to teach
+ * (caught by /lesson-coverage: shape-tracer stamped all 4 challenges 'triangle'
+ * despite instructions naming circle/square/triangle/rectangle). Per the
+ * answer-bearing-lever rule (EVAL_TRACKER SCR-2): honor the LLM's distinct,
+ * already-valid choices rather than narrowing them to satisfy a difficulty axis.
+ */
+function typesWithNamedSetVariety(challenges: ShapeTracerChallenge[]): Set<string> {
+  const shapesByType = new Map<string, Set<string>>();
+  for (const ch of challenges) {
+    const shapes = shapesByType.get(ch.type) ?? new Set<string>();
+    shapes.add(ch.targetShape);
+    shapesByType.set(ch.type, shapes);
+  }
+  return new Set(Array.from(shapesByType).filter(([, shapes]) => shapes.size >= 2).map(([type]) => type));
+}
+
+/**
  * Post-process a single challenge to the structural tier: re-select its target
  * shape up the complexity ladder, then RECONSTRUCT its answer-bearing geometry
  * from that shape. Returns true if anything was rewritten.
@@ -1107,6 +1129,7 @@ export const generateShapeTracer = async (
   // auto sessions get tiered too. Withdraw tracing help; NEVER touch the shape.
   if (supportTier) {
     let reshapedCount = 0;
+    const namedSetTypes = typesWithNamedSetVariety(challenges);
     for (const ch of challenges) {
       // AXIS 1 — scaffolding withdrawal (display-only, same shape).
       const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
@@ -1121,12 +1144,15 @@ export const generateShapeTracer = async (
       // grade-band complexity ladder and RECONSTRUCT the answer-bearing geometry
       // from it (the shape determines the answer, so this stays self-consistent).
       // Honor-don't-churn: skips when the LLM already produced the target shape.
-      if (applyStructuralShape(ch, supportTier, setup.gradeBand)) reshapedCount++;
+      // Named-set skip: never collapse a session that already names DISTINCT
+      // shapes per challenge (an identify-these-shapes session) onto one shape.
+      if (!namedSetTypes.has(ch.type) && applyStructuralShape(ch, supportTier, setup.gradeBand)) reshapedCount++;
     }
     console.log(
       `[ShapeTracer] Support tier "${supportTier}" applied per-challenge `
       + `(${evalConstraint?.allowedTypes.length === 1 ? `single-mode ${evalConstraint.allowedTypes[0]}` : 'blended'}); `
-      + `structural reshapes: ${reshapedCount}/${challenges.length} (grade ${setup.gradeBand})`,
+      + `structural reshapes: ${reshapedCount}/${challenges.length} (grade ${setup.gradeBand})`
+      + `${namedSetTypes.size ? `; named-set types preserved: ${Array.from(namedSetTypes).join(', ')}` : ''}`,
     );
   }
 
