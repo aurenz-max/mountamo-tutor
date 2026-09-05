@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { LessonCoverageEval } from '../lessonCoverage/types';
 import type { ComponentDefinition, ExhibitManifest, IntroBriefingData, ManifestItem } from '../../../types';
 import { buildLessonPackage, emptyHumanLabel, type LessonPackage } from './lessonPackage';
 import {
@@ -60,6 +61,7 @@ function pkgWith(blocks: Block[], opts: { gradeLevel?: string; subject?: string;
 
 const score = (pkg: LessonPackage) => scoreLessonPackage(pkg, CATALOG, { now: new Date(0) });
 const cites = (s: ReturnType<typeof score>, checkId: string) => (s.citations ?? []).filter((c) => c.checkId === checkId);
+const unknowns = (s: ReturnType<typeof score>, checkId: string) => (s.unknowns ?? []).filter((c) => c.checkId === checkId);
 
 describe('band resolution', () => {
   it('reads the canonical grade off the stamped objectiveGrade, then the band string', () => {
@@ -74,7 +76,7 @@ describe('Tier A scorer', () => {
     const s = score(pkgWith([['concrete-thing', 'ct', 'obj1', 'count'], ['symbol-grid', 'sg', 'obj1', 'highlight']], { final: ['checker', 'kc', 'obj1', 'recall|apply'] }));
     expect(s.bucket).toBe('RUNNABLE');
     expect(s.gates).toEqual({ G1: 1, G4: 1, G6: 1 });
-    expect(s.checks).toEqual({ Q8: 1, Q3: 1, Q6: 1, Q7: 1, Q9: 1 });
+    expect(s.checks).toEqual({ Q8: 1, Q3: 1, Q6: 1, Q7: 1 });
     expect(s.holistic).toEqual([]);
     // symbol-grid has no reader verdict → unknown on Q8, never a fail
     expect((s.unknowns ?? []).some((u) => u.checkId === 'Q8' && u.instanceId === 'sg')).toBe(true);
@@ -155,12 +157,13 @@ describe('Tier A scorer', () => {
     expect(cites(s, 'Q7')[0].instanceId).toBe(LESSON_SCOPE);
   });
 
-  it('Q9: known minutes over the band cap is too-long, with the cap in the note', () => {
+  it('Q9: known minutes over the band cap is advisory only — a note, never a fail', () => {
     const many: Block[] = Array.from({ length: 8 }, (_, i) => ['concrete-thing', `c${i}`, 'obj1', 'count'] as Block);
     const s = score(pkgWith(many.flatMap((b, i) => (i % 2 ? [b] : [b, ['symbol-grid', `s${i}`, 'obj1']]))));
     expect(s.evidence?.minutes).toBeGreaterThan(LENGTH_CAP_MINUTES.preReader);
-    expect(s.checks.Q9).toBe(0);
-    expect(cites(s, 'Q9')[0].note).toContain(`cap of ${LENGTH_CAP_MINUTES.preReader}`);
+    expect(s.checks.Q9).toBeUndefined();
+    expect(cites(s, 'Q9')).toEqual([]);
+    expect(unknowns(s, 'Q9')[0].note).toContain(`guide of ${LENGTH_CAP_MINUTES.preReader}`);
   });
 
   it('G6: tap-only production fails a K-2 LITERACY lesson; a math lesson records it as evidence only', () => {
@@ -193,8 +196,11 @@ describe('machine vs human', () => {
     expect(a.parentCardLabels).toEqual([{ instanceId: 'home', reaction: 'cut', reasons: ['too-much-reading'] }]);
     expect(a.unrouted).toEqual([{ instanceId: 'kc', reaction: 'fix', note: 'says the answer, then has to click too' }]);
     expect(a.rows.find((r) => r.checkId === 'Q1')!.agree).toBeNull(); // Tier B check
-    expect(a.scored).toBe(8);
-    expect(a.agreed).toBe(7);
+    // Q9 is advisory-only — never a machine verdict — and was one of the agreeing rows
+    // before this change, so dropping it takes both scored and agreed down by one;
+    // Q8 (the parent-card case, asserted above) stays the lesson's one disagreement.
+    expect(a.scored).toBe(7);
+    expect(a.agreed).toBe(6);
     expect(a.holistic).toBe(4);
   });
 });
@@ -223,5 +229,46 @@ describe('triage', () => {
     const pkg = pkgWith([['concrete-thing', 'ct', 'obj1']]);
     pkg.human = { ...emptyHumanLabel(), blocks: { ct: { reaction: 'fix', reasons: [], note: 'meh' } } };
     expect(triageLabel(pkg, CATALOG)[0]).toMatchObject({ layer: 'UNROUTED' });
+  });
+});
+
+describe('Q4 coverage — the judge\'s verdict, merged when the package carries one', () => {
+  const meta: LessonCoverageEval['meta'] = { topic: '', gradeLevel: '', skillIds: [], subskillIds: [], primitiveTypes: [], evalModel: 'test-model', evalTimestamp: '1970-01-01T00:00:00.000Z', latencyMs: 0, usedSchemaFallback: false, digestChars: 0, truncated: false, objectiveCount: 0, objectivesFullyCovered: 0, objectivesUncovered: 0, failureCategories: [], source: 'test' };
+  type Category = LessonCoverageEval['objectives'][number]['category'];
+  const verdict = (objectives: Array<[id: string, category: Category]>, status: LessonCoverageEval['status'] = 'warn'): LessonCoverageEval => ({
+    version: 1, lessonId: 'test-pkg', status, overallObjectiveCoverage: 0.5, blockingFailure: false, summary: '', detectedConstraints: [],
+    objectives: objectives.map(([objectiveId, category]) => ({ objectiveId, objective: objectiveId, category, taught: true, assessed: category !== 'TAUGHT_NOT_ASSESSED', assessmentCount: 0, assessmentEvidence: [], instructionEvidence: [], masteryInferenceSupported: false, severity: 'CRITICAL', notes: 'no item asks it' })),
+    meta: { ...meta, objectiveCount: objectives.length },
+  });
+  const blocks: Block[] = [['concrete-thing', 'ct', 'obj1', 'count'], ['symbol-grid', 'sg', 'obj2', 'highlight']];
+
+  it('without a verdict Q4 is an unknown, never a score', () => {
+    const s = score(pkgWith(blocks));
+    expect(s.checks.Q4).toBeUndefined();
+    expect((s.unknowns ?? []).find((u) => u.checkId === 'Q4')?.note).toContain('no coverage verdict');
+    expect(s.evidence?.coverageJudge).toBeNull();
+  });
+
+  it('merges the judge: a miss cites the objective\'s first NON-final stream block; all sufficient passes', () => {
+    const pkg = pkgWith(blocks, { final: ['checker', 'kc', 'obj2', 'recall'] });
+    pkg.coverage = verdict([['obj1', 'ASSESSED_SUFFICIENTLY'], ['obj2', 'TAUGHT_NOT_ASSESSED']]);
+    const s = score(pkg);
+    expect(s.checks.Q4).toBe(0);
+    expect(cites(s, 'Q4')).toEqual([{ instanceId: 'sg', checkId: 'Q4', note: 'obj2 TAUGHT_NOT_ASSESSED: no item asks it' }]);
+    expect(s.evidence?.coverageJudge).toMatchObject({ status: 'warn', model: 'test-model', source: 'test' });
+    pkg.coverage = verdict([['obj1', 'ASSESSED_SUFFICIENTLY'], ['obj2', 'ASSESSED_SUFFICIENTLY']], 'pass');
+    expect(score(pkg).checks.Q4).toBe(1);
+  });
+
+  it('an errored verdict stays unknown; the calibration table scores Q4 against the rater\'s "missing"', () => {
+    const pkg = pkgWith(blocks);
+    pkg.coverage = { ...verdict([]), status: 'error', meta: { ...meta, error: 'down' } };
+    const errored = score(pkg);
+    expect(errored.checks.Q4).toBeUndefined();
+    expect((errored.unknowns ?? []).some((u) => u.checkId === 'Q4' && u.note.includes('down'))).toBe(true);
+    pkg.coverage = verdict([['obj1', 'ASSESSED_SUFFICIENTLY'], ['obj2', 'TAUGHT_NOT_ASSESSED']]);
+    const a = machineVsHuman(score(pkg), { ...emptyHumanLabel(), holistic: 3, lessonReasons: ['missing'] });
+    expect(a.rows.find((r) => r.checkId === 'Q4')).toMatchObject({ machine: 0, human: 'fail', agree: true, humanBlocks: [LESSON_SCOPE], machineBlocks: ['sg'] });
+    expect(a.scored).toBe(8); // Q9 is advisory-only — never a machine verdict, so it drops out of scoring
   });
 });

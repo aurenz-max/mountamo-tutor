@@ -68,7 +68,7 @@ export const LESSON_BENCH_CHECKS: readonly LessonBenchCheckDef[] = [
   { id: 'Q8', kind: 'check', label: 'Text load', judge: 'code',
     passesWhen: 'At the pre-reader band every on-screen instruction is read aloud or absent.' },
   { id: 'Q9', kind: 'check', label: 'Length', judge: 'code',
-    passesWhen: "Known block minutes in the child's stream (parent cards excluded) sum to at most the band cap (LENGTH_CAP_MINUTES: pre-reader 40, K-2 45, else 55). Untagged blocks add nothing, so the sum is a floor." },
+    passesWhen: "ADVISORY ONLY (2026-09-05) — never scored pass/fail. Known block minutes in the child's stream (parent cards excluded) are compared to the band guide (LENGTH_CAP_MINUTES: pre-reader 40, K-2 45, else 55), but both sides are estimates — per-primitive typical-minutes tags summed against a cap calibrated from one labeled lesson — so an overage surfaces as a note, never a citation." },
 ];
 
 export const HOLISTIC_ANCHORS: Readonly<Record<1 | 2 | 3 | 4 | 5, string>> = {

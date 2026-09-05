@@ -1,0 +1,1559 @@
+{
+  "benchVersion": 1,
+  "id": "kindergarten-phonics-2-letter-sound-group-2-c-k-e-h-r-m-d-20260905181053-q437",
+  "subskill": null,
+  "provenance": {
+    "generatedAt": "2026-09-05T18:10:53.078Z",
+    "source": "topic-trace",
+    "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d",
+    "gradeLevel": "Kindergarten",
+    "gitSha": null,
+    "promptHash": null,
+    "generationRequest": {
+      "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+      "gradeLevel": "kindergarten",
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+          "verb": "identify",
+          "icon": "ear",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+          "grade": "K"
+        },
+        {
+          "id": "obj2",
+          "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+          "verb": "apply",
+          "icon": "voice",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+          "grade": "K"
+        }
+      ],
+      "curatorBrief": {
+        "primitive": "intro_briefing",
+        "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+        "subject": "Language Arts",
+        "gradeLevel": "Kindergarten",
+        "estimatedTime": "15 min",
+        "hook": {
+          "content": "Let us practice our letter sounds."
+        },
+        "bigIdea": {},
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+            "verb": "identify",
+            "icon": "ear",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "grade": "K"
+          },
+          {
+            "id": "obj2",
+            "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+            "verb": "apply",
+            "icon": "voice",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "grade": "K"
+          }
+        ],
+        "prerequisites": {},
+        "roadmap": [],
+        "connections": {},
+        "mindset": {}
+      },
+      "package": true
+    }
+  },
+  "manifest": {
+    "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d",
+    "gradeLevel": "Kindergarten",
+    "subject": "LANGUAGE_ARTS",
+    "themeColor": "#f97316",
+    "curatorBrief": {
+      "instanceId": "brief-letter-group-2",
+      "title": "Welcome to Letter-Sound Safari!",
+      "intent": "Introduce Kindergarten learners to Letter-Sound Group 2 (c, k, e, h, r, m, d) making the sounds /k/, /e/, /h/, /r/, /m/, /d/, while reviewing Group 1 (s, a, t, i, p, n) in a cumulative 13-letter set."
+    },
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Letter-Sound Group 2: c, k, e, h, r, m, d. Introduce the new sounds (/k/, /ĕ/, /h/, /r/, /m/, /d/) while systematically reviewing the sounds from Group 1, pulling from the full 13-letter cumulative list (s, a, t, i, p, n, c, k, e, h, r, m, d), noting that 'c' and 'k' share the same primary sound /k/.",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "letter-spotter",
+            "instanceId": "obj1-spotter-group2",
+            "title": "Spot the Letters: Group 2 and Review",
+            "intent": "Help kindergarteners recognize and discriminate the printed letterforms for Group 2 (c, k, e, h, r, m, d) alongside review letters from Group 1 (s, a, t, i, p, n) using visual discrimination and case matching.",
+            "config": {
+              "difficulty": "easy",
+              "targetEvalMode": "find_it"
+            }
+          },
+          {
+            "componentId": "letter-sound-link",
+            "instanceId": "obj1-sound-link-intro",
+            "title": "Hear the Sound, Find the Letter",
+            "intent": "Introduce and identify phoneme-grapheme correspondences for new sounds /k/, /ĕ/, /h/, /r/, /m/, /d/ (with 'c' and 'k' both linking to /k/) interspersed with cumulative review of s, a, t, i, p, n.",
+            "config": {
+              "difficulty": "easy",
+              "targetEvalMode": "see_hear"
+            }
+          },
+          {
+            "componentId": "phonics-blender",
+            "instanceId": "obj1-blender-cumulative",
+            "title": "Blend Sounds Together",
+            "intent": "Reinforce identification of cumulative letter sounds (Group 1 & 2) by blending sounds sequentially into simple decodable words like cat, hen, rip, mat, and kid.",
+            "config": {
+              "difficulty": "easy",
+              "targetEvalMode": "cvc"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj2",
+        "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "di-letter-sounds",
+            "instanceId": "obj2-di-continuous-production",
+            "title": "Say the Sound Aloud",
+            "intent": "Provide live-judged voice practice where the student independently produces continuous sounds and short vowels (m, r, e, and review sounds s, a, i, n) out loud when shown each letter grapheme.",
+            "config": {
+              "difficulty": "medium",
+              "targetEvalMode": "letter_sound_review"
+            }
+          },
+          {
+            "componentId": "letter-sound-link",
+            "instanceId": "obj2-sound-production-check",
+            "title": "Grapheme to Sound Challenge",
+            "intent": "Prompt the student to say the corresponding sound or keyword when shown cumulative letters from the full 13-letter set (s, a, t, i, p, n, c, k, e, h, r, m, d) with cold presentation without first hearing the tutor model it.",
+            "config": {
+              "difficulty": "medium",
+              "targetEvalMode": "keyword_match"
+            }
+          }
+        ]
+      }
+    ],
+    "finalAssessment": {
+      "componentId": "knowledge-check",
+      "instanceId": "final-phonics-check",
+      "title": "Letter-Sound Safari Roundup",
+      "intent": "Check spoken or tap identification and independent production of letter sounds across the entire cumulative 13-letter set (s, a, t, i, p, n, c, k, e, h, r, m, d).",
+      "config": {
+        "count": 6,
+        "targetEvalMode": "mixed"
+      }
+    },
+    "layout": [
+      {
+        "componentId": "curator-brief",
+        "instanceId": "brief-letter-group-2",
+        "title": "Welcome to Letter-Sound Safari!",
+        "intent": "Introduce Kindergarten learners to Letter-Sound Group 2 (c, k, e, h, r, m, d) making the sounds /k/, /e/, /h/, /r/, /m/, /d/, while reviewing Group 1 (s, a, t, i, p, n) in a cumulative 13-letter set.",
+        "objectiveIds": [
+          "obj1",
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "letter-spotter",
+        "instanceId": "obj1-spotter-group2",
+        "title": "Spot the Letters: Group 2 and Review",
+        "intent": "Help kindergarteners recognize and discriminate the printed letterforms for Group 2 (c, k, e, h, r, m, d) alongside review letters from Group 1 (s, a, t, i, p, n) using visual discrimination and case matching.",
+        "config": {
+          "difficulty": "easy",
+          "targetEvalMode": "find_it",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Help kindergarteners recognize and discriminate the printed letterforms for Group 2 (c, k, e, h, r, m, d) alongside review letters from Group 1 (s, a, t, i, p, n) using visual discrimination and case matching."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "letter-sound-link",
+        "instanceId": "obj1-sound-link-intro",
+        "title": "Hear the Sound, Find the Letter",
+        "intent": "Introduce and identify phoneme-grapheme correspondences for new sounds /k/, /ĕ/, /h/, /r/, /m/, /d/ (with 'c' and 'k' both linking to /k/) interspersed with cumulative review of s, a, t, i, p, n.",
+        "config": {
+          "difficulty": "easy",
+          "targetEvalMode": "see_hear",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Introduce and identify phoneme-grapheme correspondences for new sounds /k/, /ĕ/, /h/, /r/, /m/, /d/ (with 'c' and 'k' both linking to /k/) interspersed with cumulative review of s, a, t, i, p, n."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "phonics-blender",
+        "instanceId": "obj1-blender-cumulative",
+        "title": "Blend Sounds Together",
+        "intent": "Reinforce identification of cumulative letter sounds (Group 1 & 2) by blending sounds sequentially into simple decodable words like cat, hen, rip, mat, and kid.",
+        "config": {
+          "difficulty": "easy",
+          "targetEvalMode": "cvc",
+          "objectiveId": "obj1",
+          "objectiveText": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+          "objectiveVerb": "identify",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Reinforce identification of cumulative letter sounds (Group 1 & 2) by blending sounds sequentially into simple decodable words like cat, hen, rip, mat, and kid."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "di-letter-sounds",
+        "instanceId": "obj2-di-continuous-production",
+        "title": "Say the Sound Aloud",
+        "intent": "Provide live-judged voice practice where the student independently produces continuous sounds and short vowels (m, r, e, and review sounds s, a, i, n) out loud when shown each letter grapheme.",
+        "config": {
+          "difficulty": "medium",
+          "targetEvalMode": "letter_sound_review",
+          "objectiveId": "obj2",
+          "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+          "objectiveVerb": "apply",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Provide live-judged voice practice where the student independently produces continuous sounds and short vowels (m, r, e, and review sounds s, a, i, n) out loud when shown each letter grapheme."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "letter-sound-link",
+        "instanceId": "obj2-sound-production-check",
+        "title": "Grapheme to Sound Challenge",
+        "intent": "Prompt the student to say the corresponding sound or keyword when shown cumulative letters from the full 13-letter set (s, a, t, i, p, n, c, k, e, h, r, m, d) with cold presentation without first hearing the tutor model it.",
+        "config": {
+          "difficulty": "medium",
+          "targetEvalMode": "keyword_match",
+          "objectiveId": "obj2",
+          "objectiveText": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+          "objectiveVerb": "apply",
+          "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+          "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+          "objectiveGrade": "K",
+          "intent": "Prompt the student to say the corresponding sound or keyword when shown cumulative letters from the full 13-letter set (s, a, t, i, p, n, c, k, e, h, r, m, d) with cold presentation without first hearing the tutor model it."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "final-phonics-check",
+        "title": "Letter-Sound Safari Roundup",
+        "intent": "Check spoken or tap identification and independent production of letter sounds across the entire cumulative 13-letter set (s, a, t, i, p, n, c, k, e, h, r, m, d).",
+        "config": {
+          "count": 6,
+          "targetEvalMode": "mixed",
+          "objectiveGrade": "K",
+          "lessonObjectives": [
+            {
+              "id": "obj1",
+              "text": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "grade": "K"
+            },
+            {
+              "id": "obj2",
+              "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+              "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+              "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+              "grade": "K"
+            }
+          ]
+        },
+        "objectiveIds": [
+          "obj1",
+          "obj2"
+        ]
+      }
+    ]
+  },
+  "curatorBrief": {
+    "primitive": "intro_briefing",
+    "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+    "subject": "Language Arts",
+    "gradeLevel": "Kindergarten",
+    "estimatedTime": "15 min",
+    "hook": {
+      "content": "Let us practice our letter sounds."
+    },
+    "bigIdea": {},
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+        "verb": "identify",
+        "icon": "ear",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+        "grade": "K"
+      },
+      {
+        "id": "obj2",
+        "text": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+        "verb": "apply",
+        "icon": "voice",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+        "grade": "K"
+      }
+    ],
+    "prerequisites": {},
+    "roadmap": [],
+    "connections": {},
+    "mindset": {}
+  },
+  "components": [
+    {
+      "instanceId": "obj1-spotter-group2",
+      "componentId": "letter-spotter",
+      "data": {
+        "title": "Spot the Group 2 Letters!",
+        "challenges": [
+          {
+            "id": "ch1",
+            "mode": "find-it",
+            "targetLetter": "c",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "D",
+              "E",
+              "T",
+              "M",
+              "C",
+              "I",
+              "S",
+              "K",
+              "A",
+              "K",
+              "T",
+              "N",
+              "H",
+              "D",
+              "P",
+              "R"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch2",
+            "mode": "find-it",
+            "targetLetter": "h",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "S",
+              "P",
+              "T",
+              "R",
+              "K",
+              "M",
+              "D",
+              "E",
+              "N",
+              "A",
+              "H",
+              "I",
+              "A",
+              "T",
+              "P",
+              "C"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch3",
+            "mode": "find-it",
+            "targetLetter": "m",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "N",
+              "K",
+              "I",
+              "C",
+              "S",
+              "D",
+              "A",
+              "A",
+              "H",
+              "T",
+              "P",
+              "E",
+              "E",
+              "R",
+              "M",
+              "S"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch4",
+            "mode": "find-it",
+            "targetLetter": "r",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "T",
+              "I",
+              "T",
+              "K",
+              "M",
+              "P",
+              "A",
+              "N",
+              "K",
+              "S",
+              "C",
+              "R",
+              "H",
+              "E",
+              "I",
+              "D"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch5",
+            "mode": "find-it",
+            "targetLetter": "k",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "T",
+              "D",
+              "M",
+              "A",
+              "M",
+              "E",
+              "C",
+              "S",
+              "K",
+              "N",
+              "P",
+              "R",
+              "H",
+              "I",
+              "A",
+              "R"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch6",
+            "mode": "find-it",
+            "targetLetter": "e",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "C",
+              "T",
+              "N",
+              "I",
+              "P",
+              "M",
+              "R",
+              "R",
+              "D",
+              "H",
+              "E",
+              "K",
+              "I",
+              "M",
+              "A",
+              "S"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          },
+          {
+            "id": "ch7",
+            "mode": "find-it",
+            "targetLetter": "d",
+            "targetCase": "uppercase",
+            "letterGrid": [
+              "H",
+              "N",
+              "M",
+              "T",
+              "P",
+              "E",
+              "M",
+              "D",
+              "R",
+              "C",
+              "I",
+              "N",
+              "C",
+              "A",
+              "S",
+              "K"
+            ],
+            "targetCount": 1,
+            "showTargetReference": true
+          }
+        ],
+        "letterGroup": 2,
+        "cumulativeLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n",
+          "c",
+          "k",
+          "e",
+          "h",
+          "r",
+          "m",
+          "d"
+        ],
+        "newLetters": [
+          "c",
+          "k",
+          "e",
+          "h",
+          "r",
+          "m",
+          "d"
+        ],
+        "supportTier": "easy"
+      }
+    },
+    {
+      "instanceId": "obj1-sound-link-intro",
+      "componentId": "letter-sound-link",
+      "data": {
+        "title": "Letter Sounds - Group 2!",
+        "letterGroup": 2,
+        "cumulativeLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n",
+          "c",
+          "k",
+          "e",
+          "h",
+          "r",
+          "m",
+          "d"
+        ],
+        "challenges": [
+          {
+            "id": "ch1",
+            "mode": "see-hear",
+            "targetLetter": "s",
+            "targetSound": "/s/",
+            "keywordWord": "sun",
+            "keywordImage": "sun",
+            "options": [],
+            "showKeywordAnchor": "proactive",
+            "strategyHint": "Look at the letter, then listen to BOTH bubbles before you pick.",
+            "protocolHint": "Tap each speaker to hear the sound, then tap your answer again to choose it",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch2",
+            "mode": "see-hear",
+            "targetLetter": "a",
+            "targetSound": "/ă/",
+            "keywordWord": "apple",
+            "keywordImage": "apple",
+            "options": [],
+            "showKeywordAnchor": "proactive",
+            "strategyHint": "Look at the letter, then listen to BOTH bubbles before you pick.",
+            "protocolHint": "Tap each speaker to hear the sound, then tap your answer again to choose it",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch3",
+            "mode": "see-hear",
+            "targetLetter": "t",
+            "targetSound": "/t/",
+            "keywordWord": "tent",
+            "keywordImage": "tent",
+            "options": [],
+            "showKeywordAnchor": "proactive",
+            "strategyHint": "Look at the letter, then listen to BOTH bubbles before you pick.",
+            "protocolHint": "Tap each speaker to hear the sound, then tap your answer again to choose it",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch4",
+            "mode": "see-hear",
+            "targetLetter": "m",
+            "targetSound": "/m/",
+            "keywordWord": "map",
+            "keywordImage": "map",
+            "options": [],
+            "showKeywordAnchor": "proactive",
+            "strategyHint": "Look at the letter, then listen to BOTH bubbles before you pick.",
+            "protocolHint": "Tap each speaker to hear the sound, then tap your answer again to choose it",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch5",
+            "mode": "see-hear",
+            "targetLetter": "r",
+            "targetSound": "/r/",
+            "keywordWord": "run",
+            "keywordImage": "run",
+            "options": [],
+            "showKeywordAnchor": "proactive",
+            "strategyHint": "Look at the letter, then listen to BOTH bubbles before you pick.",
+            "protocolHint": "Tap each speaker to hear the sound, then tap your answer again to choose it",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch6",
+            "mode": "see-hear",
+            "targetLetter": "d",
+            "targetSound": "/d/",
+            "keywordWord": "dog",
+            "keywordImage": "dog",
+            "options": [],
+            "showKeywordAnchor": "proactive",
+            "strategyHint": "Look at the letter, then listen to BOTH bubbles before you pick.",
+            "protocolHint": "Tap each speaker to hear the sound, then tap your answer again to choose it",
+            "showSharedSoundHint": true,
+            "auditionBeforeCommit": true
+          }
+        ],
+        "gradeLevel": "K",
+        "supportTier": "easy",
+        "maxAttempts": 3
+      }
+    },
+    {
+      "instanceId": "obj1-blender-cumulative",
+      "componentId": "phonics-blender",
+      "data": {
+        "title": "Blend CVC Words with Group 2 Sounds",
+        "gradeLevel": "K",
+        "patternType": "cvc",
+        "words": [
+          {
+            "id": "w1",
+            "targetWord": "cat",
+            "phonemes": [
+              {
+                "id": "w1_p1",
+                "sound": "/k/",
+                "letters": "c"
+              },
+              {
+                "id": "w1_p2",
+                "sound": "/æ/",
+                "letters": "a"
+              },
+              {
+                "id": "w1_p3",
+                "sound": "/t/",
+                "letters": "t"
+              }
+            ],
+            "emoji": "🐱",
+            "imageDescription": "a small furry cat"
+          },
+          {
+            "id": "w2",
+            "targetWord": "hen",
+            "phonemes": [
+              {
+                "id": "w2_p1",
+                "sound": "/h/",
+                "letters": "h"
+              },
+              {
+                "id": "w2_p2",
+                "sound": "/ɛ/",
+                "letters": "e"
+              },
+              {
+                "id": "w2_p3",
+                "sound": "/n/",
+                "letters": "n"
+              }
+            ],
+            "emoji": "🐔",
+            "imageDescription": "a farm hen"
+          },
+          {
+            "id": "w3",
+            "targetWord": "rip",
+            "phonemes": [
+              {
+                "id": "w3_p1",
+                "sound": "/r/",
+                "letters": "r"
+              },
+              {
+                "id": "w3_p2",
+                "sound": "/ɪ/",
+                "letters": "i"
+              },
+              {
+                "id": "w3_p3",
+                "sound": "/p/",
+                "letters": "p"
+              }
+            ],
+            "emoji": "📄",
+            "imageDescription": "a piece of paper with a rip"
+          },
+          {
+            "id": "w4",
+            "targetWord": "mat",
+            "phonemes": [
+              {
+                "id": "w4_p1",
+                "sound": "/m/",
+                "letters": "m"
+              },
+              {
+                "id": "w4_p2",
+                "sound": "/æ/",
+                "letters": "a"
+              },
+              {
+                "id": "w4_p3",
+                "sound": "/t/",
+                "letters": "t"
+              }
+            ],
+            "emoji": "🚪",
+            "imageDescription": "a welcome door mat"
+          },
+          {
+            "id": "w5",
+            "targetWord": "kid",
+            "phonemes": [
+              {
+                "id": "w5_p1",
+                "sound": "/k/",
+                "letters": "k"
+              },
+              {
+                "id": "w5_p2",
+                "sound": "/ɪ/",
+                "letters": "i"
+              },
+              {
+                "id": "w5_p3",
+                "sound": "/d/",
+                "letters": "d"
+              }
+            ],
+            "emoji": "👦",
+            "imageDescription": "a happy child"
+          }
+        ],
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "supportTier": "easy",
+        "showBlendPreview": "full",
+        "showSlotCount": true,
+        "showTileLetters": true,
+        "nameTargetPhonemes": true
+      }
+    },
+    {
+      "instanceId": "obj2-di-continuous-production",
+      "componentId": "di-letter-sounds",
+      "data": {
+        "title": "Super Sound Adventure",
+        "description": "Get ready to look at the letters and say their sounds out loud!",
+        "challengeType": "letter_sound_review",
+        "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+        "challenges": [
+          {
+            "id": "dils-1-m",
+            "challengeType": "letter_sound_review",
+            "letter": "m",
+            "spoken": "mmm",
+            "keyword": "moon",
+            "emoji": "🌙",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "m",
+              "mm",
+              "mmm",
+              "hm",
+              "hmm",
+              "mhm",
+              "um"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-2-r",
+            "challengeType": "letter_sound_review",
+            "letter": "r",
+            "spoken": "rrr",
+            "keyword": "ring",
+            "emoji": "💍",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "r",
+              "rr",
+              "rrr",
+              "ar",
+              "are",
+              "er"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-3-s",
+            "challengeType": "letter_sound_review",
+            "letter": "s",
+            "spoken": "sss",
+            "keyword": "sun",
+            "emoji": "☀️",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "s",
+              "ss",
+              "sss",
+              "ess",
+              "sh",
+              "shh",
+              "hiss"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-4-a",
+            "challengeType": "letter_sound_review",
+            "letter": "a",
+            "spoken": "aaa",
+            "keyword": "apple",
+            "emoji": "🍎",
+            "elicitation": "keyword",
+            "asrAliases": [
+              "apple",
+              "a"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-5-i",
+            "challengeType": "letter_sound_review",
+            "letter": "i",
+            "spoken": "iii",
+            "keyword": "igloo",
+            "emoji": "🧊",
+            "elicitation": "keyword",
+            "asrAliases": [
+              "igloo",
+              "i"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-6-n",
+            "challengeType": "letter_sound_review",
+            "letter": "n",
+            "spoken": "nnn",
+            "keyword": "nest",
+            "emoji": "🪺",
+            "elicitation": "isolated",
+            "asrAliases": [
+              "n",
+              "nn",
+              "nnn",
+              "en",
+              "un"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-7-e",
+            "challengeType": "letter_sound_review",
+            "letter": "e",
+            "spoken": "eee",
+            "keyword": "egg",
+            "emoji": "🥚",
+            "elicitation": "keyword",
+            "asrAliases": [
+              "egg",
+              "e"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-8-t",
+            "challengeType": "letter_sound_review",
+            "letter": "t",
+            "spoken": "/t/",
+            "keyword": "tent",
+            "emoji": "⛺",
+            "elicitation": "isolated",
+            "articulation": "clipped",
+            "asrAliases": [
+              "t",
+              "tuh",
+              "ta",
+              "tent"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-9-p",
+            "challengeType": "letter_sound_review",
+            "letter": "p",
+            "spoken": "/p/",
+            "keyword": "pig",
+            "emoji": "🐷",
+            "elicitation": "isolated",
+            "articulation": "clipped",
+            "asrAliases": [
+              "p",
+              "puh",
+              "pa",
+              "pig"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-10-c",
+            "challengeType": "letter_sound_review",
+            "letter": "c",
+            "spoken": "/k/",
+            "keyword": "cat",
+            "emoji": "🐱",
+            "elicitation": "isolated",
+            "articulation": "clipped",
+            "asrAliases": [
+              "k",
+              "c",
+              "kuh",
+              "ka",
+              "cat"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-11-k",
+            "challengeType": "letter_sound_review",
+            "letter": "k",
+            "spoken": "/k/",
+            "keyword": "kite",
+            "emoji": "🪁",
+            "elicitation": "isolated",
+            "articulation": "clipped",
+            "asrAliases": [
+              "k",
+              "kuh",
+              "ka",
+              "kite"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-12-h",
+            "challengeType": "letter_sound_review",
+            "letter": "h",
+            "spoken": "/h/",
+            "keyword": "hat",
+            "emoji": "🎩",
+            "elicitation": "isolated",
+            "articulation": "clipped",
+            "asrAliases": [
+              "h",
+              "huh",
+              "ha",
+              "hat"
+            ],
+            "supportTier": "hard"
+          },
+          {
+            "id": "dils-13-d",
+            "challengeType": "letter_sound_review",
+            "letter": "d",
+            "spoken": "/d/",
+            "keyword": "dog",
+            "emoji": "🐶",
+            "elicitation": "isolated",
+            "articulation": "clipped",
+            "asrAliases": [
+              "d",
+              "duh",
+              "da",
+              "dog"
+            ],
+            "supportTier": "hard"
+          }
+        ],
+        "letters": "m, r, s, a, i, n, e, t, p, c, k, h, d"
+      }
+    },
+    {
+      "instanceId": "obj2-sound-production-check",
+      "componentId": "letter-sound-link",
+      "data": {
+        "title": "Letter Sounds Group 2 - Keyword Match",
+        "letterGroup": 2,
+        "cumulativeLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n",
+          "c",
+          "k",
+          "e",
+          "h",
+          "r",
+          "m",
+          "d"
+        ],
+        "challenges": [
+          {
+            "id": "ch1",
+            "mode": "keyword-match",
+            "targetLetter": "c",
+            "targetSound": "/k/",
+            "keywordWord": "cat",
+            "keywordImage": "cat",
+            "options": [
+              {
+                "sound": "tent",
+                "isCorrect": false
+              },
+              {
+                "sound": "cat",
+                "isCorrect": true
+              }
+            ],
+            "sharedSoundLetters": [
+              "c",
+              "k"
+            ],
+            "showKeywordAnchor": "never",
+            "strategyHint": null,
+            "protocolHint": null,
+            "showSharedSoundHint": false,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch2",
+            "mode": "keyword-match",
+            "targetLetter": "e",
+            "targetSound": "/ĕ/",
+            "keywordWord": "egg",
+            "keywordImage": "egg",
+            "options": [
+              {
+                "sound": "apple",
+                "isCorrect": false
+              },
+              {
+                "sound": "egg",
+                "isCorrect": true
+              }
+            ],
+            "showKeywordAnchor": "never",
+            "strategyHint": null,
+            "protocolHint": null,
+            "showSharedSoundHint": false,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch3",
+            "mode": "keyword-match",
+            "targetLetter": "h",
+            "targetSound": "/h/",
+            "keywordWord": "hat",
+            "keywordImage": "hat",
+            "options": [
+              {
+                "sound": "net",
+                "isCorrect": false
+              },
+              {
+                "sound": "hat",
+                "isCorrect": true
+              }
+            ],
+            "showKeywordAnchor": "never",
+            "strategyHint": null,
+            "protocolHint": null,
+            "showSharedSoundHint": false,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch4",
+            "mode": "keyword-match",
+            "targetLetter": "r",
+            "targetSound": "/r/",
+            "keywordWord": "run",
+            "keywordImage": "run",
+            "options": [
+              {
+                "sound": "run",
+                "isCorrect": true
+              },
+              {
+                "sound": "map",
+                "isCorrect": false
+              }
+            ],
+            "showKeywordAnchor": "never",
+            "strategyHint": null,
+            "protocolHint": null,
+            "showSharedSoundHint": false,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch5",
+            "mode": "keyword-match",
+            "targetLetter": "m",
+            "targetSound": "/m/",
+            "keywordWord": "map",
+            "keywordImage": "map",
+            "options": [
+              {
+                "sound": "net",
+                "isCorrect": false
+              },
+              {
+                "sound": "map",
+                "isCorrect": true
+              }
+            ],
+            "showKeywordAnchor": "never",
+            "strategyHint": null,
+            "protocolHint": null,
+            "showSharedSoundHint": false,
+            "auditionBeforeCommit": true
+          },
+          {
+            "id": "ch6",
+            "mode": "keyword-match",
+            "targetLetter": "d",
+            "targetSound": "/d/",
+            "keywordWord": "dog",
+            "keywordImage": "dog",
+            "options": [
+              {
+                "sound": "dog",
+                "isCorrect": true
+              },
+              {
+                "sound": "tent",
+                "isCorrect": false
+              }
+            ],
+            "showKeywordAnchor": "never",
+            "strategyHint": null,
+            "protocolHint": null,
+            "showSharedSoundHint": false,
+            "auditionBeforeCommit": true
+          }
+        ],
+        "gradeLevel": "K",
+        "unaskableLetters": [
+          "i"
+        ],
+        "supportTier": "hard",
+        "maxAttempts": 2
+      }
+    },
+    {
+      "instanceId": "final-phonics-check",
+      "componentId": "knowledge-check",
+      "data": {
+        "problems": [
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which word starts with the /m/ sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "cat",
+                "emoji": "🐱"
+              },
+              {
+                "id": "B",
+                "text": "mouse",
+                "emoji": "🐭"
+              },
+              {
+                "id": "C",
+                "text": "dog",
+                "emoji": "🐶"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Mouse begins with the /m/ sound made by your lips pressing together. Cat starts with the /k/ sound, and dog starts with the /d/ sound.",
+            "teachingNote": "Have students press their lips together to feel the vibration when saying /m/. Emphasize the initial sound by stretching it out: 'm-m-mouse'.",
+            "successCriteria": [
+              "Identify the initial /m/ sound in spoken words",
+              "Distinguish the /m/ sound from other initial consonant sounds like /k/ and /d/"
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which word starts with the letter H sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Duck",
+                "emoji": "🦆"
+              },
+              {
+                "id": "B",
+                "text": "Hat",
+                "emoji": "🎩"
+              },
+              {
+                "id": "C",
+                "text": "Ring",
+                "emoji": "💍"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Hat begins with the /h/ sound made by the letter H. Duck starts with the /d/ sound, and ring starts with the /r/ sound. Listening for the gentle puff of air at the start of 'hat' helps identify the letter H sound.",
+            "teachingNote": "Have learners place a hand in front of their mouths to feel the warm puff of breath when making the /h/ sound in words like 'hat'.",
+            "successCriteria": [
+              "Identify the initial /h/ sound in spoken words",
+              "Distinguish the letter sound /h/ from /d/ and /r/"
+            ],
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which picture starts with the short e sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "apple",
+                "emoji": "🍎"
+              },
+              {
+                "id": "B",
+                "text": "egg",
+                "emoji": "🥚"
+              },
+              {
+                "id": "C",
+                "text": "iguana",
+                "emoji": "🦎"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Egg begins with the short e sound, which sounds like /ĕ/. Apple starts with /ă/ and iguana starts with /ĭ/. Listening for the opening sound helps us connect words to the letter e.",
+            "teachingNote": "Have children pretend to crack an egg on the side of a pan while saying /ĕ/ to build a multisensory connection for the short e vowel sound.",
+            "successCriteria": [
+              "Identify the initial short vowel sound /ĕ/ in spoken words",
+              "Distinguish the short vowel sound /ĕ/ from /ă/ and /ĭ/"
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "The letter C makes the first sound in ___.",
+            "options": [
+              {
+                "id": "A",
+                "text": "rat",
+                "emoji": "🐀"
+              },
+              {
+                "id": "B",
+                "text": "cat",
+                "emoji": "🐱"
+              },
+              {
+                "id": "C",
+                "text": "hen",
+                "emoji": "🐔"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "The word 'cat' begins with the letter C, which makes the /k/ sound. In contrast, 'rat' begins with the /r/ sound and 'hen' begins with the /h/ sound. Listening to the starting sound shows that 'cat' correctly completes the sentence.",
+            "teachingNote": "Reinforce that the letter C makes the /k/ sound at the start of 'cat'. Encourage students to isolate the initial phoneme by stretching the word out loud (e.g., /k/-/a/-/t/).",
+            "successCriteria": [
+              "Identify the initial /k/ sound represented by the letter C in familiar words",
+              "Distinguish the starting sound of 'cat' from other Group 2 sounds such as /r/ and /h/"
+            ],
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which animal starts with the /d/ sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Snake",
+                "emoji": "🐍"
+              },
+              {
+                "id": "B",
+                "text": "Duck",
+                "emoji": "🦆"
+              },
+              {
+                "id": "C",
+                "text": "Tiger",
+                "emoji": "🐯"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Duck starts with the /d/ sound from Group 2. Snake begins with /s/ and tiger begins with /t/, which are both sounds from Group 1. Listening closely to the first sound in duck helps us connect it to the letter d.",
+            "teachingNote": "Have children place their hand lightly on their throat to feel the vocal cord vibration when making the voiced /d/ sound, comparing it with the unvoiced Group 1 sounds like /s/ and /t/.",
+            "successCriteria": [
+              "Identify words that begin with the /d/ sound",
+              "Distinguish Group 2 initial sounds from Group 1 initial sounds"
+            ],
+            "objectiveId": "obj1",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "medium",
+            "gradeLevel": "kindergarten",
+            "question": "Which word starts with the same sound as cat?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Kite",
+                "emoji": "🪁"
+              },
+              {
+                "id": "B",
+                "text": "Sun",
+                "emoji": "☀️"
+              },
+              {
+                "id": "C",
+                "text": "Pig",
+                "emoji": "🐷"
+              }
+            ],
+            "correctOptionId": "A",
+            "rationale": "Kite begins with the /k/ sound, which is the exact same beginning sound heard in cat. Even though cat begins with the letter c and kite begins with the letter k, both letters share this same sound. Sun begins with /s/ and pig begins with /p/.",
+            "teachingNote": "Reinforce that the letter 'c' and the letter 'k' can make the identical /k/ sound. Have students make the sound aloud while touching their throat to feel the shared sound.",
+            "successCriteria": [
+              "Identify words that begin with the /k/ sound represented by letters 'c' and 'k'",
+              "Distinguish the /k/ sound from other consonant sounds such as /s/ and /p/"
+            ],
+            "objectiveId": "obj2",
+            "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+            "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+            "subject": "LANGUAGE_ARTS"
+          }
+        ],
+        "problemType": "orchestrated",
+        "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d",
+        "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+      }
+    }
+  ],
+  "scores": null,
+  "human": null,
+  "coverage": {
+    "version": 1,
+    "lessonId": "kindergarten-phonics-2-letter-sound-group-2-c-k-e-h-r-m-d-20260905181053-q437",
+    "status": "warn",
+    "overallObjectiveCoverage": 0.75,
+    "blockingFailure": false,
+    "objectives": [
+      {
+        "objectiveId": "obj1",
+        "objective": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+        "verb": "identify",
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "grade": "K",
+        "category": "ASSESSED_INSUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 12,
+        "assessmentEvidence": [
+          "obj1-sound-link-intro#challenges[0]",
+          "obj1-sound-link-intro#challenges[1]",
+          "obj1-sound-link-intro#challenges[2]",
+          "obj1-sound-link-intro#challenges[3]",
+          "obj1-sound-link-intro#challenges[4]",
+          "obj1-sound-link-intro#challenges[5]",
+          "final-phonics-check#problems[0]",
+          "final-phonics-check#problems[1]",
+          "final-phonics-check#problems[2]",
+          "final-phonics-check#problems[3]",
+          "final-phonics-check#problems[4]",
+          "final-phonics-check#problems[5]"
+        ],
+        "instructionEvidence": [
+          "obj1-spotter-group2",
+          "obj1-sound-link-intro",
+          "obj1-blender-cumulative"
+        ],
+        "masteryInferenceSupported": false,
+        "severity": "WARNING",
+        "notes": "The cumulative set requires all 13 letters (s, a, t, i, p, n, c, k, e, h, r, m, d), but review letters p, n, and i are omitted from letter-sound identification items. Spotter tests letter names rather than sounds."
+      },
+      {
+        "objectiveId": "obj2",
+        "objective": "Independently produce the most common sound for each letter in this cumulative set, when shown its grapheme. Assess without first saying its sound: s, a, t, i, p, n, c, k, e, h, r, m, d.",
+        "verb": "apply",
+        "subskillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+        "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+        "grade": "K",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 13,
+        "assessmentEvidence": [
+          "obj2-di-continuous-production#challenges[0]",
+          "obj2-di-continuous-production#challenges[1]",
+          "obj2-di-continuous-production#challenges[2]",
+          "obj2-di-continuous-production#challenges[3]",
+          "obj2-di-continuous-production#challenges[4]",
+          "obj2-di-continuous-production#challenges[5]",
+          "obj2-di-continuous-production#challenges[6]",
+          "obj2-di-continuous-production#challenges[7]",
+          "obj2-di-continuous-production#challenges[8]",
+          "obj2-di-continuous-production#challenges[9]",
+          "obj2-di-continuous-production#challenges[10]",
+          "obj2-di-continuous-production#challenges[11]",
+          "obj2-di-continuous-production#challenges[12]"
+        ],
+        "instructionEvidence": [
+          "obj1-sound-link-intro",
+          "obj2-di-continuous-production"
+        ],
+        "masteryInferenceSupported": true,
+        "severity": "NONE",
+        "notes": "Every letter in the full 13-letter cumulative set (s, a, t, i, p, n, c, k, e, h, r, m, d) is directly assessed via unprompted spoken sound production in obj2-di-continuous-production."
+      }
+    ],
+    "detectedConstraints": [
+      {
+        "type": "content_guard",
+        "description": "Generator reported unaskableLetters=['i'] in obj2-sound-production-check, preventing the letter 'i' from appearing in keyword match assessment.",
+        "instanceId": "obj2-sound-production-check"
+      },
+      {
+        "type": "off_target_assessment",
+        "description": "obj1-spotter-group2 tests letterform recognition and visual discrimination using letter names rather than phoneme-grapheme correspondences.",
+        "instanceId": "obj1-spotter-group2"
+      },
+      {
+        "type": "insufficient_items",
+        "description": "Review letters p, n, and i from the cumulative set were not assessed in obj1 identification tasks.",
+        "instanceId": "final-phonics-check"
+      }
+    ],
+    "summary": "The lesson thoroughly assesses objective 2 by requiring independent oral production of all 13 letters in the cumulative set via direct instruction review. However, objective 1 is assessed insufficiently because multiple letters from the cumulative set (p, n, and i) are never assessed for sound identification, and the letter-spotter block evaluates letterform recognition by name rather than letter-sound knowledge.",
+    "meta": {
+      "evalModel": "gemini-flash-latest",
+      "evalTimestamp": "2026-09-05T18:21:47.495Z",
+      "latencyMs": 16468,
+      "usedSchemaFallback": false,
+      "source": "alias-refix",
+      "topic": "Phonics 2: Letter-Sound Group 2: c, k, e, h, r, m, d",
+      "gradeLevel": "Kindergarten",
+      "grade": "K",
+      "subject": "LANGUAGE_ARTS",
+      "skillIds": [
+        "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w"
+      ],
+      "subskillIds": [
+        "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil"
+      ],
+      "primitiveTypes": [
+        "letter-spotter",
+        "letter-sound-link",
+        "phonics-blender",
+        "di-letter-sounds",
+        "knowledge-check"
+      ],
+      "digestChars": 18495,
+      "truncated": false,
+      "objectiveCount": 2,
+      "objectivesFullyCovered": 1,
+      "objectivesUncovered": 0,
+      "failureCategories": [
+        "ASSESSED_INSUFFICIENTLY",
+        "constraint:content_guard",
+        "constraint:off_target_assessment",
+        "constraint:insufficient_items"
+      ]
+    }
+  }
+}

@@ -1,5 +1,7 @@
 /**
- * Lesson Bench — Tier A scorer and label triage. Code-judged, no LLM.
+ * Lesson Bench — Tier A scorer and label triage. Code-judged, plus the one
+ * LLM check (Q4) merged from the objective-coverage judge when the package
+ * carries its verdict.
  *
  * WHAT. Fills `scores.gates / checks` on a Lesson Package from the manifest,
  * the live catalog and the affordance tags (`catalog/affordances.ts`): the
@@ -10,10 +12,18 @@
  *
  * WHY THIS HALF FIRST. The human rail (`LessonBenchRail`) already produces a
  * label in the machine's vocabulary (`humanCheckSignals`). Until the machine
- * fills the same checks there is nothing to calibrate against, and the Tier B
- * LLM judge is trusted per check only where it agrees with hand labels. This
- * file gives the label its machine half, and `machineVsHuman` prints the
- * agreement per check with the blocks each side cited.
+ * fills the same checks there is nothing to calibrate against. This file gives
+ * the label its machine half, and `machineVsHuman` prints the agreement per
+ * check with the blocks each side cited.
+ *
+ * THE ONE LLM CHECK. Q4 Coverage is not decided here. It is the objective-
+ * coverage judge's verdict (`service/qa/lessonCoverage/`, the same judge that
+ * runs in shadow on every build-stream lesson). When a package carries
+ * `coverage` (`lesson-coverage.mjs eval --write`) its Q4 signal is merged in
+ * through `coverageToLessonBenchSignals`, so the scoreboard and the
+ * machine-vs-human table carry the judge's row and the ≥80% hand-label rule
+ * can be measured. Without a verdict Q4 is an unknown, never a fail. There is
+ * no separate Tier B judge (BACKLOG item 7 retired 2026-09-05 in its favour).
  *
  * WHAT THE CHILD PLAYS IS WHAT IS SCORED. Caregiver blocks are partitioned the
  * way `exhibitAssembly` places them (after the final assessment, as a parent
@@ -34,16 +44,29 @@
  *                no primitive over its declared `maxPerLesson`.
  *   Q7 evidence  at least one stream block supports evaluation with a mode.
  *   Q8 text      pre-reader band: no stream block declares reads above `none`.
- *   Q9 length    known minutes in the stream <= the band cap (a FLOOR — untagged
- *                blocks add nothing). Gives `LESSON_REASONS.too-long` its number.
+ *   Q9 length    ADVISORY ONLY (2026-09-05) — never sets checks.Q9, never fails
+ *                the lesson. `minutes` sums each block's catalog "typical
+ *                minutes" tag (a per-primitive estimate authored once, not this
+ *                generation's actual play time) and LENGTH_CAP_MINUTES is an
+ *                explicitly provisional starting point calibrated from ONE
+ *                labeled lesson — comparing an estimate to a guess is a prompt
+ *                to look, never a verdict to bind on. Surfaces as an `unknown`
+ *                note when over cap; silent otherwise. Still names
+ *                `LESSON_REASONS.too-long` for the human rail, but a human
+ *                "too long" label no longer scores against a machine Q9 (there
+ *                isn't one).
+ *   Q4 coverage  from `pkg.coverage` when present: every evaluated objective
+ *                ASSESSED_SUFFICIENTLY; each miss cites the objective's first
+ *                non-final stream block. No verdict on the package = unknown.
  *
- * Bucket: any gate 0 → BROKEN, else RUNNABLE. CLEAN needs Tier B's holistic.
+ * Bucket: any gate 0 → BROKEN, else RUNNABLE. CLEAN is the human's holistic call.
  */
 import type { AffordanceRepresentation, ComponentDefinition, ManifestItem } from '../../../types';
 import { resolveAffordances, type ResolvedAffordances } from '../../manifest/catalog/affordances';
 import { normalizeObjectiveGrade } from '../../generation/resolveGenerationContext';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import { partitionCaregiverBlocks } from '../../exhibitAssembly';
+import { coverageToLessonBenchSignals } from '../lessonCoverage/toLessonBench';
 import {
   BLOCK_REASONS,
   LESSON_BENCH_CHECKS,
@@ -294,16 +317,35 @@ export function scoreLessonPackage(
   if (scored.length === 0) cite('Q7', null, 'no stream block supports evaluation with an eval mode — nothing feeds IRT');
   checks.Q7 = hasCite('Q7') ? 0 : 1;
 
-  // ── Q9 length (a floor: untagged blocks add nothing) ──
+  // ── Q9 length — ADVISORY ONLY, never a fail (see file docblock). `minutes` is
+  // a sum of static per-primitive estimates and `cap` a provisional starting
+  // point, so an overage is a note to look at, never a citation that scores.
   const knownMinuteBlocks = stream.filter((b) => typeof b.affordances?.minutes === 'number');
   const minutes = knownMinuteBlocks.reduce((s, b) => s + (b.affordances!.minutes as number), 0);
   const cap = band.preReader ? LENGTH_CAP_MINUTES.preReader : band.k2 ? LENGTH_CAP_MINUTES.k2 : LENGTH_CAP_MINUTES.other;
   if (minutes > cap) {
-    cite('Q9', null, `known block minutes ${minutes} exceed the ${band.preReader ? 'pre-reader' : band.k2 ? 'K-2' : 'band'} cap of ${cap} (${knownMinuteBlocks.length}/${stream.length} blocks tagged)`);
+    unknown('Q9', null, `estimated block minutes ${minutes} above the provisional ${band.preReader ? 'pre-reader' : band.k2 ? 'K-2' : 'band'} guide of ${cap} (${knownMinuteBlocks.length}/${stream.length} blocks tagged) — advisory, not a fail`);
   }
   const untimed = stream.length - knownMinuteBlocks.length;
   if (untimed > 0) unknown('Q9', null, `${untimed} stream block(s) carry no minutes — the sum is a floor`);
-  checks.Q9 = hasCite('Q9') ? 0 : 1;
+  // checks.Q9 intentionally never set — length is advisory (absent reads as
+  // unknown in machineVsHuman and the checks header, never as pass or fail).
+
+  // ── Q4 coverage — the objective-coverage judge's verdict, carried on the package ──
+  // One instrument for "taught → assessed → enough to infer mastery?": the same
+  // judge that runs in shadow on every build-stream lesson. The scorer only
+  // translates its row into the rubric's vocabulary so calibration and the
+  // scoreboard see one Q4. A package without a verdict is an unknown, not a fail.
+  if (pkg.coverage) {
+    const firstBlockOf = (objectiveId: string) =>
+      (stream.find((b) => b.objectiveId === objectiveId && !b.isFinalAssessment) ?? stream.find((b) => b.objectiveId === objectiveId))?.instanceId;
+    const q4 = coverageToLessonBenchSignals(pkg.coverage, firstBlockOf);
+    citations.push(...q4.citations);
+    unknowns.push(...q4.unknowns);
+    if (q4.checks.Q4 !== undefined) checks.Q4 = q4.checks.Q4;
+  } else {
+    unknown('Q4', null, 'no coverage verdict on the package — lesson-coverage.mjs eval --write <pkg> lets the judge fill Q4');
+  }
 
   const bucket = Object.values(gates).some((v) => v === 0) ? 'BROKEN' : 'RUNNABLE';
   return {
@@ -327,11 +369,15 @@ export function scoreLessonPackage(
       tapOnlyProduction,
       notationObjectives,
       distinctPrimitives: distinct.size,
+      coverageJudge: pkg.coverage
+        ? { status: pkg.coverage.status, coverage: pkg.coverage.overallObjectiveCoverage, model: pkg.coverage.meta.evalModel, source: pkg.coverage.meta.source, judgedAt: pkg.coverage.meta.evalTimestamp }
+        : null,
       notCodeJudged: [
         'G1 catalog-band half (no grade floors by ruling)',
         'G4 generator-emitted half',
         'G6 visible-timer half',
-        'G2', 'G3', 'G5', 'Q1', 'Q2', 'Q4', 'Q5',
+        'Q4 when the package carries no coverage verdict',
+        'G2', 'G3', 'G5', 'Q1', 'Q2', 'Q5',
       ],
     },
   };
