@@ -3447,7 +3447,9 @@ export interface DiWordReadingMetrics extends BasePrimitiveMetrics {
 export interface DiMathFactsMetrics extends BasePrimitiveMetrics {
   type: 'di-math-facts';
   // L1 task identities — all answered with a spoken number word.
-  challengeType: 'counting_next' | 'answer_fact' | 'fact_review' | 'subtraction_fact';
+  challengeType:
+    | 'counting_next' | 'answer_fact' | 'fact_review' | 'subtraction_fact'
+    | 'name_numeral';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts across all facts (corrections + 1 each)

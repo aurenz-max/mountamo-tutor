@@ -78,6 +78,7 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
     defaultTopic: 'addition facts within 5',
     defaultGrade: 'kindergarten',
     evalModes: [
+      { key: 'name_numeral', label: 'Name the Number' },
       { key: 'counting_next', label: 'The Number After' },
       { key: 'answer_fact', label: 'Answer a Fact' },
       { key: 'fact_review', label: 'Fact Review (mixed set)' },

@@ -291,7 +291,13 @@ export const resolveTextScope = (text: string): FactScope | null => {
   // counting pool topped out at twelve — reader-fit 14g's census finding. `\b`
   // keeps the widening honest: "to 2026" now pins nothing (and falls through to
   // the model hint / grade default) rather than resolving to a truncated "202".
-  const within = /(?:within|up\s+to|sums?\s+to|to)\s+(\d{1,3})\b/i.exec(text);
+  // `through` (2026-09-05, lesson-bench item 20): the K objective "Recognize
+  // and name the written numbers 1 THROUGH 10 in order" matched nothing here,
+  // so a naming session fell through to the grade default and silently capped
+  // itself at 1-5. Placed ahead of the bare `to` alternative for readability
+  // only — alternation is tried per start position, so every existing ask
+  // ("within 120", "up to 100", "to 50") still parses byte-identically.
+  const within = /(?:within|up\s+to|sums?\s+to|through|to)\s+(\d{1,3})\b/i.exec(text);
   if (within) {
     // The clamp is the pack's HARD CEILING, not a knob (the di-sentence-reading
     // precedent: a cap that saturates, never widens). 120 is the counting
@@ -314,6 +320,9 @@ export const resolveTextScope = (text: string): FactScope | null => {
  * "119 − 3" (multi-digit arithmetic, which the catalog forbids outright).
  */
 const benchedCeilingFor = (type: DiMathFactsChallengeType): number =>
+  // Naming is a single-word production like every fact identity, never the
+  // compound-numeral extension: "1 through 20" is the widest naming ask the
+  // benched response class covers.
   type === 'counting_next' ? 120 : 20;
 
 /** The model's factScope hint — used ONLY when the text pinned nothing. */
@@ -412,25 +421,43 @@ const buildCountingPool = (ceiling: number): FactPair[] => {
   return Array.from(starts).sort((x, y) => x - y).map((a) => ({ a, b: 1 }));
 };
 
+/**
+ * The numerals a naming session draws from — every integer in [min, max].
+ *
+ * Deliberately NOT `buildCountingPool`: that returns `{a, b: 1}` starting at
+ * ZERO (the number after zero is a real counting item), so reusing it would
+ * both ship "name this numeral: 0" and shift the whole range down one. The
+ * objectives this mode serves say "1 through 10" / "numbers to 20"; naming
+ * zero is a separate and much later idea, so the floor is one.
+ */
+const buildNumeralPool = (min: number, max: number): FactPair[] =>
+  max < min ? [] : Array.from({ length: max - min + 1 }, (_, i) => ({ a: min + i, b: 0 }));
+
 // ── Per-skill answer / identity / triviality ───────────────────────
 
 /** The answer for one pair UNDER a given skill — the single authority. */
 const answerFor = (type: DiMathFactsChallengeType, p: FactPair): number =>
   type === 'counting_next' ? p.a + 1
     : type === 'subtraction_fact' ? p.a - p.b
-      : p.a + p.b;
+      // Naming computes nothing: the printed numeral IS the answer.
+      : type === 'name_numeral' ? p.a
+        : p.a + p.b;
 
 /** Canonical identity. Addition commutes (2+3 ≡ 3+2); subtraction does not. */
 const keyFor = (type: DiMathFactsChallengeType, p: FactPair): string =>
   type === 'counting_next' ? `next:${p.a}`
     : type === 'subtraction_fact' ? `${p.a}-${p.b}`
-      : p.a <= p.b ? `${p.a}+${p.b}` : `${p.b}+${p.a}`;
+      : type === 'name_numeral' ? `name:${p.a}`
+        : p.a <= p.b ? `${p.a}+${p.b}` : `${p.b}+${p.a}`;
 
 /** Facts that teach nothing when repeated: ± zero, or counting up from zero. */
 const isTrivial = (type: DiMathFactsChallengeType, p: FactPair): boolean =>
   type === 'counting_next' ? p.a === 0
     : type === 'subtraction_fact' ? p.b === 0
-      : p.a === 0 || p.b === 0;
+      // Every numeral in the pool is worth naming — there is no ±0 analog to
+      // exclude, and the pool already starts at one.
+      : type === 'name_numeral' ? false
+        : p.a === 0 || p.b === 0;
 
 /** The value whose ceiling defines "within N" for each task identity. */
 const structuralMagnitude = (
@@ -439,7 +466,8 @@ const structuralMagnitude = (
 ): number =>
   type === 'counting_next' ? p.a
     : type === 'subtraction_fact' ? p.a
-      : p.a + p.b;
+      : type === 'name_numeral' ? p.a
+        : p.a + p.b;
 
 /** Does this fact actually require stepping across the requested boundary? */
 export const crossesOperandBoundary = (
@@ -448,6 +476,14 @@ export const crossesOperandBoundary = (
   boundary: 5 | 10,
 ): boolean => {
   if (type === 'counting_next') return p.a === boundary;
+  // `name_numeral` has no crossing concept at all: naming "twelve" does not
+  // step over ten the way 8 + 5 does — it is one perceptual act whose only
+  // structural dial would be the numeral's magnitude (one-digit vs. teen).
+  // Reported honestly rather than faked: the operand axis is UNDEFINED here
+  // and the caller skips the shape entirely (see `shapeApplies` below), the
+  // same deferral `counting_next` already documents above twenty. A
+  // magnitude-band axis for naming is /add-structural-difficulty territory.
+  if (type === 'name_numeral') return false;
   if (type === 'subtraction_fact') {
     return p.a > boundary && answerFor(type, p) <= boundary;
   }
@@ -673,6 +709,26 @@ const selectVariedForShape = (
 
 const DEFAULT_INSTANCE_COUNT = 5;
 const MAX_INSTANCE_COUNT = 6;
+/**
+ * How many numerals ONE naming session may cover — the only session length in
+ * this pack that is derived from the objective rather than defaulted.
+ *
+ * A fact objective ("addition within 10") names a SPACE to sample from, so five
+ * items is a session. A naming objective names its whole TARGET SET — "the
+ * written numbers 1 THROUGH 10" is ten numerals, and drawing five of them
+ * assesses half the objective while reporting success. That is what the
+ * coverage judge caught on the item-20 rerun (2026-09-05): the mode was right,
+ * the session was ASSESSED_INSUFFICIENTLY because "numbers 3, 5, 6, 7 and 8 are
+ * omitted from direct oral naming assessment". A cap below the lesson's own
+ * intent is a bug, so a single-mode naming session covers its range.
+ *
+ * Ten is the honest ceiling rather than the pack's 20: past that the DISTAR
+ * model→guide→test rep count outgrows a K/G1 sitting, and a wider ask is two
+ * blocks — the manifest's call, not a silently longer one. A "1 through 20"
+ * objective therefore SAMPLES, and the build log says so instead of implying
+ * full coverage.
+ */
+const NAMING_SESSION_MAX = 10;
 /** Guaranteed-runnable easy spread — the never-empty final fallback. */
 const EASY_SPREAD: FactPair[] = [
   { a: 1, b: 1 }, { a: 2, b: 1 }, { a: 2, b: 2 }, { a: 3, b: 1 }, { a: 3, b: 2 },
@@ -699,6 +755,10 @@ const poolForType = (
   switch (type) {
     case 'counting_next':
       return buildCountingPool(Math.min(ceiling, benchedCeilingFor(type)));
+    case 'name_numeral':
+      // Floor of one, ceiling from the objective — "1 through 10" builds
+      // exactly {1..10}, never the grade default's silent {1..5}.
+      return buildNumeralPool(1, Math.min(ceiling, benchedCeilingFor(type)));
     case 'subtraction_fact':
       // The arithmetic cap, not the raw ceiling: a "within 120" COUNTING ask
       // must never build "119 − 3" (multi-digit arithmetic — catalog-forbidden).
@@ -771,6 +831,20 @@ const buildChallenge = (
       solvedDisplay: `${pair.a} → ${answer}`,
     };
   }
+  if (type === 'name_numeral') {
+    return {
+      ...base,
+      id: `dimf-${index + 1}-id${pair.a}`,
+      a: pair.a,
+      b: 0,
+      // The bare numeral is the whole stimulus. `problem` reads correctly
+      // inside every cue line: "Listen: this number is seven." / "Your turn.
+      // What is this number?"
+      display: `${pair.a}`,
+      problem: 'this number',
+      solvedDisplay: `${pair.a} = ${numberWordFor(answer)}`,
+    };
+  }
   if (type === 'subtraction_fact') {
     return {
       ...base,
@@ -804,6 +878,11 @@ const distribute = (count: number, k: number): number[] => {
 
 /** Skill docs for the intent→mode router (Fork A — no schema to constrain). */
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  name_numeral: {
+    promptDoc:
+      `"name_numeral": the child sees ONE printed numeral ("7") and says its name aloud ("seven"). Pure numeral recognition and production — no computation, no sequence. Pick this for objectives about RECOGNIZING or NAMING written numbers.`,
+    schemaDescription: "'name_numeral' (say the printed numeral's name)",
+  },
   counting_next: {
     promptDoc:
       `"counting_next": the child sees a number ("5 →") and says the number that comes NEXT ("six"). Rote counting sequence — the skill underneath counting on.`,
@@ -828,7 +907,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 
 /** Every identity this pack can build, easiest → hardest (the mixed spread). */
 const ALL_TYPES: DiMathFactsChallengeType[] = [
-  'counting_next', 'answer_fact', 'fact_review', 'subtraction_fact',
+  'name_numeral', 'counting_next', 'answer_fact', 'fact_review', 'subtraction_fact',
 ];
 
 const FACT_SCOPES = ['within_5', 'within_10', 'make_10', 'doubles'];
@@ -907,6 +986,7 @@ TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}${buildTierPro
 
 RULES:
 - Read the objective and pick the factScope that matches its number range: 'within_5' (numbers to five), 'within_10' (numbers to ten), 'make_10' (pairs that make ten), or 'doubles' (a number plus itself). A generic objective for a kindergartner means 'within_5'; otherwise 'within_10'.
+- An objective about RECOGNIZING or NAMING written numerals ("name the written numbers 1 through 10") is a number-RANGE ask, not an addition one: pick the scope covering the numerals it names ('within_10' here). Never answer such an objective with 'make_10' or 'doubles'.
 - Write a warm, short kid title and a one-sentence description. They MUST NOT contain any digits or number words — the child must produce the answers, never hear or see them first.
 
 Return the wrapper JSON only.`;
@@ -919,7 +999,7 @@ Return the wrapper JSON only.`;
     CHALLENGE_TYPE_DOCS,
   );
   const modeTypes: DiMathFactsChallengeType[] =
-    (resolution?.allowedTypes as DiMathFactsChallengeType[] | undefined) ?? ALL_TYPES; // mixed = all four
+    (resolution?.allowedTypes as DiMathFactsChallengeType[] | undefined) ?? ALL_TYPES; // mixed = every identity
 
   let title = DEFAULT_TITLE;
   let description = DEFAULT_DESCRIPTION;
@@ -988,7 +1068,12 @@ Return the wrapper JSON only.`;
     // axis there (transition-count rungs) is /add-structural-difficulty
     // territory, not this slice. Support-tier DISTAR withdrawal still applies —
     // it is stamped per-challenge below, independent of this shape.
-    const shapeApplies = !(type === 'counting_next' && poolCeilingFor(type) > 20);
+    // `name_numeral` is excluded outright, not merely above a ceiling: the
+    // operand-boundary axis is undefined for a bare naming task, and applying
+    // it anyway would clamp an easy-tier session to numerals ≤ 5 — re-creating
+    // through the TIER exactly the silent 1-5 cap the scope fix removed.
+    const shapeApplies = type !== 'name_numeral'
+      && !(type === 'counting_next' && poolCeilingFor(type) > 20);
     const shape = supportTier && shapeApplies
       ? resolveProblemShape(type, supportTier, poolCeilingFor(type))
       : undefined;
@@ -1036,12 +1121,35 @@ Return the wrapper JSON only.`;
 
   // Build the challenge set from the resolved mode(s). Single mode → all one
   // skill; blend/mixed → an interleaved spread so every mode appears (SP-21).
+  // Session length. Everything but a single-mode naming session uses the
+  // caller's count: the naming case is the one identity whose objective
+  // enumerates its own target set, so it is sized from the resolved pool. Two
+  // deliberate guards — an explicitly pinned `challengeCount` always wins (the
+  // caller asked), and a blended session keeps its own length, because there
+  // the mix owns the budget and one identity must not eat it.
+  const namingPool = modeTypes.length === 1 && modeTypes[0] === 'name_numeral'
+    ? poolForType('name_numeral', scope, gradeLevel, ceiling)
+    : null;
+  const sessionCount = namingPool && config?.challengeCount === undefined
+    ? Math.max(count, Math.min(NAMING_SESSION_MAX, namingPool.length))
+    : count;
+  if (namingPool) {
+    console.log('[DiMathFacts] Naming session length:', {
+      pool: namingPool.length,
+      items: sessionCount,
+      // Honest residual: above ten the session samples the range instead of
+      // covering it, and the coverage judge should see that as a sample.
+      covers: sessionCount >= namingPool.length ? 'whole range' : 'sampled',
+      pinnedByCaller: config?.challengeCount !== undefined,
+    });
+  }
+
   let challenges: DiMathFactsChallenge[];
   if (modeTypes.length === 1) {
-    challenges = buildFor(modeTypes[0], count)
+    challenges = buildFor(modeTypes[0], sessionCount)
       .map((pair, i) => buildChallenge(pair, i, modeTypes[0]));
   } else {
-    const shares = distribute(count, modeTypes.length);
+    const shares = distribute(sessionCount, modeTypes.length);
     const perModePairs = modeTypes.map((t, i) => buildFor(t, shares[i]));
     // Round-robin interleave so the session alternates skills.
     const interleaved: Array<{ pair: FactPair; type: DiMathFactsChallengeType }> = [];
@@ -1053,13 +1161,13 @@ Return the wrapper JSON only.`;
       }
     }
     challenges = interleaved
-      .slice(0, count)
+      .slice(0, sessionCount)
       .map(({ pair, type }, i) => buildChallenge(pair, i, type));
   }
 
   // Guarantee a runnable session even if every scope filter emptied out.
   if (challenges.length === 0) {
-    challenges = EASY_SPREAD.slice(0, count)
+    challenges = EASY_SPREAD.slice(0, sessionCount)
       .map((pair, i) => buildChallenge(pair, i, 'answer_fact'));
   }
 
@@ -1089,6 +1197,9 @@ Return the wrapper JSON only.`;
       // Mirrors the buildFor guard: the operand axis is not defined above the
       // ≤20 fact space, so a 1–120 counting item reports that honestly instead
       // of a fake within-20 saturation verdict.
+      if (ch.challengeType === 'name_numeral') {
+        return { type: ch.challengeType, target: 'numeral-naming (operand axis n/a)', actual: true, saturated: false };
+      }
       if (ch.challengeType === 'counting_next' && poolCeilingFor(ch.challengeType) > 20) {
         return { type: ch.challengeType, target: 'windowed-counting (operand axis n/a > 20)', actual: true, saturated: false };
       }

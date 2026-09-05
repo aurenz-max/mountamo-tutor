@@ -134,7 +134,7 @@ describe('di-math-facts subtraction remediation selection', () => {
 
     expect(data.challenges).toHaveLength(5);
     expect(new Set(data.challenges.map((challenge) => challenge.challengeType))).toEqual(new Set([
-      'counting_next', 'answer_fact', 'fact_review', 'subtraction_fact',
+      'name_numeral', 'counting_next', 'answer_fact', 'fact_review', 'subtraction_fact',
     ]));
     const subtraction = data.challenges.filter((challenge) => challenge.challengeType === 'subtraction_fact');
     expect(subtraction).toHaveLength(1);

@@ -567,10 +567,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "sight_word":          PriorConfig(3.0, "Recall: read one irregular high-frequency word aloud as a whole"),
         "word_reading_review": PriorConfig(3.5, "Review: read taught CVC and sight words from a wide cumulative mix"),
     },
-    # L1 ladder (2026-07-24). Every mode answers with a spoken NUMBER WORD —
-    # one benched response class, four skills. Deferred: multiplication (G3,
-    # needs its own curriculum fit + grade gate); missing-addend (L4).
+    # L1 ladder (2026-07-24, +name_numeral 2026-09-05). Every mode answers with
+    # a spoken NUMBER WORD — one benched response class, five skills. Deferred:
+    # multiplication (G3, needs its own curriculum fit + grade gate);
+    # missing-addend (L4). name_numeral ties counting_next at the floor: both
+    # are entry tasks and nothing in the evidence orders them yet.
     "di-math-facts": {
+        "name_numeral":     PriorConfig(1.5, "Production: name a printed numeral aloud with the number word"),
         "counting_next":    PriorConfig(1.5, "Sequence: see a number, say the number that comes next"),
         "answer_fact":      PriorConfig(2.0, "Production: answer a printed addition fact aloud with the number word"),
         "fact_review":      PriorConfig(2.5, "Review: answer taught facts from a wide cumulative mix"),

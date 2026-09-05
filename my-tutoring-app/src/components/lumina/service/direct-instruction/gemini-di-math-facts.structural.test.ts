@@ -26,8 +26,14 @@ import type {
 
 const TIERS: DiMathFactsSupportTier[] = ['easy', 'medium', 'hard'];
 const MODES: DiMathFactsChallengeType[] = [
-  'counting_next', 'answer_fact', 'fact_review', 'subtraction_fact',
+  'name_numeral', 'counting_next', 'answer_fact', 'fact_review', 'subtraction_fact',
 ];
+
+/** Identities the operand-boundary axis is not defined on. `counting_next`
+ *  above twenty is windowed by its pool; `name_numeral` has no crossing
+ *  concept at all (see crossesOperandBoundary). Both are exempt from the
+ *  boundary assertions, not silently passed by them. */
+const NO_OPERAND_AXIS: DiMathFactsChallengeType[] = ['counting_next', 'name_numeral'];
 
 const gen = (
   mode: string,
@@ -159,7 +165,7 @@ describe('mixed spine, prompt/code alignment, and no-tier guardrail', () => {
     expect(new Set(data.challenges.map((c) => c.challengeType))).toEqual(new Set(MODES));
     for (const c of data.challenges) {
       const boundary = c.challengeType === 'fact_review' ? 5 : 10;
-      if (c.challengeType !== 'counting_next') {
+      if (!NO_OPERAND_AXIS.includes(c.challengeType)) {
         expect(crossesOperandBoundary(c.challengeType, pairOf(c), boundary)).toBe(true);
       }
       expect(c.supportTier).toBe('hard');
@@ -193,9 +199,13 @@ describe('mixed spine, prompt/code alignment, and no-tier guardrail', () => {
       const mode = MODES[run % MODES.length];
       const tier = TIERS[Math.floor(run / MODES.length) % TIERS.length];
       const data = await gen(mode, tier);
+      // Naming is bounded by its POOL, not by a tier shape — the axis does not
+      // apply, so the tier must not narrow the objective's numeral range.
       const cap = mode === 'fact_review'
         ? 10
-        : resolveProblemShape(mode, tier, 20).maximum;
+        : mode === 'name_numeral'
+          ? 20
+          : resolveProblemShape(mode, tier, 20).maximum;
       expect(data.challenges.every((c) => magnitudeOf(c) <= cap)).toBe(true);
       expect(data.challenges.every((c) => c.supportTier === tier)).toBe(true);
       expectAnswersRecomputed(data.challenges);

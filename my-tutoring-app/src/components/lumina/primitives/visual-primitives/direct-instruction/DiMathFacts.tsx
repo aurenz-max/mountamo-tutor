@@ -172,6 +172,7 @@ const TASK_PHRASE: Record<DiMathFactsChallengeType, string> = {
   answer_fact: 'answering a printed ADDITION fact aloud',
   fact_review: 'answering already-taught facts drawn as a mixed review set aloud',
   subtraction_fact: 'answering a printed SUBTRACTION (take-away) fact aloud',
+  name_numeral: 'naming a printed NUMERAL aloud (recognition and production, no computation)',
 };
 
 const challengeSummaryFor = (item: DiMathFactsChallenge): string =>

@@ -61,15 +61,26 @@
  *   - answer_fact      — say the answer to a printed addition fact. The base.
  *   - fact_review      — cumulative mix drawn WIDE across the taught range.
  *   - subtraction_fact — say the answer to a printed subtraction fact.
+ *   - name_numeral     — see ONE printed numeral, say its name. No computation.
  * Deferred by design: the G3 `multiplication_fact` variant (the pack is
  * curriculum-fit at K/G1 only — it needs its own fit probe and a grade gate)
  * and the missing-addend shape ("2 + ? is 5"), queued at L4.
+ *
+ * `name_numeral` (2026-09-05) is the SUPPLY answer to lesson-bench item 20: the
+ * K objective "Recognize and name the written numbers 1 through 10 in order"
+ * had no primitive whose task IS "see a written numeral, name it" — the three
+ * the manifest reached for all proxied a neighbour skill (handwriting motion,
+ * pattern-tap, sequence-neighbor). The objective's verb is EXPRESSIVE, so a
+ * tap-to-select fix was ruled out (user, 2026-09-05): the child says it aloud,
+ * which is this pack's whole response class. Simpler than `counting_next` —
+ * no successor to compute, the shown numeral IS the answer.
  */
 export type DiMathFactsChallengeType =
   | 'counting_next'
   | 'answer_fact'
   | 'fact_review'
-  | 'subtraction_fact';
+  | 'subtraction_fact'
+  | 'name_numeral';
 
 /**
  * The within-mode SUPPORT tier (L3, 2026-08-01). Second field of the two-field
@@ -191,6 +202,36 @@ const countingDirection = (it: DiMathFactsChallenge): 'up' | 'back' =>
   it.challengeType === 'subtraction_fact' ? 'back' : 'up';
 
 /**
+ * Is "counting to the answer" a legitimate route for THIS item? For every
+ * arithmetic and sequence identity it is — the spoken analog of sounding out a
+ * word. For `name_numeral` there is no such route: you do not count your way to
+ * a number's NAME, and telling the tutor to accept one would license affirming
+ * a child who recited a sequence instead of reading the numeral in front of
+ * them. Same conditional-scoping shape as `countingJudgingClauses` below, so
+ * every other mode's contract stays byte-for-byte the #46-benched text.
+ */
+const hasCountingRoute = (it: DiMathFactsChallenge): boolean =>
+  it.challengeType !== 'name_numeral';
+
+/** The ways a RIGHT answer may legitimately arrive, per identity. */
+const rightAnswerRoutes = (it: DiMathFactsChallenge): string =>
+  hasCountingRoute(it)
+    ? ` — right away, with young-child pronunciation, or after counting ${countingDirection(it)} to it`
+    : ' — right away, or with young-child pronunciation';
+
+/**
+ * The echo warning is scoped OFF for `name_numeral`, and not merely because it
+ * is inert there. The stimulus is a single bare numeral, so "a number straight
+ * out of the problem" IS the correct answer — leaving the line in would hand
+ * the tutor an instruction to treat the target production as a common error.
+ */
+const echoWarningFor = (it: DiMathFactsChallenge): string =>
+  it.challengeType === 'name_numeral'
+    ? ''
+    : `
+A very common wrong answer is echoing a number straight out of the problem — "${it.problem}" answered with one of its own numbers. Contrast it like any other wrong quantity; do not treat it as close.`;
+
+/**
  * COUNTING-SCOPED judging additions for the 1–120 extension (DI item 10).
  * Ported from the bench probe's counting criteria (diScript.ts,
  * `judgingCriteria` counting fork — the wording the #63 sitting drives), and
@@ -220,11 +261,10 @@ A number said as several words is ONE answer and must arrive whole: "twenty" is 
  */
 export const judgingContract = (it: DiMathFactsChallenge) => `Then wait for the learner.
 Each time the learner responds, judge the audio you heard against the answer "${it.answerWord}":
-- The learner said ${it.answerWord} — right away, with young-child pronunciation, or after counting ${countingDirection(it)} to it: say exactly "${verifyLine(it)}" and stop.
+- The learner said ${it.answerWord}${rightAnswerRoutes(it)}: say exactly "${verifyLine(it)}" and stop.
 - A DIFFERENT number: say exactly "${contrastCorrectionLine(it)}" and stop, then wait again. Replace ⟨what they said⟩ with the number word they actually said ("not one", "not five"). Never speak the ⟨ ⟩ marks, and change nothing else in the line. Naming their number is the point of this branch: it is the only way they hear that THEIR answer was the wrong quantity.
 - No number at all, or anything else: say exactly "${correctionLine(it)}" and stop, then wait again.
-A different number word is always wrong — never affirm a wrong quantity to be kind.${countingJudgingClauses(it)}
-A very common wrong answer is echoing a number straight out of the problem — "${it.problem}" answered with one of its own numbers. Contrast it like any other wrong quantity; do not treat it as close.
+A different number word is always wrong — never affirm a wrong quantity to be kind.${countingJudgingClauses(it)}${echoWarningFor(it)}
 If the learner gives the SAME wrong number again, use the contrast branch again — do not fall back to the plain re-model, and do not invent a third wording.
 Never begin any other sentence with the word "Yes" or the words "My turn".
 Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;

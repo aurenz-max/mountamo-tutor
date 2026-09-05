@@ -309,8 +309,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'di-math-facts',
-    description: 'Live-judged Direct Instruction MATH FACT fluency ("What is 2 plus 1?"): the tutor models a printed fact aloud ("two plus one is three"), practices it together, then asks the child and judges the spoken number-word answer. The child SEES the printed problem and SPEAKS the answer aloud (voice/microphone); response time is captured silently as the fluency signal — no visible timer. Perfect for kindergarten and grade 1 fact fluency: addition within 5 or 10, doubles, make-ten pairs, take-away (subtraction) facts in the same range, cumulative mixed review of taught facts, and the counting-sequence step underneath them — see a number, say the number that comes next, all the way to 120 (decade transitions like "39 → forty" and compound numerals like "one hundred seven"). ESSENTIAL for K/G1 MATHEMATICS operations — spoken fact fluency and number-word production for early learners.',
-    constraints: 'Requires microphone + live audio tutor. Addition and subtraction facts within 10 only — NO multiplication, division, or multi-digit arithmetic. The next-number counting step reaches 120 (a G1 "counting forward within 120" objective is served with a session windowed near the top of its range). Use a dedicated counting primitive when COUNTING ITSELF is the objective (counting objects, one-to-one correspondence); this pack drills only the say-the-next-number step as fluency. The manifest must NOT supply specific facts; the scoped pool builds problems from the objective (within 5 / within 10 / within 120 counting / doubles / make ten) and attaches number words + ASR aliases in code. The printed problem is the stimulus and the spoken number word is the answer: the answer never appears on screen before the child says it.',
+    description: 'Live-judged Direct Instruction MATH FACT fluency ("What is 2 plus 1?"): the tutor models a printed fact aloud ("two plus one is three"), practices it together, then asks the child and judges the spoken number-word answer. The child SEES the printed problem and SPEAKS the answer aloud (voice/microphone); response time is captured silently as the fluency signal — no visible timer. Perfect for kindergarten and grade 1 fact fluency: addition within 5 or 10, doubles, make-ten pairs, take-away (subtraction) facts in the same range, cumulative mixed review of taught facts, and the counting-sequence step underneath them — see a number, say the number that comes next, all the way to 120 (decade transitions like "39 → forty" and compound numerals like "one hundred seven"). ALSO serves pure NUMERAL RECOGNITION AND NAMING: the child sees one printed numeral ("7") and says its name aloud ("seven"), with no computation and no sequence — the primitive for K.CC.3-style "recognize and name the written numbers 1 through 10" objectives, where the child must PRODUCE the number name rather than point at a match. NOT for identifying the SIGNS themselves: an objective like "identify the minus sign and the equals sign" or "recognize + and = as math symbols" is served by a symbol-introduction or equation-building block, never by this pack — every mode here has the child compute or name a NUMBER, so a sign-identification objective gets no assessment from it. ESSENTIAL for K/G1 MATHEMATICS operations — spoken fact fluency and number-word production for early learners.',
+    constraints: 'Requires microphone + live audio tutor. Addition and subtraction facts within 10 only — NO multiplication, division, or multi-digit arithmetic. The next-number counting step reaches 120 (a G1 "counting forward within 120" objective is served with a session windowed near the top of its range). Use a dedicated counting primitive when COUNTING ITSELF is the objective (counting objects, one-to-one correspondence); this pack drills only the say-the-next-number step as fluency. That carve-out is about COUNTING, not about numerals: naming a written numeral aloud is a recognition/production task with no counting in it, and IS served here. Likewise NOT for objectives asking the child to identify, name, or point at a printed OPERATOR or relational symbol (+, -, =): none of this pack\'s modes test symbol recognition — only numeral naming and fact computation — so a sign-identification objective needs a different primitive\'s introduce/apply block, not this one. The manifest must NOT supply specific facts; the scoped pool builds problems from the objective (within 5 / within 10 / within 120 counting / doubles / make ten) and attaches number words + ASR aliases in code. The printed problem is the stimulus and the spoken number word is the answer: the answer never appears on screen before the child says it.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
     // L1 eval modes — task identities, all within the benched number-word
     // response class (the produced audio is a spoken number in every mode), so
@@ -319,6 +319,19 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // Deferred: G3 `multiplication_fact` (pack is curriculum-fit at K/G1 only —
     // needs its own fit probe + grade gate) and missing-addend (queued at L4).
     evalModes: [
+      {
+        // The ladder's floor (2026-09-05, lesson-bench item 20): pure
+        // perceptual recognition + production, no computation and no
+        // sequence. β mirrors the di-shapes `name_shape` precedent — the same
+        // "see one thing, name it" act. Tied with `counting_next` on purpose:
+        // both are floor tasks, and nothing in the evidence orders them yet.
+        evalMode: 'name_numeral',
+        label: 'Name the Number',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['name_numeral'],
+        description: 'See one printed numeral, say its name aloud — recognition and production, no computation.',
+      },
       {
         evalMode: 'counting_next',
         label: 'The Number After',
