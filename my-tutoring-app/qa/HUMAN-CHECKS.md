@@ -7,14 +7,62 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open — ONE list, newest first (as of 2026-09-03, `/add-di-loop` cause-effect-chain)
+## Open — ONE list, newest first (as of 2026-09-04, `/lesson-bench` item 12)
 
-> **93 rows open.** **Newest five:** #130 cause-effect-chain (port 25 — yes/no per card, a chain that
-> commits on stillness, a spoken root pick; di item 29) · #129 scroll-layout lesson focus (di item 31) ·
-> #128 judged pack past block 1 (di item 30) · #127 era-explorer (port 24; **supersedes #121**) ·
-> #126 matter-explorer `change`.
-> Next free ID is **#131**.
+> **95 rows open.** **Newest five:** #132 Lesson Bench parent card (caregiver block behind the
+> child's path; lesson-bench item 12) · #131 3d-shape-explorer (all five modes spoken; di item 18) ·
+> #130 cause-effect-chain (port 25 — yes/no per card, a chain that commits on stillness, a spoken
+> root pick; di item 29) · #129 scroll-layout lesson focus (di item 31) · #128 judged pack past
+> block 1 (di item 30).
+> Next free ID is **#133**.
 > Re-grep before filing; concurrent sessions in this lane are normal.
+
+### #132 — **Lesson Bench parent card: does the take-home block sit BEHIND the child's path on the Kindergarten stage, and does the scroll layout's frame read as "for a grown-up"?** · OPEN
+
+Dev → **Lesson Bench** → drop `qa/lesson-bench/packages/kindergarten-counting-objects-to-10-20260904131302-t93c.json`
+→ Play. Headless Chrome (09-04) already confirms the SCROLL layout: `take-home-activity` renders LAST, after the
+knowledge-check, inside the amber "For a grown-up · after the lesson" frame, with no generation POSTs. The rest is human.
+
+- **K stage** (Ctrl+Alt+K → on, or a curriculum-launched K lesson): the dot trail must NOT include the take-home;
+  the parent card appears only after the finish check-mark, under the summary — never as a frame the child rides to.
+- **Scroll layout at phone width:** the amber frame + two lines of adult copy read as a parent hand-off, not as one more
+  activity; **Print** still works inside the frame.
+- **Re-rate `…t93c` in the rail** (carried keeps are pre-filled): the take-home and the knowledge-check are the two
+  RE-RATE rows in `…t93c.rerun.md`; then `node scripts/lesson-bench.mjs score` prints the agreement. Queue:
+  `qa/lesson-bench/BACKLOG.md` item 12.
+
+### #131 — **`3d-shape-explorer`: can a Kindergartener SAY every geometry answer while the solid stays a useful, answer-safe source?** · OPEN
+
+Dev → Math Primitives tester → **3D Shape Explorer** → run every eval mode at easy and hard where
+available. Plain and signature headless drives covered all five modes, and the post-fix cap sweep has
+no HIGH findings, but those drives answer in TEXT. This row owns the real microphone, browser pixels,
+and reveal timing that machine evidence cannot close. Queue: `qa/di/BACKLOG.md` item 18.
+
+- **Identify:** on a sphere say *"circle"*, then *"sphere"*. The first must open with *"My turn:"*
+  and re-ask the same unlabeled solid; only the second may open with *"Yes,"*, reveal the name, and
+  advance. There must be no shape-name buttons or printed answer before the verdict.
+- **Flat or solid:** confidently reverse the classification on both a code-drawn flat shape and a
+  pseudo-3D solid, then correct it. The actual SVG is the source — no semantic emoji or labeled bins.
+- **Real-world match:** for a ball say *"ball"* instead of *"sphere"*. The everyday object may stay
+  named and visible, but no solid-name column or elimination grid may appear.
+- **Properties:** give an off-by-one face count; say *"yes"* when asked whether a cube rolls smoothly;
+  on a true no-answer say a natural *"nope"*. All must judge correctly. At easy, the ring may suggest
+  careful looking but must not claim to highlight individual faces or print the total; active-property
+  labels remain hidden until reveal.
+- **Riddle:** say *"cylinder"* for the cone riddle that shares curved/circular clues, then *"cone"*.
+  The clue card stays readable and the illustrated/name options stay absent.
+- **Acoustic edge:** on a rectangular-prism item try *"rectangle prism"* and a young-child production
+  of *"rectangular prism"*. Record what ASR hears and whether the judge is appropriately tolerant
+  without accepting plain *"rectangle"*.
+- **Transport and timing:** confirm open-mic transport, VAD, ASR, and the final audio tail. Talk over a
+  prompt once, pause to think, and watch correction → same item → affirmation → reveal → next item.
+  The tutor's own *"Yes,"* is the only advancing event; no click, timer, or early screen swap advances.
+- **Layout:** at phone and desktop widths, inspect every mode one item at a time. Solids remain legible,
+  the hear-again control is not an answer control, the final reveal does not flash the next answer,
+  and the completion summary matches the judged items.
+
+**Pass:** every deliberate misconception is refused, every intended spoken form is affirmed, all five
+modes need voice but no answer button, and the screen/tutor stay on the same item through each verdict.
 
 ### #130 — **cause-effect-chain (port 25): can a child SAY yes/no per card, BUILD a chain that commits on stillness, and SAY which card is the root?** · OPEN
 

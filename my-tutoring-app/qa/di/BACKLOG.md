@@ -1362,6 +1362,17 @@ word", word-sorter) applied to the tap surface. Blast radius note: knowledge-che
 most-routed primitive in the portfolio (Grade-1 census: 6/42 generated components, in every
 lesson) — contract-first on every slice.
 
+> **OPEN 2026-09-04 (lesson-bench label on `…pgr5`, K, user: "pre-reader, the student says the
+> answer, but then they need to click on the answer too? just move pre-reader to di?").** The
+> spoken verdict did not COMMIT the choice at K — the child answered aloud and was still asked
+> to tap. First determine which surface ran: the judged set is all-or-nothing (every problem
+> must build a judged item AND a mic must exist, else the whole set falls to taps), so either the
+> set fell to taps silently or the judged path still requires a tap after the affirmation. Then
+> the fix is on the commit path (tutor affirmation = commit, no tap), never a K exclusion.
+> Executor: `/add-di-loop knowledge-check` contract check (R2). Lesson-bench BACKLOG item 11–13
+> already carry the affordance side (`answers: spoken+tap` is the declared truth today).
+> **Triage 2026-09-04:** `node scripts/lesson-bench.mjs triage …pgr5.labeled.json` now routes this label here MECHANICALLY (layer TUTOR, executor `/add-di-loop knowledge-check` contract check) — `qa/lesson-bench/triage/kindergarten-counting-objects-to-10-20260904013634-pgr5-2026-09-04.md`. The Tier A scorer cannot see a commit-path defect (the manifest says `answers: spoken+tap`); only a sitting can.
+
 #### Slice 1 — ✅ SHIPPED 2026-08-18: categorization microstep tap surface (this session)
 - **Files:** `primitives/problem-primitives/CategorizationActivityProblem.tsx` (whole-file
   rewrite, drag→microstep) + `CategorizationActivityProblem.microstep.test.tsx` (new, 5 pins).
@@ -4151,7 +4162,72 @@ it may be constrained production rather than free — decide it at the pack.
   - **19h(iii). QUEUED —** the §1 census greps become a vitest rule over every component importing `useJudgedScriptRunner` (two shipped ports already violate the comment clause). Executor: direct edit.
 - *(19-adjacent, already filed: 18a `numberWordFor` ×3 — fold into 19f's barrel if convenient; 18b ✅ rode 19c and shipped with it 2026-08-15.)*
 
-### 18. 🔢 **P4 OPEN — `place-value-chart` SHIPPED 2026-08-18 (math port 8, THE FIRST PAST THE ≤20 BENCH: new `place_value_word` class accepted-build-ahead on the user's 2026-08-19 ruling, mic **#113** = the #63 acceptance material itself) · `ordinal-line` SHIPPED 2026-08-18 (math port 6, all 5 eval modes, mic #110; its "unbenched ordinal words" gate was FALSE IN CODE) · `compare-objects` SHIPPED 2026-08-17 (4th math port, mic #107) · P1 SHIPPED 2026-08-13 + DRIVEN (6/6 refusals) · P2 `addition-subtraction-scene` SHIPPED 2026-08-14 · `number-bond` SHIPPED 2026-08-14 (the P3-correction port) · `shape-sorter` SHIPPED 2026-08-18 (5th port, 3/3 modes spoken, zero taps, mic #108) · P3 (#63) = THE REMAINING GATE — and #113 folds INTO the #63 sitting — THE DI MODALITY ON MATH PRIMITIVES (user thread 2026-08-12: *"would there be value adding /add-di-loop to any of those? for example ten frame… addition subtraction scene may benefit from speaking aloud instead of typing"*)**
+### 18. 🔢 **P4 OPEN — `3d-shape-explorer` SHIPPED 2026-09-04 (all 5 modes spoken, mic #131) · `place-value-chart` SHIPPED 2026-08-18 (math port 8, THE FIRST PAST THE ≤20 BENCH: new `place_value_word` class accepted-build-ahead on the user's 2026-08-19 ruling, mic **#113** = the #63 acceptance material itself) · `ordinal-line` SHIPPED 2026-08-18 (math port 6, all 5 eval modes, mic #110; its "unbenched ordinal words" gate was FALSE IN CODE) · `compare-objects` SHIPPED 2026-08-17 (4th math port, mic #107) · P1 SHIPPED 2026-08-13 + DRIVEN (6/6 refusals) · P2 `addition-subtraction-scene` SHIPPED 2026-08-14 · `number-bond` SHIPPED 2026-08-14 (the P3-correction port) · `shape-sorter` SHIPPED 2026-08-18 (5th port, 3/3 modes spoken, zero taps, mic #108) · P3 (#63) = THE REMAINING GATE — and #113 folds INTO the #63 sitting — THE DI MODALITY ON MATH PRIMITIVES (user thread 2026-08-12: *"would there be value adding /add-di-loop to any of those? for example ten frame… addition subtraction scene may benefit from speaking aloud instead of typing"*)**
+
+> #### ✅ 2026-09-04 — `3d-shape-explorer` IS ON THE JUDGED LOOP, all five eval modes. Mic row **#131**.
+>
+> **THE MODALITY FORK ENDED ALL-VOICE.** Identify says the mathematical solid; 2D-vs-3D says
+> flat/solid; real-world match translates an object name into a solid name; each property child says
+> one number word, yes/no verdict, or flat-face shape; each riddle says the one solid satisfying every
+> clue. The pseudo-3D/code-drawn SVG, object, or clue card remains the source, but every name grid,
+> classification bin, matching column, property control, Check, Next, timer, local grader, and local
+> AI choreography is gone. `useJudgedScriptRunner` is now the only interaction clock.
+>
+> **ONE SOURCE IS NOT ONE ITEM.** Collection challenges fan out into stable child ids, equal actions
+> stay grouped, identity answers do not repeat, each collection caps at 4 and the session at 6. The
+> component, generator, and DI adapter all consume `buildThreeDShapeItems`; partial bad children drop
+> without discarding sound siblings, and source/item indices are never interchanged. Evaluation is
+> item-based; legacy metric fields without a not-observed state use a documented neutral value plus
+> `details.observedMetrics`, never overall accuracy masquerading as subset evidence.
+>
+> **GEOMETRY IS CODE-OWNED.** `SHAPE_FACTS` is the only fact table for cube, sphere, cylinder, cone,
+> and rectangular prism. It derives property answers and bounded riddle atoms; generated facts,
+> `is3d`, answers, options, instructions, and free-prose riddles are not trusted. Unknown shapes,
+> contradictory dimensions/facts, unsayable or answer-bearing object names, non-unique/leaking
+> riddles, duplicate asks/ids, and out-of-range counts drop. A zero count becomes a yes/no item rather
+> than the unbenched spoken word zero. Wrapper text is neutralized as a whole, never token-mangled.
+>
+> **PIXEL LEAKS CLOSED PER FACET.** Identify and riddle names stay hidden until `revealHeld`; flat/solid
+> uses the actual drawing, not an emoji answer; the real-world object remains public while its solid
+> column is absent. Property support can ring a positive-count solid but cannot claim a per-face
+> sequence; labels naming the active facet are held until reveal. The displayed item and counter now
+> remain on the affirmed item for the full reveal hold, then change together when the next cue sends.
+>
+> **LIVE CAUGHT THREE PACK DEFECTS, ALL FIXED AND RE-DRIVEN.** (1) The classification greeting said
+> “solid shapes,” leaking the first flat/solid answer; now it welcomes the child to a neutral shape
+> lab, and the post-fix signature drive is clean. (2) After the cap, the judge retained the cube
+> riddle while hearing the next correct “sphere,” producing no verdict. Every item contract now
+> explicitly replaces and discards every earlier item; the re-drive affirmed sphere and continued.
+> (3) A one-answer property transition collided with “once” and then “next one” in the move-on ask.
+> The count ask now says “look carefully at every…,” the hand-over says “next question,” and a seeded
+> two→one pack gate prevents either regression. The final property cap report has **0 HIGH**.
+>
+> **Generator probes:** identify 5→5 · match 2→5 · flat/solid 2→6 · property easy/medium/hard
+> 1→4 each · riddle 5→5 · mixed 5→6 with one session-cap omission. Every final pack gate was clean;
+> no build drop occurred in the pinned runs. The three property probes all used the safe code-owned
+> fallback after generated source failed to produce a valid property collection — a generator-quality
+> residual, not hidden or loosened. Mixed kept action grouping and four action families inside cap.
+>
+> **Drives:** plain across all modes **25/25 wrong refused + 25/25 right affirmed**; signature across
+> all modes **24/24 + 24/24** (flat look-alike, reversed dimension, object echo, off-by-one/property
+> confusion, face/solid confusion, nearest riddle solid); post-fix cap across all five modes **15/15
+> repeated capped wrong turns refused and 18/18 post-move correct answers affirmed**, with **0 HIGH**.
+> The remaining cap findings are the known item-30 family WARNs
+> `di-correction-verbatim-repeat` and `di-capped-item-asks-then-withdraws`. Some ordinary sessions
+> also reproduced the family `[CURRENT STATE]` narration class; it remains owned by item 32 because
+> the same behavior spans packs and needs a non-voiceable state channel, not another primitive prompt.
+> Reports are
+> `qa/tutor-reports/3d-shape-explorer-live-di-{plain,signature,plain-cap}-2026-09-04.md`; the harness
+> overwrites per-mode runs with the same run shape, so this block preserves the consolidated matrices.
+>
+> **Files:** NEW `math/threeDShapeExplorerScript.ts` +
+> `math/__tests__/ThreeDShapeExplorer.di-script.test.ts`; rewritten `math/ThreeDShapeExplorer.tsx`;
+> generator imports the canonical builder/gates and logs drops; catalog now has exact DI wording,
+> `audioInput.manual_activity`, only `challengeType`/`stimulus` context, all-spoken affordances, and
+> βs 2.0/3.0/3.5/4.5/6.0 with rationale; `diDrivePlan.ts` registers an all-voice adapter.
+> **Gates:** focused script **10/10** · `typecheck:lumina` **0** · full Vitest **4578 pass / 4 skip,
+> 0 fail** · click-era component census **0** across the required tokens. Browser pixels, real ASR,
+> VAD, audio tail, “rectangle prism,” and reveal timing remain honestly open only in **#131**.
 
 > #### ✅ 2026-08-18 — `place-value-chart` IS ON THE JUDGED LOOP (all four eval modes). EIGHTH math port — THE FIRST PAST THE ≤20 BENCH. Mic row **#113**, which IS the #63 acceptance material. User-pulled ("what about place value chart? this feels like a high value one?"), same session as the ruling that unblocked it.
 >
