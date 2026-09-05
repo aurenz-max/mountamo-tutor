@@ -1,0 +1,1507 @@
+{
+  "benchVersion": 1,
+  "id": "kindergarten-decoding-cvc-words-with-short-a-20260905200116-rw3p",
+  "subskill": null,
+  "provenance": {
+    "generatedAt": "2026-09-05T20:01:16.183Z",
+    "source": "topic-trace",
+    "topic": "Decoding CVC words with short a",
+    "gradeLevel": "Kindergarten",
+    "gitSha": null,
+    "promptHash": null,
+    "generationRequest": {
+      "topic": "Decoding CVC words with short a",
+      "gradeLevel": "kindergarten",
+      "package": true,
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Listen to and identify the short 'a' sound in spoken words.",
+          "verb": "identify",
+          "icon": "search"
+        },
+        {
+          "id": "obj2",
+          "text": "Connect letter sounds to written letters to decode simple CVC words.",
+          "verb": "apply",
+          "icon": "puzzle"
+        },
+        {
+          "id": "obj3",
+          "text": "Read a short CVC word all the way through to discover the secret word.",
+          "verb": "create",
+          "icon": "lightbulb"
+        }
+      ],
+      "curatorBrief": {
+        "primitive": "intro_briefing",
+        "topic": "Decoding CVC words with short a",
+        "subject": "General",
+        "gradeLevel": "kindergarten",
+        "estimatedTime": "15-20 minutes",
+        "hook": {
+          "type": "scenario",
+          "content": "Imagine you are a detective at a secret letter factory, and you find three mystery sounds hiding together. When you put them together like magic, they whisper a secret word to you like 'cat' or 'hat'!",
+          "visual": "📖"
+        },
+        "bigIdea": {
+          "statement": "Letters make special sounds, and when we blend them together, they form real words we can read!",
+          "whyItMatters": "Learning how to blend sounds lets you read your very own books, discover new stories, and write secret notes to your friends."
+        },
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Listen to and identify the short 'a' sound in spoken words.",
+            "verb": "identify",
+            "icon": "search"
+          },
+          {
+            "id": "obj2",
+            "text": "Connect letter sounds to written letters to decode simple CVC words.",
+            "verb": "apply",
+            "icon": "puzzle"
+          },
+          {
+            "id": "obj3",
+            "text": "Read a short CVC word all the way through to discover the secret word.",
+            "verb": "create",
+            "icon": "lightbulb"
+          }
+        ],
+        "prerequisites": {
+          "shouldKnow": [
+            "Recognize the alphabet letters and their basic sounds",
+            "Understand how to blend two sounds together smoothly"
+          ],
+          "quickCheck": {
+            "question": "What sound does the letter 'a' make like in 'apple'?",
+            "answer": "The /a/ sound",
+            "hint": "Open your mouth wide like you are taking a big bite of a crunchy red apple and say /a/!"
+          }
+        },
+        "roadmap": [
+          {
+            "phase": "Explore",
+            "description": "Listen for the special short 'a' sound hiding in fun words.",
+            "activities": [
+              "Play a listening game for the /a/ sound",
+              "Practice making the short 'a' mouth shape"
+            ]
+          },
+          {
+            "phase": "Learn",
+            "description": "Meet the consonant-vowel-consonant letter building blocks.",
+            "activities": [
+              "Look at letter cards for beginning, middle, and ending sounds",
+              "Slide letter sounds together slowly like a train"
+            ]
+          },
+          {
+            "phase": "Practice",
+            "description": "Blend sounds together to decode real words.",
+            "activities": [
+              "Sound out simple words like 'cat', 'map', and 'hat'",
+              "Match decoded words to fun picture cards"
+            ]
+          }
+        ],
+        "connections": {
+          "buildingFrom": [
+            "Learning individual letter names and sounds",
+            "Hearing beginning sounds in spoken words"
+          ],
+          "leadingTo": [
+            "Reading full sentences and beginner storybooks",
+            "Writing your own simple words and stories"
+          ],
+          "realWorld": [
+            "Reading words on signs, toy boxes, and your favorite storybooks"
+          ]
+        },
+        "mindset": {
+          "encouragement": "Sometimes the sounds can feel shy and try to stay apart, but if you keep practicing your slow slide, you will hear the word pop right out!",
+          "growthTip": "If a word is tricky, point to each letter with your finger and say its sound out loud before blending them together."
+        }
+      }
+    }
+  },
+  "manifest": {
+    "topic": "Decoding CVC words with short a",
+    "gradeLevel": "Kindergarten",
+    "subject": "LANGUAGE_ARTS",
+    "themeColor": "#E11D48",
+    "curatorBrief": {
+      "instanceId": "curator-brief-intro",
+      "title": "Welcome to the Short 'a' Word Workshop!",
+      "intent": "Welcome Kindergarten learners with an engaging, audio-rich hook about the short 'a' sound (/ă/ as in apple and cat). Introduce our three missions: hearing the short 'a' sound, blending letter sounds into 3-letter CVC words, and reading words all the way through to solve word puzzles."
+    },
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Listen to and identify the short 'a' sound in spoken words.",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "concept-card-grid",
+            "instanceId": "obj1-concept-cards",
+            "title": "Meet the Short 'a' Sound",
+            "intent": "Introduce the short 'a' sound (/ă/) with vibrant, friendly visual anchor cards such as an apple, an alligator, an ant, and an astronaut to build phonemic awareness without requiring reading.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy"
+            }
+          },
+          {
+            "componentId": "di-letter-sounds",
+            "instanceId": "obj1-di-letter-sounds",
+            "title": "Say the Short 'a' Sound",
+            "intent": "Guide learners through live direct-instruction phonemic practice to isolate, stretch, and speak the continuous short vowel sound /ă/, reinforcing grapheme-phoneme connection with live tutor audio feedback.",
+            "config": {
+              "count": 5,
+              "difficulty": "easy",
+              "targetEvalMode": "letter_sound"
+            }
+          },
+          {
+            "componentId": "phoneme-explorer",
+            "instanceId": "obj1-phoneme-explorer",
+            "title": "Sound Detective: Finding /ă/",
+            "intent": "Provide spoken phonemic awareness challenges where students listen to spoken words and identify words that have the short 'a' sound, utilizing supportive picture cues.",
+            "config": {
+              "count": 5,
+              "difficulty": "easy",
+              "targetEvalMode": "isolate"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj2",
+        "objectiveText": "Connect letter sounds to written letters to decode simple CVC words.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "phonics-blender",
+            "instanceId": "obj2-phonics-blender",
+            "title": "Blend Sounds Together",
+            "intent": "Model continuous sound-by-sound blending for short 'a' CVC words (like c-a-t, b-a-t, m-a-p) using Elkonin-style phoneme tiles and audio playback that blend into whole words.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy",
+              "targetEvalMode": "cvc"
+            }
+          },
+          {
+            "componentId": "cvc-speller",
+            "instanceId": "obj2-cvc-speller",
+            "title": "Build and Spell Short 'a' Words",
+            "intent": "Guide students to map spoken sounds to letters by placing consonant-vowel-consonant tiles into boxes to spell target short 'a' words with live tutor support.",
+            "config": {
+              "count": 5,
+              "difficulty": "medium",
+              "targetEvalMode": "spell_word"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj3",
+        "objectiveText": "Read a short CVC word all the way through to discover the secret word.",
+        "objectiveVerb": "create",
+        "components": [
+          {
+            "componentId": "di-word-reading",
+            "instanceId": "obj3-di-word-reading",
+            "title": "Read the Mystery Word",
+            "intent": "Direct instruction reading drill where the child sees printed short 'a' CVC words (e.g., cat, jam, pan, fan) and reads them aloud into the microphone to reveal the secret meaning.",
+            "config": {
+              "count": 5,
+              "difficulty": "medium",
+              "targetEvalMode": "cvc_reading"
+            }
+          },
+          {
+            "componentId": "word-workout",
+            "instanceId": "obj3-word-workout",
+            "title": "Secret Word Match",
+            "intent": "Challenge students to decode printed short 'a' CVC words and match them with the corresponding picture or distinguish real words from silly nonsense words, proving full decoding mastery.",
+            "config": {
+              "count": 6,
+              "difficulty": "medium",
+              "targetEvalMode": "real_vs_nonsense"
+            }
+          }
+        ]
+      }
+    ],
+    "finalAssessment": {
+      "componentId": "knowledge-check",
+      "instanceId": "final-assessment-knowledge-check",
+      "title": "Short 'a' Word Master Badge",
+      "intent": "Assess all three objectives: recognizing the short 'a' sound in spoken words, identifying the correct letter sounds to form a CVC word, and matching decoded short 'a' words with their corresponding pictures.",
+      "config": {
+        "count": 5,
+        "targetEvalMode": "mixed"
+      }
+    },
+    "layout": [
+      {
+        "componentId": "curator-brief",
+        "instanceId": "curator-brief-intro",
+        "title": "Welcome to the Short 'a' Word Workshop!",
+        "intent": "Welcome Kindergarten learners with an engaging, audio-rich hook about the short 'a' sound (/ă/ as in apple and cat). Introduce our three missions: hearing the short 'a' sound, blending letter sounds into 3-letter CVC words, and reading words all the way through to solve word puzzles.",
+        "objectiveIds": [
+          "obj1",
+          "obj2",
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "concept-card-grid",
+        "instanceId": "obj1-concept-cards",
+        "title": "Meet the Short 'a' Sound",
+        "intent": "Introduce the short 'a' sound (/ă/) with vibrant, friendly visual anchor cards such as an apple, an alligator, an ant, and an astronaut to build phonemic awareness without requiring reading.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "objectiveId": "obj1",
+          "objectiveText": "Listen to and identify the short 'a' sound in spoken words.",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Introduce the short 'a' sound (/ă/) with vibrant, friendly visual anchor cards such as an apple, an alligator, an ant, and an astronaut to build phonemic awareness without requiring reading."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "di-letter-sounds",
+        "instanceId": "obj1-di-letter-sounds",
+        "title": "Say the Short 'a' Sound",
+        "intent": "Guide learners through live direct-instruction phonemic practice to isolate, stretch, and speak the continuous short vowel sound /ă/, reinforcing grapheme-phoneme connection with live tutor audio feedback.",
+        "config": {
+          "count": 5,
+          "difficulty": "easy",
+          "targetEvalMode": "letter_sound",
+          "objectiveId": "obj1",
+          "objectiveText": "Listen to and identify the short 'a' sound in spoken words.",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Guide learners through live direct-instruction phonemic practice to isolate, stretch, and speak the continuous short vowel sound /ă/, reinforcing grapheme-phoneme connection with live tutor audio feedback."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "phoneme-explorer",
+        "instanceId": "obj1-phoneme-explorer",
+        "title": "Sound Detective: Finding /ă/",
+        "intent": "Provide spoken phonemic awareness challenges where students listen to spoken words and identify words that have the short 'a' sound, utilizing supportive picture cues.",
+        "config": {
+          "count": 5,
+          "difficulty": "easy",
+          "targetEvalMode": "isolate",
+          "objectiveId": "obj1",
+          "objectiveText": "Listen to and identify the short 'a' sound in spoken words.",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Provide spoken phonemic awareness challenges where students listen to spoken words and identify words that have the short 'a' sound, utilizing supportive picture cues."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "phonics-blender",
+        "instanceId": "obj2-phonics-blender",
+        "title": "Blend Sounds Together",
+        "intent": "Model continuous sound-by-sound blending for short 'a' CVC words (like c-a-t, b-a-t, m-a-p) using Elkonin-style phoneme tiles and audio playback that blend into whole words.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "targetEvalMode": "cvc",
+          "objectiveId": "obj2",
+          "objectiveText": "Connect letter sounds to written letters to decode simple CVC words.",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Model continuous sound-by-sound blending for short 'a' CVC words (like c-a-t, b-a-t, m-a-p) using Elkonin-style phoneme tiles and audio playback that blend into whole words."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "cvc-speller",
+        "instanceId": "obj2-cvc-speller",
+        "title": "Build and Spell Short 'a' Words",
+        "intent": "Guide students to map spoken sounds to letters by placing consonant-vowel-consonant tiles into boxes to spell target short 'a' words with live tutor support.",
+        "config": {
+          "count": 5,
+          "difficulty": "medium",
+          "targetEvalMode": "spell_word",
+          "objectiveId": "obj2",
+          "objectiveText": "Connect letter sounds to written letters to decode simple CVC words.",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Guide students to map spoken sounds to letters by placing consonant-vowel-consonant tiles into boxes to spell target short 'a' words with live tutor support."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "di-word-reading",
+        "instanceId": "obj3-di-word-reading",
+        "title": "Read the Mystery Word",
+        "intent": "Direct instruction reading drill where the child sees printed short 'a' CVC words (e.g., cat, jam, pan, fan) and reads them aloud into the microphone to reveal the secret meaning.",
+        "config": {
+          "count": 5,
+          "difficulty": "medium",
+          "targetEvalMode": "cvc_reading",
+          "objectiveId": "obj3",
+          "objectiveText": "Read a short CVC word all the way through to discover the secret word.",
+          "objectiveVerb": "create",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Direct instruction reading drill where the child sees printed short 'a' CVC words (e.g., cat, jam, pan, fan) and reads them aloud into the microphone to reveal the secret meaning."
+        },
+        "objectiveIds": [
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "word-workout",
+        "instanceId": "obj3-word-workout",
+        "title": "Secret Word Match",
+        "intent": "Challenge students to decode printed short 'a' CVC words and match them with the corresponding picture or distinguish real words from silly nonsense words, proving full decoding mastery.",
+        "config": {
+          "count": 6,
+          "difficulty": "medium",
+          "targetEvalMode": "real_vs_nonsense",
+          "objectiveId": "obj3",
+          "objectiveText": "Read a short CVC word all the way through to discover the secret word.",
+          "objectiveVerb": "create",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Challenge students to decode printed short 'a' CVC words and match them with the corresponding picture or distinguish real words from silly nonsense words, proving full decoding mastery."
+        },
+        "objectiveIds": [
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "final-assessment-knowledge-check",
+        "title": "Short 'a' Word Master Badge",
+        "intent": "Assess all three objectives: recognizing the short 'a' sound in spoken words, identifying the correct letter sounds to form a CVC word, and matching decoded short 'a' words with their corresponding pictures.",
+        "config": {
+          "count": 5,
+          "targetEvalMode": "mixed",
+          "objectiveGrade": "Kindergarten",
+          "lessonObjectives": [
+            {
+              "id": "obj1",
+              "text": "Listen to and identify the short 'a' sound in spoken words.",
+              "grade": "Kindergarten"
+            },
+            {
+              "id": "obj2",
+              "text": "Connect letter sounds to written letters to decode simple CVC words.",
+              "grade": "Kindergarten"
+            },
+            {
+              "id": "obj3",
+              "text": "Read a short CVC word all the way through to discover the secret word.",
+              "grade": "Kindergarten"
+            }
+          ]
+        },
+        "objectiveIds": [
+          "obj1",
+          "obj2",
+          "obj3"
+        ]
+      }
+    ]
+  },
+  "curatorBrief": {
+    "primitive": "intro_briefing",
+    "topic": "Decoding CVC words with short a",
+    "subject": "General",
+    "gradeLevel": "kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+      "type": "scenario",
+      "content": "Imagine you are a detective at a secret letter factory, and you find three mystery sounds hiding together. When you put them together like magic, they whisper a secret word to you like 'cat' or 'hat'!",
+      "visual": "📖"
+    },
+    "bigIdea": {
+      "statement": "Letters make special sounds, and when we blend them together, they form real words we can read!",
+      "whyItMatters": "Learning how to blend sounds lets you read your very own books, discover new stories, and write secret notes to your friends."
+    },
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Listen to and identify the short 'a' sound in spoken words.",
+        "verb": "identify",
+        "icon": "search"
+      },
+      {
+        "id": "obj2",
+        "text": "Connect letter sounds to written letters to decode simple CVC words.",
+        "verb": "apply",
+        "icon": "puzzle"
+      },
+      {
+        "id": "obj3",
+        "text": "Read a short CVC word all the way through to discover the secret word.",
+        "verb": "create",
+        "icon": "lightbulb"
+      }
+    ],
+    "prerequisites": {
+      "shouldKnow": [
+        "Recognize the alphabet letters and their basic sounds",
+        "Understand how to blend two sounds together smoothly"
+      ],
+      "quickCheck": {
+        "question": "What sound does the letter 'a' make like in 'apple'?",
+        "answer": "The /a/ sound",
+        "hint": "Open your mouth wide like you are taking a big bite of a crunchy red apple and say /a/!"
+      }
+    },
+    "roadmap": [
+      {
+        "phase": "Explore",
+        "description": "Listen for the special short 'a' sound hiding in fun words.",
+        "activities": [
+          "Play a listening game for the /a/ sound",
+          "Practice making the short 'a' mouth shape"
+        ]
+      },
+      {
+        "phase": "Learn",
+        "description": "Meet the consonant-vowel-consonant letter building blocks.",
+        "activities": [
+          "Look at letter cards for beginning, middle, and ending sounds",
+          "Slide letter sounds together slowly like a train"
+        ]
+      },
+      {
+        "phase": "Practice",
+        "description": "Blend sounds together to decode real words.",
+        "activities": [
+          "Sound out simple words like 'cat', 'map', and 'hat'",
+          "Match decoded words to fun picture cards"
+        ]
+      }
+    ],
+    "connections": {
+      "buildingFrom": [
+        "Learning individual letter names and sounds",
+        "Hearing beginning sounds in spoken words"
+      ],
+      "leadingTo": [
+        "Reading full sentences and beginner storybooks",
+        "Writing your own simple words and stories"
+      ],
+      "realWorld": [
+        "Reading words on signs, toy boxes, and your favorite storybooks"
+      ]
+    },
+    "mindset": {
+      "encouragement": "Sometimes the sounds can feel shy and try to stay apart, but if you keep practicing your slow slide, you will hear the word pop right out!",
+      "growthTip": "If a word is tricky, point to each letter with your finger and say its sound out loud before blending them together."
+    }
+  },
+  "components": [
+    {
+      "instanceId": "obj1-concept-cards",
+      "componentId": "concept-card-grid",
+      "data": {
+        "cards": [
+          {
+            "title": "Red Apple",
+            "subheading": "Bite the /ă/ Sound",
+            "definition": "Apple starts with the happy /ă/ sound like a joyful bite!",
+            "conceptElements": [
+              {
+                "label": "First Sound",
+                "type": "primary"
+              },
+              {
+                "detail": "Open your mouth wide into a cheerful smile.",
+                "label": "Mouth Shape",
+                "type": "secondary"
+              }
+            ],
+            "timelineContext": "Ready for snack time in the classroom.",
+            "originStory": "A crunchy red apple tumbled down and shouted /ă/!",
+            "curiosityNote": "Your mouth opens wide into a smile to say /ă/!",
+            "visualPrompt": "A cheerful bright red cartoon apple with big friendly eyes, a joyful smile, and a single green leaf on top, simple sticker style with bold outlines.",
+            "themeColor": "#E63946",
+            "cardEmoji": "🍎",
+            "gradeLevel": "K"
+          },
+          {
+            "title": "Happy Alligator",
+            "subheading": "Snap the /ă/ Sound",
+            "definition": "Alligator starts with an open /ă/ sound just before a snap!",
+            "conceptElements": [
+              {
+                "detail": "Listen for /ă/ right at the very beginning.",
+                "label": "Start Sound",
+                "type": "primary"
+              },
+              {
+                "detail": "Clap your arms together like snapping jaws.",
+                "label": "Arm Chomp",
+                "type": "highlight"
+              }
+            ],
+            "timelineContext": "Splashing along sunny river waters.",
+            "originStory": "A friendly green alligator opened his big snout and cheered /ă/!",
+            "curiosityNote": "Chomp your arms like an alligator when you hear /ă/!",
+            "visualPrompt": "A cute bright green baby alligator smiling cheerfully with rounded teeth, sitting on a soft riverbank, vibrant storybook style.",
+            "themeColor": "#2A9D8F",
+            "cardEmoji": "🐊",
+            "gradeLevel": "K"
+          },
+          {
+            "title": "Tiny Ant",
+            "subheading": "Quick /ă/ Sound",
+            "definition": "Ant starts with a quick /ă/ sound as it scurries by.",
+            "conceptElements": [
+              {
+                "detail": "Hear the quick /ă/ sound when saying ant.",
+                "label": "Hear It",
+                "type": "primary"
+              },
+              {
+                "detail": "Tap your knees every time you hear /ă/.",
+                "label": "Tap Along",
+                "type": "secondary"
+              }
+            ],
+            "timelineContext": "Marching on green grass under the sunshine.",
+            "originStory": "A brave tiny ant lifted a crumb and sang /ă/!",
+            "curiosityNote": "Tickle your arm like tiny crawling ants saying /ă/!",
+            "visualPrompt": "A tiny, adorable cartoon ant with big sparkly eyes wearing little red sneakers and holding a green leaf, warm sunny garden background.",
+            "themeColor": "#F4A261",
+            "cardEmoji": "🐜",
+            "gradeLevel": "K"
+          }
+        ]
+      }
+    },
+    {
+      "instanceId": "obj1-di-letter-sounds",
+      "componentId": "di-letter-sounds",
+      "data": {
+        "title": "Super Sound Fun!",
+        "description": "Let us look at a letter and say its special sound together out loud.",
+        "challengeType": "letter_sound",
+        "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+        "challenges": [
+          {
+            "id": "dils-1-a",
+            "challengeType": "letter_sound",
+            "letter": "a",
+            "spoken": "aaa",
+            "keyword": "apple",
+            "emoji": "🍎",
+            "elicitation": "keyword",
+            "asrAliases": [
+              "apple",
+              "a"
+            ],
+            "supportTier": "easy"
+          }
+        ],
+        "letters": "a"
+      }
+    },
+    {
+      "instanceId": "obj1-phoneme-explorer",
+      "componentId": "phoneme-explorer",
+      "data": {
+        "title": "Sound Safari: Decoding CVC words with short a",
+        "supportTier": "easy",
+        "challenges": [
+          {
+            "phoneme": "M",
+            "phonemeSound": "mmm",
+            "exampleWord": "Map",
+            "exampleEmoji": "🗺️",
+            "choices": [
+              {
+                "word": "Pig",
+                "emoji": "🐷",
+                "correct": false
+              },
+              {
+                "word": "Mat",
+                "emoji": "🧶",
+                "correct": true
+              },
+              {
+                "word": "Pen",
+                "emoji": "🖊️",
+                "correct": false
+              },
+              {
+                "word": "Cup",
+                "emoji": "🥤",
+                "correct": false
+              }
+            ],
+            "mode": "isolate",
+            "id": "c1",
+            "showChoiceEmoji": true,
+            "readOptionsAloud": true,
+            "showExampleWord": true,
+            "showExampleHint": true
+          },
+          {
+            "phoneme": "H",
+            "phonemeSound": "huh",
+            "exampleWord": "Hat",
+            "exampleEmoji": "🧢",
+            "choices": [
+              {
+                "word": "Bed",
+                "emoji": "🛏️",
+                "correct": false
+              },
+              {
+                "word": "Net",
+                "emoji": "🥅",
+                "correct": false
+              },
+              {
+                "word": "Ham",
+                "emoji": "🍖",
+                "correct": true
+              },
+              {
+                "word": "Top",
+                "emoji": "🪀",
+                "correct": false
+              }
+            ],
+            "mode": "isolate",
+            "id": "c2",
+            "showChoiceEmoji": true,
+            "readOptionsAloud": true,
+            "showExampleWord": true,
+            "showExampleHint": true
+          },
+          {
+            "phoneme": "F",
+            "phonemeSound": "fff",
+            "exampleWord": "Fan",
+            "exampleEmoji": "🪭",
+            "choices": [
+              {
+                "word": "Fat",
+                "emoji": "🐘",
+                "correct": true
+              },
+              {
+                "word": "Log",
+                "emoji": "🪵",
+                "correct": false
+              },
+              {
+                "word": "Zip",
+                "emoji": "🤐",
+                "correct": false
+              },
+              {
+                "word": "Cup",
+                "emoji": "☕",
+                "correct": false
+              }
+            ],
+            "mode": "isolate",
+            "id": "c3",
+            "showChoiceEmoji": true,
+            "readOptionsAloud": true,
+            "showExampleWord": true,
+            "showExampleHint": true
+          },
+          {
+            "phoneme": "S",
+            "phonemeSound": "sss",
+            "exampleWord": "Sun",
+            "exampleEmoji": "☀️",
+            "choices": [
+              {
+                "word": "Bag",
+                "emoji": "🎒",
+                "correct": false
+              },
+              {
+                "word": "Hop",
+                "emoji": "🐇",
+                "correct": false
+              },
+              {
+                "word": "Sat",
+                "emoji": "🪑",
+                "correct": true
+              },
+              {
+                "word": "Pin",
+                "emoji": "📍",
+                "correct": false
+              }
+            ],
+            "mode": "isolate",
+            "id": "c4",
+            "showChoiceEmoji": true,
+            "readOptionsAloud": true,
+            "showExampleWord": true,
+            "showExampleHint": true
+          }
+        ]
+      }
+    },
+    {
+      "instanceId": "obj2-phonics-blender",
+      "componentId": "phonics-blender",
+      "data": {
+        "title": "Blend Short A CVC Words",
+        "gradeLevel": "K",
+        "patternType": "cvc",
+        "words": [
+          {
+            "id": "w1",
+            "targetWord": "cat",
+            "phonemes": [
+              {
+                "id": "w1_p1",
+                "sound": "/k/",
+                "letters": "c"
+              },
+              {
+                "id": "w1_p2",
+                "sound": "/æ/",
+                "letters": "a"
+              },
+              {
+                "id": "w1_p3",
+                "sound": "/t/",
+                "letters": "t"
+              }
+            ],
+            "emoji": "🐱",
+            "imageDescription": "a small furry cat"
+          },
+          {
+            "id": "w2",
+            "targetWord": "bat",
+            "phonemes": [
+              {
+                "id": "w2_p1",
+                "sound": "/b/",
+                "letters": "b"
+              },
+              {
+                "id": "w2_p2",
+                "sound": "/æ/",
+                "letters": "a"
+              },
+              {
+                "id": "w2_p3",
+                "sound": "/t/",
+                "letters": "t"
+              }
+            ],
+            "emoji": "🦇",
+            "imageDescription": "a flying bat"
+          },
+          {
+            "id": "w3",
+            "targetWord": "map",
+            "phonemes": [
+              {
+                "id": "w3_p1",
+                "sound": "/m/",
+                "letters": "m"
+              },
+              {
+                "id": "w3_p2",
+                "sound": "/æ/",
+                "letters": "a"
+              },
+              {
+                "id": "w3_p3",
+                "sound": "/p/",
+                "letters": "p"
+              }
+            ],
+            "emoji": "🗺️",
+            "imageDescription": "a paper map"
+          },
+          {
+            "id": "w4",
+            "targetWord": "hat",
+            "phonemes": [
+              {
+                "id": "w4_p1",
+                "sound": "/h/",
+                "letters": "h"
+              },
+              {
+                "id": "w4_p2",
+                "sound": "/æ/",
+                "letters": "a"
+              },
+              {
+                "id": "w4_p3",
+                "sound": "/t/",
+                "letters": "t"
+              }
+            ],
+            "emoji": "🎩",
+            "imageDescription": "a winter hat"
+          }
+        ],
+        "count": 4,
+        "supportTier": "easy",
+        "showBlendPreview": "full",
+        "showSlotCount": true,
+        "showTileLetters": true,
+        "nameTargetPhonemes": true
+      }
+    },
+    {
+      "instanceId": "obj2-cvc-speller",
+      "componentId": "cvc-speller",
+      "data": {
+        "title": "Short A Word Fun!",
+        "vowelFocus": "short-a",
+        "letterGroup": 3,
+        "availableLetters": [
+          "s",
+          "a",
+          "t",
+          "i",
+          "p",
+          "n",
+          "c",
+          "k",
+          "e",
+          "h",
+          "r",
+          "m",
+          "d",
+          "g",
+          "o",
+          "u",
+          "l",
+          "f",
+          "b"
+        ],
+        "challenges": [
+          {
+            "id": "c1",
+            "taskType": "spell-word",
+            "targetWord": "cat",
+            "targetLetters": [
+              "c",
+              "a",
+              "t"
+            ],
+            "targetPhonemes": [
+              "/k/",
+              "/æ/",
+              "/t/"
+            ],
+            "emoji": "🐱",
+            "imageDescription": "A cute furry cat",
+            "distractorLetters": [
+              "q",
+              "l",
+              "v"
+            ],
+            "showPictureCue": true
+          },
+          {
+            "id": "c2",
+            "taskType": "spell-word",
+            "targetWord": "map",
+            "targetLetters": [
+              "m",
+              "a",
+              "p"
+            ],
+            "targetPhonemes": [
+              "/m/",
+              "/æ/",
+              "/p/"
+            ],
+            "emoji": "🗺️",
+            "imageDescription": "A paper map with a route",
+            "distractorLetters": [
+              "f",
+              "q",
+              "o"
+            ],
+            "showPictureCue": true
+          },
+          {
+            "id": "c3",
+            "taskType": "spell-word",
+            "targetWord": "bag",
+            "targetLetters": [
+              "b",
+              "a",
+              "g"
+            ],
+            "targetPhonemes": [
+              "/b/",
+              "/æ/",
+              "/g/"
+            ],
+            "emoji": "👜",
+            "imageDescription": "A small carry bag",
+            "distractorLetters": [
+              "u",
+              "j",
+              "k"
+            ],
+            "showPictureCue": true
+          },
+          {
+            "id": "c4",
+            "taskType": "spell-word",
+            "targetWord": "fan",
+            "targetLetters": [
+              "f",
+              "a",
+              "n"
+            ],
+            "targetPhonemes": [
+              "/f/",
+              "/æ/",
+              "/n/"
+            ],
+            "emoji": "🪭",
+            "imageDescription": "A handheld cooling fan",
+            "distractorLetters": [
+              "w",
+              "v",
+              "o"
+            ],
+            "showPictureCue": true
+          }
+        ],
+        "supportTier": "medium"
+      }
+    },
+    {
+      "instanceId": "obj3-di-word-reading",
+      "componentId": "di-word-reading",
+      "data": {
+        "title": "Fun Sound Power!",
+        "description": "Get ready to sound out some fun new words all by yourself!",
+        "challengeType": "cvc_reading",
+        "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+        "challenges": [
+          {
+            "id": "diwr-1-cat",
+            "challengeType": "cvc_reading",
+            "word": "cat",
+            "wordType": "cvc",
+            "graphemes": [
+              "c",
+              "a",
+              "t"
+            ],
+            "emoji": "🐱",
+            "asrAliases": [
+              "cat"
+            ]
+          },
+          {
+            "id": "diwr-2-pan",
+            "challengeType": "cvc_reading",
+            "word": "pan",
+            "wordType": "cvc",
+            "graphemes": [
+              "p",
+              "a",
+              "n"
+            ],
+            "emoji": "🍳",
+            "asrAliases": [
+              "pan"
+            ]
+          },
+          {
+            "id": "diwr-3-sam",
+            "challengeType": "cvc_reading",
+            "word": "sam",
+            "wordType": "cvc",
+            "graphemes": [
+              "s",
+              "a",
+              "m"
+            ],
+            "asrAliases": [
+              "sam"
+            ]
+          },
+          {
+            "id": "diwr-4-mat",
+            "challengeType": "cvc_reading",
+            "word": "mat",
+            "wordType": "cvc",
+            "graphemes": [
+              "m",
+              "a",
+              "t"
+            ],
+            "asrAliases": [
+              "mat",
+              "matt"
+            ]
+          },
+          {
+            "id": "diwr-5-hat",
+            "challengeType": "cvc_reading",
+            "word": "hat",
+            "wordType": "cvc",
+            "graphemes": [
+              "h",
+              "a",
+              "t"
+            ],
+            "emoji": "🎩",
+            "asrAliases": [
+              "hat"
+            ]
+          }
+        ],
+        "words": "cat, pan, sam, mat, hat"
+      }
+    },
+    {
+      "instanceId": "obj3-word-workout",
+      "componentId": "word-workout",
+      "data": {
+        "title": "CVC Word Workout: Decoding CVC words with short a",
+        "mode": "real-vs-nonsense",
+        "masteredVowels": [
+          "a"
+        ],
+        "gradeLevel": "K",
+        "supportTier": "medium",
+        "challenges": [
+          {
+            "id": "c1",
+            "realWord": "cat",
+            "nonsenseWord": "zat",
+            "mode": "real-vs-nonsense"
+          },
+          {
+            "id": "c2",
+            "realWord": "pan",
+            "nonsenseWord": "lan",
+            "mode": "real-vs-nonsense"
+          },
+          {
+            "id": "c3",
+            "realWord": "map",
+            "nonsenseWord": "vap",
+            "mode": "real-vs-nonsense"
+          },
+          {
+            "id": "c4",
+            "realWord": "dad",
+            "nonsenseWord": "zad",
+            "mode": "real-vs-nonsense"
+          }
+        ]
+      }
+    },
+    {
+      "instanceId": "final-assessment-knowledge-check",
+      "componentId": "knowledge-check",
+      "data": {
+        "problems": [
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which word has the short a sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "dog",
+                "emoji": "🐶"
+              },
+              {
+                "id": "B",
+                "text": "cat",
+                "emoji": "🐱"
+              },
+              {
+                "id": "C",
+                "text": "sun",
+                "emoji": "☀️"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "The word cat has the short a sound in the middle, making the /æ/ sound like in apple. When we blend the sounds /k/, /æ/, and /t/, we make the word cat. The words dog and sun have different vowel sounds.",
+            "teachingNote": "Encourage learners to segment each word by tapping their fingers or stretching their arms for each phoneme (/k/ - /æ/ - /t/) to help isolate the medial vowel sound.",
+            "successCriteria": [
+              "Identify the short a vowel sound in a CVC word."
+            ],
+            "objectiveId": "obj1",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "true_false",
+            "id": "tf_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "statement": "The letter a in the word cat makes the short a sound.",
+            "correct": true,
+            "rationale": "The word cat is a simple CVC word where the letter a sits in the middle and makes the short a sound, just like in hat and bat. When sounding out c-a-t, we blend the short a sound between the consonant sounds.",
+            "teachingNote": "Help students practice touching each letter and making the sound before blending them together to hear the whole word.",
+            "successCriteria": [
+              "Identify the short a sound in CVC words",
+              "Decode simple three-letter words"
+            ],
+            "objectiveId": "obj1",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which word finishes the sentence: Pat wore a h_t?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Bat",
+                "emoji": "🦇"
+              },
+              {
+                "id": "B",
+                "text": "Hat",
+                "emoji": "🎩"
+              },
+              {
+                "id": "C",
+                "text": "Cap",
+                "emoji": "🧢"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Adding the short a sound to the middle of 'h_t' spells the word 'hat' (/h/ /æ/ /t/). Pat can wear a hat on his head. 'Bat' and 'cap' do not have the same starting or ending sounds as 'h_t'.",
+            "teachingNote": "Guide students to isolate the beginning sound /h/ and ending sound /t/, then blend them with the short a sound /æ/ to decode 'hat'.",
+            "successCriteria": [
+              "Decode a CVC word with the short a vowel sound.",
+              "Identify the correct CVC word that completes a sentence."
+            ],
+            "objectiveId": "obj2",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "What animal do the sounds /k/ /a/ /t/ make?",
+            "options": [
+              {
+                "id": "A",
+                "text": "A bat",
+                "emoji": "🦇"
+              },
+              {
+                "id": "B",
+                "text": "A cat",
+                "emoji": "🐱"
+              },
+              {
+                "id": "C",
+                "text": "A rat",
+                "emoji": "🐀"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "When we blend the sounds /k/, /a/, and /t/ together, they make the word 'cat.' A bat begins with the /b/ sound, and a rat begins with the /r/ sound.",
+            "teachingNote": "Encourage students to use continuous blending by stretching each sound smoothly without pausing before saying the full word quickly.",
+            "successCriteria": [
+              "Blend individual phonemes in a short a CVC word to identify the spoken word.",
+              "Distinguish between CVC words that share the -at word family ending based on the initial sound."
+            ],
+            "objectiveId": "obj2",
+            "subject": "LANGUAGE_ARTS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which word has the short a sound?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Dog",
+                "emoji": "🐶"
+              },
+              {
+                "id": "B",
+                "text": "Cat",
+                "emoji": "🐱"
+              },
+              {
+                "id": "C",
+                "text": "Pig",
+                "emoji": "🐷"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "When we stretch out the sounds in cat, we hear /k/, /æ/, and /t/. The middle sound is the short a sound, just like in bat and map. Dog has a short o sound and pig has a short i sound.",
+            "teachingNote": "Have students place a hand on their chin or tap their fingers to isolate the middle vowel sound when blending CVC words.",
+            "successCriteria": [
+              "Identify the short a vowel sound in a CVC word",
+              "Distinguish the short a vowel sound from other short vowel sounds"
+            ],
+            "objectiveId": "obj3",
+            "subject": "LANGUAGE_ARTS"
+          }
+        ],
+        "problemType": "orchestrated",
+        "topic": "Decoding CVC words with short a",
+        "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+      }
+    }
+  ],
+  "scores": {
+    "gates": {
+      "G1": 1,
+      "G4": 1,
+      "G6": 1
+    },
+    "checks": {
+      "Q8": 1,
+      "Q3": 0,
+      "Q6": 1,
+      "Q7": 1,
+      "Q9": 1,
+      "Q4": 0
+    },
+    "holistic": [],
+    "bucket": "RUNNABLE",
+    "judgedAt": "2026-09-05T20:01:46.261Z",
+    "judge": "tier-a@315f7bfb",
+    "citations": [
+      {
+        "instanceId": "obj3-di-word-reading",
+        "checkId": "Q3",
+        "note": "di-word-reading[cvc_reading] opens obj3 on symbols before any concrete or pictorial block"
+      },
+      {
+        "instanceId": "obj1-concept-cards",
+        "checkId": "Q4",
+        "note": "obj1 ASSESSED_INSUFFICIENTLY: obj1-phoneme-explorer is off-target (tests initial consonants /m/, /h/, /f/, /s/). In the knowledge check, problem 4 repeats problem 0 with the same target word 'cat', leaving fewer than 2 distinct valid opportunities."
+      }
+    ],
+    "unknowns": [
+      {
+        "instanceId": "obj2-phonics-blender",
+        "checkId": "Q3",
+        "note": "phonics-blender[cvc] opens obj2 on symbols, but the objective targets notation (\"Connect letter sounds to written letters to decode simple CVC words.\")"
+      }
+    ],
+    "evidence": {
+      "band": {
+        "grade": "K",
+        "preReader": true,
+        "k2": true,
+        "subject": "LANGUAGE_ARTS"
+      },
+      "streamOrder": [
+        "concept-card-grid",
+        "di-letter-sounds[letter_sound]",
+        "phoneme-explorer[isolate]",
+        "phonics-blender[cvc]",
+        "cvc-speller[spell_word]",
+        "di-word-reading[cvc_reading]",
+        "word-workout[real_vs_nonsense]",
+        "knowledge-check[mixed]"
+      ],
+      "parentCards": [],
+      "parentCardMinutes": 0,
+      "minutes": 37,
+      "lengthCap": 40,
+      "knownMinuteBlocks": 8,
+      "streamBlocks": 8,
+      "tapOnlyProduction": [],
+      "notationObjectives": [
+        "obj2"
+      ],
+      "distinctPrimitives": 8,
+      "coverageJudge": {
+        "status": "warn",
+        "coverage": 0.833,
+        "model": "gemini-flash-latest",
+        "source": "script",
+        "judgedAt": "2026-09-05T20:01:24.134Z"
+      },
+      "notCodeJudged": [
+        "G1 catalog-band half (no grade floors by ruling)",
+        "G4 generator-emitted half",
+        "G6 visible-timer half",
+        "Q4 when the package carries no coverage verdict",
+        "G2",
+        "G3",
+        "G5",
+        "Q1",
+        "Q2",
+        "Q5"
+      ]
+    }
+  },
+  "human": null,
+  "coverage": {
+    "version": 1,
+    "lessonId": "kindergarten-decoding-cvc-words-with-short-a-20260905200116-rw3p",
+    "status": "warn",
+    "overallObjectiveCoverage": 0.833,
+    "blockingFailure": false,
+    "objectives": [
+      {
+        "objectiveId": "obj1",
+        "objective": "Listen to and identify the short 'a' sound in spoken words.",
+        "verb": "identify",
+        "grade": "Kindergarten",
+        "category": "ASSESSED_INSUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 3,
+        "assessmentEvidence": [
+          "final-assessment-knowledge-check#problems[0]",
+          "final-assessment-knowledge-check#problems[1]",
+          "final-assessment-knowledge-check#problems[4]"
+        ],
+        "instructionEvidence": [
+          "obj1-concept-cards#cards[0]",
+          "obj1-concept-cards#cards[1]",
+          "obj1-concept-cards#cards[2]",
+          "obj1-di-letter-sounds#challenges[0]"
+        ],
+        "masteryInferenceSupported": false,
+        "severity": "WARNING",
+        "notes": "obj1-phoneme-explorer is off-target (tests initial consonants /m/, /h/, /f/, /s/). In the knowledge check, problem 4 repeats problem 0 with the same target word 'cat', leaving fewer than 2 distinct valid opportunities."
+      },
+      {
+        "objectiveId": "obj2",
+        "objective": "Connect letter sounds to written letters to decode simple CVC words.",
+        "verb": "apply",
+        "grade": "Kindergarten",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 6,
+        "assessmentEvidence": [
+          "obj2-phonics-blender#words[0]",
+          "obj2-phonics-blender#words[1]",
+          "obj2-phonics-blender#words[2]",
+          "obj2-phonics-blender#words[3]",
+          "final-assessment-knowledge-check#problems[2]",
+          "final-assessment-knowledge-check#problems[3]"
+        ],
+        "instructionEvidence": [
+          "obj2-phonics-blender#words[0]",
+          "obj2-phonics-blender#words[1]"
+        ],
+        "masteryInferenceSupported": true,
+        "severity": "NONE",
+        "notes": "Directly assessed across multiple independent blending opportunities in phonics-blender and blending items in the knowledge check."
+      },
+      {
+        "objectiveId": "obj3",
+        "objective": "Read a short CVC word all the way through to discover the secret word.",
+        "verb": "create",
+        "grade": "Kindergarten",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 9,
+        "assessmentEvidence": [
+          "obj3-di-word-reading#challenges[0]",
+          "obj3-di-word-reading#challenges[1]",
+          "obj3-di-word-reading#challenges[2]",
+          "obj3-di-word-reading#challenges[3]",
+          "obj3-di-word-reading#challenges[4]",
+          "obj3-word-workout#challenges[0]",
+          "obj3-word-workout#challenges[1]",
+          "obj3-word-workout#challenges[2]",
+          "obj3-word-workout#challenges[3]"
+        ],
+        "instructionEvidence": [
+          "obj3-di-word-reading#challenges[0]",
+          "obj3-di-word-reading#challenges[1]"
+        ],
+        "masteryInferenceSupported": true,
+        "severity": "NONE",
+        "notes": "Assessed sufficiently with 5 independent oral CVC reading challenges in di-word-reading and 4 real vs. nonsense decoding challenges in word-workout."
+      }
+    ],
+    "detectedConstraints": [
+      {
+        "type": "off_target_assessment",
+        "description": "obj1-phoneme-explorer tests initial consonant phoneme isolation (/m/, /h/, /f/, /s/) rather than identifying the short 'a' vowel sound in spoken words.",
+        "instanceId": "obj1-phoneme-explorer"
+      },
+      {
+        "type": "insufficient_items",
+        "description": "Objective 1 lacks 2 distinct valid assessment opportunities because phoneme-explorer was off-target and knowledge check problems 0 and 4 asked the identical question for 'cat'.",
+        "instanceId": "final-assessment-knowledge-check"
+      }
+    ],
+    "summary": "Objectives 2 and 3 are thoroughly taught and assessed with multiple independent spoken decoding and reading items in phonics-blender, di-word-reading, and word-workout. Objective 1 is insufficiently assessed because its dedicated practice block (phoneme-explorer) is off-target, testing initial consonants rather than the short 'a' vowel sound, leaving only a single non-duplicated multiple-choice item in the final assessment.",
+    "meta": {
+      "evalModel": "gemini-flash-latest",
+      "evalTimestamp": "2026-09-05T20:01:24.134Z",
+      "latencyMs": 15864,
+      "usedSchemaFallback": false,
+      "source": "script",
+      "topic": "Decoding CVC words with short a",
+      "gradeLevel": "Kindergarten",
+      "grade": "Kindergarten",
+      "subject": "LANGUAGE_ARTS",
+      "skillIds": [],
+      "subskillIds": [],
+      "primitiveTypes": [
+        "concept-card-grid",
+        "di-letter-sounds",
+        "phoneme-explorer",
+        "phonics-blender",
+        "cvc-speller",
+        "di-word-reading",
+        "word-workout",
+        "knowledge-check"
+      ],
+      "digestChars": 14707,
+      "truncated": false,
+      "objectiveCount": 3,
+      "objectivesFullyCovered": 2,
+      "objectivesUncovered": 0,
+      "failureCategories": [
+        "ASSESSED_INSUFFICIENTLY",
+        "constraint:off_target_assessment",
+        "constraint:insufficient_items"
+      ]
+    }
+  }
+}

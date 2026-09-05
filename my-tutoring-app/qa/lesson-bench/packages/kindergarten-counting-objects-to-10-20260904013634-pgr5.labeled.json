@@ -1717,19 +1717,15 @@
       "Q3": 1,
       "Q6": 1,
       "Q7": 1,
-      "Q9": 1
+      "Q9": 1,
+      "Q4": 1
     },
     "holistic": [],
     "bucket": "RUNNABLE",
-    "judgedAt": "2026-09-05T11:42:39.040Z",
-    "judge": "tier-a@1a591c80",
+    "judgedAt": "2026-09-05T18:50:40.098Z",
+    "judge": "tier-a@315f7bfb",
     "citations": [],
     "unknowns": [
-      {
-        "instanceId": "obj1-foundation-touch-count",
-        "checkId": "Q8",
-        "note": "foundation-explorer has no reader verdict (no reader-fit / contract line)"
-      },
       {
         "instanceId": "obj3-number-tracer-1-10",
         "checkId": "Q3",
@@ -1770,16 +1766,23 @@
         "obj3"
       ],
       "distinctPrimitives": 9,
+      "coverageJudge": {
+        "status": "pass",
+        "coverage": 1,
+        "model": "gemini-flash-latest",
+        "source": "calibrate",
+        "judgedAt": "2026-09-05T18:50:12.936Z"
+      },
       "notCodeJudged": [
         "G1 catalog-band half (no grade floors by ruling)",
         "G4 generator-emitted half",
         "G6 visible-timer half",
+        "Q4 when the package carries no coverage verdict",
         "G2",
         "G3",
         "G5",
         "Q1",
         "Q2",
-        "Q4",
         "Q5"
       ]
     }
@@ -1841,5 +1844,142 @@
     "runIds": [
       "kindergarten-counting-objects-to-10-2026-e9846b982285"
     ]
+  },
+  "coverage": {
+    "version": 1,
+    "lessonId": "kindergarten-counting-objects-to-10-20260904013634-pgr5",
+    "status": "pass",
+    "overallObjectiveCoverage": 1,
+    "blockingFailure": false,
+    "objectives": [
+      {
+        "objectiveId": "obj1",
+        "objective": "Count a group of up to 10 real objects by touching them one at a time",
+        "verb": "apply",
+        "grade": "kindergarten",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 7,
+        "assessmentEvidence": [
+          "obj1-counting-board-tap#challenges[0]",
+          "obj1-counting-board-tap#challenges[1]",
+          "obj1-counting-board-tap#challenges[2]",
+          "obj1-counting-board-tap#challenges[3]",
+          "obj1-counting-board-tap#challenges[4]",
+          "obj1-counting-board-tap#challenges[5]",
+          "obj1-counting-board-tap#challenges[6]"
+        ],
+        "instructionEvidence": [
+          "obj1-foundation-touch-count"
+        ],
+        "masteryInferenceSupported": true,
+        "severity": "NONE",
+        "notes": "Touch counting is introduced clearly and assessed through 7 counting board challenges requiring 1:1 tapping of up to 10 items."
+      },
+      {
+        "objectiveId": "obj2",
+        "objective": "Recognize that the last number we say tells us the total amount",
+        "verb": "explain",
+        "grade": "kindergarten",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 5,
+        "assessmentEvidence": [
+          "obj2-di-spoken-how-many#items[0]",
+          "obj2-di-spoken-how-many#items[1]",
+          "obj2-di-spoken-how-many#items[2]",
+          "obj2-di-spoken-how-many#items[3]",
+          "final-counting-knowledge-check#problems[4]"
+        ],
+        "instructionEvidence": [
+          "obj2-concept-card-cardinality#cards[0]",
+          "obj2-concept-card-cardinality#cards[1]",
+          "obj2-concept-card-cardinality#cards[2]"
+        ],
+        "masteryInferenceSupported": true,
+        "severity": "NONE",
+        "notes": "Cardinality is explicitly modeled in concept cards and assessed via 4 spoken count-and-say items and a direct knowledge check question."
+      },
+      {
+        "objectiveId": "obj3",
+        "objective": "Match the written numbers 1 through 10 to groups of objects",
+        "verb": "identify",
+        "grade": "kindergarten",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": false,
+        "assessed": true,
+        "assessmentCount": 11,
+        "assessmentEvidence": [
+          "obj3-fast-fact-numeral-match#challenges[0]",
+          "obj3-fast-fact-numeral-match#challenges[1]",
+          "obj3-fast-fact-numeral-match#challenges[2]",
+          "obj3-fast-fact-numeral-match#challenges[3]",
+          "obj3-fast-fact-numeral-match#challenges[4]",
+          "obj3-fast-fact-numeral-match#challenges[5]",
+          "obj3-fast-fact-numeral-match#challenges[6]",
+          "obj3-fast-fact-numeral-match#challenges[7]",
+          "obj3-fast-fact-numeral-match#challenges[8]",
+          "obj3-fast-fact-numeral-match#challenges[9]",
+          "final-counting-knowledge-check#problems[2]"
+        ],
+        "instructionEvidence": [],
+        "masteryInferenceSupported": true,
+        "severity": "INFO",
+        "notes": "No explicit introduce block teaches numeral-to-quantity matching, but fast-fact directly assesses all set members (numerals 1 through 10)."
+      }
+    ],
+    "detectedConstraints": [
+      {
+        "type": "off_target_assessment",
+        "description": "obj2-ten-frame-total tests placing counters to match a target count rather than explaining or recognizing that the last counted word is the total.",
+        "instanceId": "obj2-ten-frame-total"
+      },
+      {
+        "type": "off_target_assessment",
+        "description": "obj3-number-tracer-1-10 assesses tracing numeral strokes for digits 1-5 rather than matching numerals to groups of objects.",
+        "instanceId": "obj3-number-tracer-1-10"
+      },
+      {
+        "type": "off_target_assessment",
+        "description": "obj3-number-sequencer-train assesses card ordering and number sequencing rather than matching written numerals to quantities.",
+        "instanceId": "obj3-number-sequencer-train"
+      }
+    ],
+    "summary": "All three declared learning objectives have sufficient direct assessment evidence to support mastery inferences. Objective 1 is directly assessed via one-to-one counting board interactions. Objective 2 is assessed using spoken recall of total quantities and explicit cardinality questions, despite an off-target ten-frame building block. Objective 3 lacks an explicit introduce block and includes off-target tracing and sequencing activities, but completely assesses its named set of numerals 1 through 10 in the fast-fact matching challenge.",
+    "meta": {
+      "evalModel": "gemini-flash-latest",
+      "evalTimestamp": "2026-09-05T18:50:12.936Z",
+      "latencyMs": 26366,
+      "usedSchemaFallback": false,
+      "source": "calibrate",
+      "topic": "Counting objects to 10",
+      "gradeLevel": "kindergarten",
+      "grade": "kindergarten",
+      "subject": "MATHEMATICS",
+      "skillIds": [],
+      "subskillIds": [],
+      "primitiveTypes": [
+        "foundation-explorer",
+        "counting-board",
+        "concept-card-grid",
+        "ten-frame",
+        "di-spoken-practice",
+        "number-tracer",
+        "number-sequencer",
+        "fast-fact",
+        "knowledge-check",
+        "take-home-activity"
+      ],
+      "digestChars": 27534,
+      "truncated": false,
+      "objectiveCount": 3,
+      "objectivesFullyCovered": 3,
+      "objectivesUncovered": 0,
+      "failureCategories": [
+        "constraint:off_target_assessment"
+      ]
+    }
   }
 }

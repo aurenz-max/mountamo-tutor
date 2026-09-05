@@ -1,0 +1,1409 @@
+{
+  "benchVersion": 1,
+  "id": "kindergarten-subtraction-for-kindergarten-20260905202425-mb4f",
+  "subskill": null,
+  "provenance": {
+    "generatedAt": "2026-09-05T20:24:25.698Z",
+    "source": "topic-trace",
+    "topic": "Subtraction for Kindergarten",
+    "gradeLevel": "kindergarten",
+    "gitSha": null,
+    "promptHash": null,
+    "generationRequest": {
+      "topic": "subtraction",
+      "gradeLevel": "kindergarten",
+      "package": true,
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Demonstrate taking away objects from a small group to see what remains",
+          "verb": "apply",
+          "icon": "puzzle"
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the minus sign and the equals sign in a simple take-away sentence",
+          "verb": "identify",
+          "icon": "search"
+        }
+      ],
+      "curatorBrief": {
+        "primitive": "intro_briefing",
+        "topic": "subtraction",
+        "subject": "General",
+        "gradeLevel": "kindergarten",
+        "estimatedTime": "15-20 minutes",
+        "hook": {
+          "type": "scenario",
+          "content": "Imagine you have 4 yummy cookies on your plate. You eat 1 cookie for a snack. How many cookies are left on your plate now?",
+          "visual": "🧮"
+        },
+        "bigIdea": {
+          "statement": "Subtraction means taking away some objects from a group to find out how many are left.",
+          "whyItMatters": "Knowing how to take away helps you share toys, figure out how many snacks are left, and solve everyday puzzles!"
+        },
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Demonstrate taking away objects from a small group to see what remains",
+            "verb": "apply",
+            "icon": "puzzle"
+          },
+          {
+            "id": "obj2",
+            "text": "Identify the minus sign and the equals sign in a simple take-away sentence",
+            "verb": "identify",
+            "icon": "search"
+          }
+        ],
+        "prerequisites": {
+          "shouldKnow": [
+            "Count objects up to 10 accurately",
+            "Understand that a group has a total number of items"
+          ],
+          "quickCheck": {
+            "question": "If you have 3 blocks and I hand you 0 more blocks, how many blocks do you have?",
+            "answer": "3 blocks",
+            "hint": "Count all the blocks you started with without adding anything new."
+          }
+        },
+        "roadmap": [
+          {
+            "phase": "Explore",
+            "description": "Play with real objects and watch items disappear.",
+            "activities": [
+              "Act out taking away apples from a tree",
+              "Hide some counters under a cup"
+            ]
+          },
+          {
+            "phase": "Learn",
+            "description": "Discover the special minus sign and how to tell a subtraction story.",
+            "activities": [
+              "Read a take-away picture book",
+              "Trace the minus sign with a finger"
+            ]
+          },
+          {
+            "phase": "Practice",
+            "description": "Solve quick picture puzzles by crossing out items.",
+            "activities": [
+              "Cross out flying birds to see who is left",
+              "Solve a finger-counting riddle"
+            ]
+          }
+        ],
+        "connections": {
+          "buildingFrom": [
+            "Counting groups of physical objects",
+            "Understanding number order from 1 to 10"
+          ],
+          "leadingTo": [
+            "Writing complete subtraction equations",
+            "Solving missing-part math stories"
+          ],
+          "realWorld": [
+            "Eating pieces of fruit and seeing how many are left",
+            "Sharing crayons with friends and keeping track of your own",
+            "Toy cars driving away from a parking spot"
+          ]
+        },
+        "mindset": {
+          "encouragement": "Sometimes it is tricky to figure out what is left when things go away, but using your fingers and toys makes it super fun and easy!",
+          "growthTip": "When counting down, touch each object gently as you take it away so you do not lose track."
+        }
+      }
+    }
+  },
+  "manifest": {
+    "topic": "Subtraction for Kindergarten",
+    "gradeLevel": "kindergarten",
+    "subject": "MATHEMATICS",
+    "themeColor": "#f97316",
+    "curatorBrief": {
+      "instanceId": "curator-brief-1",
+      "title": "Adventures in Taking Away!",
+      "intent": "Introduce young kindergarten learners to the concept of subtraction through playful stories of taking away objects from small groups (within 5 to 10) and discovering how many are left. Introduce the minus sign (-) as 'take away' and the equals sign (=) as 'shows how many are left'."
+    },
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Demonstrate taking away objects from a small group to see what remains [apply]",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "addition-subtraction-scene",
+            "instanceId": "obj1-subtraction-scene",
+            "title": "Act Out: Taking Away!",
+            "intent": "Guide kindergarteners to act out taking away items (such as birds flying off a fence or apples being picked) using numbers within 5. Students manipulate the objects to see how many remain.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy",
+              "targetEvalMode": "act_out"
+            }
+          },
+          {
+            "componentId": "ten-frame",
+            "instanceId": "obj1-ten-frame",
+            "title": "Ten-Frame Take-Away",
+            "intent": "Use a ten-frame with counters (within 5-10) to physically or visually take away counters, having students count and say aloud the number of remaining counters.",
+            "config": {
+              "count": 4,
+              "difficulty": "medium",
+              "targetEvalMode": "operate"
+            }
+          },
+          {
+            "componentId": "take-home-activity",
+            "instanceId": "obj1-take-home-snack-subtraction",
+            "title": "Snack Subtraction Hands-On Activity",
+            "intent": "Provide a fun caregiver-guided screen-free activity where students count a small bowl of 5 crackers or grapes, take some away to eat, and tell how many are left.",
+            "config": {
+              "difficulty": "easy"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj2",
+        "objectiveText": "Identify the minus sign and the equals sign in a simple take-away sentence [identify]",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "foundation-explorer",
+            "instanceId": "obj2-symbol-explorer",
+            "title": "Meet the Minus Sign and Equals Sign",
+            "intent": "Introduce and define the minus sign (-) as the symbol meaning 'take away' and the equals sign (=) as the symbol meaning 'is' or 'how many are left' in basic horizontal subtraction sentences like 4 - 1 = 3.",
+            "config": {
+              "count": 2,
+              "difficulty": "easy"
+            }
+          },
+          {
+            "componentId": "equation-builder",
+            "instanceId": "obj2-equation-builder",
+            "title": "Build a Take-Away Sentence",
+            "intent": "Allow students to place number and symbol tiles into simple subtraction sentences (e.g., placing the '-' between quantities and '=' before the result), solidifying the role and appearance of each sign.",
+            "config": {
+              "count": 3,
+              "difficulty": "easy",
+              "targetEvalMode": "build-simple"
+            }
+          },
+          {
+            "componentId": "di-math-facts",
+            "instanceId": "obj2-di-math-facts",
+            "title": "Spoken Subtraction Sentences",
+            "intent": "Present simple subtraction sentences within 5 (e.g., 3 - 1 = 2) with voice prompts from the tutor, asking the child to recognize the minus and equals sign and speak the resulting remaining count.",
+            "config": {
+              "count": 4,
+              "difficulty": "medium",
+              "targetEvalMode": "subtraction_fact"
+            }
+          }
+        ]
+      }
+    ],
+    "finalAssessment": {
+      "componentId": "knowledge-check",
+      "instanceId": "final-assessment-subtraction",
+      "title": "Subtraction Explorer Check!",
+      "intent": "Assess both objectives: asking students to determine how many objects remain when some are removed from a set, and identifying the minus sign (-) and equals sign (=) in a simple number sentence.",
+      "config": {
+        "count": 4,
+        "targetEvalMode": "recall|apply"
+      }
+    },
+    "layout": [
+      {
+        "componentId": "curator-brief",
+        "instanceId": "curator-brief-1",
+        "title": "Adventures in Taking Away!",
+        "intent": "Introduce young kindergarten learners to the concept of subtraction through playful stories of taking away objects from small groups (within 5 to 10) and discovering how many are left. Introduce the minus sign (-) as 'take away' and the equals sign (=) as 'shows how many are left'.",
+        "objectiveIds": [
+          "obj1",
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "addition-subtraction-scene",
+        "instanceId": "obj1-subtraction-scene",
+        "title": "Act Out: Taking Away!",
+        "intent": "Guide kindergarteners to act out taking away items (such as birds flying off a fence or apples being picked) using numbers within 5. Students manipulate the objects to see how many remain.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "targetEvalMode": "act_out",
+          "objectiveId": "obj1",
+          "objectiveText": "Demonstrate taking away objects from a small group to see what remains",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "kindergarten",
+          "intent": "Guide kindergarteners to act out taking away items (such as birds flying off a fence or apples being picked) using numbers within 5. Students manipulate the objects to see how many remain."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "ten-frame",
+        "instanceId": "obj1-ten-frame",
+        "title": "Ten-Frame Take-Away",
+        "intent": "Use a ten-frame with counters (within 5-10) to physically or visually take away counters, having students count and say aloud the number of remaining counters.",
+        "config": {
+          "count": 4,
+          "difficulty": "medium",
+          "targetEvalMode": "operate",
+          "objectiveId": "obj1",
+          "objectiveText": "Demonstrate taking away objects from a small group to see what remains",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "kindergarten",
+          "intent": "Use a ten-frame with counters (within 5-10) to physically or visually take away counters, having students count and say aloud the number of remaining counters."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "take-home-activity",
+        "instanceId": "obj1-take-home-snack-subtraction",
+        "title": "Snack Subtraction Hands-On Activity",
+        "intent": "Provide a fun caregiver-guided screen-free activity where students count a small bowl of 5 crackers or grapes, take some away to eat, and tell how many are left.",
+        "config": {
+          "difficulty": "easy",
+          "objectiveId": "obj1",
+          "objectiveText": "Demonstrate taking away objects from a small group to see what remains",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "kindergarten",
+          "intent": "Provide a fun caregiver-guided screen-free activity where students count a small bowl of 5 crackers or grapes, take some away to eat, and tell how many are left."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "foundation-explorer",
+        "instanceId": "obj2-symbol-explorer",
+        "title": "Meet the Minus Sign and Equals Sign",
+        "intent": "Introduce and define the minus sign (-) as the symbol meaning 'take away' and the equals sign (=) as the symbol meaning 'is' or 'how many are left' in basic horizontal subtraction sentences like 4 - 1 = 3.",
+        "config": {
+          "count": 2,
+          "difficulty": "easy",
+          "objectiveId": "obj2",
+          "objectiveText": "Identify the minus sign and the equals sign in a simple take-away sentence",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "kindergarten",
+          "intent": "Introduce and define the minus sign (-) as the symbol meaning 'take away' and the equals sign (=) as the symbol meaning 'is' or 'how many are left' in basic horizontal subtraction sentences like 4 - 1 = 3."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "equation-builder",
+        "instanceId": "obj2-equation-builder",
+        "title": "Build a Take-Away Sentence",
+        "intent": "Allow students to place number and symbol tiles into simple subtraction sentences (e.g., placing the '-' between quantities and '=' before the result), solidifying the role and appearance of each sign.",
+        "config": {
+          "count": 3,
+          "difficulty": "easy",
+          "targetEvalMode": "build-simple",
+          "objectiveId": "obj2",
+          "objectiveText": "Identify the minus sign and the equals sign in a simple take-away sentence",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "kindergarten",
+          "intent": "Allow students to place number and symbol tiles into simple subtraction sentences (e.g., placing the '-' between quantities and '=' before the result), solidifying the role and appearance of each sign."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "di-math-facts",
+        "instanceId": "obj2-di-math-facts",
+        "title": "Spoken Subtraction Sentences",
+        "intent": "Present simple subtraction sentences within 5 (e.g., 3 - 1 = 2) with voice prompts from the tutor, asking the child to recognize the minus and equals sign and speak the resulting remaining count.",
+        "config": {
+          "count": 4,
+          "difficulty": "medium",
+          "targetEvalMode": "subtraction_fact",
+          "objectiveId": "obj2",
+          "objectiveText": "Identify the minus sign and the equals sign in a simple take-away sentence",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "kindergarten",
+          "intent": "Present simple subtraction sentences within 5 (e.g., 3 - 1 = 2) with voice prompts from the tutor, asking the child to recognize the minus and equals sign and speak the resulting remaining count."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "final-assessment-subtraction",
+        "title": "Subtraction Explorer Check!",
+        "intent": "Assess both objectives: asking students to determine how many objects remain when some are removed from a set, and identifying the minus sign (-) and equals sign (=) in a simple number sentence.",
+        "config": {
+          "count": 4,
+          "targetEvalMode": "recall|apply",
+          "objectiveGrade": "kindergarten",
+          "lessonObjectives": [
+            {
+              "id": "obj1",
+              "text": "Demonstrate taking away objects from a small group to see what remains",
+              "grade": "kindergarten"
+            },
+            {
+              "id": "obj2",
+              "text": "Identify the minus sign and the equals sign in a simple take-away sentence",
+              "grade": "kindergarten"
+            }
+          ]
+        },
+        "objectiveIds": [
+          "obj1",
+          "obj2"
+        ]
+      }
+    ]
+  },
+  "curatorBrief": {
+    "primitive": "intro_briefing",
+    "topic": "subtraction",
+    "subject": "General",
+    "gradeLevel": "kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+      "type": "scenario",
+      "content": "Imagine you have 4 yummy cookies on your plate. You eat 1 cookie for a snack. How many cookies are left on your plate now?",
+      "visual": "🧮"
+    },
+    "bigIdea": {
+      "statement": "Subtraction means taking away some objects from a group to find out how many are left.",
+      "whyItMatters": "Knowing how to take away helps you share toys, figure out how many snacks are left, and solve everyday puzzles!"
+    },
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Demonstrate taking away objects from a small group to see what remains",
+        "verb": "apply",
+        "icon": "puzzle"
+      },
+      {
+        "id": "obj2",
+        "text": "Identify the minus sign and the equals sign in a simple take-away sentence",
+        "verb": "identify",
+        "icon": "search"
+      }
+    ],
+    "prerequisites": {
+      "shouldKnow": [
+        "Count objects up to 10 accurately",
+        "Understand that a group has a total number of items"
+      ],
+      "quickCheck": {
+        "question": "If you have 3 blocks and I hand you 0 more blocks, how many blocks do you have?",
+        "answer": "3 blocks",
+        "hint": "Count all the blocks you started with without adding anything new."
+      }
+    },
+    "roadmap": [
+      {
+        "phase": "Explore",
+        "description": "Play with real objects and watch items disappear.",
+        "activities": [
+          "Act out taking away apples from a tree",
+          "Hide some counters under a cup"
+        ]
+      },
+      {
+        "phase": "Learn",
+        "description": "Discover the special minus sign and how to tell a subtraction story.",
+        "activities": [
+          "Read a take-away picture book",
+          "Trace the minus sign with a finger"
+        ]
+      },
+      {
+        "phase": "Practice",
+        "description": "Solve quick picture puzzles by crossing out items.",
+        "activities": [
+          "Cross out flying birds to see who is left",
+          "Solve a finger-counting riddle"
+        ]
+      }
+    ],
+    "connections": {
+      "buildingFrom": [
+        "Counting groups of physical objects",
+        "Understanding number order from 1 to 10"
+      ],
+      "leadingTo": [
+        "Writing complete subtraction equations",
+        "Solving missing-part math stories"
+      ],
+      "realWorld": [
+        "Eating pieces of fruit and seeing how many are left",
+        "Sharing crayons with friends and keeping track of your own",
+        "Toy cars driving away from a parking spot"
+      ]
+    },
+    "mindset": {
+      "encouragement": "Sometimes it is tricky to figure out what is left when things go away, but using your fingers and toys makes it super fun and easy!",
+      "growthTip": "When counting down, touch each object gently as you take it away so you do not lose track."
+    }
+  },
+  "components": [
+    {
+      "instanceId": "obj1-subtraction-scene",
+      "componentId": "addition-subtraction-scene",
+      "data": {
+        "title": "Garden Subtraction Stories",
+        "challenges": [
+          {
+            "id": "ch1",
+            "type": "act-out",
+            "instruction": "Tap 1 butterflies to send them away!",
+            "storyText": "4 butterflies are resting on a flower. 1 butterfly flies away.",
+            "scene": "garden",
+            "objectType": "butterflies",
+            "operation": "subtraction",
+            "storyType": "separate",
+            "startCount": 4,
+            "changeCount": 1,
+            "resultCount": 3,
+            "equation": "4 - 1 = 3",
+            "unknownPosition": "result"
+          },
+          {
+            "id": "ch2",
+            "type": "act-out",
+            "instruction": "Tap 2 butterflies to send them away!",
+            "storyText": "5 bees are buzzing near the hive. 2 bees fly off to find flowers.",
+            "scene": "garden",
+            "objectType": "butterflies",
+            "operation": "subtraction",
+            "storyType": "separate",
+            "startCount": 5,
+            "changeCount": 2,
+            "resultCount": 3,
+            "equation": "5 - 2 = 3",
+            "unknownPosition": "result"
+          },
+          {
+            "id": "ch3",
+            "type": "act-out",
+            "instruction": "Tap 3 apples to send them away!",
+            "storyText": "3 apples are hanging on the tree branch. You pick all 3 apples.",
+            "scene": "farm",
+            "objectType": "apples",
+            "operation": "subtraction",
+            "storyType": "separate",
+            "startCount": 3,
+            "changeCount": 3,
+            "resultCount": 0,
+            "equation": "3 - 3 = 0",
+            "unknownPosition": "result"
+          },
+          {
+            "id": "ch4",
+            "type": "act-out",
+            "instruction": "Tap 2 frogs to send them away!",
+            "storyText": "5 little frogs are sitting on a green pad. 2 frogs jump into the water.",
+            "scene": "pond",
+            "objectType": "frogs",
+            "operation": "subtraction",
+            "storyType": "separate",
+            "startCount": 5,
+            "changeCount": 2,
+            "resultCount": 3,
+            "equation": "5 - 2 = 3",
+            "unknownPosition": "result"
+          },
+          {
+            "id": "ch5",
+            "type": "act-out",
+            "instruction": "Tap 1 apples to send them away!",
+            "storyText": "4 red apples are growing on the tree. 1 apple falls to the grass.",
+            "scene": "farm",
+            "objectType": "apples",
+            "operation": "subtraction",
+            "storyType": "separate",
+            "startCount": 4,
+            "changeCount": 1,
+            "resultCount": 3,
+            "equation": "4 - 1 = 3",
+            "unknownPosition": "result"
+          },
+          {
+            "id": "ch6",
+            "type": "act-out",
+            "instruction": "Tap 3 birds to send them away!",
+            "storyText": "5 birds are sitting on the wooden fence. 3 birds fly up into the sky.",
+            "scene": "farm",
+            "objectType": "birds",
+            "operation": "subtraction",
+            "storyType": "separate",
+            "startCount": 5,
+            "changeCount": 3,
+            "resultCount": 2,
+            "equation": "5 - 3 = 2",
+            "unknownPosition": "result"
+          }
+        ],
+        "maxNumber": 5,
+        "showTenFrame": true,
+        "showEquationBar": false,
+        "gradeBand": "K",
+        "description": "Guide kindergarteners to act out taking away items using numbers within 5, helping them see how many remain.",
+        "showCountBadges": true,
+        "groupedReveal": true
+      }
+    },
+    {
+      "instanceId": "obj1-ten-frame",
+      "componentId": "ten-frame",
+      "data": {
+        "title": "Subtraction for Kindergarten",
+        "description": "Demonstrate taking away objects from a small group to see what remains using a ten-frame.",
+        "mode": "single",
+        "counters": {
+          "count": 0,
+          "color": "red",
+          "positions": []
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "subtract",
+            "targetCount": 3,
+            "hint": "Count how many counters are left on the frame after taking some away.",
+            "narration": "Let's start with five counters and take away two. How many are left?",
+            "startCount": 5,
+            "instruction": "The frame starts with 5 counters. Take away 2. How many are left?"
+          },
+          {
+            "id": "c2",
+            "type": "subtract",
+            "targetCount": 4,
+            "hint": "Look at the remaining red dots in the frame.",
+            "narration": "We have six counters here. Let's take away two and see what remains.",
+            "startCount": 6,
+            "instruction": "The frame starts with 6 counters. Take away 2. How many are left?"
+          },
+          {
+            "id": "c3",
+            "type": "subtract",
+            "targetCount": 2,
+            "hint": "Count the counters that stay on the frame.",
+            "narration": "Start with seven counters. If we take away five, how many are left?",
+            "startCount": 7,
+            "instruction": "The frame starts with 7 counters. Take away 5. How many are left?"
+          },
+          {
+            "id": "c4",
+            "type": "subtract",
+            "targetCount": 5,
+            "hint": "Count the dots that are still there.",
+            "narration": "Here are eight counters. Let's take away three.",
+            "startCount": 8,
+            "instruction": "The frame starts with 8 counters. Take away 3. How many are left?"
+          },
+          {
+            "id": "c5",
+            "type": "subtract",
+            "targetCount": 4,
+            "hint": "Check how many counters remain after the takeaway.",
+            "narration": "Our final challenge: start with nine counters and take away five.",
+            "startCount": 9,
+            "instruction": "The frame starts with 9 counters. Take away 5. How many are left?"
+          }
+        ],
+        "showOptions": {
+          "showCount": false,
+          "showEquation": false,
+          "showEmptyCount": false,
+          "allowFlip": false
+        },
+        "gradeBand": "K"
+      }
+    },
+    {
+      "instanceId": "obj1-take-home-snack-subtraction",
+      "componentId": "take-home-activity",
+      "data": {
+        "id": "snack-subtraction-k",
+        "title": "Snack Subtraction: The Case of the Disappearing Treats",
+        "subject": "Math",
+        "topic": "Kindergarten Subtraction within 5",
+        "gradeRange": "K-2",
+        "estimatedTime": "20-30 minutes",
+        "overview": "Turn everyday snack time into an exciting math adventure! Count out five tasty treats, physically take some away to eat, and discover how subtraction tells the story of what is left over.",
+        "learningObjectives": [
+          "Count up to five concrete objects using one-to-one correspondence.",
+          "Demonstrate subtraction by physically removing items from a group of 5.",
+          "Verbally state subtraction story problems using foundational math words like 'take away' and 'is left'."
+        ],
+        "materials": [
+          {
+            "item": "Small snack treats",
+            "quantity": "5 pieces",
+            "essential": true,
+            "examples": [
+              "mini crackers",
+              "sliced grapes",
+              "cereal pieces",
+              "blueberries"
+            ],
+            "substitutes": [
+              "counters",
+              "buttons",
+              "small toy blocks"
+            ]
+          },
+          {
+            "item": "Paper plate or small bowl",
+            "quantity": "1",
+            "essential": true,
+            "substitutes": [
+              "clean napkin",
+              "flat baking sheet",
+              "placemat"
+            ]
+          },
+          {
+            "item": "Second snack napkin",
+            "quantity": "1",
+            "essential": false,
+            "substitutes": [
+              "small bowl",
+              "second plate"
+            ]
+          },
+          {
+            "item": "Paper strip",
+            "quantity": "1 sheet",
+            "essential": false,
+            "substitutes": [
+              "dry-erase board",
+              "chalkboard"
+            ]
+          },
+          {
+            "item": "Crayon or washable marker",
+            "quantity": "1",
+            "essential": false,
+            "substitutes": [
+              "pencil",
+              "finger paint"
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "stepNumber": 1,
+            "title": "Wash and Set Up",
+            "instruction": "Wash your hands thoroughly with soap and water, then place your plate on the table.",
+            "tip": "A flat surface keeps round snacks from rolling away! "
+          },
+          {
+            "stepNumber": 2,
+            "title": "Count Your Starting Snacks",
+            "instruction": "Place your 5 snacks onto the plate in a straight line and touch each one as you count out loud from 1 to 5.",
+            "checkpoint": {
+              "question": "How many snacks do you have in your starting group?",
+              "type": "count"
+            },
+            "scienceNote": "Lining up objects helps our eyes and fingers match each item to one number name."
+          },
+          {
+            "stepNumber": 3,
+            "title": "The First Take Away",
+            "instruction": "Pick up 1 snack from your plate, move it onto your napkin, and eat it!",
+            "checkpoint": {
+              "question": "You started with 5 and took away 1. How many snacks are left on your plate?",
+              "type": "count"
+            },
+            "scienceNote": "Subtraction is the math word for taking something away from a group."
+          },
+          {
+            "stepNumber": 4,
+            "title": "Tell the Snack Story",
+            "instruction": "Say the whole math sentence aloud: '5 take away 1 leaves 4!'",
+            "tip": "Using fingers to show 5 and then tucking 1 finger down helps reinforce the concept."
+          },
+          {
+            "stepNumber": 5,
+            "title": "The Mystery Snack Thief",
+            "instruction": "Close your eyes while your adult helper moves 2 snacks from the plate to your napkin, then open your eyes and count the remaining treats.",
+            "checkpoint": {
+              "question": "Did taking snacks away make your starting group larger or smaller?",
+              "type": "reflection"
+            }
+          },
+          {
+            "stepNumber": 6,
+            "title": "Subtract Down to Zero",
+            "instruction": "Count how many snacks remain on your plate, move all of them to your napkin to eat, and observe what is left.",
+            "checkpoint": {
+              "question": "When there are zero snacks left on your plate, does that mean the plate is empty?",
+              "type": "confirm"
+            }
+          }
+        ],
+        "reflectionPrompts": [
+          {
+            "question": "What happened to the total number of snacks on your plate every time you took one away?",
+            "connectionTo": "Demonstrate subtraction by physically removing items from a group of 5.",
+            "hint": "Think about whether the number went up or down."
+          },
+          {
+            "question": "If you have 4 crackers and you want 2 left, how many do you need to eat?",
+            "connectionTo": "State subtraction story problems using foundational math words.",
+            "hint": "Try hiding crackers with your hand until only 2 show."
+          },
+          {
+            "question": "Where else in your day do you notice things being subtracted or taken away?",
+            "connectionTo": "Count concrete objects up to 5 with one-to-one correspondence.",
+            "hint": "Think about toys going into a bin, shoes coming off, or sips of water from a cup."
+          }
+        ],
+        "documentationPrompt": {
+          "instruction": "Take a photo of your plate showing your remaining snacks alongside your fingers holding up the number taken away.",
+          "suggestedCaption": "I started with 5 snacks. I subtracted ___ and now I have ___ left!"
+        },
+        "extensions": [
+          {
+            "title": "Ten-Frame Snack Attack",
+            "description": "Level up to subtracting within 10! Draw a 10-box grid on paper, place 10 snacks in the boxes, and subtract from 10.",
+            "difficulty": "intermediate"
+          },
+          {
+            "title": "Toy Animal Story Problems",
+            "description": "Use small toy animals resting in a 'barn' box and act out animal subtraction stories when some wander out to the pasture.",
+            "difficulty": "intermediate"
+          }
+        ],
+        "safetyNotes": [
+          "Adult helper recommended to supervise food preparation and activity.",
+          "Cut round foods like grapes or cherry tomatoes in half lengthwise to eliminate choking risks.",
+          "Wash hands thoroughly before and after handling edible materials."
+        ]
+      }
+    },
+    {
+      "instanceId": "obj2-symbol-explorer",
+      "componentId": "foundation-explorer",
+      "data": {
+        "objectiveId": "obj2",
+        "objectiveText": "Identify the minus sign and the equals sign in a simple take-away sentence",
+        "objectiveVerb": "identify",
+        "diagram": {
+          "description": "A simple take-away sentence showing 5 minus 2 equals 3 with colored arrows pointing to the minus sign, equals sign, and the full sentence.",
+          "imagePrompt": "Clean educational schematic diagram of kindergarten subtraction: the math sentence '5 - 2 = 3' in large, rounded, colorful numbers on a light background. A bright blue arrow points to the minus sign labeled 'MINUS SIGN'. A bright green arrow points to the equals sign labeled 'EQUALS SIGN'. An amber bracket underlines the entire sentence labeled 'TAKE-AWAY SENTENCE'. Simple line art style, bold outlines, friendly kindergarten math graphic.",
+          "style": "schematic"
+        },
+        "concepts": [
+          {
+            "id": "minus-sign",
+            "name": "Minus Sign",
+            "briefDefinition": "A flat line that means take away.",
+            "diagramHighlight": "The blue dash between the five and two",
+            "inContext": {
+              "scenario": "You have four cookies and give one away.",
+              "whereToFind": "The minus sign shows that a cookie went away."
+            },
+            "selfCheck": {
+              "prompt": "Which picture shows the minus sign?",
+              "options": [
+                "Minus line",
+                "Equals lines",
+                "Plus cross"
+              ],
+              "correctIndex": 0,
+              "hint": "Look for one straight line sleeping on its side.",
+              "optionEmojis": [
+                "➖",
+                "🟰",
+                "➕"
+              ]
+            },
+            "color": "#3B82F6"
+          },
+          {
+            "id": "equals-sign",
+            "name": "Equals Sign",
+            "briefDefinition": "Two flat lines that show what is left.",
+            "diagramHighlight": "The green twin lines before the number three",
+            "inContext": {
+              "scenario": "You count your remaining toys after cleaning up.",
+              "whereToFind": "The equals sign sits right before the answer."
+            },
+            "selfCheck": {
+              "prompt": "Which picture shows the equals sign?",
+              "options": [
+                "One line",
+                "Two stacked lines",
+                "Crossed lines"
+              ],
+              "correctIndex": 1,
+              "hint": "Look for two little lines lying flat together.",
+              "optionEmojis": [
+                "➖",
+                "🟰",
+                "➕"
+              ]
+            },
+            "color": "#10B981"
+          },
+          {
+            "id": "take-away-sentence",
+            "name": "Take-Away Sentence",
+            "briefDefinition": "Numbers and signs that tell a take-away story.",
+            "diagramHighlight": "The whole line showing five minus two equals three",
+            "inContext": {
+              "scenario": "Five birds sit together and two fly away.",
+              "whereToFind": "A take-away sentence tells the math story."
+            },
+            "selfCheck": {
+              "prompt": "Which picture is a take-away sentence?",
+              "options": [
+                "Single circle",
+                "Alphabet letters",
+                "Numbers and signs"
+              ],
+              "correctIndex": 2,
+              "hint": "Look for numbers with math signs between them.",
+              "optionEmojis": [
+                "🔵",
+                "🔤",
+                "🔢"
+              ]
+            },
+            "color": "#F59E0B"
+          }
+        ],
+        "themeColor": "#3B82F6",
+        "gradeLevel": "K"
+      }
+    },
+    {
+      "instanceId": "obj2-equation-builder",
+      "componentId": "equation-builder",
+      "data": {
+        "title": "Subtraction Fun!",
+        "description": "Learn how to use the minus sign to take away and the equals sign to see what is left!",
+        "maxNumber": 5,
+        "gradeBand": "K",
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "build",
+            "instruction": "Use the minus sign and equals sign to show taking 1 away from 3.",
+            "targetEquation": "3 - 1 = 2",
+            "availableTiles": [
+              "=",
+              "1",
+              "2",
+              "3",
+              "-"
+            ]
+          },
+          {
+            "id": "c2",
+            "type": "build",
+            "instruction": "Let us take 2 away from 4. Build a take-away sentence using your tiles!",
+            "targetEquation": "4 - 2 = 2",
+            "availableTiles": [
+              "4",
+              "2",
+              "-",
+              "=",
+              "2"
+            ]
+          },
+          {
+            "id": "c3",
+            "type": "build",
+            "instruction": "Can you show what happens when you take 3 away from 3?",
+            "targetEquation": "3 - 3 = 0",
+            "availableTiles": [
+              "0",
+              "3",
+              "3",
+              "=",
+              "-"
+            ]
+          },
+          {
+            "id": "c4",
+            "type": "build",
+            "instruction": "Make a subtraction sentence showing 5 take away 4.",
+            "targetEquation": "5 - 4 = 1",
+            "availableTiles": [
+              "1",
+              "=",
+              "-",
+              "5",
+              "4"
+            ]
+          },
+          {
+            "id": "c5",
+            "type": "build",
+            "instruction": "Build a subtraction sentence to show 2 take away 1.",
+            "targetEquation": "2 - 1 = 1",
+            "availableTiles": [
+              "1",
+              "2",
+              "=",
+              "1",
+              "-"
+            ]
+          }
+        ],
+        "supportTier": "easy"
+      }
+    },
+    {
+      "instanceId": "obj2-di-math-facts",
+      "componentId": "di-math-facts",
+      "data": {
+        "title": "Minus Magic",
+        "description": "Get ready to look at subtraction signs and speak your answers out loud!",
+        "challengeType": "subtraction_fact",
+        "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+        "challenges": [
+          {
+            "challengeType": "subtraction_fact",
+            "answerWord": "four",
+            "answerNumeral": 4,
+            "asrAliases": [
+              "four",
+              "4",
+              "for",
+              "fore"
+            ],
+            "id": "dimf-1-4m0",
+            "a": 4,
+            "b": 0,
+            "display": "4 - 0",
+            "problem": "four minus zero",
+            "solvedDisplay": "4 - 0 = 4",
+            "supportTier": "medium"
+          },
+          {
+            "challengeType": "subtraction_fact",
+            "answerWord": "one",
+            "answerNumeral": 1,
+            "asrAliases": [
+              "one",
+              "1",
+              "won"
+            ],
+            "id": "dimf-2-3m2",
+            "a": 3,
+            "b": 2,
+            "display": "3 - 2",
+            "problem": "three minus two",
+            "solvedDisplay": "3 - 2 = 1",
+            "supportTier": "medium"
+          },
+          {
+            "challengeType": "subtraction_fact",
+            "answerWord": "three",
+            "answerNumeral": 3,
+            "asrAliases": [
+              "three",
+              "3",
+              "free",
+              "tree"
+            ],
+            "id": "dimf-3-4m1",
+            "a": 4,
+            "b": 1,
+            "display": "4 - 1",
+            "problem": "four minus one",
+            "solvedDisplay": "4 - 1 = 3",
+            "supportTier": "medium"
+          },
+          {
+            "challengeType": "subtraction_fact",
+            "answerWord": "two",
+            "answerNumeral": 2,
+            "asrAliases": [
+              "two",
+              "2",
+              "to",
+              "too"
+            ],
+            "id": "dimf-4-3m1",
+            "a": 3,
+            "b": 1,
+            "display": "3 - 1",
+            "problem": "three minus one",
+            "solvedDisplay": "3 - 1 = 2",
+            "supportTier": "medium"
+          },
+          {
+            "challengeType": "subtraction_fact",
+            "answerWord": "four",
+            "answerNumeral": 4,
+            "asrAliases": [
+              "four",
+              "4",
+              "for",
+              "fore"
+            ],
+            "id": "dimf-5-5m1",
+            "a": 5,
+            "b": 1,
+            "display": "5 - 1",
+            "problem": "five minus one",
+            "solvedDisplay": "5 - 1 = 4",
+            "supportTier": "medium"
+          }
+        ],
+        "facts": "4 - 0, 3 - 2, 4 - 1, 3 - 1, 5 - 1"
+      }
+    },
+    {
+      "instanceId": "final-assessment-subtraction",
+      "componentId": "knowledge-check",
+      "data": {
+        "problems": [
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "What is 4 apples take away 1 apple?",
+            "options": [
+              {
+                "id": "A",
+                "text": "2 apples",
+                "emoji": "2️⃣"
+              },
+              {
+                "id": "B",
+                "text": "3 apples",
+                "emoji": "3️⃣"
+              },
+              {
+                "id": "C",
+                "text": "4 apples",
+                "emoji": "4️⃣"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "When you start with 4 apples and take 1 away, you have 3 apples left. Counting backward by one from 4 lands right on 3. This means 4 take away 1 equals 3.",
+            "teachingNote": "Use physical counters or fingers to model taking one away so students can see the quantity decrease by one.",
+            "successCriteria": [
+              "Subtract 1 from a small group of up to 5 objects",
+              "Identify how many objects remain after taking one away"
+            ],
+            "objectiveId": "obj1",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "What number is two jumps back from four?",
+            "options": [
+              {
+                "id": "A",
+                "text": "1",
+                "emoji": "1️⃣"
+              },
+              {
+                "id": "B",
+                "text": "2",
+                "emoji": "2️⃣"
+              },
+              {
+                "id": "C",
+                "text": "3",
+                "emoji": "3️⃣"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Starting at 4 and jumping back 1 space lands on 3. Jumping back 1 more space lands on 2, so 4 take away 2 leaves 2. Counting backward helps us see subtraction in action.",
+            "teachingNote": "Have students place their finger on 4 and hop backward one tick at a time while counting aloud to reinforce the connection between subtraction and counting back.",
+            "successCriteria": [
+              "Use a number line to subtract by jumping backward",
+              "Identify the result of subtracting 2 from 4"
+            ],
+            "inset": {
+              "insetType": "number-line",
+              "min": 0,
+              "max": 5,
+              "ticks": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "label": "Number Line",
+              "points": [
+                {
+                  "value": 4,
+                  "label": "Start"
+                }
+              ]
+            },
+            "objectiveId": "obj1",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "true_false",
+            "id": "tf_sub_k_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "statement": "True or false: The minus sign in this equation means we take away objects.",
+            "correct": true,
+            "rationale": "True! The minus sign (-) tells us to take away or remove objects from a group, which makes our total number smaller. In this equation, starting with five and taking away two leaves us with three.",
+            "teachingNote": "Connect the minus sign to physical actions like eating a cookie or hiding toys so students can visualize subtraction.",
+            "successCriteria": [
+              "Understand that the minus sign means taking away"
+            ],
+            "inset": {
+              "insetType": "katex",
+              "expression": "5 - 2 = 3",
+              "displayMode": "display",
+              "caption": "Five take away two equals three",
+              "label": "Equation"
+            },
+            "objectiveId": "obj2",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which sign means take away when one balloon flies away?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Plus sign",
+                "emoji": "➕"
+              },
+              {
+                "id": "B",
+                "text": "Minus sign",
+                "emoji": "➖"
+              },
+              {
+                "id": "C",
+                "text": "Equal sign",
+                "emoji": "🟰"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "The minus sign shows subtraction or taking things away. When one balloon flies away from your group, we use a minus sign to show it is gone. The plus sign means putting things together instead.",
+            "teachingNote": "Reinforce the physical gesture of taking something away while pointing to the minus symbol. Connect the word 'minus' to real-life subtraction stories like losing or eating items.",
+            "successCriteria": [
+              "Identify the minus symbol as the sign for taking away or subtraction."
+            ],
+            "objectiveId": "obj2",
+            "subject": "MATHEMATICS"
+          }
+        ],
+        "problemType": "orchestrated",
+        "topic": "Subtraction for Kindergarten",
+        "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+      }
+    }
+  ],
+  "scores": {
+    "gates": {
+      "G1": 0,
+      "G4": 1,
+      "G6": 1
+    },
+    "checks": {
+      "Q8": 0,
+      "Q3": 1,
+      "Q6": 1,
+      "Q7": 1,
+      "Q4": 0
+    },
+    "holistic": [],
+    "bucket": "BROKEN",
+    "judgedAt": "2026-09-05T20:25:00.151Z",
+    "judge": "tier-a@315f7bfb",
+    "citations": [
+      {
+        "instanceId": "obj2-equation-builder",
+        "checkId": "G1",
+        "note": "equation-builder[build-simple] declares reads: developing — the child must read alone at the pre-reader band"
+      },
+      {
+        "instanceId": "obj2-equation-builder",
+        "checkId": "Q8",
+        "note": "equation-builder[build-simple] declares reads: developing"
+      },
+      {
+        "instanceId": "obj2-symbol-explorer",
+        "checkId": "Q4",
+        "note": "obj2 ASSESSED_INSUFFICIENTLY: The objective names both the minus sign and the equals sign. Direct assessment only tests the minus sign; the equals sign is never assessed. Additionally, obj2-di-math-facts tests subtraction fact recall rather than sign identification."
+      }
+    ],
+    "unknowns": [],
+    "evidence": {
+      "band": {
+        "grade": "K",
+        "preReader": true,
+        "k2": true,
+        "subject": "MATHEMATICS"
+      },
+      "streamOrder": [
+        "addition-subtraction-scene[act_out]",
+        "ten-frame[operate]",
+        "foundation-explorer",
+        "equation-builder[build-simple]",
+        "di-math-facts[subtraction_fact]",
+        "knowledge-check[recall|apply]"
+      ],
+      "parentCards": [
+        "obj1-take-home-snack-subtraction"
+      ],
+      "parentCardMinutes": 10,
+      "minutes": 28,
+      "lengthCap": 40,
+      "knownMinuteBlocks": 6,
+      "streamBlocks": 6,
+      "tapOnlyProduction": [],
+      "notationObjectives": [],
+      "distinctPrimitives": 6,
+      "coverageJudge": {
+        "status": "warn",
+        "coverage": 0.75,
+        "model": "gemini-flash-latest",
+        "source": "script",
+        "judgedAt": "2026-09-05T20:24:42.040Z"
+      },
+      "notCodeJudged": [
+        "G1 catalog-band half (no grade floors by ruling)",
+        "G4 generator-emitted half",
+        "G6 visible-timer half",
+        "Q4 when the package carries no coverage verdict",
+        "G2",
+        "G3",
+        "G5",
+        "Q1",
+        "Q2",
+        "Q5"
+      ]
+    }
+  },
+  "human": null,
+  "coverage": {
+    "version": 1,
+    "lessonId": "kindergarten-subtraction-for-kindergarten-20260905202425-mb4f",
+    "status": "warn",
+    "overallObjectiveCoverage": 0.75,
+    "blockingFailure": false,
+    "objectives": [
+      {
+        "objectiveId": "obj1",
+        "objective": "Demonstrate taking away objects from a small group to see what remains",
+        "verb": "apply",
+        "grade": "kindergarten",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 12,
+        "assessmentEvidence": [
+          "obj1-subtraction-scene#challenges[0]",
+          "obj1-subtraction-scene#challenges[1]",
+          "obj1-subtraction-scene#challenges[2]",
+          "obj1-subtraction-scene#challenges[3]",
+          "obj1-subtraction-scene#challenges[4]",
+          "obj1-subtraction-scene#challenges[5]",
+          "obj1-ten-frame#challenges[0]",
+          "obj1-ten-frame#challenges[1]",
+          "obj1-ten-frame#challenges[2]",
+          "obj1-ten-frame#challenges[3]",
+          "obj1-ten-frame#challenges[4]",
+          "final-assessment-subtraction#problems[0]"
+        ],
+        "instructionEvidence": [
+          "obj1-subtraction-scene",
+          "obj1-ten-frame"
+        ],
+        "masteryInferenceSupported": true,
+        "severity": "NONE",
+        "notes": "Demonstrating taking away objects to find what remains is thoroughly assessed across concrete story scenes, ten-frame counter tasks, and the final assessment."
+      },
+      {
+        "objectiveId": "obj2",
+        "objective": "Identify the minus sign and the equals sign in a simple take-away sentence",
+        "verb": "identify",
+        "grade": "kindergarten",
+        "category": "ASSESSED_INSUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 2,
+        "assessmentEvidence": [
+          "final-assessment-subtraction#problems[2]",
+          "final-assessment-subtraction#problems[3]"
+        ],
+        "instructionEvidence": [
+          "obj2-symbol-explorer",
+          "obj2-equation-builder"
+        ],
+        "masteryInferenceSupported": false,
+        "severity": "WARNING",
+        "notes": "The objective names both the minus sign and the equals sign. Direct assessment only tests the minus sign; the equals sign is never assessed. Additionally, obj2-di-math-facts tests subtraction fact recall rather than sign identification."
+      }
+    ],
+    "detectedConstraints": [
+      {
+        "type": "off_target_assessment",
+        "description": "obj2-di-math-facts prompts students to compute and vocalize differences rather than identifying the minus or equals signs.",
+        "instanceId": "obj2-di-math-facts"
+      },
+      {
+        "type": "insufficient_items",
+        "description": "The equals sign from the declared set (minus sign and equals sign) is never directly tested in assessment items.",
+        "instanceId": "final-assessment-subtraction"
+      }
+    ],
+    "summary": "Objective 1 (taking away objects to see what remains) is fully supported with robust instruction and varied concrete assessment opportunities across story scenes, ten-frame tasks, and word problems. Objective 2 (identifying the minus sign and equals sign) is introduced well, but its assessment falls short: the equals sign is entirely omitted from direct identification items, and the dedicated practice block obj2-di-math-facts is off-target, testing mental fact computation instead of symbol identification.",
+    "meta": {
+      "evalModel": "gemini-flash-latest",
+      "evalTimestamp": "2026-09-05T20:24:42.040Z",
+      "latencyMs": 11859,
+      "usedSchemaFallback": false,
+      "source": "script",
+      "topic": "Subtraction for Kindergarten",
+      "gradeLevel": "kindergarten",
+      "grade": "kindergarten",
+      "subject": "MATHEMATICS",
+      "skillIds": [],
+      "subskillIds": [],
+      "primitiveTypes": [
+        "addition-subtraction-scene",
+        "ten-frame",
+        "foundation-explorer",
+        "equation-builder",
+        "di-math-facts",
+        "knowledge-check",
+        "take-home-activity"
+      ],
+      "digestChars": 16304,
+      "truncated": false,
+      "objectiveCount": 2,
+      "objectivesFullyCovered": 1,
+      "objectivesUncovered": 0,
+      "failureCategories": [
+        "ASSESSED_INSUFFICIENTLY",
+        "constraint:off_target_assessment",
+        "constraint:insufficient_items"
+      ]
+    }
+  }
+}

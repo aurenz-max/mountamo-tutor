@@ -1,0 +1,1396 @@
+{
+  "benchVersion": 1,
+  "id": "kindergarten-addition-20260905190820-imvy",
+  "subskill": null,
+  "provenance": {
+    "generatedAt": "2026-09-05T19:08:20.870Z",
+    "source": "topic-trace",
+    "topic": "addition",
+    "gradeLevel": "kindergarten",
+    "gitSha": null,
+    "promptHash": null,
+    "generationRequest": {
+      "topic": "addition",
+      "gradeLevel": "kindergarten",
+      "package": true,
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Combine two groups of physical objects to find the total amount",
+          "verb": "apply",
+          "icon": "puzzle"
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the plus sign (+) and equal sign (=) as math symbols",
+          "verb": "identify",
+          "icon": "search"
+        },
+        {
+          "id": "obj3",
+          "text": "Explain how putting things together makes a bigger number",
+          "verb": "explain",
+          "icon": "lightbulb"
+        }
+      ],
+      "curatorBrief": {
+        "primitive": "intro_briefing",
+        "topic": "addition",
+        "subject": "General",
+        "gradeLevel": "kindergarten",
+        "estimatedTime": "15-20 minutes",
+        "hook": {
+          "type": "scenario",
+          "content": "Imagine you have 2 shiny red apples in your lunchbox, and your kind friend gives you 1 more apple to share. How many apples do you have altogether now?",
+          "visual": "🧮"
+        },
+        "bigIdea": {
+          "statement": "Addition means putting groups together to find out how many there are in all.",
+          "whyItMatters": "We use addition every single day when we share toys, count snacks, or gather items with our friends and family."
+        },
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Combine two groups of physical objects to find the total amount",
+            "verb": "apply",
+            "icon": "puzzle"
+          },
+          {
+            "id": "obj2",
+            "text": "Identify the plus sign (+) and equal sign (=) as math symbols",
+            "verb": "identify",
+            "icon": "search"
+          },
+          {
+            "id": "obj3",
+            "text": "Explain how putting things together makes a bigger number",
+            "verb": "explain",
+            "icon": "lightbulb"
+          }
+        ],
+        "prerequisites": {
+          "shouldKnow": [
+            "Count objects up to 10 out loud in order",
+            "Understand that the last number counted tells how many there are"
+          ],
+          "quickCheck": {
+            "question": "If you have 3 blocks and count them (1, 2, 3), how many blocks do you have?",
+            "answer": "3",
+            "hint": "Remember the last number you say when counting is the total amount!"
+          }
+        },
+        "roadmap": [
+          {
+            "phase": "Explore",
+            "description": "Put real objects together and count the total.",
+            "activities": [
+              "Combine toy cars or counters",
+              "Count the total group out loud"
+            ]
+          },
+          {
+            "phase": "Learn",
+            "description": "Discover the special math symbols for joining groups.",
+            "activities": [
+              "Look at the plus (+) and equal (=) signs",
+              "Match math signs to physical actions"
+            ]
+          },
+          {
+            "phase": "Practice",
+            "description": "Solve fun addition stories with pictures.",
+            "activities": [
+              "Draw pictures of combined groups",
+              "Answer simple picture addition problems"
+            ]
+          }
+        ],
+        "connections": {
+          "buildingFrom": [
+            "Rote counting to 10 or 20",
+            "Recognizing groups of objects"
+          ],
+          "leadingTo": [
+            "Adding numbers up to 10 and 20",
+            "Learning about subtraction (taking away)"
+          ],
+          "realWorld": [
+            "Combining toys during playtime",
+            "Counting pieces of fruit at snack time"
+          ]
+        },
+        "mindset": {
+          "encouragement": "Math is like a fun puzzle! If numbers ever feel tricky, just use your fingers or toys to help you count.",
+          "growthTip": "Always touch each object one by one as you count your total to keep track."
+        }
+      }
+    }
+  },
+  "manifest": {
+    "topic": "addition",
+    "gradeLevel": "kindergarten",
+    "subject": "MATHEMATICS",
+    "themeColor": "#3b82f6",
+    "curatorBrief": {
+      "instanceId": "curator-brief-1",
+      "title": "Welcome to the World of Addition!",
+      "intent": "Welcome young mathematicians to addition! Introduce the adventure of putting groups of objects together, discovering the math symbols plus and equal, and seeing how combining things makes bigger numbers."
+    },
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Combine two groups of physical objects to find the total amount",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "addition-subtraction-scene",
+            "instanceId": "obj1-addition-scene",
+            "title": "Story Time: Bringing Friends Together",
+            "intent": "Guide kindergarteners through an interactive story scene where they act out joining two small groups of objects, like ducks joining a pond, to count the combined total.",
+            "config": {
+              "difficulty": "easy",
+              "targetEvalMode": "act_out"
+            }
+          },
+          {
+            "componentId": "ten-frame",
+            "instanceId": "obj1-ten-frame",
+            "title": "Fill the Frame: Putting Groups Together",
+            "intent": "Allow students to place counters into a ten-frame to physically see and count how two distinct groups combine to create one total amount within 10.",
+            "config": {
+              "difficulty": "easy",
+              "targetEvalMode": "operate"
+            }
+          },
+          {
+            "componentId": "counting-board",
+            "instanceId": "obj1-counting-board",
+            "title": "Count the Whole Group",
+            "intent": "Encourage students to practice one-to-one counting on a collection of playful items created by joining two separate clusters, saying the total count aloud.",
+            "config": {
+              "count": 5,
+              "difficulty": "easy",
+              "targetEvalMode": "count"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj2",
+        "objectiveText": "Identify the plus sign (+) and equal sign (=) as math symbols",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "foundation-explorer",
+            "instanceId": "obj2-symbol-explorer",
+            "title": "Meet the Math Symbols: Plus and Equal",
+            "intent": "Introduce the plus sign (+) as the symbol that puts things together and the equal sign (=) as the symbol that shows what both sides have in total, supported by simple visual cards.",
+            "config": {
+              "difficulty": "easy"
+            }
+          },
+          {
+            "componentId": "equation-builder",
+            "instanceId": "obj2-equation-builder",
+            "title": "Building Number Sentences",
+            "intent": "Invite students to place the plus sign and equal sign into scaffolded slots between object groups and numerals to build a complete math sentence.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy",
+              "targetEvalMode": "build-simple"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj3",
+        "objectiveText": "Explain how putting things together makes a bigger number",
+        "objectiveVerb": "explain",
+        "components": [
+          {
+            "componentId": "number-bond",
+            "instanceId": "obj3-number-bond",
+            "title": "Part-Part-Whole: Growing Bigger",
+            "intent": "Show how two smaller part circles join branches into one larger whole circle, helping students visually understand that combining amounts results in a bigger quantity.",
+            "config": {
+              "difficulty": "easy",
+              "targetEvalMode": "decompose"
+            }
+          },
+          {
+            "componentId": "comparison-builder",
+            "instanceId": "obj3-comparison-builder",
+            "title": "Comparing Before and After",
+            "intent": "Provide side-by-side visual comparisons of an initial group versus the new, combined group to reinforce that putting more items in makes the total group larger.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy",
+              "targetEvalMode": "compare_groups"
+            }
+          },
+          {
+            "componentId": "di-dice-roll",
+            "instanceId": "obj3-dice-roll",
+            "title": "Roll, Combine, and Grow",
+            "intent": "Have students roll two dice, observe each individual pip pattern, and speak the bigger combined sum aloud with supportive direct instruction feedback.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy",
+              "targetEvalMode": "sum_two_dice"
+            }
+          }
+        ]
+      }
+    ],
+    "finalAssessment": {
+      "componentId": "knowledge-check",
+      "instanceId": "final-addition-check",
+      "title": "Addition Superstar Check",
+      "intent": "Assess kindergarten understanding across all three objectives: combining two sets of objects, recognizing '+' and '=', and recognizing that combining amounts yields a bigger number.",
+      "config": {
+        "count": 4,
+        "targetEvalMode": "recall|apply"
+      }
+    },
+    "layout": [
+      {
+        "componentId": "curator-brief",
+        "instanceId": "curator-brief-1",
+        "title": "Welcome to the World of Addition!",
+        "intent": "Welcome young mathematicians to addition! Introduce the adventure of putting groups of objects together, discovering the math symbols plus and equal, and seeing how combining things makes bigger numbers.",
+        "objectiveIds": [
+          "obj1",
+          "obj2",
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "addition-subtraction-scene",
+        "instanceId": "obj1-addition-scene",
+        "title": "Story Time: Bringing Friends Together",
+        "intent": "Guide kindergarteners through an interactive story scene where they act out joining two small groups of objects, like ducks joining a pond, to count the combined total.",
+        "config": {
+          "difficulty": "easy",
+          "targetEvalMode": "act_out",
+          "objectiveId": "obj1",
+          "objectiveText": "Combine two groups of physical objects to find the total amount",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "kindergarten",
+          "intent": "Guide kindergarteners through an interactive story scene where they act out joining two small groups of objects, like ducks joining a pond, to count the combined total."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "ten-frame",
+        "instanceId": "obj1-ten-frame",
+        "title": "Fill the Frame: Putting Groups Together",
+        "intent": "Allow students to place counters into a ten-frame to physically see and count how two distinct groups combine to create one total amount within 10.",
+        "config": {
+          "difficulty": "easy",
+          "targetEvalMode": "operate",
+          "objectiveId": "obj1",
+          "objectiveText": "Combine two groups of physical objects to find the total amount",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "kindergarten",
+          "intent": "Allow students to place counters into a ten-frame to physically see and count how two distinct groups combine to create one total amount within 10."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "counting-board",
+        "instanceId": "obj1-counting-board",
+        "title": "Count the Whole Group",
+        "intent": "Encourage students to practice one-to-one counting on a collection of playful items created by joining two separate clusters, saying the total count aloud.",
+        "config": {
+          "count": 5,
+          "difficulty": "easy",
+          "targetEvalMode": "count",
+          "objectiveId": "obj1",
+          "objectiveText": "Combine two groups of physical objects to find the total amount",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "kindergarten",
+          "intent": "Encourage students to practice one-to-one counting on a collection of playful items created by joining two separate clusters, saying the total count aloud."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "foundation-explorer",
+        "instanceId": "obj2-symbol-explorer",
+        "title": "Meet the Math Symbols: Plus and Equal",
+        "intent": "Introduce the plus sign (+) as the symbol that puts things together and the equal sign (=) as the symbol that shows what both sides have in total, supported by simple visual cards.",
+        "config": {
+          "difficulty": "easy",
+          "objectiveId": "obj2",
+          "objectiveText": "Identify the plus sign (+) and equal sign (=) as math symbols",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "kindergarten",
+          "intent": "Introduce the plus sign (+) as the symbol that puts things together and the equal sign (=) as the symbol that shows what both sides have in total, supported by simple visual cards."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "equation-builder",
+        "instanceId": "obj2-equation-builder",
+        "title": "Building Number Sentences",
+        "intent": "Invite students to place the plus sign and equal sign into scaffolded slots between object groups and numerals to build a complete math sentence.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "targetEvalMode": "build-simple",
+          "objectiveId": "obj2",
+          "objectiveText": "Identify the plus sign (+) and equal sign (=) as math symbols",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "kindergarten",
+          "intent": "Invite students to place the plus sign and equal sign into scaffolded slots between object groups and numerals to build a complete math sentence."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "number-bond",
+        "instanceId": "obj3-number-bond",
+        "title": "Part-Part-Whole: Growing Bigger",
+        "intent": "Show how two smaller part circles join branches into one larger whole circle, helping students visually understand that combining amounts results in a bigger quantity.",
+        "config": {
+          "difficulty": "easy",
+          "targetEvalMode": "decompose",
+          "objectiveId": "obj3",
+          "objectiveText": "Explain how putting things together makes a bigger number",
+          "objectiveVerb": "explain",
+          "objectiveGrade": "kindergarten",
+          "intent": "Show how two smaller part circles join branches into one larger whole circle, helping students visually understand that combining amounts results in a bigger quantity."
+        },
+        "objectiveIds": [
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "comparison-builder",
+        "instanceId": "obj3-comparison-builder",
+        "title": "Comparing Before and After",
+        "intent": "Provide side-by-side visual comparisons of an initial group versus the new, combined group to reinforce that putting more items in makes the total group larger.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "targetEvalMode": "compare_groups",
+          "objectiveId": "obj3",
+          "objectiveText": "Explain how putting things together makes a bigger number",
+          "objectiveVerb": "explain",
+          "objectiveGrade": "kindergarten",
+          "intent": "Provide side-by-side visual comparisons of an initial group versus the new, combined group to reinforce that putting more items in makes the total group larger."
+        },
+        "objectiveIds": [
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "di-dice-roll",
+        "instanceId": "obj3-dice-roll",
+        "title": "Roll, Combine, and Grow",
+        "intent": "Have students roll two dice, observe each individual pip pattern, and speak the bigger combined sum aloud with supportive direct instruction feedback.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "targetEvalMode": "sum_two_dice",
+          "objectiveId": "obj3",
+          "objectiveText": "Explain how putting things together makes a bigger number",
+          "objectiveVerb": "explain",
+          "objectiveGrade": "kindergarten",
+          "intent": "Have students roll two dice, observe each individual pip pattern, and speak the bigger combined sum aloud with supportive direct instruction feedback."
+        },
+        "objectiveIds": [
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "final-addition-check",
+        "title": "Addition Superstar Check",
+        "intent": "Assess kindergarten understanding across all three objectives: combining two sets of objects, recognizing '+' and '=', and recognizing that combining amounts yields a bigger number.",
+        "config": {
+          "count": 4,
+          "targetEvalMode": "recall|apply",
+          "objectiveGrade": "kindergarten",
+          "lessonObjectives": [
+            {
+              "id": "obj1",
+              "text": "Combine two groups of physical objects to find the total amount",
+              "grade": "kindergarten"
+            },
+            {
+              "id": "obj2",
+              "text": "Identify the plus sign (+) and equal sign (=) as math symbols",
+              "grade": "kindergarten"
+            },
+            {
+              "id": "obj3",
+              "text": "Explain how putting things together makes a bigger number",
+              "grade": "kindergarten"
+            }
+          ]
+        },
+        "objectiveIds": [
+          "obj1",
+          "obj2",
+          "obj3"
+        ]
+      }
+    ]
+  },
+  "curatorBrief": {
+    "primitive": "intro_briefing",
+    "topic": "addition",
+    "subject": "General",
+    "gradeLevel": "kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+      "type": "scenario",
+      "content": "Imagine you have 2 shiny red apples in your lunchbox, and your kind friend gives you 1 more apple to share. How many apples do you have altogether now?",
+      "visual": "🧮"
+    },
+    "bigIdea": {
+      "statement": "Addition means putting groups together to find out how many there are in all.",
+      "whyItMatters": "We use addition every single day when we share toys, count snacks, or gather items with our friends and family."
+    },
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Combine two groups of physical objects to find the total amount",
+        "verb": "apply",
+        "icon": "puzzle"
+      },
+      {
+        "id": "obj2",
+        "text": "Identify the plus sign (+) and equal sign (=) as math symbols",
+        "verb": "identify",
+        "icon": "search"
+      },
+      {
+        "id": "obj3",
+        "text": "Explain how putting things together makes a bigger number",
+        "verb": "explain",
+        "icon": "lightbulb"
+      }
+    ],
+    "prerequisites": {
+      "shouldKnow": [
+        "Count objects up to 10 out loud in order",
+        "Understand that the last number counted tells how many there are"
+      ],
+      "quickCheck": {
+        "question": "If you have 3 blocks and count them (1, 2, 3), how many blocks do you have?",
+        "answer": "3",
+        "hint": "Remember the last number you say when counting is the total amount!"
+      }
+    },
+    "roadmap": [
+      {
+        "phase": "Explore",
+        "description": "Put real objects together and count the total.",
+        "activities": [
+          "Combine toy cars or counters",
+          "Count the total group out loud"
+        ]
+      },
+      {
+        "phase": "Learn",
+        "description": "Discover the special math symbols for joining groups.",
+        "activities": [
+          "Look at the plus (+) and equal (=) signs",
+          "Match math signs to physical actions"
+        ]
+      },
+      {
+        "phase": "Practice",
+        "description": "Solve fun addition stories with pictures.",
+        "activities": [
+          "Draw pictures of combined groups",
+          "Answer simple picture addition problems"
+        ]
+      }
+    ],
+    "connections": {
+      "buildingFrom": [
+        "Rote counting to 10 or 20",
+        "Recognizing groups of objects"
+      ],
+      "leadingTo": [
+        "Adding numbers up to 10 and 20",
+        "Learning about subtraction (taking away)"
+      ],
+      "realWorld": [
+        "Combining toys during playtime",
+        "Counting pieces of fruit at snack time"
+      ]
+    },
+    "mindset": {
+      "encouragement": "Math is like a fun puzzle! If numbers ever feel tricky, just use your fingers or toys to help you count.",
+      "growthTip": "Always touch each object one by one as you count your total to keep track."
+    }
+  },
+  "components": [
+    {
+      "instanceId": "obj1-addition-scene",
+      "componentId": "addition-subtraction-scene",
+      "data": {
+        "title": "Pond and Garden Addition Stories",
+        "challenges": [
+          {
+            "id": "ch1",
+            "type": "act-out",
+            "instruction": "Tap to bring 1 more ducks in!",
+            "storyText": "2 ducks are swimming in the pond. 1 more duck joins them.",
+            "scene": "pond",
+            "objectType": "ducks",
+            "operation": "addition",
+            "storyType": "join",
+            "startCount": 2,
+            "changeCount": 1,
+            "resultCount": 3,
+            "equation": "2 + 1 = 3"
+          },
+          {
+            "id": "ch2",
+            "type": "act-out",
+            "instruction": "Tap to bring 2 more frogs in!",
+            "storyText": "1 frog is sitting on the lily pad. 2 more frogs jump over and join it.",
+            "scene": "pond",
+            "objectType": "frogs",
+            "operation": "addition",
+            "storyType": "join",
+            "startCount": 1,
+            "changeCount": 2,
+            "resultCount": 3,
+            "equation": "1 + 2 = 3"
+          },
+          {
+            "id": "ch3",
+            "type": "act-out",
+            "instruction": "Tap to bring 2 more fish in!",
+            "storyText": "2 little fish are swimming near the reeds. 2 more fish swim over to join them.",
+            "scene": "pond",
+            "objectType": "fish",
+            "operation": "addition",
+            "storyType": "join",
+            "startCount": 2,
+            "changeCount": 2,
+            "resultCount": 4,
+            "equation": "2 + 2 = 4"
+          },
+          {
+            "id": "ch4",
+            "type": "act-out",
+            "instruction": "Tap to bring 3 more flowers in!",
+            "storyText": "1 yellow flower is growing in the dirt. 3 more flowers pop up right beside it.",
+            "scene": "garden",
+            "objectType": "flowers",
+            "operation": "addition",
+            "storyType": "join",
+            "startCount": 1,
+            "changeCount": 3,
+            "resultCount": 4,
+            "equation": "1 + 3 = 4"
+          },
+          {
+            "id": "ch5",
+            "type": "act-out",
+            "instruction": "Tap to bring 2 more butterflies in!",
+            "storyText": "3 butterflies are resting on a leaf. 2 more butterflies flutter over to join them.",
+            "scene": "garden",
+            "objectType": "butterflies",
+            "operation": "addition",
+            "storyType": "join",
+            "startCount": 3,
+            "changeCount": 2,
+            "resultCount": 5,
+            "equation": "3 + 2 = 5"
+          },
+          {
+            "id": "ch6",
+            "type": "act-out",
+            "instruction": "Tap to bring 4 more cookies in!",
+            "storyText": "1 cookie is sitting on the baking tray. 4 more warm cookies are placed next to it.",
+            "scene": "kitchen",
+            "objectType": "cookies",
+            "operation": "addition",
+            "storyType": "join",
+            "startCount": 1,
+            "changeCount": 4,
+            "resultCount": 5,
+            "equation": "1 + 4 = 5"
+          }
+        ],
+        "maxNumber": 5,
+        "showTenFrame": true,
+        "showEquationBar": true,
+        "gradeBand": "K",
+        "description": "Guide kindergarteners through interactive story scenes where they act out joining two small groups of objects, like ducks joining a pond, to count the combined total.",
+        "showCountBadges": true,
+        "groupedReveal": true
+      }
+    },
+    {
+      "instanceId": "obj1-ten-frame",
+      "componentId": "ten-frame",
+      "data": {
+        "title": "Adding Together on the Ten Frame",
+        "description": "Combine two groups of physical objects to find the total amount within 10.",
+        "mode": "single",
+        "counters": {
+          "count": 0,
+          "color": "red",
+          "positions": []
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "add",
+            "targetCount": 4,
+            "hint": "Try placing 2 counters first, then add 2 more to find the total.",
+            "narration": "Let's put 2 counters on the frame, and then add 2 more. How many do we have in all?",
+            "addend1": 2,
+            "addend2": 2,
+            "instruction": "Show 2 + 2 on the frame!"
+          },
+          {
+            "id": "c2",
+            "type": "add",
+            "targetCount": 6,
+            "hint": "Start with 3 counters in the top row, then add 3 more below.",
+            "narration": "Can you show 3 counters and add 3 more to see what total we make?",
+            "addend1": 3,
+            "addend2": 3,
+            "instruction": "Show 3 + 3 on the frame!"
+          },
+          {
+            "id": "c3",
+            "type": "add",
+            "targetCount": 7,
+            "hint": "Fill the top row with 5, then add 2 more on the bottom.",
+            "narration": "Let's combine 5 counters with 2 more counters. What is our total sum?",
+            "addend1": 5,
+            "addend2": 2,
+            "instruction": "Show 5 + 2 on the frame!"
+          },
+          {
+            "id": "c4",
+            "type": "subtract",
+            "targetCount": 3,
+            "hint": "Count how many are left after taking some away.",
+            "narration": "We started with 5 counters and took away 2. How many are left on the frame?",
+            "startCount": 5,
+            "instruction": "The frame starts with 5 counters. Take away 2. How many are left?"
+          },
+          {
+            "id": "c5",
+            "type": "subtract",
+            "targetCount": 4,
+            "hint": "Look closely at how many counters remain after removing the extras.",
+            "narration": "Starting with 8 counters, we take away 4. How many remain?",
+            "startCount": 8,
+            "instruction": "The frame starts with 8 counters. Take away 4. How many are left?"
+          }
+        ],
+        "showOptions": {
+          "showCount": false,
+          "showEquation": true,
+          "showEmptyCount": false,
+          "allowFlip": false
+        },
+        "gradeBand": "K",
+        "twoColorMode": {
+          "enabled": false,
+          "color1Count": 0,
+          "color2Count": 0,
+          "color1": "red",
+          "color2": "yellow"
+        }
+      }
+    },
+    {
+      "instanceId": "obj1-counting-board",
+      "componentId": "counting-board",
+      "data": {
+        "title": "Joining Fish Together!",
+        "description": "Practice counting fish by joining two separate groups and saying the total count aloud.",
+        "objects": {
+          "type": "fish"
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "count_all",
+            "instruction": "Look at these fish! Can you count all of them in the circle? Touch each one!",
+            "targetAnswer": 4,
+            "count": 4,
+            "arrangement": "line",
+            "hint": "Try tapping the fish slowly one by one so you do not miss any.",
+            "narration": "Let's bring these two groups of fish together into a circle and count them all!"
+          },
+          {
+            "id": "c2",
+            "type": "count_all",
+            "instruction": "Here are more fish swimming in a neat line. Can you touch each one to find the total?",
+            "targetAnswer": 5,
+            "count": 5,
+            "arrangement": "line",
+            "hint": "Start at the very first fish on the left and count across.",
+            "narration": "We joined more fish to our line! Let's count them all together."
+          },
+          {
+            "id": "c3",
+            "type": "count_all",
+            "instruction": "Look at these playful fish! Can you count every single one?",
+            "targetAnswer": 6,
+            "count": 6,
+            "arrangement": "line",
+            "hint": "Tap each fish as you count so you know which ones you have already visited.",
+            "narration": "These fish swam all around. Can you count them all to see how many there are now?"
+          },
+          {
+            "id": "c4",
+            "type": "count_all",
+            "instruction": "Another group has joined! Can you count all the fish in this line?",
+            "targetAnswer": 7,
+            "count": 7,
+            "arrangement": "line",
+            "hint": "Take your time and tap each fish carefully from left to right.",
+            "narration": "Our fish family is growing! Let's count them one by one."
+          },
+          {
+            "id": "c5",
+            "type": "count_all",
+            "instruction": "Look at all these swimming fish! Can you count them all?",
+            "targetAnswer": 8,
+            "count": 8,
+            "arrangement": "line",
+            "hint": "Keep track of the numbers as you tap each fish.",
+            "narration": "When we put these two groups together, how many fish do we have in total?"
+          },
+          {
+            "id": "c6",
+            "type": "count_all",
+            "instruction": "Here is a wonderful line of fish. Can you count all of them?",
+            "targetAnswer": 9,
+            "count": 9,
+            "arrangement": "line",
+            "hint": "Count right along the line from start to finish.",
+            "narration": "Let's touch each fish in the line to find the grand total!"
+          },
+          {
+            "id": "c7",
+            "type": "count_all",
+            "instruction": "Our biggest group of fish yet! Can you count every single one?",
+            "targetAnswer": 10,
+            "count": 10,
+            "arrangement": "line",
+            "hint": "You are doing great! Tap each fish slowly until you reach the last one.",
+            "narration": "All the fish have joined together. Let's count them up to find the final number!"
+          }
+        ],
+        "showOptions": {
+          "showRunningCount": true,
+          "showGroupCircles": false,
+          "highlightOnTap": true,
+          "showLastNumber": true
+        },
+        "gradeBand": "K"
+      }
+    },
+    {
+      "instanceId": "obj2-symbol-explorer",
+      "componentId": "foundation-explorer",
+      "data": {
+        "objectiveId": "obj2",
+        "objectiveText": "Identify the plus sign (+) and equal sign (=) as math symbols",
+        "objectiveVerb": "identify",
+        "diagram": {
+          "description": "A simple math addition sentence showing 2 + 3 = 5 with the plus sign and equal sign clearly highlighted and labeled.",
+          "imagePrompt": "Clean educational diagram for kindergarten showing a simple math addition equation: large bold numbers '2 + 3 = 5'. The plus sign (+) is circled in bright green and labeled 'Plus Sign'. The equal sign (=) is circled in bright blue and labeled 'Equal Sign'. A banner across the top is labeled 'Math Symbols'. Clean schematic style, bright colors, white background, kid-friendly bold outlines.",
+          "style": "schematic"
+        },
+        "concepts": [
+          {
+            "id": "plus-sign",
+            "name": "Plus Sign",
+            "briefDefinition": "The plus sign means we put things together.",
+            "diagramHighlight": "The green cross shape between the two numbers",
+            "inContext": {
+              "scenario": "You have two red apples and pick one green apple.",
+              "whereToFind": "The plus sign shows you are adding the apples together."
+            },
+            "selfCheck": {
+              "prompt": "Which sign shows we are putting things together?",
+              "options": [
+                "Two flat lines",
+                "A cross shape",
+                "A round circle"
+              ],
+              "correctIndex": 1,
+              "hint": "Look for the mark that looks like a little cross.",
+              "optionEmojis": [
+                "🟰",
+                "➕",
+                "⚪"
+              ]
+            },
+            "color": "#10B981"
+          },
+          {
+            "id": "equal-sign",
+            "name": "Equal Sign",
+            "briefDefinition": "The equal sign shows the total or the answer.",
+            "diagramHighlight": "The two flat blue lines right before the answer",
+            "inContext": {
+              "scenario": "You make two stacks of blocks with the same height.",
+              "whereToFind": "The equal sign shows that both sides match."
+            },
+            "selfCheck": {
+              "prompt": "Which sign has two flat lines lying down?",
+              "options": [
+                "Two flat lines",
+                "A cross shape",
+                "A tall star"
+              ],
+              "correctIndex": 0,
+              "hint": "Look for two straight lines lying on top of each other.",
+              "optionEmojis": [
+                "🟰",
+                "➕",
+                "⭐"
+              ]
+            },
+            "color": "#3B82F6"
+          },
+          {
+            "id": "math-symbol",
+            "name": "Math Symbol",
+            "briefDefinition": "A math symbol is a mark that tells what to do.",
+            "diagramHighlight": "The special marks like plus and equals in the sentence",
+            "inContext": {
+              "scenario": "Street signs tell cars when to stop or turn.",
+              "whereToFind": "Math signs tell us when to add or show an answer."
+            },
+            "selfCheck": {
+              "prompt": "Which of these is a math sign we use to add?",
+              "options": [
+                "A smiley face",
+                "A toy truck",
+                "A plus mark"
+              ],
+              "correctIndex": 2,
+              "hint": "Look for the mark you see when adding numbers.",
+              "optionEmojis": [
+                "😀",
+                "🛻",
+                "➕"
+              ]
+            },
+            "color": "#F59E0B"
+          }
+        ],
+        "themeColor": "#3B82F6",
+        "gradeLevel": "K"
+      }
+    },
+    {
+      "instanceId": "obj2-equation-builder",
+      "componentId": "equation-builder",
+      "data": {
+        "title": "Plus and Equals Workshop!",
+        "description": "Learn how the plus sign and equal sign work together to make addition sentences.",
+        "maxNumber": 5,
+        "gradeBand": "K",
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "build",
+            "instruction": "Use addition to make a true equation that equals the total of 2.",
+            "targetEquation": "1 + 1 = 2",
+            "availableTiles": [
+              "+",
+              "1",
+              "1",
+              "=",
+              "2"
+            ]
+          },
+          {
+            "id": "c2",
+            "type": "build",
+            "instruction": "Use addition to make a true equation that equals the total of 3.",
+            "targetEquation": "2 + 1 = 3",
+            "availableTiles": [
+              "1",
+              "=",
+              "+",
+              "2",
+              "3"
+            ]
+          },
+          {
+            "id": "c3",
+            "type": "build",
+            "instruction": "Use addition to make a true equation that equals the total of 4.",
+            "targetEquation": "2 + 2 = 4",
+            "availableTiles": [
+              "+",
+              "=",
+              "2",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "id": "c4",
+            "type": "build",
+            "instruction": "Use addition to make a true equation that equals the total of 4.",
+            "targetEquation": "3 + 1 = 4",
+            "availableTiles": [
+              "1",
+              "=",
+              "+",
+              "4",
+              "3"
+            ]
+          },
+          {
+            "id": "c5",
+            "type": "build",
+            "instruction": "Use addition to make a true equation that equals the total of 5.",
+            "targetEquation": "3 + 2 = 5",
+            "availableTiles": [
+              "2",
+              "+",
+              "5",
+              "3",
+              "="
+            ]
+          }
+        ],
+        "supportTier": "easy"
+      }
+    },
+    {
+      "instanceId": "obj3-number-bond",
+      "componentId": "number-bond",
+      "data": {
+        "title": "Putting Things Together with 3, 4, and 5!",
+        "description": "Learn how putting things together makes a bigger number using fun visual number bonds.",
+        "maxNumber": 5,
+        "showCounters": true,
+        "showEquation": true,
+        "gradeBand": "K",
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "decompose",
+            "instruction": "Let's explore the number 3! Find all the ways to split 3 counters into two parts.",
+            "whole": 3,
+            "allPairs": [
+              [
+                0,
+                3
+              ],
+              [
+                1,
+                2
+              ]
+            ],
+            "part1": null,
+            "part2": null
+          },
+          {
+            "id": "c2",
+            "type": "decompose",
+            "instruction": "Now let's look at 4! Put 4 together and find all the ways to split it into two parts.",
+            "whole": 4,
+            "allPairs": [
+              [
+                0,
+                4
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                2
+              ]
+            ],
+            "part1": null,
+            "part2": null
+          },
+          {
+            "id": "c3",
+            "type": "decompose",
+            "instruction": "Great job! Finally, let's break apart 5 to see how combining amounts makes a bigger number.",
+            "whole": 5,
+            "allPairs": [
+              [
+                0,
+                5
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                3
+              ]
+            ],
+            "part1": null,
+            "part2": null
+          }
+        ],
+        "showFactFamilyHelper": true,
+        "supportTier": "easy"
+      }
+    },
+    {
+      "instanceId": "obj3-comparison-builder",
+      "componentId": "comparison-builder",
+      "data": {
+        "title": "Which Group Has More?",
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "compare-groups",
+            "instruction": "Does the left group have more, fewer, or the same number of apples?",
+            "correctAnswer": "more",
+            "leftGroup": {
+              "count": 5,
+              "objectType": "apples"
+            },
+            "rightGroup": {
+              "count": 1,
+              "objectType": "apples"
+            }
+          },
+          {
+            "id": "c2",
+            "type": "compare-groups",
+            "instruction": "Does the left group have more, fewer, or the same number of stars?",
+            "correctAnswer": "less",
+            "leftGroup": {
+              "count": 1,
+              "objectType": "stars"
+            },
+            "rightGroup": {
+              "count": 7,
+              "objectType": "stars"
+            }
+          },
+          {
+            "id": "c3",
+            "type": "compare-groups",
+            "instruction": "Does the left group have more, fewer, or the same number of fish?",
+            "correctAnswer": "equal",
+            "leftGroup": {
+              "count": 4,
+              "objectType": "fish"
+            },
+            "rightGroup": {
+              "count": 4,
+              "objectType": "fish"
+            }
+          },
+          {
+            "id": "c4",
+            "type": "compare-groups",
+            "instruction": "Does the left group have more, fewer, or the same number of blocks?",
+            "correctAnswer": "more",
+            "leftGroup": {
+              "count": 8,
+              "objectType": "blocks"
+            },
+            "rightGroup": {
+              "count": 2,
+              "objectType": "blocks"
+            }
+          },
+          {
+            "id": "c5",
+            "type": "compare-groups",
+            "instruction": "Does the left group have more, fewer, or the same number of bears?",
+            "correctAnswer": "less",
+            "leftGroup": {
+              "count": 3,
+              "objectType": "bears"
+            },
+            "rightGroup": {
+              "count": 9,
+              "objectType": "bears"
+            }
+          }
+        ],
+        "gradeBand": "K",
+        "showCorrespondenceLines": true,
+        "useAlligatorMnemonic": false,
+        "description": "Learn to compare quantities by looking at side-by-side groups and finding out if the left group has more, fewer, or the same amount.",
+        "showCountBadges": true,
+        "correspondenceMode": "live",
+        "supportTier": "easy"
+      }
+    },
+    {
+      "instanceId": "obj3-dice-roll",
+      "componentId": "di-dice-roll",
+      "data": {
+        "title": "Roll and Say",
+        "description": "Roll the cubes, count the dots, and speak your answer out loud.",
+        "challengeType": "sum_two_dice",
+        "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+        "challenges": [
+          {
+            "id": "didr-1",
+            "challengeType": "sum_two_dice",
+            "action": "sum_two_dice",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "sides": 6,
+            "value": 6,
+            "secondValue": 6,
+            "total": 12,
+            "spokenAnswer": "twelve",
+            "asrAliases": [
+              "twelve",
+              "12"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "didr-2",
+            "challengeType": "sum_two_dice",
+            "action": "sum_two_dice",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "sides": 6,
+            "value": 6,
+            "secondValue": 5,
+            "total": 11,
+            "spokenAnswer": "eleven",
+            "asrAliases": [
+              "eleven",
+              "11"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "didr-3",
+            "challengeType": "sum_two_dice",
+            "action": "sum_two_dice",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "sides": 6,
+            "value": 6,
+            "secondValue": 1,
+            "total": 7,
+            "spokenAnswer": "seven",
+            "asrAliases": [
+              "seven",
+              "7"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "didr-4",
+            "challengeType": "sum_two_dice",
+            "action": "sum_two_dice",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "sides": 6,
+            "value": 6,
+            "secondValue": 4,
+            "total": 10,
+            "spokenAnswer": "ten",
+            "asrAliases": [
+              "ten",
+              "10"
+            ],
+            "supportTier": "easy"
+          },
+          {
+            "id": "didr-5",
+            "challengeType": "sum_two_dice",
+            "action": "sum_two_dice",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "sides": 6,
+            "value": 5,
+            "secondValue": 1,
+            "total": 6,
+            "spokenAnswer": "six",
+            "asrAliases": [
+              "six",
+              "6"
+            ],
+            "supportTier": "easy"
+          }
+        ]
+      }
+    },
+    {
+      "instanceId": "final-addition-check",
+      "componentId": "knowledge-check",
+      "data": {
+        "problems": [
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "What is 2 red apples and 3 green apples in all?",
+            "options": [
+              {
+                "id": "A",
+                "text": "4",
+                "emoji": "4️⃣"
+              },
+              {
+                "id": "B",
+                "text": "5",
+                "emoji": "5️⃣"
+              },
+              {
+                "id": "C",
+                "text": "6",
+                "emoji": "6️⃣"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "When you combine 2 red apples and 3 green apples, you count all of them together to get 5. Starting with 2 and counting 3 more (3, 4, 5) gives a total of 5 apples.",
+            "teachingNote": "Encourage students to use concrete counters or fingers to model joining two separate sets into one combined group.",
+            "successCriteria": [
+              "Combine two sets of objects to find the total quantity up to 5.",
+              "Recognize that adding 2 and 3 results in 5."
+            ],
+            "objectiveId": "obj1",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "What math sign means to put things together?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Plus sign",
+                "emoji": "➕"
+              },
+              {
+                "id": "B",
+                "text": "Minus sign",
+                "emoji": "➖"
+              },
+              {
+                "id": "C",
+                "text": "Star sign",
+                "emoji": "⭐"
+              }
+            ],
+            "correctOptionId": "A",
+            "rationale": "The plus sign shows addition, which means putting groups together to make more. When we see a plus sign, we combine things into one bigger group. The minus sign is used for taking things away instead.",
+            "teachingNote": "Use physical manipulatives like counting blocks or fingers when introducing the plus sign so students can physically bring two groups together as they say 'plus'.",
+            "successCriteria": [
+              "Identify the plus sign as the symbol used for joining or adding groups."
+            ],
+            "objectiveId": "obj2",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Start at 2 and jump forward 2 steps. Where do you land?",
+            "options": [
+              {
+                "id": "A",
+                "text": "3",
+                "emoji": "3️⃣"
+              },
+              {
+                "id": "B",
+                "text": "4",
+                "emoji": "4️⃣"
+              },
+              {
+                "id": "C",
+                "text": "5",
+                "emoji": "5️⃣"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "Starting at 2 and moving forward 2 hops lands on 4. Each jump counts forward one more number: 2 plus 1 is 3, and one more hop makes 4. So, 2 + 2 = 4!",
+            "teachingNote": "Encourage kindergarteners to use their fingers to trace hops along the line, counting each hop aloud ('one hop to 3, two hops to 4').",
+            "successCriteria": [
+              "Use a number line to add two numbers within 5",
+              "Identify the landing number after jumping forward"
+            ],
+            "inset": {
+              "insetType": "number-line",
+              "min": 0,
+              "max": 5,
+              "ticks": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "label": "Number Line",
+              "points": [
+                {
+                  "value": 2,
+                  "label": "Start"
+                },
+                {
+                  "value": 4,
+                  "label": "Land"
+                }
+              ]
+            },
+            "objectiveId": "obj1",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "true_false",
+            "id": "tf_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "statement": "When you put 2 toys and 1 toy together, you get a bigger number of toys.",
+            "correct": true,
+            "rationale": "When we combine groups of objects, like putting 2 toys together with 1 toy, the total amount grows to become a bigger number. This is the basic idea of addition, which means joining groups to find out how many there are in all.",
+            "teachingNote": "Use physical toys or counting blocks to let students physically combine groups so they can see and feel that the total count increases.",
+            "successCriteria": [
+              "Understand that combining groups increases the total amount",
+              "Recognize addition as putting things together"
+            ],
+            "objectiveId": "obj3",
+            "subject": "MATHEMATICS"
+          }
+        ],
+        "problemType": "orchestrated",
+        "topic": "addition",
+        "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+      }
+    }
+  ],
+  "scores": null,
+  "human": null
+}

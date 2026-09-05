@@ -9,13 +9,20 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-04, `/lesson-bench` item 12)
 
-> **95 rows open.** **Newest five:** #132 Lesson Bench parent card (caregiver block behind the
+> **96 rows open.** **Newest five:** #133 di-letter-sounds + letter-sound-link STOPS (t p c k h d g b now produced as clipped sounds — is a five-year-old’s clipped /t/ or its keyword accepted, and does the voice read “/t/” cleanly, not “slash tee slash”?) · #132 Lesson Bench parent card (caregiver block behind the
 > child's path; lesson-bench item 12) · #131 3d-shape-explorer (all five modes spoken; di item 18) ·
 > #130 cause-effect-chain (port 25 — yes/no per card, a chain that commits on stillness, a spoken
 > root pick; di item 29) · #129 scroll-layout lesson focus (di item 31) · #128 judged pack past
 > block 1 (di item 30).
-> Next free ID is **#133**.
+> Next free ID is **#135**.
 > Re-grep before filing; concurrent sessions in this lane are normal.
+
+### #134 — **`di-math-facts[name_numeral]`: does a ten-numeral naming block hold a five-year-old, and does the tutor stay ON the naming task?** The pack's fifth mode (lesson-bench item 20) shows one printed numeral and the child says its name aloud. Two things need an ear.
+(a) **Length.** A naming session is now sized from the objective, not the pack default: "1 through 10" builds TEN items, where every other mode ships five. Ten DISTAR model→guide→test reps is the pedagogically right coverage (the coverage judge scored five items ASSESSED_INSUFFICIENTLY — "3, 5, 6, 7 and 8 are omitted") but it is untested against a real K attention span. If ten drags, the answer is a manifest-side split into two blocks, not a silent cap back to five.
+(b) **The improvised deflection.** In the 3-run live pass one run answered the answer-fish with *"I can't tell you the answer, but... Do you know what comes after one? This is that number!"* — a COUNTING route offered on a NAMING task, and it hands over the answer by implication. The scripted lines are clean (the judging contract drops the counting-route clause for this mode); this is the model's own recovery wording, so it needs an ear rather than a prompt edit on spec.
+Headless: 3/3 fresh lesson generations PASS at coverage 1.00 (obj2 ASSESSED_INDIRECTLY → ASSESSED_SUFFICIENTLY), live tutor-test PASS 3/3 no findings, answer withheld 3/3. `qa/tutor-reports/di-math-facts-live-lesson-2026-09-05.md`. · OPEN
+
+### #133 — **di-letter-sounds & letter-sound-link: can a Kindergartener PRODUCE the eight stop sounds (t p c k h d g b)?** The 2026-09-05 ruling admits stops as CLIPPED sounds (“articulation: clipped”): the judge accepts a short release, a schwa (“tuh”), OR a word that starts with the sound (“tent”), and refuses the letter NAME. Two things need an ear: (a) the tutor voice must say the stop as a sound, not read the notation “/t/” aloud; (b) a real child’s clipped attempt must be judged fairly at speed. Headless: generator 264/264, every named letter of Groups 1-3 now has a production item (`lesson-coverage-replicate.mjs truth`, all AGREE — no gap), coverage judge PASS on phonics-1. `qa/lesson-coverage/replicate-2026-09-05-postfix/`. · OPEN
 
 ### #132 — **Lesson Bench parent card: does the take-home block sit BEHIND the child's path on the Kindergarten stage, and does the scroll layout's frame read as "for a grown-up"?** · OPEN
 

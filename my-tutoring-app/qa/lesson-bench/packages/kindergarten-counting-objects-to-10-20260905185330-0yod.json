@@ -1,0 +1,1430 @@
+{
+ "benchVersion": 1,
+ "id": "kindergarten-counting-objects-to-10-20260905185330-0yod",
+ "subskill": null,
+ "provenance": {
+  "generatedAt": "2026-09-05T18:53:30.472Z",
+  "source": "topic-trace",
+  "topic": "Counting objects to 10",
+  "gradeLevel": "kindergarten",
+  "gitSha": null,
+  "promptHash": null,
+  "generationRequest": {
+   "topic": "Counting objects to 10",
+   "gradeLevel": "kindergarten",
+   "package": true,
+   "objectives": [
+    {
+     "id": "obj1",
+     "text": "Count a group of up to 10 real objects by touching them one by one",
+     "verb": "apply",
+     "icon": "check"
+    },
+    {
+     "id": "obj2",
+     "text": "Recognize and name the written numbers 1 through 10 in order",
+     "verb": "identify",
+     "icon": "search"
+    }
+   ],
+   "curatorBrief": {
+    "primitive": "intro_briefing",
+    "topic": "Counting objects to 10",
+    "subject": "General",
+    "gradeLevel": "kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+     "type": "scenario",
+     "content": "Imagine you have a basket of shiny red apples and you want to share them with your friends at snack time. How do you make sure everyone gets one and you know how many you have altogether?",
+     "visual": "🧮"
+    },
+    "bigIdea": {
+     "statement": "Every object in a group gets one number, and the last number we say tells us the total amount.",
+     "whyItMatters": "Counting helps us share toys, set the table, and figure out how many things we have every single day!"
+    },
+    "objectives": [
+     {
+      "id": "obj1",
+      "text": "Count a group of up to 10 real objects by touching them one by one",
+      "verb": "apply",
+      "icon": "check"
+     },
+     {
+      "id": "obj2",
+      "text": "Recognize and name the written numbers 1 through 10 in order",
+      "verb": "identify",
+      "icon": "search"
+     }
+    ],
+    "prerequisites": {
+     "shouldKnow": [
+      "Saying numbers from one to ten in the correct order",
+      "Pointing at things with a finger"
+     ],
+     "quickCheck": {
+      "question": "Can you point to your fingers and count out loud from 1 to 5?",
+      "answer": "1, 2, 3, 4, 5",
+      "hint": "Start with your thumb and touch each finger one at a time!"
+     }
+    },
+    "roadmap": [
+     {
+      "phase": "Explore",
+      "description": "Touch and count real items like blocks and toys",
+      "activities": [
+       "Touch and count toy cars",
+       "Line up counting bears"
+      ]
+     },
+     {
+      "phase": "Learn",
+      "description": "Connect groups of items to their number names",
+      "activities": [
+       "Match object groups to written numbers",
+       "Practice the finger-pointing counting trick"
+      ]
+     },
+     {
+      "phase": "Play",
+      "description": "Show what we know with fun counting games",
+      "activities": [
+       "Count clapping sounds together",
+       "Find hidden objects in the room"
+      ]
+     }
+    ],
+    "connections": {
+     "buildingFrom": [
+      "Rote counting out loud with songs and rhymes",
+      "Comparing groups to see which has more or less"
+     ],
+     "leadingTo": [
+      "Counting numbers all the way up to 20 and beyond",
+      "Adding and subtracting small groups of objects"
+     ],
+     "realWorld": [
+      "Counting how many crayons are in the box",
+      "Counting steps while walking to the playground",
+      "Counting plates needed for dinner"
+     ]
+    },
+    "mindset": {
+     "encouragement": "Sometimes we might count a toy twice or go too fast, and that is totally okay! Counting is like a superpower that gets stronger the more we practice.",
+     "growthTip": "Use your finger to touch each object slowly as you say its number so you don't skip any!"
+    }
+   }
+  }
+ },
+ "manifest": {
+  "topic": "Counting objects to 10",
+  "gradeLevel": "kindergarten",
+  "subject": "MATHEMATICS",
+  "themeColor": "#22c55e",
+  "curatorBrief": {
+   "instanceId": "intro-curator-brief",
+   "title": "Welcome to Counting World: Up to 10!",
+   "intent": "Welcome Kindergarten learners with a playful, audio-first hook about counting cheerful objects one by one and meeting the written numbers from 1 to 10."
+  },
+  "objectiveBlocks": [
+   {
+    "objectiveId": "obj1",
+    "objectiveText": "Count a group of up to 10 real objects by touching them one by one [apply]",
+    "objectiveVerb": "apply",
+    "components": [
+     {
+      "componentId": "ten-frame",
+      "instanceId": "obj1-ten-frame",
+      "title": "Fill the Frame: Touch and Place Counters",
+      "intent": "Introduce one-to-one correspondence up to 10 using a concrete single 2x5 ten-frame. Guide the child to touch and place one counter per slot while saying the count aloud.",
+      "config": {
+       "count": 4,
+       "difficulty": "easy",
+       "targetEvalMode": "build"
+      }
+     },
+     {
+      "componentId": "counting-board",
+      "instanceId": "obj1-counting-board",
+      "title": "Touch and Count the Objects",
+      "intent": "Provide hands-on practice touching scattered and lined groups of familiar objects (bears, stars, apples) up to 10 one at a time, reinforcing the cardinality principle by stating how many there are in all.",
+      "config": {
+       "count": 5,
+       "difficulty": "medium",
+       "targetEvalMode": "count"
+      }
+     },
+     {
+      "componentId": "take-home-activity",
+      "instanceId": "obj1-take-home-activity",
+      "title": "Everyday Counting Treasure Hunt",
+      "intent": "Prompt caregivers to practice one-to-one touch counting at home with real items like buttons, toy cars, or socks up to 10.",
+      "config": {
+       "difficulty": "easy"
+      }
+     }
+    ]
+   },
+   {
+    "objectiveId": "obj2",
+    "objectiveText": "Recognize and name the written numbers 1 through 10 in order [identify]",
+    "objectiveVerb": "identify",
+    "components": [
+     {
+      "componentId": "hundreds-chart",
+      "instanceId": "obj2-hundreds-chart",
+      "title": "Explore Numbers 1 to 10 in Order",
+      "intent": "Display a simple, single-row 1-10 visual grid. Let students tap and highlight numbers sequentially from 1 to 10 to notice their ordered progression.",
+      "config": {
+       "count": 5,
+       "difficulty": "easy",
+       "targetEvalMode": "highlight_sequence"
+      }
+     },
+     {
+      "componentId": "di-math-facts",
+      "instanceId": "obj2-di-math-facts",
+      "title": "Say the Written Number",
+      "intent": "Show single written numerals from 1 through 10 in isolation and have the student speak the number name aloud into the microphone with live DI tutor affirmation.",
+      "config": {
+       "count": 6,
+       "difficulty": "easy",
+       "targetEvalMode": "name_numeral"
+      }
+     },
+     {
+      "componentId": "number-sequencer",
+      "instanceId": "obj2-number-sequencer",
+      "title": "The Number Train: Order 1 to 10",
+      "intent": "Engage students in ordering shuffled numeral cards from 1 to 10 and filling in simple missing numbers along a train sequence within 1-10.",
+      "config": {
+       "count": 4,
+       "difficulty": "medium",
+       "targetEvalMode": "order_cards"
+      }
+     }
+    ]
+   }
+  ],
+  "finalAssessment": {
+   "componentId": "knowledge-check",
+   "instanceId": "final-knowledge-check",
+   "title": "Counting Champions Checkup",
+   "intent": "Assess both objectives together: touch-counting a set of objects up to 10 to find total quantity, and identifying the correct written numerals in order.",
+   "config": {
+    "count": 4,
+    "targetEvalMode": "recall|apply"
+   }
+  },
+  "layout": [
+   {
+    "componentId": "curator-brief",
+    "instanceId": "intro-curator-brief",
+    "title": "Welcome to Counting World: Up to 10!",
+    "intent": "Welcome Kindergarten learners with a playful, audio-first hook about counting cheerful objects one by one and meeting the written numbers from 1 to 10.",
+    "objectiveIds": [
+     "obj1",
+     "obj2"
+    ]
+   },
+   {
+    "componentId": "ten-frame",
+    "instanceId": "obj1-ten-frame",
+    "title": "Fill the Frame: Touch and Place Counters",
+    "intent": "Introduce one-to-one correspondence up to 10 using a concrete single 2x5 ten-frame. Guide the child to touch and place one counter per slot while saying the count aloud.",
+    "config": {
+     "count": 4,
+     "difficulty": "easy",
+     "targetEvalMode": "build",
+     "objectiveId": "obj1",
+     "objectiveText": "Count a group of up to 10 real objects by touching them one by one",
+     "objectiveVerb": "apply",
+     "objectiveGrade": "kindergarten",
+     "intent": "Introduce one-to-one correspondence up to 10 using a concrete single 2x5 ten-frame. Guide the child to touch and place one counter per slot while saying the count aloud."
+    },
+    "objectiveIds": [
+     "obj1"
+    ]
+   },
+   {
+    "componentId": "counting-board",
+    "instanceId": "obj1-counting-board",
+    "title": "Touch and Count the Objects",
+    "intent": "Provide hands-on practice touching scattered and lined groups of familiar objects (bears, stars, apples) up to 10 one at a time, reinforcing the cardinality principle by stating how many there are in all.",
+    "config": {
+     "count": 5,
+     "difficulty": "medium",
+     "targetEvalMode": "count",
+     "objectiveId": "obj1",
+     "objectiveText": "Count a group of up to 10 real objects by touching them one by one",
+     "objectiveVerb": "apply",
+     "objectiveGrade": "kindergarten",
+     "intent": "Provide hands-on practice touching scattered and lined groups of familiar objects (bears, stars, apples) up to 10 one at a time, reinforcing the cardinality principle by stating how many there are in all."
+    },
+    "objectiveIds": [
+     "obj1"
+    ]
+   },
+   {
+    "componentId": "take-home-activity",
+    "instanceId": "obj1-take-home-activity",
+    "title": "Everyday Counting Treasure Hunt",
+    "intent": "Prompt caregivers to practice one-to-one touch counting at home with real items like buttons, toy cars, or socks up to 10.",
+    "config": {
+     "difficulty": "easy",
+     "objectiveId": "obj1",
+     "objectiveText": "Count a group of up to 10 real objects by touching them one by one",
+     "objectiveVerb": "apply",
+     "objectiveGrade": "kindergarten",
+     "intent": "Prompt caregivers to practice one-to-one touch counting at home with real items like buttons, toy cars, or socks up to 10."
+    },
+    "objectiveIds": [
+     "obj1"
+    ]
+   },
+   {
+    "componentId": "hundreds-chart",
+    "instanceId": "obj2-hundreds-chart",
+    "title": "Explore Numbers 1 to 10 in Order",
+    "intent": "Display a simple, single-row 1-10 visual grid. Let students tap and highlight numbers sequentially from 1 to 10 to notice their ordered progression.",
+    "config": {
+     "count": 5,
+     "difficulty": "easy",
+     "targetEvalMode": "highlight_sequence",
+     "objectiveId": "obj2",
+     "objectiveText": "Recognize and name the written numbers 1 through 10 in order",
+     "objectiveVerb": "identify",
+     "objectiveGrade": "kindergarten",
+     "intent": "Display a simple, single-row 1-10 visual grid. Let students tap and highlight numbers sequentially from 1 to 10 to notice their ordered progression."
+    },
+    "objectiveIds": [
+     "obj2"
+    ]
+   },
+   {
+    "componentId": "di-math-facts",
+    "instanceId": "obj2-di-math-facts",
+    "title": "Say the Written Number",
+    "intent": "Show single written numerals from 1 through 10 in isolation and have the student speak the number name aloud into the microphone with live DI tutor affirmation.",
+    "config": {
+     "count": 6,
+     "difficulty": "easy",
+     "targetEvalMode": "name_numeral",
+     "objectiveId": "obj2",
+     "objectiveText": "Recognize and name the written numbers 1 through 10 in order",
+     "objectiveVerb": "identify",
+     "objectiveGrade": "kindergarten",
+     "intent": "Show single written numerals from 1 through 10 in isolation and have the student speak the number name aloud into the microphone with live DI tutor affirmation."
+    },
+    "objectiveIds": [
+     "obj2"
+    ]
+   },
+   {
+    "componentId": "number-sequencer",
+    "instanceId": "obj2-number-sequencer",
+    "title": "The Number Train: Order 1 to 10",
+    "intent": "Engage students in ordering shuffled numeral cards from 1 to 10 and filling in simple missing numbers along a train sequence within 1-10.",
+    "config": {
+     "count": 4,
+     "difficulty": "medium",
+     "targetEvalMode": "order_cards",
+     "objectiveId": "obj2",
+     "objectiveText": "Recognize and name the written numbers 1 through 10 in order",
+     "objectiveVerb": "identify",
+     "objectiveGrade": "kindergarten",
+     "intent": "Engage students in ordering shuffled numeral cards from 1 to 10 and filling in simple missing numbers along a train sequence within 1-10."
+    },
+    "objectiveIds": [
+     "obj2"
+    ]
+   },
+   {
+    "componentId": "knowledge-check",
+    "instanceId": "final-knowledge-check",
+    "title": "Counting Champions Checkup",
+    "intent": "Assess both objectives together: touch-counting a set of objects up to 10 to find total quantity, and identifying the correct written numerals in order.",
+    "config": {
+     "count": 4,
+     "targetEvalMode": "recall|apply",
+     "objectiveGrade": "kindergarten",
+     "lessonObjectives": [
+      {
+       "id": "obj1",
+       "text": "Count a group of up to 10 real objects by touching them one by one",
+       "grade": "kindergarten"
+      },
+      {
+       "id": "obj2",
+       "text": "Recognize and name the written numbers 1 through 10 in order",
+       "grade": "kindergarten"
+      }
+     ]
+    },
+    "objectiveIds": [
+     "obj1",
+     "obj2"
+    ]
+   }
+  ]
+ },
+ "curatorBrief": {
+  "primitive": "intro_briefing",
+  "topic": "Counting objects to 10",
+  "subject": "General",
+  "gradeLevel": "kindergarten",
+  "estimatedTime": "15-20 minutes",
+  "hook": {
+   "type": "scenario",
+   "content": "Imagine you have a basket of shiny red apples and you want to share them with your friends at snack time. How do you make sure everyone gets one and you know how many you have altogether?",
+   "visual": "🧮"
+  },
+  "bigIdea": {
+   "statement": "Every object in a group gets one number, and the last number we say tells us the total amount.",
+   "whyItMatters": "Counting helps us share toys, set the table, and figure out how many things we have every single day!"
+  },
+  "objectives": [
+   {
+    "id": "obj1",
+    "text": "Count a group of up to 10 real objects by touching them one by one",
+    "verb": "apply",
+    "icon": "check"
+   },
+   {
+    "id": "obj2",
+    "text": "Recognize and name the written numbers 1 through 10 in order",
+    "verb": "identify",
+    "icon": "search"
+   }
+  ],
+  "prerequisites": {
+   "shouldKnow": [
+    "Saying numbers from one to ten in the correct order",
+    "Pointing at things with a finger"
+   ],
+   "quickCheck": {
+    "question": "Can you point to your fingers and count out loud from 1 to 5?",
+    "answer": "1, 2, 3, 4, 5",
+    "hint": "Start with your thumb and touch each finger one at a time!"
+   }
+  },
+  "roadmap": [
+   {
+    "phase": "Explore",
+    "description": "Touch and count real items like blocks and toys",
+    "activities": [
+     "Touch and count toy cars",
+     "Line up counting bears"
+    ]
+   },
+   {
+    "phase": "Learn",
+    "description": "Connect groups of items to their number names",
+    "activities": [
+     "Match object groups to written numbers",
+     "Practice the finger-pointing counting trick"
+    ]
+   },
+   {
+    "phase": "Play",
+    "description": "Show what we know with fun counting games",
+    "activities": [
+     "Count clapping sounds together",
+     "Find hidden objects in the room"
+    ]
+   }
+  ],
+  "connections": {
+   "buildingFrom": [
+    "Rote counting out loud with songs and rhymes",
+    "Comparing groups to see which has more or less"
+   ],
+   "leadingTo": [
+    "Counting numbers all the way up to 20 and beyond",
+    "Adding and subtracting small groups of objects"
+   ],
+   "realWorld": [
+    "Counting how many crayons are in the box",
+    "Counting steps while walking to the playground",
+    "Counting plates needed for dinner"
+   ]
+  },
+  "mindset": {
+   "encouragement": "Sometimes we might count a toy twice or go too fast, and that is totally okay! Counting is like a superpower that gets stronger the more we practice.",
+   "growthTip": "Use your finger to touch each object slowly as you say its number so you don't skip any!"
+  }
+ },
+ "components": [
+  {
+   "instanceId": "obj1-ten-frame",
+   "componentId": "ten-frame",
+   "data": {
+    "title": "Counting Objects to 10",
+    "description": "Practice counting objects up to 10 using a single ten frame with one-to-one correspondence.",
+    "mode": "single",
+    "counters": {
+     "count": 0,
+     "color": "red",
+     "positions": []
+    },
+    "challenges": [
+     {
+      "id": "c1",
+      "type": "build",
+      "targetCount": 2,
+      "hint": "Try placing two red counters on the top row, one by one.",
+      "narration": "Let's start by placing two counters on the frame. Count with me as you place them!",
+      "instruction": "Put 2 counters on the ten frame!"
+     },
+     {
+      "id": "c2",
+      "type": "build",
+      "targetCount": 4,
+      "hint": "Fill the first four spots in the top row carefully.",
+      "narration": "Great job! Now let's place four counters on the frame.",
+      "instruction": "Put 4 counters on the ten frame!"
+     },
+     {
+      "id": "c3",
+      "type": "build",
+      "targetCount": 5,
+      "hint": "Remember, a full top row is five counters!",
+      "narration": "Can you fill the entire top row? That's five counters in all.",
+      "instruction": "Put 5 counters on the ten frame!"
+     },
+     {
+      "id": "c4",
+      "type": "build",
+      "targetCount": 6,
+      "hint": "Fill the top row completely, and then place one more counter on the bottom row.",
+      "narration": "Now let's go past five. Place six counters on the frame.",
+      "instruction": "Put 6 counters on the ten frame!"
+     },
+     {
+      "id": "c5",
+      "type": "build",
+      "targetCount": 7,
+      "hint": "Put five on the top row and two on the bottom row.",
+      "narration": "Let's build the number seven on our ten frame.",
+      "instruction": "Put 7 counters on the ten frame!"
+     },
+     {
+      "id": "c6",
+      "type": "build",
+      "targetCount": 8,
+      "hint": "Fill the top row and add three more counters on the bottom.",
+      "narration": "You are doing wonderful! Can you place eight counters on the frame?",
+      "instruction": "Put 8 counters on the ten frame!"
+     },
+     {
+      "id": "c7",
+      "type": "build",
+      "targetCount": 10,
+      "hint": "Fill every single space on the top and bottom rows!",
+      "narration": "For our final challenge, let's fill the entire ten frame with ten counters!",
+      "instruction": "Put 10 counters on the ten frame!"
+     }
+    ],
+    "showOptions": {
+     "showCount": true,
+     "showEquation": false,
+     "showEmptyCount": false,
+     "allowFlip": false
+    },
+    "gradeBand": "K",
+    "twoColorMode": {
+     "enabled": false,
+     "color1Count": 0,
+     "color2Count": 0,
+     "color1": "red",
+     "color2": "yellow"
+    }
+   }
+  },
+  {
+   "instanceId": "obj1-counting-board",
+   "componentId": "counting-board",
+   "data": {
+    "title": "Count the Butterflies!",
+    "description": "Practice counting colorful butterflies up to 10 one at a time to learn cardinality.",
+    "objects": {
+     "type": "butterflies"
+    },
+    "challenges": [
+     {
+      "id": "c1",
+      "type": "count_all",
+      "instruction": "Can you count all the butterflies? Touch each one!",
+      "targetAnswer": 4,
+      "count": 4,
+      "arrangement": "line",
+      "hint": "Try touching each butterfly slowly from left to right.",
+      "narration": "Let us count the butterflies together in a row!"
+     },
+     {
+      "id": "c2",
+      "type": "count_all",
+      "instruction": "How many butterflies are flying here? Tap them one by one!",
+      "targetAnswer": 6,
+      "count": 6,
+      "arrangement": "scattered",
+      "hint": "Make sure you tap every butterfly only once.",
+      "narration": "These butterflies are scattered around. Let us find and count every single one."
+     },
+     {
+      "id": "c3",
+      "type": "count_all",
+      "instruction": "Look at these butterflies! Can you count them all?",
+      "targetAnswer": 5,
+      "count": 5,
+      "arrangement": "line",
+      "hint": "Count them carefully as you touch each one.",
+      "narration": "Here is another line of pretty butterflies. Let us count them."
+     },
+     {
+      "id": "c4",
+      "type": "count_all",
+      "instruction": "Let us count this group of butterflies together!",
+      "targetAnswer": 8,
+      "count": 8,
+      "arrangement": "scattered",
+      "hint": "Take your time and tap each butterfly as you count.",
+      "narration": "Look at all these active butterflies! Count them to see how many there are."
+     },
+     {
+      "id": "c5",
+      "type": "count_all",
+      "instruction": "Can you count this neat row of butterflies?",
+      "targetAnswer": 7,
+      "count": 7,
+      "arrangement": "line",
+      "hint": "Start from the left and count each butterfly in order.",
+      "narration": "They are lined up nicely. Let us count them one by one."
+     },
+     {
+      "id": "c6",
+      "type": "count_all",
+      "instruction": "How many butterflies do you see in this group? Tap to count!",
+      "targetAnswer": 9,
+      "count": 9,
+      "arrangement": "scattered",
+      "hint": "Keep going! Touch each butterfly until none are left.",
+      "narration": "Getting higher! Let us count this fun group of butterflies."
+     },
+     {
+      "id": "c7",
+      "type": "count_all",
+      "instruction": "Can you count our biggest group of butterflies today?",
+      "targetAnswer": 10,
+      "count": 10,
+      "arrangement": "scattered",
+      "hint": "Count slowly and steadily to reach ten!",
+      "narration": "This is our final challenge with ten lovely butterflies. Let us count them all!"
+     }
+    ],
+    "showOptions": {
+     "showRunningCount": false,
+     "showGroupCircles": false,
+     "highlightOnTap": true,
+     "showLastNumber": true
+    },
+    "gradeBand": "K"
+   }
+  },
+  {
+   "instanceId": "obj1-take-home-activity",
+   "componentId": "take-home-activity",
+   "data": {
+    "id": "ten-treasure-trackers",
+    "title": "Ten-Treasure Trail: The Touch-and-Count Quest",
+    "subject": "Math",
+    "topic": "One-to-One Correspondence and Counting to 10",
+    "gradeRange": "K-2",
+    "estimatedTime": "20-30 minutes",
+    "overview": "Embark on an indoor treasure hunt to collect ten special household objects and build your very own counting trail! Young mathematicians will discover the power of touch-counting and learn the golden rule of counting: the last number you say tells you how many you have in all.",
+    "learningObjectives": [
+     "Demonstrate one-to-one correspondence by touching or moving exactly one object for each counting number spoken up to 10.",
+     "Apply the cardinality principle by stating that the last number counted represents the total number in the group.",
+     "Organize a scattered set of objects into a straight row or sequence to count accurately without skipping or double-counting."
+    ],
+    "materials": [
+     {
+      "item": "Small household objects",
+      "quantity": "10 items",
+      "essential": true,
+      "examples": [
+       "clean rolled socks",
+       "toy cars",
+       "large buttons",
+       "plastic spoons",
+       "blocks"
+      ],
+      "substitutes": [
+       "crayons",
+       "jumbo pasta shells",
+       "hair scrunchies"
+      ]
+     },
+     {
+      "item": "Large sheet of paper",
+      "quantity": "1 sheet",
+      "essential": true,
+      "examples": [
+       "construction paper",
+       "printer paper"
+      ],
+      "substitutes": [
+       "opened cereal box",
+       "baking sheet",
+       "tabletop with painter tape marks"
+      ]
+     },
+     {
+      "item": "Washable marker or crayon",
+      "quantity": "1",
+      "essential": true,
+      "substitutes": [
+       "colored pencil",
+       "dot sticker"
+      ]
+     },
+     {
+      "item": "Small basket or collection container",
+      "quantity": "1",
+      "essential": false,
+      "examples": [
+       "shoebox",
+       "clean mixing bowl",
+       "plastic bucket"
+      ],
+      "substitutes": [
+       "paper grocery bag",
+       "pillowcase"
+      ]
+     },
+     {
+      "item": "Sticky notes or scrap paper squares",
+      "quantity": "10 small squares",
+      "essential": false,
+      "substitutes": [
+       "index cards cut in half",
+       "jar lids"
+      ]
+     }
+    ],
+    "steps": [
+     {
+      "stepNumber": 1,
+      "title": "The Treasure Hunt",
+      "instruction": "Walk through your living space with your helper and find up to 10 small, interesting items to put in your basket. Pick safe, easy-to-hold objects like clean socks, toy cars, or plastic spoons.",
+      "tip": "Choose objects that do not roll away easily to make counting smoother later!"
+     },
+     {
+      "stepNumber": 2,
+      "title": "Build the Counting Runway",
+      "instruction": "Lay your large piece of paper flat on a table or the floor. With your helper, draw a straight line of 10 big circles across the paper to make landing spots for your treasures.",
+      "checkpoint": {
+       "question": "Can you touch each circle on the paper with your finger and confirm there are 10 landing spots?",
+       "type": "confirm"
+      },
+      "tip": "If the paper is too small, make two rows of 5 circles like a 10-frame!"
+     },
+     {
+      "stepNumber": 3,
+      "title": "Touch-and-Park Each Item",
+      "instruction": "Take one item out of your basket at a time. Place it onto the first circle and clearly say, 'One!' Place the next item on the second circle and say, 'Two!' Continue placing and saying one number at a time until each circle has one object.",
+      "scienceNote": "Matching one spoken number word to one physical object is called one-to-one correspondence. Touching the object as you speak locks the brain to that specific item.",
+      "tip": "Say the number at the exact second your fingers gently touch the item."
+     },
+     {
+      "stepNumber": 4,
+      "title": "The Big Reveal Checkpoint",
+      "instruction": "Take your pointer finger and tap each object one more time, starting from number 1 all the way across to the end.",
+      "checkpoint": {
+       "question": "What is the final number you say when you touch your last treasure?",
+       "type": "count"
+      },
+      "scienceNote": "The cardinality principle means the final number you say is the total amount in your set. You do not need to start over to know how many you have!"
+     },
+     {
+      "stepNumber": 5,
+      "title": "The Pile Scramble Challenge",
+      "instruction": "Scoop all 10 treasures into a messy heap on one side of the paper. Practice 'move-and-count': slide one item across to a clean side of the paper as you say each number. See if you reach the exact same count when moving them out of a pile.",
+      "checkpoint": {
+       "question": "What happens if you move the items into a 'done' pile as you count them instead of leaving them in a jumble?",
+       "type": "reflection"
+      },
+      "tip": "Moving counted items into a new pile keeps you from accidentally counting the same treasure twice."
+     }
+    ],
+    "reflectionPrompts": [
+     {
+      "question": "What trick helped you the most so you didn't count the same toy two times?",
+      "connectionTo": "Demonstrate one-to-one correspondence by touching or moving exactly one object for each counting number spoken up to 10.",
+      "hint": "Think about what your fingers did with each object as you said the number."
+     },
+     {
+      "question": "If you mix your 10 treasures into a circle or a snake shape, how many treasures will you have? Do you need to recount them to be sure?",
+      "connectionTo": "Apply the cardinality principle by stating that the last number counted represents the total number in the group.",
+      "hint": "Did any items disappear or did any new items appear when you moved them?"
+     },
+     {
+      "question": "Where else in your house can you use your touch-counting superpower to find out how many there are?",
+      "connectionTo": "Organize a scattered set of objects into a straight row or sequence to count accurately without skipping or double-counting.",
+      "hint": "Look around your kitchen table, your bookshelf, or your shoe rack!"
+     }
+    ],
+    "documentationPrompt": {
+     "instruction": "Take a photo of your student with their finger pointing to the 10th item on their completed counting runway.",
+     "suggestedCaption": "I went on a treasure hunt and counted [10] [name of items] using my touch-and-count runway! The last number I said was [10], so that tells me the total!"
+    },
+    "extensions": [
+     {
+      "title": "Blastoff Countdown",
+      "description": "Start at your 10th object and touch each item going backward toward number 1: '10, 9, 8, 7, 6, 5, 4, 3, 2, 1, BLASTOFF!' Lift your hands into the air like a rocket!",
+      "difficulty": "intermediate"
+     },
+     {
+      "title": "The Mystery Thief",
+      "description": "Close your eyes while your helper hides 1, 2, or 3 items behind their back. Open your eyes, count your runway spots, and determine how many items are missing.",
+      "difficulty": "intermediate"
+     }
+    ],
+    "safetyNotes": [
+     "Adult helper recommended for all parts of this activity.",
+     "Use items that are larger than 1.5 inches in diameter to avoid choking risks, especially if younger children or toddlers share the home.",
+     "Walk carefully while searching for treasures to avoid slips or falls."
+    ]
+   }
+  },
+  {
+   "instanceId": "obj2-hundreds-chart",
+   "componentId": "hundreds-chart",
+   "data": {
+    "title": "Tiny Step Safari!",
+    "description": "Join the friendly animals as you explore counting numbers up to ten on the chart.",
+    "challenges": [
+     {
+      "id": "c1",
+      "type": "highlight_sequence",
+      "instruction": "Tap the numbers in order, one at a time, all the way to 10. Tip: say each number out loud as you tap it.",
+      "skipValue": 1,
+      "startNumber": 1,
+      "givenCells": [],
+      "correctCells": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Try pointing to each number in order as you say them out loud.",
+      "supportTier": "easy"
+     },
+     {
+      "id": "c2",
+      "type": "highlight_sequence",
+      "instruction": "Count by 2s and tap every number you land on, all the way to 10.",
+      "skipValue": 2,
+      "startNumber": 2,
+      "givenCells": [],
+      "correctCells": [
+       2,
+       4,
+       6,
+       8,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Hop over one number every time you make a jump!",
+      "supportTier": "easy"
+     },
+     {
+      "id": "c3",
+      "type": "highlight_sequence",
+      "instruction": "Tap the numbers in order, one at a time, all the way to 10. Tip: say each number out loud as you tap it.",
+      "skipValue": 1,
+      "startNumber": 1,
+      "givenCells": [],
+      "correctCells": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Check the very next box to find your next step.",
+      "supportTier": "easy"
+     },
+     {
+      "id": "c4",
+      "type": "highlight_sequence",
+      "instruction": "Count by 2s and tap every number you land on, all the way to 10.",
+      "skipValue": 2,
+      "startNumber": 2,
+      "givenCells": [],
+      "correctCells": [
+       2,
+       4,
+       6,
+       8,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Listen to the rhythm of skipping a number between each tap.",
+      "supportTier": "easy"
+     },
+     {
+      "id": "c5",
+      "type": "highlight_sequence",
+      "instruction": "Tap the numbers in order, one at a time, all the way to 10. Tip: say each number out loud as you tap it.",
+      "skipValue": 1,
+      "startNumber": 1,
+      "givenCells": [],
+      "correctCells": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Keep going forward one cozy step at a time.",
+      "supportTier": "easy"
+     },
+     {
+      "id": "c6",
+      "type": "highlight_sequence",
+      "instruction": "Count by 2s and tap every number you land on, all the way to 10.",
+      "skipValue": 2,
+      "startNumber": 2,
+      "givenCells": [],
+      "correctCells": [
+       2,
+       4,
+       6,
+       8,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "Imagine you are a bouncy frog leaping over every other number.",
+      "supportTier": "easy"
+     },
+     {
+      "id": "c7",
+      "type": "highlight_sequence",
+      "instruction": "Tap the numbers in order, one at a time, all the way to 10. Tip: say each number out loud as you tap it.",
+      "skipValue": 1,
+      "startNumber": 1,
+      "givenCells": [],
+      "correctCells": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "correctAnswer": "",
+      "options": [],
+      "hint": "You are almost at the end of the line, take one final step.",
+      "supportTier": "easy"
+     }
+    ],
+    "gridMax": 10,
+    "gradeBand": "1"
+   }
+  },
+  {
+   "instanceId": "obj2-di-math-facts",
+   "componentId": "di-math-facts",
+   "data": {
+    "title": "Super Star Reading",
+    "description": "Let us practice saying the special number names out loud together!",
+    "challengeType": "name_numeral",
+    "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+    "challenges": [
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "three",
+      "answerNumeral": 3,
+      "asrAliases": [
+       "three",
+       "3",
+       "free",
+       "tree"
+      ],
+      "id": "dimf-1-id3",
+      "a": 3,
+      "b": 0,
+      "display": "3",
+      "problem": "this number",
+      "solvedDisplay": "3 = three",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "ten",
+      "answerNumeral": 10,
+      "asrAliases": [
+       "ten",
+       "10",
+       "tin"
+      ],
+      "id": "dimf-2-id10",
+      "a": 10,
+      "b": 0,
+      "display": "10",
+      "problem": "this number",
+      "solvedDisplay": "10 = ten",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "two",
+      "answerNumeral": 2,
+      "asrAliases": [
+       "two",
+       "2",
+       "to",
+       "too"
+      ],
+      "id": "dimf-3-id2",
+      "a": 2,
+      "b": 0,
+      "display": "2",
+      "problem": "this number",
+      "solvedDisplay": "2 = two",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "four",
+      "answerNumeral": 4,
+      "asrAliases": [
+       "four",
+       "4",
+       "for",
+       "fore"
+      ],
+      "id": "dimf-4-id4",
+      "a": 4,
+      "b": 0,
+      "display": "4",
+      "problem": "this number",
+      "solvedDisplay": "4 = four",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "seven",
+      "answerNumeral": 7,
+      "asrAliases": [
+       "seven",
+       "7"
+      ],
+      "id": "dimf-5-id7",
+      "a": 7,
+      "b": 0,
+      "display": "7",
+      "problem": "this number",
+      "solvedDisplay": "7 = seven",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "eight",
+      "answerNumeral": 8,
+      "asrAliases": [
+       "eight",
+       "8",
+       "ate"
+      ],
+      "id": "dimf-6-id8",
+      "a": 8,
+      "b": 0,
+      "display": "8",
+      "problem": "this number",
+      "solvedDisplay": "8 = eight",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "one",
+      "answerNumeral": 1,
+      "asrAliases": [
+       "one",
+       "1",
+       "won"
+      ],
+      "id": "dimf-7-id1",
+      "a": 1,
+      "b": 0,
+      "display": "1",
+      "problem": "this number",
+      "solvedDisplay": "1 = one",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "nine",
+      "answerNumeral": 9,
+      "asrAliases": [
+       "nine",
+       "9"
+      ],
+      "id": "dimf-8-id9",
+      "a": 9,
+      "b": 0,
+      "display": "9",
+      "problem": "this number",
+      "solvedDisplay": "9 = nine",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "five",
+      "answerNumeral": 5,
+      "asrAliases": [
+       "five",
+       "5"
+      ],
+      "id": "dimf-9-id5",
+      "a": 5,
+      "b": 0,
+      "display": "5",
+      "problem": "this number",
+      "solvedDisplay": "5 = five",
+      "supportTier": "easy"
+     },
+     {
+      "challengeType": "name_numeral",
+      "answerWord": "six",
+      "answerNumeral": 6,
+      "asrAliases": [
+       "six",
+       "6",
+       "sick"
+      ],
+      "id": "dimf-10-id6",
+      "a": 6,
+      "b": 0,
+      "display": "6",
+      "problem": "this number",
+      "solvedDisplay": "6 = six",
+      "supportTier": "easy"
+     }
+    ],
+    "facts": "3, 10, 2, 4, 7, 8, 1, 9, 5, 6"
+   }
+  },
+  {
+   "instanceId": "obj2-number-sequencer",
+   "componentId": "number-sequencer",
+   "data": {
+    "title": "Fun Number Train: 1 to 10",
+    "description": "Help the little train sort its number cards in the correct order from 1 to 10!",
+    "challenges": [
+     {
+      "id": "seq1",
+      "type": "order-cards",
+      "instruction": "Can you put these number cards in order from the smallest to the biggest?",
+      "sequence": [
+       2,
+       1,
+       4,
+       3
+      ],
+      "correctAnswers": [
+       1,
+       2,
+       3,
+       4
+      ],
+      "rangeMin": 1,
+      "rangeMax": 4
+     },
+     {
+      "id": "seq2",
+      "type": "order-cards",
+      "instruction": "Great job! Let's try four new numbers. Can you sort them in order?",
+      "sequence": [
+       5,
+       6,
+       4,
+       3
+      ],
+      "correctAnswers": [
+       3,
+       4,
+       5,
+       6
+      ],
+      "rangeMin": 3,
+      "rangeMax": 6
+     },
+     {
+      "id": "seq3",
+      "type": "order-cards",
+      "instruction": "You are doing wonderful! Let's arrange these number cards from start to finish.",
+      "sequence": [
+       6,
+       5,
+       8,
+       7
+      ],
+      "correctAnswers": [
+       5,
+       6,
+       7,
+       8
+      ],
+      "rangeMin": 5,
+      "rangeMax": 8
+     },
+     {
+      "id": "seq4",
+      "type": "order-cards",
+      "instruction": "Can you sort these four number cards into the correct counting order?",
+      "sequence": [
+       9,
+       10,
+       7,
+       8
+      ],
+      "correctAnswers": [
+       7,
+       8,
+       9,
+       10
+      ],
+      "rangeMin": 7,
+      "rangeMax": 10
+     },
+     {
+      "id": "seq5",
+      "type": "order-cards",
+      "instruction": "The final challenge! Sort all these number cards carefully from 1 to 10.",
+      "sequence": [
+       6,
+       2,
+       10,
+       4
+      ],
+      "correctAnswers": [
+       2,
+       4,
+       6,
+       10
+      ],
+      "rangeMin": 2,
+      "rangeMax": 10
+     }
+    ],
+    "gradeBand": "K",
+    "showNumberLine": true,
+    "showDotArrays": false,
+    "supportTier": "medium"
+   }
+  },
+  {
+   "instanceId": "final-knowledge-check",
+   "componentId": "knowledge-check",
+   "data": {
+    "problems": [
+     {
+      "type": "multiple_choice",
+      "id": "mc_1",
+      "difficulty": "easy",
+      "gradeLevel": "kindergarten",
+      "question": "What is the number of stars: ⭐ ⭐ ⭐ ⭐ ⭐?",
+      "options": [
+       {
+        "id": "A",
+        "text": "4",
+        "emoji": "4️⃣"
+       },
+       {
+        "id": "B",
+        "text": "5",
+        "emoji": "5️⃣"
+       },
+       {
+        "id": "C",
+        "text": "6",
+        "emoji": "6️⃣"
+       }
+      ],
+      "correctOptionId": "B",
+      "rationale": "When counting the stars one by one, we count one, two, three, four, five. The last number spoken tells how many stars there are in total, which is 5. Options 4 and 6 are incorrect because they stop one count too early or add one extra count.",
+      "teachingNote": "Encourage students to touch or point to each star as they count out loud to reinforce one-to-one correspondence.",
+      "successCriteria": [
+       "Count a set of up to 10 objects using one-to-one correspondence",
+       "Identify the numeral that represents the quantity of a counted set"
+      ],
+      "objectiveId": "obj1",
+      "subject": "MATHEMATICS"
+     },
+     {
+      "type": "multiple_choice",
+      "id": "mc_1",
+      "difficulty": "easy",
+      "gradeLevel": "kindergarten",
+      "question": "Which number comes right after 6?",
+      "options": [
+       {
+        "id": "A",
+        "text": "5",
+        "emoji": "5️⃣"
+       },
+       {
+        "id": "B",
+        "text": "7",
+        "emoji": "7️⃣"
+       },
+       {
+        "id": "C",
+        "text": "8",
+        "emoji": "8️⃣"
+       }
+      ],
+      "correctOptionId": "B",
+      "rationale": "When we count forward, the number that comes immediately after 6 is 7. Looking at the number line, moving one spot to the right from 6 brings us directly to 7. Number 5 comes before 6, and 8 comes after 7.",
+      "teachingNote": "Encourage students to place their finger on 6 and hop forward one space to clearly see that 7 is the next counting number.",
+      "successCriteria": [
+       "Identify the number that comes directly after a given number within 10",
+       "Use a number line to follow counting order from 1 to 7"
+      ],
+      "inset": {
+       "insetType": "number-line",
+       "min": 1,
+       "max": 7,
+       "ticks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+       ],
+       "label": "Number Line 1 to 7",
+       "points": [
+        {
+         "value": 1,
+         "label": "1"
+        },
+        {
+         "value": 2,
+         "label": "2"
+        },
+        {
+         "value": 3,
+         "label": "3"
+        },
+        {
+         "value": 4,
+         "label": "4"
+        },
+        {
+         "value": 5,
+         "label": "5"
+        },
+        {
+         "value": 6,
+         "label": "6"
+        },
+        {
+         "value": 7,
+         "label": "7"
+        }
+       ]
+      },
+      "objectiveId": "obj2",
+      "subject": "MATHEMATICS"
+     },
+     {
+      "type": "true_false",
+      "id": "tf_1",
+      "difficulty": "easy",
+      "gradeLevel": "kindergarten",
+      "statement": "True or false: When we count a group of toys, the last number we say tells us how many toys there are in all.",
+      "correct": true,
+      "rationale": "This statement is true because the final number named in a counting sequence represents the total quantity of the set, a foundational math concept known as cardinality. Understanding cardinality means children realize they do not need to recount the group to know the total amount after finishing the count.",
+      "teachingNote": "Reinforce this concept by having students count physical objects aloud and asking 'How many are there?' right after to connect the final number to the total group size.",
+      "successCriteria": [
+       "Demonstrate an understanding of cardinality when counting objects to 10",
+       "Recognize that the final count represents the total quantity"
+      ],
+      "objectiveId": "obj1",
+      "subject": "MATHEMATICS"
+     },
+     {
+      "type": "multiple_choice",
+      "id": "mc_1",
+      "difficulty": "easy",
+      "gradeLevel": "kindergarten",
+      "question": "Which of these belongs in counts to eight?",
+      "options": [
+       {
+        "id": "A",
+        "text": "Five red apples",
+        "emoji": "🍎"
+       },
+       {
+        "id": "B",
+        "text": "Eight toy blocks",
+        "emoji": "🧱"
+       },
+       {
+        "id": "C",
+        "text": "Five shiny stars",
+        "emoji": "⭐"
+       }
+      ],
+      "correctOptionId": "B",
+      "rationale": "Eight toy blocks belongs in the counts to eight category because there are eight items in that group. Five red apples and five shiny stars belong in the counts to five category. Sorting groups by their quantity helps us recognize matching numbers.",
+      "teachingNote": "Encourage students to practice one-to-one correspondence by tapping each item as they count aloud before deciding which number group it belongs to.",
+      "successCriteria": [
+       "Identify quantities that belong in a specific number category",
+       "Differentiate between quantities of five and eight"
+      ],
+      "objectiveId": "obj2",
+      "subject": "MATHEMATICS"
+     }
+    ],
+    "problemType": "orchestrated",
+    "topic": "Counting objects to 10",
+    "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+   }
+  }
+ ],
+ "scores": null,
+ "human": null
+}

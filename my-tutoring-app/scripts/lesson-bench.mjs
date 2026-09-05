@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Lesson Bench loop — score · triage · rerun · diff. Tier A only (no LLM).
+ * Lesson Bench mechanics (driven by /lesson-coverage) — score · triage · rerun · diff.
  *
  *   node scripts/lesson-bench.mjs score  [pkg.json|dir ...]   default: every qa/lesson-bench/packages/*.json
  *   node scripts/lesson-bench.mjs triage <labeled.json>        label → layer → executor, paste-ready queue entries
@@ -15,6 +15,9 @@
  * for the check list), appends {runId, gitSha, packageId, checkId, score} rows to
  * qa/lesson-bench/scoreboard.jsonl, and — for a package with a human label —
  * prints machine-vs-human agreement per check with the blocks each side cited.
+ * Q4 Coverage is the objective-coverage judge's verdict: run
+ * `node scripts/lesson-coverage.mjs eval --write <pkg>` first and `score` merges
+ * it; a package without one shows Q4 as an unknown (never a fail).
  *
  * The TypeScript scorer and the LIVE catalog are loaded through vite's SSR
  * module runner (the loader vitest uses), so this script and the app share one
@@ -98,6 +101,7 @@ function printScores(pkg, scores) {
   console.log(`  band: grade ${band.grade ?? '—'} · pre-reader ${band.preReader ? 'yes' : 'no'} · K-2 ${band.k2 ? 'yes' : 'no'} · subject ${band.subject ?? '—'}`);
   console.log(`  stream: ${(ev.streamOrder ?? []).join(' → ')}${ev.parentCards?.length ? ` ‖ parent cards: ${ev.parentCards.join(', ')}` : ''}`);
   console.log(`  minutes ${ev.minutes}/${ev.lengthCap} known over ${ev.knownMinuteBlocks}/${ev.streamBlocks} blocks${ev.parentCardMinutes ? ` (+${ev.parentCardMinutes} on parent cards)` : ''}${ev.tapOnlyProduction?.length ? ` · tap-only production: ${ev.tapOnlyProduction.join(', ')}` : ''}`);
+  if (ev.coverageJudge) console.log(`  Q4 judge: ${ev.coverageJudge.status} · coverage ${Number(ev.coverageJudge.coverage).toFixed(2)} · ${ev.coverageJudge.model} · source ${ev.coverageJudge.source} · ${ev.coverageJudge.judgedAt}`);
   for (const c of scores.citations ?? []) console.log(`  ✗ ${c.checkId} ${c.instanceId}: ${c.note}`);
   for (const u of scores.unknowns ?? []) console.log(`  ? ${u.checkId} ${u.instanceId ?? 'lesson'}: ${u.note}`);
 }

@@ -1,0 +1,1925 @@
+{
+  "benchVersion": 1,
+  "id": "kindergarten-shapes-20260905194513-99mt",
+  "subskill": null,
+  "provenance": {
+    "generatedAt": "2026-09-05T19:45:13.823Z",
+    "source": "topic-trace",
+    "topic": "shapes",
+    "gradeLevel": "Kindergarten",
+    "gitSha": null,
+    "promptHash": null,
+    "generationRequest": {
+      "topic": "shapes",
+      "gradeLevel": "kindergarten",
+      "package": true,
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Find and point to different shapes hidden in real-world objects around the room",
+          "verb": "apply",
+          "icon": "search"
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+          "verb": "identify",
+          "icon": "check"
+        },
+        {
+          "id": "obj3",
+          "text": "Compare shapes by looking at their straight sides and corners",
+          "verb": "compare",
+          "icon": "scale"
+        }
+      ],
+      "curatorBrief": {
+        "primitive": "intro_briefing",
+        "topic": "shapes",
+        "subject": "General",
+        "gradeLevel": "kindergarten",
+        "estimatedTime": "15-20 minutes",
+        "hook": {
+          "type": "scenario",
+          "content": "Imagine you are building the tallest castle ever with blocks. Look around your room—everything you see is made of special secret shapes like circles, squares, and triangles!",
+          "visual": "🔷"
+        },
+        "bigIdea": {
+          "statement": "Shapes are everywhere around us, and we can find and name them in our everyday world.",
+          "whyItMatters": "Knowing about shapes helps us build things, draw pictures, and understand how the world is put together."
+        },
+        "objectives": [
+          {
+            "id": "obj1",
+            "text": "Find and point to different shapes hidden in real-world objects around the room",
+            "verb": "apply",
+            "icon": "search"
+          },
+          {
+            "id": "obj2",
+            "text": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+            "verb": "identify",
+            "icon": "check"
+          },
+          {
+            "id": "obj3",
+            "text": "Compare shapes by looking at their straight sides and corners",
+            "verb": "compare",
+            "icon": "scale"
+          }
+        ],
+        "prerequisites": {
+          "shouldKnow": [
+            "Ability to point to objects in pictures and the room",
+            "Basic understanding of same and different"
+          ],
+          "quickCheck": {
+            "question": "Can you point to something in the room that is round like a ball?",
+            "answer": "A clock, a ball, or a wheel",
+            "hint": "Look for something that rolls or has a curved, round edge!"
+          }
+        },
+        "roadmap": [
+          {
+            "phase": "Explore",
+            "description": "Hunt for real objects around us and see what shapes they are made of.",
+            "activities": [
+              "Shape scavenger hunt in the classroom",
+              "Touching and feeling block cutouts"
+            ]
+          },
+          {
+            "phase": "Learn",
+            "description": "Discover the special names of our new shape friends.",
+            "activities": [
+              "Singing the shape song",
+              "Tracing shape outlines with our fingers"
+            ]
+          },
+          {
+            "phase": "Practice",
+            "description": "Sort and group shapes by counting their sides and corners.",
+            "activities": [
+              "Sorting triangles and squares into different buckets",
+              "Counting corners on a picture of a house"
+            ]
+          }
+        ],
+        "connections": {
+          "buildingFrom": [
+            "Recognizing colors and basic visual patterns",
+            "Matching similar objects together"
+          ],
+          "leadingTo": [
+            "Combining shapes to make pictures and new shapes",
+            "Beginning measurement and spatial awareness"
+          ],
+          "realWorld": [
+            "Recognizing stop signs are octagons",
+            "Seeing that a window is a rectangle and a pizza slice is a triangle"
+          ]
+        },
+        "mindset": {
+          "encouragement": "Sometimes shapes can look a little tricky when they turn around or change size, but you are a super shape detective and you can do this!",
+          "growthTip": "Trace the edges of a shape with your finger while you say its name to help your brain remember it better."
+        }
+      }
+    }
+  },
+  "manifest": {
+    "topic": "shapes",
+    "gradeLevel": "Kindergarten",
+    "subject": "MATHEMATICS",
+    "themeColor": "#3b82f6",
+    "curatorBrief": {
+      "instanceId": "brief-shapes-intro",
+      "title": "Exploring Shapes All Around Us",
+      "intent": "Welcome young kindergarten learners to the world of 2D shapes! Introduce circles, squares, triangles, and rectangles through bright visuals and familiar everyday objects found in a classroom or home, setting up the journey to name, find, and compare them."
+    },
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Find and point to different shapes hidden in real-world objects around the room",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "media-player",
+            "instanceId": "obj1-media-shape-hunt",
+            "title": "Shape Hunt in the Classroom",
+            "intent": "Narrate an engaging listening story where friendly characters spot real-world objects (clock, window, door, slice of pizza) and guide kindergarten students to tap pictures that match the hidden shapes.",
+            "config": {
+              "difficulty": "easy",
+              "targetEvalMode": "listen_and_look"
+            }
+          },
+          {
+            "componentId": "shape-composer",
+            "instanceId": "obj1-composer-everyday-scenes",
+            "title": "Building Everyday Things with Shapes",
+            "intent": "Let students manipulate geometric shapes to build familiar everyday scenes and objects like houses, wagons, and suns, reinforcing how real-world items are made of basic shapes.",
+            "config": {
+              "difficulty": "easy",
+              "targetEvalMode": "compose-match"
+            }
+          },
+          {
+            "componentId": "take-home-activity",
+            "instanceId": "obj1-home-shape-detective",
+            "title": "At-Home Shape Detective Walk",
+            "intent": "Provide caregivers with a simple, screen-free shape scavenger hunt guide to help children find and touch real-world circles, squares, rectangles, and triangles around the home.",
+            "config": {
+              "difficulty": "easy"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj2",
+        "objectiveText": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "foundation-explorer",
+            "instanceId": "obj2-explorer-shape-names",
+            "title": "Meet the Shapes",
+            "intent": "Present four core shapes—circle, square, triangle, and rectangle—with audio pronunciation, cheerful visual depictions, and clear, simple identifying labels for kindergarten pre-readers.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy"
+            }
+          },
+          {
+            "componentId": "shape-tracer",
+            "instanceId": "obj2-tracer-finger-draw",
+            "title": "Trace and Name the Shapes",
+            "intent": "Guide students to trace dotted outlines of circles, squares, triangles, and rectangles, reinforcing tactile shape formation while hearing the shape names spoken aloud.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy",
+              "targetEvalMode": "trace"
+            }
+          },
+          {
+            "componentId": "di-shapes",
+            "instanceId": "obj2-di-spoken-naming",
+            "title": "Say the Shape Name",
+            "intent": "Engage children in live Direct Instruction where the tutor shows a 2D shape in varied orientations and the student speaks the shape name aloud into the microphone.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy",
+              "targetEvalMode": "name_shape"
+            }
+          }
+        ]
+      },
+      {
+        "objectiveId": "obj3",
+        "objectiveText": "Compare shapes by looking at their straight sides and corners",
+        "objectiveVerb": "compare",
+        "components": [
+          {
+            "componentId": "comparison-panel",
+            "instanceId": "obj3-comparison-sides-corners",
+            "title": "Sides and Corners: Straight vs. Round",
+            "intent": "Visually compare contrasting shapes (e.g., a triangle with 3 sides and 3 corners vs. a round circle with 0 straight sides; a square vs. a rectangle) highlighting side and corner attributes.",
+            "config": {
+              "difficulty": "easy"
+            }
+          },
+          {
+            "componentId": "shape-sorter",
+            "instanceId": "obj3-sorter-attribute-sorting",
+            "title": "Sort by Sides and Corners",
+            "intent": "Direct Instruction interactive session where the tutor presents shapes and the student answers aloud to count straight sides and corners or classify shapes into groups.",
+            "config": {
+              "count": 4,
+              "difficulty": "easy",
+              "targetEvalMode": "count"
+            }
+          },
+          {
+            "componentId": "shape-builder",
+            "instanceId": "obj3-builder-side-count",
+            "title": "Connecting Sides to Form Corners",
+            "intent": "Provide a simple dot-grid canvas where students tap and connect straight sides to discover how corners are formed when sides meet.",
+            "config": {
+              "count": 3,
+              "difficulty": "easy",
+              "targetEvalMode": "build"
+            }
+          }
+        ]
+      }
+    ],
+    "finalAssessment": {
+      "componentId": "knowledge-check",
+      "instanceId": "shapes-final-knowledge-check",
+      "title": "Shape Master Challenge",
+      "intent": "Check kindergarten mastery across all three objectives: recognizing shape names, finding shapes in everyday objects, and identifying sides and corners using voice and simple tap options.",
+      "config": {
+        "count": 4,
+        "targetEvalMode": "recall|apply"
+      }
+    },
+    "layout": [
+      {
+        "componentId": "curator-brief",
+        "instanceId": "brief-shapes-intro",
+        "title": "Exploring Shapes All Around Us",
+        "intent": "Welcome young kindergarten learners to the world of 2D shapes! Introduce circles, squares, triangles, and rectangles through bright visuals and familiar everyday objects found in a classroom or home, setting up the journey to name, find, and compare them.",
+        "objectiveIds": [
+          "obj1",
+          "obj2",
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "media-player",
+        "instanceId": "obj1-media-shape-hunt",
+        "title": "Shape Hunt in the Classroom",
+        "intent": "Narrate an engaging listening story where friendly characters spot real-world objects (clock, window, door, slice of pizza) and guide kindergarten students to tap pictures that match the hidden shapes.",
+        "config": {
+          "difficulty": "easy",
+          "targetEvalMode": "listen_and_look",
+          "objectiveId": "obj1",
+          "objectiveText": "Find and point to different shapes hidden in real-world objects around the room",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Narrate an engaging listening story where friendly characters spot real-world objects (clock, window, door, slice of pizza) and guide kindergarten students to tap pictures that match the hidden shapes."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "shape-composer",
+        "instanceId": "obj1-composer-everyday-scenes",
+        "title": "Building Everyday Things with Shapes",
+        "intent": "Let students manipulate geometric shapes to build familiar everyday scenes and objects like houses, wagons, and suns, reinforcing how real-world items are made of basic shapes.",
+        "config": {
+          "difficulty": "easy",
+          "targetEvalMode": "compose-match",
+          "objectiveId": "obj1",
+          "objectiveText": "Find and point to different shapes hidden in real-world objects around the room",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Let students manipulate geometric shapes to build familiar everyday scenes and objects like houses, wagons, and suns, reinforcing how real-world items are made of basic shapes."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "take-home-activity",
+        "instanceId": "obj1-home-shape-detective",
+        "title": "At-Home Shape Detective Walk",
+        "intent": "Provide caregivers with a simple, screen-free shape scavenger hunt guide to help children find and touch real-world circles, squares, rectangles, and triangles around the home.",
+        "config": {
+          "difficulty": "easy",
+          "objectiveId": "obj1",
+          "objectiveText": "Find and point to different shapes hidden in real-world objects around the room",
+          "objectiveVerb": "apply",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Provide caregivers with a simple, screen-free shape scavenger hunt guide to help children find and touch real-world circles, squares, rectangles, and triangles around the home."
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "foundation-explorer",
+        "instanceId": "obj2-explorer-shape-names",
+        "title": "Meet the Shapes",
+        "intent": "Present four core shapes—circle, square, triangle, and rectangle—with audio pronunciation, cheerful visual depictions, and clear, simple identifying labels for kindergarten pre-readers.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "objectiveId": "obj2",
+          "objectiveText": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Present four core shapes—circle, square, triangle, and rectangle—with audio pronunciation, cheerful visual depictions, and clear, simple identifying labels for kindergarten pre-readers."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "shape-tracer",
+        "instanceId": "obj2-tracer-finger-draw",
+        "title": "Trace and Name the Shapes",
+        "intent": "Guide students to trace dotted outlines of circles, squares, triangles, and rectangles, reinforcing tactile shape formation while hearing the shape names spoken aloud.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "targetEvalMode": "trace",
+          "objectiveId": "obj2",
+          "objectiveText": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Guide students to trace dotted outlines of circles, squares, triangles, and rectangles, reinforcing tactile shape formation while hearing the shape names spoken aloud."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "di-shapes",
+        "instanceId": "obj2-di-spoken-naming",
+        "title": "Say the Shape Name",
+        "intent": "Engage children in live Direct Instruction where the tutor shows a 2D shape in varied orientations and the student speaks the shape name aloud into the microphone.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "targetEvalMode": "name_shape",
+          "objectiveId": "obj2",
+          "objectiveText": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+          "objectiveVerb": "identify",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Engage children in live Direct Instruction where the tutor shows a 2D shape in varied orientations and the student speaks the shape name aloud into the microphone."
+        },
+        "objectiveIds": [
+          "obj2"
+        ]
+      },
+      {
+        "componentId": "comparison-panel",
+        "instanceId": "obj3-comparison-sides-corners",
+        "title": "Sides and Corners: Straight vs. Round",
+        "intent": "Visually compare contrasting shapes (e.g., a triangle with 3 sides and 3 corners vs. a round circle with 0 straight sides; a square vs. a rectangle) highlighting side and corner attributes.",
+        "config": {
+          "difficulty": "easy",
+          "objectiveId": "obj3",
+          "objectiveText": "Compare shapes by looking at their straight sides and corners",
+          "objectiveVerb": "compare",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Visually compare contrasting shapes (e.g., a triangle with 3 sides and 3 corners vs. a round circle with 0 straight sides; a square vs. a rectangle) highlighting side and corner attributes."
+        },
+        "objectiveIds": [
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "shape-sorter",
+        "instanceId": "obj3-sorter-attribute-sorting",
+        "title": "Sort by Sides and Corners",
+        "intent": "Direct Instruction interactive session where the tutor presents shapes and the student answers aloud to count straight sides and corners or classify shapes into groups.",
+        "config": {
+          "count": 4,
+          "difficulty": "easy",
+          "targetEvalMode": "count",
+          "objectiveId": "obj3",
+          "objectiveText": "Compare shapes by looking at their straight sides and corners",
+          "objectiveVerb": "compare",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Direct Instruction interactive session where the tutor presents shapes and the student answers aloud to count straight sides and corners or classify shapes into groups."
+        },
+        "objectiveIds": [
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "shape-builder",
+        "instanceId": "obj3-builder-side-count",
+        "title": "Connecting Sides to Form Corners",
+        "intent": "Provide a simple dot-grid canvas where students tap and connect straight sides to discover how corners are formed when sides meet.",
+        "config": {
+          "count": 3,
+          "difficulty": "easy",
+          "targetEvalMode": "build",
+          "objectiveId": "obj3",
+          "objectiveText": "Compare shapes by looking at their straight sides and corners",
+          "objectiveVerb": "compare",
+          "objectiveGrade": "Kindergarten",
+          "intent": "Provide a simple dot-grid canvas where students tap and connect straight sides to discover how corners are formed when sides meet."
+        },
+        "objectiveIds": [
+          "obj3"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "shapes-final-knowledge-check",
+        "title": "Shape Master Challenge",
+        "intent": "Check kindergarten mastery across all three objectives: recognizing shape names, finding shapes in everyday objects, and identifying sides and corners using voice and simple tap options.",
+        "config": {
+          "count": 4,
+          "targetEvalMode": "recall|apply",
+          "objectiveGrade": "Kindergarten",
+          "lessonObjectives": [
+            {
+              "id": "obj1",
+              "text": "Find and point to different shapes hidden in real-world objects around the room",
+              "grade": "Kindergarten"
+            },
+            {
+              "id": "obj2",
+              "text": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+              "grade": "Kindergarten"
+            },
+            {
+              "id": "obj3",
+              "text": "Compare shapes by looking at their straight sides and corners",
+              "grade": "Kindergarten"
+            }
+          ]
+        },
+        "objectiveIds": [
+          "obj1",
+          "obj2",
+          "obj3"
+        ]
+      }
+    ]
+  },
+  "curatorBrief": {
+    "primitive": "intro_briefing",
+    "topic": "shapes",
+    "subject": "General",
+    "gradeLevel": "kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+      "type": "scenario",
+      "content": "Imagine you are building the tallest castle ever with blocks. Look around your room—everything you see is made of special secret shapes like circles, squares, and triangles!",
+      "visual": "🔷"
+    },
+    "bigIdea": {
+      "statement": "Shapes are everywhere around us, and we can find and name them in our everyday world.",
+      "whyItMatters": "Knowing about shapes helps us build things, draw pictures, and understand how the world is put together."
+    },
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Find and point to different shapes hidden in real-world objects around the room",
+        "verb": "apply",
+        "icon": "search"
+      },
+      {
+        "id": "obj2",
+        "text": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+        "verb": "identify",
+        "icon": "check"
+      },
+      {
+        "id": "obj3",
+        "text": "Compare shapes by looking at their straight sides and corners",
+        "verb": "compare",
+        "icon": "scale"
+      }
+    ],
+    "prerequisites": {
+      "shouldKnow": [
+        "Ability to point to objects in pictures and the room",
+        "Basic understanding of same and different"
+      ],
+      "quickCheck": {
+        "question": "Can you point to something in the room that is round like a ball?",
+        "answer": "A clock, a ball, or a wheel",
+        "hint": "Look for something that rolls or has a curved, round edge!"
+      }
+    },
+    "roadmap": [
+      {
+        "phase": "Explore",
+        "description": "Hunt for real objects around us and see what shapes they are made of.",
+        "activities": [
+          "Shape scavenger hunt in the classroom",
+          "Touching and feeling block cutouts"
+        ]
+      },
+      {
+        "phase": "Learn",
+        "description": "Discover the special names of our new shape friends.",
+        "activities": [
+          "Singing the shape song",
+          "Tracing shape outlines with our fingers"
+        ]
+      },
+      {
+        "phase": "Practice",
+        "description": "Sort and group shapes by counting their sides and corners.",
+        "activities": [
+          "Sorting triangles and squares into different buckets",
+          "Counting corners on a picture of a house"
+        ]
+      }
+    ],
+    "connections": {
+      "buildingFrom": [
+        "Recognizing colors and basic visual patterns",
+        "Matching similar objects together"
+      ],
+      "leadingTo": [
+        "Combining shapes to make pictures and new shapes",
+        "Beginning measurement and spatial awareness"
+      ],
+      "realWorld": [
+        "Recognizing stop signs are octagons",
+        "Seeing that a window is a rectangle and a pizza slice is a triangle"
+      ]
+    },
+    "mindset": {
+      "encouragement": "Sometimes shapes can look a little tricky when they turn around or change size, but you are a super shape detective and you can do this!",
+      "growthTip": "Trace the edges of a shape with your finger while you say its name to help your brain remember it better."
+    }
+  },
+  "components": [
+    {
+      "instanceId": "obj1-media-shape-hunt",
+      "componentId": "media-player",
+      "data": {
+        "title": "Secret Shapes All Around Us",
+        "description": "A 3-part narrated walkthrough with a check after each part.",
+        "segments": [
+          {
+            "title": "Spotting a Round Clock",
+            "script": "Benny Bear looks up at the kitchen wall and spots a ticking clock. Its border curves all the way around with no corners at all. That round clock is shaped just like a circle!",
+            "imagePrompt": "A friendly cartoon bear named Benny standing in a bright kitchen, happily pointing up to a round wall clock. The circular rim of the clock glows with a soft yellow outline. Storybook illustration style with clean lines and warm pastel colors.",
+            "knowledgeCheck": {
+              "question": "What shape is hiding in Benny's wall clock?",
+              "options": [
+                "Circle",
+                "Triangle",
+                "Square"
+              ],
+              "correctOptionIndex": 0,
+              "explanation": "The clock curves all the way around with no corners, so it is a circle.",
+              "optionEmojis": [
+                "🔴",
+                "🔺",
+                "🟩"
+              ]
+            },
+            "audioBase64": null,
+            "imageUrl": null
+          },
+          {
+            "title": "Finding a Square Window",
+            "script": "Next, Benny looks at the sunny playroom window. It has four straight sides that are all the exact same size, with four matching corners. The window is shaped just like a square!",
+            "imagePrompt": "Benny Bear looking happily at a bright square window in a cozy playroom. Outside the window, a green garden is visible. The four equal sides of the square window frame are highlighted with a soft, cheerful glow. Friendly children's book art style.",
+            "knowledgeCheck": {
+              "question": "What shape did Benny find in the window?",
+              "options": [
+                "Triangle",
+                "Square",
+                "Circle"
+              ],
+              "correctOptionIndex": 1,
+              "explanation": "The window has four straight sides of the exact same size, so it is a square.",
+              "optionEmojis": [
+                "🔺",
+                "🟩",
+                "🔴"
+              ]
+            },
+            "audioBase64": null,
+            "imageUrl": null
+          },
+          {
+            "title": "Snacking on Triangle Pizza",
+            "script": "Time for lunch, so Benny picks up a warm slice of pizza. He counts three straight sides and three pointy corners at the crust and tip. That yummy pizza slice is shaped like a triangle!",
+            "imagePrompt": "Benny Bear sitting at a small wooden table holding up a single triangular slice of cheese pizza. The three straight sides and three pointed corners of the slice are highlighted with gentle sparkle lines. Fun, vibrant storybook illustration for young children.",
+            "knowledgeCheck": {
+              "question": "What shape is Benny's yummy slice of pizza?",
+              "options": [
+                "Square",
+                "Circle",
+                "Triangle"
+              ],
+              "correctOptionIndex": 2,
+              "explanation": "The pizza slice has three straight sides and three pointy corners, making it a triangle.",
+              "optionEmojis": [
+                "🟩",
+                "🔴",
+                "🔺"
+              ]
+            },
+            "audioBase64": null,
+            "imageUrl": null
+          }
+        ],
+        "imageResolution": "1K",
+        "gradeLevel": "K",
+        "evalMode": "listen_and_look"
+      }
+    },
+    {
+      "instanceId": "obj1-composer-everyday-scenes",
+      "componentId": "shape-composer",
+      "data": {
+        "title": "Shape Composition Fun!",
+        "description": "Practice shape composition with shapes.",
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "compose-match",
+            "instruction": "Let's make a square patch for our quilt! Drag the shapes to fill the large square.",
+            "hint": "Try turning the pieces to see which corner they fit into.",
+            "targetShape": "large-square",
+            "targetOutlinePath": "M 140 115 L 260 115 L 260 235 L 140 235 Z",
+            "pieces": [
+              {
+                "id": "cm0-p0",
+                "shape": "triangle",
+                "color": "#8B5CF6",
+                "width": 120,
+                "height": 120,
+                "targetX": 140,
+                "targetY": 115,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm0-p1",
+                "shape": "triangle",
+                "color": "#6366F1",
+                "width": 120,
+                "height": 120,
+                "targetX": 140,
+                "targetY": 115,
+                "targetRotation": 180
+              }
+            ],
+            "supportTier": "easy",
+            "showSeams": true,
+            "showSnapGuides": true
+          },
+          {
+            "id": "c2",
+            "type": "compose-match",
+            "instruction": "Time for a tall rectangle patch! Use the smaller shapes to fill the rectangle silhouette.",
+            "hint": "Put the longer pieces along the straight sides first.",
+            "targetShape": "rectangle",
+            "targetOutlinePath": "M 110 130 L 290 130 L 290 220 L 110 220 Z",
+            "pieces": [
+              {
+                "id": "cm1-p0",
+                "shape": "square",
+                "color": "#3B82F6",
+                "width": 90,
+                "height": 90,
+                "targetX": 110,
+                "targetY": 130,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm1-p1",
+                "shape": "square",
+                "color": "#6366F1",
+                "width": 90,
+                "height": 90,
+                "targetX": 200,
+                "targetY": 130,
+                "targetRotation": 0
+              }
+            ],
+            "supportTier": "easy",
+            "showSeams": true,
+            "showSnapGuides": true
+          },
+          {
+            "id": "c3",
+            "type": "compose-match",
+            "instruction": "Look at this big triangle patch! Can you fill it with smaller shapes?",
+            "hint": "Match the pointy corners of your shapes with the corners of the big triangle.",
+            "targetShape": "large-triangle",
+            "targetOutlinePath": "M 200 115 L 260 235 L 140 235 Z",
+            "pieces": [
+              {
+                "id": "cm2-p0",
+                "shape": "triangle",
+                "color": "#8B5CF6",
+                "width": 60,
+                "height": 60,
+                "targetX": 170,
+                "targetY": 115,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm2-p1",
+                "shape": "triangle",
+                "color": "#3B82F6",
+                "width": 60,
+                "height": 60,
+                "targetX": 140,
+                "targetY": 175,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm2-p2",
+                "shape": "triangle",
+                "color": "#10B981",
+                "width": 60,
+                "height": 60,
+                "targetX": 200,
+                "targetY": 175,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm2-p3",
+                "shape": "triangle",
+                "color": "#F59E0B",
+                "width": 60,
+                "height": 60,
+                "targetX": 170,
+                "targetY": 175,
+                "targetRotation": 180
+              }
+            ],
+            "supportTier": "easy",
+            "showSeams": true,
+            "showSnapGuides": true
+          },
+          {
+            "id": "c4",
+            "type": "compose-match",
+            "instruction": "Another square patch needs our help! Fill in the large square to complete the pattern.",
+            "hint": "Look at the dashed lines inside the square to see where each piece goes.",
+            "targetShape": "large-square",
+            "targetOutlinePath": "M 140 115 L 260 115 L 260 235 L 140 235 Z",
+            "pieces": [
+              {
+                "id": "cm3-p0",
+                "shape": "triangle",
+                "color": "#8B5CF6",
+                "width": 120,
+                "height": 120,
+                "targetX": 140,
+                "targetY": 115,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm3-p1",
+                "shape": "triangle",
+                "color": "#6366F1",
+                "width": 120,
+                "height": 120,
+                "targetX": 140,
+                "targetY": 115,
+                "targetRotation": 180
+              }
+            ],
+            "supportTier": "easy",
+            "showSeams": true,
+            "showSnapGuides": true
+          },
+          {
+            "id": "c5",
+            "type": "compose-match",
+            "instruction": "Let's build a wide rectangle patch for the bottom of the quilt!",
+            "hint": "Use the side-by-side dashed guides to help place your shapes.",
+            "targetShape": "rectangle",
+            "targetOutlinePath": "M 110 130 L 290 130 L 290 220 L 110 220 Z",
+            "pieces": [
+              {
+                "id": "cm4-p0",
+                "shape": "square",
+                "color": "#3B82F6",
+                "width": 90,
+                "height": 90,
+                "targetX": 110,
+                "targetY": 130,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm4-p1",
+                "shape": "square",
+                "color": "#6366F1",
+                "width": 90,
+                "height": 90,
+                "targetX": 200,
+                "targetY": 130,
+                "targetRotation": 0
+              }
+            ],
+            "supportTier": "easy",
+            "showSeams": true,
+            "showSnapGuides": true
+          },
+          {
+            "id": "c6",
+            "type": "compose-match",
+            "instruction": "Our final challenge is a giant triangle patch! Can you finish the quilt?",
+            "hint": "Check the dashed lines to see how the smaller shapes fit together inside.",
+            "targetShape": "large-triangle",
+            "targetOutlinePath": "M 200 115 L 260 235 L 140 235 Z",
+            "pieces": [
+              {
+                "id": "cm5-p0",
+                "shape": "triangle",
+                "color": "#8B5CF6",
+                "width": 60,
+                "height": 60,
+                "targetX": 170,
+                "targetY": 115,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm5-p1",
+                "shape": "triangle",
+                "color": "#3B82F6",
+                "width": 60,
+                "height": 60,
+                "targetX": 140,
+                "targetY": 175,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm5-p2",
+                "shape": "triangle",
+                "color": "#10B981",
+                "width": 60,
+                "height": 60,
+                "targetX": 200,
+                "targetY": 175,
+                "targetRotation": 0
+              },
+              {
+                "id": "cm5-p3",
+                "shape": "triangle",
+                "color": "#F59E0B",
+                "width": 60,
+                "height": 60,
+                "targetX": 170,
+                "targetY": 175,
+                "targetRotation": 180
+              }
+            ],
+            "supportTier": "easy",
+            "showSeams": true,
+            "showSnapGuides": true
+          }
+        ],
+        "gradeBand": "K"
+      }
+    },
+    {
+      "instanceId": "obj1-home-shape-detective",
+      "componentId": "take-home-activity",
+      "data": {
+        "id": "shape-detective-scavenger-hunt",
+        "title": "Home Shape Detectives: The Great 2D Shape Hunt",
+        "subject": "Math",
+        "topic": "Identifying and Describing 2D Shapes (Circles, Squares, Rectangles, Triangles)",
+        "gradeRange": "K-2",
+        "estimatedTime": "30-40 minutes",
+        "overview": "Grab your detective magnifying glass and explore your home! In this hands-on mission, young learners will touch, trace, and hunt down real-world circles, squares, rectangles, and triangles hidden in plain sight.",
+        "learningObjectives": [
+          "Identify and name four basic 2D geometric shapes: circle, square, rectangle, and triangle.",
+          "Count the sides and corners (vertices) of everyday objects to sort them into shape categories.",
+          "Distinguish between squares and rectangles by comparing side lengths."
+        ],
+        "materials": [
+          {
+            "item": "Paper Detective Badges (Paper or Cardboard)",
+            "quantity": "4 pieces",
+            "essential": true,
+            "examples": [
+              "Blank printer paper",
+              "Index cards",
+              "Cereal box cardboard"
+            ],
+            "substitutes": [
+              "Construction paper",
+              "Sticky notes"
+            ]
+          },
+          {
+            "item": "Crayons or Washable Markers",
+            "quantity": "3-4 colors",
+            "essential": true,
+            "substitutes": [
+              "Colored pencils",
+              "Standard pencils"
+            ]
+          },
+          {
+            "item": "Small Basket or Tote Bag",
+            "quantity": "1",
+            "essential": true,
+            "examples": [
+              "Laundry basket",
+              "Canvas grocery bag",
+              "Cardboard shoe box"
+            ],
+            "substitutes": [
+              "Pillowcase",
+              "Backpack"
+            ]
+          },
+          {
+            "item": "Yarn, String, or Ribbon",
+            "quantity": "4 short pieces (about 12 inches each)",
+            "essential": false,
+            "substitutes": [
+              "Shoelaces",
+              "Pipe cleaners",
+              "Cooked spaghetti noodles"
+            ]
+          },
+          {
+            "item": "Painter's Tape or Masking Tape",
+            "quantity": "1 roll",
+            "essential": false,
+            "substitutes": [
+              "Sidewalk chalk (for outdoors)",
+              "Placed wooden spoons"
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "stepNumber": 1,
+            "title": "Make Your Shape Badges",
+            "instruction": "Draw one big shape on each of your four pieces of paper: a circle on the first, a square on the second, a rectangle on the third, and a triangle on the fourth. Write the shape name with a helper.",
+            "tip": "Trace a cup or a coaster if you want help drawing a very neat circle!"
+          },
+          {
+            "stepNumber": 2,
+            "title": "Inspect the Clues: Sides and Corners",
+            "instruction": "Run your finger along each drawn shape. Count its straight sides, and touch its pointy corners. Notice that the circle is round and smooth with no straight sides or corners at all.",
+            "checkpoint": {
+              "question": "How many pointy corners does your triangle have?",
+              "type": "count"
+            },
+            "scienceNote": "Shapes are defined by their rules! A corner (or vertex) is where two straight lines meet."
+          },
+          {
+            "stepNumber": 3,
+            "title": "Hunt for Round Circles",
+            "instruction": "Grab your bag and walk through the room looking for objects with round circle faces. Gently pick them up or point them out, tracing the round rim with your pointer finger.",
+            "tip": "Look at the lids of jars, round drink coasters, or clock faces."
+          },
+          {
+            "stepNumber": 4,
+            "title": "Hunt for Straight-Sided Squares and Rectangles",
+            "instruction": "Search for objects with four straight sides. Find one item where all four sides are equal length (a square) and one item where two sides are long and two are short (a rectangle).",
+            "checkpoint": {
+              "question": "Can you confirm that both your square object and rectangle object have 4 corners?",
+              "type": "confirm"
+            },
+            "scienceNote": "Squares are a special type of rectangle where every single side is the exact same length."
+          },
+          {
+            "stepNumber": 5,
+            "title": "The Tricky Triangle Search",
+            "instruction": "Triangles can be sneaky detectives! Look for things that have 3 straight sides and 3 pointy corners, like a wedge of cheese, a folded napkin, a roof shape outside a window, or a musical triangle.",
+            "tip": "If you cannot find a triangle object, fold a square paper napkin diagonally across the center to create one!"
+          },
+          {
+            "stepNumber": 6,
+            "title": "Shape Sorting Station",
+            "instruction": "Lay out your four shape badges on the floor or a table. Place each discovered item next to its matching shape badge, forming four shape collections.",
+            "checkpoint": {
+              "question": "Which shape badge has the biggest pile of collected items?",
+              "type": "reflection"
+            }
+          }
+        ],
+        "reflectionPrompts": [
+          {
+            "question": "What felt different when you traced the edge of a circle compared to tracing the edge of a square?",
+            "connectionTo": "Distinguish between curved and straight-sided 2D shapes",
+            "hint": "Think about whether your finger went smoothly in a curve or had to stop and turn at a corner."
+          },
+          {
+            "question": "How can you tell if an object with four sides is a square or a rectangle?",
+            "connectionTo": "Distinguish between squares and rectangles by comparing side lengths",
+            "hint": "Look closely at the sides: are they all twins of the same length, or are two longer?"
+          },
+          {
+            "question": "Why do you think doors and books are shaped like rectangles instead of circles?",
+            "connectionTo": "Identify and name four basic 2D geometric shapes in the real world",
+            "hint": "Think about how books stack together or how a round door might swing open."
+          }
+        ],
+        "documentationPrompt": {
+          "instruction": "Take a photo of all your hunted objects arranged neatly around their matching shape badges on the floor.",
+          "suggestedCaption": "I became a Shape Detective! I found [number] objects. My favorite shape to hunt was the [circle/square/rectangle/triangle] because [reason]."
+        },
+        "extensions": [
+          {
+            "title": "Body Shape Builders",
+            "description": "Use your arms, fingers, or your whole body on the rug to bend and stretch into a triangle, a rectangle, or a circle with a family member!",
+            "difficulty": "intermediate"
+          },
+          {
+            "title": "Tape Town Walk",
+            "description": "Have an adult tape large outlines of the shapes on the floor using painter's tape. Walk like an animal along each shape's perimeter (e.g., hop around the circle, stomp along the 4 square sides).",
+            "difficulty": "intermediate"
+          }
+        ],
+        "safetyNotes": [
+          "Adult helper recommended: Supervise children while collecting household items.",
+          "Do not collect fragile, sharp, or breakable items (such as glass plates, knives, or ceramic mugs).",
+          "Keep exploration away from stairwells, electrical outlets, and high shelves."
+        ]
+      }
+    },
+    {
+      "instanceId": "obj2-explorer-shape-names",
+      "componentId": "foundation-explorer",
+      "data": {
+        "objectiveId": "obj2",
+        "objectiveText": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+        "objectiveVerb": "identify",
+        "diagram": {
+          "description": "A clear kindergarten shape chart showing a circle, a triangle, and a square side by side with simple labels.",
+          "imagePrompt": "Educational diagram showing three basic 2D shapes on a clean chalkboard: a bright blue round circle labeled 'CIRCLE', a bright green three-sided triangle labeled 'TRIANGLE', and a warm amber four-sided square labeled 'SQUARE'. Simple bold outlines, clear kindergarten friendly layout, minimalist schematic style.",
+          "style": "schematic"
+        },
+        "concepts": [
+          {
+            "id": "circle",
+            "name": "Circle",
+            "briefDefinition": "A circle is round like a ball with no corners.",
+            "diagramHighlight": "The round blue shape on the left",
+            "inContext": {
+              "scenario": "Look at a round plate on the dinner table.",
+              "whereToFind": "The whole plate is shaped like a circle."
+            },
+            "selfCheck": {
+              "prompt": "Which one is a circle?",
+              "options": [
+                "A round button",
+                "A slice of pizza",
+                "A square block"
+              ],
+              "correctIndex": 0,
+              "hint": "Look for something that rolls and has no corners.",
+              "optionEmojis": [
+                "🔘",
+                "🍕",
+                "🧱"
+              ]
+            },
+            "color": "#3B82F6"
+          },
+          {
+            "id": "triangle",
+            "name": "Triangle",
+            "briefDefinition": "A triangle has three straight sides and three pointy corners.",
+            "diagramHighlight": "The green shape in the middle with three corners",
+            "inContext": {
+              "scenario": "You eat a yummy slice of cheese for snack.",
+              "whereToFind": "The cheese slice has three pointy corners like a triangle."
+            },
+            "selfCheck": {
+              "prompt": "Which one is a triangle?",
+              "options": [
+                "A round coin",
+                "A party hat",
+                "A square window"
+              ],
+              "correctIndex": 1,
+              "hint": "Look for the thing with three sharp corners that looks like a slice.",
+              "optionEmojis": [
+                "🪙",
+                "🎉",
+                "🪟"
+              ]
+            },
+            "color": "#10B981"
+          },
+          {
+            "id": "square",
+            "name": "Square",
+            "briefDefinition": "A square has four straight sides that are all the same.",
+            "diagramHighlight": "The amber box shape on the right",
+            "inContext": {
+              "scenario": "You build a tall tower using toy wooden blocks.",
+              "whereToFind": "Each flat side of the toy block is a square."
+            },
+            "selfCheck": {
+              "prompt": "Which one is a square?",
+              "options": [
+                "A round clock",
+                "A party flag",
+                "A toy building block"
+              ],
+              "correctIndex": 2,
+              "hint": "Look for the shape with four straight sides that look just alike.",
+              "optionEmojis": [
+                "⏰",
+                "🚩",
+                "🧱"
+              ]
+            },
+            "color": "#F59E0B"
+          }
+        ],
+        "themeColor": "#8B5CF6",
+        "gradeLevel": "K"
+      }
+    },
+    {
+      "instanceId": "obj2-tracer-finger-draw",
+      "componentId": "shape-tracer",
+      "data": {
+        "title": "Trace the Magic Shapes!",
+        "description": "Learn to identify and trace basic shapes like circles, squares, triangles, and rectangles by following the dotted outlines.",
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "trace",
+            "instruction": "Trace the circle by following the dots!",
+            "targetShape": "triangle",
+            "tracePath": [
+              {
+                "x": 250,
+                "y": 80
+              },
+              {
+                "x": 150,
+                "y": 280
+              },
+              {
+                "x": 350,
+                "y": 280
+              }
+            ],
+            "tolerance": 35,
+            "showGuidePath": true,
+            "showDirectionArrows": true,
+            "showNextCue": true,
+            "showOrderNumbers": true,
+            "supportTier": "easy"
+          },
+          {
+            "id": "c2",
+            "type": "trace",
+            "instruction": "Trace the triangle by following the dots!",
+            "targetShape": "triangle",
+            "tracePath": [
+              {
+                "x": 250,
+                "y": 80
+              },
+              {
+                "x": 150,
+                "y": 280
+              },
+              {
+                "x": 350,
+                "y": 280
+              }
+            ],
+            "tolerance": 35,
+            "showGuidePath": true,
+            "showDirectionArrows": true,
+            "showNextCue": true,
+            "showOrderNumbers": true,
+            "supportTier": "easy"
+          },
+          {
+            "id": "c3",
+            "type": "trace",
+            "instruction": "Trace the square by following the dots!",
+            "targetShape": "triangle",
+            "tracePath": [
+              {
+                "x": 250,
+                "y": 80
+              },
+              {
+                "x": 150,
+                "y": 280
+              },
+              {
+                "x": 350,
+                "y": 280
+              }
+            ],
+            "tolerance": 35,
+            "showGuidePath": true,
+            "showDirectionArrows": true,
+            "showNextCue": true,
+            "showOrderNumbers": true,
+            "supportTier": "easy"
+          },
+          {
+            "id": "c4",
+            "type": "trace",
+            "instruction": "Trace the rectangle by following the dots!",
+            "targetShape": "triangle",
+            "tracePath": [
+              {
+                "x": 250,
+                "y": 80
+              },
+              {
+                "x": 150,
+                "y": 280
+              },
+              {
+                "x": 350,
+                "y": 280
+              }
+            ],
+            "tolerance": 35,
+            "showGuidePath": true,
+            "showDirectionArrows": true,
+            "showNextCue": true,
+            "showOrderNumbers": true,
+            "supportTier": "easy"
+          }
+        ],
+        "gridSize": 25,
+        "showPropertyReminder": false,
+        "gradeBand": "K"
+      }
+    },
+    {
+      "instanceId": "obj2-di-spoken-naming",
+      "componentId": "di-shapes",
+      "data": {
+        "title": "Shape Superstars!",
+        "description": "Look at each picture on the screen and say its name out loud!",
+        "challengeType": "name_shape",
+        "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+        "challenges": [
+          {
+            "id": "dish-1-circle",
+            "challengeType": "name_shape",
+            "shape": "circle",
+            "shapeWord": "circle",
+            "article": "a",
+            "sides": null,
+            "corners": null,
+            "rotationDeg": 0,
+            "asrAliases": [
+              "circle",
+              "circles",
+              "surkle"
+            ],
+            "supportTier": "easy",
+            "exemplar": "prototype",
+            "scalePct": 100
+          },
+          {
+            "id": "dish-2-rectangle",
+            "challengeType": "name_shape",
+            "shape": "rectangle",
+            "shapeWord": "rectangle",
+            "article": "a",
+            "sides": 4,
+            "corners": 4,
+            "rotationDeg": 1,
+            "asrAliases": [
+              "rectangle",
+              "rectangles",
+              "wectangle"
+            ],
+            "supportTier": "easy",
+            "exemplar": "prototype",
+            "scalePct": 100
+          },
+          {
+            "id": "dish-3-triangle",
+            "challengeType": "name_shape",
+            "shape": "triangle",
+            "shapeWord": "triangle",
+            "article": "a",
+            "sides": 3,
+            "corners": 3,
+            "rotationDeg": 0,
+            "asrAliases": [
+              "triangle",
+              "triangles",
+              "twiangle"
+            ],
+            "supportTier": "easy",
+            "exemplar": "prototype",
+            "scalePct": 100
+          },
+          {
+            "id": "dish-4-square",
+            "challengeType": "name_shape",
+            "shape": "square",
+            "shapeWord": "square",
+            "article": "a",
+            "sides": 4,
+            "corners": 4,
+            "rotationDeg": 3,
+            "asrAliases": [
+              "square",
+              "squares",
+              "sware"
+            ],
+            "supportTier": "easy",
+            "exemplar": "prototype",
+            "scalePct": 100
+          },
+          {
+            "id": "dish-5-rectangle",
+            "challengeType": "name_shape",
+            "shape": "rectangle",
+            "shapeWord": "rectangle",
+            "article": "a",
+            "sides": 4,
+            "corners": 4,
+            "rotationDeg": 5,
+            "asrAliases": [
+              "rectangle",
+              "rectangles",
+              "wectangle"
+            ],
+            "supportTier": "easy",
+            "exemplar": "prototype",
+            "scalePct": 100
+          }
+        ]
+      }
+    },
+    {
+      "instanceId": "obj3-comparison-sides-corners",
+      "componentId": "comparison-panel",
+      "data": {
+        "title": "Square and Circle",
+        "intro": "Let us look at two fun shapes together.",
+        "item1": {
+          "name": "Square",
+          "description": "A square has four straight sides and four corners.",
+          "visualPrompt": "A bright blue square with straight sides and sharp corners.",
+          "points": [
+            "Four straight sides",
+            "Four sharp corners"
+          ]
+        },
+        "item2": {
+          "name": "Circle",
+          "description": "A circle is round with zero straight sides.",
+          "visualPrompt": "A bright red circle that is perfectly round with no corners.",
+          "points": [
+            "Zero straight sides",
+            "Zero sharp corners"
+          ]
+        },
+        "synthesis": {
+          "mainInsight": "Shapes are different because some have straight sides and corners while others are round.",
+          "keyDifferences": [
+            "Square has four straight sides",
+            "Circle has zero straight sides"
+          ],
+          "keySimilarities": [
+            "Both are closed shapes",
+            "Both can be drawn on paper"
+          ],
+          "commonMisconception": "Thinking that a round circle has hidden corners.",
+          "whenToUse": {
+            "item1Context": "Use a square when you want to build a box with flat walls.",
+            "item2Context": "Use a circle when you want something that rolls easily."
+          }
+        },
+        "gates": [
+          {
+            "question": "A square has four straight sides.",
+            "correctAnswer": true,
+            "rationale": "Great job! A square always has four straight sides and four corners.",
+            "unlocks": "synthesis"
+          },
+          {
+            "question": "A circle has four sharp corners.",
+            "correctAnswer": false,
+            "rationale": "Not quite! A circle is completely round and has zero corners.",
+            "unlocks": "complete"
+          }
+        ],
+        "gradeLevel": "K"
+      }
+    },
+    {
+      "instanceId": "obj3-sorter-attribute-sorting",
+      "componentId": "shape-sorter",
+      "data": {
+        "title": "Shape Side and Corner Safari!",
+        "description": "Compare shapes by looking closely at their straight sides and corners.",
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "count",
+            "instruction": "Look at this shape and listen for the question.",
+            "ruleAttribute": "shape",
+            "shapes": [
+              {
+                "shape": "triangle",
+                "color": "red",
+                "size": "medium",
+                "rotation": 0
+              }
+            ],
+            "targetValue": "triangle",
+            "supportTier": "easy",
+            "showCornerHints": true
+          },
+          {
+            "id": "c2",
+            "type": "count",
+            "instruction": "Look at this shape and listen for the question.",
+            "ruleAttribute": "shape",
+            "shapes": [
+              {
+                "shape": "square",
+                "color": "blue",
+                "size": "medium",
+                "rotation": 0
+              }
+            ],
+            "targetValue": "square",
+            "supportTier": "easy",
+            "showCornerHints": true
+          },
+          {
+            "id": "c3",
+            "type": "count",
+            "instruction": "Look at this shape and listen for the question.",
+            "ruleAttribute": "shape",
+            "shapes": [
+              {
+                "shape": "rectangle",
+                "color": "green",
+                "size": "large",
+                "rotation": 90
+              }
+            ],
+            "targetValue": "rectangle",
+            "supportTier": "easy",
+            "showCornerHints": true
+          },
+          {
+            "id": "c4",
+            "type": "count",
+            "instruction": "Look at this shape and listen for the question.",
+            "ruleAttribute": "shape",
+            "shapes": [
+              {
+                "shape": "hexagon",
+                "color": "purple",
+                "size": "medium",
+                "rotation": 15
+              }
+            ],
+            "targetValue": "hexagon",
+            "supportTier": "easy",
+            "showCornerHints": true
+          }
+        ],
+        "gradeBand": "K"
+      }
+    },
+    {
+      "instanceId": "obj3-builder-side-count",
+      "componentId": "shape-builder",
+      "data": {
+        "title": "Shape Builder Adventure!",
+        "description": "Compare shapes by looking at their straight sides and corners on a fun dot grid.",
+        "mode": "build",
+        "grid": {
+          "type": "dot",
+          "size": {
+            "rows": 8,
+            "columns": 8
+          },
+          "showCoordinates": false
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "build",
+            "instruction": "Can you build a shape with 3 straight sides and 3 corners? Let's make a triangle!",
+            "hint": "Try connecting three dots to make three straight sides that meet at three corners.",
+            "narration": "Welcome! Let's start by building a shape with 3 sides and 3 corners. Can you connect the dots?",
+            "targetProperties": {
+              "sides": 3
+            },
+            "showTargetGhost": true,
+            "showSideCountBadge": true,
+            "supportTier": "easy"
+          },
+          {
+            "id": "c2",
+            "type": "build",
+            "instruction": "Great job! Now let's build a shape with 4 straight sides and 4 corners.",
+            "hint": "Count four sides as you connect the dots. All four corners should look nice and square!",
+            "narration": "Awesome! Next, let's try making a shape with 4 sides and 4 corners.",
+            "targetProperties": {
+              "sides": 4
+            },
+            "showTargetGhost": true,
+            "showSideCountBadge": true,
+            "supportTier": "easy"
+          },
+          {
+            "id": "c3",
+            "type": "build",
+            "instruction": "You are doing wonderful! Can you build another shape with 4 sides, but make it look a bit different?",
+            "hint": "Remember to count your straight sides and make sure they meet at 4 corners.",
+            "narration": "You are a shape superstar! Let's build one more 4-sided shape to compare.",
+            "targetProperties": {
+              "sides": 4
+            },
+            "showTargetGhost": true,
+            "showSideCountBadge": true,
+            "supportTier": "easy"
+          }
+        ],
+        "tools": {
+          "ruler": false,
+          "protractor": false,
+          "symmetryLine": false,
+          "parallelMarker": false
+        },
+        "gradeBand": "K-2",
+        "patternBlocks": {
+          "enabled": false,
+          "availableShapes": []
+        },
+        "preloadedShapes": [],
+        "classificationCategories": []
+      }
+    },
+    {
+      "instanceId": "shapes-final-knowledge-check",
+      "componentId": "knowledge-check",
+      "data": {
+        "problems": [
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which shape is a triangle?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Circle",
+                "emoji": "🔴"
+              },
+              {
+                "id": "B",
+                "text": "Triangle",
+                "emoji": "🔺"
+              },
+              {
+                "id": "C",
+                "text": "Square",
+                "emoji": "🟦"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "A triangle is a shape with three straight sides and three corners. The shape with three pointed corners is the triangle. Circles are curved and round, while squares have four straight sides.",
+            "teachingNote": "Have students practice counting the three corners and three sides of triangles using their fingers to reinforce the concept.",
+            "successCriteria": [
+              "Identify a triangle from basic two-dimensional shapes."
+            ],
+            "objectiveId": "obj2",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "true_false",
+            "id": "tf_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "statement": "A circle has straight sides.",
+            "correct": false,
+            "rationale": "A circle is round and has a smooth, curved line all the way around it. It does not have any straight sides or sharp corners like a square or triangle.",
+            "teachingNote": "Kindergarten students often confuse round shapes with flat-sided shapes when learning basic geometry. Help them feel the smooth curve of a circle with their finger to reinforce that it has no straight edges.",
+            "successCriteria": [
+              "Identify the defining attribute of a circle as a curved shape",
+              "Distinguish between curved boundaries and straight sides"
+            ],
+            "objectiveId": "obj2",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which shape has four corners?",
+            "options": [
+              {
+                "id": "A",
+                "text": "Circle",
+                "emoji": "⚪"
+              },
+              {
+                "id": "B",
+                "text": "Square",
+                "emoji": "🟦"
+              },
+              {
+                "id": "C",
+                "text": "Triangle",
+                "emoji": "🔺"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "A square has four straight sides and four pointy corners. A circle has round sides with no corners, and a triangle only has three corners. That makes the square the shape with four corners!",
+            "teachingNote": "Encourage young learners to count corners by touching each pointy tip on real-world blocks or shape cutouts.",
+            "successCriteria": [
+              "Identify shapes that have four corners",
+              "Distinguish a square from shapes with zero or three corners"
+            ],
+            "objectiveId": "obj3",
+            "subject": "MATHEMATICS"
+          },
+          {
+            "type": "multiple_choice",
+            "id": "mc_1",
+            "difficulty": "easy",
+            "gradeLevel": "kindergarten",
+            "question": "Which of these looks like a circle?",
+            "options": [
+              {
+                "id": "A",
+                "text": "A book",
+                "emoji": "📖"
+              },
+              {
+                "id": "B",
+                "text": "A clock",
+                "emoji": "⏰"
+              },
+              {
+                "id": "C",
+                "text": "A door",
+                "emoji": "🚪"
+              }
+            ],
+            "correctOptionId": "B",
+            "rationale": "A wall clock is round and curved with no corners, which makes it a circle. Books and doors have straight sides and corners, so they look like rectangles instead.",
+            "teachingNote": "Have students trace the edge of a classroom clock in the air with their finger to reinforce that circles are round curves with zero corners.",
+            "successCriteria": [
+              "Identify a familiar real-world object shaped like a circle"
+            ],
+            "objectiveId": "obj1",
+            "subject": "MATHEMATICS"
+          }
+        ],
+        "problemType": "orchestrated",
+        "topic": "shapes",
+        "gradeContext": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+      }
+    }
+  ],
+  "scores": {
+    "gates": {
+      "G1": 1,
+      "G4": 1,
+      "G6": 1
+    },
+    "checks": {
+      "Q8": 1,
+      "Q3": 1,
+      "Q6": 1,
+      "Q7": 1,
+      "Q4": 0
+    },
+    "holistic": [],
+    "bucket": "RUNNABLE",
+    "judgedAt": "2026-09-05T20:25:26.357Z",
+    "judge": "tier-a@315f7bfb",
+    "citations": [
+      {
+        "instanceId": "obj3-comparison-sides-corners",
+        "checkId": "Q4",
+        "note": "obj3 ASSESSED_INSUFFICIENTLY: Only 1 item directly asks students to compare shapes by corners (problems[2]); sorter and builder blocks test isolated side counting or construction rather than comparative evaluation."
+      }
+    ],
+    "unknowns": [
+      {
+        "instanceId": "obj1-media-shape-hunt",
+        "checkId": "Q8",
+        "note": "media-player[listen_and_look] has no reader verdict (no reader-fit / contract line)"
+      },
+      {
+        "instanceId": "obj3-builder-side-count",
+        "checkId": "Q8",
+        "note": "shape-builder[build] has no reader verdict (no reader-fit / contract line)"
+      },
+      {
+        "checkId": "Q9",
+        "note": "estimated block minutes 48 above the provisional pre-reader guide of 40 (9/9 blocks tagged) — advisory, not a fail"
+      }
+    ],
+    "evidence": {
+      "band": {
+        "grade": "K",
+        "preReader": true,
+        "k2": true,
+        "subject": "MATHEMATICS"
+      },
+      "streamOrder": [
+        "media-player[listen_and_look]",
+        "shape-composer[compose-match]",
+        "foundation-explorer",
+        "shape-tracer[trace]",
+        "di-shapes[name_shape]",
+        "comparison-panel",
+        "shape-sorter[count]",
+        "shape-builder[build]",
+        "knowledge-check[recall|apply]"
+      ],
+      "parentCards": [
+        "obj1-home-shape-detective"
+      ],
+      "parentCardMinutes": 10,
+      "minutes": 48,
+      "lengthCap": 40,
+      "knownMinuteBlocks": 9,
+      "streamBlocks": 9,
+      "tapOnlyProduction": [
+        "media-player[listen_and_look]"
+      ],
+      "notationObjectives": [],
+      "distinctPrimitives": 9,
+      "coverageJudge": {
+        "status": "warn",
+        "coverage": 0.833,
+        "model": "gemini-flash-latest",
+        "source": "script",
+        "judgedAt": "2026-09-05T19:55:48.882Z"
+      },
+      "notCodeJudged": [
+        "G1 catalog-band half (no grade floors by ruling)",
+        "G4 generator-emitted half",
+        "G6 visible-timer half",
+        "Q4 when the package carries no coverage verdict",
+        "G2",
+        "G3",
+        "G5",
+        "Q1",
+        "Q2",
+        "Q5"
+      ]
+    }
+  },
+  "human": null,
+  "coverage": {
+    "version": 1,
+    "lessonId": "kindergarten-shapes-20260905194513-99mt",
+    "status": "warn",
+    "overallObjectiveCoverage": 0.833,
+    "blockingFailure": false,
+    "objectives": [
+      {
+        "objectiveId": "obj1",
+        "objective": "Find and point to different shapes hidden in real-world objects around the room",
+        "verb": "apply",
+        "grade": "Kindergarten",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 4,
+        "assessmentEvidence": [
+          "obj1-media-shape-hunt#segments[0]",
+          "obj1-media-shape-hunt#segments[1]",
+          "obj1-media-shape-hunt#segments[2]",
+          "shapes-final-knowledge-check#problems[3]"
+        ],
+        "instructionEvidence": [
+          "obj1-media-shape-hunt",
+          "obj1-composer-everyday-scenes"
+        ],
+        "masteryInferenceSupported": true,
+        "severity": "NONE",
+        "notes": "Students are presented with multiple opportunities to identify real-world objects shaped like circles, squares, and triangles across the media player and final knowledge check."
+      },
+      {
+        "objectiveId": "obj2",
+        "objective": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+        "verb": "identify",
+        "grade": "Kindergarten",
+        "category": "ASSESSED_SUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 6,
+        "assessmentEvidence": [
+          "obj2-di-spoken-naming#challenges[0]",
+          "obj2-di-spoken-naming#challenges[1]",
+          "obj2-di-spoken-naming#challenges[2]",
+          "obj2-di-spoken-naming#challenges[3]",
+          "obj2-di-spoken-naming#challenges[4]",
+          "shapes-final-knowledge-check#problems[0]"
+        ],
+        "instructionEvidence": [
+          "obj2-explorer-shape-names",
+          "obj2-tracer-finger-draw"
+        ],
+        "masteryInferenceSupported": true,
+        "severity": "NONE",
+        "notes": "Spoken direct instruction prompts explicitly assess naming all four target shapes (circle, square, triangle, rectangle), reinforced by the final knowledge check."
+      },
+      {
+        "objectiveId": "obj3",
+        "objective": "Compare shapes by looking at their straight sides and corners",
+        "verb": "compare",
+        "grade": "Kindergarten",
+        "category": "ASSESSED_INSUFFICIENTLY",
+        "taught": true,
+        "assessed": true,
+        "assessmentCount": 2,
+        "assessmentEvidence": [
+          "shapes-final-knowledge-check#problems[1]",
+          "shapes-final-knowledge-check#problems[2]"
+        ],
+        "instructionEvidence": [
+          "obj3-comparison-sides-corners",
+          "obj3-sorter-attribute-sorting",
+          "obj3-builder-side-count"
+        ],
+        "masteryInferenceSupported": false,
+        "severity": "WARNING",
+        "notes": "Only 1 item directly asks students to compare shapes by corners (problems[2]); sorter and builder blocks test isolated side counting or construction rather than comparative evaluation."
+      }
+    ],
+    "detectedConstraints": [
+      {
+        "type": "generation_failure",
+        "description": "In obj2-tracer-finger-draw, all four challenges have targetShape set to triangle despite instructions directing the student to trace circles, squares, and rectangles.",
+        "instanceId": "obj2-tracer-finger-draw"
+      },
+      {
+        "type": "insufficient_items",
+        "description": "Objective obj3 lacks sufficient direct assessment items comparing shapes by sides and corners, with only one comparative multiple-choice question provided.",
+        "instanceId": "shapes-final-knowledge-check"
+      }
+    ],
+    "summary": "The lesson effectively teaches and assesses shape recognition in everyday objects (obj1) and basic shape naming (obj2) through interactive listening checks and spoken identification tasks covering circles, squares, triangles, and rectangles. However, comparing shapes by attributes (obj3) is insufficiently assessed; the interactive sorter and builder blocks focus on isolated counting and polygon construction rather than active comparison, leaving only a single multiple-choice question to assess the comparative skill.",
+    "meta": {
+      "evalModel": "gemini-flash-latest",
+      "evalTimestamp": "2026-09-05T19:55:48.882Z",
+      "latencyMs": 16311,
+      "usedSchemaFallback": false,
+      "source": "script",
+      "topic": "shapes",
+      "gradeLevel": "Kindergarten",
+      "grade": "Kindergarten",
+      "subject": "MATHEMATICS",
+      "skillIds": [],
+      "subskillIds": [],
+      "primitiveTypes": [
+        "media-player",
+        "shape-composer",
+        "foundation-explorer",
+        "shape-tracer",
+        "di-shapes",
+        "comparison-panel",
+        "shape-sorter",
+        "shape-builder",
+        "knowledge-check",
+        "take-home-activity"
+      ],
+      "digestChars": 23087,
+      "truncated": false,
+      "objectiveCount": 3,
+      "objectivesFullyCovered": 2,
+      "objectivesUncovered": 0,
+      "failureCategories": [
+        "ASSESSED_INSUFFICIENTLY",
+        "constraint:generation_failure",
+        "constraint:insufficient_items"
+      ]
+    }
+  }
+}
