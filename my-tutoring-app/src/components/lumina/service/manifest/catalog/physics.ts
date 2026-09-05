@@ -12,12 +12,17 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     id: 'motion-diagram',
     description: 'Motion Diagram / Strobe Diagram showing object positions at equal time intervals with velocity and acceleration vectors. Perfect for teaching kinematics qualitatively. ESSENTIAL for Middle School - High School physics: introduction to motion (MS), velocity concepts (MS/HS), acceleration (HS), projectile motion (HS), circular motion (AP).',
     constraints: 'Best for grades 6-12. Use uniform motion for MS, accelerated/projectile for HS, circular for AP.',
+    // No evalModes/challengeTypes declared here despite supportsEvaluation, so `answers`
+    // is left out rather than inferred from the component's own click-to-place/identify
+    // surface — the same class of gap as media-player's MP-3.
+    affordances: { representation: 'pictorial', role: 'visualize', minutes: 5 },
     supportsEvaluation: true,
   },
   {
     id: 'sound-wave-explorer',
     description: 'Interactive sound lab where students tap virtual objects to create vibrations, see real-time wave visualizations, and explore how force (volume) and speed (pitch) affect sound. Includes medium selection (air/water/solid/vacuum) and distance controls. Uses Web Audio API for real audio feedback. ESSENTIAL for Grade 1 Physical Science (NGSS 1-PS4-1, 1-PS4-4).',
     constraints: 'Best for K-3. Themes: music_room (K-1), playground (1-2), science_lab (2-3). Keep oscillator frequencies in safe range (200-800Hz). Short tone bursts only.',
+    affordances: { representation: ['concrete', 'pictorial'], answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'observe',
@@ -73,6 +78,10 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     id: 'push-pull-arena',
     description: 'Live tutor-judged force arena (DI modality) where the child watches and runs canvas physics simulations — pushes and pulls on ice, wood, carpet and grass — and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken answer from the audio in-band, corrects with the physics idea, and its own affirmation advances. Modes: observe (watch the preset force, say "push" or "pull"), predict (say "moves" or "stays" before it runs; the sim reveals the truth as the answer is judged), compare (two objects, same push — say which slides farther), design (experiment with force controls, say whether the goal needs a big or little push). ESSENTIAL for K-5 Physical Science: pushes and pulls (K-PS2-1), motion from forces (K-PS2-2), balanced/unbalanced forces (3-PS2-1).',
     constraints: 'Best for K-5. Use observe mode for K-1, predict for 1-2, compare for 2-3, design for 4-5. Keep object weights 1-10 for clarity. Answers are single spoken words judged by the microphone-enabled Lumina tutor; there is no Check button and no printed answer options.',
+    // reader: 'none' — shipped judged-loop DI port (same pattern as di-dice-roll /
+    // di-math-facts): the runner owns every cue, the child never reads anything, the
+    // constraint text itself says "no printed answer options."
+    affordances: { representation: ['concrete', 'pictorial'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'observe',
@@ -170,6 +179,7 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     id: 'race-track-lab',
     description: 'Interactive race track where students observe races between characters, predict winners, measure distances on a grid, calculate speed = distance / time, and analyze position-time graphs. Canvas-based with animated racers on a measured track. ESSENTIAL for K-5 Physical Science and extends to Middle School: comparing speeds (K-1), predicting motion (1-2), measuring distance (2-4), computing speed (4-5), position-time graphs and slope as velocity (MS).',
     constraints: 'Best for K-5, extends to MS. Use observe for K-1, predict for 1-2, measure for 2-4, calculate for 4-5, graph for MS. Keep racer count 2-4 for clarity.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'observe',
@@ -231,6 +241,7 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     id: 'gravity-drop-tower',
     description: 'Interactive drop tower where students drop objects side-by-side and discover that all objects fall at the same rate without air resistance. Canvas physics simulation with height markers, splat animations, slow-motion replay, and optional air resistance toggle. Busts the great misconception that heavier objects fall faster. ESSENTIAL for K-5 Physical Science: gravity pulls objects down (5-PS2-1), forces and motion (3-PS2-2), extends to HS gravitational force models (HS-PS2-4).',
     constraints: 'Best for K-5 (extends to HS). Use observe for K-1, predict for 1-3, compare for 2-4, measure for 4-5, calculate for MS-HS. Keep object count to 1-2 for clarity.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'observe',

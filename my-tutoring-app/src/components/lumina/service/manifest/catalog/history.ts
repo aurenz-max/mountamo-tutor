@@ -29,6 +29,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
     // sentence begins with "Yes" or with "My turn".
     description: 'Live-judged Direct Instruction on historical cause and effect, spoken and built. Students see an outcome and a bank of shuffled event cards and work out what had to happen before what: the tutor reads one event at a time and the child SAYS whether it helped cause the ending (rather than being a result of it, or just true at the time); the child BUILDS the chain with their hands by placing the causes in the order each one made the next possible; and the child SAYS which cause was the deep root versus the one that happened right before the end. Requires a microphone. Color-coded by category (political, economic, social, technological) so students SEE that big changes have causes from different corners of life. Ideal for "why did this happen" history, community-change and social-studies causation objectives, grades 1-6.',
     constraints: 'Explains ONE historical setting per session across 3-5 separate chains (causation depth, not chronology - use timeline-explorer for dating events, era-explorer for what one era was like). Requires a working microphone and the live tutor: two of the three moves are spoken exchanges and the third is judged by the tutor. Chain length is set by grade (3 cards K-4, 4 cards at 5+), never by the manifest. The manifest must NOT supply events, causes or an order: the generator writes the chains, and CODE derives the answer key from the order Gemini emits and then shuffles the bank away from it.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'build'], role: 'apply', minutes: 8 },
     audioInput: { manual_activity: true },
     evalModes: [
       {
@@ -49,6 +50,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build_chain',
+        affordances: { answers: ['build'] },
         label: 'Build the Chain (Connect)',
         beta: 3.5,
         // 3! = 6 arrangements at K-4, 4! = 24 at grade 5+, and two corrections
@@ -167,6 +169,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
     // "Yes" or with "My turn".
     description: 'Live-judged Direct Instruction on one historical era, spoken end to end. The child explores the era through three lens cards (daily life, technology, school and work), and then the tutor reads one life detail at a time and the child SAYS which lens it came from, whether life looked like that only back then, only today, or in both times, which of two past eras it belongs to, and why life changed. Requires a microphone. Every answer is spoken aloud and judged from the audio - there is nothing to drag, tap or type. Perfect for long-ago-versus-today comparisons, community-history and American-history era studies. ESSENTIAL for K-6 social studies / history.',
     constraints: 'Covers ONE era per session (era depth, not chronological sequencing - use timeline-explorer for event sequences). Requires a working microphone and the live tutor: the whole activity is a spoken exchange. The manifest must NOT supply specific statements or lens text - the generator builds the era card and the challenges itself, and code owns every answer key.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 6 },
     audioInput: { manual_activity: true },
     evalModes: [
       {

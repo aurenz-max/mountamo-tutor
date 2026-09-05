@@ -12,6 +12,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     id: 'curator-brief',
     description: 'Introduction, learning objectives, and hook. REQUIRED: Always include this first.',
     constraints: 'Must be first component',
+    affordances: { representation: 'symbolic', reader: 'none', role: 'introduce', minutes: 2, maxPerLesson: 1 },
     tutoring: {
       taskDescription:
         'The student is on the opening briefing for "{{topic}}" — a tabbed overview (the hook, the big idea, '
@@ -74,6 +75,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   {
     id: 'concept-card-grid',
     description: 'A set of 3-4 distinct key terms or concepts defined with visuals. Use for vocabulary or core principles.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: 'introduce', minutes: 3 },
     tutoring: {
       taskDescription:
         'Guide the student through a set of concept cards. Each card has a front side (visual image + title) '
@@ -131,6 +133,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'comparison-panel',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap'], role: ['introduce', 'visualize'], minutes: 4 },
     description: 'Side-by-side comparison of two entities. Use when distinct "A vs B" analysis aids understanding.',
     tutoring: {
       taskDescription:
@@ -219,40 +222,48 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   {
     id: 'generative-table',
     description: 'Structured rows/columns. Use for datasets, timelines, or categorical attributes.',
+    affordances: { representation: 'symbolic', role: 'visualize', minutes: 3 },
   },
   {
     id: 'custom-visual',
     description: 'A bespoke HTML/JS simulation or SVG diagram. Use for complex systems (biology, physics, counting games) that standard math visuals cannot handle. TIP: Provide config with subject, keyTerms, and conceptsCovered for richer content.',
+    affordances: { representation: 'pictorial', role: 'visualize', minutes: 5 },
   },
   {
     id: 'formula-card',
     description: 'Mathematical formula display with LaTeX. Use for equations, theorems, or scientific formulas.',
     constraints: 'Requires mathematical formulas',
+    affordances: { representation: 'symbolic', role: 'introduce', minutes: 2 },
   },
   {
     id: 'feature-exhibit',
     description: 'Static editorial section with subsections. Legacy — prefer deep-dive for comprehensive topic exploration.',
+    affordances: { representation: 'pictorial', role: 'introduce', minutes: 3 },
     supportsEvaluation: true,
   },
   {
     id: 'annotated-example',
     description: 'Step-by-step worked example with multi-layer annotations (procedural steps, strategic thinking, common errors, conceptual connections). Use for demonstrating problem-solving processes in math, science, or any domain requiring systematic reasoning.',
     constraints: 'Best for elementary and above. Requires a well-defined problem with clear solution steps.',
+    affordances: { representation: 'symbolic', role: 'introduce', minutes: 3 },
   },
   {
     id: 'take-home-activity',
     description: 'Hands-on activity using common household materials. Screen-free learning experience with step-by-step instructions, safety notes, reflection prompts, and optional extensions. Perfect for reinforcing concepts through kinesthetic learning and real-world application.',
     constraints: 'Best for science experiments, math manipulatives, art projects, or any topic that benefits from hands-on exploration. Automatically adapts complexity and safety guidance to grade level.',
+    affordances: { audience: 'caregiver', representation: 'concrete', answers: ['manipulate'], role: 'apply', minutes: 10, maxPerLesson: 1 },
   },
   {
     id: 'graph-board',
     description: 'Interactive polynomial graphing board where users plot points and visualize fitted polynomial curves. Use for algebra, functions, data analysis, or polynomial interpolation concepts.',
     constraints: 'Best for middle-school and above. Requires mathematical/data analysis context.',
+    affordances: { representation: 'symbolic', role: 'visualize', minutes: 5 },
   },
   {
     id: 'foundation-explorer',
     description: 'Objective-driven concept exploration with clear diagrams, definitions, and self-checks. Shows a central diagram with multiple labeled concepts that students explore one at a time. Self-check questions match the learning objective verb (IDENTIFY, EXPLAIN, APPLY). BEST for IDENTIFY objectives where students need to learn foundational vocabulary and recognize key parts/components of a system. Use when introducing 2-4 core concepts that students must master before deeper learning.',
     constraints: 'Best for IDENTIFY and EXPLAIN objectives. Requires 2-4 foundational concepts with clear visual representations. Works across all subjects: science (parts of a cell), engineering (parts of a lever), language arts (parts of a sentence), math (components of an equation). Always connects to a specific learning objective from the curator brief.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap'], role: 'introduce', minutes: 4 },
     tutoring: {
       taskDescription:
         'Guide the student through objective-driven concept exploration. '
@@ -353,6 +364,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     constraints: 'Best for factual recall (not reasoning or multi-step problems). '
       + 'Challenges should have single correct answers. Keep to 8-15 challenges per session for engagement. '
       + 'No timers — never frame challenges around speed or deadlines.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap'], role: ['apply', 'assess'], minutes: 3 },
     evalModes: [
       {
         evalMode: 'recognize',
@@ -417,6 +429,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
           instruction:
             'When you receive [ACTIVITY_START], welcome the student to the fluency drill. '
             + 'Mention the subject and number of challenges. Reassure them it is untimed and they can take all the time they need. '
+            + 'Then say the first question out loud, word for word — a young student may not be able to read it. '
             + 'Keep it to 2-3 sentences.',
         },
         {
@@ -437,8 +450,8 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         {
           title: 'NEXT CHALLENGE TRANSITION',
           instruction:
-            'When you receive [NEXT_ITEM], briefly introduce the new challenge. '
-            + 'Acknowledge progress if relevant. Keep to 1 sentence.',
+            'When you receive [NEXT_ITEM], say the new question itself out loud ("{{promptText}}") — a young student may not be able to read it. '
+            + 'Acknowledge progress if relevant. Keep to 1-2 sentences.',
         },
         {
           title: 'COMPLETION CELEBRATION',
@@ -455,6 +468,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     id: 'fact-file',
     description: 'Magazine-style profile card with key stats, quick facts, deep dive sections, records, and "did you know?" callouts. Students explore tabbed sections then answer self-check questions. Works for ANY topic — trash trucks, volcanoes, ancient civilizations, animals. ESSENTIAL for K-8 general content delivery.',
     constraints: 'Best for topics with concrete facts and stats. Not ideal for purely narrative content.',
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['tap'], role: ['introduce', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'explore',
@@ -552,9 +566,11 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     id: 'how-it-works',
     description: 'Interactive step-by-step process diagram. Students navigate through 4-6 sequential stages learning how something works (garbage collection, water cycle, digestion, bill-making). Each step has description, optional "What\'s Happening?" deeper explanation, key terms, and fun facts. Comprehension challenges test understanding via sequencing, identifying, predicting, and explaining. ESSENTIAL for K-8 procedural knowledge across all subjects.',
     constraints: 'Best for processes with clear sequential steps (4-6). Not ideal for non-linear or branching processes.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap', 'manipulate'], role: ['introduce', 'visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'guided',
+        affordances: { answers: ['tap'] },
         label: 'Guided Walkthrough (Easy)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -563,6 +579,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'sequence',
+        affordances: { answers: ['manipulate', 'tap'] },
         label: 'Sequence & Identify (Medium)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -571,6 +588,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict',
+        affordances: { answers: ['tap'] },
         label: 'Predict & Explain (Hard)',
         beta: 5.5,
         scaffoldingMode: 4,
@@ -647,9 +665,11 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     id: 'timeline-explorer',
     description: 'Interactive chronological timeline with 5-8 event cards. Students explore events spanning a time period, reading descriptions, impact callouts, and connections between events. Comprehension challenges test chronological understanding via ordering, identification, dating, and cause-effect reasoning. Works for ANY chronological topic — history of aviation, evolution of computers, life of a city, scientific discoveries. ESSENTIAL for K-8 chronological understanding across all subjects.',
     constraints: 'Best for topics with clear chronological progression (5-8 events). Not ideal for non-sequential topics.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'manipulate'], role: ['introduce', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'explore',
+        affordances: { answers: ['tap'] },
         label: 'Guided Exploration (Easy)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -666,6 +686,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'connect',
+        affordances: { answers: ['tap'] },
         label: 'Cause & Effect (Hard)',
         beta: 5.5,
         scaffoldingMode: 4,
@@ -729,6 +750,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     id: 'vocabulary-explorer',
     description: 'Topic-specific vocabulary explorer with rich contextual definitions, example sentences, word origins, related words, and pronunciation guides. Students explore 5-8 terms through an interactive card interface, then demonstrate comprehension via matching, fill-in-blank, context usage, and identification challenges. Natural complement to any content primitive. ESSENTIAL for K-8 vocabulary building across all subjects.',
     constraints: 'Best for topics with specialized terminology (5-8 terms). Not ideal for topics without distinct vocabulary.',
+    affordances: { representation: 'symbolic', answers: ['tap'], role: ['introduce', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'explore',
@@ -822,9 +844,11 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     id: 'digital-skills-sim',
     description: 'Guided tutorial teaching fundamental digital device skills: clicking targets, dragging objects to zones, and typing on a virtual keyboard. Gamified with score tracking. Perfect for teaching basic computer interaction. ESSENTIAL for K-1 digital literacy.',
     constraints: 'K-1 only. Challenges are very simple motor-skill tasks, not academic content.',
+    affordances: { answers: ['tap', 'manipulate', 'type'], role: ['introduce', 'apply'], minutes: 4 },
     evalModes: [
       {
         evalMode: 'click',
+        affordances: { answers: ['tap'] },
         label: 'Click Practice (Easy)',
         beta: -1.5,
         scaffoldingMode: 1,
@@ -833,6 +857,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'drag',
+        affordances: { answers: ['manipulate'] },
         label: 'Drag Practice (Easy)',
         beta: -1.0,
         scaffoldingMode: 2,
@@ -841,6 +866,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'type',
+        affordances: { answers: ['type'] },
         label: 'Type Practice (Easy)',
         beta: -0.5,
         scaffoldingMode: 2,
@@ -876,9 +902,11 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       + 'or creating comprehensive topic overviews. ESSENTIAL for any topic requiring broad coverage with embedded comprehension checks.',
     constraints:
       'Requires orchestrator + parallel generation. Best for topics with enough depth for 5+ blocks.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'manipulate'], role: ['introduce', 'visualize', 'apply'], minutes: 7 },
     evalModes: [
       {
         evalMode: 'explore',
+        affordances: { answers: ['tap'] },
         label: 'Explore (Tier 1)',
         beta: -1.5,
         scaffoldingMode: 1,
@@ -972,9 +1000,11 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     constraints:
       'Best for grade-appropriate literature, poetry, opinion writing, dialogue analysis, and grammar/syntax work. Requires a passage worth '
       + 'reading carefully; not appropriate for purely factual recall topics (use deep-dive instead).',
+    affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: ['introduce', 'apply'], minutes: 8 },
     evalModes: [
       {
         evalMode: 'explore',
+        affordances: { answers: ['tap'] },
         label: 'Explore (Tier 1)',
         beta: -1.5,
         scaffoldingMode: 1,
@@ -983,6 +1013,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'recall',
+        affordances: { answers: ['tap'] },
         label: 'Recall (Tier 2)',
         beta: -0.5,
         scaffoldingMode: 2,
@@ -991,6 +1022,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'apply',
+        affordances: { answers: ['tap'] },
         label: 'Apply (Tier 3)',
         beta: 0.5,
         scaffoldingMode: 3,

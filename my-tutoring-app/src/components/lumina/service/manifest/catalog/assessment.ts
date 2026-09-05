@@ -17,6 +17,7 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
       + 'advances. Symbol/KaTeX choices are answered by touching the one you mean. Without a microphone it is a '
       + 'tap surface, one problem at a time.',
     constraints: 'Typically one per exhibit, at the end. The spoken form requires the live tutor and a microphone.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap'], role: 'assess', minutes: 4, maxPerLesson: 1 },
     // ── DI MODALITY (2026-08-18, qa/di/BACKLOG.md item 23 slice 2). The
     // judged surface is all-or-nothing per SET (completion is gated per
     // problem, so a partially-judged set would strand the check): if every
@@ -198,6 +199,7 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
   {
     id: 'scale-spectrum',
     description: 'Interactive spectrum for placing items along a continuum. Use for teaching nuanced judgments, degrees of intensity, moral/ethical reasoning, or comparative analysis.',
-    constraints: 'Best for middle-school and above. Requires items that can be meaningfully positioned on a spectrum.'
+    constraints: 'Best for middle-school and above. Requires items that can be meaningfully positioned on a spectrum.',
+    affordances: { representation: ['pictorial', 'symbolic'], role: 'introduce', minutes: 3 },
   },
 ];

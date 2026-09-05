@@ -12,6 +12,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'bar-model',
     description: 'K-5 categorical-data graph: simple comparison bars (K-1), scaled bar graphs with step-2/5/10 axes (3.MD.B.3), and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction; not for histograms or numeric distributions.',
     constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
+    affordances: { representation: 'pictorial', answers: ['tap'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Work through {{totalChallenges}} {{graphStyle}} graph challenges. Mode: {{evalMode}}. Currently on challenge {{currentChallengeIndex}}. Values: {{values}}.',
       contextKeys: ['values', 'value1', 'value2', 'barCount', 'title', 'graphStyle', 'evalMode', 'scaleStep', 'iconEmoji', 'iconValue', 'currentPrompt', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges'],
@@ -92,6 +93,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build_graph',
+        affordances: { answers: ['tap', 'type'] },
         label: 'Build Graph (3-5)',
         beta: 5.5,
         scaffoldingMode: 4,
@@ -104,6 +106,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'number-line',
     description: 'Interactive number line with drag-to-plot, animated jump arcs, ordering, and auto-zoom. Supports integers, fractions, decimals, and mixed numbers. K uses small fully labeled ranges; explicit Grade-1 objectives can use readable local windows within 0-120; grades 3-5 add negatives, fractions, and operations. Perfect for teaching number placement, addition/subtraction as movement, fraction comparison, and ordering. ESSENTIAL for K-5 math.',
     constraints: 'Requires numeric range. Jump mode requires operations array. Challenges drive interactivity.',
+    affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.',
       contextKeys: ['rangeMin', 'rangeMax', 'visibleMin', 'visibleMax', 'numberType', 'interactionMode', 'gradeBand', 'instruction', 'challengeType', 'targetValues', 'exactTargetValue', 'placedPoints', 'attemptNumber', 'currentPhase'],
@@ -166,6 +169,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'order',
+        affordances: { answers: ['tap', 'manipulate'] },
         label: 'Order (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -174,6 +178,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'between',
+        affordances: { reader: 'emerging' },
         label: 'Between (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -186,6 +191,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'base-ten-blocks',
     description: 'Interactive base-ten manipulative with place value columns, supply tray, and regrouping. Students drag blocks to build numbers, decompose values, regroup (trade 10 ones for 1 ten), and perform addition/subtraction with blocks. Supports decimal mode (tenths/hundredths) and thousands. Challenge modes: build_number, read_blocks, regroup, add_with_blocks, subtract_with_blocks. ESSENTIAL for K-5 place value.',
     constraints: 'Requires a number to work with. Challenges array drives interactivity. Grade band determines complexity.',
+    affordances: { representation: 'concrete', answers: ['build', 'manipulate', 'type'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Explore place value using base-ten blocks. Mode: {{interactionMode}}. Target: {{targetNumber}}. Current total: {{currentTotal}}.',
       contextKeys: ['numberValue', 'interactionMode', 'decimalMode', 'gradeBand', 'currentTotal', 'columns', 'targetNumber', 'challengeType', 'instruction', 'attemptNumber', 'regroupsUsed'],
@@ -221,6 +227,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'build_number',
+        affordances: { answers: ['build'] },
         label: 'Build Number (Concrete)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -229,6 +236,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'read_blocks',
+        affordances: { representation: 'pictorial', answers: ['type'] },
         label: 'Read Blocks (Pictorial)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -237,6 +245,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'regroup',
+        affordances: { answers: ['manipulate'] },
         label: 'Regroup (Strategy)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -245,6 +254,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'operate',
+        affordances: { answers: ['manipulate', 'type'] },
         label: 'Operate (Transitional)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -258,6 +268,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'fraction-circles',
     description: 'Multi-phase fraction learning with circle diagrams. Challenges include identifying fractions from shaded circles, building target fractions by clicking slices, comparing two fractions visually, and discovering equivalent fractions. ESSENTIAL for elementary fraction concepts.',
     constraints: 'Generates 4-6 challenges mixing identify, build, compare, and equivalent types. Denominators 2-12.',
+    affordances: { representation: ['concrete', 'pictorial'], answers: ['type', 'tap', 'build'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Complete fraction challenges using circle diagrams. Current challenge: {{instruction}} (type: {{challengeType}}). Circle has {{denominator}} slices.',
       contextKeys: ['challengeType', 'instruction', 'denominator', 'numerator', 'shadedCount', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges'],
@@ -288,6 +299,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'identify',
+        affordances: { representation: 'pictorial', answers: ['type'] },
         label: 'Identify (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -296,6 +308,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build',
+        affordances: { representation: 'concrete', answers: ['build'] },
         label: 'Build (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -304,6 +317,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compare',
+        affordances: { representation: 'pictorial', answers: ['tap'] },
         label: 'Compare (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -312,6 +326,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'equivalent',
+        affordances: { representation: 'pictorial', answers: ['build'] },
         label: 'Equivalent (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -324,6 +339,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'fraction-bar',
     description: 'Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. ESSENTIAL for elementary fraction introduction.',
     constraints: 'Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), compare (4-5, larger denominators), add_subtract (5-6, operation context).',
+    affordances: { representation: 'pictorial', answers: ['tap', 'build'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Walk through {{totalChallenges}} fraction problems in {{challengeType}} mode. Current: fraction {{currentChallengeIndex}} of {{totalChallenges}} = {{numerator}}/{{denominator}}. Phase: {{currentPhase}}.',
       contextKeys: ['numerator', 'denominator', 'currentPhase', 'shadedCount', 'currentChallengeIndex', 'totalChallenges', 'challengeType'],
@@ -389,6 +405,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'place-value-chart',
     description: 'Live tutor-judged place value (DI modality) over 2- to 5-digit whole numbers. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. Each session alternates two kinds of number: for a PRINTED number with one glowing digit the child SAYS THE NAME OF ITS PLACE (ones through ten thousands) and then SAYS WHAT IT IS WORTH ("forty", "three hundred" — the spoken place-value vocabulary this primitive has always been about); for a number that is NEVER printed the tutor SAYS it and the child WRITES it into the labeled chart, one digit per column — dictation, where hearing "four hundred six" and writing 4-0-6 rather than 46 is the whole skill. ESSENTIAL for elementary place value instruction, grades 1-5.',
     constraints: 'Requires a microphone: two of the three answer kinds are spoken and judged by the Live tutor, and there is no Check button, no Next button, and no multiple-choice row anywhere. Session-level configuration: the generator selects target numbers locally from the number pool service per the selected eval mode, so do NOT supply specific numbers, place ranges, or answer choices from the manifest. Whole numbers only, 11 to 99,999 — every spoken value word stays inside the place-value vocabulary (digit and decade words plus hundred/thousand), and a highlighted digit is never zero because "zero" is not an accepted spoken answer. A number that was printed for analysis is never dictated, and a dictated number is never printed — each would answer the other. Supports challengeTypes: identify (1-2), build (2-3), compare (3-4), expanded_form (5+).',
+    affordances: { representation: 'symbolic', answers: ['spoken', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'LIVE-JUDGED place value practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or by WRITING digits into the chart, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
       contextKeys: ['challengeType', 'stimulus'],
@@ -538,6 +555,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'practice-problem',
     description: 'Standalone canvas-based math derivation surface. Student writes their multi-step solution by hand on a whiteboard; live transcription + step-aware coaching keep them oriented as they solve; pressing Done dispatches a judge that compares their derivation to the canonical solution and reveals a verdict (correct / partial / incorrect) with side-by-side analysis. Perfect for algebra, pre-calculus, and calculus problems where showing work matters more than the final answer. ESSENTIAL for grades 6-12 procedural fluency, multi-step problem solving, and strategy selection.',
     constraints: 'Requires a problem with a canonical multi-step solution (2+ steps). Best for derivation-style math problems (solve equations, simplify expressions, evaluate integrals, prove identities). Not suitable for one-shot computation, multiple choice, or visual-spatial problems where the answer is non-symbolic.',
+    affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 10 },
     evalModes: [
       { evalMode: 'derive_easy', label: 'Derive — Easy (Tier 1)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['derive'], description: 'Short 2-3 step derivation. Single rule application, simple algebra or arithmetic. Aimed at warm-up / fluency.' },
       { evalMode: 'derive_medium', label: 'Derive — Medium (Tier 2)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['derive'], description: '3-5 step derivation requiring multiple rule applications. Standard practice difficulty.' },
@@ -582,6 +600,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'area-model',
     description: 'Multi-challenge visual area model for multiplication, perimeter, and factoring. Each session walks the student through 3-6 distinct factor pairs in the same eval mode. Per-challenge data (factor decompositions, display flags) is built locally from a pool service; Gemini emits only session-level wrapper metadata. Use for multi-digit multiplication, distributive property, partial products, perimeter (4.MD.3), and area-model factoring. ESSENTIAL for grades 3-6 math.',
     constraints: 'The manifest must NOT supply specific factor numbers, decompositions, or display flags — the generator picks 3-6 pairs locally per the selected eval mode. Algebraic mode is reserved for future expansion (no eval mode currently uses it).',
+    affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Area model session: {{challengeType}}, {{totalChallenges}} problems. Currently on problem {{currentChallengeIndex}}/{{totalChallenges}}.',
       contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'factor1Parts', 'factor2Parts', 'algebraicMode', 'supportTier'],
@@ -668,6 +687,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'array-grid',
     description: 'Multi-challenge rectangular array of discrete objects (dots, squares, stars) arranged in rows and columns. Each session walks the student through 3-6 distinct (rows, columns) pairs in the same eval mode. Per-challenge dimensions are picked locally by a pool service; Gemini emits only session-level wrapper metadata. Teaches multiplication introduction, repeated addition, skip counting, commutative property, and arrays-as-multiplication. ESSENTIAL for elementary multiplication (grades 2-5).',
     constraints: 'The manifest must NOT supply specific row/column counts — the generator picks 3-6 dimension pairs locally per the selected eval mode. Keep arrays within the component caps (rows 2-6, columns 2-8).',
+    affordances: { representation: ['concrete', 'pictorial'], answers: ['build', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Array session: {{challengeType}}, {{totalChallenges}} arrays. Currently on array {{currentChallengeIndex}}/{{totalChallenges}}.',
       contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetRows', 'targetColumns', 'supportTier'],
@@ -704,6 +724,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'build_array',
+        affordances: { representation: 'concrete', answers: ['build'] },
         label: 'Build Array (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -712,6 +733,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'count_array',
+        affordances: { representation: 'pictorial', answers: ['type'] },
         label: 'Count Array (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -720,6 +742,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'multiply_array',
+        affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'] },
         label: 'Multiply Array (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -732,6 +755,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'double-number-line',
     description: 'Multi-challenge double-number-line session: students walk through 3-6 ratio challenges that all share ONE proportional relationship (same topLabel/bottomLabel/unitRate) for context coherence. Each challenge highlights one target ask-point on parallel number lines and the student enters the missing value. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions practice.',
     constraints: 'Session-level configuration. The generator produces 3-6 ratio challenges per session sharing one scenario, so do NOT supply specific target points, given points, or per-challenge prompts from the manifest — they are derived from the eval mode + generated unit rate. Supports equivalent_ratios, find_missing, and unit_rate challenge types.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'equivalent_ratios',
@@ -805,6 +829,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       misconceptionScope: 'primitive',
     description: 'Multi-challenge tape-diagram session: students walk through 3-6 distinct word problems of the same eval mode, each with its own bars and (where applicable) word problem. Rectangular bars divided into labeled segments representing part-part-whole and comparison relationships. The single most versatile visual for word problems from elementary through algebra. Perfect for addition/subtraction word problems, comparison problems (more than, less than), multi-step word problems, ratio and proportion, and algebraic equation setup. Supports unknown segments marked with "?" for algebra. ESSENTIAL for word problem solving (grades 1-algebra).',
     constraints: 'Session-level configuration. The generator fans out N parallel sub-generator calls per the selected eval mode, so do NOT supply specific values, bar segments, or word problems from the manifest — they are generated per challenge.',
+    affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 5 },
     evalModes: [
       { evalMode: 'represent', label: 'Represent (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['represent'], description: 'Build tape diagram from word problem, identify parts.' },
       { evalMode: 'solve_part_whole', label: 'Part-Whole (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['solve_part_whole'], description: 'Standard part-whole: given parts find total, or vice versa.' },
@@ -840,6 +865,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'factor-tree',
     description: 'Multi-challenge factor-tree session: students factor 3-6 different composite numbers in a row at the same difficulty tier. Each challenge is a fresh tree with its own composite. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and divisibility rules. ESSENTIAL for grades 4-6 number theory.',
     constraints: 'Composites only (not primes). Session-level configuration; rootValues are selected by the local pool service per eval mode, so do NOT supply specific numbers from the manifest.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Walk through {{totalChallenges}} factor trees. Current factorization: {{rootValue}} (challenge {{currentChallengeIndex}} of {{totalChallenges}}).',
       contextKeys: ['rootValue', 'currentFactorization', 'leavesCount', 'allPrime', 'guidedMode', 'currentChallengeIndex', 'totalChallenges'],
@@ -922,6 +948,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'ratio-table',
     description: 'Multi-challenge ratio table with 4 challenge types: missing-value (find a hidden scaled value), find-multiplier (determine the scaling factor), build-ratio (use a slider to construct an equivalent ratio), and unit-rate (calculate the unit rate). Structured table showing equivalent ratios with columns for each quantity. Progressive difficulty with scaffolded hints. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. ESSENTIAL for grades 5-7 ratios and proportions.',
     constraints: 'Requires a ratio relationship between 2-3 quantities. Best with 3-5 rows showing equivalent ratios.',
+    affordances: { representation: 'symbolic', answers: ['manipulate', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Work through {{totalChallenges}} ratio challenges covering missing values, multipliers, ratio building, and unit rates. Current challenge: {{instruction}} with base ratio {{baseRatio}}.',
       contextKeys: ['baseRatio', 'rowLabels', 'challengeType', 'targetMultiplier', 'studentAnswer', 'targetValue', 'unitRate', 'hintsUsed', 'currentChallengeIndex', 'totalChallenges', 'currentAttempts'],
@@ -957,6 +984,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'build_ratio',
+        affordances: { answers: ['manipulate'] },
         label: 'Build Ratio (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -965,6 +993,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing_value',
+        affordances: { answers: ['type'] },
         label: 'Missing Value (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -973,6 +1002,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_multiplier',
+        affordances: { answers: ['type'] },
         label: 'Find Multiplier (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -981,6 +1011,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'unit_rate',
+        affordances: { answers: ['type'] },
         label: 'Unit Rate (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -993,6 +1024,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'percent-bar',
     description: 'Multi-challenge percent-bar session (3-6 percent problems of the same difficulty tier). Each challenge gives a scenario (test score, discount, tax, comparison) and the student drags the bar to the target percent. The generator pre-builds each scenario deterministically; the catalog must NOT supply specific numbers or scenarios. Grade 5-8 percent concepts.',
     constraints: 'The generator pre-selects every scenario (wholeValue, question, targetPercent, hint) per session — the manifest must NOT supply specific numbers, scenarios, questions, or target percents. The manifest may set instanceCount (default 4, max 6), showPercentLabels, showValueLabels, benchmarkLines, doubleBar, and the targetEvalMode.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'identify_percent',
@@ -1079,6 +1111,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'balance-scale',
     description: 'Multi-equation balance scale session (3-6 equations of the same difficulty tier). Each equation uses Explore → Solve → Verify pacing; students click blocks to remove from both sides, drag blocks from palette, or use operations panel. The generator pre-builds each equation deterministically; the catalog must NOT supply specific numbers. Grade-banded: K-2 (concrete, mystery number), 3-4 (one-step x equations), 5 (two-step). ESSENTIAL for pre-algebra and algebra.',
     constraints: 'The generator pre-selects every equation (leftSide, rightSide, variableValue) per session — the manifest must NOT supply specific numbers, sides, or solutions. The manifest may set instanceCount (default 4, max 6), showTilt, and the targetEvalMode.',
+    affordances: { representation: ['concrete', 'pictorial', 'symbolic'], answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Balance scale session: {{title}}. Mode: {{challengeType}}. Equation {{currentChallengeIndex}} of {{totalChallenges}}. Current: {{currentEquation}}. Phase: {{phase}}. Steps taken: {{stepCount}}.',
       contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetEquation', 'currentEquation', 'variableValue', 'gradeBand', 'phase', 'stepCount', 'isSolved', 'isBalanced', 'attemptNumber'],
@@ -1143,6 +1176,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'equality',
+        affordances: { representation: 'concrete' },
         label: 'Equality (Concrete)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -1151,6 +1185,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'equality_hard',
+        affordances: { representation: 'pictorial' },
         label: 'Equality Hard (Pictorial)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -1159,6 +1194,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'one_step',
+        affordances: { representation: 'pictorial' },
         label: 'One-Step (Pictorial–)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1183,6 +1219,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'two_step',
+        affordances: { representation: 'symbolic' },
         label: 'Two-Step (Symbolic)',
         beta: 6.5,
         scaffoldingMode: 5,
@@ -1195,6 +1232,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'function-machine',
     description: 'Visual "machine" with input hopper, rule display, and output chute. Each session walks the student through 3-6 distinct function rules of the same challenge type (observe / predict / discover_rule / create_rule). Numbers enter, get transformed by the rule, and exit. Grade-banded: 3-4 (one-step rules like x+3, x*2), 5 (two-step rules like 2*x+1), advanced (expressions like x^2). ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
     constraints: 'The generator pre-selects the rules and input queues for each session — the manifest must NOT supply specific rules, inputs, or numeric values. The manifest may set instanceCount (default 3, max 6), ruleComplexity, gradeBand, outputDisplay, and the targetEvalMode.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Function machine session: {{title}}. Mode: {{challengeType}}. Function {{currentChallengeIndex}} of {{totalChallenges}}. Current rule: {{rule}} (visible={{showRule}}). Pairs observed: {{pairsCount}}. Predictions: {{predictionsCorrect}}/{{predictionsTotal}}. Grade band: {{gradeBand}}.',
       contextKeys: ['challengeType', 'title', 'currentChallengeIndex', 'totalChallenges', 'rule', 'showRule', 'processedPairs', 'guessedRule', 'gradeBand', 'ruleComplexity', 'pairsCount', 'predictionsCorrect', 'predictionsTotal', 'guessAttempts', 'ruleDiscovered'],
@@ -1237,6 +1275,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'observe',
+        affordances: { answers: ['tap'] },
         label: 'Observe (Tier 1)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -1245,6 +1284,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict',
+        affordances: { answers: ['type'] },
         label: 'Predict (Tier 2)',
         beta: 3.0,
         scaffoldingMode: 2,
@@ -1253,6 +1293,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'discover_rule',
+        affordances: { answers: ['type'] },
         label: 'Discover Rule (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1261,6 +1302,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'create_rule',
+        affordances: { answers: ['type'] },
         label: 'Create Rule (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -1273,6 +1315,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'coordinate-graph',
     description: 'Interactive coordinate plane with structured challenges. Students plot points by clicking grid intersections, identify coordinates of displayed points, calculate slopes using rise/run triangles, and find y-intercepts of lines. SVG-based with snap-to-grid interaction. ESSENTIAL for Grades 5-8 algebra readiness and Algebra I.',
     constraints: 'Requires gridMin/gridMax (integer bounds for both axes). Challenges must use integer coordinates within the grid range. For plot_point, target must be on a grid intersection. For find_slope, points must have integer coordinates producing clean slope fractions. For find_intercept, the line must cross the y-axis at an integer.',
+    affordances: { representation: 'symbolic', answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'plot_point',
@@ -1328,6 +1371,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'slope-triangle',
     description: 'Multi-challenge slope triangle session (3-6 distinct lines of the same challenge type). Each challenge shows a line on a coordinate grid with a right triangle illustrating rise and run; the student reads or constructs the triangle to find slope. ESSENTIAL for grades 7-8 (slope introduction), Algebra 1 (slope calculation, linear equations), Geometry (parallel/perpendicular lines, angles), and Precalculus (connecting slope to tangent). Supports rise/run notation for younger students and Δy/Δx notation for older ones. The system pre-builds the line equations and triangle positions per challenge — the manifest must NOT specify equations, slopes, or triangle dimensions.',
     constraints: 'The manifest must NOT supply equations, slopes, or triangle positions/sizes — these are built per challenge by the pool service. Provide only topic + grade-level context and (optionally) instanceCount and targetEvalMode.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'identify_slope',
@@ -1347,6 +1391,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'draw_triangle',
+        affordances: { answers: ['manipulate'] },
         label: 'Construct Triangle (Tier 6)',
         beta: 6.5,
         scaffoldingMode: 5,
@@ -1392,9 +1437,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'systems-equations-visualizer',
     description: 'Multi-challenge systems-of-equations session (3-6 distinct systems of the same solution method, surfaced sequentially). Per challenge, students see two linear equations and one integer (x, y) solution, then type the answer for immediate judgment. Wrong answers prompt a hint; correct answers reveal the intersection on the graph and advance. Supports graphing (slope-intercept lines drawn for visual reading), substitution (equations in y = mx + b form, graph hidden until correct), and elimination (equations in a·x + b·y = c form, graph hidden until correct). ESSENTIAL for grade 8 (systems introduction via graphing), Algebra 1 (substitution + elimination), and Algebra 2 (efficient method selection).',
     constraints: 'Manifest must NOT supply specific equations, slopes, intercepts, or solutions — the pool service builds 3-6 distinct systems deterministically from the eval mode and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape: graph uses integer slopes (m ∈ {±1, ±2, ±3, ±1/2}) and integer intersections in [-4, 4]; substitution uses the same slope-intercept form with mixed integer/fractional slopes; elimination uses small integer coefficients (a, b ∈ {±1, ±2, ±3}) with integer solutions and a·x + b·y = c display form.',
+    affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 8 },
     evalModes: [
       {
         evalMode: 'graph',
+        affordances: { representation: ['pictorial', 'symbolic'] },
         label: 'Graph (Tier 1)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1456,9 +1503,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'polygon-area-builder',
     description: 'Multi-figure polygon-area session (3-6 distinct figures of the same eval mode, surfaced sequentially). Students derive and apply area formulas by composing and decomposing shapes on a canvas grid: rearrange a parallelogram into a rectangle by sliding the cut triangle (conservation of area), compute triangle / parallelogram / trapezoid areas from labeled dimensions, decompose composite figures into known rectangles and sum, and find the area of a polygon from its vertex coordinates. Canvas-based with five progressive difficulty tiers (decompose → triangle/parallelogram → trapezoid → composite → coordinate polygon). CCSS 6.G.A.1. Grades 6-7. The system pre-builds each figure (dimensions, coordinates, rectangle parts) deterministically per challenge — the manifest must NOT specify dimensions, coordinates, or areas.',
     constraints: 'The manifest must NOT supply per-figure dimensions, coordinates, rectangle parts, or areas — the pool service builds 3-6 distinct figures deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challenge type of the same name.',
+    affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 8 },
     evalModes: [
       {
         evalMode: 'decompose',
+        affordances: { answers: ['manipulate', 'type'] },
         label: 'Decompose to Rectangle (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 2,
@@ -1538,9 +1587,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'circle-explorer',
     description: 'Multi-circle grade-7 session (3-6 distinct circles of the same eval mode, surfaced sequentially) for discovering and applying the geometry of circles. Students first uncover π itself by measuring C ÷ d across several circles and recognizing the constant ≈ 3.14, then find circumference from a radius or diameter (C = 2πr = πd), find area from a radius (A = πr²), work backward to recover the radius given a circumference or an area, and finally tackle composite figures (semicircle area/perimeter, circle-in-square). Canvas-based with two signature interactions: an unroll-the-circumference animation that straightens the perimeter into a line of length πd, and a slice-into-wedges rearrangement that morphs the circle into a near-rectangle of base πr and height r to reveal A = πr². Five progressive difficulty tiers (discover π → circumference → area → reverse → composite). CCSS 7.G.B.4. Grade 7. Fork-A: the pool service pre-builds each circle (radius, given value, composite dimensions, answer) deterministically per challenge — the manifest must NOT specify radii, given values, dimensions, or answers.',
     constraints: 'The manifest must NOT supply per-circle radii, given values, composite dimensions, or answers — the pool service builds 3-6 distinct circles deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challengeType of the same name.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'discover_pi',
+        affordances: { answers: ['tap', 'type'] },
         label: 'Discover π (Tier 1)',
         beta: 2.0,
         scaffoldingMode: 2,
@@ -1618,6 +1669,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'angle-workshop',
     description: 'Interactive angle workshop where students measure, classify, and solve for unknown angles on a canvas figure. Perfect for angle relationships (complementary, supplementary, vertical, adjacent), writing and solving equations for unknown angles, and parallel-lines-with-a-transversal reasoning. ESSENTIAL for grade 7-8 geometry (CCSS 7.G.B.5, 8.G.A.5).',
     constraints: 'The manifest must NOT supply specific per-challenge angle values, measures, or relationships — the local pool service builds the challenges deterministically from the selected eval mode. The manifest supplies only session-level wrapper metadata (title, description, challengeType, gradeBand).',
+    affordances: { representation: 'pictorial', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'measure',
@@ -1629,6 +1681,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'classify_pairs',
+        affordances: { answers: ['tap'] },
         label: 'Classify Angle Pairs',
         beta: 2.5,
         scaffoldingMode: 3,
@@ -1637,6 +1690,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'solve_unknown',
+        affordances: { answers: ['type'] },
         label: 'Solve for an Unknown Angle',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1645,6 +1699,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'solve_algebraic',
+        affordances: { answers: ['type'] },
         label: 'Algebraic Angle Equations',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -1653,6 +1708,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'transversal',
+        affordances: { answers: ['type'] },
         label: 'Transversals & Triangle Angles',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -1690,9 +1746,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'transformation-lab',
     description: 'Interactive coordinate-plane transformation lab where students slide, flip, turn, and scale a polygon and see what stays the same. Students drag image vertices to apply translations, reflections, and rotations; name transformations from a pre-image/image pair; compose sequences of motions to hit a target; and apply dilations to reason about similarity vs congruence. Perfect for rigid motions (translations, reflections, rotations), congruence via sequences of transformations, dilations, and similarity. ESSENTIAL for grade 8 geometry (CCSS 8.G.A.1, 8.G.A.2, 8.G.A.3, 8.G.A.4).',
     constraints: 'The manifest must NOT supply specific per-challenge vertices, coordinates, transformation parameters, or answers — the local pool service builds the challenges deterministically from the selected eval mode. The manifest supplies only session-level wrapper metadata (title, description, challengeType, gradeBand=\'8\').',
+    affordances: { representation: 'pictorial', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
       {
         evalMode: 'apply_translation_reflection',
+        affordances: { answers: ['manipulate'] },
         label: 'Translate & Reflect (Tier 3)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -1701,6 +1759,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'apply_rotation',
+        affordances: { answers: ['manipulate'] },
         label: 'Rotate about the Origin (Tier 4)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1709,6 +1768,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'identify_transformation',
+        affordances: { answers: ['tap'] },
         label: 'Identify the Transformation (Tier 4)',
         beta: 4.0,
         scaffoldingMode: 3,
@@ -1725,6 +1785,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'dilation_similarity',
+        affordances: { answers: ['manipulate'] },
         label: 'Dilations & Similarity (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -1762,6 +1823,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'matrix-display',
     description: 'Multi-challenge matrix practice session (3-6 matrix problems of the same operation, surfaced sequentially). Per challenge, students see Matrix A (and Matrix B for binary operations), enter the result in editable cells (or a single number for determinant), and click "Check Answer" for immediate judgment. Wrong answers prompt hint / "Show steps" walkthrough; correct answers advance to the next matrix. Supports transpose, add, subtract, multiply (row-by-column), determinant (2×2 and 3×3), and inverse (2×2 with det = ±1 so entries stay integer). ESSENTIAL for grade 7-8 (intro to matrix arithmetic), Algebra 2 (operations + determinant), Precalculus (inverses + multiplication), and Linear Algebra (all operations).',
     constraints: 'Manifest must NOT supply specific matrix values, dimensions, or per-challenge content — the pool service builds 3-6 distinct challenges deterministically from the eval-mode operation and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape constraints: transpose alternates 2×3/3×2; add/subtract uses 2×2 or 2×3 same-shape; multiply alternates 2×2 × 2×2 and 2×3 × 3×2; determinant uses 2×2 (grade 7-8) or 2×2/3×3 (algebra2+); inverse is always 2×2 with det ∈ {±1} so A⁻¹ entries are clean integers.',
+    affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'transpose',
@@ -1836,9 +1898,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'dot-plot',
     description: 'Interactive dot plot (also called line plot) with stacked dots representing data values on a number line. Perfect for teaching data representation, frequency concepts, mean, median, mode, data distribution shape, and comparing datasets. Students click to add/remove data points, view frequency at each value, and calculate statistical measures. Supports parallel dot plots for comparing two datasets (e.g., morning vs afternoon temperatures). Stack styles include dots, X marks, or custom icons. ESSENTIAL for grades 2-3 (counting and data representation), grades 3-4 (frequency concepts), grades 5-6 (mean, median, mode), and grades 6-7 (data distribution, comparing datasets).',
     constraints: 'Requires number line range [min, max] and data points array. Data values should be within the range. For younger grades (2-3), use small whole numbers (0-10) and disable statistics. For grades 5+, enable showStatistics for mean/median/mode. For comparison activities, enable parallel mode with labeled datasets. Keep data size manageable: 8-20 values per dataset.',
+    affordances: { representation: 'pictorial', role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'whole_number_plot',
+        affordances: { answers: ['build'] },
         label: 'Whole Number Plot (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -1847,6 +1911,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'measure_and_plot',
+        affordances: { answers: ['build'] },
         label: 'Measure & Plot (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -1863,6 +1928,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'fractional_units',
+        affordances: { answers: ['build'] },
         label: 'Fractional Units (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1918,9 +1984,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'histogram',
     description: 'Multi-histogram analysis session (3-6 distinct histograms of the same challenge type) for grades 6-8 statistics. Each challenge presents its own dataset with a real-world context (test scores, heights, temperatures, etc.) and a single mode-specific prompt: identify the distribution shape (symmetric, skewed, bimodal, uniform), find the modal bin, read a specific bin frequency, or estimate the mean/median from the visual. Pool-service generator: bin widths, datasets, and answer keys are built deterministically per mode. ESSENTIAL for 6.SP (statistical questions, shape & center), 7.SP (comparing populations from displays).',
     constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own dataset, bin width, and prompt. The manifest MUST NOT supply specific data arrays, bin widths, bin starts, contexts, or answer keys — the generator builds every challenge deterministically from the eval mode + topic via the pool service. Stats panel is auto-hidden in estimate_center mode to prevent the student from reading the mean/median directly off the UI.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'identify_shape',
+        affordances: { answers: ['tap'] },
         label: 'Identify Shape (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -1929,6 +1997,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_modal_bin',
+        affordances: { answers: ['tap'] },
         label: 'Find Modal Bin (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -1937,6 +2006,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'read_frequency',
+        affordances: { answers: ['type'] },
         label: 'Read Frequency (Tier 2+)',
         beta: 3.0,
         scaffoldingMode: 2,
@@ -1945,6 +2015,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'estimate_center',
+        affordances: { answers: ['type'] },
         label: 'Estimate Center (Tier 3)',
         beta: 4.0,
         scaffoldingMode: 3,
@@ -1995,6 +2066,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'two-way-table',
     description: 'Multi-challenge two-way table (contingency table) probability practice session (3-6 problems of the same probability concept, surfaced sequentially). Per challenge, students see a real-world scenario (pet preference by gender, sport by grade, transportation by distance, etc.), a frequency table, and a question — they enter a probability as a decimal and click "Check Answer" for immediate judgment. Wrong answers show a hint; correct answers advance to the next table. Supports joint probability, marginal distribution, conditional probability, and the independence test. Mode-specific UI gating: marginal/conditional modes hide row/column totals so the student must compute them; joint/independence modes show totals to support the calculation. ESSENTIAL for grade 7 (categorical data, joint probability), grade 7-Statistics (conditional probability), and Statistics courses (independence testing).',
     constraints: 'Manifest must NOT supply specific scenarios, categories, or per-challenge frequencies — the pool service builds 3-6 distinct contingency-table problems deterministically from the eval-mode concept. Manifest may supply instanceCount only. Per-mode shape: joint/independence modes use 2×2 frequency tables with totals visible; marginal/conditional modes use 2×2 tables with totals hidden to prevent answer leak.',
+    affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'joint_probability',
@@ -2066,9 +2138,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'ten-frame',
     description: 'Live tutor-judged 2×5 grid manipulative for K-2 number sense (DI modality). The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the answer out loud for subitizing (counters flash, then hide — say how many you saw), for make-ten at grades 1-2 (how many more fill the frame), and for addition and subtraction on the frame; they answer WITH THEIR HANDS for building a number (place exactly N counters) and for make-ten at Kindergarten (tap the empty cells until the frame is full), where placing the counters IS the skill. Supports single frame (1-10) and double frame (1-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, subitizing, make-ten strategy, addition, and subtraction.',
     constraints: 'Best for grades K-2. Requires a microphone: spoken answers are judged by the Live tutor and there is no Check button and no typed or stepper answer anywhere. Single frame for K, double frame for grades 1-2. Every spoken answer is a number word from 1 to 20 — challenges whose answer would be 0 (an empty frame, a subtraction down to nothing) or above 20 are discarded before the child sees them.',
+    affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'build'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'build',
+        affordances: { answers: ['build'] },
         label: 'Build (Concrete)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2077,6 +2151,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'subitize',
+        affordances: { representation: 'pictorial', answers: ['spoken'] },
         label: 'Subitize (Pictorial)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2085,6 +2160,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'make_ten',
+        affordances: { answers: ['build', 'spoken'] },
         label: 'Make Ten (Strategy)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2093,6 +2169,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'operate',
+        affordances: { answers: ['spoken'] },
         label: 'Operate (Symbolic)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -2163,9 +2240,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'counting-board',
     description: 'Live tutor-judged Pre-K to Grade 1 counting workspace (DI modality) with tappable objects (bears, apples, stars, fish, butterflies, blocks) in varied arrangements (scattered, line, groups, circle). The child counts by tapping and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken number word from the audio in-band, corrects DISTAR-style, and its own affirmation advances the lesson. Modes: pre-numeric perceptual subitizing (Pre-K, tap the matching hand — fully number-free), count-all (tap each object, say how many), flash subitizing (K: objects flash then hide; say how many you saw), count-on (start from a known group), group counting (count by 2s/5s/10s), and compare (say how many in the group with more). Builds one-to-one correspondence, cardinality principle, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
     constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand answers (no numerals anywhere in the item). K: count 1-20 objects, count_all and subitize. Grade 1: count to 30, count-on and group counting. Answers are spoken number words (or a hand tap at Pre-K) judged by the microphone-enabled Lumina tutor; there is no Check button and no typed answer.',
+    affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'subitize_perceptual',
+        affordances: { representation: 'pictorial', answers: ['tap'] },
         label: 'Subitize (Pre-Numeric)',
         beta: 0.5,
         scaffoldingMode: 1,
@@ -2174,6 +2253,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'count',
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Count All (Concrete)',
         beta: 1.0,
         scaffoldingMode: 1,
@@ -2182,6 +2262,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'subitize',
+        affordances: { representation: 'pictorial', answers: ['spoken'] },
         label: 'Subitize (Perceptual)',
         beta: 2.0,
         scaffoldingMode: 2,
@@ -2190,6 +2271,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'group',
+        affordances: { answers: ['spoken'] },
         label: 'Group Count (Pictorial)',
         beta: 2.0,
         scaffoldingMode: 2,
@@ -2198,6 +2280,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'count_on',
+        affordances: { answers: ['spoken'] },
         label: 'Count On (Reduced Prompts)',
         beta: 2.5,
         scaffoldingMode: 3,
@@ -2206,6 +2289,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compare',
+        affordances: { answers: ['spoken'] },
         label: 'Compare (Reduced Prompts)',
         beta: 2.5,
         scaffoldingMode: 3,
@@ -2280,6 +2364,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       misconceptionScope: 'primitive',
     description: 'Multi-phase comparison activity with four challenge types: compare groups of objects visually, compare written numerals with inequality symbols, order numbers least-to-greatest or greatest-to-least, and identify one more / one less. Features animated correspondence lines and alligator mouth mnemonic for < and >. Perfect for teaching quantity comparison and number ordering. ESSENTIAL for K-1 math.',
     constraints: 'Supports numbers 1-20. Groups contain up to 10 objects. Order challenges use 3-5 numbers. Object types: bears, apples, stars, blocks, fish, butterflies, hearts, flowers, cookies, balls.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
     tutoring: {
       // taskDescription is flat — no {{#if}} handlebars. interpolate_template does
       // key substitution only, so conditional blocks render as literal junk in the
@@ -2330,6 +2415,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'compare_groups',
+        affordances: { representation: 'pictorial', answers: ['tap'] },
         label: 'Compare Groups (Scaffold 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2338,6 +2424,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'one_more_less',
+        affordances: { representation: 'symbolic', answers: ['tap'] },
         label: 'One More / One Less (Scaffold 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2346,6 +2433,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compare_numbers',
+        affordances: { representation: 'symbolic', answers: ['tap'] },
         label: 'Compare Numbers (Scaffold 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2354,6 +2442,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'order',
+        affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'] },
         label: 'Order (Scaffold 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -2367,6 +2456,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'pattern-builder',
     description: 'Interactive pattern recognition, extension, and creation for K-3 algebraic thinking. Students build, extend, identify cores, translate, and create repeating patterns (AB, AAB, ABC), growing patterns (1,3,5,7), and number patterns. Supports color tokens, shape tokens, and numbers. Progressive phases: Copy → Identify → Create → Translate. Connects pattern skills to skip counting, multiplication foundations, and early algebra. ESSENTIAL for grades K-3 algebraic thinking, pattern recognition, and early algebra foundations.',
     constraints: 'Best for grades K-3. K-1: repeating patterns with colors/shapes only (AB, AAB, ABB). Grades 2-3: growing and number patterns, translation and creation challenges.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'build'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Student is working through {{totalChallenges}} pattern challenges (currently {{currentChallengeIndex}}). Pattern type: {{patternType}}. Challenge: {{instruction}}. Given sequence: {{givenSequence}}. Core unit: {{coreUnit}}. Rule: {{rule}}. Student extension: {{studentExtension}}. Attempt: {{attemptNumber}}.',
       contextKeys: ['patternType', 'instruction', 'givenSequence', 'hiddenSequence', 'coreUnit', 'rule', 'challengeType', 'attemptNumber', 'currentPhase', 'studentExtension', 'studentCreation', 'currentChallengeIndex', 'totalChallenges', 'supportTier', 'tutorRevealPolicy'],
@@ -2396,6 +2486,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'extend',
+        affordances: { answers: ['build'] },
         label: 'Extend (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2404,6 +2495,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'identify_core',
+        affordances: { answers: ['tap'] },
         label: 'Identify Core (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2412,6 +2504,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'translate',
+        affordances: { answers: ['build'] },
         label: 'Translate (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2420,6 +2513,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'create',
+        affordances: { answers: ['build'] },
         label: 'Create (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -2428,6 +2522,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_rule',
+        affordances: { answers: ['tap'] },
         label: 'Find Rule (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -2440,9 +2535,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'skip-counting-runner',
     description: 'Rhythmic skip counting with animated number line jumps for grades 1-3. A character (frog, kangaroo, rabbit, rocket) jumps along a number line in equal leaps, landing on multiples. Students count along, predict landing spots, identify skip values, fill missing numbers, and connect to multiplication facts. Parallel array visualization links skip counting to multiplication. Supports forward and backward counting. ESSENTIAL for grades 1-3 skip counting, multiplication foundations, and number pattern recognition.',
     constraints: 'Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, forward only, count_along and predict challenges. Grades 2-3: skip by 3s, 4s, backward counting, multiplication connections.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 4 },
     evalModes: [
       {
         evalMode: 'count_along',
+        affordances: { answers: ['tap'] },
         label: 'Count Along (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2451,6 +2548,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict',
+        affordances: { answers: ['type'] },
         label: 'Predict (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2459,6 +2557,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'fill_missing',
+        affordances: { answers: ['type'] },
         label: 'Fill Missing (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2467,6 +2566,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_skip_value',
+        affordances: { answers: ['type'] },
         label: 'Find Skip Value (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -2475,6 +2575,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'connect_multiplication',
+        affordances: { answers: ['type'] },
         label: 'Connect Multiplication (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -2513,6 +2614,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'hundreds-chart',
     description: 'Interactive number grid (10 numbers per row) for counting and skip-counting pattern discovery. The grid ceiling follows the lesson: a "counting to 10" lesson renders a 1-10 board and counting IN ORDER (by 1s), while an unbounded skip-counting lesson renders the full 1-100 chart. Students highlight sequences, complete partially shown patterns, identify visual column/row/diagonal relationships, and determine skip intervals. Connects number grid topology to multiplication foundations. Good for K counting-to-10/20 and ESSENTIAL for grades 1-3 skip counting, pattern recognition, and place value understanding.',
     constraints: 'K: counting in order on a small board (1-10, 1-20), highlight mode. Grades 1-2: skip by 2s, 5s, 10s, highlight and complete modes. Grades 2-3: skip by 3s, 4s, identify and find_skip_value modes. State the ceiling in the topic or intent ("to 10", "within 50") — the grid sizes itself to it and defaults to 1-100 when the lesson names none. Skip intervals too coarse for a small board are dropped automatically.',
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'highlight_sequence',
@@ -2532,6 +2634,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'identify_pattern',
+        // Sentence options ("Every other cell in each row") — a text-only answer
+        // surface with no read-aloud; the child decodes alone (reader-fit PRE 2026-09-05).
+        affordances: { reader: 'developing' },
         label: 'Identify Pattern (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2561,7 +2666,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Cannot identify the visual pattern', response: '"Look at where the highlighted cells sit. Are they in the same column (vertical line)? The same row? Or do they make a diagonal? Columns mean the ones digit stays the same!"' },
         { pattern: 'Wrong skip value guess', response: '"Pick any two highlighted numbers next to each other. Subtract the smaller from the bigger — that difference IS the skip value!"' },
       ],
+      // ORIENT beat (reader-fit PRE 2026-09-05): K lessons open counting-to-10
+      // objectives on this board, and the child cannot read the instruction.
+      // aiDirectives render into the standalone prompt AND the lesson greeting /
+      // [PRIMITIVE SWITCH] injection, so the beat survives the one-sentence cap
+      // that drops a component sendText clause alone.
       aiDirectives: [
+        {
+          title: 'SAY THE INSTRUCTION — THE STUDENT MAY NOT BE ABLE TO READ IT',
+          instruction:
+            'At the start of the activity ([PRIMITIVE SWITCH] or [ACTIVITY_START]) and on every [NEXT_ITEM], your FIRST action is to say the current instruction out loud in child terms: "{{instruction}}". '
+            + 'On a small board (numbers to 10 or 20) the task is counting in order: "Tap 1, then 2, then 3, all the way to the end." '
+            + 'Saying the instruction IS your greeting for this activity and overrides any one-sentence cap. Never tell the student to read the screen.',
+        },
         {
           title: 'HUNDREDS CHART COACHING',
           instruction:
@@ -2579,6 +2696,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'regrouping-workbench',
     description: 'Interactive addition and subtraction with regrouping (carrying and borrowing) for grades 1-4. Split view: base-ten blocks workspace (ones cubes, tens rods, hundreds flats) alongside the written algorithm. Students tap to trade 10 ones for 1 ten (carry) or break 1 ten into 10 ones (borrow). The blocks and algorithm update in parallel. Progressive phases from exploration to solving. Supports word problem contexts. ESSENTIAL for grades 1-4 multi-digit addition, subtraction, regrouping, and standard algorithm understanding.',
     constraints: 'Best for grades 1-4. Grades 1-2: two-digit problems with one regroup, addition focus. Grades 3-4: three-digit problems with multiple regroups, addition and subtraction. Supports add_no_regroup, subtract_no_regroup, add_regroup, and subtract_regroup challenge types.',
+    affordances: { representation: ['concrete', 'symbolic'], answers: ['manipulate', 'type'], role: 'apply', minutes: 6 },
     evalModes: [
       {
         evalMode: 'add_no_regroup',
@@ -2644,9 +2762,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'multiplication-explorer',
     description: 'Multi-representation multiplication workspace connecting equal groups, arrays, repeated addition, number line jumps, and area model — all synchronized to the same fact. Students progress through 4 phases: build groups → build arrays → connect all 5 representations → use strategies (distributive property, fact families). Includes commutative property toggle, missing-factor challenges, and fluency quiz mode. ESSENTIAL for grades 2-4 multiplication introduction, fact fluency, and multiplicative thinking.',
     constraints: 'Best for single-digit × single-digit facts (grades 2-3) or multi-digit × single-digit (grade 4). Factors should be reasonable for visual display (≤12 for arrays, ≤50 product for number line). Supports build, connect, commutative, distributive, missing_factor, and fluency challenge types.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'build',
+        affordances: { representation: 'concrete', answers: ['build'] },
         label: 'Build (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2655,6 +2775,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'connect',
+        affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'] },
         label: 'Connect (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2679,6 +2800,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing_factor',
+        affordances: { answers: ['type'] },
         label: 'Missing Factor (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -2687,6 +2809,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'fluency',
+        affordances: { answers: ['type'] },
         label: 'Fluency (Tier 6)',
         beta: 6.5,
         scaffoldingMode: 6,
@@ -2726,6 +2849,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'measurement-tools',
     description: 'Multi-shape ruler measurement session (3-6 distinct shapes of the same challenge type). Pool-service pattern: the generator picks the mode and unit, the component supplies the shapes deterministically from per-mode width pools. Students walk through each shape sequentially, dragging it onto a ruler and reading the measurement. Modes: measure (whole units, grades 1-3), compare (measure all, then order shortest-to-longest, grades 2-3), estimate (half-inch precision between tick marks, grades 2-3), convert (measure then convert between inches and centimeters, grades 3-4). ESSENTIAL for grades 1-5 measurement and data standards.',
     constraints: 'Ruler-based length measurement session. The manifest must NOT supply specific shape widths, colors, labels, or hints — those are built deterministically from the in-generator pool service. Grades 1-2 use whole-number precision; grades 3-5 add half precision and unit conversion.',
+    affordances: { representation: 'pictorial', answers: ['manipulate'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Multi-shape measurement session. Mode: {{challengeType}}. Shape {{currentChallengeIndex}} of {{totalChallenges}}: {{currentShape}} (width: {{shapeWidth}} {{unit}}). On ruler: {{isOnRuler}}. Precision: {{precision}}.',
       contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'currentShape', 'shapeWidth', 'unit', 'precision', 'isOnRuler'],
@@ -2792,6 +2916,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'convert',
+        affordances: { representation: 'symbolic', answers: ['manipulate', 'type'] },
         label: 'Convert (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -2804,9 +2929,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'shape-builder',
     description: 'Interactive geometry workspace for constructing shapes on dot/coordinate grids, measuring properties with ruler/protractor tools, classifying shapes into categories, composing/decomposing shapes, and finding lines of symmetry. Supports build, discover, classify, compose, decompose, and symmetry modes. Perfect for teaching shape construction, property discovery, classification hierarchies, and spatial reasoning. ESSENTIAL for K-5 geometry.',
     constraints: 'Requires challenges array with progressive difficulty. Grid-based workspace (dot or coordinate). Supports modes: build, discover, classify, compose, decompose, symmetry.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
       {
         evalMode: 'build',
+        affordances: { representation: 'concrete', answers: ['manipulate'] },
         label: 'Build (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2823,6 +2950,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'classify_by_lines',
+        affordances: { representation: 'symbolic', answers: ['tap'] },
         label: 'Classify by Lines (Tier 2.5)',
         beta: 3.0,
         scaffoldingMode: 3,
@@ -2831,6 +2959,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'classify',
+        affordances: { representation: 'symbolic', answers: ['tap'] },
         label: 'Classify (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2839,6 +2968,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compose',
+        affordances: { representation: 'concrete', answers: ['manipulate'] },
         label: 'Compose (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -2855,6 +2985,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'coordinate_shape',
+        affordances: { representation: 'symbolic', answers: ['manipulate'] },
         label: 'Coordinate Shape (Tier 6)',
         beta: 6.5,
         scaffoldingMode: 6,
@@ -2903,9 +3034,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'number-sequencer',
     description: 'Interactive number sequencing with 5 challenge types: fill-missing (complete number sequences with blanks), before-after (identify numbers before/after a given number), order-cards (arrange shuffled numbers in order), count-from (continue counting forward/backward from a starting number), and decade-fill (fill missing numbers across decade boundaries in a local number window). Uses a "number train" visual metaphor. Perfect for building sequential number understanding. ESSENTIAL for K-1 math.',
     constraints: 'K: 1-20 range. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all five.',
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['type', 'tap'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'count_from',
+        affordances: { answers: ['type'] },
         label: 'Count From (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2914,6 +3047,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'before_after',
+        affordances: { answers: ['type'] },
         label: 'Before/After (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2922,6 +3056,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'order_cards',
+        affordances: { answers: ['tap'] },
         label: 'Order Cards (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2930,6 +3065,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'fill_missing',
+        affordances: { answers: ['type'] },
         label: 'Fill Missing (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -2938,6 +3074,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'decade_fill',
+        affordances: { answers: ['type'] },
         label: 'Decade Fill (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -2966,6 +3103,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'number-bond',
     description: 'Live tutor-judged number bond practice (DI modality) on the classic circle-and-branch part-part-whole diagram. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the missing part OUT LOUD (missing-part, both grades); they answer WITH THEIR HANDS by splitting counters into the two part circles to find every pair (decompose — one judged turn per pair), by writing all four fact-family equations (fact-family), and by building a number sentence from tiles (build-equation) — in those three, constructing it IS the skill. Perfect for K-1 addition/subtraction fluency. ESSENTIAL for Kindergarten and Grade 1 number decomposition.',
     constraints: 'Max number 5 for Kindergarten, 10 for Grade 1, so every spoken answer is a number word from 1 to 9. Requires a microphone: the missing-part answer is spoken and judged by the Live tutor, and there is no Check button, no stepper and no typed number answer anywhere. Kindergarten uses decompose and missing-part only; fact-family and build-equation are Grade 1. Known parts are never 0 and never the whole.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'build', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'LIVE-JUDGED number bond practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the bond, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
       contextKeys: ['challengeType', 'stimulus'],
@@ -3038,6 +3176,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'decompose',
+        affordances: { representation: 'concrete', answers: ['build'] },
         label: 'Decompose (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -3049,6 +3188,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing_part',
+        affordances: { answers: ['spoken'] },
         label: 'Missing Part (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -3061,6 +3201,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'fact_family',
+        affordances: { representation: 'symbolic', answers: ['type'] },
         label: 'Fact Family (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -3071,6 +3212,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build_equation',
+        affordances: { representation: 'symbolic', answers: ['build'] },
         label: 'Build Equation (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -3085,6 +3227,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'addition-subtraction-scene',
     description: 'Live tutor-judged K-1 addition and subtraction story scenes (DI modality). The Live tutor reads the story aloud, asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the number OUT LOUD to solve a word problem (both grades) and to report how many there are now, or how many are left, after acting a story out at Grade 1; they answer WITH THEIR HANDS by acting the story out on the scene at Kindergarten (bring more in, send some away), by building the number sentence from tiles, and by making the scene that matches a given number sentence — in those three, constructing it IS the skill. Supports join, separate, compare, and part-part-whole story types. The bridge from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
     constraints: 'Best for Kindergarten and Grade 1. Requires a microphone: spoken answers are judged by the Live tutor and there is no Check button, no typed answer and no numeral menu anywhere. Numbers limited to maxNumber (5 for K, 10 for Grade 1), so every spoken answer is a number word from 1 to 20. Four challenge types: act-out, build-equation, solve-story, create-story; story contexts must match the scene theme. Stories are read aloud, so a story that states the number the child must find — or whose answer would be 0 — is discarded before the child ever sees it.',
+    affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'manipulate', 'build'], role: 'apply', minutes: 6 },
     tutoring: {
       taskDescription: 'LIVE-JUDGED addition and subtraction story practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the scene, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
       contextKeys: ['challengeType', 'stimulus'],
@@ -3171,6 +3314,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'act_out',
+        affordances: { answers: ['manipulate'] },
         label: 'Act Out (Scaffold 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -3183,6 +3327,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build_equation',
+        affordances: { representation: 'symbolic', answers: ['build'] },
         label: 'Build Equation (Scaffold 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -3193,6 +3338,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'solve_story',
+        affordances: { answers: ['spoken'] },
         label: 'Solve Story (Scaffold 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -3208,6 +3354,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'create_story',
+        affordances: { answers: ['manipulate'] },
         label: 'Create Story (Scaffold 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -3228,6 +3375,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'primitive',
     description: 'Live tutor-judged ordinal positions (DI modality) on a line of characters in a race, parade, lunch line, train or bookshelf. The Live tutor names which end is the FRONT, asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill and the grade: at Kindergarten they SAY THE NAME of the one in the place the tutor asks for, and at Grade 1 the tutor names a character and they SAY ITS PLACE (identify — one eval mode, band-split, because naming the place is the harder rung and is the vocabulary the standard is about); they READ ONE PLACE SYMBOL ALOUD, one card at a time (match); they SAY THE NAME of the one right before or right after a marked place (relative-position); they LISTEN to a spoken story and SAY the place one character has in it (sequence-story); and they answer WITH THEIR HANDS by putting pictures into places from spoken clues (build-sequence) — there the arrangement IS the answer. Builds the ordinal vocabulary first through tenth by SAYING it. ESSENTIAL for Kindergarten and Grade 1 number sense.',
     constraints: 'Best for grades K-1. Requires a microphone: four of the five answers are spoken and judged by the Live tutor, and there is no Check button, no Next button, no multiple-choice row, no matching grid and no tap-on-the-line anywhere. Positions run 1-10 so every spoken place word is a single benched word (first..tenth); maxPosition 5 for Kindergarten, up to 10 for Grade 1, and a line shorter than 3 has no ordinal work in it. Character names are read aloud and said back, so they must be plain sayable names, tellable apart by ear, and must never contain a position or a number — a character called First-Place Freddie or Number Three answers the question out loud. Story challenges are HEARD, not read: at most 5 characters, under 60 words, no quotation marks. Build challenges give at most 4 spoken clues, which is what a child can hold from speech. A challenge whose answer key disagrees with its target position, whose printed word and printed symbol are different ordinals, or whose clues leave a gap in the line is discarded before the child ever sees it.',
+    // reader: 'none' at the primitive level — every mode but `match` is spoken/hands (no Check,
+    // no multiple-choice row, no tap-on-the-line, per constraints above); `match` alone requires
+    // reading a printed ordinal symbol aloud ("READ ONE PLACE SYMBOL ALOUD"), so it is overridden
+    // to 'emerging' below. No dedicated qa/reader-fit PRE file for this primitive.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'manipulate'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'LIVE-JUDGED ordinal position practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the screen, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
       contextKeys: ['challengeType', 'stimulus'],
@@ -3335,6 +3487,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'match',
+        affordances: { representation: 'symbolic', reader: 'emerging', answers: ['spoken'] },
         label: 'Match (Scaffold 2)',
         beta: 3.0,
         scaffoldingMode: 2,
@@ -3377,6 +3530,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build_sequence',
+        affordances: { answers: ['manipulate'] },
         label: 'Build Sequence (Scaffold 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -3395,6 +3549,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'primitive',
     description: 'Live tutor-judged sorting and classifying (DI modality) on picture cards and labelled trays. The Live tutor asks with scripted lines ONE OBJECT AT A TIME, judges the child in-band, and its own affirmation advances the lesson — a challenge is no longer a screenful of objects committed at once, it is a sequence of single judged questions. Every answer is SPOKEN: the child says which group a thing belongs with (sort-by-one, sort-variety), says HOW the set should be sorted (sort-by-attribute), says which card does not belong (odd-one-out), says HOW MANY are in a group (count-and-compare, tally-record), says which group has more, and says YES or NO to whether one thing matches two criteria at once (two-attributes). Covers objective-relevant semantic categories (needs/wants, roles, living/nonliving, kinds) and visible attributes when those attributes are the taught concept. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
     constraints: 'Best for K-1. Requires a microphone: EVERY answer is spoken and judged by the Live tutor, and there is no Check button, no drag-to-bin, no attribute buttons, no number steppers and no odd-one-out tap anywhere. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar and their names sayable in one or two words. Objects per challenge: 4-6 at Kindergarten, 5-8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. Group counts run 1-20 so every spoken count is a single word, and a group that would be EMPTY is not asked (zero has no benched spoken form). A challenge whose tray labels cannot be told apart by ear, whose object IS one of the tray labels, or whose yes/no set has only one reachable verdict is discarded before the child ever sees it. BAND FLOOR (unchanged by the spoken port — moving it needs a reader-fit re-audit, not a catalog edit): at Kindergarten route only sort_one and odd_one_out. sort_attribute, sort_variety, count_compare, two_attributes and tally_record remain Grade 1+.',
+    // reader: 'none' — READY @ PRE for sort_one and odd_one_out after the --fix loop
+    // (qa/reader-fit/sorting-station-PRE-2026-07-15.md); the other five modes carry a
+    // Grade 1+ band floor stated in their own eval-mode descriptions. The verdict predates
+    // the DI port, which only REMOVED demand from the child's path (every answer is now
+    // spoken; no Check button, drag-to-bin, attribute buttons or steppers survive), and the
+    // mode descriptions record that the port left the band floors unchanged. The re-audit
+    // WORKSTREAMS still owes this primitive is about the ported surface, not the reading axis.
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'LIVE-JUDGED sorting practice (DI modality): you ask with scripted lines sent as cues, ONE object or ONE group at a time, the child answers OUT LOUD, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
       contextKeys: ['challengeType', 'stimulus'],
@@ -3576,6 +3738,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       + 'either name is accepted for either. COUNTING items are POLYGONS ONLY — a circle has no defensible side '
       + 'count, being arguable at zero and at one. SORTING is by sides, curved or color (never by shape, whose '
       + 'groups would just be the shape names) into 2-3 groups, and a sides sort holds polygons only.',
+    // reader: 'none' — "Nothing is tapped, dragged or typed" (description) and every answer is
+    // spoken (all 3 modes below); no text surface exists for the child to read.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
     // ── DI MODALITY (2026-08-18) — FIFTH math port, item 18. The tutor owns the
     // clock: it asks once, waits, judges the spoken answer in-band, and its own
     // affirmation is the advance. No advance timer, no Next button, no Check,
@@ -3760,64 +3925,83 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: '3d-shape-explorer',
-    description: '3D Shape Explorer — introduces cubes, cones, cylinders, spheres, and rectangular prisms through multi-phase challenges: identifying shapes, sorting 2D vs 3D, matching to real-world objects, analyzing properties (faces, rolling, stacking), and comparing shapes side by side. Perfect for building 3D geometry vocabulary and spatial reasoning. ESSENTIAL for Kindergarten and Grade 1 geometry.',
-    constraints: 'Shapes limited to: cube, sphere, cylinder, cone, rectangular-prism. Properties must use accurate geometry (e.g., cube has 6 flat faces, sphere has 0). Real-world object matches must be unambiguous.',
+    misconceptionScope: 'primitive',
+    description: 'LIVE-JUDGED spoken solid-shape exploration for K-1. The child sees one code-drawn solid or familiar object, or hears one code-owned riddle, and SAYS one answer: a mathematical solid name, flat or solid, one property count, a yes/no property verdict, or a flat-face shape. The Live tutor judges the response in-band, teaches the exact misconception after a wrong answer, and its own affirmation advances the run.',
+    constraints: 'Requires a microphone. Every answer is spoken; there are no answer buttons, sorting bins, match grid, property grid, Check, or Next controls. Solids are limited to cube, sphere, cylinder, cone, and rectangular-prism; flat drawings are circle, square, triangle, and rectangle. Geometry facts and riddle clues come from the code-owned truth table. Number answers are 1-20; a zero count is reframed as a yes/no any-question. Compound generated collections fan out to one judged item per answer, capped at four children and six session items. Generated content with unknown names, contradictory dimensions or facts, object-name leaks, or non-unique riddles is discarded.',
+    // reader: 'none' — every mode below is already spoken-only ("there are no answer buttons,
+    // sorting bins, match grid, property grid, Check, or Next controls").
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     tutoring: {
-      taskDescription: 'Student is exploring 3D shapes through {{challengeType}} challenges. Current shape: {{shape3d}}. They need to identify, sort, match, or analyze properties of 3D shapes.',
-      contextKeys: ['challengeType', 'shape3d', 'displayShape', 'properties', 'attemptNumber', 'shape1', 'shape2', 'instruction', 'gradeBand'],
+      taskDescription: 'LIVE-JUDGED solid-shape practice. Ask only the hand-authored cue, wait for one spoken answer, judge it, and let your own verdict advance. Current challenge type: {{challengeType}}. Question-side screen context: {{stimulus}}. Never read the [CURRENT STATE] heading or its lines aloud.',
+      contextKeys: ['challengeType', 'stimulus'],
       scaffoldingLevels: {
-        level1: '"Look at this shape. Is it flat like a piece of paper, or could you pick it up and hold it?"',
-        level2: '"Try to think about its flat parts. How many flat faces can you see? What shape are those flat parts?"',
-        level3: '"This is a {{shape3d}}. Let me tell you about it: [describe faces, curved surfaces, real-world example]. A cube is like a dice block. A sphere is like a ball. A cylinder is like a can."',
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name the hidden solid or property and never offer a second speakable line.',
+        level2: 'After a wrong answer, speak the cue\'s scripted "My turn:" correction exactly. Do not add a hint, alternate question, or praise before or after it.',
+        level3: 'Stay with the script even when the child is stuck. The correction models the geometry and re-asks. Never improvise a walkthrough, count aloud during the child\'s turn, or reveal a candidate.',
       },
       commonStruggles: [
-        { pattern: 'Confuses 2D circle with 3D sphere', response: 'A circle is flat — you can draw it on paper. A sphere is round all the way around, like a ball you can hold. Can you hold a circle? No, but you can hold a sphere!' },
-        { pattern: 'Cannot count flat faces on a shape', response: 'Let us look at one side at a time. The top is flat — that is one face. Now the bottom — that is two. What about the sides?' },
-        { pattern: 'Struggles to connect real-world objects to shape names', response: 'Think about what you can find at home. A soup can is a cylinder — it has circles on top and bottom. A box is a rectangular prism. What shape is a ball?' },
-        { pattern: 'Confuses "roll" and "slide" properties', response: 'Rolling means it can move smoothly like a ball. Sliding means it moves flat on a surface. A cube slides but does not roll. A sphere rolls but does not slide flat.' },
+        { pattern: 'Says a flat look-alike instead of a solid name', response: 'Judge it wrong and use only the scripted correction, which contrasts the whole solid with one flat face.' },
+        { pattern: 'Repeats the everyday object name', response: 'That names the stimulus, not its mathematical solid. Use only the scripted correction.' },
+        { pattern: 'Counts one face twice or misses one', response: 'Use only the scripted correction, which models touching each face exactly once.' },
+        { pattern: 'Confuses rolling, sliding, and stacking', response: 'Judge the property actually asked. A true statement about a different movement is still wrong.' },
+        { pattern: 'Long silence', response: 'The child is looking and thinking. Wait. If needed, re-speak the exact current ask once without naming the answer.' },
+      ],
+      aiDirectives: [
+        { title: 'THE SCRIPT OWNS EVERY SPOKEN LINE', instruction: 'The opening cue already contains the greeting, how-to-play, exact ask, exact affirmation, and exact correction. Speak only the quoted line required for this turn. Never replace it with catalog prose or generated instruction text.' },
+        { title: 'TWO-BRANCH LAW', instruction: 'Judge only the learner response. If it is right, speak the exact "Yes," affirmation. If it is wrong, speak the exact "My turn:" correction. There is no hint or partial-credit branch.' },
+        { title: 'THE VERDICT ENDS THE TURN', instruction: 'An affirmation or correction is the whole turn. Stop immediately afterward. Never ask the next item early; its cue arrives separately.' },
+        { title: 'ANSWER MATERIAL', instruction: 'Every item is answered aloud. Shape names must be mathematical names, flat/solid accepts the stated dimensional variants, positive counts are one through twenty, and yes/no accepts the natural variants explicitly listed by the cue. Do not accept an object name, a nearby solid, or a fact about a different property.' },
+        { title: 'NEVER PERFORM THE CHILD\'S WORK', instruction: 'Never name a hidden target, read answer options, count faces aloud during the child\'s turn, or select a candidate from the clues. Think time is unbounded. Bracketed text is stage direction and is never spoken.' },
+        { title: 'CURRENT STATE IS SILENT CONTEXT', instruction: 'Never read [CURRENT STATE], its heading, or any of its lines aloud. It describes the screen only.' },
       ],
     },
+    audioInput: { manual_activity: true },
     supportsEvaluation: true,
     evalModes: [
       {
         evalMode: 'identify_3d',
+        affordances: { answers: ['spoken'] },
         label: 'Identify 3D (Tier 1)',
-        beta: 1.5,
+        beta: 2.0,
         scaffoldingMode: 1,
         challengeTypes: ['identify-3d'],
-        description: 'Name 3D shapes from visual display.',
+        description: 'Look at one unlabeled solid and SAY its mathematical name. Beta raised from 1.5: the 1-of-4 printed name menu is gone.',
       },
       {
         evalMode: 'match_real_world',
+        affordances: { answers: ['spoken'] },
         label: 'Match Real World (Tier 2)',
-        beta: 2.5,
+        beta: 3.0,
         scaffoldingMode: 2,
         challengeTypes: ['match-to-real-world'],
-        description: 'Connect 3D shapes to real-world objects.',
+        description: 'Look at one familiar object and SAY its solid-shape name. Beta raised from 2.5: the shape word column and elimination grid are gone.',
       },
       {
         evalMode: '2d_vs_3d',
+        affordances: { answers: ['spoken'] },
         label: '2D vs 3D (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['2d-vs-3d'],
-        description: 'Compare and sort 2D and 3D shapes.',
+        description: 'Look at one code-drawn shape and SAY flat or solid. Beta held: the same binary discrimination and closed spoken pair remain.',
       },
       {
         evalMode: 'faces_properties',
+        affordances: { answers: ['spoken'] },
         label: 'Faces & Properties (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['faces-and-properties'],
-        description: 'Analyze faces, edges, vertices, and movement properties.',
+        description: 'Answer one focused property question aloud with a number word, yes/no verdict, or flat-face shape. Beta held: menus are removed while the old bulk grid is decomposed.',
       },
       {
         evalMode: 'shape_riddle',
+        affordances: { answers: ['spoken'] },
         label: 'Shape Riddle (Tier 5)',
-        beta: 5.5,
+        beta: 6.0,
         scaffoldingMode: 5,
         challengeTypes: ['shape-riddle'],
-        description: 'Deductive identification from property clues.',
+        description: 'Listen to every code-owned clue and SAY the mystery solid name. Beta raised from 5.5: the 1-of-4 illustrated name menu is gone.',
       },
     ],
   },
@@ -3825,6 +4009,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'shape-tracer',
     description: 'Interactive shape construction canvas with 4 progressive challenge types: trace (follow dotted outlines), complete (finish half-drawn shapes), draw-from-description (build shapes from verbal property descriptions), and connect-dots (reveal shapes by connecting numbered dots). Develops geometric reasoning by linking shape properties to motor construction. Perfect for K-1 shape recognition and spatial reasoning. ESSENTIAL for Kindergarten and Grade 1 geometry.',
     constraints: 'Canvas coordinate space is 500x400. All vertex coordinates must be within bounds (x: 40-460, y: 40-360). Shapes should be large enough for small hands to tap. Maximum 6 challenges per activity.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['manipulate'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Student is constructing shapes on a drawing canvas. Current challenge type: {{challengeType}}. Target shape: {{targetShape}}. They have completed {{sidesCompleted}} of {{totalSides}} sides. Attempt {{attemptNumber}}.',
       contextKeys: ['challengeType', 'targetShape', 'description', 'requiredProperties', 'sidesCompleted', 'totalSides', 'attemptNumber', 'tracingAccuracy'],
@@ -3867,6 +4052,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'draw_from_description',
+        affordances: { representation: 'symbolic' },
         label: 'Draw from Description (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -3880,9 +4066,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'math-fact-fluency',
     description: 'Math fact fluency practice with 5 progressive challenge types: visual facts with dot arrays/ten-frames, bare equation solving, missing number problems, visual-equation matching, and aid-free rapid recall. Builds automaticity for addition and subtraction facts within 3, 5, or 10 through calm, untimed practice (no countdown, no time pressure). Perfect for K-1 fact fluency development. ESSENTIAL for Kindergarten and Grade 1 math fact recall.',
     constraints: 'Facts limited to addition and subtraction within maxNumber (3, 5, or 10). Visual aids only in visual-fact and match phases. Rapid-recall (speed-round) has no multiple choice and no visual aids. No timers — students answer at their own pace; response time is measured silently for the automaticity signal only.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'type'], role: 'apply', minutes: 4 },
     evalModes: [
       {
         evalMode: 'visual_fact',
+        affordances: { representation: 'pictorial', answers: ['tap'] },
         label: 'Visual Fact (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -3891,6 +4079,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'match',
+        affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'] },
         label: 'Match (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -3899,6 +4088,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'equation_solve',
+        affordances: { representation: 'symbolic', answers: ['tap'] },
         label: 'Equation Solve (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -3907,6 +4097,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing_number',
+        affordances: { representation: 'symbolic', answers: ['type'] },
         label: 'Missing Number (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -3915,6 +4106,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'speed_round',
+        affordances: { representation: 'symbolic', answers: ['type'] },
         label: 'Rapid Recall (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -3943,6 +4135,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'strategy-picker',
     description: 'An interactive strategy-comparison activity where students solve the same problem using 2-3 different strategies (counting on, make-ten, doubles, tally marks, draw objects), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10.',
     constraints: 'Numbers within 5 (K) or 10 (Grade 1). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Student is on challenge {{currentChallengeIndex}} of {{totalChallenges}}, solving {{equation}} using {{assignedStrategy}}. Challenge type: {{challengeType}}. They have completed strategies: {{strategiesCompleted}}. Support tier: {{supportTier}}. RECOGNITION RULE: for challenge type "match-strategy" the strategy IS the answer — NEVER name the correct strategy at any tier; at easy describe what features to look for, at hard only ask what the student notices.',
       contextKeys: ['currentChallengeIndex', 'totalChallenges', 'challengeType', 'equation', 'assignedStrategy', 'strategySteps', 'studentAnswer', 'attemptNumber', 'chosenStrategy', 'strategiesCompleted', 'supportTier'],
@@ -4005,6 +4198,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'number-tracer',
     description: 'Canvas-based numeral writing practice. Students trace dotted digit paths, copy from a model, write from a prompt, or complete counting sequences. Essential for CC.K.CC.3 (write 0-20) and 1.NBT.1 (write to 120).',
     constraints: 'Best for K-Grade 1. Digit range: 0-20 for K, 0-120 for Grade 1. Use trace mode for beginners, sequence for advanced.',
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['manipulate'], role: 'apply', minutes: 4 },
     tutoring: {
       taskDescription: 'Student is writing the numeral {{digit}}. Challenge type: {{challengeType}}. Attempt {{attemptNumber}}. Model visible: {{showModel}}. Support tier: {{supportTier}}.',
       contextKeys: ['digit', 'challengeType', 'instruction', 'showModel', 'showArrows', 'supportTier', 'attemptNumber', 'lastScore', 'gradeBand'],
@@ -4059,9 +4253,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'length-lab',
     description: 'Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units (cubes, paper clips) end-to-end to measure, arrange objects by length, and use indirect comparison via a reference. Perfect for K.MD.1 and K.MD.2 standards. ESSENTIAL for Kindergarten measurement.',
     constraints: 'Objects limited to 1-12 unit lengths. K: compare + tile only. G1: order + indirect.',
+    // reader: 'none' — BACKLOG direct-manipulation sibling audit (qa/reader-fit/BACKLOG.md,
+    // "Systemic items" section) cleared length-lab: "TilingWorkspace derives from placedUnits =
+    // good" — the answer comes from what the child tiles/points at, never a read-then-type proxy.
+    affordances: { representation: ['concrete', 'pictorial'], reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'compare',
+        affordances: { answers: ['tap'] },
         label: 'Compare (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -4070,6 +4269,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'tile_and_count',
+        affordances: { representation: 'concrete', answers: ['manipulate'] },
         label: 'Tile & Count (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -4078,6 +4278,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'order',
+        affordances: { answers: ['manipulate'] },
         label: 'Order (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -4086,6 +4287,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'indirect',
+        affordances: { answers: ['tap'] },
         label: 'Indirect (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -4118,9 +4320,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       + 'Perfect for K-5 time-telling standards. ESSENTIAL for K.MD and 1.MD.3.',
     constraints:
       'K: hour and half-hour only (:00/:30). G1-2: quarter-hour (:15 intervals). G3-5: 5-minute intervals. Maximum 6 challenges per session.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'read',
+        affordances: { answers: ['tap'] },
         label: 'Read Time (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 2,
@@ -4129,6 +4333,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'set_time',
+        affordances: { representation: 'concrete', answers: ['manipulate'] },
         label: 'Set Time (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 3,
@@ -4137,6 +4342,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'match',
+        affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'] },
         label: 'Match (Tier 2)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -4145,6 +4351,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'elapsed',
+        affordances: { answers: ['manipulate'] },
         label: 'Elapsed Time (Tier 3)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -4194,6 +4401,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'coin-counter',
     description: 'Interactive coin workspace for grades K-3. Students identify coins by appearance, count mixed coin sets, drag coins to make target amounts, compare groups, and make change. Supports pennies, nickels, dimes, and quarters with skip-counting scaffolds. Progressive difficulty from single-coin identification through greedy-algorithm fewest-coins challenges. ESSENTIAL for grades K-3 money skills and financial literacy foundations.',
     constraints: 'Best for grades K-3. K-1: identify coins and count like coins only. Grades 2-3: mixed counting, make-amount, compare, and make-change challenges.',
+    affordances: { representation: 'concrete', answers: ['tap', 'manipulate', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Student is working with coins — identifying, counting, or making amounts. Instruction: {{instruction}}. Grade band: {{gradeBand}}.',
       contextKeys: ['instruction', 'targetCoin', 'correctTotal', 'targetAmount', 'correctGroup', 'correctChange', 'displayedCoins', 'gradeBand'],
@@ -4233,6 +4441,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'identify',
+        affordances: { representation: 'pictorial', answers: ['tap'] },
         label: 'Identify (Scaffold 1)',
         beta: 1.0,
         scaffoldingMode: 1,
@@ -4241,6 +4450,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'count-like',
+        affordances: { answers: ['tap'] },
         label: 'Count Like Coins (Scaffold 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -4249,6 +4459,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'count-mixed',
+        affordances: { representation: 'pictorial', reader: 'emerging', answers: ['type'] },
         label: 'Count Mixed Coins (Scaffold 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -4257,6 +4468,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compare',
+        affordances: { representation: 'pictorial', answers: ['tap'] },
         label: 'Compare (Scaffold 2)',
         beta: 3.0,
         scaffoldingMode: 2,
@@ -4265,6 +4477,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'make-amount',
+        affordances: { answers: ['manipulate'] },
         label: 'Make Amount (Scaffold 2)',
         beta: 3.5,
         scaffoldingMode: 2,
@@ -4273,6 +4486,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'make-change',
+        affordances: { representation: 'pictorial', answers: ['type'] },
         label: 'Make Change (Scaffold 3)',
         beta: 4.5,
         scaffoldingMode: 3,
@@ -4281,6 +4495,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'fewest-coins',
+        affordances: { answers: ['manipulate'] },
         label: 'Fewest Coins (Scaffold 3)',
         beta: 5.0,
         scaffoldingMode: 3,
@@ -4293,6 +4508,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'time-sequencer',
     description: 'Event sequencer and time concepts for grades K-2. Students order daily events, match activities to time of day (morning/afternoon/night), reason about before/after relationships, compare durations, and read simple schedules. Progressive difficulty from 3-event sequencing through clock-time schedule reading. Bridges to AnalogClock for formal time-telling. ESSENTIAL for K-2 time and daily routine concepts.',
     constraints: 'Best for grades K-2. K: 3-event sequences and time-of-day matching only. Grades 1-2: 5-event sequences, before/after reasoning, duration comparison, and schedule reading.',
+    // reader: 'none' — qa/reader-fit/how-it-works-PRE-2026-07-21.md names time-sequencer as the
+    // recommended K routing destination for procedural/ordering content precisely because it is
+    // "already K-2, picture-primary"; read-schedule is the one mode that requires reading printed
+    // clock times off a schedule, so it is overridden to 'developing' below.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Student is ordering daily events or matching activities to times of day. Connects to personal routines.',
       contextKeys: ['instruction', 'events', 'correctOrder', 'event', 'correctPeriod', 'referenceEvent', 'relation', 'schedule', 'targetTime', 'gradeBand'],
@@ -4351,6 +4571,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'read-schedule',
+        affordances: { representation: 'symbolic', reader: 'developing', answers: ['tap'] },
         label: 'Read Schedule (Scaffold 3)',
         beta: 4.0,
         scaffoldingMode: 3,
@@ -4363,6 +4584,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'spatial-scene',
     description: 'Grid-based positional language and prepositions. Students identify, place, and describe object positions using spatial words (above, below, beside, next to, on, under, left of, right of) — tapping the grid to ENACT an instruction like "Put the ball under the box". Also serves containment ("Put the ball IN the box" — tap the container itself) and two-reference placement ("Put the ball BETWEEN the box and the tree"). Serves both K.G.1 math positional vocabulary and Kindergarten Language Arts preposition skills. Supports multiple challenge types from simple identification to multi-step direction following. ESSENTIAL for K-1 geometry and K-2 grammar prepositions.',
     constraints: 'Requires a grid layout with placed objects. Challenges array drives interactivity. Grade band K-1. The position-word vocabulary follows whatever words the lesson objective/intent names, widening the grade-band default — so name the target prepositions in the intent. Containment "in/inside" and two-reference "between" are served by their own challenge types (place_in, place_between). NOT supported (do not route these here): viewer-relative "in front of/behind" and path words "through/around/across" — a 3x3 top-down static grid cannot express them.',
+    // docs/contracts/spatial-scene.md: R5 populates the grid with pictorial scene objects (icons,
+    // not photos or bare symbols); identify/describe alone carry a text options row (R7/R12), which
+    // the child must read to disambiguate — the place/place_in/place_between/follow_directions
+    // family is pure tap-to-enact with no text answer surface, so 'none' is the primitive default
+    // and identify/describe are overridden to 'emerging' below. No formal reader-fit PRE verdict.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Student identifies, places, or describes positions of objects on a grid using spatial vocabulary (above, below, beside, in, between).',
       contextKeys: ['instruction', 'sceneObjects', 'targetObject', 'correctPosition', 'referenceObjectName', 'referenceObjectName2', 'options', 'steps', 'gradeBand'],
@@ -4381,6 +4608,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'identify',
+        affordances: { reader: 'emerging', answers: ['tap'] },
         label: 'Identify (Scaffold 1)',
         beta: 1.0,
         scaffoldingMode: 1,
@@ -4389,6 +4617,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'place_in',
+        affordances: { answers: ['manipulate'] },
         label: 'Put In — Containment (Scaffold 2)',
         beta: 1.5,
         scaffoldingMode: 2,
@@ -4397,6 +4626,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'place',
+        affordances: { answers: ['manipulate'] },
         label: 'Place (Scaffold 2)',
         beta: 2.0,
         scaffoldingMode: 2,
@@ -4405,6 +4635,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'describe',
+        affordances: { reader: 'emerging', answers: ['tap'] },
         label: 'Describe (Scaffold 3)',
         beta: 3.0,
         scaffoldingMode: 3,
@@ -4413,6 +4644,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'place_between',
+        affordances: { answers: ['manipulate'] },
         label: 'Between — Two References (Scaffold 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -4421,6 +4653,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'follow_directions',
+        affordances: { answers: ['manipulate'] },
         label: 'Follow Directions (Scaffold 4)',
         beta: 4.0,
         scaffoldingMode: 4,
@@ -4433,6 +4666,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'shape-composer',
     description: 'Interactive shape composition and decomposition workspace. Students compose larger shapes from smaller pieces (tangram-style), build pictures from shape palettes, and decompose composite shapes into basic components. Supports snap-to-fit placement, rotation, and guided decomposition. Perfect for teaching spatial reasoning, shape relationships, and geometry vocabulary at K-1 level. ESSENTIAL for kindergarten geometry composition standards.',
     constraints: 'Requires K-1 grade band. Challenge types: compose-match, compose-picture, decompose, free-create, how-many-ways.',
+    affordances: { representation: 'concrete', reader: 'none', answers: ['build'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
       {
         evalMode: 'free-create',
@@ -4460,6 +4694,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'decompose',
+        affordances: { answers: ['tap'] },
         label: 'Decompose (Medium-Hard)',
         beta: 0.5,
         scaffoldingMode: 3,
@@ -4506,9 +4741,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'net-folder',
     description: '3D shape net folding/unfolding visualization with CSS 3D transforms. Shows relationship between 3D solids and 2D nets. Students rotate solids, unfold into nets, match face correspondence, validate nets, and calculate surface area. Supports cube, rectangular prism, triangular prism, and pyramid. Perfect for teaching spatial reasoning, 3D geometry, and surface area at grades 3-5. ESSENTIAL for geometry standards.',
     constraints: 'Requires grade 3-5. Solid types: cube, rectangular_prism, triangular_prism, square_pyramid, triangular_pyramid. Challenge types: identify_solid, match_faces, valid_net, surface_area, count_faces_edges_vertices.',
+    affordances: { representation: 'pictorial', answers: ['manipulate', 'tap', 'type'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
       {
         evalMode: 'count_faces_edges_vertices',
+        affordances: { answers: ['type'] },
         label: 'Count FEV (Easy)',
         beta: -0.8,
         scaffoldingMode: 1,
@@ -4517,6 +4754,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'identify_solid',
+        affordances: { answers: ['tap'] },
         label: 'Identify Solid (Easy-Medium)',
         beta: -0.3,
         scaffoldingMode: 2,
@@ -4525,6 +4763,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'match_faces',
+        affordances: { answers: ['tap'] },
         label: 'Match Faces (Medium)',
         beta: 0.2,
         scaffoldingMode: 3,
@@ -4533,6 +4772,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'valid_net',
+        affordances: { answers: ['tap'] },
         label: 'Valid Net (Medium-Hard)',
         beta: 0.7,
         scaffoldingMode: 4,
@@ -4541,6 +4781,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'surface_area',
+        affordances: { representation: 'symbolic', answers: ['type'] },
         label: 'Surface Area (Hard)',
         beta: 1.2,
         scaffoldingMode: 5,
@@ -4580,6 +4821,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'equation-builder',
     description: 'Interactive equation-building manipulative where students construct, evaluate, and balance equations using draggable number and operator tiles. Teaches that the equal sign means "same amount on both sides," not "answer comes next." Supports build, missing-value, true-false, balance, and rewrite challenge types across scaffolding levels. ESSENTIAL for K-2 equation understanding.',
     constraints: 'Requires grade band (K-2). Challenges array drives interactivity. Each challenge specifies a challengeType and target equation.',
+    // reader: 'developing' — WRONG-BAND @ PRE (qa/reader-fit/equation-builder-PRE-2026-09-05.md).
+    // The build target is stated ONLY in an English sentence and the true/false answer surface is
+    // two English words, with no read-aloud directive. No band floor was added (user ruling: make
+    // it age-friendly, never floor it) — the demand is recorded here instead.
+    affordances: { representation: 'symbolic', reader: 'developing', answers: ['build', 'type', 'tap'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Build and reason about equations using draggable tiles. Challenge type: {{challengeType}}. Instruction: {{instruction}}. Equation: {{equation}}. Grade band: {{gradeBand}}.',
       contextKeys: ['challengeType', 'instruction', 'equation', 'gradeBand'],
@@ -4618,6 +4864,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'build-simple',
+        affordances: { answers: ['build'] },
         label: 'Build Simple',
         beta: 1.0,
         scaffoldingMode: 1,
@@ -4626,6 +4873,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing-result',
+        affordances: { answers: ['type'] },
         label: 'Missing Result',
         beta: 1.5,
         scaffoldingMode: 2,
@@ -4634,6 +4882,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'true-false',
+        affordances: { answers: ['tap'] },
         label: 'True or False',
         beta: 2.0,
         scaffoldingMode: 3,
@@ -4642,6 +4891,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing-operand',
+        affordances: { answers: ['type'] },
         label: 'Missing Operand',
         beta: 2.5,
         scaffoldingMode: 4,
@@ -4650,6 +4900,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'balance-both-sides',
+        affordances: { answers: ['build'] },
         label: 'Balance Both Sides',
         beta: 3.5,
         scaffoldingMode: 5,
@@ -4658,6 +4909,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'rewrite',
+        affordances: { answers: ['build'] },
         label: 'Rewrite',
         beta: 4.0,
         scaffoldingMode: 6,
@@ -4671,6 +4923,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'primitive',
     description: 'Live tutor-judged measurement comparison (DI modality) on drawings of real-world objects. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY OUT LOUD what the picture lets us measure — how long, how tall, how heavy, or how much it holds (identify-attribute, both grades); they SAY THE NAME of the object that is longer, taller, heavier or holds more (compare-two, both grades); they SAY THE COUNT of non-standard units laid along an object (non-standard, Grade 1); and they answer WITH THEIR HANDS by touching three objects in order (order-three, Grade 1) — there the arrangement IS the answer. Builds the measurement vocabulary K.MD.1 asks children to SPEAK. ESSENTIAL for Kindergarten and Grade 1 measurement and data (K.MD.1-2).',
     constraints: 'Best for grades K-1. Requires a microphone: three of the four answers are spoken and judged by the Live tutor, and there is no Check button, no attribute chips, no object buttons and no typed number anywhere. Kindergarten uses identify-attribute and compare-two only; order-three and non-standard are Grade 1. Unit counts run 1-20, so every spoken number is a single word. A comparison whose drawing disagrees with its answer, whose two object names cannot be told apart by ear, or whose attribute menu offers both length and height is discarded before the child ever sees it.',
+    // reader: 'none' — "no Check button, no attribute chips, no object buttons and no typed
+    // number anywhere" (constraints above); three of four modes are spoken, order_three is hands.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'manipulate'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'LIVE-JUDGED measurement comparison practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the screen, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
       contextKeys: ['challengeType', 'stimulus'],
@@ -4750,6 +5005,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'identify_attribute',
+        affordances: { answers: ['spoken'] },
         label: 'Identify Attribute (Tier 1)',
         beta: 1.0,
         scaffoldingMode: 1,
@@ -4763,6 +5019,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compare_two',
+        affordances: { answers: ['spoken'] },
         label: 'Compare Two (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -4775,6 +5032,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'order_three',
+        affordances: { answers: ['manipulate'] },
         label: 'Order Three (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -4786,6 +5044,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'non_standard',
+        affordances: { answers: ['spoken'] },
         label: 'Non-Standard Measure (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -4803,6 +5062,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'formula-lab',
     description: 'Interactive Formula Lab for grades 6-12 math and science relationship reasoning. Students hold other variables constant while they explore a living system, predict direction or relative magnitude, construct the symbolic relationship, and transfer the same formula to a new setting with the output withheld. Perfect for building conceptual understanding of direct, inverse, and nonlinear formulas before calculation or memorization. ESSENTIAL for middle-school and high-school algebra, physics, chemistry, and quantitative science.',
     constraints: 'Use only scalar formulas expressible with 2-3 numeric input variables and restricted +, -, *, /, and ^ arithmetic. The manifest must NOT supply specific per-challenge values, variable settings, predictions, or answers — the generator builds the local value pool and derives every challenge deterministically. Supply only topic, grade-level context, and session-level formula metadata.',
+    affordances: { representation: 'symbolic', answers: ['manipulate', 'type'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription:
         'Investigate how {{changedVariable}} affects {{outputName}} in {{challengeType}} mode. '
@@ -4875,6 +5135,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'free-explore',
+        affordances: { answers: ['manipulate'] },
         label: 'Free Explore (Tier 1)',
         beta: 1.5,
         discrimination: 1.8,
@@ -4884,6 +5145,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict-direction',
+        affordances: { answers: ['tap'] },
         label: 'Predict Direction (Tier 2)',
         beta: 2.5,
         discrimination: 1.6,
@@ -4893,6 +5155,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict-magnitude',
+        affordances: { answers: ['manipulate'] },
         label: 'Predict Magnitude (Tier 3)',
         beta: 3.5,
         discrimination: 1.6,
@@ -4902,6 +5165,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'construct-formula',
+        affordances: { answers: ['build'] },
         label: 'Construct Formula (Tier 4)',
         beta: 5.0,
         discrimination: 1.8,
@@ -4911,6 +5175,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'transfer-apply',
+        affordances: { answers: ['type'] },
         label: 'Transfer & Apply (Tier 6)',
         beta: 8.0,
         discrimination: 1.6,
@@ -4925,9 +5190,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'parameter-explorer',
     description: 'Multi-variable formula explorer with interactive sliders. Students adjust parameters via continuous sliders to observe how output changes in real-time. Supports prediction checkpoints and hold-and-vary (lock variables). Perfect for exploring STEM relationships (physics, chemistry, economics). ESSENTIAL for grade 6-12 science and math.',
     constraints: 'Requires jsExpression (JS-evaluable formula) alongside LaTeX formula. Parameters need numeric min/max/step ranges. Works best with 2-3 parameters.',
+    affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'explore',
+        affordances: { answers: ['manipulate'] },
         label: 'Explore (Tier 1)',
         beta: 1.0,
         scaffoldingMode: 1,
@@ -4936,6 +5203,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict-direction',
+        affordances: { answers: ['tap'] },
         label: 'Predict Direction (Tier 2)',
         beta: 2.0,
         scaffoldingMode: 2,
@@ -4944,6 +5212,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'identify-relationship',
+        affordances: { answers: ['tap'] },
         label: 'Identify Relationship (Tier 3)',
         beta: 3.0,
         scaffoldingMode: 3,
@@ -4952,6 +5221,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict-value',
+        affordances: { answers: ['type'] },
         label: 'Predict Value (Tier 4)',
         beta: 3.5,
         scaffoldingMode: 4,
@@ -4979,6 +5249,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'equation-workspace',
     description: 'Step-by-step algebraic manipulation workspace where students isolate a target variable by selecting operations (divide, multiply, take arcsin, square root, etc.) applied to both sides of an equation. Supports guided-solve with highlighted hints, identify-operation multiple choice, free-solve, and multi-step challenges requiring 4+ operations. Covers linear, quadratic, trigonometric, and calculus-level equations. Pedagogical moments: STEP_CORRECT (after each correct operation), ANSWER_CORRECT (equation solved), ANSWER_INCORRECT (wrong operation selected), NEXT_ITEM (advancing to next challenge), ALL_COMPLETE (all challenges done). ESSENTIAL for grades 9-12+ algebra through calculus.',
     constraints: 'Best for grades 9-12+. Requires equation string and target variable. Multi-step mode requires equations needing 4+ operations. Guided-solve highlights valid operations as hints.',
+    affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 8 },
     evalModes: [
       {
         evalMode: 'guided-solve',
@@ -5033,6 +5304,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'function-sketch',
     description: 'Multi-challenge qualitative function reasoning primitive for grades 9-12. Each session walks the student through 3-6 distinct functions in the same eval mode (orchestrator-same-mode pattern). Students analyze function behavior by shape, key features, and family — without computing exact values. Supports four challenge types: classify-shape (linear/quadratic/exponential/periodic), identify-features (roots, extrema, intercepts, asymptotes), compare-functions (two curves, match to description), and sketch-match (place control points to sketch a described function). Pedagogical moments: FEATURE_FOUND, ANSWER_CORRECT, ANSWER_INCORRECT, NEXT_ITEM, ALL_COMPLETE. ESSENTIAL for Algebra 2, Precalculus, and AP Calculus qualitative reasoning.',
     constraints: 'Best for grades 9-12. The manifest must NOT supply specific functions, expressions, curves, or features — the generator picks 3-6 distinct functions locally per the selected eval mode via N parallel Gemini sub-generator calls. Requires only a title and context string at the session level. Sketch-match requires control-point placement UI; identify-features requires annotatable curve with clickable feature markers.',
+    affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 6 },
     evalModes: [
       {
         evalMode: 'classify-shape',
@@ -5060,6 +5332,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'sketch-match',
+        affordances: { answers: ['manipulate'] },
         label: 'Sketch Match (Tier 4)',
         beta: 3.5,
         scaffoldingMode: 5,
@@ -5096,9 +5369,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'distribution-explorer',
     description: 'Live workbench for probability distributions (binomial, Poisson, exponential). Students manipulate parameter sliders and watch the PMF/PDF, CDF, and moments update in real time. Supports four phase-gated challenge modes: free guided exploration, family identification from shape/moments, basic single-distribution probability computation, and advanced conditional/tail/percentile reasoning. ESSENTIAL for probability, statistics, and actuarial topics.',
     constraints: 'Requires a topic with a probabilistic structure. Each eval mode produces phase-appropriate challenges: explore (no graded answer), identify (family MCQ), compute (numeric input with tolerance), predict_shape (free-text or MCQ description). Math is computed client-side from the chosen family — Gemini authors framing + challenges only.',
+    affordances: { representation: 'symbolic', answers: ['manipulate', 'type'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'explore',
+        affordances: { answers: ['manipulate'] },
         label: 'Explore (Tier 1)',
         beta: 1.0,
         scaffoldingMode: 1,
@@ -5107,6 +5382,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'identify',
+        affordances: { answers: ['tap'] },
         label: 'Identify (Tier 2)',
         beta: 3.0,
         scaffoldingMode: 2,
@@ -5115,6 +5391,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compute_basic',
+        affordances: { answers: ['type'] },
         label: 'Compute Basic (Tier 3)',
         beta: 4.5,
         scaffoldingMode: 3,
@@ -5123,6 +5400,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compute_advanced',
+        affordances: { answers: ['type', 'tap'] },
         label: 'Compute Advanced (Tier 4)',
         beta: 6.5,
         scaffoldingMode: 5,

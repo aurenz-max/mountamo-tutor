@@ -1241,6 +1241,9 @@ export interface OrderedComponent {
   title: string;
   data: any;
   objectiveIds?: string[];
+  /** Who the block is for. `caregiver` blocks are placed after the final
+   *  assessment by exhibitAssembly and framed as a parent card; absent = student. */
+  audience?: 'student' | 'caregiver';
 }
 
 export interface ExhibitData {
@@ -1273,34 +1276,6 @@ export interface ExhibitData {
   // All components now render exclusively from orderedComponents array.
   knowledgeCheck: KnowledgeCheckData;
   relatedTopics: RelatedTopic[];
-}
-
-// Walk-Through Types
-export interface WalkThroughRequest {
-  type: 'curator-brief' | 'concept-card' | 'feature-exhibit'; // Extensible
-  content: WalkThroughContent;
-  componentId: string; // Unique identifier for targeting
-}
-
-export interface WalkThroughContent {
-  brief?: string;
-  objectives?: string[];
-  title?: string;
-  description?: string;
-  // Extensible for future component types
-}
-
-export interface WalkThroughProgress {
-  section: 'brief' | 'objectives';
-  objectiveIndex?: number | null;
-  isComplete?: boolean;
-}
-
-export interface WalkThroughState {
-  active: boolean;
-  componentId: string | null;
-  currentSection: 'brief' | 'objectives' | null;
-  highlightIndex: number | null;
 }
 
 // --- MANIFEST-FIRST ARCHITECTURE ---
@@ -1659,6 +1634,47 @@ export interface StudentPrompt {
  * prior (β) from the calibration PRD §5.3. Used by the practice-visual-catalog
  * and session assembly engine to select the right mode for a target difficulty.
  */
+// ============================================================================
+// Primitive affordances — what a block DEMANDS of the child and what it OFFERS
+// ============================================================================
+//
+// Declared per primitive (and per eval mode where modes differ), rendered as a
+// terse tag on the catalog line the curator reads, and read back by the Lesson
+// Bench's code-judged checks. These are facts about the primitive that hold at
+// every grade — deliberately NOT grade ranges (user ruling 2026-08-07: a grade
+// floor removes the primitive along with the demand). Absent = unknown: an
+// untagged primitive renders no tag and behaves exactly as before.
+// Resolver + renderer: service/manifest/catalog/affordances.ts
+
+/** Who reads the block. `caregiver` = an adult reads it (home activities). */
+export type AffordanceAudience = 'student' | 'caregiver';
+/** Concrete–Pictorial–Abstract position of what the block SHOWS. */
+export type AffordanceRepresentation = 'concrete' | 'pictorial' | 'symbolic';
+/** Minimum reading the child's OWN path needs, after read-aloud is accounted for. */
+export type AffordanceReader = 'none' | 'emerging' | 'developing';
+/** What the child PRODUCES to answer. */
+export type AffordanceAnswer = 'spoken' | 'tap' | 'build' | 'manipulate' | 'type';
+/** Rung on the curator's Introduce / Visualize / Apply / Assess ladder. */
+export type AffordanceRole = 'introduce' | 'visualize' | 'apply' | 'assess';
+
+export interface PrimitiveAffordances {
+  /** Default `student`. */
+  audience?: AffordanceAudience;
+  representation?: AffordanceRepresentation | AffordanceRepresentation[];
+  /** Derive from a reader-fit verdict (READY @ PRE → `none`); never guess. */
+  reader?: AffordanceReader;
+  /** `spoken` is also derived from `audioInput` (a judged pack declares it). */
+  answers?: AffordanceAnswer[];
+  role?: AffordanceRole | AffordanceRole[];
+  /** Typical minutes a student spends on one block. */
+  minutes?: number;
+  /** How many times the primitive may appear in one lesson. */
+  maxPerLesson?: number;
+}
+
+/** Per-mode override: only the axes that vary between a primitive's modes. */
+export type EvalModeAffordances = Pick<PrimitiveAffordances, 'representation' | 'reader' | 'answers'>;
+
 export interface EvalModeDefinition {
   /** Eval mode key sent to the backend (e.g., 'build', 'subitize', 'make_ten') */
   evalMode: string;
@@ -1679,6 +1695,8 @@ export interface EvalModeDefinition {
   challengeTypes: string[];
   /** Brief description of what this mode tests */
   description: string;
+  /** Where this mode's demands differ from the primitive's `affordances`. */
+  affordances?: EvalModeAffordances;
 }
 
 export interface ComponentDefinition {
@@ -1701,6 +1719,12 @@ export interface ComponentDefinition {
    * Absence means the primitive is not enabled for misconception capture.
    */
   misconceptionScope?: 'primitive' | 'skill';
+  /**
+   * What the block demands of the child and offers the curator — audience,
+   * CPA representation, reading load, answer modality, ladder role, minutes,
+   * max per lesson. Rendered as a tag on the catalog line; absent = untagged.
+   */
+  affordances?: PrimitiveAffordances;
 }
 
 /**

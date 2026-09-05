@@ -9,6 +9,7 @@ import {
   generateIntroBriefing,
 } from '@/components/lumina/service/geminiService';
 import { getComponentById } from '@/components/lumina/service/manifest/catalog';
+import { AFFORDANCE_TAGS_DEFAULT, resolveAffordances } from '@/components/lumina/service/manifest/catalog/affordances';
 import type { ExhibitManifest, IntroBriefingData, ManifestItem } from '@/components/lumina/types';
 import { buildLessonPackage } from '@/components/lumina/service/qa/lessonBench/lessonPackage';
 import type { StudentGenerationContext } from '@/components/lumina/service/studentContext/types';
@@ -82,6 +83,13 @@ function stripImageData(node: unknown): unknown {
     return out;
   }
   return node;
+}
+
+/** "on" | true → true, "off" | false → false, anything else → production default. */
+function parseAffordances(v: unknown): boolean | undefined {
+  if (v === true || v === 'on' || v === 'true') return true;
+  if (v === false || v === 'off' || v === 'false') return false;
+  return undefined;
 }
 
 /** Project a manifest's objective blocks into the trace's `objectives` shape. */
@@ -161,7 +169,13 @@ interface TraceParams {
   emitPackage: boolean;
   /** Fixed objectives — when provided, the brief is skipped entirely */
   fixedObjectives: Array<{ id: string; text: string; verb: string; icon: string }> | null;
+  /** Frozen brief for a controlled full-package rerun with fixed objectives. */
+  fixedBrief?: IntroBriefingData | null;
   studentContext: StudentGenerationContext | null;
+  /** Render affordance tags in the curator prompt: true / false, or undefined
+   *  for the production default (AFFORDANCE_TAGS_DEFAULT). The A/B script
+   *  passes both explicitly. */
+  affordanceTags: boolean | undefined;
 }
 
 async function runTrace(params: TraceParams) {
@@ -175,12 +189,13 @@ async function runTrace(params: TraceParams) {
     emitPackage,
     fixedObjectives,
     studentContext,
+    affordanceTags,
   } = params;
 
   const startTime = Date.now();
 
   // ── Step 1: objectives — fixed (caller-controlled) or from the curator brief ──
-  let brief: { hook?: unknown; objectives?: Array<{ id: string; text: string; verb: string; icon: string }> } | null = null;
+  let brief: { hook?: unknown; objectives?: Array<{ id: string; text: string; verb: string; icon: string }> } | null = params.fixedBrief ?? null;
   let objectives = fixedObjectives ?? undefined;
   if (!objectives && useObjectives) {
     try {
@@ -198,6 +213,8 @@ async function runTrace(params: TraceParams) {
     gradeLevel,
     objectives,
     studentContext,
+    undefined,
+    { affordanceTags },
   );
 
   // What the curator actually saw — '' when no usable context was provided.
@@ -228,10 +245,36 @@ async function runTrace(params: TraceParams) {
     itemsToTrace = itemsToTrace.filter((i) => i.componentId === componentIdFilter);
   }
 
+  // The selection the curator made, one row per block in lesson order, with the
+  // primitive's resolved affordances (for the pinned mode when there is one) so
+  // a manifestOnly run can be scored without the catalog: supply per grade,
+  // symbolic openers, caregiver placement, reads/answers at K.
+  const selection = layout.map((i) => {
+    const def = getComponentById(i.componentId);
+    const pin = typeof i.config?.targetEvalMode === 'string' ? i.config.targetEvalMode : undefined;
+    const a = def ? resolveAffordances(def, pin) : null;
+    return {
+      componentId: i.componentId,
+      instanceId: i.instanceId,
+      objectiveId: (i.objectiveIds && i.objectiveIds[0]) || null,
+      // The final assessment is flattened with objectiveIds = every objective, so
+      // its objectiveId above is the FIRST objective's — flag it so a scorer
+      // does not count it as that objective's closing block.
+      isFinalAssessment: !!manifest.finalAssessment && i.instanceId === manifest.finalAssessment.instanceId,
+      targetEvalMode: pin ?? null,
+      difficulty: typeof i.config?.difficulty === 'string' ? i.config.difficulty : null,
+      affordances: a
+        ? { declared: a.declared, audience: a.audience, representation: a.representation, reader: a.reader, answers: a.answers, role: a.role, minutes: a.minutes, maxPerLesson: a.maxPerLesson }
+        : null,
+    };
+  });
+
   const baseResponse = {
     topic: manifest.topic,
     gradeLevel: manifest.gradeLevel,
     themeColor: manifest.themeColor,
+    affordanceTags: affordanceTags ?? AFFORDANCE_TAGS_DEFAULT,
+    selection,
     personalization,
     // Where the voice greeting lands — needed to assess persona framing.
     curatorBrief: manifest.curatorBrief
@@ -356,6 +399,12 @@ async function runTrace(params: TraceParams) {
               .filter((c) => c.status === 'ok')
               .map((c) => ({ instanceId: c.instanceId, componentId: c.componentId, data: c.data })),
             source: 'topic-trace',
+            generationRequest: {
+              topic, gradeLevel, package: true, affordances: affordanceTags,
+              ...(objectives ? { objectives } : {}),
+              ...(brief ? { curatorBrief: brief } : {}),
+              ...(studentContext ? { studentContext } : {}),
+            },
           }),
         }
       : {}),
@@ -376,6 +425,7 @@ export async function GET(request: NextRequest) {
         componentId: 'optional — only trace components with this id (focus one generator)',
         objectives: 'optional — "false" to skip the curator brief',
         manifestOnly: 'optional — "true" to stop after the manifest (fast)',
+        affordances: 'optional — "on" / "off" to force affordance tags in the curator prompt; omit for the production default (scripts/affordance-ab.mjs runs both arms)',
         package: 'optional — "true" to also return a Lesson Bench package (manifest + brief + every block, images kept) under `package`; save it as .json and drop it on the Lesson Bench dev panel',
       },
       post: {
@@ -396,6 +446,7 @@ export async function GET(request: NextRequest) {
       keepImages: searchParams.get('images') === 'keep',
       manifestOnly: searchParams.get('manifestOnly') === 'true',
       emitPackage: searchParams.get('package') === 'true',
+      affordanceTags: parseAffordances(searchParams.get('affordances')),
       fixedObjectives: null,
       studentContext: null,
     });
@@ -427,6 +478,14 @@ export async function POST(request: NextRequest) {
   }
   const gradeLevel = typeof body.gradeLevel === 'string' ? body.gradeLevel : 'elementary';
 
+  if (body.curatorBrief !== undefined) {
+    const brief = body.curatorBrief as IntroBriefingData | null;
+    if (!brief || typeof brief.hook?.content !== 'string' || !Array.isArray(brief.objectives)
+      || !Array.isArray(body.objectives) || JSON.stringify(brief.objectives) !== JSON.stringify(body.objectives)) {
+      return NextResponse.json({ status: 'error', error: 'curatorBrief needs hook.content and objectives identical to the fixed objectives request' }, { status: 400 });
+    }
+  }
+
   try {
     const result = await runTrace({
       topic,
@@ -436,6 +495,8 @@ export async function POST(request: NextRequest) {
       keepImages: body.images === 'keep',
       manifestOnly: body.manifestOnly === true,
       emitPackage: body.package === true,
+      fixedBrief: body.curatorBrief as IntroBriefingData | undefined,
+      affordanceTags: parseAffordances(body.affordances),
       fixedObjectives: Array.isArray(body.objectives)
         ? (body.objectives as TraceParams['fixedObjectives'])
         : null,

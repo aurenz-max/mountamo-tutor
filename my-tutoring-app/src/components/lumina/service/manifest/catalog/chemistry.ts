@@ -12,6 +12,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'molecule-viewer',
     description: 'Interactive 3D molecular structure visualization with CPK-colored atoms and chemical bonds. Perfect for chemistry lessons on molecular structure, bonding, organic compounds, crystal lattices, proteins, and biochemistry. Features interactive atom selection, bond analysis, and auto-rotating 3D view. HIGHLY RECOMMENDED for any chemistry topic involving molecular structure.',
     constraints: 'Best for middle-school and above. Use for chemistry, biochemistry, organic chemistry, crystal structures, or any topic involving molecules, atoms, and chemical bonds.',
+    affordances: { representation: 'pictorial', answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Student is exploring a 3D model of {{moleculeName}} ({{category}}). The molecule has {{atomCount}} atoms and {{bondCount}} bonds. They can click atoms to learn about each element and examine the bond structure. Help them understand the molecular geometry, bonding patterns, and why this molecule has the shape it does.',
       contextKeys: ['moleculeName', 'category', 'atomCount', 'bondCount', 'uniqueElements', 'bondTypes', 'selectedAtomElement', 'selectedAtomName', 'atomsExplored'],
@@ -49,6 +50,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'periodic-table',
     description: 'Interactive periodic table of all 118 elements with group/period axes, element modal views (electron shells, stability, phase), and category filtering. Two surfaces: free EXPLORATION (clickable elements, search, family filters — ideal for introducing the table), and a live-judged DIRECT INSTRUCTION session when an eval mode is pinned — the spoken tutor asks, the child taps a box (Element Hunt) or answers OUT LOUD (element names, trend comparisons, outer-electron counts), and the tutor\'s own affirmation advances the lesson. Perfect for element properties, periodic trends, atomic structure, chemical families, and the organization of the table.',
     constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Judged sessions require the live tutor and a microphone; the manifest must NOT supply element lists or answer keys — every challenge is drawn and keyed in code from the element table.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['introduce', 'apply'], minutes: 5 },
     // ── DI MODALITY (2026-08-19) — FIRST chemistry port. The tutor owns the
     // clock in all four task shapes: it asks once, waits, judges the spoken
     // answer in-band (or is handed the CODE-COMPUTED verdict for a tap), and
@@ -113,9 +115,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'explore', label: 'Element Hunt (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['explore'], description: 'DI judged: the tutor names a target — by name, spelled symbol, atomic number, or group and period — and the child taps its box. Verdict computed in code.' },
-      { evalMode: 'identify', label: 'Name It (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify'], description: 'DI judged, spoken: a position, number, or symbol clue; the child reads the table and says the element\'s name.' },
-      { evalMode: 'trend', label: 'Periodic Trends (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['trend'], description: 'DI judged, spoken: same-group size and reactivity comparisons plus main-group outer-electron counts, all keys computed from the table.' },
+      { evalMode: 'explore', affordances: { answers: ['tap'] }, label: 'Element Hunt (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['explore'], description: 'DI judged: the tutor names a target — by name, spelled symbol, atomic number, or group and period — and the child taps its box. Verdict computed in code.' },
+      { evalMode: 'identify', affordances: { answers: ['spoken'] }, label: 'Name It (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify'], description: 'DI judged, spoken: a position, number, or symbol clue; the child reads the table and says the element\'s name.' },
+      { evalMode: 'trend', affordances: { answers: ['spoken'] }, label: 'Periodic Trends (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['trend'], description: 'DI judged, spoken: same-group size and reactivity comparisons plus main-group outer-electron counts, all keys computed from the table.' },
     ],
     supportsEvaluation: true,
   },
@@ -151,6 +153,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     // "Yes" or with "My turn".
     description: 'Live-judged Direct Instruction on states of matter and everyday change for K-2, spoken end to end. The tutor names an everyday object and the child SAYS whether it is a solid, a liquid or a gas; says what it does when you pour it into a cup; says whether a change that happened to it can go back the way it was or is changed for ever (ice melts and freezes again, a cooked egg does not); and works out the state of a secret object from clues. Requires a microphone. Every answer is spoken aloud and judged from the audio - there is nothing to drag, tap or type. ESSENTIAL for Kindergarten and Grade 1-2 science.',
     constraints: 'Best for K-2. Requires a working microphone and the live tutor - the whole activity is a spoken exchange. Use for early science lessons on states of matter, observable properties of materials, classification, and changes that can or cannot be undone. Reversible and irreversible change is taught here from what a child can picture, never from melting and boiling points - that framing belongs to states-of-matter at Grade 3-5.',
+    affordances: { representation: 'pictorial', answers: ['spoken'], role: 'apply', minutes: 5 },
     audioInput: { manual_activity: true },
     tutoring: {
       // Defect 12: `{{stimulus}}` goes LAST, with the never-read-aloud clause
@@ -212,6 +215,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'reaction-lab',
     description: 'Interactive chemistry experiment station where students combine real substances and observe reactions — fizzing, color changes, temperature changes, gas production, precipitates. Features split Real View / Particle View, observation notebook, and multi-phase workflow (predict → experiment → observe → explain). K-2 uses kitchen chemistry, 3-5 adds classification and particle view, 6-8 adds equation balancing and conservation of mass. Perfect for teaching chemical vs physical change, signs of chemical reactions, and the scientific method. ESSENTIAL for K-8 chemistry and science.',
     constraints: 'Best for K-8. Use for chemistry lessons on chemical reactions, physical vs chemical change, states of matter changes, kitchen chemistry, acid-base reactions, oxidation, dissolution, and the scientific method. Grade-appropriate complexity adjusts automatically.',
+    affordances: { representation: 'pictorial', answers: ['type'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
       taskDescription: 'Student is conducting the "{{experimentName}}" experiment ({{experimentCategory}}). Currently in {{currentPhase}} phase. Reaction type: {{reactionType}}. They have recorded {{observationsRecorded}}/{{observationPromptsTotal}} observations and identified {{signsIdentified}}/{{signsTotal}} signs of change. On challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Attempt {{attemptNumber}}.',
       contextKeys: ['gradeBand', 'experimentName', 'experimentCategory', 'reactionType', 'signs', 'currentPhase', 'isReacting', 'reactionComplete', 'predictionSubmitted', 'prediction', 'observationsRecorded', 'observationPromptsTotal', 'signsIdentified', 'signsTotal', 'particleViewActive', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'equation'],
@@ -239,6 +243,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'equation-balancer',
     description: 'Interactive chemical equation balancer with adjustable coefficients, live atom counter, molecule visualization, and balance scale. Students adjust coefficients to balance equations while tracking atom counts on each side. Perfect for teaching conservation of mass and systematic problem-solving. ESSENTIAL for grade 6-8 chemistry.',
     constraints: 'Requires equation data with reactants/products and atom counts. Max 10 compounds. Best for grade 6-8.',
+    affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'The student is balancing the chemical equation: {{equationString}}. They adjust coefficients (big numbers in front of formulas) to make atom counts match on both sides. Currently balanced elements: {{balancedElements}}, unbalanced elements: {{unbalancedElements}}.',
       contextKeys: ['currentCoefficients', 'atomCounts', 'elements', 'balancedElements', 'unbalancedElements', 'isBalanced', 'equationString', 'guidedMode', 'guidedElement', 'attemptNumber'],
@@ -265,6 +270,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'energy-of-reactions',
     description: 'Interactive energy-of-reactions visualization with enthalpy diagrams, temperature gauges, bond energy breakdowns, and catalyst comparisons. Students explore why reactions release or absorb heat through animated energy diagrams and real-world connections. Perfect for teaching exothermic/endothermic classification, activation energy, and bond energies. ESSENTIAL for grade 5-8 chemistry.',
     constraints: 'Requires reaction data with energy values. Bond energy view only for grade 7-8. Best for grade 5-8.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription: 'The student is exploring the energy changes in {{reactionName}} ({{equation}}). This is a {{reactionType}} reaction with \u0394H = {{deltaH}} kJ. They are working on a {{challengeType}} challenge: "{{instruction}}".',
       contextKeys: ['reactionName', 'reactionType', 'equation', 'deltaH', 'activationEnergy', 'realWorldExample', 'reactionActive', 'showCatalyst', 'bondEnergiesEnabled', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer'],
@@ -281,9 +287,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'classify', label: 'Classify (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['classify'], description: 'Classify reactions as exothermic or endothermic from diagrams' },
-      { evalMode: 'diagram', label: 'Read Diagram (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['diagram'], description: 'Read activation energy and deltaH from enthalpy diagrams' },
-      { evalMode: 'bond_energy', label: 'Bond Energy (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['bond_energy'], description: 'Calculate deltaH from bond energies' },
+      { evalMode: 'classify', affordances: { answers: ['tap'] }, label: 'Classify (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['classify'], description: 'Classify reactions as exothermic or endothermic from diagrams' },
+      { evalMode: 'diagram', affordances: { answers: ['type'] }, label: 'Read Diagram (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['diagram'], description: 'Read activation energy and deltaH from enthalpy diagrams' },
+      { evalMode: 'bond_energy', affordances: { answers: ['type'] }, label: 'Bond Energy (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['bond_energy'], description: 'Calculate deltaH from bond energies' },
     ],
     supportsEvaluation: true,
   },
@@ -291,6 +297,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'states-of-matter',
     description: 'Live-judged DIRECT INSTRUCTION particle simulation. The spoken tutor puts a substance on the bench beside its particle view, asks ONE question, and the child answers OUT LOUD — what state it is, what state it will reach when the tutor heats or cools it, what the change is called, or which of two named substances melts first. The tutor judges from the audio, and its own affirmation runs the experiment and advances the lesson. With no challenges in play the same primitive is a free exploration surface: a temperature slider, a macroscopic beaker and a synchronized particle model, heating curve and substance switcher. Perfect for the particle model of matter, phase transitions, melting and boiling points, and energy transfer. ESSENTIAL for K-5 science.',
     constraints: 'Best for K-5. Use for science lessons on states of matter, the particle model, phase changes, melting/boiling/freezing/condensation, temperature and energy. Judged sessions require the live tutor and a microphone; every answer is SPOKEN, so there is nothing to tap. The manifest must NOT supply substances, temperatures or answer keys — every challenge is drawn and keyed in code from a substance table with real melting and boiling points. Grade-appropriate complexity adjusts automatically; K-2 stays on everyday, above-freezing substances and never hears a below-zero temperature.',
+    affordances: { representation: 'pictorial', answers: ['spoken'], role: ['visualize', 'apply'], minutes: 5 },
     // ── DI MODALITY (2026-08-20) — THIRD science port, SECOND chemistry port.
     // The tutor owns the clock in all three modes: it asks once, waits, judges
     // the spoken answer in-band, and its own line is the advance. No advance
@@ -377,6 +384,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'mixing-and-dissolving',
     description: 'Interactive solutions and mixtures explorer with beaker workspace, substance shelf, particle view, temperature control, saturation indicator, concentration meter, and separation tools. Students add substances to water and discover what dissolves and what does not, then use separation techniques to recover solutes. Perfect for teaching dissolving, solutions vs mixtures, and saturation. ESSENTIAL for grade 3-7 chemistry.',
     constraints: 'Requires substance data with solubility values. Best for grade 3-7. Solubility curve only for grade 6-7.',
+    affordances: { representation: 'pictorial', answers: ['manipulate', 'tap', 'type'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription: 'The student is exploring mixing and dissolving in {{solventName}} at {{temperature}}\u00B0C. They have added: {{addedSubstanceNames}}. Current challenge: {{challengeType}} \u2014 "{{instruction}}".',
       contextKeys: ['solventName', 'temperature', 'addedSubstanceNames', 'addedSubstanceTypes', 'isSaturated', 'isStirring', 'particleViewActive', 'selectedSeparation', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer'],
@@ -393,9 +401,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'dissolve', label: 'Dissolve (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['dissolve'], description: 'Test which substances dissolve and which do not' },
-      { evalMode: 'classify', label: 'Classify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['classify'], description: 'Classify as solution, suspension, or mixture' },
-      { evalMode: 'separate', label: 'Separate (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['separate'], description: 'Choose correct separation technique and explain why' },
+      { evalMode: 'dissolve', affordances: { answers: ['manipulate'] }, label: 'Dissolve (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['dissolve'], description: 'Test which substances dissolve and which do not' },
+      { evalMode: 'classify', affordances: { answers: ['tap'] }, label: 'Classify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['classify'], description: 'Classify as solution, suspension, or mixture' },
+      { evalMode: 'separate', affordances: { answers: ['tap', 'type'] }, label: 'Separate (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['separate'], description: 'Choose correct separation technique and explain why' },
     ],
     supportsEvaluation: true,
   },
@@ -403,6 +411,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'atom-builder',
     description: 'Interactive atom construction tool where students drag protons, neutrons, and electrons to build atoms from scratch. Features Bohr model visualization with electron shells, mini periodic table with live element highlighting, identity card, charge and mass number display. Supports build, identify, fill-shells, make-ion, and make-isotope challenges. Grades 3-5 focus on element identity and shell filling. Grades 6-8 add ions, isotopes, and electron configuration. ESSENTIAL for chemistry lessons on atomic structure, subatomic particles, and the periodic table.',
     constraints: 'Best for grades 3-8. Use for chemistry lessons on atoms, subatomic particles, electron shells, element identity, ions, isotopes, periodic table connections, and electron configuration.',
+    affordances: { representation: ['concrete', 'pictorial'], answers: ['build', 'manipulate', 'type'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription: 'Student is building an atom with {{protons}} protons, {{neutrons}} neutrons, {{electrons}} electrons (element: {{elementName}}, charge: {{charge}}). Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Instruction: "{{instruction}}". Attempt {{attemptNumber}}. Shells: {{shells}}. Shells correct: {{shellsCorrect}}.',
       contextKeys: ['protons', 'neutrons', 'electrons', 'charge', 'massNumber', 'elementName', 'elementSymbol', 'shells', 'shellsCorrect', 'valenceElectrons', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'gradeBand'],
@@ -420,9 +429,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'build', label: 'Build (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['build'], description: 'Build a named element from protons, neutrons, electrons' },
-      { evalMode: 'identify', label: 'Identify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify', 'fill-shells'], description: 'Identify element from particle counts and fill electron shells' },
-      { evalMode: 'ion_isotope', label: 'Ion & Isotope (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['make-ion', 'make-isotope'], description: 'Create specific ions and isotopes' },
+      { evalMode: 'build', affordances: { answers: ['build'] }, label: 'Build (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['build'], description: 'Build a named element from protons, neutrons, electrons' },
+      { evalMode: 'identify', affordances: { answers: ['type', 'manipulate'] }, label: 'Identify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify', 'fill-shells'], description: 'Identify element from particle counts and fill electron shells' },
+      { evalMode: 'ion_isotope', affordances: { answers: ['build'] }, label: 'Ion & Isotope (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['make-ion', 'make-isotope'], description: 'Create specific ions and isotopes' },
     ],
     supportsEvaluation: true,
   },
@@ -430,6 +439,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'molecule-constructor',
     description: 'Interactive molecule-building workspace where students snap atoms together to form molecules. Atom palette with category-colored elements and valence connection dots. Click-to-bond interaction with single, double, and triple bond support. Live formula display, valence satisfaction indicators, molecule gallery with real-world categories, and multi-challenge progression (build, identify, formula write, predict). Perfect for teaching chemical bonding, molecular structure, valence rules, and molecular formulas. ESSENTIAL for grades 3-8 chemistry.',
     constraints: 'Best for grades 3-8. Use for chemistry lessons on chemical bonding, molecules, valence, molecular formulas, covalent bonds, Lewis structures, molecular shape, and properties from structure.',
+    affordances: { representation: ['concrete', 'symbolic'], answers: ['build', 'type'], role: ['visualize', 'apply'], minutes: 7 },
     tutoring: {
       taskDescription: 'Student is building molecules by snapping atoms together. Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Target: {{targetName}} ({{targetFormula}}). Current formula: {{formula}}. Atoms placed: {{atomsPlaced}}, bonds formed: {{bondsFormed}}. All valence satisfied: {{allValenceSatisfied}}. Attempt {{attemptNumber}}.',
       contextKeys: ['gradeBand', 'atomsPlaced', 'bondsFormed', 'formula', 'allValenceSatisfied', 'targetFormula', 'targetName', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'placedElements'],
@@ -447,9 +457,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'build', label: 'Build (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['build'], description: 'Build simple molecules from a name or formula' },
-      { evalMode: 'identify', label: 'Identify (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['identify', 'formula'], description: 'Identify molecules and write formulas from structure' },
-      { evalMode: 'predict', label: 'Predict (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['predict'], description: 'Predict properties and shape from molecular structure' },
+      { evalMode: 'build', affordances: { answers: ['build'] }, label: 'Build (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['build'], description: 'Build simple molecules from a name or formula' },
+      { evalMode: 'identify', affordances: { answers: ['type'] }, label: 'Identify (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['identify', 'formula'], description: 'Identify molecules and write formulas from structure' },
+      { evalMode: 'predict', affordances: { answers: ['type'] }, label: 'Predict (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['predict'], description: 'Predict properties and shape from molecular structure' },
     ],
     supportsEvaluation: true,
   },
@@ -457,6 +467,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'ph-explorer',
     description: 'Interactive pH scale exploration with rainbow gradient (0-14), substance testing with multiple indicators (litmus, cabbage juice, universal, phenolphthalein), acid/base/neutral sorting, neutralization station with real-time pH meter, and particle view showing H+/OH- concentration. Features cabbage juice rainbow mode where students create a color spectrum by testing many substances. Perfect for teaching the pH scale, acids and bases, indicators, and neutralization. ESSENTIAL for grade 4-8 chemistry.',
     constraints: 'Best for grades 4-8. Use for chemistry lessons on pH, acids and bases, indicators, neutralization, acid-base reactions, and the pH scale. Grade-appropriate complexity adjusts automatically.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate', 'tap', 'type'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription: 'Student is exploring pH and acids/bases with {{totalSubstances}} substances available. They have tested {{testedCount}} substances so far. Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Selected indicator: {{selectedIndicator}}. Rainbow substances tested: {{rainbowCount}}. Attempt {{attemptNumber}}.',
       contextKeys: ['gradeBand', 'totalSubstances', 'testedCount', 'selectedSubstance', 'selectedIndicator', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer', 'neutralizationPH', 'rainbowCount'],
@@ -473,9 +484,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'test', label: 'Test (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['test'], description: 'Test substances and sort as acid, base, or neutral' },
-      { evalMode: 'indicator', label: 'Indicator (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['indicator'], description: 'Match indicator colors to pH ranges' },
-      { evalMode: 'neutralize', label: 'Neutralize (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['neutralize'], description: 'Predict and achieve target pH through neutralization' },
+      { evalMode: 'test', affordances: { answers: ['manipulate'] }, label: 'Test (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['test'], description: 'Test substances and sort as acid, base, or neutral' },
+      { evalMode: 'indicator', affordances: { answers: ['tap'] }, label: 'Indicator (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['indicator'], description: 'Match indicator colors to pH ranges' },
+      { evalMode: 'neutralize', affordances: { answers: ['manipulate', 'type'] }, label: 'Neutralize (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['neutralize'], description: 'Predict and achieve target pH through neutralization' },
     ],
     supportsEvaluation: true,
   },
@@ -483,6 +494,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'safety-lab',
     description: 'Gamified lab safety training with interactive lab scene for hazard identification, PPE selection station with draggable equipment (goggles, gloves, apron, lab coat, face shield), GHS hazard symbol matching, emergency response sequencing, and safe lab design mode. K-2 covers basic safety rules, 3-5 adds hazard symbols and equipment handling, 6-8 includes full GHS symbols, risk assessment, and SDS basics. Every chemistry primitive references this one. ESSENTIAL for K-8 science safety.',
     constraints: 'Best for K-8. Use for lab safety training, science safety rules, PPE selection, hazard identification, emergency procedures, and GHS hazard symbols. Should precede any hands-on chemistry activity.',
+    affordances: { representation: 'pictorial', answers: ['tap', 'manipulate'], role: ['introduce', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Student is doing lab safety training for "{{scenarioName}}" (preparing for {{experiment}}). They have identified {{hazardsIdentified}}/{{hazardsTotal}} hazards and selected PPE: {{selectedPPE}}. Required PPE: {{requiredPPE}}. Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Attempt {{attemptNumber}}.',
       contextKeys: ['gradeBand', 'scenarioName', 'experiment', 'hazardsTotal', 'hazardsIdentified', 'requiredPPE', 'selectedPPE', 'ppeSubmitted', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer', 'emergencyScenario', 'ghsSymbolCount'],
@@ -499,9 +511,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'hazard', label: 'Hazard ID (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['hazard'], description: 'Spot hazards in a lab scene' },
-      { evalMode: 'ppe', label: 'PPE Selection (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['ppe'], description: 'Select correct PPE for given experiment' },
-      { evalMode: 'emergency', label: 'Emergency Response (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['emergency', 'ghs'], description: 'Sequence emergency procedures and match GHS symbols' },
+      { evalMode: 'hazard', affordances: { answers: ['tap'] }, label: 'Hazard ID (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['hazard'], description: 'Spot hazards in a lab scene' },
+      { evalMode: 'ppe', affordances: { answers: ['manipulate'] }, label: 'PPE Selection (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['ppe'], description: 'Select correct PPE for given experiment' },
+      { evalMode: 'emergency', affordances: { answers: ['manipulate', 'tap'] }, label: 'Emergency Response (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['emergency', 'ghs'], description: 'Sequence emergency procedures and match GHS symbols' },
     ],
     supportsEvaluation: true,
   },
@@ -509,6 +521,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'stoichiometry-lab',
     description: 'Interactive mole-conversion workshop for stoichiometry. Students stage reactant amounts (in grams), watch a balanced equation consume reactants in correct mole ratios, and see products form alongside any leftover (excess) reactant. Mole ladder converts grams ↔ moles via molar mass; mole-ratio strip exposes the coefficients as a conversion factor. Three eval modes ladder from single conversions to limiting-reagent identification to theoretical/percent yield. ESSENTIAL for HS chemistry — closes the largest K-8 → HS gap (the mole concept).',
     constraints: 'Best for grades 8-12. Requires a fully balanced reaction with molar masses for every reactant and product. Each challenge specifies given masses (one for convert, two for limiting/yield) and a numeric or formula target answer. Not a particle simulation — workspace-style.',
+    affordances: { representation: 'symbolic', answers: ['type', 'tap'], role: 'apply', minutes: 9 },
     tutoring: {
       taskDescription: 'Student is doing stoichiometry on the reaction {{equation}}. They are on challenge {{challengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Given: {{givenMassA}} g of {{givenFormulaA}}{{givenFormulaB ? ", " + givenMassB + " g of " + givenFormulaB : ""}}. They must find: {{askFor}}. Computed limiting reagent: {{limitingReagent}}. Phase: {{phase}}. Attempt {{attemptNumber}}.',
       contextKeys: ['gradeBand', 'title', 'equation', 'challengeType', 'challengeIndex', 'totalChallenges', 'instruction', 'askFor', 'givenFormulaA', 'givenMassA', 'givenFormulaB', 'givenMassB', 'answerFormula', 'answerUnit', 'targetAnswer', 'targetAnswerFormula', 'limitingReagent', 'productYieldGrams', 'leftoversGrams', 'studentAnswer', 'studentLimitingChoice', 'phase', 'attemptNumber'],
@@ -526,9 +539,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'convert', label: 'Mole Conversion (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['convert'], description: 'Single-step gram ↔ mole conversion using molar mass and a 1:1 mole ratio' },
-      { evalMode: 'limiting', label: 'Limiting Reagent (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['limiting'], description: 'Identify the limiting reagent from two given reactant masses' },
-      { evalMode: 'yield', label: 'Theoretical & Percent Yield (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['yield'], description: 'Compute theoretical yield in grams (and percent yield when actual is given)' },
+      { evalMode: 'convert', affordances: { answers: ['type'] }, label: 'Mole Conversion (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['convert'], description: 'Single-step gram ↔ mole conversion using molar mass and a 1:1 mole ratio' },
+      { evalMode: 'limiting', affordances: { answers: ['tap'] }, label: 'Limiting Reagent (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['limiting'], description: 'Identify the limiting reagent from two given reactant masses' },
+      { evalMode: 'yield', affordances: { answers: ['type'] }, label: 'Theoretical & Percent Yield (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['yield'], description: 'Compute theoretical yield in grams (and percent yield when actual is given)' },
     ],
     supportsEvaluation: true,
   },
@@ -536,6 +549,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'gas-laws-simulator',
     description: 'Living-simulation gas laws workbench with canvas-driven particle physics in a cylinder with a movable piston. Students watch particles speed up with temperature, slam the piston when compressed, and see pressure / volume / temperature / amount relationships read off one simulation. Live P-V, V-T, and P-T plots track state changes in real time. Three eval modes ladder from KMT observation → directional prediction → PV=nRT calculation. ESSENTIAL for HS chemistry — closes the Gas Behavior unit entirely missing from the K-8 catalog.',
     constraints: 'Best for grades 8-12. Grade 8 uses KMT-only mode (qualitative). Grades 9-10 use Boyle, Charles, or Gay-Lussac (one variable locked). Grades 11-12 unlock the combined and ideal gas laws including full PV=nRT calculations. Not suitable for real-gas deviations (ideal gas only).',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
       taskDescription: 'Student is using a gas-laws simulator focused on {{lawFocus}} for grades {{gradeBand}}. Initial state: P={{initialP}} atm, V={{initialV}} L, T={{initialT}} K, n={{initialN}} mol. Locked variables: {{lockedVariables}}. Current sim state: P={{currentP}} atm, V={{currentV}} L, T={{currentT}} K, n={{currentN}} mol. They are on challenge {{challengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). The perturbation applies {{changeVariable}} → {{changeNewValue}}. Student must determine: {{askFor}}. Phase: {{phase}}. Attempt {{attemptNumber}}.',
       contextKeys: ['gradeBand', 'title', 'lawFocus', 'lockedVariables', 'initialP', 'initialV', 'initialT', 'initialN', 'currentP', 'currentV', 'currentT', 'currentN', 'challengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'askFor', 'changeVariable', 'changeNewValue', 'askedVariable', 'directionAnswer', 'targetAnswer', 'studentNumber', 'studentDirection', 'phase', 'attemptNumber'],
@@ -562,9 +576,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'observe', label: 'KMT Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'Identify directional change of a variable when one input is altered (KMT-grounded)' },
-      { evalMode: 'predict', label: 'Directional Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'Predict numeric end-state value before applying a perturbation' },
-      { evalMode: 'calculate', label: 'Gas Law Calculate (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['calculate'], description: 'Solve for an unknown using PV=nRT or the combined gas law' },
+      { evalMode: 'observe', affordances: { answers: ['tap'] }, label: 'KMT Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'Identify directional change of a variable when one input is altered (KMT-grounded)' },
+      { evalMode: 'predict', affordances: { answers: ['type'] }, label: 'Directional Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'Predict numeric end-state value before applying a perturbation' },
+      { evalMode: 'calculate', affordances: { answers: ['type'] }, label: 'Gas Law Calculate (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['calculate'], description: 'Solve for an unknown using PV=nRT or the combined gas law' },
     ],
     supportsEvaluation: true,
   },

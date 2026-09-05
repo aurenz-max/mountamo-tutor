@@ -11,10 +11,16 @@ export const MEDIA_CATALOG: ComponentDefinition[] = [
     id: 'media-player',
     description: 'Narrated listening-comprehension walkthrough. The live tutor VOICES a multi-segment story or explanation (3-4 segments), and after each segment the student answers a comprehension check about what they just HEARD — listen, then show you understood. Presentation adapts by reading band: kindergarteners get picture-answer checks with everything read aloud; readers get text checks. On-demand AI illustrations per segment. ESSENTIAL for oral comprehension, listen-and-answer objectives, narrated stories, holiday/history narratives, and any "listen to a passage and answer questions" task from K up.',
     constraints: 'Best when LISTENING is the channel: oral comprehension, listen-for-details, narrated story or process walkthroughs. 3-4 segments, one check per segment; students progress sequentially (3 attempts then reveal for readers; tap-until-correct pictures at K). BAND MAP: Kindergarten = listen_and_look (picture-primary check, fully voiced); Grade 1 = listen_for_details (short-text options, voiced); Grade 2+ = story_analysis (why/how/evidence/sequence questions). NOT for reading-a-text-with-evidence (interactive-passage), student read-aloud production (read-aloud-studio), or decoding practice (decodable-reader).',
+    // Tag conservatively per docs/contracts/media-player.md — no reader-fit VERDICT file
+    // exists yet (reimagining B1 landed the band split; B5 live confirmation is still
+    // outstanding), so `reader` is deliberately omitted rather than inferred from the
+    // tutor narration alone.
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'], role: 'apply', minutes: 6 },
     supportsEvaluation: true,
     evalModes: [
       {
         evalMode: 'listen_and_look',
+        affordances: { representation: 'pictorial' },
         label: 'Listen & Look (PRE)',
         beta: -1.5,
         scaffoldingMode: 1,
@@ -23,6 +29,7 @@ export const MEDIA_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'listen_for_details',
+        affordances: { representation: 'symbolic' },
         label: 'Listen for Details (Tier 2)',
         beta: -0.5,
         scaffoldingMode: 2,
@@ -31,6 +38,7 @@ export const MEDIA_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'story_analysis',
+        affordances: { representation: 'symbolic' },
         label: 'Story Analysis (Tier 3)',
         beta: 0.5,
         scaffoldingMode: 3,
@@ -133,6 +141,9 @@ export const MEDIA_CATALOG: ComponentDefinition[] = [
     id: 'flashcard-deck',
     description: 'Interactive flashcard deck for rapid-fire memorization and active recall practice. Students flip cards to reveal answers, mark whether they know each concept, and track their progress. Perfect for vocabulary, key terms, formulas, definitions, facts, language learning, or any content requiring rote memorization. Features 3D flip animations, keyboard shortcuts, audio feedback, shuffle mode, and performance statistics.',
     constraints: 'Best for content with discrete facts or term-definition pairs. Generates about 12-20 cards for open study, fewer for young learners; when a lesson asks for a specific number of cards, or for a review of material it already taught, the deck honors that exactly and introduces no new vocabulary. Ideal for review, test prep, or building fluency. Works for all grade levels - vocabulary and definitions adapt to audience. Use when students need active recall practice rather than passive reading.',
+    // reader: 'none' — READY @ PRE, qa/reader-fit/flashcard-deck-PRE-2026-07-16.md
+    // (auto-start emoji face + full read-aloud at K; jsdom 5/5; tutor-test probe 0 findings).
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap'], role: 'apply', minutes: 6 },
     tutoring: {
       taskDescription:
         'Guide the student through a flashcard deck about "{{title}}". Each card shows a term on the '
@@ -179,12 +190,14 @@ export const MEDIA_CATALOG: ComponentDefinition[] = [
   {
     id: 'image-comparison',
     description: 'Interactive before/after image slider for visualizing transformations, processes, or changes. Students drag a slider to reveal differences between two AI-generated images showing a progression (e.g., caterpillar to butterfly, light refraction, cell division, historical changes). Perfect for science processes, biological transformations, physical phenomena, historical evolution, cause-and-effect relationships, or any concept involving visual change over time. Includes educational explanations and key takeaways.',
-    constraints: 'Best for topics with clear visual transformations or progressive states. Works for all subjects - science (metamorphosis, phase changes, reactions), history (before/after events), geography (erosion, urban development), biology (life cycles, cellular processes), physics (states of matter, optical phenomena). The AI automatically determines the most educational before/after progression for the topic.'
+    constraints: 'Best for topics with clear visual transformations or progressive states. Works for all subjects - science (metamorphosis, phase changes, reactions), history (before/after events), geography (erosion, urban development), biology (life cycles, cellular processes), physics (states of matter, optical phenomena). The AI automatically determines the most educational before/after progression for the topic.',
+    affordances: { representation: 'pictorial', role: 'visualize', minutes: 4 },
   },
   {
     id: 'image-panel',
     description: 'AI-generated images for visual context (maps, diagrams, illustrations, historical scenes, scientific visualizations). Subject-agnostic - works for geography, history, science, literature, art, or any topic requiring visual representation.',
     constraints: 'Best for topics that benefit from visual representation. Automatically categorizes and styles based on subject matter.',
+    affordances: { representation: 'pictorial', role: 'introduce', minutes: 2 },
     supportsEvaluation: true,
   },
 ];

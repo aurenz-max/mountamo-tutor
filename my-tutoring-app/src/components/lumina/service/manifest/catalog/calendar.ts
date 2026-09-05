@@ -15,6 +15,7 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       + 'Supports identify (find specific dates), count (count days or days between dates), and pattern (discover calendar patterns) challenge types. '
       + 'Grade range K-5.',
     constraints: 'Requires a month/year context and challenge array. Grade band determines complexity.',
+    affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription:
         'Student is exploring a calendar for {{month}} {{year}}, answering questions about dates, counting days, and finding patterns. This is question {{challengeNumber}} of {{totalChallenges}} ({{challengeType}}).',
@@ -96,6 +97,7 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       + 'Students learn chronological sequencing, before/after relationships, and temporal scale. '
       + 'ESSENTIAL for K-8 social studies and math time concepts.',
     constraints: 'Requires 3-6 events with labels and correct chronological positions. Scale labels define the timeline range.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
       taskDescription:
         'Student is building a timeline for "{{title}}" by placing events in chronological order from {{scaleStart}} to {{scaleEnd}}.',

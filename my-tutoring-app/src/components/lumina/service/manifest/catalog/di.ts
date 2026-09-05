@@ -37,6 +37,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-letter-sounds',
     description: 'Live-judged Direct Instruction for continuous letter SOUNDS (not letter names): the tutor models a sound like /mmm/ as in "moon", practices it together, then asks the child to say it and judges the spoken audio. The child SPEAKS each sound aloud (voice/microphone). Perfect for kindergarten phonemic awareness and letter-sound correspondence. ESSENTIAL for K phonics / early reading foundations — grapheme-to-phoneme mapping for pre-readers. Also drills first-sound (onset) isolation from a spoken word and cumulative spaced review of taught sounds.',
     constraints: 'Requires microphone + live audio tutor. Continuous (stretchable) sounds and short vowels only — NOT letter names, digraphs, blends, or stop consonants. The manifest must NOT supply specific letters; the menu-scoped generator selects target letters from the objective and attaches keywords/pictures in code.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 eval modes — task identities, all within the benched continuant response
     // class (the produced audio is a held sound in every mode). β mirrors backend
     // problem_type_registry.py → "di-letter-sounds". Ordered easiest → hardest.
@@ -153,6 +154,10 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-word-reading',
     description: 'Live-judged Direct Instruction WORD READING (DISTAR "What word?"): the tutor models a printed word — sounding out a decodable CVC word ("sss-aaa-mmm… sam") or naming a sight word whole — practices it together, then asks the child to read it and judges the spoken audio. The child SEES the printed word and READS it aloud (voice/microphone). Perfect for kindergarten and grade 1 decoding: short-vowel CVC word reading, blending, and high-frequency sight-word recognition. ESSENTIAL for K/G1 early reading — print-to-speech decoding for beginning readers.',
     constraints: 'Requires microphone + live audio tutor. SHORT-vowel CVC words and starter sight words only — NO long-vowel or silent-e / magic-e (CVCe) words like cake, ride, or hope, and NO digraphs, blends, or multisyllable words. When the objective is the silent-e rule, long vowels, or any other pattern outside short-vowel CVC, use phonics-blender (cvce_blend), cvc-speller, or decodable-reader instead — this pack cannot serve those words and will fall back to short-vowel CVC ones. The manifest must NOT supply specific words; the menu-scoped generator selects target words from the objective (phonics pattern or sight-word set) and attaches graphemes/rewards in code. The printed word is the answer: no pictures or audio pre-cues before the child reads.',
+    // reader: 'none' — the printed word IS the target skill, not incidental load, and the
+    // DI script models it aloud (model → lead → test) before the child is ever asked to
+    // read it alone. Nothing on the child's path requires unaided reading to advance.
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 eval modes (2026-08-04): same spoken single-word response class;
     // modes differ by code-owned word pool and review identity.
     // β mirrors backend problem_type_registry.py → "di-word-reading".
@@ -306,6 +311,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-math-facts',
     description: 'Live-judged Direct Instruction MATH FACT fluency ("What is 2 plus 1?"): the tutor models a printed fact aloud ("two plus one is three"), practices it together, then asks the child and judges the spoken number-word answer. The child SEES the printed problem and SPEAKS the answer aloud (voice/microphone); response time is captured silently as the fluency signal — no visible timer. Perfect for kindergarten and grade 1 fact fluency: addition within 5 or 10, doubles, make-ten pairs, take-away (subtraction) facts in the same range, cumulative mixed review of taught facts, and the counting-sequence step underneath them — see a number, say the number that comes next, all the way to 120 (decade transitions like "39 → forty" and compound numerals like "one hundred seven"). ESSENTIAL for K/G1 MATHEMATICS operations — spoken fact fluency and number-word production for early learners.',
     constraints: 'Requires microphone + live audio tutor. Addition and subtraction facts within 10 only — NO multiplication, division, or multi-digit arithmetic. The next-number counting step reaches 120 (a G1 "counting forward within 120" objective is served with a session windowed near the top of its range). Use a dedicated counting primitive when COUNTING ITSELF is the objective (counting objects, one-to-one correspondence); this pack drills only the say-the-next-number step as fluency. The manifest must NOT supply specific facts; the scoped pool builds problems from the objective (within 5 / within 10 / within 120 counting / doubles / make ten) and attaches number words + ASR aliases in code. The printed problem is the stimulus and the spoken number word is the answer: the answer never appears on screen before the child says it.',
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
     // L1 eval modes — task identities, all within the benched number-word
     // response class (the produced audio is a spoken number in every mode), so
     // the ladder needed no new bench sitting. β mirrors backend
@@ -452,6 +458,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'di-dice-roll',
+    affordances: { representation: ['concrete', 'pictorial'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     description:
       'Live-judged Direct Instruction DICE practice: the child taps one or two dice to roll, looks at the '
       + 'pip patterns, and answers aloud while the tutor judges the spoken response in-band. Supports three '
@@ -583,6 +590,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-shapes',
     description: 'Live-judged Direct Instruction SHAPE PRACTICE over voice: the tutor shows one drawn 2D shape, models the answer aloud ("this shape is a triangle" / "this shape has three sides"), practices it together, then asks the child and judges the spoken answer from the audio. Two kinds of ask — NAME the shape ("What shape is this?") and COUNT its attributes ("How many sides does this shape have?", "How many corners?"). The child SEES the drawn shape and SPEAKS the answer aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them, and counting the sides and corners (vertices) of straight-sided shapes to confirm what they are. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification, naming, and side/vertex counting for early learners.',
     constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders) and no composing, decomposing, or building shapes from other shapes; use a geometry primitive when composing IS the objective. Side and corner counting ARE supported (count_sides / count_corners), on straight-sided shapes only — a curved shape carries no side count, so a circles-and-ovals objective routes to naming. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken answer is the answer: neither the shape name nor its side/corner count ever appears on screen (or in the title/description) before the child says it.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 ladder (2026-08-07, /add-eval-modes). Four task identities over ONE
     // stage. Two response classes, BOTH already benched, so no new sitting was
     // owed under standing gate 1: naming is the single-spoken-word class, and
@@ -757,6 +765,9 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-sentence-reading',
     description: 'Live-judged Direct Instruction SENTENCE READING (connected text): the tutor models a printed short sentence read fluently ("Listen: The cat sat."), reads it together with the child, then asks the child to read it alone and judges the spoken audio WORD BY WORD — a skipped, added, or swapped word is corrected, not waved through. The child SEES the printed sentence and READS it aloud (voice/microphone). Perfect for kindergarten through grade 2 reading accuracy and fluency on short decodable sentences: reading fully sound-it-out CVC sentences (blending carried into connected text), reading sentences that carry irregular high-frequency sight words which must be recognised whole, and cumulative spaced review of sentences already taught. ESSENTIAL for K/G1/G2 early reading — the rung above single-word decoding, where reading accuracy first becomes measurable.',
     constraints: 'Requires microphone + live audio tutor. Short DECODABLE sentences of 3-8 words only — the 8-word ceiling is the benched limit for reliable one-word-error detection, and longer connected text is unverified. Short-vowel CVC vocabulary plus starter sight words; NO digraphs, blends, or multisyllable words. Use read-aloud-studio instead for CONNECTED PASSAGES at grades 1-6, or for phrasing / character-voice practice with older readers — since its own DI port (2026-08-12) that primitive is judged too, so the fork is no longer graded-vs-ungraded: this pack owns ISOLATED short sentences drawn from a phonics or sight-word menu at K-2, and read-aloud-studio owns a passage whose lines read as one continuous text. Use a single-word primitive (di-word-reading) when reading ONE word is the objective; this pack always reads connected text. The manifest must NOT supply specific sentences; the menu-scoped generator selects them from the objective (phonics pattern or sight-word focus) and attaches word counts/rewards in code. The printed sentence is the answer: no pictures or audio pre-cues beyond the scripted model line.',
+    // reader: 'none' — same derivation as di-word-reading: the tutor models the sentence,
+    // reads it WITH the child, and only then tests. The print is the objective, not a gate.
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 eval modes (2026-07-25) — task identities, all within the benched
     // response class (a printed 3-8 word sentence read aloud), so the ladder
     // needed no new bench sitting and every mode reads through the identical
@@ -927,6 +938,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // L1 eval modes — task identities by the ACT the child performs, because
     // the CONTENT is generated per objective rather than fixed by the pack.
     // β mirrors backend problem_type_registry.py → "di-spoken-practice".
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'count_and_say',

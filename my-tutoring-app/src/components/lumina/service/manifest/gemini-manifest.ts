@@ -10,6 +10,7 @@ import { ai } from "../geminiClient";
 
 // Import modular catalog (Phase 3 refactor)
 import { UNIVERSAL_CATALOG } from './catalog';
+import { AFFORDANCE_LEGEND, AFFORDANCE_TAGS_DEFAULT, hasAffordanceTags, renderAffordanceTag } from './catalog/affordances';
 
 // Dedicated post-manifest eval-mode resolution (authoritative selector; the
 // inline curator pin is now a fallback). See resolveLessonEvalModes.ts.
@@ -286,14 +287,29 @@ export interface ManifestProgressCallback {
  * This creates a plan for what components to use WITHOUT generating content
  * Supports real-time progress updates and thinking visibility
  */
+/**
+ * Per-call switches for the manifest prompt. Each has a production default
+ * (a constant next to the feature) and an explicit on/off so
+ * `/api/lumina/topic-trace` can run both arms and `scripts/affordance-ab.mjs`
+ * can measure a prompt change as a number — supply per grade, symbolic
+ * openers, caregiver placement — before it is trusted.
+ */
+export interface ManifestPromptOptions {
+  /** Render each tagged catalog line's affordance tag + the legend.
+   *  Default `AFFORDANCE_TAGS_DEFAULT` (catalog/affordances.ts). */
+  affordanceTags?: boolean;
+}
+
 export const generateExhibitManifestStreaming = async (
   topic: string,
   gradeLevel: string = 'elementary',
   objectives?: Array<{ id: string; text: string; verb: string; icon: string; subskillId?: string; skillId?: string; grade?: string }>,
   studentContext?: StudentGenerationContext | null,
   callbacks?: ManifestProgressCallback,
+  promptOptions?: ManifestPromptOptions,
 ): Promise<ExhibitManifest> => {
   try {
+    const affordanceTags = promptOptions?.affordanceTags ?? AFFORDANCE_TAGS_DEFAULT;
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
     const studentContextBlock = buildStudentContextBlock(studentContext);
     const studentVoiceBlock = buildStudentVoiceBlock(studentContext);
@@ -301,9 +317,18 @@ export const generateExhibitManifestStreaming = async (
     // resolves it downstream, reading the catalog directly. The manifest only needs
     // each primitive's identity, so mode lists are NOT surfaced here (reclaims the
     // prompt's cognitive-load budget — the point of this stage's existence).
-    const catalogContext = UNIVERSAL_CATALOG.map(c =>
-      `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`
-    ).join('\n');
+    // Affordance tags: a terse {…} of facts per TAGGED primitive (audience, CPA
+    // representation, reading load, answer modality, role, minutes, max/lesson)
+    // plus a legend that reads them as facts, never bans. Untagged lines are
+    // byte-identical to before — see catalog/affordances.ts for why this is
+    // metadata and not a grade floor.
+    const catalogContext = UNIVERSAL_CATALOG.map(c => {
+      const tag = affordanceTags ? renderAffordanceTag(c) : '';
+      return `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}${tag ? ` ${tag}` : ''}`;
+    }).join('\n');
+    const affordanceLegend = affordanceTags && hasAffordanceTags(UNIVERSAL_CATALOG)
+      ? `\n\n${AFFORDANCE_LEGEND}`
+      : '';
 
     // Within-block ordering rule: the Introduce / Visualize / Apply phase ladder.
     //
@@ -337,7 +362,7 @@ ASSIGNMENT: Create a manifest (blueprint) for: "${topic}"
 TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}${studentContextBlock}${studentVoiceBlock}
 
 AVAILABLE COMPONENT TOOLS:
-${catalogContext}
+${catalogContext}${affordanceLegend}
 
 ## CRITICAL: OBJECTIVE-CENTRIC DESIGN
 

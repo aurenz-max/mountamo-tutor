@@ -1,0 +1,3889 @@
+[
+  {
+    "topic": "Counting objects to 10",
+    "gradeLevel": "kindergarten",
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Count a group of up to 10 real objects by touching them one by one",
+        "verb": "apply",
+        "icon": "search"
+      },
+      {
+        "id": "obj2",
+        "text": "Identify the number words and numerals from 1 to 10 in order",
+        "verb": "identify",
+        "icon": "pencil"
+      },
+      {
+        "id": "obj3",
+        "text": "Explain that the final number counted tells how many objects are in total",
+        "verb": "explain",
+        "icon": "lightbulb"
+      }
+    ],
+    "arms": {
+      "off": {
+        "runs": 2,
+        "failed": 0,
+        "blocks": 9.5,
+        "distinct": 9,
+        "supply": [
+          "counting-board",
+          "di-spoken-practice",
+          "foundation-explorer",
+          "hundreds-chart",
+          "knowledge-check",
+          "number-line",
+          "number-sequencer",
+          "number-tracer",
+          "take-home-activity",
+          "ten-frame"
+        ],
+        "symOpen": 1,
+        "unknownOpen": 0.5,
+        "caregiver": 1,
+        "misplaced": 0,
+        "readsAbove": 0,
+        "spoken": 4.5,
+        "untagged": 1.5,
+        "minutes": 43
+      },
+      "on": {
+        "runs": 2,
+        "failed": 0,
+        "blocks": 9,
+        "distinct": 8.5,
+        "supply": [
+          "concept-card-grid",
+          "counting-board",
+          "di-spoken-practice",
+          "hundreds-chart",
+          "knowledge-check",
+          "number-sequencer",
+          "number-tracer",
+          "take-home-activity",
+          "ten-frame"
+        ],
+        "symOpen": 1,
+        "unknownOpen": 0,
+        "caregiver": 1,
+        "misplaced": 0,
+        "readsAbove": 0,
+        "spoken": 4,
+        "untagged": 0,
+        "minutes": 46
+      }
+    },
+    "lost": [
+      "foundation-explorer",
+      "number-line"
+    ],
+    "gained": [
+      "concept-card-grid"
+    ],
+    "runs": {
+      "off": [
+        {
+          "blocks": 9,
+          "distinct": 9,
+          "ids": [
+            "counting-board",
+            "ten-frame",
+            "take-home-activity",
+            "number-sequencer",
+            "number-tracer",
+            "hundreds-chart",
+            "foundation-explorer",
+            "di-spoken-practice",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 1,
+          "unknownOpen": 1,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 4,
+          "untagged": 1,
+          "minutes": 43,
+          "affordanceTags": false,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "curator-brief-counting-10",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "ten-frame",
+              "instanceId": "obj1-ten-frame",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "build",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "build",
+                  "spoken"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj1-take-home-activity",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "number-sequencer",
+              "instanceId": "obj2-number-sequencer",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "order_cards",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate",
+                  "tap"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-tracer",
+              "instanceId": "obj2-number-tracer",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "trace",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 4,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "hundreds-chart",
+              "instanceId": "obj2-hundreds-chart",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "highlight_sequence",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "foundation-explorer",
+              "instanceId": "obj3-cardinality-foundation",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "di-spoken-practice",
+              "instanceId": "obj3-cardinality-spoken",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count_and_say",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "counting-final-knowledge-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        },
+        {
+          "blocks": 10,
+          "distinct": 9,
+          "ids": [
+            "counting-board",
+            "take-home-activity",
+            "number-sequencer",
+            "number-line",
+            "number-tracer",
+            "ten-frame",
+            "foundation-explorer",
+            "di-spoken-practice",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 1,
+          "unknownOpen": 0,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 5,
+          "untagged": 2,
+          "minutes": 43,
+          "affordanceTags": false,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "curator-brief-counting-10",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board-line",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board-scattered",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj1-hands-on-counting",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "number-sequencer",
+              "instanceId": "obj2-number-train",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "order_cards|fill_missing",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate",
+                  "tap"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-line",
+              "instanceId": "obj2-jumping-number-line",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "identify",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-tracer",
+              "instanceId": "obj2-numeral-trace",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "trace",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 4,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "ten-frame",
+              "instanceId": "obj3-ten-frame-total",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "build",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "build",
+                  "spoken"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "foundation-explorer",
+              "instanceId": "obj3-cardinality-explorer",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "di-spoken-practice",
+              "instanceId": "obj3-say-the-total",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count_and_say",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-counting-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        }
+      ],
+      "on": [
+        {
+          "blocks": 10,
+          "distinct": 9,
+          "ids": [
+            "concept-card-grid",
+            "counting-board",
+            "take-home-activity",
+            "hundreds-chart",
+            "number-sequencer",
+            "number-tracer",
+            "ten-frame",
+            "di-spoken-practice",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 1,
+          "unknownOpen": 0,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 4,
+          "untagged": 0,
+          "minutes": 49,
+          "affordanceTags": true,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "curator-brief-counting-10",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "concept-card-grid",
+              "instanceId": "obj1-concept-cards",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "introduce"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj1-take-home",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "hundreds-chart",
+              "instanceId": "obj2-number-grid",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "highlight_sequence",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-sequencer",
+              "instanceId": "obj2-number-train",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "order_cards",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate",
+                  "tap"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-tracer",
+              "instanceId": "obj2-numeral-trace",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "trace",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 4,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "concept-card-grid",
+              "instanceId": "obj3-cardinality-cards",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "introduce"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "ten-frame",
+              "instanceId": "obj3-ten-frame-total",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "build",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "build",
+                  "spoken"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "di-spoken-practice",
+              "instanceId": "obj3-spoken-total-practice",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count_and_say",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-counting-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        },
+        {
+          "blocks": 8,
+          "distinct": 8,
+          "ids": [
+            "counting-board",
+            "take-home-activity",
+            "hundreds-chart",
+            "number-sequencer",
+            "number-tracer",
+            "ten-frame",
+            "di-spoken-practice",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 1,
+          "unknownOpen": 0,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 4,
+          "untagged": 0,
+          "minutes": 43,
+          "affordanceTags": true,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "curator-brief-1",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj1-take-home-counting",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "hundreds-chart",
+              "instanceId": "obj2-hundreds-chart-10",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "highlight_sequence",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-sequencer",
+              "instanceId": "obj2-number-sequencer",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "order_cards",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate",
+                  "tap"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-tracer",
+              "instanceId": "obj2-number-tracer",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "trace",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 4,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "ten-frame",
+              "instanceId": "obj3-ten-frame-cardinality",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "build",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "build",
+                  "spoken"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "di-spoken-practice",
+              "instanceId": "obj3-di-spoken-total",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count_and_say",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-assessment-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "topic": "Addition within 5 with objects",
+    "gradeLevel": "kindergarten",
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Combine two groups of real objects to find the total sum up to 5",
+        "verb": "apply",
+        "icon": "puzzle"
+      },
+      {
+        "id": "obj2",
+        "text": "Explain how putting groups together makes a bigger group",
+        "verb": "explain",
+        "icon": "lightbulb"
+      }
+    ],
+    "arms": {
+      "off": {
+        "runs": 2,
+        "failed": 0,
+        "blocks": 7,
+        "distinct": 7,
+        "supply": [
+          "addition-subtraction-scene",
+          "comparison-builder",
+          "counting-board",
+          "knowledge-check",
+          "number-bond",
+          "take-home-activity",
+          "ten-frame"
+        ],
+        "symOpen": 0,
+        "unknownOpen": 1,
+        "caregiver": 1,
+        "misplaced": 0,
+        "readsAbove": 0,
+        "spoken": 4,
+        "untagged": 2,
+        "minutes": 30
+      },
+      "on": {
+        "runs": 2,
+        "failed": 0,
+        "blocks": 7,
+        "distinct": 7,
+        "supply": [
+          "addition-subtraction-scene",
+          "comparison-builder",
+          "counting-board",
+          "di-dice-roll",
+          "knowledge-check",
+          "number-bond",
+          "take-home-activity",
+          "ten-frame"
+        ],
+        "symOpen": 0,
+        "unknownOpen": 0.5,
+        "caregiver": 1,
+        "misplaced": 0,
+        "readsAbove": 0,
+        "spoken": 3.5,
+        "untagged": 2.5,
+        "minutes": 27.5
+      }
+    },
+    "lost": [],
+    "gained": [
+      "di-dice-roll"
+    ],
+    "runs": {
+      "off": [
+        {
+          "blocks": 7,
+          "distinct": 7,
+          "ids": [
+            "addition-subtraction-scene",
+            "counting-board",
+            "ten-frame",
+            "comparison-builder",
+            "number-bond",
+            "take-home-activity",
+            "knowledge-check"
+          ],
+          "objectives": 2,
+          "symOpen": 0,
+          "unknownOpen": 1,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 4,
+          "untagged": 2,
+          "minutes": 30,
+          "affordanceTags": false,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "curator-brief-intro",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "addition-subtraction-scene",
+              "instanceId": "obj1-addition-scene",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "act_out",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "manipulate",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 6,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "ten-frame",
+              "instanceId": "obj1-ten-frame",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "build",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "build",
+                  "spoken"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "comparison-builder",
+              "instanceId": "obj2-comparison-builder",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "compare_groups",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-bond",
+              "instanceId": "obj2-number-bond",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "decompose",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [
+                  "spoken"
+                ],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj2-take-home-activity",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-assessment-addition",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        },
+        {
+          "blocks": 7,
+          "distinct": 7,
+          "ids": [
+            "counting-board",
+            "addition-subtraction-scene",
+            "ten-frame",
+            "number-bond",
+            "comparison-builder",
+            "take-home-activity",
+            "knowledge-check"
+          ],
+          "objectives": 2,
+          "symOpen": 0,
+          "unknownOpen": 1,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 4,
+          "untagged": 2,
+          "minutes": 30,
+          "affordanceTags": false,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "brief-addition-objects-5",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-intro",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "addition-subtraction-scene",
+              "instanceId": "obj1-act-out-addition",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "act_out",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "manipulate",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 6,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "ten-frame",
+              "instanceId": "obj1-tenframe-practice",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "build",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "build",
+                  "spoken"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-bond",
+              "instanceId": "obj2-number-bond-explore",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "decompose",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [
+                  "spoken"
+                ],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "comparison-builder",
+              "instanceId": "obj2-compare-sizes",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "compare_groups",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj2-hands-on-snack-math",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-assessment-addition-5",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "recall|apply",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        }
+      ],
+      "on": [
+        {
+          "blocks": 7,
+          "distinct": 7,
+          "ids": [
+            "addition-subtraction-scene",
+            "counting-board",
+            "di-dice-roll",
+            "ten-frame",
+            "number-bond",
+            "take-home-activity",
+            "knowledge-check"
+          ],
+          "objectives": 2,
+          "symOpen": 0,
+          "unknownOpen": 0,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 4,
+          "untagged": 2,
+          "minutes": 30,
+          "affordanceTags": true,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "curator-brief-add-5",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "addition-subtraction-scene",
+              "instanceId": "obj1-addition-scene",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "act_out",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "manipulate",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 6,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "di-dice-roll",
+              "instanceId": "obj1-dice-roll-addition",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "sum_two_dice",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [
+                  "spoken"
+                ],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "ten-frame",
+              "instanceId": "obj2-ten-frame-growth",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "build",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "build",
+                  "spoken"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-bond",
+              "instanceId": "obj2-number-bond-decompose",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "decompose",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [
+                  "spoken"
+                ],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj2-snack-counter-hands-on",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-assessment-sum-5",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        },
+        {
+          "blocks": 7,
+          "distinct": 7,
+          "ids": [
+            "addition-subtraction-scene",
+            "ten-frame",
+            "di-dice-roll",
+            "number-bond",
+            "comparison-builder",
+            "take-home-activity",
+            "knowledge-check"
+          ],
+          "objectives": 2,
+          "symOpen": 0,
+          "unknownOpen": 1,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 3,
+          "untagged": 3,
+          "minutes": 25,
+          "affordanceTags": true,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "brief-addition-within-5",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "addition-subtraction-scene",
+              "instanceId": "obj1-scene-act-out",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "act_out",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "manipulate",
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 6,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "ten-frame",
+              "instanceId": "obj1-tenframe-combine",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "operate",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "di-dice-roll",
+              "instanceId": "obj1-dice-combine",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "sum_two_dice",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [
+                  "spoken"
+                ],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-bond",
+              "instanceId": "obj2-number-bond-decompose",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "decompose",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [
+                  "spoken"
+                ],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "comparison-builder",
+              "instanceId": "obj2-compare-before-after",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "compare_groups",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj2-take-home-snack-math",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-check-addition-5",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "topic": "Skip counting by 5s to 100",
+    "gradeLevel": "elementary",
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Count groups of physical objects arranged in sets of five",
+        "verb": "apply",
+        "icon": "puzzle"
+      },
+      {
+        "id": "obj2",
+        "text": "Identify the number pattern when counting by fives up to one hundred",
+        "verb": "identify",
+        "icon": "search"
+      },
+      {
+        "id": "obj3",
+        "text": "Explain why numbers in a counting by fives pattern always end in zero or five",
+        "verb": "explain",
+        "icon": "lightbulb"
+      }
+    ],
+    "arms": {
+      "off": {
+        "runs": 2,
+        "failed": 0,
+        "blocks": 10,
+        "distinct": 10,
+        "supply": [
+          "annotated-example",
+          "array-grid",
+          "base-ten-blocks",
+          "coin-counter",
+          "comparison-panel",
+          "concept-card-grid",
+          "counting-board",
+          "hundreds-chart",
+          "knowledge-check",
+          "number-sequencer",
+          "skip-counting-runner"
+        ],
+        "symOpen": 0,
+        "unknownOpen": 2,
+        "caregiver": 0,
+        "misplaced": 0,
+        "readsAbove": 0,
+        "spoken": 2,
+        "untagged": 5.5,
+        "minutes": 20.5
+      },
+      "on": {
+        "runs": 2,
+        "failed": 0,
+        "blocks": 9.5,
+        "distinct": 9.5,
+        "supply": [
+          "annotated-example",
+          "array-grid",
+          "base-ten-blocks",
+          "concept-card-grid",
+          "counting-board",
+          "fast-fact",
+          "foundation-explorer",
+          "hundreds-chart",
+          "knowledge-check",
+          "number-sequencer",
+          "skip-counting-runner",
+          "take-home-activity"
+        ],
+        "symOpen": 0,
+        "unknownOpen": 2,
+        "caregiver": 0.5,
+        "misplaced": 0,
+        "readsAbove": 0,
+        "spoken": 2,
+        "untagged": 4,
+        "minutes": 27
+      }
+    },
+    "lost": [
+      "coin-counter",
+      "comparison-panel"
+    ],
+    "gained": [
+      "fast-fact",
+      "foundation-explorer",
+      "take-home-activity"
+    ],
+    "runs": {
+      "off": [
+        {
+          "blocks": 10,
+          "distinct": 10,
+          "ids": [
+            "concept-card-grid",
+            "counting-board",
+            "array-grid",
+            "skip-counting-runner",
+            "hundreds-chart",
+            "number-sequencer",
+            "annotated-example",
+            "base-ten-blocks",
+            "comparison-panel",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 0,
+          "unknownOpen": 2,
+          "caregiver": 0,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 2,
+          "untagged": 5,
+          "minutes": 22,
+          "affordanceTags": false,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "brief-skip-counting-5s",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "concept-card-grid",
+              "instanceId": "obj1-concept-cards",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "introduce"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "group",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "array-grid",
+              "instanceId": "obj1-array-grid",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count_array",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "skip-counting-runner",
+              "instanceId": "obj2-skip-counting-runner",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "fill_missing",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "hundreds-chart",
+              "instanceId": "obj2-hundreds-chart",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "identify_pattern",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-sequencer",
+              "instanceId": "obj2-number-sequencer",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "fill_missing",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate",
+                  "tap"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "annotated-example",
+              "instanceId": "obj3-annotated-example",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "base-ten-blocks",
+              "instanceId": "obj3-base-ten-blocks",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "comparison-panel",
+              "instanceId": "obj3-comparison-panel",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-skip-counting-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        },
+        {
+          "blocks": 10,
+          "distinct": 10,
+          "ids": [
+            "counting-board",
+            "array-grid",
+            "coin-counter",
+            "skip-counting-runner",
+            "hundreds-chart",
+            "number-sequencer",
+            "annotated-example",
+            "base-ten-blocks",
+            "comparison-panel",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 0,
+          "unknownOpen": 2,
+          "caregiver": 0,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 2,
+          "untagged": 6,
+          "minutes": 19,
+          "affordanceTags": false,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "brief-skip-counting-5s",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "group",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "array-grid",
+              "instanceId": "obj1-array-grid",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count_array",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "coin-counter",
+              "instanceId": "obj1-coin-counter",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count-like",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "skip-counting-runner",
+              "instanceId": "obj2-runner",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "fill_missing",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "hundreds-chart",
+              "instanceId": "obj2-hundreds-chart",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "complete_sequence",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-sequencer",
+              "instanceId": "obj2-number-sequencer",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "fill_missing",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate",
+                  "tap"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "annotated-example",
+              "instanceId": "obj3-annotated-example",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "base-ten-blocks",
+              "instanceId": "obj3-base-ten-blocks",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "comparison-panel",
+              "instanceId": "obj3-comparison-panel",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "hard",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-skip-counting-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        }
+      ],
+      "on": [
+        {
+          "blocks": 9,
+          "distinct": 9,
+          "ids": [
+            "counting-board",
+            "array-grid",
+            "take-home-activity",
+            "skip-counting-runner",
+            "hundreds-chart",
+            "number-sequencer",
+            "foundation-explorer",
+            "base-ten-blocks",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 0,
+          "unknownOpen": 2,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 2,
+          "untagged": 4,
+          "minutes": 29,
+          "affordanceTags": true,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "brief-intro",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-counting-board",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "group",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "array-grid",
+              "instanceId": "obj1-array-grid",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count_array",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj1-take-home",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "skip-counting-runner",
+              "instanceId": "obj2-runner",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "predict",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "hundreds-chart",
+              "instanceId": "obj2-hundreds-chart",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "highlight_sequence",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-sequencer",
+              "instanceId": "obj2-number-sequencer",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "fill_missing",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate",
+                  "tap"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "foundation-explorer",
+              "instanceId": "obj3-foundation-explorer",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "base-ten-blocks",
+              "instanceId": "obj3-base-ten-blocks",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-knowledge-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        },
+        {
+          "blocks": 10,
+          "distinct": 10,
+          "ids": [
+            "concept-card-grid",
+            "array-grid",
+            "counting-board",
+            "skip-counting-runner",
+            "hundreds-chart",
+            "number-sequencer",
+            "annotated-example",
+            "base-ten-blocks",
+            "fast-fact",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 0,
+          "unknownOpen": 2,
+          "caregiver": 0,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 2,
+          "untagged": 4,
+          "minutes": 25,
+          "affordanceTags": true,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "brief-skip-counting-5s",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "concept-card-grid",
+              "instanceId": "obj1-concept-intro",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "introduce"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "array-grid",
+              "instanceId": "obj1-array-sets",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "count_array",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "counting-board",
+              "instanceId": "obj1-group-counting",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "group",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "skip-counting-runner",
+              "instanceId": "obj2-runner-leaps",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "predict",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "hundreds-chart",
+              "instanceId": "obj2-hundreds-grid",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "highlight_sequence",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "visualize",
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "number-sequencer",
+              "instanceId": "obj2-number-train-seq",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "fill_missing",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate",
+                  "tap"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 5,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "annotated-example",
+              "instanceId": "obj3-place-value-ones",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "base-ten-blocks",
+              "instanceId": "obj3-regroup-tens",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "fast-fact",
+              "instanceId": "obj3-ending-digit-drill",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "recognize",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "apply",
+                  "assess"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-skip-counting-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "topic": "Adding two-digit numbers with regrouping",
+    "gradeLevel": "elementary",
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Model two-digit addition problems using base-ten blocks to physically group tens and ones.",
+        "verb": "apply",
+        "icon": "puzzle"
+      },
+      {
+        "id": "obj2",
+        "text": "Explain why 10 ones must be traded or regrouped as 1 new ten.",
+        "verb": "explain",
+        "icon": "lightbulb"
+      },
+      {
+        "id": "obj3",
+        "text": "Solve vertical addition equations that require regrouping in the ones place.",
+        "verb": "apply",
+        "icon": "check"
+      }
+    ],
+    "arms": {
+      "off": {
+        "runs": 1,
+        "failed": 1,
+        "blocks": 7,
+        "distinct": 6,
+        "supply": [
+          "annotated-example",
+          "base-ten-blocks",
+          "comparison-panel",
+          "concept-card-grid",
+          "knowledge-check",
+          "regrouping-workbench"
+        ],
+        "symOpen": 0,
+        "unknownOpen": 2,
+        "caregiver": 0,
+        "misplaced": 0,
+        "readsAbove": 0,
+        "spoken": 1,
+        "untagged": 5,
+        "minutes": 7
+      },
+      "on": {
+        "runs": 2,
+        "failed": 0,
+        "blocks": 8,
+        "distinct": 7.5,
+        "supply": [
+          "annotated-example",
+          "base-ten-blocks",
+          "concept-card-grid",
+          "fast-fact",
+          "foundation-explorer",
+          "knowledge-check",
+          "regrouping-workbench",
+          "take-home-activity"
+        ],
+        "symOpen": 0,
+        "unknownOpen": 2,
+        "caregiver": 0.5,
+        "misplaced": 0,
+        "readsAbove": 0,
+        "spoken": 1,
+        "untagged": 4.5,
+        "minutes": 15
+      }
+    },
+    "lost": [
+      "comparison-panel"
+    ],
+    "gained": [
+      "fast-fact",
+      "foundation-explorer",
+      "take-home-activity"
+    ],
+    "runs": {
+      "off": [
+        {
+          "blocks": 7,
+          "distinct": 6,
+          "ids": [
+            "concept-card-grid",
+            "base-ten-blocks",
+            "comparison-panel",
+            "regrouping-workbench",
+            "annotated-example",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 0,
+          "unknownOpen": 2,
+          "caregiver": 0,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 1,
+          "untagged": 5,
+          "minutes": 7,
+          "affordanceTags": false,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "brief-intro",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "concept-card-grid",
+              "instanceId": "obj1-place-value-terms",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "introduce"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "base-ten-blocks",
+              "instanceId": "obj1-base-ten-manipulative",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "operate",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "comparison-panel",
+              "instanceId": "obj2-ten-ones-vs-one-ten",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "regrouping-workbench",
+              "instanceId": "obj2-trade-workbench",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "add_regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "annotated-example",
+              "instanceId": "obj3-worked-vertical-regrouping",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "regrouping-workbench",
+              "instanceId": "obj3-vertical-regrouping-solve",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "add_regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-regrouping-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        },
+        {
+          "error": "404 <!DOCTYPE html><html id=\"__next_error__\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" as=\"script\" fetchPriority=\"low\" href=\"/_next/static/chunks/webpack.js\"/><script src=\"/_next/static/chunks/main-app.js\" async=\"\"></script>"
+        }
+      ],
+      "on": [
+        {
+          "blocks": 8,
+          "distinct": 7,
+          "ids": [
+            "concept-card-grid",
+            "base-ten-blocks",
+            "foundation-explorer",
+            "annotated-example",
+            "regrouping-workbench",
+            "fast-fact",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 0,
+          "unknownOpen": 2,
+          "caregiver": 0,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 1,
+          "untagged": 5,
+          "minutes": 10,
+          "affordanceTags": true,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "intro-curator-brief",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "concept-card-grid",
+              "instanceId": "obj1-concept-cards",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "introduce"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "base-ten-blocks",
+              "instanceId": "obj1-base-ten-modeling",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "build_number",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "foundation-explorer",
+              "instanceId": "obj2-foundation-regroup-rule",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "base-ten-blocks",
+              "instanceId": "obj2-base-ten-regroup-action",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": "regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "annotated-example",
+              "instanceId": "obj3-annotated-steps",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "regrouping-workbench",
+              "instanceId": "obj3-workbench-practice",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "add_regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "fast-fact",
+              "instanceId": "obj3-addition-fluency",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "recall",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "apply",
+                  "assess"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-assessment-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        },
+        {
+          "blocks": 8,
+          "distinct": 8,
+          "ids": [
+            "concept-card-grid",
+            "base-ten-blocks",
+            "foundation-explorer",
+            "annotated-example",
+            "regrouping-workbench",
+            "fast-fact",
+            "take-home-activity",
+            "knowledge-check"
+          ],
+          "objectives": 3,
+          "symOpen": 0,
+          "unknownOpen": 2,
+          "caregiver": 1,
+          "misplaced": 0,
+          "readsAbove": 0,
+          "spoken": 1,
+          "untagged": 4,
+          "minutes": 20,
+          "affordanceTags": true,
+          "selection": [
+            {
+              "componentId": "curator-brief",
+              "instanceId": "curator-brief-main",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": null,
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "concept-card-grid",
+              "instanceId": "obj1-concept-card-grid",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial"
+                ],
+                "reader": "none",
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "introduce"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "base-ten-blocks",
+              "instanceId": "obj1-base-ten-blocks",
+              "objectiveId": "obj1",
+              "isFinalAssessment": false,
+              "targetEvalMode": "operate",
+              "difficulty": "easy",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "foundation-explorer",
+              "instanceId": "obj2-foundation-explorer",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "annotated-example",
+              "instanceId": "obj2-annotated-example",
+              "objectiveId": "obj2",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "regrouping-workbench",
+              "instanceId": "obj3-regrouping-workbench",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "add_regroup",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": false,
+                "audience": "student",
+                "representation": [],
+                "reader": null,
+                "answers": [],
+                "role": [],
+                "minutes": null,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "fast-fact",
+              "instanceId": "obj3-fast-fact",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": "recall",
+              "difficulty": "medium",
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": null,
+                "answers": [
+                  "tap"
+                ],
+                "role": [
+                  "apply",
+                  "assess"
+                ],
+                "minutes": 3,
+                "maxPerLesson": null
+              }
+            },
+            {
+              "componentId": "take-home-activity",
+              "instanceId": "obj3-take-home-activity",
+              "objectiveId": "obj3",
+              "isFinalAssessment": false,
+              "targetEvalMode": null,
+              "difficulty": "easy",
+              "affordances": {
+                "declared": true,
+                "audience": "caregiver",
+                "representation": [
+                  "concrete"
+                ],
+                "reader": null,
+                "answers": [
+                  "manipulate"
+                ],
+                "role": [
+                  "apply"
+                ],
+                "minutes": 10,
+                "maxPerLesson": 1
+              }
+            },
+            {
+              "componentId": "knowledge-check",
+              "instanceId": "final-assessment-check",
+              "objectiveId": "obj1",
+              "isFinalAssessment": true,
+              "targetEvalMode": "mixed",
+              "difficulty": null,
+              "affordances": {
+                "declared": true,
+                "audience": "student",
+                "representation": [
+                  "pictorial",
+                  "symbolic"
+                ],
+                "reader": "none",
+                "answers": [
+                  "spoken",
+                  "tap"
+                ],
+                "role": [
+                  "assess"
+                ],
+                "minutes": 4,
+                "maxPerLesson": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

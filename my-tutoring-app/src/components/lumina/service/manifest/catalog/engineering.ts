@@ -11,18 +11,21 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'lever-lab',
     description: 'Interactive lever/fulcrum simulation for teaching simple machines. Students explore balance, mechanical advantage, and force trade-offs by manipulating loads, fulcrum position, and effort force. Features multiple themes (seesaw, excavator, crowbar) to connect abstract physics to real-world tools. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for elementary engineering and physics.',
     constraints: 'Best for grades K-5. Use for simple machines, balance concepts, mechanical advantage, force multiplication. Themes adapt complexity: seesaw for K-2 (basic balance), excavator/crowbar for 3-5 (mechanical advantage). Supports both exploration (movable fulcrum) and problem-solving (fixed challenges).',
+    affordances: { representation: 'concrete', answers: ['manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     supportsEvaluation: true,
   },
   {
     id: 'pulley-system-builder',
     description: 'Interactive pulley system simulation for teaching mechanical advantage and simple machines. Students build and explore pulley configurations by adding fixed and movable pulleys, threading rope, and lifting loads. Shows how cranes, flagpoles, wells, and construction hoists work. Features multiple themes (crane, flagpole, well, construction) to connect physics to real-world applications. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching pulleys and mechanical advantage.',
     constraints: 'Best for grades K-5. Use for pulleys, mechanical advantage, force reduction, rope systems. Themes adapt complexity: flagpole for K-1 (direction change), well for 1-2 (fixed vs movable), crane/construction for 3-5 (mechanical advantage calculations). Supports exploration (add pulleys) and guided challenges (fixed configurations).',
+    affordances: { representation: 'concrete', answers: ['build', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     supportsEvaluation: true,
   },
   {
     id: 'ramp-lab',
     description: 'Interactive inclined plane (ramp) simulation for teaching simple machines. Students explore how ramps reduce the force needed to lift objects by trading distance for effort. Adjust angle, friction, and push force to see how steeper ramps require more force. Shows real-world connections: loading docks, wheelchair ramps (ADA), dump trucks, skateboard ramps. Features multiple themes (loading_dock, dump_truck, skateboard, generic) and load types (box, barrel, wheel). Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching inclined planes and force trade-offs.',
     constraints: 'Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects, fair tests, and constraint-based engineering design. compare_conditions isolates angle, surface, or rolling/sliding in matched setups. find_threshold measures the least sufficient push. design_with_budget holds platform height fixed while students find the steepest feasible ramp. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.',
+    affordances: { representation: 'concrete', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'compare_conditions',
@@ -55,42 +58,49 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'wheel-axle-explorer',
     description: 'Interactive wheel and axle simulation for teaching simple machines and force multiplication. Students rotate wheels of different sizes connected to axles to discover how steering wheels, doorknobs, winches, and well cranks multiply force. Adjust wheel and axle diameters to see how larger wheels make turning easier. Attach loads to axle to simulate lifting with a winch. Shows real-world connections: steering wheel, doorknob, well crank, winch, screwdriver. Features multiple themes (steering_wheel, winch, doorknob, well_crank) to connect physics to everyday objects. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching wheel and axle machines and gear ratios.',
     constraints: 'Best for grades K-5. Use for wheel and axle, force multiplication, gear ratios. K-1: doorknobs are easier than handles (doorknob theme). 1-2: well cranks and turning (well_crank theme). 2-3: bigger wheel = easier turn (winch theme). 4-5: mechanical advantage calculations, gear ratio introduction (steering_wheel theme). Supports exploration (adjustable sizes) and challenges (fixed configurations with loads to lift).',
+    affordances: { representation: 'concrete', answers: ['manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     supportsEvaluation: true,
   },
   {
     id: 'gear-train-builder',
     description: 'Interactive gear train sandbox for teaching speed/torque trade-offs fundamental to all machinery. Students place gears on a grid, connect them by proximity (auto-mesh), rotate driver gear, and watch followers spin. Count teeth and observe speed ratios. Build gear chains for specific ratios. Shows real-world connections: bicycle gears, clock mechanisms, wind-up toys, car transmissions. Features multiple themes (toy, machine, clock, bicycle) to connect engineering to everyday objects. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching gears, speed ratios, direction changes, and mechanical advantage.',
     constraints: 'Best for grades K-5. Use for gears, speed ratios, direction changes, torque trade-offs. K-1: gears turn together (toy theme, free play). 1-2: direction changes with each gear (showDirection). 2-3: big gear turns small gear fast (showSpeedRatio). 3-4: counting teeth for ratios (showTeethCount). 4-5: design challenges with specific output speeds (targetRatio). Supports free exploration and guided design challenges.',
+    affordances: { representation: 'concrete', answers: ['build', 'manipulate'], role: ['visualize', 'apply'], minutes: 6 },
     supportsEvaluation: true,
   },
   {
     id: 'bridge-builder',
     description: 'Interactive 2D bridge construction canvas for teaching structural engineering. Students place beams, cables, and supports to span gaps, then test bridges with loads (cars, trucks, trains) to see if they hold. Watch bridges deform under stress with color-coded feedback (green/yellow/red). Teaches triangles are strong, load distribution, and truss optimization. Shows real-world connections: highway bridges, railroad trestles, footbridges. Features multiple themes (construction, medieval, modern) to connect engineering to different contexts. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching structural engineering, forces, and design iteration.',
     constraints: 'Best for grades K-5. Use for bridges, structural engineering, trusses, load distribution. K-1: connect two sides (simple spanning). 1-2: supports at edges vs middle (support concepts). 2-3: triangles are strong (truss introduction). 3-4: load distribution concepts (stress visualization). 4-5: truss design optimization (budget constraints, efficiency). Supports free building exploration and guided design challenges with piece limits.',
+    affordances: { representation: 'concrete', answers: ['build'], role: ['visualize', 'apply'], minutes: 8 },
     supportsEvaluation: true,
   },
   {
     id: 'tower-stacker',
     description: 'Interactive vertical building challenge for teaching stability and center of gravity. Students stack blocks, beams, triangles, and arches to reach target heights while maintaining stability. Features wind/shake test to check structural integrity. Shows center of gravity indicator to help students understand balance. Teaches wider base = more stable, center of gravity concepts, material efficiency, and wind resistance design. Shows real-world connections: skyscrapers, building construction, architecture. Features multiple themes (blocks, construction, city) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching structural stability, balance, and physics of building.',
     constraints: 'Best for grades K-5. Use for stacking, balance, stability, center of gravity, building design. K: simple stacking exploration (blocks theme, no wind). K-1: wider base = more stable (introduce stability concept). 2-3: center of gravity exploration (showCenterOfGravity: true). 3-4: material efficiency - height per piece (limited pieces). 4-5: wind resistance design (high wind strength, optimization). Supports free building and height challenges with piece limits.',
+    affordances: { representation: 'concrete', answers: ['build'], role: ['visualize', 'apply'], minutes: 7 },
     supportsEvaluation: true,
   },
   {
     id: 'shape-strength-tester',
     description: 'Interactive experimental rig for testing shape strength under load. Students discover why triangles dominate structural engineering by testing different 2D shapes (triangle, square, pentagon, hexagon) in a compression frame. Watch shapes deform or hold under increasing loads. Add diagonal bracing to weak shapes and see them become rigid. Teaches shape recognition, triangles are rigid, squares squish, triangulation principles, and truss analysis. Shows real-world connections: bridge trusses, building frames, tower structures, bicycle geometry. Features multiple materials (straw, wood, steel) and joint types (pinned, rigid) to explore structural behavior. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching why triangles are strong and how triangulation provides structural stability.',
     constraints: 'Best for grades K-5. Use for shapes in structures, triangulation, truss analysis, structural rigidity. K-1: shape recognition, triangles vs squares (simple comparison). 1-2: squares squish, triangles don\'t (discovery). 2-3: adding diagonals makes shapes strong (introduce bracing). 3-4: triangulation principles (understand why diagonals help). 4-5: truss analysis and optimization (minimize bracing, maximize strength). Supports free exploration and guided challenges with target loads and shapes.',
+    affordances: { representation: 'concrete', answers: ['tap', 'build'], role: ['visualize', 'apply'], minutes: 6 },
     supportsEvaluation: true,
   },
   {
     id: 'foundation-builder',
     description: 'Interactive soil/foundation simulator for teaching why buildings need foundations and how engineers design them. Students select foundation types (spread, strip, slab, piles), adjust footing size, and test if their design supports the building without sinking. Different soil types (rock, gravel, sand, clay, mud) have different bearing capacities, teaching that soil matters. Calculate pressure = force ÷ area to understand how bigger footings reduce pressure on soil. Watch buildings settle/sink when pressure exceeds soil capacity. Teaches foundations spread weight like snowshoes, bigger footings = less pressure, soil types affect design, pressure calculations, and foundation optimization. Shows real-world connections: house footings, skyscraper foundations, deep piles for soft soil. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching foundations, pressure, and structural engineering fundamentals.',
     constraints: 'Best for grades K-5. Use for foundations, soil types, pressure calculations, structural support. K-1: buildings need foundations, bigger is better (discovery). 1-2: bigger footings spread weight (like snowshoes). 2-3: different soils are stronger or weaker (soil comparison). 3-4: pressure = force ÷ area calculations (introduce formula). 4-5: foundation optimization (minimal area that still works). Supports free design exploration and guided challenges with target loads and soil types.',
+    affordances: { representation: ['concrete', 'symbolic'], answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 6 },
     supportsEvaluation: true,
   },
   {
     id: 'excavator-arm-simulator',
     description: 'Interactive multi-jointed excavator arm simulation with boom, stick, and bucket for teaching hydraulics, kinematics, and coordinated movement. Students control three joints (boom angle, stick angle, bucket angle) to position the bucket, dig material from different soil layers, lift loads, and dump at target zones. Features realistic Verlet physics for smooth arm movement. Material layers have different hardness values affecting excavation difficulty. Shows reach envelope to visualize workspace. Teaches cause and effect with joints, sequential operations (dig-lift-move-dump), joint coordination, reach and range concepts, efficiency optimization, and how excavators work. Shows real-world connections: construction excavators, backhoes, mining equipment, robotic arms. Features multiple control methods (sliders, buttons, drag) and themes (realistic, cartoon, blueprint) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching multi-jointed mechanisms, hydraulics, robotics, and construction equipment.',
     constraints: 'Best for grades K-5. Use for excavators, construction equipment, multi-joint systems, hydraulics, kinematics, robotics. K-1: cause and effect with joints, basic digging (buttons control, cartoon theme). 1-2: reach and range exploration (sliders, show reach envelope). 2-3: sequencing dig operations (dig-move-dump sequences, challenges). 3-4: joint angle coordination (all three joints working together, angles shown). 4-5: reach envelope and efficiency optimization (minimize operations, advanced challenges, blueprint theme). Supports free exploration and guided challenges with material excavation targets and dump zones.',
+    affordances: { representation: 'concrete', reader: 'developing', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
       taskDescription: 'Student is running a construction Dig Site job board, driving a 3-joint excavator arm (boom, stick, bucket) to solve real jobs — the geometry engine is the judge, not a submit button. Current job {{jobNumber}} of {{jobsTotal}}: "{{jobTitle}}" ({{jobBadge}}). Goal: move {{goalUnits}} units by {{goalKind}}; progress {{progressUnits}}/{{goalUnits}}, bucket holds {{bucketLoad}}/{{bucketSize}}. Jobs solved: {{jobsSolved}}/{{jobsTotal}}. Active constraints — tracks stuck in mud: {{bodyLocked}}, stick hydraulic jammed: {{stickJammed}}, buried gas pipe: {{hasPipe}}, digs used: {{digsUsed}}/{{maxDigs}}.',
       contextKeys: ['jobTitle', 'jobBadge', 'jobNumber', 'jobsTotal', 'goalKind', 'goalUnits', 'progressUnits', 'jobsSolved', 'bucketLoad', 'bucketSize', 'digsUsed', 'maxDigs', 'bodyLocked', 'stickJammed', 'hasPipe', 'pipeStrikes', 'spilledUnits'],
@@ -127,6 +137,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'dump-truck-loader',
     description: 'Interactive dump truck loading and hauling simulation for teaching capacity, weight limits, and material transport efficiency. Students load material into the truck bed, monitor weight and volume capacity, drive to dump location, raise the bed to dump, and return for more loads. Features realistic Verlet physics for material particle simulation. Material types (dirt, gravel, sand, debris) have different densities affecting weight vs volume trade-offs. Teaches full and empty concepts, capacity constraints (weight AND volume), overloading consequences, counting loads, weight vs volume understanding, efficiency optimization (material per trip), and how dump trucks work. Shows real-world connections: construction sites, material delivery, landscaping, mining operations, waste management. Features multiple themes (realistic, cartoon, simple) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching capacity, material handling, weight concepts, and construction equipment.',
     constraints: 'Best for grades K-5. Use for dump trucks, capacity concepts, weight limits, material handling, construction equipment, efficiency. K: full and empty concepts (cartoon theme, simple loads). K-1: capacity and "too much" understanding (overload feedback). 1-2: counting loads, how many trips needed (target loads). 2-3: weight limits vs volume limits (different materials, show both). 3-4: material density understanding (gravel is heavier than debris for same volume). 4-5: efficiency optimization (maximize load size, minimize trips, time limits). Supports free exploration and guided challenges with material moving targets and efficiency goals. Curriculum home: G1 SCI005-02 "Construction Machines" (curriculum-fit 2026-08-21, 0.873 / 5-of-5).',
+    affordances: { representation: 'concrete', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'load',
@@ -159,6 +170,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'construction-sequence-planner',
     description: 'Visual construction project planner ("Build It Right") where students arrange tasks and watch a Canvas build animation play out — if the order is wrong, the structure fails visually (walls collapse, roof falls) showing real consequences of bad sequencing. Features a Gantt timeline that animates week by week, critical path highlighting, "Build in under N weeks" deadline challenges, and parallel task discovery. Students learn that construction follows strict dependency rules by experiencing failure consequences, not just getting a wrong-answer message. Project types include house, bridge, tower, road, and playground. Teaches first-then-last sequencing, dependency chains, parallel vs sequential task concepts, critical path identification, and deadline optimization. ESSENTIAL for teaching planning, sequencing, logical thinking, and construction project management.',
     constraints: 'Best for grades K-5. Use for construction sequencing, project planning, dependencies, critical path, deadline challenges. K-1: first, then, last (3-4 simple tasks, linear sequence, evalMode: sequence). 2-3: dependency chains (5-6 tasks, branching/converging deps, evalMode: dependency_chain). 3-4: parallel task discovery (6-8 tasks, parallelAllowed: true, "Build in under N weeks" challenge, evalMode: parallel). 4-5: critical path identification and optimization (8-10 tasks, identify longest path, deadline pressure, evalMode: critical_path). All modes feature Canvas build animation with visual failure consequences and Gantt timeline.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['build'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
       taskDescription: 'Planning a {{projectType}} construction project with {{taskCount}} tasks. Target: {{targetWeeks}} weeks. Student arranges tasks and watches the build animation to see consequences of their ordering.',
       contextKeys: ['projectType', 'gradeLevel', 'taskCount', 'targetWeeks', 'criticalPathLength', 'parallelAllowed'],
@@ -184,6 +196,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'blueprint-canvas',
     description: 'General-purpose grid-based drawing surface for creating technical drawings of ANY subject. Students sketch floor plans, machine diagrams, playground maps, vehicle schematics, bridge cross-sections, and more. Features gridded canvas, snap-to-grid drawing, multiple view types (plan/elevation/section), dimension tools, and export. Gemini adapts element labels and challenges to the topic: "rooms" for buildings, "components" for machines, "zones" for maps, "parts" for vehicles. Teaches spatial reasoning, technical drawing, measurement, scale, and design communication. Themes adapt to age: sketch (K-1), blueprint (2-3), technical (4-5). Perfect for K-5 engineering, NGSS design standards, and any topic needing spatial/technical drawing.',
     constraints: 'Best for grades K-5. Use for floor plans, machine diagrams, playground maps, vehicle designs, bridge cross-sections, garden layouts, city planning — any topic needing spatial/technical drawing. K-1: simple shapes, 2-3 elements, sketch theme, no measurements. 1-2: 3-4 elements with labels, show grid, snap enabled. 2-3: 4-5 elements with measurements, blueprint theme. 3-4: 5-6 elements, can use elevation view for machines/vehicles. 4-5: 6-7 elements, technical precision, smaller gridScale. Gemini picks the right viewType (plan for layouts, elevation for machines, section for internals) and elementLabel (rooms, components, parts, zones) based on topic.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['build'], role: 'apply', minutes: 8 },
     supportsEvaluation: true,
   },
   // Vehicles, Flight & Machines Primitives
@@ -191,6 +204,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'machine-profile',
     description: 'Rich display profile for any vehicle or machine — the engineering equivalent of species-profile. Presents beautifully themed profiles for airplanes, trains, cars, ships, helicopters, submarines, bikes, bulldozers, spacecraft and more. Each profile includes specifications, how-it-works explanations, key components with fun analogies, history, fascinating facts, and real-world connections. Category-based color theming (10 categories) makes each machine type visually distinct. AI-generated machine illustrations. Perfect for K-5 vehicle and machine education. ESSENTIAL for answering "How does a [machine] work?" questions.',
     constraints: 'Best for grades K-5. Display-only (no direct evaluation). Use for any vehicle or machine topic: airplanes, cars, trains, ships, helicopters, trucks, submarines, bicycles, construction equipment, spacecraft. K-2: simple vocabulary, 2-3 sentence howItWorks, 3 keyComponents, fun analogies. 3-5: technical vocabulary, full paragraph howItWorks, 4-6 keyComponents, science connections.',
+    affordances: { representation: 'pictorial', role: 'introduce', minutes: 3 },
     tutoring: {
       taskDescription: 'Exploring a machine profile: {{machineName}} ({{category}}). Help the student understand how this machine works and connect to their experience.',
       contextKeys: ['machineName', 'category', 'era', 'sectionsOpened'],
@@ -209,6 +223,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'flight-forces-explorer',
     description: 'Canvas particle-physics simulation of the four forces of flight. Hundreds of air particles stream around a wing cross-section in real time — particles above the wing move faster (visible lower pressure = lift). At high angle of attack particles detach and swirl to visualize stall. The plane moves up/down based on the live force balance. Force arrows emerge from the physics, not from labels. Controls: aircraft type (cessna, jumbo_jet, glider, fighter), thrust slider, angle of attack slider, cargo weight slider. Challenges are predict/observe/adjust MC questions. Perfect for K-5 flight and aerodynamics education. ESSENTIAL for answering "How does an airplane fly?"',
     constraints: 'Best for grades K-5. K-2: simple force names, tap-to-identify, no numeric values, 1-2 easy challenges. 3-5: real force magnitudes, quantitative challenges, stall exploration, aircraft comparison. Evaluable: tracks challenges completed, forces identified, states explored, stall discovery.',
+    affordances: { representation: 'pictorial', reader: 'developing', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription: 'Student explores four forces of flight by adjusting thrust, angle of attack, and cargo weight while watching air particle flow around the wing.',
       contextKeys: ['aircraft', 'flightState', 'thrustPct', 'aoa', 'speed', 'altitude', 'stallCount', 'statesExplored', 'challengeProgress'],
@@ -249,6 +264,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'airfoil-lab',
     description: 'Wing cross-section in a simulated wind tunnel. Students change the wing shape, angle of attack, and airspeed to observe how lift is generated. Animated streamlines, color-coded pressure maps, and force gauges make the invisible physics of flight visible and tangible. Drag handles reshape the airfoil. Compare two airfoils side-by-side. Stall visualization at extreme angles. Teaches variable manipulation, observation, cause-and-effect. Perfect for grades 1-5 flight and aerodynamics education. ESSENTIAL for answering "Why is the wing shaped like that?"',
     constraints: 'Best for grades 1-5. 1-2: relative terms (more/less lift), flat vs curved comparison, no numeric coefficients. 3-5: quantitative results, Bernoulli\'s principle, design optimization challenges. Evaluable: tracks shapes explored, variables manipulated, predictions, stall discovery, challenge performance.',
+    affordances: { representation: ['concrete', 'pictorial'], reader: 'developing', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription: 'Experiment with wing shapes to understand how lift is generated. Current airfoil: {{airfoilName}}. Angle of attack: {{angleOfAttack}}°. Wind speed: {{windSpeed}} m/s. Lift: {{liftForce}} N. Drag: {{dragForce}} N.',
       contextKeys: ['airfoilName', 'airfoilShape', 'angleOfAttack', 'windSpeed', 'liftForce', 'dragForce', 'stallAngle', 'compareModeActive'],
@@ -269,6 +285,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'vehicle-comparison-lab',
     description: 'Interactive, topic-specific vehicle comparison bay. Students drag or tap real vehicles into a test area, predict which will lead on speed, weight, capacity, range, age, or emissions, then launch an animated shared-scale visualization that reveals the evidence. Evidence missions require students to choose both a vehicle and the data that supports it. Includes immediate vector vehicle art plus optional model-specific generated visuals. Best for K-5 comparative data reasoning about a named vehicle class or explicit vehicle comparison.',
     constraints: 'Use for grades K-5 when the objective is to compare vehicles or justify claims from vehicle data. A topic about airplanes should produce airplane peers; bicycles should produce bicycle peers; use a mixed air/land/sea set only for broad transportation comparison. Do not use for fleet logistics, budgets, repeated trips, or optimization—transport-challenge owns that task.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 7 },
     evalModes: [
       {
         evalMode: 'metric_leader',
@@ -325,6 +342,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'propulsion-lab',
     description: 'Interactive exploration of how vehicles generate thrust. Students see action/reaction force arrows for jets, propellers, wheels, sails, and rockets — all unified by Newton\'s Third Law. Toggle force arrow overlays, adjust throttle, compare propulsion types side-by-side, and test predictions in "What If?" experiments. Teaches that propellers need air but rockets work in vacuum. Perfect for grades 1-5 physics and engineering. ESSENTIAL for teaching Newton\'s Third Law through real vehicles.',
     constraints: 'Best for grades 1-5. 1-2: 4 propulsion types, simple push-backward/go-forward concept, everyday analogies. 3-5: 5-6 types including rocket (vacuum discussion), medium dependency, action/reaction identification, efficiency comparisons. Evaluable: tracks pairs identified, what-if accuracy, types explored, medium understanding.',
+    affordances: { representation: 'pictorial', reader: 'developing', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription: 'Student explores Newton\'s Third Law by switching propulsion types (jet, rocket, propeller, sail) across mediums (air, water, vacuum) and watching particle physics.',
       contextKeys: ['propulsion', 'medium', 'throttle', 'speed', 'exploredCombos', 'noThrustMoments', 'challengeProgress'],
@@ -381,6 +399,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'propulsion-timeline',
     description: 'Interactive timeline showing the evolution of transportation from walking to spacecraft. Scrub through eras, tap milestones for detail cards, filter by domain (land/sea/air/space), trace innovation chains showing how one invention enabled the next, complete chronological ordering challenges, and observe exponential speed record growth. Period-accurate vehicle descriptions with real dates and speeds. Perfect for K-5 history and engineering education. ESSENTIAL for teaching innovation history and technological progress.',
     constraints: 'Best for grades K-5. K-2: 6-8 milestones, simple sequencing with 4 items, 1 innovation chain. 3-5: 10-15 milestones, complex sequencing with 5-6 items, 2-3 innovation chains, speed record analysis. Evaluable: tracks milestones explored, sequencing accuracy, chains traced, domains explored, speed trend observation.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap', 'build'], role: ['visualize', 'apply'], minutes: 7 },
     tutoring: {
       taskDescription: 'Explore the history of transportation. Phase: {{phase}}. Selected milestone: {{selectedMilestone}}. Milestones explored: {{milestonesExplored}}/{{milestonesTotal}}.',
       contextKeys: ['phase', 'selectedMilestone', 'milestonesExplored', 'milestonesTotal', 'domainFilter'],
@@ -411,6 +430,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'paper-airplane-designer',
     description: 'Interactive paper airplane design lab where students choose templates (dart, glider, stunt, wide body), customize wing geometry and fold parameters, then launch in simulated flight tests. Performance metrics (distance, hang time, stability, accuracy) drive iterative improvement. Tracks design iterations and variable isolation. Perfect for teaching the engineering design process and scientific method. ESSENTIAL for K-5 engineering and design thinking.',
     constraints: 'Requires understanding of the 4-phase workflow: build → launch → analyze → iterate. Flight simulation is approximate — focus is on the design process, not physics accuracy.',
+    affordances: { representation: ['concrete', 'symbolic'], reader: 'developing', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
       taskDescription: 'Student is designing and testing paper airplanes using the {{template}} template (version {{designVersion}}). Current design: nose angle {{designParameters.noseAngle.value}}°, wing span {{designParameters.wingSpan.value}}cm, wing angle {{designParameters.wingAngle.value}}°. They have completed {{flightLog.length}} flights so far.',
       contextKeys: ['template', 'designParameters', 'launchSettings', 'flightLog', 'designVersion', 'currentResults', 'challenges', 'gradeBand'],
@@ -432,6 +452,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'engine-explorer',
     description: 'Living Engine particle simulation — students watch water/fuel particles heat up, build pressure, push a piston, and turn a drive wheel. Canvas-based physics with fuel and load sliders that have real consequences. Interactive zone exploration and MC challenges. Perfect for teaching energy transformation, cause-and-effect, and mechanical systems. ESSENTIAL for grades 1-5 engineering and physics.',
     constraints: 'Requires engineType. Zone descriptions, challenges, and energyFlow are generated content. Engine geometry and particle physics are hardcoded per engine type in the component.',
+    affordances: { representation: 'pictorial', reader: 'developing', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
       taskDescription: 'Student is exploring a living {{engineName}} ({{engineType}}) simulation for {{vehicleContext}}. Fuel: {{fuelLevel}}%, Load: {{loadLevel}}%, Wheel: {{wheelRPM}} RPM. Zones explored: {{zonesExplored}}. Selected zone: {{selectedZone}}. Challenge progress: {{challengeProgress}}.',
       contextKeys: ['engineType', 'engineName', 'vehicleContext', 'fuelLevel', 'loadLevel', 'wheelRPM', 'zonesExplored', 'selectedZone', 'challengeProgress'],
@@ -453,6 +474,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'hydraulics-lab',
     description: 'Living Hydraulics particle simulation — students watch fluid particles transmit pressure between two connected pistons of different sizes. Canvas-based physics with input force, piston diameter, and load sliders that have real consequences. Demonstrates Pascal\'s Law (F₁/A₁ = F₂/A₂), force multiplication, and work conservation. Interactive zone exploration and MC challenges. Four scenarios: hydraulic press, car lift, excavator, brake system. Perfect for teaching fluid mechanics, force multiplication, and mechanical advantage. ESSENTIAL for grades 3-8 engineering and physics.',
     constraints: 'Requires scenario type. Zone descriptions, challenges, and Pascal\'s Law explanation are generated content. Hydraulic geometry, particle physics, and force calculations are hardcoded in the component.',
+    affordances: { representation: ['concrete', 'pictorial'], reader: 'developing', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 7 },
     evalModes: [
       {
         evalMode: 'predict',
@@ -570,6 +592,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'vehicle-design-studio',
     description: 'Engineering design process studio where students pick vehicle body, propulsion, and control parts then test against physics simulation. Includes radar performance chart, design log for iteration tracking, and challenge mode with constraints. Perfect for teaching the engineering design cycle (design \u2192 test \u2192 analyze \u2192 iterate), trade-off analysis, and systematic testing. ESSENTIAL for grades 2-5 engineering and design thinking.',
     constraints: 'Requires partsPalette with bodies, propulsion, and controls arrays. Each part needs numeric physics values. Challenges optional but recommended for grade 4-5.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
       taskDescription: 'Student is designing a {{domain}} vehicle. They select parts from a palette (body: {{selectedBody}}, propulsion: {{selectedPropulsion}}, controls: {{selectedControls}}) and test their design. Current simulation shows {{latestSimulation}}. This is iteration {{designIterations}}. Active challenge: {{activeChallenge}}.',
       contextKeys: ['domain', 'selectedBody', 'selectedPropulsion', 'selectedControls', 'latestSimulation', 'designIterations', 'activeChallenge', 'constraintsMet'],
@@ -591,6 +614,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'transport-challenge',
     description: 'Living transport simulation where students pick vehicles and watch animated trips play out. Students see 50 cars making round trips vs 2 buses vs 1 plane — the visual IS the explanation. Constraint bars (budget, time, CO₂) fill in real-time. Comparison tables reveal trade-offs. Perfect for K-5 engineering, logistics, and data-driven decision making. ESSENTIAL for teaching constraint analysis and transport planning.',
     constraints: 'Best for grades 3-5. Use for transport logistics, constraint-based decisions, trade-off analysis, data comparison. Easy: single constraint, obvious answer. Medium: 2-3 constraints, multiple viable options. Hard: all constraints active, no perfect answer. Vehicles include cars, buses, vans, trains, planes with realistic capacity/speed/cost/CO2 data.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap'], role: ['visualize', 'apply'], minutes: 7 },
     evalModes: [
       {
         evalMode: 'single_constraint',

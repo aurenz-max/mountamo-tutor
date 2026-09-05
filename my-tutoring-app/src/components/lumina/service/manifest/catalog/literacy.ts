@@ -35,6 +35,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'the word "noun" says an answer before it is asked. The answer is SPOKEN, so pick this for '
       + 'objectives about NAMING grammatical structure, not for editing or writing objectives — those need '
       + 'a written surface.',
+    affordances: { representation: 'symbolic', answers: ['spoken'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-17) — item 22, port 3 of the closed-set literacy
     // frontier. The tutor owns the clock: it asks, waits, judges the spoken label
     // from the audio in-band, corrects contrastively, and its own affirmation is
@@ -202,6 +203,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'exactly when joined in order (un+help+ful, tele+scope); words needing a spelling change at the join '
       + '(happy+ly, run+ing) are excluded. The answer is SPOKEN, so pick this for objectives about building '
       + 'or unpacking word meaning, not for spelling objectives — those need a written surface.',
+    affordances: { representation: 'symbolic', answers: ['spoken'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-16) — the FIRST judged port above the K-2 band.
     // The tutor owns the clock: it states what the word means, waits, judges
     // the spoken word from the audio in-band, corrects contrastively, and its
@@ -378,6 +380,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       misconceptionScope: 'primitive',
     description: 'Sound-by-sound word building with phoneme tiles. Students tap to hear individual sounds, then blend into words. Supports CVC, CVCE, blends, digraphs, diphthongs, and r-controlled vowels. Audio playback via TTS. AI-generated word images on success. ESSENTIAL for K-2 phonics instruction.',
     constraints: 'Grades K-2 only. Requires phonics/decoding content.',
+    // reader: 'none' — READY @ PRE (cvc, the K census route), live-confirmed 3/3
+    // (qa/reader-fit/phonics-blender-PRE-2026-07-15.md).
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
     evalModes: [
       {
         evalMode: 'cvc',
@@ -585,6 +590,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'text); the decoding comprehension modes (literal/sequence/inference/main_idea) are for Grade 1+. Use '
       + 'di-sentence-reading instead for ISOLATED decodable or sight-word sentences with no story around them, and '
       + 'read-aloud-studio for grade 1-6 fluency where comprehension is not being measured.',
+    // reader: 'emerging' base (decode modes — READY @ EMERGING, Gr1) with
+    // read_along overridden to 'none' (READY @ PRE, live 3/3) —
+    // qa/reader-fit/decodable-reader-PRE-2026-07-14.md.
+    affordances: { representation: 'symbolic', reader: 'emerging', answers: ['spoken'], role: 'apply', minutes: 8 },
     // ── DI MODALITY (2026-08-12) — tenth literacy port, consumer of
     // useJudgedScriptRunner. Before this the READING PHASE MEASURED NOTHING:
     // its only signal was `wordsTapped` (how often the child asked for a word)
@@ -620,7 +629,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // a FLOOR and adds a comprehension question on top, so the ladder starts
       // above it and keeps its old spacing. read_along gains a spoken answer
       // where it used to take a tap, which is a smaller structural step.
-      { evalMode: 'read_along', label: 'Read-Along (Tier 0)', beta: 1.0, scaffoldingMode: 1, challengeTypes: ['literal'], description: 'Kindergarten shared reading: the tutor reads the whole story aloud while the child follows the print, then the child SAYS the answer to each question out loud. For pre-readers who cannot yet decode connected text.' },
+      { evalMode: 'read_along', affordances: { reader: 'none' }, label: 'Read-Along (Tier 0)', beta: 1.0, scaffoldingMode: 1, challengeTypes: ['literal'], description: 'Kindergarten shared reading: the tutor reads the whole story aloud while the child follows the print, then the child SAYS the answer to each question out loud. For pre-readers who cannot yet decode connected text.' },
       { evalMode: 'literal', label: 'Literal Recall (Tier 1)', beta: 3.0, scaffoldingMode: 1, challengeTypes: ['literal'], description: 'Read the story aloud, then say the one word that answers a fact stated directly in it.' },
       { evalMode: 'sequence', label: 'Sequence/Cause-Effect (Tier 2)', beta: 4.0, scaffoldingMode: 2, challengeTypes: ['sequence'], description: 'Read the story aloud, then SAY which of two text-explicit parts came first, or the stated cause of an effect, from the choices the tutor reads out.' },
       { evalMode: 'inference', label: 'Inference (Tier 3)', beta: 5.0, scaffoldingMode: 3, challengeTypes: ['inference'], description: 'Read the story aloud, then SAY what the text implies but does not state, from the choices the tutor reads out.' },
@@ -806,6 +815,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'generator derives all scored contracts from visible book content. Every focus word needs at least two '
       + 'natural words before it in its sentence so the tutor has a real lead-in to read and stop after. Not a '
       + 'story or compare activity yet.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['spoken', 'tap'], role: 'apply', minutes: 8 },
     // ── DI MODALITY (2026-08-14) — FOURTEENTH literacy port. The tutor owns
     // the clock in both directions: it asks once, waits, judges the spoken word
     // from the audio in-band, is handed a CODE-COMPUTED verdict for the tap,
@@ -834,6 +844,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'find-feature',
+        affordances: { answers: ['tap'] },
         label: 'Find Book Features',
         beta: 1.5,
         discrimination: 1.8,
@@ -843,6 +854,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'read-focus-word',
+        affordances: { answers: ['spoken'] },
         label: 'Read the Glowing Word',
         beta: 2.5,
         discrimination: 1.6,
@@ -974,6 +986,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'PRE-READER (K): all three modes route at K. Each word in recognition and identification (target, '
       + 'comparison, every option) carries a single depicting emoji so a non-reader can tell the words apart; '
       + 'production needs no such surface because nothing but the target is on screen.',
+    // reader: 'none' — READY @ PRE for recognition + identification, live 3/3
+    // (qa/reader-fit/rhyme-studio-PRE-2026-07-15.md); production is purely oral
+    // with nothing on screen but the target, so it carries no higher demand.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
     // ── DI MODALITY (2026-08-12) — eighth literacy port. The tutor owns the
     // clock in every mode; there is no advance timer, no push-to-talk mic, no
     // Next button and no Start gate anywhere in the path.
@@ -1029,6 +1045,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'production',
+        affordances: { representation: 'symbolic' },
         label: 'Think of a Rhyme (Tier 4)',
         beta: 5.0,
         scaffoldingMode: 4,
@@ -1155,6 +1172,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'rejected in code, because a judged tutor would refuse a child who was right. 1-4 syllables '
       + '(5 tolerated). Spoken answers are COUNTS, never letters or sounds. Requires the live tutor and a '
       + 'microphone.',
+    // reader: 'none' — a shipped judged-loop port with a live gate
+    // (qa/tutor-reports/syllable-clapper-live-di-cap-2026-08-16.md,
+    // -signature-2026-08-16.md); the word is never printed at all, before or
+    // after the answer, so there is nothing to read at any point.
+    affordances: { reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
     // ── DI MODALITY (2026-08-16) — literacy port. The click era shipped a
     // `👏 Clap!` button, six counter circles and a `Check (3 claps)` label: the
     // button failed the costume test outright (a child who cannot hear a single
@@ -1350,6 +1372,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'INITIAL/beginning phoneme only (route ending-sound or rhyme tasks to rhyme-studio / poetry-lab). '
       + 'K: CVC words. Spoken answers are WORDS or COUNTS — the child is never asked to produce an isolated '
       + 'letter sound. Requires the live tutor and a microphone.',
+    // reader: 'none' — shipped judged-loop port (port 6, 2026-08-11) and USER-DRIVEN
+    // 2026-08-12 ("this passes human check"): the runner owns every cue, all four modes are
+    // answered aloud, and segment deliberately never prints the word.
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-11) — sixth literacy port, second literacy
     // consumer of useJudgedScriptRunner. The 4-choice grid was a costume on
     // every mode: picking "cat" after hearing /k/ /a/ /t/ is word recognition,
@@ -1392,6 +1418,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'segment',
+        // The word is deliberately never printed here (letters must not be countable),
+        // so the stimulus is picture-only.
+        affordances: { representation: 'pictorial' },
         label: 'Sound Count (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1537,6 +1566,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'sounds are on screen and every sound is tappable to hear; there are no answer buttons and nothing to click to '
       + 'advance. Requires a microphone. ESSENTIAL for K-2 reading readiness.',
     constraints: 'Use simple CVC/CVCC words. All result words must be real words. Use proper phoneme notation with slashes. Spoken answers — requires the live tutor and a microphone.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['spoken'], role: 'apply', minutes: 4 },
     evalModes: [
       {
         evalMode: 'addition',
@@ -1742,6 +1772,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'route to letter-sound-link, which owns grapheme→phoneme and its continuant gate — this primitive '
       + 'teaches recognition. The manifest must NOT supply sentences or letters — the generator authors them '
       + 'from the letter group.',
+    // name_it's spoken answer overturned the click-era 4-tile menu (2026-08-13
+    // user ruling, drive 6ada8c0a1bcf) — voice GONE nowhere, it is the mode's
+    // ONLY surface now; find_it/match_it stay tapped (position/form, unspeakable).
+    affordances: { representation: 'symbolic', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-13) — ELEVENTH literacy port. The tutor owns the
     // clock in all three directions: it asks once, waits, is handed a
     // CODE-COMPUTED verdict for the tap, and its own line is the advance.
@@ -1898,6 +1932,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'name_it',
+        affordances: { answers: ['spoken'] },
         label: 'Name It (Sentence Spotter)',
         // β RAISED 1.5 → 2.0 on the 2026-08-13 conversion, because the STRUCTURE
         // changed and not just the surface: a 1-of-4 menu (25% guess floor,
@@ -1914,6 +1949,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_it',
+        affordances: { answers: ['tap'] },
         label: 'Find It (Visual Search)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -1930,6 +1966,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'match_it',
+        affordances: { answers: ['tap'] },
         label: 'Match It (Case Matching)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1962,6 +1999,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'a pre-reader names; both keep full coverage in the other two directions. '
       + 'One letter is asked ONCE per session, so a group bounds how many challenges a lesson can carry. '
       + 'Do not route letter-NAMING objectives here — naming a letter aloud has no reliable judge.',
+    // reader: 'none' — READY @ PRE after the --fix loop, live-confirmed
+    // (qa/reader-fit/letter-sound-link-PRE-2026-07-14.md + the 2026-08-16 live DI reports).
+    // `hear_see` is the one tapped direction: a grapheme cannot be spoken, so it is touched.
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-11) — seventh literacy port. The tutor owns the
     // clock: no advance timer, no push-to-talk mic, no Next button, and no
     // per-option audition protocol. The old two-tap "tap to hear, tap to keep"
@@ -2069,6 +2110,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'see_hear',
+        affordances: { representation: 'symbolic', answers: ['spoken'] },
         // Beta RAISED 1.5 → 3.0 with the DI port: this stopped being a 1-of-2
         // audio discrimination (guessable at 50%) and became unaided
         // grapheme→phoneme PRODUCTION with no options on screen.
@@ -2083,6 +2125,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'hear_see',
+        // A grapheme cannot be spoken: the tutor says the sound and the child TAPS the letter.
+        affordances: { representation: 'symbolic', answers: ['tap'] },
         label: 'Find the Letter (Sound → Grapheme)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2126,6 +2170,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'set is one word wide, not one sentence wide. Requires the live tutor and a microphone. '
       + 'The manifest must NOT supply specific words — the generator builds the word pool and challenges '
       + 'deterministically from the eval mode.',
+    // reader: 'none' — shipped judged-loop port (port 5, 2026-08-11) that the user drove the
+    // same day ("an incredibly strong modality from a learning standpoint"): nothing on screen
+    // prints the word, five of six modes are answered aloud, and receptive_match taps a picture.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-11) — fifth literacy port, first literacy consumer
     // of useJudgedScriptRunner. The tutor owns the clock in every mode; there is
     // no advance timer, no push-to-talk mic, no Next button and no answer chips
@@ -2158,6 +2206,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'receptive_match',
+        // The one tapped mode: the tutor says the word and the child taps its picture.
+        affordances: { answers: ['tap'] },
         label: 'Listen & Find (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2384,6 +2434,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'so do not route letter-naming or alphabet-recognition objectives to this primitive. Requires the live tutor '
       + 'and a microphone. The manifest must NOT supply per-challenge words \u2014 the generator authors the word pool '
       + 'from the letter group and the objective.',
+    // reader: 'none' \u2014 READY @ PRE for all three modes (qa/reader-fit/cvc-speller-PRE-2026-07-14.md).
+    affordances: { representation: ['concrete', 'symbolic'], reader: 'none', answers: ['spoken', 'build'], role: 'apply', minutes: 5 },
     // \u2500\u2500 DI MODALITY (2026-08-10) \u2014 fourth literacy port after phonics-blender,
     // sound-swap and word-flip, same two user rulings. The tutor owns the clock
     // in all three modes: it says the word, waits, judges, corrects
@@ -2420,6 +2472,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'spell_word',
+        affordances: { representation: 'concrete', answers: ['build'] },
         label: 'Spell It (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2582,6 +2635,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'its last sound cannot be scored). Word Chains must follow the one-letter-change rule. Sentences use only '
       + 'mastered CVC words + approved sight words and must fit the benched 3-8 word read-aloud window; the '
       + 'comprehension answer must be a word IN the sentence and must NOT appear in the question.',
+    // reader: 'none' base — READY @ PRE for real_vs_nonsense/picture_match/
+    // word_chains (qa/reader-fit/word-workout-word-flip-PRE-2026-07-15.md);
+    // sentence_reading overridden 'emerging' — floored Grade 1+, the
+    // decodable-reader precedent that doc invokes by name.
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 6 },
     // ── DI MODALITY (2026-08-14) — SIXTEENTH literacy port, the last of Phase 1.
     // The tutor owns the clock: it asks once, waits, judges the spoken answer
     // from the audio in-band, and its own line is the advance. No advance timer,
@@ -2613,6 +2671,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'real_vs_nonsense',
+        affordances: { representation: 'symbolic', answers: ['spoken'] },
         label: 'Real vs Nonsense (Tier 1)',
         // β RAISED 1.5 → 2.5 on the DI port: a 1-of-2 tap with a 50% guess floor
         // became unaided spoken production of the decoded word, which is the
@@ -2625,6 +2684,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'picture_match',
+        affordances: { answers: ['tap'] },
         label: 'Picture Match (Tier 2)',
         // β UNCHANGED: still a tap of the same size. What changed is a SCAFFOLD
         // (the speaker button that read the word aloud), not the structure of
@@ -2636,6 +2696,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'word_chains',
+        affordances: { representation: 'symbolic', answers: ['spoken'] },
         label: 'Word Chains (Tier 3)',
         // β RAISED 3.5 → 4.0: the click era advanced on a "Next Word" button and
         // scored every chain 100 regardless of what was said, so the reading was
@@ -2647,6 +2708,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'sentence_reading',
+        affordances: { representation: 'symbolic', reader: 'emerging', answers: ['spoken'] },
         label: 'Sentence Reading (Tier 4)',
         // β RAISED 5.0 → 5.5: an unjudged "I Read It!" button plus a 1-of-N
         // comprehension tap became a judged whole-sentence read PLUS unaided
@@ -2780,6 +2842,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'story-map',
     description: 'Interactive plot structure diagram where students identify and place story elements on a visual arc. Supports beginning-middle-end (K-1), story mountain (2-3), full plot diagram (4-5), and hero\'s journey (5-6). Students drag event cards to arc positions. ESSENTIAL for reading comprehension K-6.',
     constraints: 'Requires narrative text. Structure type should match grade level.',
+    affordances: { representation: 'symbolic', answers: ['manipulate'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
       { evalMode: 'bme', label: 'BME (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['bme'], description: 'Beginning-Middle-End (K-1).' },
       { evalMode: 'story_mountain', label: 'Story Mountain (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['story-mountain'], description: '5-part narrative arc (2-3).' },
@@ -2823,6 +2886,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'comprehension: 3-5 short sentences, one scene, one problem. The manifest must NOT supply story text, '
       + 'questions, or answers — the generator authors the mini-stories, questions and near misses '
       + 'self-consistently from the topic.',
+    // reader: 'none' — the reader-fit skill's own PRE reference model, cited as
+    // a negative control because it is structurally mute to a non-reader risk
+    // (qa/reader-fit/BACKLOG.md, qa/reader-fit/supply-sweep-triage-2026-08-06.md);
+    // "Works for pre-readers: nothing has to be read" per this entry's own description.
+    affordances: { reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-14) — FIFTEENTH literacy port. The tutor owns the
     // clock: it reads the story, asks once, waits, judges the spoken answer from
     // the audio in-band, and its own line is the advance. No advance timer, no
@@ -3002,6 +3070,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'ESSENTIAL for early-elementary Language Arts grammar.',
     constraints:
       'GRAMMAR objectives only (plural nouns or past-tense verbs). Do NOT route decoding/CVC/phonics/spelling objectives here — the pool is chosen for honest morphology, not decodability. Modes cover regular -s, regular -es, consonant-y → -ies, common irregular plurals, add-only -ed verbs, and code-owned irregular past forms. The -ies and past modes are Grade 1-2 extensions; keep K objectives on -s/-es and familiar irregular plurals. Every noun or action must be concrete and picturable. The manifest must NOT supply per-challenge words — the generator authors typed candidates and code validates and derives every answer deterministically. Spoken answers require the live tutor and a microphone.',
+    // reader: 'none' — READY @ PRE (word-flip is the reader-fit skill's own PRE
+    // reference model for a voice-first counted-picture frame), tap chips since
+    // removed entirely by the 2026-08-09 DI port
+    // (qa/reader-fit/word-workout-word-flip-PRE-2026-07-15.md).
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
     // ── DI MODALITY, PURELY VERBAL (2026-08-09) — third literacy port after
     // phonics-blender and sound-swap, same two user rulings. The tutor owns the
     // clock and the task is spoken end to end: it models the rule on a noun this
@@ -3202,6 +3275,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'character-web',
     description: 'Interactive node-and-edge graph for character analysis and relationship mapping. Students build character profiles with traits and text evidence citations, then map relationships between characters. Tracks character change over time. Perfect for literary analysis grades 2-6.',
     constraints: 'Requires narrative text with 2+ characters. Best for grades 2-6.',
+    affordances: { representation: 'symbolic', answers: ['type', 'tap'], role: 'apply', minutes: 8 },
     evalModes: [
       { evalMode: 'trait_id', label: 'Identify Traits (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['trait_id'], description: 'Name single-word traits a character shows through what they do and say.' },
       { evalMode: 'trait_evidence', label: 'Trait Evidence (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['trait_evidence'], description: 'Support each trait claim with a specific quote or paraphrase from the text.' },
@@ -3214,10 +3288,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'poetry-lab',
     description: 'Audio-first and text-based poetry lab for grades K-6. At K-1, the tutor reads nursery-style poems aloud and students tap the two pictured ending words that rhyme, with no reading required. Analysis mode examines rhyme scheme, mood, and figurative language in grades 2-6. Composition mode supports structured poetry writing in grades 3-6.',
     constraints: 'rhyme_hunt: grades K-1 (audio-first, no reading required; the tutor reads each poem aloud and the child taps two pictured ending words). Analysis: grades 2-6 (poem reading, mood vocabulary, figurative language, rhyme notation). Composition: grades 3-6 (typed free-text writing). The manifest must not supply poem text, candidate words, answers, or templates; the generator authors mode-specific content.',
+    // reader: 'none' on rhyme_hunt only — READY @ PRE for that mode specifically
+    // (qa/reader-fit/poetry-lab-PRE-2026-07-14.md recovery re-audit, 8/8). analysis
+    // and composition remain untested at their own 2-6/3-6 bands.
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: 'apply', minutes: 6 },
     evalModes: [
-      { evalMode: 'rhyme_hunt', label: 'Rhyme Hunt (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['rhyme_hunt'], description: 'Hear a short poem read aloud, then tap the pair of words that rhyme.' },
-      { evalMode: 'analysis', label: 'Analysis (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['analysis'], description: 'Identify poetic elements in given poem.' },
-      { evalMode: 'composition', label: 'Composition (Tier 5)', beta: 6.0, scaffoldingMode: 5, challengeTypes: ['composition'], description: 'Compose poem using template structure.' },
+      { evalMode: 'rhyme_hunt', affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] }, label: 'Rhyme Hunt (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['rhyme_hunt'], description: 'Hear a short poem read aloud, then tap the pair of words that rhyme.' },
+      { evalMode: 'analysis', affordances: { representation: 'symbolic', answers: ['tap'] }, label: 'Analysis (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['analysis'], description: 'Identify poetic elements in given poem.' },
+      { evalMode: 'composition', affordances: { representation: 'symbolic', answers: ['type'] }, label: 'Composition (Tier 5)', beta: 6.0, scaffoldingMode: 5, challengeTypes: ['composition'], description: 'Compose poem using template structure.' },
     ],
     tutoring: {
       taskDescription:
@@ -3284,6 +3362,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'must be base-verb phrases that complete "Does this one ___?" ("have animals that talk"), not headings. '
       + 'At grades 1-2 each text must be 2-3 short sentences, because the tutor reads it aloud and repeats it '
       + 'in a correction.',
+    // No reader-fit verdict on file for this primitive — reader omitted rather
+    // than guessed. Every answer is spoken (audioInput + tutoring both present).
+    affordances: { representation: 'symbolic', answers: ['spoken'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-17) — NINETEENTH literacy port, second of the
     // closed-set literacy frontier (qa/di/BACKLOG.md item 22). The tutor owns
     // the clock: it asks once, waits, judges the spoken answer from the audio
@@ -3477,6 +3558,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'sentence carrying two of them has two right answers and its question is dropped. Chart regions must be one or '
       + 'two plain words a child can say back and tell apart by ear (never "Item A" / "Item B"), and a key idea may '
       + 'never contain the name of the region it belongs to.',
+    // No reader-fit verdict on file for this primitive — reader omitted rather
+    // than guessed. The student reads the passage themselves (tutor never reads
+    // it aloud); every answer is spoken (audioInput + tutoring both present).
+    affordances: { representation: 'symbolic', answers: ['spoken'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-16) — EIGHTEENTH literacy port, first of the
     // closed-set literacy frontier (qa/di/BACKLOG.md item 22). The tutor owns
     // the clock: it points at a sentence, asks once, waits, judges the spoken
@@ -3649,6 +3734,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'evidence-finder',
     description: 'Students find and highlight specific text evidence supporting claims in informational passages. Supports multiple claims, evidence strength ranking, and Claim-Evidence-Reasoning (CER) framework. Multi-color highlighting. Perfect for grades 2-6 evidence-based reading.',
     constraints: 'Best for grades 2-6. Requires informational passage with identifiable evidence.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
     evalModes: [
       { evalMode: 'locate_evidence', label: 'Locate Evidence (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['locate_evidence'], description: 'Find explicit, directly-stated evidence for one claim.' },
       { evalMode: 'match_evidence_to_claim', label: 'Match Evidence to Claim (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['match_evidence_to_claim'], description: 'Assign each evidence sentence to the correct of two claims.' },
@@ -3676,6 +3762,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'paragraph-architect',
     description: 'Scaffolded paragraph construction using hamburger model (topic sentence -> details -> conclusion). Supports informational, narrative, and opinion paragraph types. Sentence-starter frames, linking word guidance, TTS read-back. ESSENTIAL for grades 1-6 writing instruction.',
     constraints: 'Best for grades 1-6. Select paragraph type appropriate to grade level.',
+    affordances: { representation: 'symbolic', answers: ['type', 'tap'], role: 'apply', minutes: 9 },
     evalModes: [
       { evalMode: 'informational', label: 'Informational (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['informational'], description: 'Structured informational paragraph.' },
       { evalMode: 'narrative', label: 'Narrative (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['narrative'], description: 'Narrative paragraph with elements.' },
@@ -3743,8 +3830,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'story-planner',
     description: 'Pre-writing planning tool for narrative writing. Students fill structured cards: characters, setting, conflict, key events, resolution, theme. Generates visual story arc from inputs. AI-generated character/setting illustrations. Connects to story-map for read-to-write cycle. Perfect for K-6 narrative writing.',
     constraints: 'Best for K-6. Focus complexity on grade level.',
+    // reader: 'none' on story_structure only — READY @ PRE for that mode
+    // (qa/reader-fit/story-planner-PRE-2026-08-07.md, 8/8): K-3 picks pictures and
+    // taps events into order, no reading required. character_setting/
+    // conflict_resolution/theme_craft are grade 2-6 typed-card identities, untested.
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 9 },
     evalModes: [
-      { evalMode: 'story_structure', label: 'Story Structure (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['story_structure'], description: 'Sequence the narrative arc: beginning-middle-end.' },
+      { evalMode: 'story_structure', affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] }, label: 'Story Structure (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['story_structure'], description: 'Sequence the narrative arc: beginning-middle-end.' },
       { evalMode: 'character_setting', label: 'Character & Setting (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['character_setting'], description: 'Develop a believable character and a vivid setting.' },
       { evalMode: 'conflict_resolution', label: 'Conflict & Resolution (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['conflict_resolution'], description: 'Plan a central conflict and a connected resolution.' },
       { evalMode: 'theme_craft', label: 'Theme & Craft (Tier 5)', beta: 5.0, scaffoldingMode: 5, challengeTypes: ['theme_craft'], description: 'Weave theme, dialogue, and craft into the plan.' },
@@ -3847,6 +3939,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'opinion-builder',
     description: 'Structured scaffold for opinion/argumentative writing. Uses OREO model (grades 2-4) transitioning to CER framework (grades 5-6). Students construct arguments piece by piece with validation. Counter-argument support at grades 5-6. TTS read-back. ESSENTIAL for persuasive writing grades 2-6.',
     constraints: 'Best for grades 2-4 (OREO), grades 5-6 (CER).',
+    affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 8 },
     evalModes: [
       { evalMode: 'oreo', label: 'OREO (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['oreo'], description: 'Opinion-Reason-Example-Opinion (grades 2-4).' },
       { evalMode: 'cer', label: 'CER (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['cer'], description: 'Claim-Evidence-Reasoning (grades 5-6).' },
@@ -3857,12 +3950,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'revision-workshop',
     description: 'Students apply specific revision strategies to draft passages: adding details, strengthening word choice, combining sentences, fixing run-ons, improving transitions, reorganizing. Before/after comparison with TTS read-aloud. Perfect for grades 2-6 revision skills.',
     constraints: 'Best for grades 2-6. Focus on one revision skill at a time.',
+    affordances: { representation: 'symbolic', answers: ['type', 'manipulate'], role: 'apply', minutes: 9 },
     evalModes: [
       { evalMode: 'add_details', label: 'Add Details (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['add-details'], description: 'Expand with sensory/specific details.' },
       { evalMode: 'word_choice', label: 'Word Choice (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['word-choice'], description: 'Replace weak/vague words.' },
       { evalMode: 'combine_sentences', label: 'Combine Sentences (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['combine-sentences'], description: 'Combine choppy sentences.' },
       { evalMode: 'transitions', label: 'Transitions (Tier 3)', beta: 4.5, scaffoldingMode: 3, challengeTypes: ['transitions'], description: 'Add/improve transition words.' },
-      { evalMode: 'reorganize', label: 'Reorganize (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['reorganize'], description: 'Reorder for logical flow.' },
+      { evalMode: 'reorganize', affordances: { answers: ['manipulate'] }, label: 'Reorganize (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['reorganize'], description: 'Reorder for logical flow.' },
       { evalMode: 'concision', label: 'Concision (Tier 5)', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['concision'], description: 'Eliminate wordiness.' },
     ],
     supportsEvaluation: true,
@@ -3889,6 +3983,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'use di-sentence-reading instead for K-2 practice on ISOLATED decodable or sight-word sentences. '
       + 'The tutor judges WORDS, never how the reading sounded: prosody is taught by model-and-imitate and is '
       + 'not graded. No comprehension questions — this primitive measures oral reading, not understanding.',
+    // reader omitted, not 'none' — the child DECODES the printed line themselves
+    // (accuracy mode is explicitly cold-read); the tutor models the line first
+    // only in expression/dialogue mode, it never reads for the child. No
+    // reader-fit verdict on file (qa/reader-fit/BACKLOG.md names this only as a
+    // media-player rebuild boundary, not an audited entry).
+    affordances: { representation: 'symbolic', answers: ['spoken'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-12) — ninth literacy port, consumer of
     // useJudgedScriptRunner. Before this, the primitive judged NOTHING: its
     // score was modelListened + recordingMade + selfAssessment + comparisonUsed
@@ -4050,6 +4150,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'sentence-builder',
     description: 'Students construct grammatical sentences by arranging color-coded word/phrase tiles by grammatical role (subject=blue, predicate=red, object=green, modifier=yellow). Progressive complexity from simple S-V to compound-complex sentences. TTS read-back. ESSENTIAL for grades 1-6 grammar.',
     constraints: 'Best for grades 1-6. Sentence complexity should match grade level.',
+    affordances: { representation: 'symbolic', answers: ['build'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'simple',
@@ -4119,6 +4220,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'context-clues-detective',
     description: 'Students determine unfamiliar word meaning using context clues. Teaches clue types: definition, synonym/antonym, example, inference. Students highlight clues, identify type, provide meaning. Dictionary comparison reveal. Perfect for grades 2-6 vocabulary.',
     constraints: 'Best for grades 2-6. Requires passage with context clues near target word.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'definition',
@@ -4211,6 +4313,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'figurative-language-finder',
     description: 'Students identify and classify figurative language in passages: simile, metaphor, personification, hyperbole, idiom, alliteration, onomatopoeia, imagery. Color-coded highlighting by type. Literal translation mode. Connects to poetry-lab. Perfect for grades 3-6.',
     constraints: 'Best for grades 3-6. Requires passage rich in figurative language.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'sound_devices',
@@ -4312,6 +4415,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'spelling-pattern-explorer',
     description: 'Students investigate word groups sharing spelling patterns, discover underlying rules, then apply via audio dictation practice. Supports word families, vowel patterns, suffix rules, Latin/Greek roots. TTS pronunciation and slow syllable mode. Perfect for grades 1-6 spelling.',
     constraints: 'Best for grades 1-6. Pattern complexity should match grade level.',
+    affordances: { representation: 'symbolic', answers: ['type'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'short_vowel',
@@ -4371,6 +4475,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'and sortable by a single clear criterion. Match pairs limited to 5-6 per challenge and every term must have ONE '
       + 'defensible partner. BAND FLOOR: at Kindergarten use binary_sort or ternary_sort only — match_pairs answers from a '
       + 'printed bank, which requires decoding, so it is for Grade 1+.',
+    // reader: 'none' — READY @ PRE for binary_sort / ternary_sort
+    // (qa/reader-fit/word-sorter-PRE-2026-07-14.md), and the DI port (port 18, 2026-08-16)
+    // forces `namesChoices` at the K band floor precisely because a pre-reader cannot read a
+    // mat — the ask names the groups aloud. Zero taps in all three modes.
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // ── DI MODALITY (2026-08-16) — SEVENTEENTH literacy port. The tutor owns
     // the clock: it says the word, asks once, waits, judges the spoken answer
     // from the audio in-band, and its own affirmation is the advance. No advance
@@ -4415,6 +4524,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'match_pairs',
+        // Grade 1+ only — the eval-mode description states the cause itself: the word bank
+        // is READ, not heard, so this mode's own path needs reading where the sorts do not.
+        affordances: { reader: 'developing' },
         label: 'Find the Partner (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 4,
