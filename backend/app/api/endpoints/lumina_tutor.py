@@ -266,6 +266,12 @@ class FloorGate:
         return not self._quiet.is_set()
 
 
+# Opening line of the state note PrimitiveState.attach prepends. A
+# parenthetical for the tutor, with no bracket tag -- see attach() for why the
+# tag had to go. Module-level so the tests pin the same string the wire carries.
+STATE_NOTE_OPEN = "(For you only, never to be spoken. Where the student is right now:"
+
+
 class PrimitiveState:
     """The student's CURRENT state inside the primitive they are on.
 
@@ -321,7 +327,22 @@ class PrimitiveState:
     def attach(self, text: str) -> str:
         """Prepend the current state to a message that gives the model the
         floor, if it has changed since the model last saw it. The ask stays
-        last so it is the most recent thing in the model's context."""
+        last so it is the most recent thing in the model's context.
+
+        The note is a parenthetical addressed to the tutor and carries NO
+        bracket tag. Until 2026-09-05 it opened with "[CURRENT STATE]" and the
+        prompt listed it as "- [CURRENT STATE]: where the student is ...". The
+        model learned that shape well enough to FABRICATE it: on the generic
+        journey's plain student questions it opened its turn with
+        "[CURRENT STATE]: {...the runtime state as JSON...}" while the ledger
+        showed state_attached=0 on every send (hundreds-chart 2026-09-05 2/3,
+        formula-lab 2026-08-23 3/3, and the DI move-on beats in
+        qa/di/BACKLOG item 21, where the fabricated block carried the NEXT
+        item's answer). "Never read it aloud" cannot stop a block the model is
+        writing itself. A tagged message type is a template the model can
+        complete; a note in parentheses is not, and the prompt no longer names
+        a tag for it to borrow.
+        """
         if not self._state:
             return text
         signature = self._signature(self._state)
@@ -330,7 +351,7 @@ class PrimitiveState:
         self._conveyed = signature
         self.attached += 1
         lines = "\n".join(f"  {k}: {v}" for k, v in self._state.items())
-        return f"[CURRENT STATE] Where the student is in this activity:\n{lines}\n\n{text}"
+        return f"{STATE_NOTE_OPEN}\n{lines}\n)\n\n{text}"
 
 
 # --- Floor gate timing -----------------------------------------------------
@@ -611,10 +632,18 @@ that actually answers what they asked. Then, if it helps, bridge back to the act
   offer a genuine guess of your own ("I think it might be…") — praising their
   idea and changing the subject is not an answer."""
 
-_CONTEXT_MESSAGES_BLOCK = """**CONTEXT MESSAGES (never speak in response to these):**
-- [CURRENT STATE]: where the student is in the activity right now, attached to the message that follows it. Use it to answer that message accurately. Never read it aloud, list it back, or comment on it — answer what was actually asked.
-- [SESSION RESUMED]: the connection was briefly restored. Follow its instruction exactly; never say the tag aloud or mention any disconnection to the student.
-- Messages that explicitly script a line for you (e.g. 'Celebrate and explain: "..."') are the ONLY state changes you narrate."""
+# No "- [TAG]: description" line for the state note. That shape is a template,
+# and the model completed it: with nothing attached (state_attached=0 in every
+# ledger) it opened plain-question turns with a fabricated
+# "[CURRENT STATE]: {...}" block, keys copied from the greeting's RUNTIME STATE
+# (hundreds-chart 2026-09-05, formula-lab 2026-08-23; DI BACKLOG item 21 saw
+# the same shape carry the next item's answer on move-on beats). The note is
+# described in prose, and the last bullet names the fabricated shape outright.
+_CONTEXT_MESSAGES_BLOCK = """**MESSAGES THAT ARE NOT FROM THE STUDENT (never speak in response to these):**
+- Some messages open with a note in parentheses telling you where the student is in the activity right now. It is for you alone: use it to answer that message accurately, and never repeat it, list its values, or comment on it — answer what was actually asked.
+- A message that begins with [SESSION RESUMED] means the connection was briefly restored. Follow its instruction exactly; never say the tag aloud or mention any disconnection to the student.
+- Messages that explicitly script a line for you (e.g. 'Celebrate and explain: "..."') are the ONLY state changes you narrate.
+- Every word you produce is spoken to the child. Never open a turn with a bracketed tag, a state summary, JSON, or a list of the activity's values — begin with the words the child should hear."""
 
 _IMPORTANT_BLOCK = """**IMPORTANT:**
 - NEVER solve the problem for the student (their own curiosity questions are not the problem — answer those directly, per QUESTIONS FROM THE STUDENT)

@@ -5,6 +5,7 @@ honest session counters. Each test names the live failure it pins.
 Live evidence: qa/tutor-reports/lumina-session-review-2026-08-05.md.
 """
 from app.api.endpoints.lumina_tutor import (
+    STATE_NOTE_OPEN,
     FloorGate,
     PrimitiveState,
     SessionCounters,
@@ -355,7 +356,7 @@ def test_state_rides_out_on_the_next_message_that_asks_for_a_turn():
     s = PrimitiveState()
     s.merge({"problem": "3 + 4"})
     out = s.attach("[DI_ITEM] Judge the student's spoken answer.")
-    assert "[CURRENT STATE]" in out
+    assert out.startswith(STATE_NOTE_OPEN)
     assert "problem: 3 + 4" in out
     # the ask stays LAST so it is the most recent thing in the model's context
     assert out.rstrip().endswith("Judge the student's spoken answer.")
@@ -370,8 +371,9 @@ def test_the_cue_tag_survives_attachment():
     s.merge({"problem": "3 + 4"})
     original = "[DI_ITEM] Judge this."
     assert classify_cue(original) == "[DI_ITEM]"
-    # why order matters: attaching state buries the real tag behind a new one
-    assert classify_cue(s.attach(original)) == "[CURRENT STATE]"
+    # why order matters: the note in front is not a cue, so classifying after
+    # attaching would file a [DI_ITEM] as student text
+    assert classify_cue(s.attach(original)) == "text"
 
 
 def test_any_bracket_tag_is_a_cue():
@@ -406,7 +408,7 @@ def test_unchanged_state_is_not_resent():
     s.merge({"slider": 3})
     first = s.attach("cue one")
     second = s.attach("cue two")
-    assert "[CURRENT STATE]" in first
+    assert first.startswith(STATE_NOTE_OPEN)
     assert second == "cue two"      # nothing changed; nothing to say
     assert s.attached == 1
 
@@ -461,8 +463,27 @@ def test_unserializable_state_still_attaches():
 
     s = PrimitiveState()
     s.merge({"thing": Opaque()})
-    assert "[CURRENT STATE]" in s.attach("cue")
+    assert s.attach("cue").startswith(STATE_NOTE_OPEN)
     assert s.attach("cue two") == "cue two"   # and still de-dupes
+
+
+def test_the_state_note_is_not_a_tagged_message():
+    """The note used to open "[CURRENT STATE] ..." and the prompt listed it as
+    "- [CURRENT STATE]: ...". The model FABRICATED that shape on turns where
+    nothing was attached at all (state_attached=0 in every ledger:
+    hundreds-chart 2026-09-05, formula-lab 2026-08-23), opening with
+    "[CURRENT STATE]: {...json...}" before its first spoken word. A tagged
+    message type is a template; a parenthetical note is not. No bracket tag
+    anywhere in the note, and no "[CURRENT STATE]" left in the prompt for the
+    model to borrow."""
+    from app.api.endpoints import lumina_tutor
+    s = PrimitiveState()
+    s.merge({"challengeType": "count-by-2s", "attemptNumber": 1})
+    out = s.attach("What should I do first here?")
+    note = out[: out.index("What should I do first here?")]
+    assert "[" not in note and "]" not in note
+    assert note.startswith("(") and note.rstrip().endswith(")")
+    assert "CURRENT STATE" not in lumina_tutor._CONTEXT_MESSAGES_BLOCK
 
 
 # --- scripted cues own their floor: no state preamble ------------------------
@@ -522,9 +543,14 @@ def test_prompts_do_not_mention_the_deleted_context_update_channel():
         assert "[CONTEXT UPDATE]" not in p
 
 
-def test_prompts_document_the_current_state_block():
+def test_prompts_document_the_state_note_without_naming_a_tag():
+    """Both prompts still tell the model the note exists and is not for the
+    child -- and neither hands it a "[CURRENT STATE]" tag to reproduce (the
+    fabricated-block defect, see test_the_state_note_is_not_a_tagged_message)."""
     for p in (_lesson_prompt(), _standalone_prompt()):
-        assert "[CURRENT STATE]" in p
+        assert "note in parentheses" in p
+        assert "Never open a turn with a bracketed tag" in p
+        assert "[CURRENT STATE]" not in p
 
 
 def test_lesson_prompt_still_announces_the_primitive_switch_channel():
