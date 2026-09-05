@@ -6,7 +6,7 @@ import type { GradeLevel } from './GradeLevelSelector';
 import type { CurriculumContext } from './CurriculumBrowser';
 import type { LessonBlock } from '@/lib/sessionPlanAPI';
 import type { GenerateOptions } from '../hooks/useExhibitSession';
-import { ManifestOrderRenderer } from './ManifestOrderRenderer';
+import { ManifestOrderRenderer, OrderedSection } from './ManifestOrderRenderer';
 import { KindergartenStage } from './KindergartenStage';
 import { resolveKindergartenStage, useKindergartenOverride } from '../utils/kindergartenMode';
 import { CuratorCompanion } from './CuratorCompanion';
@@ -121,6 +121,13 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
   // stage mode until the student rides the rails past the final section.
   const [stageFinished, setStageFinished] = React.useState(false);
   const lessonTailVisible = !stageActive || stageFinished;
+  // Parent cards (caregiver blocks, item 12) ride BEHIND the rails on the K
+  // stage: the stage skips them and they appear here once the child finishes.
+  // The scroll layout renders them inline — assembly already put them last.
+  const parentCards = React.useMemo(
+    () => (exhibit.orderedComponents || []).filter((c) => c.audience === 'caregiver'),
+    [exhibit],
+  );
 
   return (
     <EvaluationProvider
@@ -173,6 +180,20 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
             )}
 
             {!stageActive && <EvaluationResultsIndicator />}
+
+            {stageActive && stageFinished && parentCards.length > 0 && (
+              <div className="mt-12">
+                {parentCards.map((item, i) => (
+                  <OrderedSection
+                    key={item.instanceId}
+                    item={item}
+                    index={i}
+                    onDetailItemClick={onDetailItemClick}
+                    onTermClick={onDetailItemClick}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Standalone Learn lessons: end-of-lesson "skills you demonstrated"
                 summary, built from the backend's resolved curriculum mapping.

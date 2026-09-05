@@ -53,8 +53,10 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
   onFinished,
 }) => {
   // Only sections that actually render (registry has a component for them).
+  // Caregiver blocks (parent cards) never ride the rails: an adult reads them,
+  // so LessonScreen shows them once the child has finished (item 12).
   const sections = useMemo(
-    () => orderedComponents.filter((c) => Boolean(getPrimitive(c.componentId)?.component)),
+    () => orderedComponents.filter((c) => c.audience !== 'caregiver' && Boolean(getPrimitive(c.componentId)?.component)),
     [orderedComponents],
   );
 

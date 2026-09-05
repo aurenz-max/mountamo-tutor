@@ -1706,6 +1706,83 @@
       }
     }
   ],
-  "scores": null,
+  "scores": {
+    "gates": {
+      "G1": 1,
+      "G4": 1,
+      "G6": 1
+    },
+    "checks": {
+      "Q8": 1,
+      "Q3": 1,
+      "Q6": 1,
+      "Q7": 1,
+      "Q9": 1
+    },
+    "holistic": [],
+    "bucket": "RUNNABLE",
+    "judgedAt": "2026-09-05T11:42:39.039Z",
+    "judge": "tier-a@1a591c80",
+    "citations": [],
+    "unknowns": [
+      {
+        "instanceId": "obj1-foundation-touch-count",
+        "checkId": "Q8",
+        "note": "foundation-explorer has no reader verdict (no reader-fit / contract line)"
+      },
+      {
+        "instanceId": "obj3-number-tracer-1-10",
+        "checkId": "Q3",
+        "note": "number-tracer[trace] opens obj3 on symbols, but the objective targets notation (\"Match the written numbers 1 through 10 to groups of objects\")"
+      }
+    ],
+    "evidence": {
+      "band": {
+        "grade": "K",
+        "preReader": true,
+        "k2": true,
+        "subject": "MATHEMATICS"
+      },
+      "streamOrder": [
+        "foundation-explorer",
+        "counting-board[count]",
+        "concept-card-grid",
+        "ten-frame[build]",
+        "di-spoken-practice[count_and_say]",
+        "number-tracer[trace]",
+        "number-sequencer[order_cards]",
+        "fast-fact[recognize]",
+        "knowledge-check[mixed]"
+      ],
+      "parentCards": [
+        "obj1-take-home-hands-on"
+      ],
+      "parentCardMinutes": 10,
+      "minutes": 38,
+      "lengthCap": 40,
+      "knownMinuteBlocks": 9,
+      "streamBlocks": 9,
+      "tapOnlyProduction": [
+        "number-sequencer[order_cards]",
+        "fast-fact[recognize]"
+      ],
+      "notationObjectives": [
+        "obj3"
+      ],
+      "distinctPrimitives": 9,
+      "notCodeJudged": [
+        "G1 catalog-band half (no grade floors by ruling)",
+        "G4 generator-emitted half",
+        "G6 visible-timer half",
+        "G2",
+        "G3",
+        "G5",
+        "Q1",
+        "Q2",
+        "Q4",
+        "Q5"
+      ]
+    }
+  },
   "human": null
 }

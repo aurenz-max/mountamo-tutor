@@ -20,6 +20,7 @@
  */
 import type { ExhibitData, ExhibitManifest, IntroBriefingData } from '../../../types';
 import { assembleExhibitFromContent, type GeneratedContent } from '../../exhibitAssembly';
+import type { LessonCoverageEval } from '../lessonCoverage/types';
 
 export const LESSON_PACKAGE_VERSION = 1 as const;
 
@@ -66,6 +67,8 @@ export const LESSON_BENCH_CHECKS: readonly LessonBenchCheckDef[] = [
     passesWhen: 'At least one block has a scored eval mode, so the session feeds IRT.' },
   { id: 'Q8', kind: 'check', label: 'Text load', judge: 'code',
     passesWhen: 'At the pre-reader band every on-screen instruction is read aloud or absent.' },
+  { id: 'Q9', kind: 'check', label: 'Length', judge: 'code',
+    passesWhen: "Known block minutes in the child's stream (parent cards excluded) sum to at most the band cap (LENGTH_CAP_MINUTES: pre-reader 40, K-2 45, else 55). Untagged blocks add nothing, so the sum is a floor." },
 ];
 
 export const HOLISTIC_ANCHORS: Readonly<Record<1 | 2 | 3 | 4 | 5, string>> = {
@@ -89,6 +92,10 @@ export interface LessonBenchScores {
   judge?: string;
   /** Every deduction must cite a block and a check — uncited ones are discarded. */
   citations?: Array<{ instanceId: string; checkId: string; note: string }>;
+  /** Axes a block did NOT declare (absent = unknown, never a fail) — what a tag would have decided. */
+  unknowns?: Array<{ instanceId?: string; checkId: string; note: string }>;
+  /** The numbers behind the scores (minutes, caps, stream order) — for the report, not the bucket. */
+  evidence?: Record<string, unknown>;
 }
 
 // ── The human side: reactions in plain language, mapped to checks underneath ──
@@ -133,7 +140,7 @@ export const LESSON_REASONS: readonly HumanReasonDef[] = [
   { id: 'missing', label: 'Missing something the skill needs', checkId: 'Q4' },
   { id: 'flat', label: 'Never gets harder', checkId: 'Q5' },
   { id: 'no-evidence', label: 'Nothing here measures the kid', checkId: 'Q7' },
-  { id: 'too-long', label: 'Too long' },
+  { id: 'too-long', label: 'Too long', checkId: 'Q9' },
 ];
 
 export type BlockReaction = 'keep' | 'fix' | 'cut';
@@ -210,6 +217,8 @@ export interface LessonPackageProvenance {
   gradeLevel?: string;
   gitSha?: string | null;
   promptHash?: string | null;
+  /** Exact reproducible input, including frozen objectives and learner context when supplied. */
+  generationRequest?: Record<string, unknown>;
 }
 
 export interface LessonPackage {
@@ -222,6 +231,8 @@ export interface LessonPackage {
   components: LessonPackageComponent[];
   scores?: LessonBenchScores | null;
   human?: LessonBenchHumanLabel | null;
+  /** Objective-coverage verdict (service/qa/lessonCoverage) — Q4 in the machine's own words. */
+  coverage?: LessonCoverageEval | null;
 }
 
 export class LessonPackageError extends Error {
@@ -272,6 +283,7 @@ export function parseLessonPackage(raw: unknown): LessonPackage {
     components,
     scores: isRecord(raw.scores) ? (raw.scores as unknown as LessonBenchScores) : null,
     human: isRecord(raw.human) ? (raw.human as unknown as LessonBenchHumanLabel) : null,
+    coverage: isRecord(raw.coverage) ? (raw.coverage as unknown as LessonCoverageEval) : null,
   };
 }
 
@@ -306,6 +318,7 @@ export interface BuildLessonPackageInput {
   source: string;
   subskill?: LessonPackageSubskill | null;
   id?: string;
+  generationRequest?: Record<string, unknown>;
 }
 
 /** Producer helper (topic-trace). Returns an error record instead of a package when the brief is missing. */
@@ -325,6 +338,7 @@ export function buildLessonPackage(input: BuildLessonPackageInput): LessonPackag
       gradeLevel: input.manifest.gradeLevel,
       gitSha: null,
       promptHash: null,
+      ...(input.generationRequest ? { generationRequest: input.generationRequest } : {}),
     },
     manifest: input.manifest,
     curatorBrief: input.curatorBrief,

@@ -5,6 +5,7 @@ import { useExhibitContext } from '../contexts/ExhibitContext';
 import { ObjectiveBadge } from './ObjectiveBadge';
 import { useEvaluationContext } from '../evaluation';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { LuminaPanel, LuminaSectionLabel } from '../ui';
 
 interface ManifestOrderRendererProps {
   /**
@@ -145,6 +146,30 @@ export const OrderedSection: React.FC<OrderedSectionProps> = ({
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // Caregiver blocks (catalog `affordances.audience === 'caregiver'`) are placed
+  // after the final assessment by exhibitAssembly and framed here as a parent
+  // card: an adult reads it, so it gets an adult frame that says so, and it
+  // never sits in the child's path (Lesson Bench item 12). The primitive itself
+  // renders unchanged inside the frame.
+  if (item.audience === 'caregiver') {
+    return (
+      <div
+        className={hideChrome ? undefined : config.containerClassName || 'mb-20'}
+        data-primitive-instance-id={instanceId}
+        data-primitive-component-id={componentId}
+        data-lesson-audience="caregiver"
+      >
+        <LuminaPanel accent="amber" className="mx-auto max-w-5xl">
+          <LuminaSectionLabel accent="amber" className="mb-2">For a grown-up · after the lesson</LuminaSectionLabel>
+          <p className="mb-4 text-sm text-slate-400">
+            This part is for you to read and do together, away from the screen.
+          </p>
+          <Component data={{ ...data, ...additionalProps }} index={index} />
+        </LuminaPanel>
       </div>
     );
   }
