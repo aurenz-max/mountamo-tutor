@@ -36,6 +36,7 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [currentEndpoint, setCurrentEndpoint] = useState<EndpointType>('daily-planning');
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isReconnectingRef = useRef(false);
+  const mountedRef = useRef(true);
 
   // Auto-reconnect function
   const attemptReconnect = useCallback(async (endpointType: EndpointType, studentId: number, getAuthToken: () => Promise<string | null>) => {
@@ -70,6 +71,7 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [lastContext]);
 
   const connectToAI = useCallback(async (studentId: number, getAuthToken: () => Promise<string | null>, endpointType: EndpointType = 'daily-planning', endpointContext?: any) => {
+    if (!mountedRef.current) return;
     // If already connected to the same endpoint and student, don't reconnect
     if (socketRef.current?.readyState === WebSocket.OPEN && 
         studentId === studentId && 
@@ -177,6 +179,7 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
 
       socket.onclose = (event) => {
+        if (!mountedRef.current) return;
         console.log(`AI Coach WebSocket connection closed for ${endpointType}: ${event.code} - ${event.reason}`);
         setIsConnected(false);
         
@@ -258,20 +261,12 @@ export const AICoachProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Cleanup on unmount
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
-      
-      if (audioServiceRef.current) {
-        audioServiceRef.current.destroy();
-      }
+      mountedRef.current = false;
+      disconnectFromAI();
     };
-  }, []);
+  }, [disconnectFromAI]);
 
   const value: AICoachContextType = {
     connection: {
