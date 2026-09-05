@@ -231,8 +231,9 @@ The renderer also tracks the primitive nearest the viewport focus line. After a
 debounce it updates the live tutor's primitive context, keeping tutoring help aligned
 with what the student is currently viewing.
 
-`PrimitiveRenderer` and `PrimitiveCollectionRenderer` remain useful for isolated or
-legacy rendering. Manifest-driven lessons should use `ManifestOrderRenderer`.
+`KindergartenStage` presents one section at a time for pre-readers. It shares
+`OrderedSection` with `ManifestOrderRenderer`, keeping primitive props and evaluation
+metadata consistent across both layouts.
 
 ## Evaluation and Curriculum Attribution
 
@@ -380,8 +381,7 @@ because its gallery fixture renders.
 
 Some types and render paths remain for backward compatibility:
 
-- typed arrays such as `tables`, `graphBoards`, and other fields on `ExhibitData`;
-- `PrimitiveCollectionRenderer` for collection-oriented rendering; and
+- typed arrays such as `tables`, `graphBoards`, and other fields on `ExhibitData`; and
 - older docs that describe adding a primitive by editing only `App.tsx` or a single
   monolithic service file.
 

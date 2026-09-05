@@ -15,7 +15,6 @@ import { ai } from "./geminiClient";
 // Content Registry (Phase 1 Refactor)
 import { getGenerator } from "./registry/contentRegistry";
 import { assembleExhibitFromContent, type GeneratedContent } from "./exhibitAssembly";
-import { USE_CONTENT_REGISTRY, DEBUG_CONTENT_REGISTRY } from "../config/featureFlags";
 // Import all generators for side-effect registration
 import "./registry/generators";
 
@@ -165,7 +164,7 @@ export const generateComponentContent = async (
 
   const generator = getGenerator(item.componentId);
   if (generator) {
-    if (DEBUG_CONTENT_REGISTRY) {
+    if (process.env.NODE_ENV === 'development') {
       console.log(`  📦 [Registry] Using registered generator for '${item.componentId}'`);
     }
     return await generator(item, topic, gradeLevelContext, normalizedGrade);
@@ -250,4 +249,3 @@ export const generateIntroBriefing = async (
 
 // Re-export hint generator from problems service
 export { generateProblemHint } from './problems/hint-generator';
-

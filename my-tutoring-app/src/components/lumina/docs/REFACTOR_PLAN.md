@@ -1,5 +1,8 @@
 # Lumina Architecture Refactoring Plan
 
+Historical migration plan. See [ARCHITECTURE.md](../ARCHITECTURE.md) for the current
+system. The switch fallback and migration feature flags described below are gone.
+
 ## 1. The Problem: "Context Debt" & The Monolith
 
 **Why did we reach this conclusion?**

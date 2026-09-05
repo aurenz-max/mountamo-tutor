@@ -142,21 +142,13 @@ function MyComponent() {
 
 ### Option 3: Via Manifest System
 
-Add to `ExhibitData.relationalMappings`:
+Include a `relational-mapping` item in the manifest. The registered generator
+produces its data, and exhibit assembly adds it to `orderedComponents`. The
+lesson renderer handles it through the primitive registry:
 
 ```tsx
-export interface ExhibitData {
-  // ... other fields
-  relationalMappings?: RelationalMappingSchema[];
-}
-```
-
-Then render in your exhibit:
-
-```tsx
-<PrimitiveCollectionRenderer
-  componentId="relational-mapping"
-  dataArray={exhibitData.relationalMappings || []}
+<ManifestOrderRenderer
+  orderedComponents={exhibitData.orderedComponents || []}
 />
 ```
 
