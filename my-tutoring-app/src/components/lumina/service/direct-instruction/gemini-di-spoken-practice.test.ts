@@ -5,8 +5,9 @@ vi.mock('../geminiClient', () => ({ ai: { models: { generateContent } } }));
 
 import { generateDiSpokenPractice } from './gemini-di-spoken-practice';
 import { buildPlannedSpokenItems, hasPlannedCoverage, parseSpokenPlan, spokenSourceTokens } from './spokenPracticePlan';
-import { contextFor, findAnswerLeaks, findChoiceMenuDefects, findUnspokenStimulus, itemCue, pronounceCue }
-  from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
+import {
+  contextFor, findAnswerLeaks, findChoiceMenuDefects, findConceptDefects, findUnspokenStimulus, itemCue, pronounceCue,
+} from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 
 const objective = 'Identify the plus sign (+) and equal sign (=) as math symbols';
 const target = (stimulusText: string, expectedAnswer: string, sourceQuote = objective) => ({
@@ -305,5 +306,231 @@ describe('compare_choice — the closed-set comparative session', () => {
     });
     expect(data.items).toEqual([]);
     expect(data.description).toBe('No matching practice is available for this task.');
+  });
+});
+
+// ── explain_concept — an idea stamped in by code, or written per instance ────
+
+/**
+ * The two frozen grade-1 failures this mode closes (lesson-bench 26(a)/(b),
+ * qa/di item 36): `…ah5w` obj2 is ONE concept session-wide over varied
+ * instances, `…f00i` obj3 is a rule PER instance. What is being tested is the
+ * split for each: code owns the anchor set (named) or the model writes it
+ * (open), code checks SHAPE, and a second review call checks MEANING.
+ */
+const explainObjective = 'Explain what the equal sign means using the balance scale example';
+const CONCEPT = 'The equal sign means both sides have the same amount.';
+const namedConceptPlan = (over: Record<string, unknown> = {}) => ({
+  task: 'explain_concept', closedSet: true, conceptStatement: CONCEPT,
+  targets: [{
+    stimulusId: spokenSourceTokens([explainObjective]).find(t => t.text === 'equal')?.id,
+    sourceId: 's1', stimulusText: '', stimulusEmoji: '',
+    expectedAnswer: 'both sides the same', alsoAccept: 'balanced, equal amounts',
+  }],
+  ...over,
+});
+const instance = (stimulusText: string, spoken: string) => ({
+  stimulusText, ask: `${spoken}. Look at the equal sign. What does the equal sign tell us?`,
+  expectedAnswer: '', alsoAccept: '', conceptStatement: '',
+  acceptRule: 'Any words that say the two sides match count.',
+  signatureError: 'Saying the sum is NOT an explanation.',
+  correctionBody: `${CONCEPT} ${spoken}, so the two sides match.`,
+});
+const EQUAL_DRAW = [
+  instance('3 + 2 = 5', 'Three plus two equals five'),
+  instance('4 = 4', 'Four equals four'),
+  instance('1 + 1 = 2', 'One plus one equals two'),
+  instance('5 = 2 + 3', 'Five equals two plus three'),
+];
+const conceptReview = (rejectedIds: string[] = [], sessionValid = true) =>
+  reply({ rejectedIds, sessionValid, reason: sessionValid ? 'Concept true; anchors mean it.' : 'Instances repeat.' });
+const explainGen = (
+  plan: unknown, draws: Array<{ items: unknown[]; review: { text: string } }>,
+  objectiveText = explainObjective,
+) => {
+  acceptPlan(plan);
+  for (const d of draws) {
+    generateContent.mockResolvedValueOnce(reply({ title: 'Say Why', items: d.items }));
+    generateContent.mockResolvedValueOnce(d.review);
+  }
+  return generateDiSpokenPractice('Understanding the equal sign with balance scales', '1st grade',
+    { objectiveText, targetEvalMode: 'explain_concept' });
+};
+
+describe('explain_concept — the named-concept session (ah5w)', () => {
+  it('stamps the planned sentence and anchors into every instance the model writes', async () => {
+    const data = await explainGen(namedConceptPlan(), [{ items: EQUAL_DRAW, review: conceptReview() }]);
+    expect(data.challengeType).toBe('explain_concept');
+    expect(data.items).toHaveLength(4);
+    for (const i of data.items) {
+      expect(i.responseClass).toBe('concept_statement');
+      expect(i.conceptStatement).toBe(CONCEPT);
+      expect(i.expectedAnswer).toBe('both sides the same');
+      expect(i.alternates).toEqual(['balanced', 'equal amounts']);
+      expect(i.stimulusKind).toBe('text');
+      const cue = itemCue(i, { opening: false, howToPlay: false });
+      expect(cue).toContain(`The idea they must express: "${CONCEPT}"`);
+      expect(cue).toContain('say exactly: "Yes, the equal sign means both sides have the same amount."');
+      expect(contextFor(i)).toEqual({ challengeType: 'explain_concept', stimulus: i.stimulusText });
+    }
+    expect(new Set(data.items.map(i => i.stimulusText)).size).toBe(4);
+    expect(findAnswerLeaks(data.items)).toEqual([]);
+    expect(findConceptDefects(data.items)).toEqual([]);
+    expect(findUnspokenStimulus(data.items)).toEqual([]);
+    expect(generateContent).toHaveBeenCalledTimes(4); // plan, plan review, one draw, concept review
+  });
+
+  it('ships NOTHING when the instances repeat — a concept over one equation is recall', async () => {
+    const repeated = [EQUAL_DRAW[0], EQUAL_DRAW[0], EQUAL_DRAW[0], EQUAL_DRAW[0]];
+    const data = await explainGen(namedConceptPlan(),
+      [{ items: repeated, review: conceptReview() }, { items: repeated, review: conceptReview() }]);
+    expect(data.items).toEqual([]);
+    expect(generateContent).toHaveBeenCalledTimes(6);
+  });
+
+  it('drops an ask that models the concept before asking — THE leak', async () => {
+    const leaky = EQUAL_DRAW.map(i => ({
+      ...i, ask: `${CONCEPT} ${i.ask}`,
+    }));
+    const data = await explainGen(namedConceptPlan(),
+      [{ items: leaky, review: conceptReview() }, { items: leaky, review: conceptReview() }]);
+    expect(data.items).toEqual([]);
+  });
+
+  it('refuses the plan when a named concept carries no sentence, or a sentence-length anchor', () => {
+    const sources = [explainObjective];
+    expect(() => parseSpokenPlan(namedConceptPlan({ conceptStatement: '' }), sources))
+      .toThrow(/conceptStatement/);
+    expect(() => parseSpokenPlan(namedConceptPlan({
+      targets: [{ ...namedConceptPlan().targets[0], expectedAnswer: 'the equal sign means both sides are the same' }],
+    }), sources)).toThrow(/Ungrounded or unsupported/);
+    expect(() => parseSpokenPlan({ ...namedConceptPlan(), closedSet: false, targets: [] }, sources))
+      .toThrow(/no session-wide conceptStatement/);
+    expect(parseSpokenPlan(namedConceptPlan(), sources).conceptStatement).toBe(CONCEPT);
+  });
+
+  it('refuses a compare_choice PIN over an explain objective — a menu cannot launder a proposition', async () => {
+    generateContent.mockResolvedValue(reply(namedConceptPlan()));
+    const data = await generateDiSpokenPractice('the equal sign', '1st grade',
+      { objectiveText: explainObjective, targetEvalMode: 'compare_choice' });
+    expect(data.items).toEqual([]);
+  });
+});
+
+describe('explain_concept — the per-instance session (f00i)', () => {
+  const rule = (stimulusText: string, spoken: string, concept: string, anchor: string, also: string) => ({
+    stimulusText, ask: `${spoken}. What is the rule of this pattern?`,
+    expectedAnswer: anchor, alsoAccept: also, conceptStatement: concept,
+    acceptRule: 'Saying what gets added each time counts.',
+    signatureError: 'Saying the next number is NOT the rule.',
+    correctionBody: `The rule is ${anchor}.`,
+  });
+  const PATTERN_DRAW = [
+    rule('2, 4, 6, 8', 'Two, four, six, eight', 'This pattern grows by adding two each time.', 'plus two', 'add two'),
+    rule('red, blue, red, blue', 'Red, blue, red, blue', 'The pattern repeats red then blue over and over.', 'red then blue', 'same two colors again'),
+    rule('5, 10, 15, 20', 'Five, ten, fifteen, twenty', 'This pattern grows by adding five each time.', 'plus five', 'counting by fives'),
+    rule('1, 2, 3, 4', 'One, two, three, four', 'This pattern grows by adding one each time.', 'plus one', 'counting up'),
+  ];
+  const openPlan = { task: 'explain_concept', closedSet: false, conceptStatement: '', targets: [] };
+  const patternGen = (draws: Array<{ items: unknown[]; review: { text: string } }>) =>
+    explainGen(openPlan, draws, 'Explain the secret rule behind a repeating or growing pattern');
+
+  it('ships each instance with its own reviewed rule', async () => {
+    const data = await patternGen([{ items: PATTERN_DRAW, review: conceptReview() }]);
+    expect(data.items).toHaveLength(4);
+    expect(data.items.map(i => i.conceptStatement)).toEqual(PATTERN_DRAW.map(r => r.conceptStatement));
+    expect(data.items.map(i => i.expectedAnswer)).toEqual(['plus two', 'red then blue', 'plus five', 'plus one']);
+    expect(data.items.every(i => i.responseClass === 'concept_statement')).toBe(true);
+    expect(findConceptDefects(data.items)).toEqual([]);
+    expect(generateContent).toHaveBeenCalledTimes(4);
+  });
+
+  it('drops the items the semantic review rejects and redraws when the session goes thin', async () => {
+    const data = await patternGen([
+      { items: PATTERN_DRAW, review: conceptReview(['dsp-2', 'dsp-4']) },
+      { items: PATTERN_DRAW, review: conceptReview() },
+    ]);
+    expect(data.items).toHaveLength(4);
+    expect(generateContent).toHaveBeenCalledTimes(6);
+  });
+
+  it('ships NOTHING when the review rejects the session twice', async () => {
+    const data = await patternGen([
+      { items: PATTERN_DRAW, review: conceptReview([], false) },
+      { items: PATTERN_DRAW, review: conceptReview([], false) },
+    ]);
+    expect(data.items).toEqual([]);
+  });
+
+  it('drops an instance whose anchor is the pattern read back — ECHO would be un-refusable', async () => {
+    const echoing = PATTERN_DRAW.map(r => ({ ...r, expectedAnswer: r.stimulusText.replace(/,/g, ''), alsoAccept: '' }));
+    const data = await patternGen([
+      { items: echoing, review: conceptReview() }, { items: echoing, review: conceptReview() },
+    ]);
+    expect(data.items).toEqual([]);
+  });
+});
+
+describe('explain_concept — the yield levers the first pilot forced (3/6 fresh draws shipped nothing)', () => {
+  const openPlan = { task: 'explain_concept', closedSet: false, conceptStatement: '', targets: [] };
+  const ruleItem = (n: number) => ({
+    stimulusText: `${n}, ${n * 2}, ${n * 3}, ${n * 4}`,
+    ask: `Look: ${n}, ${n * 2}, ${n * 3}, ${n * 4}. What is the rule of this pattern?`,
+    expectedAnswer: `plus ${n}`, alsoAccept: `add ${n}`,
+    conceptStatement: `This pattern grows by adding ${n} each time.`,
+    acceptRule: 'Saying what gets added each time counts.', signatureError: 'The next number is NOT the rule.',
+    correctionBody: `The rule is add ${n}.`,
+  });
+
+  it('asks for spare capacity and ships `count` — the reviewer can reject two without emptying the session', async () => {
+    acceptPlan(openPlan);
+    // The model is asked for SIX (count 4 + 2); the review rejects two; four ship.
+    generateContent.mockResolvedValueOnce(reply({ title: 'Say Why', items: [1, 2, 3, 4, 5, 6].map(ruleItem) }));
+    generateContent.mockResolvedValueOnce(conceptReview(['dsp-2', 'dsp-5']));
+    const data = await generateDiSpokenPractice('patterns', 'Grade 1',
+      { objectiveText: 'Explain the secret rule behind a repeating or growing pattern', targetEvalMode: 'explain_concept' });
+    expect(data.items).toHaveLength(4);
+    expect(data.items.map(i => i.id)).toEqual(['dsp-1', 'dsp-2', 'dsp-3', 'dsp-4']);
+    expect(data.items.map(i => i.expectedAnswer)).toEqual(['plus 1', 'plus 3', 'plus 4', 'plus 6']);
+    // The schema the model was handed asked for six.
+    const draw = generateContent.mock.calls[2][0] as { config: { responseSchema: { properties: { items: { maxItems: string } } } } };
+    expect(draw.config.responseSchema.properties.items.maxItems).toBe('6');
+    expect(generateContent).toHaveBeenCalledTimes(4);
+  });
+
+  it('POOLS survivors across the two attempts instead of replacing them', async () => {
+    acceptPlan(openPlan);
+    generateContent.mockResolvedValueOnce(reply({ items: [1, 2, 3, 4].map(ruleItem) }));
+    generateContent.mockResolvedValueOnce(conceptReview(['dsp-1', 'dsp-2', 'dsp-3'])); // one survives
+    generateContent.mockResolvedValueOnce(reply({ items: [4, 5, 6].map(ruleItem) })); // 4 repeats the survivor
+    generateContent.mockResolvedValueOnce(conceptReview());
+    const data = await generateDiSpokenPractice('patterns', 'Grade 1',
+      { objectiveText: 'Explain the secret rule behind a repeating or growing pattern', targetEvalMode: 'explain_concept' });
+    // 4 (kept from attempt 1) + 5 + 6, deduped by instance: three ship, not "3 of 4, thin".
+    expect(data.items.map(i => i.expectedAnswer)).toEqual(['plus 4', 'plus 5', 'plus 6']);
+    expect(generateContent).toHaveBeenCalledTimes(6);
+  });
+
+  it('re-reads an `unsupported` plan ONCE against an explicit pin, then lets the refusal stand', async () => {
+    const unsupported = { task: 'unsupported', closedSet: false, conceptStatement: '', targets: [] };
+    // First pass: unsupported under the explain pin → re-planned; second pass plans it.
+    generateContent.mockResolvedValueOnce(reply(unsupported));
+    acceptPlan(openPlan);
+    generateContent.mockResolvedValueOnce(reply({ items: [1, 2, 3, 4].map(ruleItem) }));
+    generateContent.mockResolvedValueOnce(conceptReview());
+    const data = await generateDiSpokenPractice('patterns', 'Grade 1',
+      { objectiveText: 'Explain the secret rule behind a repeating or growing pattern', targetEvalMode: 'explain_concept' });
+    expect(data.items).toHaveLength(4);
+    expect(generateContent).toHaveBeenCalledTimes(5);
+    const feedback = generateContent.mock.calls[1][0] as { contents: string };
+    expect(feedback.contents).toContain('Task unsupported conflicts with the requested mode explain_concept');
+
+    // Twice unsupported → nothing ships, and no third plan is drawn.
+    generateContent.mockReset();
+    generateContent.mockResolvedValue(reply(unsupported));
+    const refused = await generateDiSpokenPractice('adding', 'Grade 2',
+      { objectiveText: 'Explain how to solve a two-digit addition problem step by step', targetEvalMode: 'explain_concept' });
+    expect(refused.items).toEqual([]);
+    expect(generateContent).toHaveBeenCalledTimes(3); // plan, plan, review of the second
   });
 });

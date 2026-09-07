@@ -9,16 +9,61 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-05, `/lesson-coverage kindergarten` item 30)
 
-> **100 rows open.** **Newest five:** #138 ten-frame `split`/`decompose` — the flip-to-partition
-> gesture, never touched by a child (does a K child discover that a counter turns over when you
-> tap it, and does "you already showed that way" land as a nudge rather than a punishment?) ·
-> #137 di-spoken-practice `compare_choice` MIC (the menu read
-> aloud on every ask — does a four-word menu spoken every item hold a five-year-old, or does it
-> become noise she stops hearing? and is a menu word affirmed reliably from audio?) · #136
-> compare-attributes weight-hefting evidence RULING (does a
-> visual/verbal proxy count for a hands-on K standard, or is take-home the only valid evidence?) ·
-> #135 knowledge-check PRODUCTION items (three K stimulus insets + `point_to` token tap on the judged surface; KC redesign P1–P3) · #134 di-math-facts name_numeral · #133 di-letter-sounds + letter-sound-link STOPS (t p c k h d g b now produced as clipped sounds — is a five-year-old’s clipped /t/ or its keyword accepted, and does the voice read “/t/” cleanly, not “slash tee slash”?).
-> Next free ID is **#139**.
+> **103 rows open.** **Newest five:** #141 di-deduction MIC + EYES (the second "DI for Older Learners"
+> pack — does a nine-year-old's "no, because insects have six legs and it's got eight" ARRIVE as one turn,
+> and does "can't tell" come out of a child who heard it once in the how-to-play?) · #140 di-worked-procedure MIC + EYES (the first "DI for Older
+> Learners" pack — does an eight-year-old's "I can't so I borrow, it's twelve and four" ARRIVE, and
+> does the page scribing each affirmed step read as the child's own work?) · #139 di-spoken-practice
+> `explain_concept` MIC (the first open-proposition class) · #138 ten-frame `split`/`decompose` — the
+> flip-to-partition gesture, never touched by a child · #137 di-spoken-practice `compare_choice` MIC
+> (the menu read aloud on every ask) · #136 compare-attributes weight-hefting evidence RULING.
+> Next free ID is **#142**.
+
+- **#141 🎤👀 `di-deduction` — rule + case deductions: the first pack that judges a VERDICT AND A REASON, never
+  driven by a child.** Shipped 2026-09-07 (design brief "DI for Older Learners" concept 3, `qa/di/BACKLOG.md`
+  item 38) machine-verified: `typecheck:lumina` 0, 35/35 pack tests, live generation 0 drops / 0 gate issues,
+  every cue read by eye; headless `--di` plain PASS 6/6, `--di-wrong signature` PASS 4/4 (mixed) + 2/2 on
+  cannot_tell (the confident yes drew the "rule does not work backwards" branch), `--di-cap` PASS (item-30
+  WARNs), `--di-bench` **67/67 agreed, ZERO false affirmations** in `affirmed-consequent` (5/5),
+  `verdict-no-reason` (8/8), `wrong-verdict` (11/11), `echo` (6/6); the class `deduction` is bench-clean on
+  its first sitting and stays `accepted-build-ahead` until a second sitting on a fresh draw. Three things need
+  an ear and one needs eyes. **(a)** A `deny` answer is a SENTENCE with a pause in it — "no… because all
+  insects have six legs and it doesn't" — does it arrive as ONE turn under the family's 500ms close, or
+  does the judge hear "no" alone and run the how-do-you-know branch on a child who was mid-reason (the #140(a)
+  shape)? If so the pack owes a `silenceCloseMs` raise. **(b)** "Can't tell" is taught ONCE, in the opening
+  how-to-play ("Sometimes the rule cannot tell you; then you say can't tell") — does a G3 child produce it
+  on the third case of the first rule, or say "I don't know" and get the how-do-you-know branch? If the
+  latter is common the how-to-play needs a worked example. **(c)** The `conclude` ask reads the rule aloud
+  and then asks "so what does the rule tell you about a beetle?" — does a child answer the property ("six
+  legs") or re-read the case ("it's an insect"), and does the echo correction land as "say what FOLLOWS"?
+  **(d)** EYES: the rule card (cyan) stays while the case card changes; each affirmed case writes its
+  conclusion under the cards in emerald (carried = dim amber); the three verdict pills (yes / no / can't
+  tell) light only on affirm and only on verdict shapes. Does the ledger read as "what we know so far", and
+  does the finished case stay up through the tutor's closing line (the reveal hold)? Drive:
+  `direct-instruction-tester → Use the Rule (deductions)`, topic *"using a rule to reason about animal
+  groups: all birds lay eggs, all insects have six legs"*, Grade 3, Mixed; then `Can't Tell` alone at Grade
+  4. Say the confident yes ("yes, it lays eggs so it's a bird") on purpose once and the bare "no" once. · OPEN
+- **#140 🎤👀 `di-worked-procedure` — talk-through subtraction: the first pack that judges a MOVE, never
+  driven by a child.** Shipped 2026-09-07 (design brief "DI for Older Learners", `qa/di/BACKLOG.md`
+  item 37) machine-verified: `typecheck:lumina` 0, 33/33 pack tests, live generation 3 problems →
+  9 judged steps, 0 drops, 0 gate issues; headless `--di` drive + `--di-bench` results in the item.
+  Three things need an ear and one needs eyes. **(a)** The regroup step's answer is a SENTENCE
+  ("two minus eight, I can't, so I regroup: four tens, twelve ones") — the longest voice turn any
+  pack asks for. Does a G2 child's version arrive as ONE turn under the family's 500ms close, or
+  does the pause after "I can't" split it (di-sentence-reading's connected-text finding), so the
+  judge hears "two minus eight, I can't" alone and corrects a child who was mid-answer? If so the
+  pack owes a `silenceCloseMs` raise like the sentence pack. **(b)** The forgot-to-decrement
+  correction ("My turn: when you regroup, the tens change too. Five tens becomes four…") — does it
+  land as the ONE thing that was missing, or as a re-teach of the whole move? **(c)** On a no-regroup
+  column the ask never says the digits ("Now the tens column. Tell me what you do."): does a child
+  read the struck 5 as 4 from the page, and does a child who says just "two" get affirmed without a
+  stall? **(d)** EYES: each affirmed step writes itself (strike, small digit above, small 1 beside,
+  difference under the rule) in emerald; a move-on writes the tutor's step in dim amber. Does the
+  scribe read as "my work", are the small marks legible on a tablet, and does a finished problem
+  stay up through the tutor's closing line before the next one appears (the reveal hold)? Drive:
+  `direct-instruction-tester → Talk-Through Subtraction`, topic *"two-digit subtraction with
+  regrouping"*, Grade 2; then the same with Grade 3 for a three-digit double regroup. Say the flip
+  ("eight minus two is six") on purpose once and the half-move ("I regroup, twelve") once. · OPEN
 
 - **#137 🎤 `di-spoken-practice[compare_choice]` — the spoken menu, never heard by a child.**
   Shipped 2026-09-06 (`qa/di/BACKLOG.md` item 34) fully machine-verified — 6/6 live draws, coverage
@@ -35,6 +80,23 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
   using words like longer, shorter, heavier, and lighter."* Report:
   [eval-reports/di-spoken-practice-compare-choice-2026-09-06.md](eval-reports/di-spoken-practice-compare-choice-2026-09-06.md).
 > Re-grep before filing; concurrent sessions in this lane are normal.
+
+- **#139 🎤 `di-spoken-practice[explain_concept]` — the first open PROPOSITION, never heard from a child.**
+  Shipped 2026-09-07 (`qa/di/BACKLOG.md` item 36) machine-verified end to end — `concept_statement`
+  BENCHED on 56 text probes over four stimuli (0 false affirmations, paraphrase 8/8;
+  `qa/di-bench/run-2026-09-07-concept-statement.md`), pilot probe 6/6 fresh draws, fresh
+  full-pipeline lessons landing the explain objective `ASSESSED_SUFFICIENTLY` — but **no mic
+  sitting**. The bench sent TEXT; the class's whole bet is that a child's own wording arrives.
+  Three ear questions only a drive answers: **(a)** does a six-year-old's paraphrase ("they're
+  even", "it jumps by two", "the little cubes stuck together") ARRIVE through ASR as something
+  the judge can read, or does open production lose more to transcription than a menu word does?
+  **(b)** the affirmation restates the CONCEPT SENTENCE ("Yes, the equal sign means both sides
+  have the same amount.") — a DISTAR firm-up on paper; is it a firm-up or a lecture at speed, and
+  does the child hear the "Yes" through it? **(c)** the correction is model-then-re-elicit with the
+  instance re-said in full — after two corrections, is a first grader still with it? Drive:
+  `direct-instruction-tester → Say It Out Loud`, objective *"Explain what the equal sign means
+  using the balance scale example"* (pin `explain_concept`), then *"Explain the secret rule behind
+  a repeating or growing pattern"*. Report: `qa/di-bench/run-2026-09-07-concept-statement.md`.
 
 - **#138 🖐️ `ten-frame[decompose]` — the flip-to-partition gesture, never touched by a child.**
   Shipped 2026-09-06 (`qa/lesson-bench/BACKLOG.md` item 29(a), contract R9) machine-verified —

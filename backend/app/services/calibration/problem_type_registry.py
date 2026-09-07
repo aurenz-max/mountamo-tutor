@@ -628,6 +628,30 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "compare_choice": PriorConfig(2.0, "Closed set: say which named word describes a shown pair"),
         "read_aloud":     PriorConfig(2.5, "Decode: read the printed stimulus aloud"),
         "say_answer":     PriorConfig(3.0, "Recall: produce a spoken answer the child was not shown"),
+        # 2026-09-07: the first open-proposition shape (qa/di item 36). The child
+        # states an IDEA in any words and is judged on meaning — unaided
+        # production of a proposition, the hardest act in the pack.
+        "explain_concept": PriorConfig(4.0, "Open proposition: state in own words what a shown instance means or the rule it follows"),
+    },
+    # The first "DI for Older Learners" pack (design brief 2026-09-07): a
+    # multi-digit subtraction said one column at a time, each STEP judged where
+    # it happens. Both modes are the same act (read a column, say the move and
+    # the difference); the regroup mode adds the decision that carries the
+    # skill's signature errors (smaller-from-larger, forgot-to-decrement).
+    "di-worked-procedure": {
+        "subtract_no_regroup": PriorConfig(2.0, "Procedure: talk through a multi-digit subtraction with no regrouping, column by column"),
+        "subtract_regroup":    PriorConfig(3.5, "Procedure: talk through a multi-digit subtraction WITH regrouping — say the move, then each difference"),
+    },
+    # The second "DI for Older Learners" pack (brief 2026-09-07 concept 3): a
+    # RULE and a CASE, the child says what follows and how they know, judged
+    # aloud on meaning. The shapes are the modes: affirm the antecedent (the
+    # G3 floor) < deny the consequent < recognize that the rule cannot tell
+    # (affirming the consequent is the signature error — the G4-5 reasoning
+    # standard, and the bucket the class exists for).
+    "di-deduction": {
+        "conclude":    PriorConfig(2.5, "Deduction: apply a rule to a named member and say what follows"),
+        "deny":        PriorConfig(3.5, "Deduction: rule a thing out because it lacks what every member has, and say why"),
+        "cannot_tell": PriorConfig(4.5, "Deduction: recognize that having the property does not make it a member — the rule cannot tell"),
     },
     "phoneme-explorer": {
         # DI modality (2026-08-11): every mode is answered ALOUD and judged by

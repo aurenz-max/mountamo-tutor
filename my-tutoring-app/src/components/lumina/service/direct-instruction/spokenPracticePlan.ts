@@ -1,11 +1,15 @@
 import { Type, type Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import {
-  deriveResponseClass, normalizeSpokenAnswer,
+  CONCEPT_ANCHOR_MAX_WORDS, CONCEPT_STATEMENT_MAX_WORDS, CONCEPT_STATEMENT_MIN_WORDS,
+  deriveResponseClass, normalizeConceptAnchors, normalizeSpokenAnswer, wordCount,
   type SpokenPracticeItem, type SpokenPracticeMode,
 } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 
-const TASKS = ['visual_naming', 'read_aloud', 'say_answer', 'count_and_say', 'compare_choice', 'unsupported'] as const;
+const TASKS = [
+  'visual_naming', 'read_aloud', 'say_answer', 'count_and_say', 'compare_choice', 'explain_concept',
+  'unsupported',
+] as const;
 type Task = typeof TASKS[number];
 // Task interpretation and review are semantic judgments, like lesson coverage.
 // Flash Lite approved empty generic plans for explicit symbol-naming sets in
@@ -25,6 +29,14 @@ export interface SpokenPracticePlan {
   task: Task;
   closedSet: boolean;
   targets: SpokenTarget[];
+  /**
+   * explain_concept ONLY, and only when the objective names ONE concept (the
+   * equal sign, a ten rod): the sentence the judge holds on every item, stated
+   * once here and stamped into each generated instance by code. Empty for the
+   * per-instance shape (the rule of THIS pattern), where each item carries its
+   * own — and for every other task.
+   */
+  conceptStatement?: string;
 }
 
 // Built via the RegExp constructor, not a /u-flagged literal: this project's
@@ -45,6 +57,11 @@ const planSchema = (sources: string[]): Schema => ({
   properties: {
     task: { type: Type.STRING, enum: [...TASKS] },
     closedSet: { type: Type.BOOLEAN },
+    conceptStatement: {
+      type: Type.STRING,
+      description: 'explain_concept with ONE named concept only: the idea in one sentence, 4-12 words. '
+        + 'Empty string for every other case.',
+    },
     targets: {
       // flash-latest rejects maxItems in responseSchema; parseSpokenPlan owns
       // the six-target ceiling (same API constraint as lesson coverage).
@@ -63,7 +80,7 @@ const planSchema = (sources: string[]): Schema => ({
       },
     },
   },
-  required: ['task', 'closedSet', 'targets'],
+  required: ['task', 'closedSet', 'conceptStatement', 'targets'],
 });
 
 const text = (v: unknown): string => typeof v === 'string' ? v.trim() : '';
@@ -78,6 +95,11 @@ export function parseSpokenPlan(raw: unknown, sources: string[]): SpokenPractice
   if (!TASKS.includes(value.task as Task) || typeof value.closedSet !== 'boolean'
     || !Array.isArray(value.targets) || value.targets.length > 6) throw new Error('Invalid task plan');
   const task = value.task as Task;
+  // The class a planned target's answer must place in. explain_concept answers
+  // are ANCHORS (≤ 4 words) of an idea, not tokens, so they get their own class
+  // rather than being clamped as say_answer recall.
+  const answerMode: SpokenPracticeMode = task === 'read_aloud' ? 'read_aloud'
+    : task === 'explain_concept' ? 'explain_concept' : 'say_answer';
   const targets = value.targets.map((rawTarget, i): SpokenTarget => {
     const t = record(rawTarget);
     const picture = t.stimulusId === 'picture';
@@ -87,11 +109,14 @@ export function parseSpokenPlan(raw: unknown, sources: string[]): SpokenPractice
     const expectedAnswer = normalizeSpokenAnswer(text(t.expectedAnswer));
     const sourceIndex = sources.findIndex((_, i) => `s${i + 1}` === t.sourceId);
     const sourceQuote = sources[sourceIndex] ?? '';
-    const alternates = text(t.alsoAccept).split(',').map(normalizeSpokenAnswer)
+    const offered = text(t.alsoAccept).split(',').map(normalizeSpokenAnswer)
       .filter(a => a && a.toLowerCase() !== expectedAnswer.toLowerCase());
+    // Explain anchors are tidied here ONCE (redundant wordings dropped, capped)
+    // so the stamped set is already in its final form when items carry it.
+    const alternates = task === 'explain_concept' ? normalizeConceptAnchors(expectedAnswer, offered) : offered;
     if (!stimulusText || !expectedAnswer || !sourceQuote || (picture ? !stimulusEmoji : !sourceQuote.includes(stimulusText))
-      || !deriveResponseClass(task === 'read_aloud' ? 'read_aloud' : 'say_answer', expectedAnswer, stimulusText)
-      || alternates.some(a => !deriveResponseClass('say_answer', a, stimulusText))) {
+      || !deriveResponseClass(answerMode, expectedAnswer, stimulusText)
+      || alternates.some(a => !deriveResponseClass(answerMode, a, stimulusText))) {
       throw new Error('Ungrounded or unsupported target');
     }
     if (task === 'read_aloud' && (stimulusEmoji
@@ -112,7 +137,8 @@ export function parseSpokenPlan(raw: unknown, sources: string[]): SpokenPractice
     throw new Error('Duplicate targets');
   }
   if ((task === 'visual_naming' || value.closedSet) && targets.length === 0) throw new Error('Missing targets');
-  if (targets.length && task !== 'visual_naming' && task !== 'read_aloud' && task !== 'compare_choice') {
+  if (targets.length && task !== 'visual_naming' && task !== 'read_aloud' && task !== 'compare_choice'
+    && task !== 'explain_concept') {
     throw new Error('Unsupported target task');
   }
   // The MENU is the task. One word is not a choice, and a comparative task
@@ -121,7 +147,23 @@ export function parseSpokenPlan(raw: unknown, sources: string[]): SpokenPractice
   if (task === 'compare_choice' && (!value.closedSet || targets.length < 2)) {
     throw new Error('Comparative choice needs an enumerated menu of two or more words');
   }
-  return { task, closedSet: value.closedSet, targets };
+  // An explain plan is ONE named concept (one grounded stimulus + the sentence
+  // the judge holds + ≤ 2 more anchors) or OPEN (nothing planned; each instance
+  // writes its own rule). The sentence is STRUCTURE-checked here and MEANING-
+  // checked by the review below — nothing in the sources grounds a paraphrase.
+  const conceptStatement = task === 'explain_concept' ? text(value.conceptStatement) : '';
+  if (task === 'explain_concept') {
+    if (targets.length > 1) throw new Error('An explain plan names at most one concept');
+    if (targets.length === 1) {
+      const words = wordCount(conceptStatement);
+      if (words < CONCEPT_STATEMENT_MIN_WORDS || words > CONCEPT_STATEMENT_MAX_WORDS) {
+        throw new Error(`A named concept needs a ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS} word conceptStatement`);
+      }
+    } else if (conceptStatement) {
+      throw new Error('An open explain plan carries no session-wide conceptStatement');
+    }
+  }
+  return { task, closedSet: value.closedSet, targets, ...(conceptStatement ? { conceptStatement } : {}) };
 }
 
 export function modeForSpokenPlan(plan: SpokenPracticePlan): SpokenPracticeMode | null {
@@ -155,8 +197,20 @@ TASKS:
   when the words themselves are enumerated. targets are those WORDS: select each from the token
   inventory, set expectedAnswer to the same word, and leave alsoAccept empty. Never invent the pair
   of objects being compared — a later generator writes those around your menu.
-- unsupported: letter NAMES, open-ended answers, unsupported representations, or an impossible scope.
-An answer must be 1-3 short spoken words. Letter names are not supported by this pack.
+- explain_concept: the child says, IN THEIR OWN WORDS, what something means, why it is so, or what
+  rule governs it ("what does = mean?", "what is the rule of this pattern?"). The answer is an IDEA,
+  1-10 words, with many correct wordings. Choose this for an explain/describe/tell-why objective whose
+  answer is a short proposition. When the objective names ONE concept (the equal sign, a ten rod),
+  emit ONE target whose stimulusId is the named symbol/picture, whose expectedAnswer is the shortest
+  correct statement of the concept (1-${CONCEPT_ANCHOR_MAX_WORDS} words), with alsoAccept holding 1-2 more short
+  wordings, and put the idea as one ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS} word sentence in conceptStatement. When the
+  concept varies per instance (the rule of a pattern), targets is empty, closedSet false, and
+  conceptStatement empty — the item generator writes each instance and its rule. A PROCEDURE
+  ("explain how to solve", the steps of a method) is not one proposition: use unsupported.
+- unsupported: letter NAMES, open-ended answers that are not a short proposition, procedures,
+  unsupported representations, or an impossible scope.
+An answer must be 1-3 short spoken words, except explain_concept anchors (1-${CONCEPT_ANCHOR_MAX_WORDS}). Letter names
+are not supported by this pack. conceptStatement is empty for every task but a named explain_concept.
 closedSet is true ONLY when the objective/intent explicitly enumerates a finite required set for
 visual naming, reading, or comparative choice (which is ALWAYS closedSet — its menu is the task).
 A numerical range, arithmetic topic, or phonics pattern is not such a set.
@@ -180,6 +234,16 @@ ${feedback}`,
         throw new Error(`Task ${plan.task} conflicts with requested modes ${allowedModes.join(', ')}. `
           + 'Recheck the learner action. Do not change the objective or invent a different task to fit the mode.');
       }
+      // An explicit SINGLE pin is the curator's reading of the objective. A
+      // plan that calls it `unsupported` on the first pass gets one re-read
+      // against that pin before the refusal stands (the pattern-rule objective
+      // drew `unsupported` on 1 of 3 fresh plans while its pin said
+      // explain_concept). A second `unsupported` still ships nothing.
+      if (!plannedMode && allowedModes?.length === 1 && attempt === 0) {
+        throw new Error(`Task unsupported conflicts with the requested mode ${allowedModes[0]}. Re-read the `
+          + 'objective against that task\'s definition; plan it only if the learner action truly fits, '
+          + 'otherwise answer unsupported again.');
+      }
       // Review even an empty/open plan: otherwise misclassifying a named set
       // as generic practice would bypass the coverage contract entirely.
       {
@@ -189,9 +253,14 @@ ${feedback}`,
 CONTEXT: ${context}
 PLAN: ${JSON.stringify(plan)}
 This is a TASK PLAN, not the generated practice session. Its targets array is ONLY for visual
-naming, explicitly enumerated reading targets, and compare_choice — where the targets are the
+naming, explicitly enumerated reading targets, compare_choice — where the targets are the
 required comparison WORDS themselves (the objects each item compares are written later, so their
-absence here is correct and is NOT grounds for rejection). For listening recall, arithmetic, counting,
+absence here is correct and is NOT grounds for rejection) — and explain_concept with ONE named
+concept, where the single target only NAMES the concept (a token from the text, or a picture) as a
+grounding hook — the instances the child actually sees are written later, so the hook's glyph or
+picture is NOT grounds for rejection; judge only that conceptStatement is TRUE and grade-appropriate
+and that every anchor MEANS the same thing as it, and reject on any no. An open explain_concept plan
+(the rule varies per instance) has no targets and no conceptStatement, which is correct. For listening recall, arithmetic, counting,
 or reading from a range/pattern, targets MUST be empty and closedSet false: a later generator
 writes those items. A numerical range (within five), a phonics pattern, or an arithmetic topic
 does NOT enumerate a required set. Do not reject a valid open plan for lacking practice items.
@@ -227,8 +296,11 @@ export function buildPlannedSpokenItems(plan: SpokenPracticePlan, count: number)
   // compare_choice plans a MENU, not a stimulus mapping — there is no checked
   // stimulus→answer pair here to repeat, because the pair of objects is content
   // the item generator writes. Its coverage is verified by `hasChoiceCoverage`
-  // over the generated items instead.
-  if (!mode || mode === 'compare_choice' || !plan.targets.length || plan.targets.length > count) return [];
+  // over the generated items instead. explain_concept likewise plans a session-
+  // wide ANCHOR SET, not an instance: the instances ("3 + 2 = 5", "4 = 4") are
+  // written by the item generator around it (`hasConceptCoverage`).
+  if (!mode || mode === 'compare_choice' || mode === 'explain_concept'
+    || !plan.targets.length || plan.targets.length > count) return [];
   const offset = Math.floor(Math.random() * plan.targets.length);
   return Array.from({ length: count }, (_, i) => {
     const t = plan.targets[(i + offset) % plan.targets.length];
@@ -273,4 +345,37 @@ export function hasChoiceCoverage(
 ): boolean {
   return menu.every(word => items.some(
     item => item.expectedAnswer.trim().toLowerCase() === word.trim().toLowerCase()));
+}
+
+/** A named-concept explain plan's session-wide slot — the sentence the judge
+ *  holds and the anchor wordings, stamped into every generated instance by
+ *  code (the counterpart of `spokenChoiceMenu`). Undefined for the open shape
+ *  and for every other task. */
+export function spokenConceptPlan(
+  plan: SpokenPracticePlan,
+): { conceptStatement: string; anchors: string[] } | undefined {
+  if (plan.task !== 'explain_concept' || !plan.conceptStatement || plan.targets.length !== 1) return undefined;
+  const t = plan.targets[0];
+  return { conceptStatement: plan.conceptStatement, anchors: [t.expectedAnswer, ...t.alternates] };
+}
+
+/** Coverage for a named-concept plan: every surviving item must carry the
+ *  planned sentence and anchors (a model re-emission that drifted is not the
+ *  plan), and the instances must VARY — one concept asked over the same
+ *  equation four times is recall of a sentence, which the coverage judge files
+ *  as ASSESSED_INDIRECTLY. Run AFTER the item gates, like `hasChoiceCoverage`. */
+export function hasConceptCoverage(
+  concept: { conceptStatement: string; anchors: readonly string[] },
+  items: readonly SpokenPracticeItem[],
+): boolean {
+  if (!items.length) return false;
+  // Anchors ride as a non-empty SUBSET of the planned set: an item whose ask
+  // names an anchor word drops that anchor (`reconcileConceptAnchors`), and a
+  // model-drifted anchor — one outside the vetted set — is what this refuses.
+  const planned = new Set(concept.anchors.map(a => a.trim().toLowerCase()));
+  const stamped = items.every(item =>
+    item.conceptStatement === concept.conceptStatement
+    && [item.expectedAnswer, ...item.alternates].every(a => planned.has(a.trim().toLowerCase())));
+  const instances = new Set(items.map(item => item.stimulusText.trim().toLowerCase()));
+  return stamped && instances.size === items.length;
 }

@@ -2414,7 +2414,12 @@ def build_di_bench_journey(live: Dict[str, Any], grade: str,
                 "role": "ask", "item": item["id"], "answer_kind": item["answerKind"],
                 "expected_line": item["askLine"],
                 "leak_tokens": item["answers"].get("leakTokens") or [],
-                "leak_exempt_span": "",
+                # The port's exempt span, exactly as the drive journey wires it
+                # (2026-09-07, di-deduction bench): a conclude ask READS THE RULE,
+                # and the rule carries the answer by design. An empty span here
+                # scored every such ask as a HIGH leak the plain drive had
+                # already cleared on the same shape.
+                "leak_exempt_span": item["answers"].get("leakExemptSpan") or "",
                 "is_last_item": False,
             },
         ))
@@ -2504,7 +2509,7 @@ def build_di_bench_journey(live: Dict[str, Any], grade: str,
                         # the off-script oracle must compare against THAT.
                         "expected_line": spoken_span_of(item["reanchorCue"]),
                         "leak_tokens": item["answers"].get("leakTokens") or [],
-                        "leak_exempt_span": "",
+                        "leak_exempt_span": item["answers"].get("leakExemptSpan") or "",
                         "is_last_item": False,
                     },
                 ))

@@ -938,15 +938,18 @@ export const DI_CATALOG: ComponentDefinition[] = [
       + 'and the tutor judges the audio in-band. The stimulus is generated per objective — printed text, a '
       + 'picture, a group of pictures to count, or nothing at all (the tutor says it). Use this when the '
       + 'skill is genuinely verbal and there is NO manipulative the child needs to touch: recall answers, '
-      + 'reading a short printed item aloud, counting a group and saying how many, and saying which word '
+      + 'reading a short printed item aloud, counting a group and saying how many, saying which word '
       + 'from a set the objective NAMES (longer/shorter, heavier/lighter) describes two things shown side '
-      + 'by side. '
+      + 'by side, and — for explain / describe / tell-why objectives — saying IN THEIR OWN WORDS what a '
+      + 'shown instance means or what rule it follows (what the equal sign means, the rule of a pattern), '
+      + 'judged on meaning rather than wording. '
       + 'ESSENTIAL where a tutor-driven spoken loop is the right modality but no bespoke primitive exists.',
     constraints:
-      'Requires microphone + live audio tutor. The answer must be 1-3 short spoken words from a CLOSED set — '
+      'Requires microphone + live audio tutor. The answer must be 1-3 short spoken words from a CLOSED set, '
+      + 'or — explain_concept only — one short IDEA (up to ten words, any wording) about a shown instance; '
       + 'never open-ended production (name any animal, make up a rhyme), never a letter NAME, and never a '
-      + 'multi-sentence explanation; the generator refuses items it cannot place in a benched spoken response '
-      + 'class. Prefer the specialised pack when one exists — di-letter-sounds, di-word-reading, '
+      + 'procedure or a multi-sentence explanation; the generator refuses items it cannot place in a benched '
+      + 'spoken response class. Prefer the specialised pack when one exists — di-letter-sounds, di-word-reading, '
       + 'di-math-facts, di-shapes, di-sentence-reading — and prefer a bespoke primitive whenever the child '
       + 'must MANIPULATE something (counting-board, cvc-speller, push-pull-arena): this pack has no '
       + 'manipulative and cannot teach one. Counting stays at 1-10 objects.',
@@ -989,6 +992,17 @@ export const DI_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 3,
         challengeTypes: ['say_answer'],
         description: 'Name a displayed symbol or picture, or answer a spoken problem. Recall, not decoding. Show visual naming targets without speaking their names or printing answers.',
+      },
+      {
+        // The hardest act in the pack: unaided production of a PROPOSITION,
+        // judged on meaning (`concept_statement`, benched 2026-09-07 — qa/di
+        // item 36). The ask never states the concept; the affirmation does.
+        evalMode: 'explain_concept',
+        label: 'Say Why',
+        beta: 4.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['explain_concept'],
+        description: 'The child sees one instance (an equation on a balance, a pattern, a ten rod) and says in their own words what it means or what rule it follows. Use for explain / describe / tell-why objectives whose answer is a short idea with many correct wordings. Judged on meaning; the ask never states the concept.',
       },
     ],
     supportsEvaluation: true,
@@ -1062,6 +1076,261 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'it), and one naming a WRONG answer that sounds confident and plausible. Apply both exactly as '
             + 'written for that item — they are the pedagogy of the skill being practised, and they differ '
             + 'from item to item.',
+        },
+        {
+          title: 'BREVITY',
+          instruction:
+            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
+            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
+        },
+      ],
+    },
+  },
+  {
+    // The first "DI for Older Learners" pack (design brief 2026-09-07). The
+    // K-2 packs judge a WORD; this one judges a MOVE: the child narrates a
+    // multi-digit subtraction one column at a time and the tutor corrects at
+    // the column where the error happens. The step chain is code-built
+    // (diWorkedProcedurePlan.ts); the script is hand-authored.
+    id: 'di-worked-procedure',
+    description:
+      'Live-judged Direct Instruction TALK-THROUGH SOLVE for multi-digit SUBTRACTION (two- and three-digit, '
+      + 'with or without regrouping): the problem is printed in columns, the tutor asks one column at a '
+      + 'time ("Start in the ones column. Tell me what you do."), and the child SAYS the move out loud — '
+      + '"three minus eight, I can\'t, so I regroup: four tens, thirteen ones" — then says each '
+      + 'difference. Every affirmed step writes itself onto the problem; a wrong step is corrected at '
+      + 'THAT column, never at the end. The child never types or taps, and no answer is printed before '
+      + 'it is said. Use for objectives about subtracting two-digit or three-digit numbers, regrouping '
+      + '(borrowing, trading, renaming), or explaining the steps of subtraction aloud. ESSENTIAL for '
+      + 'G1-G4 multi-digit subtraction where the objective wants the PROCEDURE, not just the answer.',
+    constraints:
+      'Requires microphone + live audio tutor. SUBTRACTION ONLY — no addition or carrying, no borrowing '
+      + 'across a zero (300 − 148), no four-digit numbers, no decimals; both numbers have the same width. '
+      + 'Two to four problems per block, each worked as 2-5 judged steps. The manifest must NOT supply '
+      + 'problems: the pool builds them in code from the objective\'s number range (two-digit / within '
+      + '100, three-digit / within 1000) and the regrouping mode. Prefer di-math-facts for single-digit '
+      + 'facts and a manipulative primitive when the child must BUILD with base-ten blocks.',
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 6 },
+    // L1 eval modes — both are the same ACT (read a column, say the move and
+    // the difference); the regroup mode adds the decision that carries the
+    // skill's signature errors. β mirrors backend problem_type_registry.py.
+    evalModes: [
+      {
+        evalMode: 'subtract_no_regroup',
+        label: 'No Regrouping',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['subtract_no_regroup'],
+        description: 'Every column subtracts cleanly; the child says each column aloud and must decide NOT to regroup.',
+      },
+      {
+        evalMode: 'subtract_regroup',
+        label: 'With Regrouping',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['subtract_regroup'],
+        description: 'At least one column must regroup; the child says the move (borrow / trade / regroup and both new numbers), then each difference.',
+      },
+    ],
+    supportsEvaluation: true,
+    misconceptionScope: 'primitive',
+    audioInput: { manual_activity: true },
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction talk-through subtraction (current task: {{challengeType}}; problem '
+        + '{{problem}}; column open: {{column}}). You speak the exact scripted lines from each bracketed '
+        + 'application message and judge each learner step from the audio you heard, using only the '
+        + 'scripted reply branches.',
+      // Stimulus side only: the printed problem and which column is open. The
+      // answer to a step (the regrouped digits, the difference) reaches the tutor
+      // inside each [WP_ITEM] judging contract, never through RUNTIME STATE.
+      contextKeys: ['challengeType', 'problem', 'column', 'supportTier'],
+      scaffoldingLevels: {
+        level1: 'Repeat the column ask once, slowly.',
+        level2: 'Model the column once more, then hand it back with the scripted re-ask.',
+        level3: 'Accept the step warmly and continue as instructed.',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Turns the column upside down — "eight minus three is five" where three is on top',
+          response: 'Run the correction branch for this step: name what they said, model the regroup, then hand the column back.',
+        },
+        {
+          pattern: 'Regroups but never changes the digit above — says the new ones and nothing about the tens',
+          response: 'Run the forgot-to-decrement branch: say what the tens become, then hand the column back.',
+        },
+        {
+          pattern: 'Says a bare number on a "tell me what you do" ask',
+          response: 'Run the correction branch — a number with no move is not the step — then hand the column back.',
+        },
+        {
+          pattern: 'Stays silent after the hand-over',
+          response: 'Wait for them without speaking. If the silence stretches long, re-ask the scripted column question once, slowly — never a new question.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [WP_ITEM], [WP_MOVE_ON], [WP_HEAR], or [WP_COMPLETE] contain the only lesson '
+            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
+            + 'invent it. Each [WP_ITEM] message includes its judging rule: affirmations must begin with '
+            + '"Yes" and every correction must begin with "My turn", using the exact quoted lines. Never '
+            + 'begin any other sentence with those words. Judge honestly from the audio and do not praise '
+            + 'to be kind. The application decides which column comes next; never continue into another '
+            + 'column or another problem yourself.',
+        },
+        {
+          title: 'WHAT COUNTS AS A STEP',
+          instruction:
+            'On a "tell me what you do" ask the learner must say the MOVE — regroup (they may say borrow, '
+            + 'trade, or take one from the tens) with both new numbers, or the column subtracted cleanly. A '
+            + 'bare number is not a step. On a "subtract the ones" ask the learner says the difference, as '
+            + 'the bare number or the whole fact, right away or after counting back to it. Always say '
+            + 'numbers as words, never as digits.',
+        },
+        {
+          title: "THE LEARNER'S TURN",
+          instruction:
+            'After you ask, WAIT in silence — think time belongs to the learner and is unbounded. Never '
+            + 'say the move or the difference during their turn, and never read the problem\'s working off '
+            + 'the runtime state. Everything the application sends you exists to be performed or obeyed, '
+            + 'never spoken about: if a reply is not one of the scripted lines, the reply is silence.',
+        },
+        {
+          title: 'BREVITY',
+          instruction:
+            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
+            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
+        },
+      ],
+    },
+  },
+  {
+    // The second "DI for Older Learners" pack (design brief 2026-09-07,
+    // concept 3). di-worked-procedure judges a MOVE; this one judges a
+    // DEDUCTION: a rule card, a case card, and the child says what follows and
+    // how they know. The cases are code-built from one generated rule
+    // (diDeductionPlan.ts); the script is hand-authored.
+    id: 'di-deduction',
+    description:
+      'Live-judged Direct Instruction DEDUCTIONS: a RULE card ("All insects have six legs.") and a CASE '
+      + 'card ("A beetle is an insect." / "A spider does not have six legs." / "This animal has six legs."), '
+      + 'and the child SAYS what the rule tells them and how they know — "so a beetle has six legs", "no, '
+      + 'not an insect, because all insects have six legs and it doesn\'t", "can\'t tell, other things '
+      + 'have six legs too". Three case shapes: conclude (apply the rule to a member), deny (rule a thing '
+      + 'out), cannot_tell (recognize that having the property does not make it a member — the reasoning '
+      + 'standard where "yes, because it has six legs" is the error). The conclusion is written under '
+      + 'the cards only after the child says it; a wrong deduction is corrected on THAT case. The child '
+      + 'never types or taps. Use for objectives about reasoning from a rule or generalization, using '
+      + 'evidence to draw conclusions, classification rules in science (all mammals…, all insects…), '
+      + 'rules in social studies, or if-then / inference reasoning in reading. ESSENTIAL for G3-G5 '
+      + 'objectives that want the child to EXPLAIN a conclusion from a stated rule.',
+    constraints:
+      'Requires microphone + live audio tutor. ONE-RULE DEDUCTIONS ONLY — no two-rule chains or '
+      + 'syllogisms with a middle term, no written justification, no probability ("most", "some"): every '
+      + 'rule is a universal "All A have P" the code prints. The manifest must NOT supply rules or cases: '
+      + 'the generator scopes a category, a property and short entity lists from the objective, code '
+      + 'builds every case and answer, and a truth review drops any rule that is false in the world. Three '
+      + 'to nine cases per block over up to four rules. Prefer di-spoken-practice for a one-word answer '
+      + 'and a reading primitive when the child must find the rule in a text first.',
+    // reader `none`: the tutor reads the rule on each rule's first case and
+    // every case aloud, and tap-to-hear re-reads both — the child's own path
+    // needs no reading after read-aloud is accounted for.
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 6 },
+    // L1 eval modes — the three case SHAPES. Same act (read a rule and a case,
+    // say what follows and why); the shapes are ordered by the logic they
+    // demand. β mirrors backend problem_type_registry.py.
+    evalModes: [
+      {
+        evalMode: 'conclude',
+        label: 'What Follows',
+        beta: 2.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['conclude'],
+        description: 'The case names a member of the rule\'s category; the child says what the rule tells them about it (affirm the antecedent).',
+      },
+      {
+        evalMode: 'deny',
+        label: 'Rule It Out',
+        beta: 3.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['deny'],
+        description: 'The case names a thing that lacks the property; the child rules it out and says why (deny the consequent).',
+      },
+      {
+        evalMode: 'cannot_tell',
+        label: "Can't Tell",
+        beta: 4.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['cannot_tell'],
+        description: 'The case names only the property of an unnamed thing; the child says the rule cannot tell whether it is a member, and why — the confident yes is the signature error.',
+      },
+    ],
+    supportsEvaluation: true,
+    misconceptionScope: 'primitive',
+    audioInput: { manual_activity: true },
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction deductions (current case shape: {{challengeType}}; rule on screen: '
+        + '{{rule}}; case on screen: {{case}}). You speak the exact scripted lines from each bracketed '
+        + 'application message and judge each learner deduction from the audio you heard, using only the '
+        + 'scripted reply branches.',
+      // Stimulus side only: the printed rule and case. The conclusion and the
+      // verdict reach the tutor inside each [DD_ITEM] judging contract, never
+      // through RUNTIME STATE.
+      contextKeys: ['challengeType', 'rule', 'case', 'supportTier'],
+      scaffoldingLevels: {
+        level1: 'Repeat the case ask once, slowly.',
+        level2: 'Model the reasoning once more, then hand it back with the scripted re-ask.',
+        level3: 'Accept the deduction warmly and continue as instructed.',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Says yes on a can\'t-tell case — "yes, because it lays eggs" — running the rule backwards',
+          response: 'Run the signature-error branch for this case: the rule does not work backwards, model the reasoning with the counterexample, then hand the case back.',
+        },
+        {
+          pattern: 'Gives the right verdict with no reason — "no", or "no, because it\'s a spider"',
+          response: 'Run the how-do-you-know branch: model the reason from the rule, then hand the case back.',
+        },
+        {
+          pattern: 'Reads the rule back instead of answering — "all insects have six legs"',
+          response: 'Run the general correction branch — the rule read back is not a conclusion — then hand the case back.',
+        },
+        {
+          pattern: 'Stays silent after the hand-over',
+          response: 'Wait for them without speaking. If the silence stretches long, re-ask the scripted case question once, slowly — never a new question.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [DD_ITEM], [DD_MOVE_ON], [DD_HEAR], or [DD_COMPLETE] contain the only lesson '
+            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
+            + 'invent it. Each [DD_ITEM] message includes its judging rule: affirmations must begin with '
+            + '"Yes" and every correction must begin with "My turn", using the exact quoted lines. Never '
+            + 'begin any other sentence with those words. Judge honestly from the audio and do not praise '
+            + 'to be kind. The application decides which case comes next; never continue into another '
+            + 'case or another rule yourself.',
+        },
+        {
+          title: 'WHAT COUNTS AS A DEDUCTION',
+          instruction:
+            'On a "what does the rule tell you" ask the learner states the conclusion about the case in '
+            + 'any words. On an "is it… how do you know" ask the learner gives a VERDICT (no, or can\'t '
+            + 'tell) AND a REASON that comes from the rule; a bare verdict is half an answer, and a reason '
+            + 'from outside the rule is not the reason the rule gives. Judge the meaning, not the words: '
+            + 'a child\'s own phrasing counts when the idea is there. The rule read back is never an answer.',
+        },
+        {
+          title: "THE LEARNER'S TURN",
+          instruction:
+            'After you ask, WAIT in silence — think time belongs to the learner and is unbounded. Never '
+            + 'say the conclusion or the verdict during their turn, and never read the case\'s answer off '
+            + 'the runtime state. Everything the application sends you exists to be performed or obeyed, '
+            + 'never spoken about: if a reply is not one of the scripted lines, the reply is silence.',
         },
         {
           title: 'BREVITY',

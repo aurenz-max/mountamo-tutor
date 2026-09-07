@@ -8,18 +8,25 @@
 import { describe, it, expect } from 'vitest';
 import { findSentinelCollisions } from '../../../hooks/judgedScriptContract';
 import {
+  buildSpokenItem,
   completeCue,
+  conceptAffirmForm,
   contextFor,
   deriveResponseClass,
+  diSpokenPracticePackBase,
   findAnswerLeaks,
   findArithmeticMismatches,
   findChoiceMenuDefects,
+  findConceptDefects,
   findPrintedNumerals,
   findUnspokenStimulus,
+  gateSpokenItems,
   itemCue,
   moveOnCue,
+  normalizeConceptAnchors,
   normalizeSpokenAnswer,
   pronounceCue,
+  reconcileConceptAnchors,
   type SpokenPracticeItem,
 } from './diSpokenPracticeScript';
 
@@ -436,5 +443,262 @@ describe('compare_choice — a spoken menu, and the gate that keeps it closed', 
       .toBe('[SAY_HEAR] Say exactly: "a feather and a rock" Then stop — say nothing else.');
     expect(contextFor(pairItem()))
       .toEqual({ challengeType: 'compare_choice', stimulus: 'a feather and a rock' });
+  });
+});
+
+// ── explain_concept — an idea, not a token, and the gates that keep it honest ─
+
+const explainItem = (over: Partial<SpokenPracticeItem> = {}): SpokenPracticeItem => item({
+  mode: 'explain_concept',
+  action: 'explain_concept',
+  responseClass: 'concept_statement',
+  stimulusText: '3 + 2 = 5',
+  ask: 'Three plus two equals five. Look at the equal sign. What does the equal sign tell us?',
+  howToPlay: 'I will show you something, and you tell me what it means in your own words.',
+  expectedAnswer: 'both sides the same',
+  alternates: ['balanced', 'equal amounts'],
+  conceptStatement: 'The equal sign means both sides have the same amount.',
+  acceptRule: 'Any words that say the two sides match count, even without the word same.',
+  signatureError: 'Saying the sum, five, is NOT an explanation.',
+  correctionBody: 'The equal sign means both sides have the same amount.',
+  ...over,
+});
+
+describe('explain_concept — the first open proposition, and what code can gate', () => {
+  it('places a short anchor in concept_statement and refuses a sentence-length one', () => {
+    expect(deriveResponseClass('explain_concept', 'plus two', '2, 4, 6, 8')).toBe('concept_statement');
+    expect(deriveResponseClass('explain_concept', 'both sides the same', '3 + 2 = 5')).toBe('concept_statement');
+    expect(deriveResponseClass('explain_concept', 'the equal sign means both sides are the same', '3 + 2 = 5'))
+      .toBeNull();
+  });
+
+  it('is clean on a well-formed item', () => {
+    expect(findConceptDefects([explainItem()])).toEqual([]);
+    expect(findAnswerLeaks([explainItem()])).toEqual([]);
+    expect(findUnspokenStimulus([explainItem()])).toEqual([]);
+  });
+
+  it('refuses an item with no concept sentence, or one outside 4-12 words', () => {
+    expect(findConceptDefects([explainItem({ conceptStatement: '' })]).map((d) => d.reason))
+      .toEqual(['missing_concept']);
+    expect(findConceptDefects([explainItem({ conceptStatement: 'Equal means same.' })]).map((d) => d.reason))
+      .toEqual(['missing_concept']);
+    expect(findConceptDefects([explainItem({
+      conceptStatement: 'The equal sign means that the amount on the left is exactly the amount on the right side.',
+    })]).map((d) => d.reason)).toEqual(['missing_concept']);
+  });
+
+  it('refuses a concept sentence that opens with a verdict sentinel — it is SPOKEN in the affirm', () => {
+    expect(findConceptDefects([explainItem({ conceptStatement: 'Yes, both sides have the same amount.' })])
+      .map((d) => d.reason)).toEqual(['sentinel_in_concept']);
+  });
+
+  it('keeps anchors short and few — they are examples, not a required wording', () => {
+    expect(findConceptDefects([explainItem({ alternates: ['the two sides have exactly the same amount'] })]))
+      .toEqual([{ itemId: 'dsp-1', reason: 'anchor_too_long', detail: ['the two sides have exactly the same amount'] }]);
+    expect(findConceptDefects([explainItem({ alternates: ['balanced', 'equal', 'even'] })]).map((d) => d.reason))
+      .toEqual(['too_many_anchors']);
+  });
+
+  it('refuses two anchors the ear cannot separate', () => {
+    // The contained one is named — it is the anchor the other already covers.
+    expect(findConceptDefects([explainItem({ expectedAnswer: 'same', alternates: ['the same'] })]))
+      .toEqual([{ itemId: 'dsp-1', reason: 'anchors_not_distinct', detail: ['same'] }]);
+  });
+
+  it('refuses an anchor that sits inside the instance — ECHO would be un-refusable', () => {
+    expect(findConceptDefects([explainItem({
+      stimulusText: 'red, blue, red, blue', ask: 'Red, blue, red, blue. What is the rule?',
+      expectedAnswer: 'red blue', alternates: [], conceptStatement: 'The pattern repeats red then blue over and over.',
+    })])).toEqual([{ itemId: 'dsp-1', reason: 'anchor_echoes_stimulus', detail: ['red blue'] }]);
+  });
+
+  it('refuses the concept inside the ask — THE leak — but lets the subject be named', () => {
+    // "the equal sign" is the concept's SUBJECT and is legitimately in the ask
+    // (a three-token run). The PREDICATE is the leak.
+    expect(findConceptDefects([explainItem()])).toEqual([]);
+    const leaky = explainItem({
+      ask: 'The equal sign means both sides have the same amount. What does the equal sign tell us?',
+    });
+    expect(findConceptDefects([leaky]).map((d) => d.reason)).toEqual(['concept_in_ask']);
+    // An ANCHOR in the ask is caught by the ordinary leak scan at any length.
+    expect(findAnswerLeaks([explainItem({ ask: 'Is it balanced? What does the equal sign tell us?' })]))
+      .toEqual([{ itemId: 'dsp-1', field: 'ask', answer: 'balanced' }]);
+  });
+
+  it('requires the ask to SAY the printed instance — the voice is the carrier', () => {
+    expect(findUnspokenStimulus([explainItem({ ask: 'Look at this. What does the equal sign tell us?' })]))
+      .toEqual([{ itemId: 'dsp-1', missing: ['3', '2', '5'] }]);
+    // A pictured instance is exempt, as say_answer's is.
+    expect(findUnspokenStimulus([explainItem({
+      stimulusKind: 'emoji', stimulusEmoji: '⚖️', stimulusText: 'a balanced scale',
+      ask: 'Look at the scale. What does the equal sign tell us?',
+    })])).toEqual([]);
+  });
+
+  it('hands the judge the concept, the anchors as EXAMPLES, and the meaning rule — in code', () => {
+    const cue = itemCue(explainItem(), { opening: false, howToPlay: false });
+    expect(cue).toContain('The idea they must express: "The equal sign means both sides have the same amount."');
+    expect(cue).toContain('for example "both sides the same", "balanced", "equal amounts"');
+    expect(cue).toContain("a child's own phrasing that uses none of those words");
+    expect(cue).toContain('Judge the MEANING of what you heard, not the words.');
+    expect(cue).toContain('inside a sentence that means the OPPOSITE');
+    expect(cue).toContain('The stimulus read back ("3 + 2 = 5") is NOT an explanation');
+    expect(cue).toContain('Saying the sum, five, is NOT an explanation.');
+    // No "The correct answer is" — there is no single right wording.
+    expect(cue).not.toContain('The correct answer is');
+  });
+
+  it('affirms by restating the CONCEPT SENTENCE, not the anchor — the DISTAR firm-up', () => {
+    const cue = itemCue(explainItem(), { opening: false, howToPlay: false });
+    expect(cue).toContain('say exactly: "Yes, the equal sign means both sides have the same amount."');
+    expect(cue).not.toContain('"Yes, both sides the same."');
+    expect(conceptAffirmForm('This pattern grows by adding two each time')).toBe('this pattern grows by adding two each time.');
+  });
+
+  it('never models the concept in the ask — the re-teach lives in the correction', () => {
+    const cue = itemCue(explainItem(), { opening: true, howToPlay: true });
+    const spoken = cue.match(/Say exactly: "([^"]+)"/)![1];
+    expect(spoken).toBe(
+      'I will show you something, and you tell me what it means in your own words. Three plus two '
+      + 'equals five. Look at the equal sign. What does the equal sign tell us?',
+    );
+    expect(cue).toContain('My turn: The equal sign means both sides have the same amount. Your turn. Three plus two');
+  });
+
+  it('keeps sentinel discipline with the concept spoken inside the affirm', () => {
+    const items = [explainItem(), explainItem({ id: 'dsp-2', stimulusText: '4 + 1 = 5', ask: 'Four plus one equals five. What does the equal sign tell us?' })];
+    expect(findSentinelCollisions([
+      { label: 'itemCue', text: itemCue(items[0], { opening: true, howToPlay: true }) },
+      { label: 'moveOnCue', text: moveOnCue(items[0], items[1], { opening: false, howToPlay: false }) },
+      { label: 'pronounceCue', text: pronounceCue(items[0]) },
+    ])).toEqual([]);
+  });
+
+  it('pushes the instance as state and re-hears the instance — never the concept', () => {
+    expect(contextFor(explainItem())).toEqual({ challengeType: 'explain_concept', stimulus: '3 + 2 = 5' });
+    expect(pronounceCue(explainItem())).toBe('[SAY_HEAR] Say exactly: "3 + 2 = 5" Then stop — say nothing else.');
+  });
+
+  it('builds through the shipped gate with a session-wide anchor set stamped in', () => {
+    // The ah5w shape: the plan owns the concept, the model writes the instance.
+    const concept = {
+      conceptStatement: 'The equal sign means both sides have the same amount.',
+      anchors: ['both sides the same', 'balanced'],
+    };
+    const built = buildSpokenItem({
+      stimulusText: '4 + 1 = 5', ask: 'Four plus one equals five. What does the equal sign tell us?',
+      expectedAnswer: 'ignored by code', alsoAccept: 'also ignored', conceptStatement: 'also ignored',
+      correctionBody: 'The equal sign means both sides have the same amount.',
+    }, 0, 'explain_concept', [], concept)!;
+    expect(built.expectedAnswer).toBe('both sides the same');
+    expect(built.alternates).toEqual(['balanced']);
+    expect(built.conceptStatement).toBe(concept.conceptStatement);
+    expect(built.responseClass).toBe('concept_statement');
+    expect(built.stimulusKind).toBe('text');
+    expect(gateSpokenItems([built]).dropped).toEqual([]);
+  });
+
+  it('exports ONE cue surface the component and the harness both spread', () => {
+    const surface = diSpokenPracticePackBase([explainItem()]);
+    expect(surface.primitiveType).toBe('di-spoken-practice');
+    expect(surface.itemCue(explainItem(), { opening: false, howToPlay: false }))
+      .toBe(itemCue(explainItem(), { opening: false, howToPlay: false }));
+  });
+});
+
+describe('explain_concept — anchors are tidied, not refused (the third pilot)', () => {
+  it('drops a redundant wording, caps at two extras, and drops an alternate that echoes the instance', () => {
+    // "same as" beside "the same as" zeroed a whole stamped session (6/6 items).
+    expect(normalizeConceptAnchors('same as', ['the same as', 'balanced', 'equal', 'even']))
+      .toEqual(['balanced', 'equal']);
+    // The instance read back can never be an EXAMPLE the judge affirms.
+    expect(normalizeConceptAnchors('red then blue', ['red blue', 'alternating colors'], 'red, blue, red, blue'))
+      .toEqual(['alternating colors']);
+    expect(normalizeConceptAnchors('plus two', ['add two', 'counting by twos', 'skip counting by two', 'jump by twos']))
+      .toEqual(['add two', 'counting by twos']);
+  });
+
+  it('builds a model-written item with its anchors tidied, so the code gates see a clean set', () => {
+    const built = buildSpokenItem({
+      stimulusText: 'red, blue, red, blue', ask: 'Red, blue, red, blue. What is the rule of this pattern?',
+      expectedAnswer: 'red then blue', alsoAccept: 'red blue, alternating colors, repeating red and blue, blue after red',
+      conceptStatement: 'The pattern repeats red then blue over and over.', correctionBody: 'The rule is red then blue.',
+    }, 0, 'explain_concept')!;
+    expect(built.alternates).toEqual(['alternating colors', 'repeating red and blue']);
+    expect(findConceptDefects([built])).toEqual([]);
+    expect(findAnswerLeaks([built])).toEqual([]);
+  });
+
+  it('hands a PRIMARY that is the instance read back over to a safe alternate, or refuses the item', () => {
+    // The ask says the instance, so an echoing primary is in the ask too:
+    // `reconcileConceptAnchors` promotes the first safe alternate…
+    const promoted = buildSpokenItem({
+      stimulusText: 'red, blue, red, blue', ask: 'Red, blue, red, blue. What is the rule of this pattern?',
+      expectedAnswer: 'red blue', alsoAccept: 'alternating colors',
+      conceptStatement: 'The pattern repeats red then blue over and over.', correctionBody: 'The rule is red then blue.',
+    }, 0, 'explain_concept')!;
+    expect(promoted.expectedAnswer).toBe('alternating colors');
+    expect(findConceptDefects([promoted])).toEqual([]);
+    // …and with no safe alternate the item is refused outright.
+    expect(buildSpokenItem({
+      stimulusText: 'red, blue, red, blue', ask: 'Red, blue, red, blue. What is the rule of this pattern?',
+      expectedAnswer: 'red blue', alsoAccept: '',
+      conceptStatement: 'The pattern repeats red then blue over and over.', correctionBody: 'The rule is red then blue.',
+    }, 0, 'explain_concept')).toBeNull();
+  });
+
+  it('hears a pattern above twenty when the ask says it — "10, 20, 30, 40" was dropped for a perfect ask', () => {
+    expect(findUnspokenStimulus([explainItem({
+      stimulusText: '10, 20, 30, 40', ask: 'Ten, twenty, thirty, forty. What is the rule of this pattern?',
+      conceptStatement: 'This pattern grows by adding ten each time.', expectedAnswer: 'plus ten', alternates: [],
+    })])).toEqual([]);
+    expect(findUnspokenStimulus([explainItem({
+      stimulusText: '25, 50, 75, 100', ask: 'Twenty five, fifty, seventy five, one hundred. What is the rule?',
+      conceptStatement: 'This pattern grows by adding twenty-five each time.', expectedAnswer: 'plus twenty five', alternates: [],
+    })])).toEqual([]);
+    expect(findUnspokenStimulus([explainItem({
+      stimulusText: '10, 20, 30, 40', ask: 'Ten, twenty, and so on. What is the rule of this pattern?',
+      conceptStatement: 'This pattern grows by adding ten each time.', expectedAnswer: 'plus ten', alternates: [],
+    })])).toEqual([{ itemId: 'dsp-1', missing: ['30', '40'] }]);
+  });
+});
+
+describe('explain_concept — anchors reconciled with the ask (the fresh draw i08t, 0/6 twice)', () => {
+  const ask = 'Four plus one equals five. What does the equal sign tell us?';
+
+  it('drops an alternate that is a word of the ask, keeps the rest', () => {
+    // "equal" is in every ask that names the equal sign; it cannot be an
+    // example the judge affirms, and it must not fail the leak gate either.
+    expect(reconcileConceptAnchors('same as', ['balanced', 'equal', 'the same'], ask))
+      .toEqual({ primary: 'same as', alternates: ['balanced', 'the same'] });
+  });
+
+  it('hands a PRIMARY that is in the ask over to the first ask-safe alternate', () => {
+    expect(reconcileConceptAnchors('equal', ['balanced', 'the same'], ask))
+      .toEqual({ primary: 'balanced', alternates: ['the same'] });
+    // Every anchor in the ask is a genuine leak — nothing to ship.
+    expect(reconcileConceptAnchors('equal', ['equal sign'], ask)).toEqual({ primary: '', alternates: [] });
+  });
+
+  it('builds a stamped item with the ask-word anchor dropped and still passes the leak gate', () => {
+    const concept = {
+      conceptStatement: 'The equal sign means both sides have the same amount.',
+      anchors: ['same as', 'balanced', 'equal'],
+    };
+    const built = buildSpokenItem({
+      stimulusText: '4 + 1 = 5', ask, expectedAnswer: '', alsoAccept: '', conceptStatement: '',
+      correctionBody: 'The equal sign means both sides have the same amount.',
+    }, 0, 'explain_concept', [], concept)!;
+    expect(built.expectedAnswer).toBe('same as');
+    expect(built.alternates).toEqual(['balanced']);
+    expect(gateSpokenItems([built]).dropped).toEqual([]);
+  });
+
+  it('refuses the item when every anchor is a word of the ask', () => {
+    expect(buildSpokenItem({
+      stimulusText: '4 + 1 = 5', ask, expectedAnswer: 'equal', alsoAccept: 'equal sign',
+      conceptStatement: 'The equal sign means both sides have the same amount.', correctionBody: 'x',
+    }, 0, 'explain_concept')).toBeNull();
   });
 });

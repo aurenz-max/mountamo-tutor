@@ -1,0 +1,63 @@
+[1/4] Firebase sign-in…
+[2/4] Generating real content + fetching tutoring block (probe&live)…
+      tier-1 status: warn; scaffold keys: ['taskDescription', 'contextKeys', 'scaffoldingLevels', 'commonStruggles', 'aiDirectives']
+      BENCH: 1 stimulus/stimuli, 14 scored probes
+      ⚠ pack gates: ['item "bench-concept-equal-sign": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-growing-pattern": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-repeating-pattern": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-ten-rod": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.']
+[3/4] Run 1/1: connecting ws://localhost:8000/api/lumina-tutor, driving 24 beats…
+  [ask:bench-concept-equal-sign] spoke (647720 b64 audio bytes) I will show you something, and you tell me what it means in your own words. Three plus two…
+  [probe:bench-concept-equal-sign:valid-canonical:both sides are the same] spoke (263720 b64 audio bytes) Yes, the equal sign means both sides have the same amount.
+  [reanchor:bench-concept-equal-sign:0] spoke (365444 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:valid-canonical:it means equal] spoke (1050884 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+  [reanchor:bench-concept-equal-sign:1] spoke (365444 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:valid-paraphrase:they match] spoke (236164 b64 audio bytes) Yes, the equal sign means both sides have the same amount.
+  [reanchor:bench-concept-equal-sign:2] spoke (370564 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:valid-paraphrase:this side and that side are even] spoke (240644 b64 audio bytes) Yes, the equal sign means both sides have the same amount.
+  [reanchor:bench-concept-equal-sign:3] spoke (367364 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:valid-childlike:it's, um, same same on the two] spoke (254724 b64 audio bytes) Yes, the equal sign means both sides have the same amount.
+  [reanchor:bench-concept-equal-sign:4] spoke (362884 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:valid-partial:same] spoke (242564 b64 audio bytes) Yes, the equal sign means both sides have the same amount.
+  [reanchor:bench-concept-equal-sign:5] spoke (373124 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:echo:three plus two equals five] spoke (1025284 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+  [probe:bench-concept-equal-sign:answer-not-explanation:five] spoke (1032964 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+  [reanchor:bench-concept-equal-sign:7] spoke (368644 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:adjacent-concept:it means the answer is next] spoke (1037444 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+  [probe:bench-concept-equal-sign:adjacent-concept:it means add them up] spoke (1124484 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+  [reanchor:bench-concept-equal-sign:9] spoke (372484 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:negated-keyword:they are not the same] spoke (1370884 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+  [probe:bench-concept-equal-sign:negated-keyword:one side has more, not equal] spoke (1304964 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+  [reanchor:bench-concept-equal-sign:11] spoke (372520 b64 audio bytes) Three plus two equals five. Look at the equal sign. What does the equal sign tell us?
+  [probe:bench-concept-equal-sign:off-task:I don't know] spoke (1440004 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+  [probe:bench-concept-equal-sign:off-task:um] spoke (1476484 b64 audio bytes) My turn: The equal sign means both sides have the same amount. Three plus two is five, and…
+
+==============================================================================
+BENCH: concept_statement via di-spoken-practice - verdicts vs the hand-authored key
+==============================================================================
+  adjacent-concept    2/2  agreed
+  answer-not-explanation  1/1  agreed
+  echo                1/1  agreed
+  negated-keyword     2/2  agreed
+  off-task            2/2  agreed
+  valid-canonical     1/2  agreed
+  valid-childlike     1/1  agreed
+  valid-paraphrase    2/2  agreed
+  valid-partial       1/1  agreed
+------------------------------------------------------------------------------
+
+  OK - ZERO false affirmations in the hard REFUSE buckets.
+
+  . 1 missed valid answer(s) - reported, does NOT block:
+      bench-concept-equal-sign: "it means equal" (valid-canonical) -> REFUSE
+
+  VERDICT: PASS - zero false affirmations. `concept_statement` holds through di-spoken-practice on this evidence.
+==============================================================================
+
+[4/4] Report: C:\Users\xbox3\claude web tutor\my-tutoring-app\qa\tutor-reports\di-spoken-practice-live-di-bench-bench-concept-equal-sign-2026-09-07.md
+  CONFIRMED HIGH [1/1]: di-false-refusal @probe:bench-concept-equal-sign:valid-canonical:it means equal — CORRECTED a right answer ("it means equal"): "My turn: The equal sign means both sides have the same amount. Three plus two is five, and fiv
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-equal-sign:answer-not-explanation:five — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-equal-sign:adjacent-concept:it means the answer is next — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-equal-sign:adjacent-concept:it means add them up — added 6 unscripted words to a "say exactly" line. SCRIPT: "My turn: The equal sign means both sides have the same amount. Three plus two is"
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-equal-sign:negated-keyword:they are not the same — added 11 unscripted words to a "say exactly" line. SCRIPT: "My turn: The equal sign means both sides have the same amount. Three plus two is
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-equal-sign:negated-keyword:one side has more, not equal — added 10 unscripted words to a "say exactly" line. SCRIPT: "My turn: The equal sign means both sides have the same amount. Three plus two is
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-equal-sign:off-task:I don't know — added 12 unscripted words to a "say exactly" line. SCRIPT: "My turn: The equal sign means both sides have the same amount. Three plus two is
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-equal-sign:off-task:um — added 20 unscripted words to a "say exactly" line. SCRIPT: "My turn: The equal sign means both sides have the same amount. Three plus two is
+  PLUMBING OK: output transcription is flowing (tutor voice observable as text).

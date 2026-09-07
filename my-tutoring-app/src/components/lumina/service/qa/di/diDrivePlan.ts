@@ -161,6 +161,35 @@ import {
   type OpenSetProbe,
 } from './openSetWordBench';
 import { ASSOCIATION_BENCH_STIMULI } from './associationBench';
+import { CONCEPT_BENCH_STIMULI } from './conceptStatementBench';
+import {
+  WORKED_PROCEDURE_BENCH_PROBLEMS,
+  workedProcedureHarnessAnswers,
+} from './workedProcedureBench';
+import {
+  diWorkedProcedurePackBase,
+  itemsFromProblems as workedProcedureItems,
+  type WorkedProblemSpec,
+  type WorkedProcedureItem,
+} from '@/components/lumina/primitives/visual-primitives/direct-instruction/diWorkedProcedureScript';
+import {
+  DEDUCTION_BENCH_RULES,
+  deductionHarnessAnswers,
+} from './deductionBench';
+import {
+  diDeductionPackBase,
+  itemsFromRules as deductionItems,
+  type DeductionItem,
+  type DeductionRuleSpec,
+  type DeductionSupportTier,
+} from '@/components/lumina/primitives/visual-primitives/direct-instruction/diDeductionScript';
+import {
+  buildSpokenItem,
+  diSpokenPracticePackBase,
+  gateSpokenItems,
+  numberWordFor,
+  type SpokenPracticeItem,
+} from '@/components/lumina/primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 import {
   itemsFromChallenges as storyTalkItems,
   storyTalkHarnessAnswers,
@@ -1845,7 +1874,187 @@ const causeEffectChainAdapter: DiPortAdapter<CauseEffectChainItem> = {
     (item.kind === 'build_chain' ? chainVerdictCue(item, String(gesture)) : ''),
 };
 
+/**
+ * di-spoken-practice (the CONTENT-GENERIC pack; adapter added 2026-09-07 for
+ * item 36). The pack shipped five modes and never registered a drive adapter,
+ * so `--di` could not reach it — the compare_choice slice logged that gap as
+ * HUMAN-CHECKS #137 "no live drive". Registering it is step zero of the
+ * `concept_statement` bench, and it opens every mode to headless driving.
+ *
+ * ⚠️ ITS `build` READS ITEMS, NOT CHALLENGES. Every other port's generator
+ * emits a payload the script module then builds into items; here the
+ * generator IS the builder — `data.items` are already `SpokenPracticeItem`s
+ * that passed `buildSpokenItem` + `gateSpokenItems`. So `build` re-runs the
+ * SAME gate over them (idempotent on a production payload, and the honest
+ * count of what would drop if the payload had been hand-edited) rather than
+ * inventing a second construction.
+ *
+ * TWO BUILDS, ONE SURFACE, rhyme-studio's shape for rhyme-studio's reason:
+ * `benchBuild` answers the hand-authored `conceptStatementBench.ts` key,
+ * pushed through the same `buildSpokenItem` so the bench exercises the
+ * contract the primitive ships. While `concept_statement` is `blocked` the
+ * bench's `packGateIssues` is non-empty by design — the honest label on the
+ * run, and the line that disappears when the class clears.
+ *
+ * ⚠️ PROBES ARE ATTACHED BY ITEM ID ONLY — no fallback match. Nothing about a
+ * concept key transfers to a different stimulus (picture-vocabulary's rule),
+ * so a GENERATED explain item is drivable (its anchor is a valid answer, the
+ * echo is its signature wrong) but never SCORED by a borrowed key.
+ */
+const spokenAnswerMaterial = (item: SpokenPracticeItem): DiHarnessAnswers => {
+  const anchors = [item.expectedAnswer, ...item.alternates].filter((a) => a.trim());
+  const echo = {
+    text: item.mode === 'compare_choice'
+      ? `${item.stimulusText} and ${item.stimulusText2 ?? ''}`.trim()
+      : item.stimulusText,
+    why: 'the stimulus said straight back — fluent, on topic, and not an answer; the catalog names it '
+      + 'as this pack\'s commonest struggle ("says the stimulus back instead of the answer")',
+  };
+  switch (item.mode) {
+    case 'count_and_say': {
+      const n = item.stimulusCount;
+      return {
+        correct: item.expectedAnswer,
+        plainWrong: numberWordFor(n >= 2 ? n - 1 : n + 1),
+        signatureWrong: {
+          // The accept clause admits a count said aloud that LANDS on the total,
+          // which makes a fluent count that runs one past it the wrong answer
+          // that contains the right word (counting-board's shape).
+          text: Array.from({ length: n + 1 }, (_, i) => numberWordFor(i + 1)).join(', '),
+          why: 'counting aloud one PAST the total — every word of the right answer is in it, and the '
+            + 'landing is wrong',
+        },
+        leakTokens: [item.expectedAnswer],
+      };
+    }
+    case 'read_aloud':
+      return {
+        correct: item.expectedAnswer,
+        // The commonest decode miss keeps the rhythm and drops the meaning: one
+        // content word swapped. On a single word there is nothing to swap, so
+        // the plain wrong is a different word altogether.
+        plainWrong: item.expectedAnswer.split(/\s+/).length > 1
+          ? item.expectedAnswer.split(/\s+/).map((w, i) => (i === 0 ? 'the' : w)).join(' ')
+          : 'banana',
+        signatureWrong: {
+          text: item.stimulusText.split(/\s+/).map((w) => w.split('').reverse().join('')).join(' '),
+          why: 'the letters of the printed word in the wrong order — sounds like decoding, is not',
+        },
+        // The printed text is the answer and must be absent from the SPOKEN ask.
+        leakTokens: [item.expectedAnswer],
+      };
+    case 'compare_choice':
+      return {
+        correct: item.expectedAnswer,
+        plainWrong: (item.choices ?? []).find(
+          (c) => c.toLowerCase() !== item.expectedAnswer.toLowerCase(),
+        ) ?? 'bigger',
+        signatureWrong: echo,
+        // The ask READS THE WHOLE MENU by contract (`findChoiceMenuDefects`), so
+        // the answer word is in the ask by construction and a flat leak oracle
+        // would fire on every turn. Discrimination carries this mode
+        // (genre-explorer's precedent for a menu-shaped ask).
+        leakTokens: [],
+      };
+    case 'explain_concept': {
+      const key = CONCEPT_BENCH_STIMULI.find((s) => s.id === item.id);
+      return {
+        // The primary anchor is one valid answer; the key's canonical probe is
+        // the same thing said the way a child says it.
+        correct: item.expectedAnswer,
+        plainWrong: "I don't know",
+        signatureWrong: {
+          text: item.stimulusText,
+          why: 'the instance read back with no idea added — the ECHO refusal the class records',
+        },
+        // Anchors are examples the judge is shown; none may be in the ask, and
+        // neither may a run of the concept sentence (`findConceptDefects`).
+        leakTokens: anchors,
+        ...(key ? { probes: key.probes } : {}),
+      };
+    }
+    case 'say_answer':
+    default:
+      return {
+        correct: item.expectedAnswer,
+        plainWrong: NUMBER_WORD_SET.has(item.expectedAnswer.toLowerCase())
+          ? numberWordFor(Math.max(1, NUMBER_WORDS_1_20.indexOf(item.expectedAnswer.toLowerCase()) + 2))
+          : 'banana',
+        signatureWrong: item.stimulusRole === 'visual_target'
+          ? { text: 'a thing', why: 'a non-answer that names nothing — the visual target has no spoken stimulus to echo' }
+          : echo,
+        leakTokens: anchors,
+      };
+  }
+};
+
+const NUMBER_WORDS_1_20 = Array.from({ length: 20 }, (_, i) => numberWordFor(i + 1));
+const NUMBER_WORD_SET = new Set(NUMBER_WORDS_1_20);
+
+const diSpokenPracticeAdapter: DiPortAdapter<SpokenPracticeItem> = {
+  build: (data) => {
+    const items = (data.items ?? []) as SpokenPracticeItem[];
+    const { kept } = gateSpokenItems(items);
+    return { items: kept, dropped: items.length - kept.length, surface: diSpokenPracticePackBase(kept) };
+  },
+  benchBuild: () => {
+    // Straight through the shipped build gate. A fixture item that fails it
+    // fails the fixture's own test; it never silently thins the bench.
+    const built = CONCEPT_BENCH_STIMULI.flatMap((s, i) => {
+      const item = buildSpokenItem(s.raw, i, 'explain_concept');
+      return item ? [{ ...item, id: s.id }] : [];
+    });
+    const { kept } = gateSpokenItems(built);
+    return { items: kept, surface: diSpokenPracticePackBase(kept) };
+  },
+  answersFor: spokenAnswerMaterial,
+};
+
+/**
+ * di-worked-procedure (the first "DI for Older Learners" pack, brief
+ * 2026-09-07). `build` runs the SAME `itemsFromProblems` the stage runs, so a
+ * problem the plan gates refuse drops here exactly as it drops there.
+ * `benchBuild` answers the hand-authored `workedProcedureBench.ts` key for the
+ * new `procedure_step` class — probes attach by ITEM id only.
+ */
+const diWorkedProcedureAdapter: DiPortAdapter<WorkedProcedureItem> = {
+  build: (data) => {
+    const problems = (data.problems ?? []) as WorkedProblemSpec[];
+    const { items, dropped } = workedProcedureItems(problems);
+    return { items, dropped, surface: diWorkedProcedurePackBase(items) };
+  },
+  benchBuild: () => {
+    const { items } = workedProcedureItems(WORKED_PROCEDURE_BENCH_PROBLEMS);
+    return { items, surface: diWorkedProcedurePackBase(items) };
+  },
+  answersFor: workedProcedureHarnessAnswers,
+};
+
+/**
+ * di-deduction (the second "DI for Older Learners" pack, brief 2026-09-07
+ * concept 3). `build` runs the SAME `itemsFromRules` the stage runs, so a rule
+ * the plan gates refuse drops here exactly as it drops there. `benchBuild`
+ * answers the hand-authored `deductionBench.ts` key for the new `deduction`
+ * class — probes attach by ITEM id only.
+ */
+const diDeductionAdapter: DiPortAdapter<DeductionItem> = {
+  build: (data) => {
+    const rules = (data.rules ?? []) as DeductionRuleSpec[];
+    const tier = data.supportTier as DeductionSupportTier | undefined;
+    const { items, dropped } = deductionItems(rules, tier);
+    return { items, dropped, surface: diDeductionPackBase(items) };
+  },
+  benchBuild: () => {
+    const { items } = deductionItems(DEDUCTION_BENCH_RULES);
+    return { items, surface: diDeductionPackBase(items) };
+  },
+  answersFor: deductionHarnessAnswers,
+};
+
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
+  'di-deduction': diDeductionAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'di-worked-procedure': diWorkedProcedureAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'di-spoken-practice': diSpokenPracticeAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'knowledge-check': knowledgeCheckAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'counting-board': countingBoardAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

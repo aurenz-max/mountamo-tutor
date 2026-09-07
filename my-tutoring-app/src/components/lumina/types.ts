@@ -1530,6 +1530,8 @@ export type ComponentId =
   | 'di-shapes'                 // Live-judged Direct Instruction: name a drawn 2D shape aloud at any rotation (K-G1)
   | 'di-sentence-reading'       // Live-judged Direct Instruction: read a printed short sentence aloud, judged word-by-word (G1-2)
   | 'di-spoken-practice'        // Live-judged Direct Instruction, CONTENT-GENERIC: any skill whose answer is one short spoken word; items + judging clauses generated per objective
+  | 'di-worked-procedure'       // Live-judged Direct Instruction TALK-THROUGH: multi-digit subtraction said one column at a time, each step judged where it happens (G1-4)
+  | 'di-deduction'              // Live-judged Direct Instruction DEDUCTION: a rule and a case, the child says what follows and how they know (G3-5)
   | 'decodable-reader'          // Controlled-vocabulary reading with per-word TTS and comprehension (K-2)
   | 'story-map'                 // Interactive plot structure diagram (K-6)
   | 'character-web'             // Character analysis and relationship mapping (grades 2-6)

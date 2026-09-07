@@ -14,6 +14,8 @@ import { generateDiShapes } from '../../direct-instruction/gemini-di-shapes';
 import { generateDiSentenceReading } from '../../direct-instruction/gemini-di-sentence-reading';
 import { generateDiSpokenPractice } from '../../direct-instruction/gemini-di-spoken-practice';
 import { generateDiDiceRoll } from '../../direct-instruction/gemini-di-dice-roll';
+import { generateDiWorkedProcedure } from '../../direct-instruction/gemini-di-worked-procedure';
+import { generateDiDeduction } from '../../direct-instruction/gemini-di-deduction';
 
 // di-letter-sounds — continuous letter sounds, menu-scoped to the objective.
 registerContextGenerator('di-letter-sounds', async (ctx) => ({
@@ -88,5 +90,38 @@ registerContextGenerator('di-dice-roll', async (ctx) => ({
   data: await generateDiDiceRoll(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
+  }),
+}));
+
+// di-worked-procedure -- talk-through subtraction, the first "DI for Older
+// Learners" pack. The step chain is planned in code; Gemini writes only the
+// answer-free wrapper and a number-range hint. The canonical grade rides
+// explicitly (the generator never parses grade out of the prose context).
+registerContextGenerator('di-worked-procedure', async (ctx) => ({
+  type: 'di-worked-procedure',
+  instanceId: ctx.instanceId,
+  data: await generateDiWorkedProcedure(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    grade: ctx.grade ?? ctx.gradeLevel,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    supportTier: ctx.supportTier,
+  }),
+}));
+
+// di-deduction -- a rule and a case, the second "DI for Older Learners" pack.
+// Gemini emits the scope (a category, a property, entity lists); code builds
+// every case, ask and answer, and a separate review call gates truth.
+registerContextGenerator('di-deduction', async (ctx) => ({
+  type: 'di-deduction',
+  instanceId: ctx.instanceId,
+  data: await generateDiDeduction(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    grade: ctx.grade ?? ctx.gradeLevel,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    supportTier: ctx.supportTier,
   }),
 }));

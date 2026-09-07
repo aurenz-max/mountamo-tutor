@@ -1,0 +1,78 @@
+[1/4] Firebase sign-in…
+[2/4] Generating real content + fetching tutoring block (probe&live)…
+      tier-1 status: warn; scaffold keys: ['taskDescription', 'contextKeys', 'scaffoldingLevels', 'commonStruggles', 'aiDirectives']
+      BENCH: 1 stimulus/stimuli, 14 scored probes
+      ⚠ pack gates: ['item "bench-concept-equal-sign": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-growing-pattern": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-repeating-pattern": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-ten-rod": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.']
+[3/4] Run 1/1: connecting ws://localhost:8000/api/lumina-tutor, driving 24 beats…
+  [ask:bench-concept-ten-rod] spoke (332804 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:valid-canonical:ten ones make one ten] spoke (617604 b64 audio bytes) Yes, one ten rod is the same as ten ones. We are doing great today! Soon you'll be using t…
+  [reanchor:bench-concept-ten-rod:0] spoke (282884 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:valid-canonical:the rod is the same as the ten cubes] spoke (739204 b64 audio bytes) Yes, one ten rod is the same as ten ones. Look at that, we've completed our first task! Th…
+  [reanchor:bench-concept-ten-rod:1] spoke (275844 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:valid-paraphrase:they're both ten] spoke (642564 b64 audio bytes) Yes, one ten rod is the same as ten ones. You are really understanding this concept, and i…
+  [reanchor:bench-concept-ten-rod:2] spoke (280324 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:valid-paraphrase:it's just the little cubes stuck together] spoke (801320 b64 audio bytes) Yes, one ten rod is the same as ten ones. You've shown me that you really get this! We can…
+  [reanchor:bench-concept-ten-rod:3] spoke (266244 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:valid-childlike:it's, like, ten of the little ones but in one piece] spoke (629800 b64 audio bytes) Yes, one ten rod is the same as ten ones. You did great today! This will help you in the n…
+  [reanchor:bench-concept-ten-rod:4] spoke (329000 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:valid-partial:same] spoke (933764 b64 audio bytes) My turn: One ten rod is the same as ten ones. If you break the rod apart you get ten littl…
+  [reanchor:bench-concept-ten-rod:5] spoke (292484 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:echo:one ten rod and ten ones] spoke (909444 b64 audio bytes) My turn: One ten rod is the same as ten ones. If you break the rod apart you get ten littl…
+  [probe:bench-concept-ten-rod:answer-not-explanation:ten] spoke (915844 b64 audio bytes) My turn: One ten rod is the same as ten ones. If you break the rod apart you get ten littl…
+  [reanchor:bench-concept-ten-rod:7] spoke (288644 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:adjacent-concept:the rod is longer] spoke (900484 b64 audio bytes) My turn: One ten rod is the same as ten ones. If you break the rod apart you get ten littl…
+  [probe:bench-concept-ten-rod:adjacent-concept:the rod is bigger so it's more] spoke (739844 b64 audio bytes) Remember how the ten rod looks like those ten little cubes all stuck together like one big…
+  [reanchor:bench-concept-ten-rod:9] spoke (291844 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:negated-keyword:ten ones is not the same as a ten] spoke (926084 b64 audio bytes) My turn: One ten rod is the same as ten ones. If you break the rod apart you get ten littl…
+  [probe:bench-concept-ten-rod:negated-keyword:the rod is one and the cubes are ten, so the cubes are more] spoke (700164 b64 audio bytes) Think about how the ten little cubes fit perfectly together to make the ten rod. Does that…
+  [reanchor:bench-concept-ten-rod:11] spoke (287364 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+  [probe:bench-concept-ten-rod:off-task:I don't know] spoke (931204 b64 audio bytes) My turn: One ten rod is the same as ten ones. If you break the rod apart you get ten littl…
+  [probe:bench-concept-ten-rod:off-task:um] spoke (276484 b64 audio bytes) One ten rod, and ten ones. What does the ten rod show us?
+
+==============================================================================
+BENCH: concept_statement via di-spoken-practice - verdicts vs the hand-authored key
+==============================================================================
+  adjacent-concept    1/2  agreed
+  answer-not-explanation  1/1  agreed
+  echo                1/1  agreed
+  negated-keyword     1/2  agreed
+  off-task            1/2  agreed
+  valid-canonical     2/2  agreed
+  valid-childlike     1/1  agreed
+  valid-paraphrase    2/2  agreed
+  valid-partial       0/1  agreed
+------------------------------------------------------------------------------
+  ! 3 probe(s) drew NO VERDICT - the tutor said nothing the reducer
+    could classify. These are LOOP failures, not judge failures, and they
+    make the probes they cover vacuous:
+      bench-concept-ten-rod/adjacent-concept: "the rod is bigger so it's more" -> Remember how the ten rod looks like those ten little cubes all stuck together li
+      bench-concept-ten-rod/negated-keyword: "the rod is one and the cubes are ten, so the cubes are more" -> Think about how the ten little cubes fit perfectly together to make the ten rod.
+      bench-concept-ten-rod/off-task: "um" -> One ten rod, and ten ones. What does the ten rod show us?
+
+  OK - ZERO false affirmations in the hard REFUSE buckets.
+
+  . 1 missed valid answer(s) - reported, does NOT block:
+      bench-concept-ten-rod: "same" (valid-partial) -> REFUSE
+
+  . 1 SOFT disagreement(s) in valid-partial - recorded, does NOT block:
+      bench-concept-ten-rod/valid-partial: "same" -> REFUSE
+
+  VERDICT: PASS - zero false affirmations. `concept_statement` holds through di-spoken-practice on this evidence.
+==============================================================================
+
+[4/4] Report: C:\Users\xbox3\claude web tutor\my-tutoring-app\qa\tutor-reports\di-spoken-practice-live-di-bench-bench-concept-ten-rod-2026-09-07.md
+  CONFIRMED HIGH [1/1]: di-false-completion-claim @probe:bench-concept-ten-rod:valid-canonical:the rod is the same as the ten cubes — told the child the work is over with items still queued: "...we've completed..." in "Yes, one ten rod is the same as ten ones. Look at that,
+  CONFIRMED HIGH [1/1]: di-no-verdict @probe:bench-concept-ten-rod:adjacent-concept:the rod is bigger so it's more — answered "the rod is bigger so it's more" and the tutor opened with neither sentinel — the loop stalls here: "Remember how the ten rod looks
+  CONFIRMED HIGH [1/1]: di-no-verdict @probe:bench-concept-ten-rod:negated-keyword:the rod is one and the cubes are ten, so the cubes are more — answered "the rod is one and the cubes are ten, so the cubes are more" and the tutor opened with neither sentinel — the loop stalls here: "T
+  CONFIRMED HIGH [1/1]: di-no-verdict @probe:bench-concept-ten-rod:off-task:um — answered "um" and the tutor opened with neither sentinel — the loop stalls here: "One ten rod, and ten ones. What does the ten rod show us?"
+  CONFIRMED HIGH [1/1]: open-set-probe-vacuous @* — 3 probe(s) drew no classifiable verdict — those trials measured nothing and the bench cannot be read as covering them.
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-ten-rod:valid-canonical:ten ones make one ten — added 17 unscripted words to a "say exactly" line. SCRIPT: "Yes, one ten rod is the same as ten ones." SPOKE: "Yes, one ten rod is the same 
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-ten-rod:valid-canonical:the rod is the same as the ten cubes — added 28 unscripted words to a "say exactly" line. SCRIPT: "Yes, one ten rod is the same as ten ones." SPOKE: "Yes, one ten rod is the same 
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-ten-rod:valid-paraphrase:they're both ten — added 23 unscripted words to a "say exactly" line. SCRIPT: "Yes, one ten rod is the same as ten ones." SPOKE: "Yes, one ten rod is the same 
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-ten-rod:valid-paraphrase:it's just the little cubes stuck together — added 34 unscripted words to a "say exactly" line. SCRIPT: "Yes, one ten rod is the same as ten ones." SPOKE: "Yes, one ten rod is the same 
+  CONFIRMED WARN [1/1]: di-verdict-embellished @probe:bench-concept-ten-rod:valid-childlike:it's, like, ten of the little ones but in one piece — added 22 unscripted words to a "say exactly" line. SCRIPT: "Yes, one ten rod is the same as ten ones." SPOKE: "Yes, one ten rod is the same 
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-ten-rod:answer-not-explanation:ten — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-ten-rod:adjacent-concept:the rod is longer — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-ten-rod:negated-keyword:ten ones is not the same as a ten — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-ten-rod:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  PLUMBING OK: output transcription is flowing (tutor voice observable as text).

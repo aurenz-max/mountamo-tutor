@@ -387,6 +387,32 @@ interface SendTextCall {
   silent: boolean;
 }
 
+/** Inline contextFor packs wired through the shared spoken runner, not a second AI hook. */
+function analyzeJudgedPack(content: string, index: SourceIndex): { analysis: HookSiteAnalysis; calls: SendTextCall[] } | null {
+  const factory = /export const (\w+)\s*=.*JudgedScriptPack/.exec(content)?.[1];
+  if (!factory) return null;
+  const consumer = Array.from(index.files.values()).some(source =>
+    /useJudgedScriptRunner\s*(?:<[^>]+>)?\s*\(/.test(source)
+    && new RegExp(`\\b${factory}\\(items\\)`).test(source)
+    && /pack\s*[,}]/.test(source));
+  if (!consumer) return null;
+  const runner = index.files.get('src/components/lumina/hooks/useJudgedScriptRunner.ts') ?? '';
+  const loop = index.files.get('src/components/lumina/hooks/useJudgedSpeechLoop.ts') ?? '';
+  // Verify both connect-time data and turn-to-turn synchronization actually use the pack.
+  if (!runner.includes('packRef.current.contextFor(first)') || !runner.includes('ctx.updateContext(packRef.current.contextFor(item))')) return null;
+  const context = /contextFor:\s*\w+\s*=>\s*\(\s*\{/.exec(content);
+  if (!context) return null;
+  const start = context.index + context[0].lastIndexOf('{');
+  const end = findMatching(content, start);
+  if (end < 0) return null;
+  const bag = extractObjectKeys(content.slice(start, end + 1));
+  const transportCalls = analyzeSendTextCalls(`${runner}\n${loop}`
+    .replace(/ctx\.sendText\(/g, 'sendText(').replace(/sendTextRef\.current\(/g, 'sendText('));
+  const tags = Array.from(new Set(Array.from(content.matchAll(/\[([A-Z][A-Z0-9_]+)\]/g), match => match[1])));
+  return { analysis: { keys: bag.keys, dynamic: bag.dynamic },
+    calls: tags.map(tag => ({ tag, silent: transportCalls.length > 0 && transportCalls.every(call => call.silent) })) };
+}
+
 const TAG_RE = /\[([A-Z][A-Z0-9_]+)\]/;
 
 /** All sendText(…) calls in a file (including destructure renames of sendText). */
@@ -502,8 +528,12 @@ export function auditScaffold(entry: ComponentDefinition, index: SourceIndex): S
   let dataBagDynamic = false;
   const keyUnion = new Set<string>();
   let anyParsed = false;
+  const judgedCalls: SendTextCall[] = [];
   for (const rel of componentFiles) {
-    const analysis = analyzeHookSite(index.files.get(rel)!, entry.id);
+    const source = index.files.get(rel)!;
+    const judged = analyzeJudgedPack(source, index);
+    if (judged) judgedCalls.push(...judged.calls);
+    const analysis = judged?.analysis ?? analyzeHookSite(source, entry.id);
     if (analysis.keys) {
       anyParsed = true;
       for (const k of analysis.keys) keyUnion.add(k);
@@ -600,7 +630,7 @@ export function auditScaffold(entry: ComponentDefinition, index: SourceIndex): S
   }
 
   // --- sendText analysis --------------------------------------------------------
-  const sendTextCalls: SendTextCall[] = [];
+  const sendTextCalls: SendTextCall[] = [...judgedCalls];
   for (const rel of componentFiles) {
     sendTextCalls.push(...analyzeSendTextCalls(index.files.get(rel)!));
   }

@@ -49,10 +49,7 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
-  completeCue,
-  contextFor,
-  itemCue,
-  moveOnCue,
+  diSpokenPracticePackBase,
   pronounceCue,
   MODE_SHAPE,
   type SpokenPracticeItem,
@@ -88,6 +85,7 @@ const MODE_ICON: Record<SpokenPracticeMode, string> = {
   read_aloud: '📖',
   count_and_say: '🔢',
   compare_choice: '⚖️',
+  explain_concept: '💡',
 };
 
 /** Misconception Loop S1 — the task identity, named so a distilled sentence
@@ -98,6 +96,8 @@ const TASK_PHRASE: Record<SpokenPracticeMode, string> = {
   count_and_say: 'counting a group of pictures and saying how many',
   compare_choice:
     'saying which word from a stated set describes two things shown side by side',
+  explain_concept:
+    'explaining in their own words what a shown instance means or what rule it follows',
 };
 
 /** PLATFORM PROP CONTRACT: registry primitives mount as
@@ -125,17 +125,12 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
     });
 
   // ── The pack ──────────────────────────────────────────────────────────────
+  // The cue surface is exported ONCE from the script module and spread here —
+  // the DI drive harness names the same export, so the headless student replays
+  // production strings rather than a replica of them (judgedScriptContract's
+  // `JudgedCueSurface` note).
   const pack = useMemo<JudgedScriptPack<SpokenPracticeItem>>(() => ({
-    primitiveType: 'di-spoken-practice',
-    activityLine: 'live direct instruction spoken practice',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    // Returns '' on decode items; the runner sends nothing and the button is
-    // hidden, so the tutor can never read the child their own task.
-    pronounceCue: (item) => pronounceCue(item),
-    contextFor,
+    ...diSpokenPracticePackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
       retry: () => 'Have another go — say your answer.',

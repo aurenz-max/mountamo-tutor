@@ -12,6 +12,8 @@ import DiShapes, { type DiShapesData } from '../primitives/visual-primitives/dir
 import DiSentenceReading, { type DiSentenceReadingData } from '../primitives/visual-primitives/direct-instruction/DiSentenceReading';
 import DiSpokenPractice, { type DiSpokenPracticeData } from '../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
 import { DiSpokenPracticeScriptPanel } from '../primitives/visual-primitives/direct-instruction/DiSpokenPracticeScriptPanel';
+import DiWorkedProcedure, { type DiWorkedProcedureData } from '../primitives/visual-primitives/direct-instruction/DiWorkedProcedure';
+import DiDeduction, { type DiDeductionData } from '../primitives/visual-primitives/direct-instruction/DiDeduction';
 import { DiRunLogPanel } from '../primitives/visual-primitives/direct-instruction/DiRunLogPanel';
 
 interface Props { onBack: () => void; }
@@ -20,7 +22,7 @@ interface Props { onBack: () => void; }
 // must NEVER import them directly — generate via the eval-test API route.
 // One picker drives every DI pack; eval modes must mirror catalog/di.ts.
 // 'mixed' pins nothing → generator spread (letter-sounds L1 only).
-type DiPrimitiveId = 'di-dice-roll' | 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-shapes' | 'di-sentence-reading' | 'di-spoken-practice';
+type DiPrimitiveId = 'di-dice-roll' | 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-shapes' | 'di-sentence-reading' | 'di-spoken-practice' | 'di-worked-procedure' | 'di-deduction';
 
 interface DiPrimitiveOption {
   id: DiPrimitiveId;
@@ -129,6 +131,37 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
       { key: 'count_and_say', label: 'Count and Say' },
     ],
   },
+  {
+    // The first "DI for Older Learners" pack: a whole procedure said aloud, one
+    // column at a time, each step judged where it happens. Grade is a real
+    // input (≤ G2 → two-digit, G3+ → three-digit unless the topic pins it).
+    id: 'di-worked-procedure',
+    label: 'Talk-Through Subtraction',
+    subtitle: 'Multi-digit subtraction narrated column by column; every step judged.',
+    defaultTopic: 'two-digit subtraction with regrouping',
+    defaultGrade: 'Grade 2',
+    evalModes: [
+      { key: 'subtract_regroup', label: 'With Regrouping' },
+      { key: 'subtract_no_regroup', label: 'No Regrouping' },
+      { key: 'mixed', label: 'Mixed (both)' },
+    ],
+  },
+  {
+    // The second "DI for Older Learners" pack: a rule and a case, the child
+    // says what follows and how they know. The topic steers the SUBJECT
+    // (science classification, social-studies rules, reading inference).
+    id: 'di-deduction',
+    label: 'Use the Rule (deductions)',
+    subtitle: 'A rule card, a case card; the child says what follows — and how they know.',
+    defaultTopic: 'using a rule to reason about animal groups: all birds lay eggs, all insects have six legs',
+    defaultGrade: 'Grade 3',
+    evalModes: [
+      { key: 'conclude', label: 'What Follows (conclude)' },
+      { key: 'deny', label: 'Rule It Out (deny)' },
+      { key: 'cannot_tell', label: "Can't Tell (affirming the consequent)" },
+      { key: 'mixed', label: 'Mixed (a rule through all three)' },
+    ],
+  },
 ];
 
 type DiData =
@@ -138,7 +171,9 @@ type DiData =
   | { id: 'di-math-facts'; data: DiMathFactsData }
   | { id: 'di-shapes'; data: DiShapesData }
   | { id: 'di-sentence-reading'; data: DiSentenceReadingData }
-  | { id: 'di-spoken-practice'; data: DiSpokenPracticeData };
+  | { id: 'di-spoken-practice'; data: DiSpokenPracticeData }
+  | { id: 'di-worked-procedure'; data: DiWorkedProcedureData }
+  | { id: 'di-deduction'; data: DiDeductionData };
 
 const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) => {
   const [primitive, setPrimitive] = useState<DiPrimitiveOption>(DI_PRIMITIVES[0]);
@@ -257,6 +292,12 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
               hears it. Shows every generated clause plus the assembled cue. */}
           <DiSpokenPracticeScriptPanel items={generated.data.items} />
         </>
+      )}
+      {generated?.id === 'di-worked-procedure' && (
+        <DiWorkedProcedure key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
+      )}
+      {generated?.id === 'di-deduction' && (
+        <DiDeduction key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
       )}
       {/* Bench-parity diagnostics. Reads the diRunLog module store, so it needs
           no props from the pack and never renders in a lesson. Read its FLAGS

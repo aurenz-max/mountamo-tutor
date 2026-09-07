@@ -1,0 +1,766 @@
+{
+  "startedAt": "2026-09-07T15:43:51.297Z",
+  "results": [
+    {
+      "name": "selection-ah5w",
+      "routing": {
+        "slots": 5,
+        "changed": 4,
+        "kept": 1,
+        "mixed": 1,
+        "blend": 0
+      },
+      "picked": [
+        {
+          "objectiveId": "obj2",
+          "objectiveText": "Explain what the equal sign means using the balance scale example",
+          "instanceId": "obj2-spoken-practice",
+          "intent": "Engage students with a live tutor asking spoken-response questions that prompt them to say aloud what '=' means ('same as' or 'balanced') when looking at various scale images.",
+          "mode": "explain_concept"
+        }
+      ],
+      "checks": {
+        "foundSpokenSlot": true,
+        "routesToExplainConcept": true
+      }
+    },
+    {
+      "name": "selection-f00i",
+      "routing": {
+        "slots": 5,
+        "changed": 4,
+        "kept": 1,
+        "mixed": 1,
+        "blend": 0
+      },
+      "picked": [
+        {
+          "objectiveId": "obj3",
+          "objectiveText": "Explain the secret rule behind a repeating or growing pattern",
+          "instanceId": "obj3-speak-the-rule",
+          "intent": "Have the tutor show a simple pattern (such as 2, 4, 6, 8 or red-blue-red-blue) and let students say the rule aloud into the microphone (e.g., 'plus two' or 'red then blue').",
+          "mode": "explain_concept"
+        }
+      ],
+      "checks": {
+        "foundSpokenSlot": true,
+        "routesToExplainConcept": true
+      }
+    },
+    {
+      "name": "generate-ah5w-obj2-draw1",
+      "input": {
+        "objectiveText": "Explain what the equal sign means using the balance scale example",
+        "intent": "Engage students with a live tutor asking spoken-response questions that prompt them to say aloud what '=' means ('same as' or 'balanced') when looking at various scale images.",
+        "mode": "explain_concept",
+        "shape": "session-wide"
+      },
+      "elapsedMs": 16716,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "conceptClass": true,
+        "everyItemHasConcept": true,
+        "shapeHonored": true,
+        "instancesVary": true,
+        "noLeaks": true,
+        "conceptIntact": true,
+        "instanceSpoken": true,
+        "withSignatureError": true
+      },
+      "data": {
+        "title": "Balance and the Equal Sign",
+        "description": "You will answer out loud to explain what the equal sign means.",
+        "challengeType": "explain_concept",
+        "gradeLevel": "1st grade",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "4 + 1 = 5",
+            "stimulusEmoji": "",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Four plus one equals five. What does the equal sign mean in this equation?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced",
+              "the same"
+            ],
+            "acceptRule": "Any phrasing stating that the two sides match, weigh the same, or are equal counts.",
+            "signatureError": "Saying the sum, five, or reading the numbers back is NOT an explanation.",
+            "correctionBody": "The equal sign means both sides are the same. Four plus one is the same as five."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "3 = 3",
+            "stimulusEmoji": "",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Three equals three. What does the equal sign tell us here?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced",
+              "the same"
+            ],
+            "acceptRule": "Any phrasing stating that the two sides match, weigh the same, or are equal counts.",
+            "signatureError": "Just repeating the number three or saying it is a counting word is NOT an explanation.",
+            "correctionBody": "The equal sign means both sides are the same. Three is the same as three on both sides."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "2 + 3 = 1 + 4",
+            "stimulusEmoji": "",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Two plus three equals one plus four. What does the equal sign mean when we see this?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced",
+              "the same"
+            ],
+            "acceptRule": "Any phrasing stating that the two sides match, weigh the same, or are equal counts.",
+            "signatureError": "Saying that the equal sign just means the answer comes next is NOT correct.",
+            "correctionBody": "The equal sign means both sides are the same. Two plus three balances with one plus four."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "6 = 4 + 2",
+            "stimulusEmoji": "",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Six equals four plus two. Why is the equal sign used between these two parts?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced",
+              "the same"
+            ],
+            "acceptRule": "Any phrasing stating that the two sides match, weigh the same, or are equal counts.",
+            "signatureError": "Saying the final answer, six, without explaining the sign is NOT correct.",
+            "correctionBody": "The equal sign means both sides are the same. Six is the same amount as four plus two."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-ah5w-obj2-draw2",
+      "input": {
+        "objectiveText": "Explain what the equal sign means using the balance scale example",
+        "intent": "Engage students with a live tutor asking spoken-response questions that prompt them to say aloud what '=' means ('same as' or 'balanced') when looking at various scale images.",
+        "mode": "explain_concept",
+        "shape": "session-wide"
+      },
+      "elapsedMs": 16282,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "conceptClass": true,
+        "everyItemHasConcept": true,
+        "shapeHonored": true,
+        "instancesVary": true,
+        "noLeaks": true,
+        "conceptIntact": true,
+        "instanceSpoken": true,
+        "withSignatureError": true
+      },
+      "data": {
+        "title": "Equal Sign Balance",
+        "description": "You will answer out loud to explain what the equal sign means using balance scales.",
+        "challengeType": "explain_concept",
+        "gradeLevel": "1st grade",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "emoji",
+            "answerSource": "recall",
+            "stimulusText": "4 = 4",
+            "stimulusEmoji": "⚖️",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Four equals four. What does the equal sign tell us about these two numbers?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced",
+              "the same"
+            ],
+            "acceptRule": "Any words that mean the two sides match or are even count as correct.",
+            "signatureError": "Saying just the numbers or the sum of eight is not an explanation.",
+            "correctionBody": "The equal sign means both sides are the same. Four is the same as four."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "emoji",
+            "answerSource": "recall",
+            "stimulusText": "3 + 2 = 5",
+            "stimulusEmoji": "⚖️",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Three plus two equals five. What does the equal sign mean in this equation?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced",
+              "the same"
+            ],
+            "acceptRule": "Any words that mean the left side matches the right side count.",
+            "signatureError": "Saying that the answer just comes next is not an explanation.",
+            "correctionBody": "The equal sign means both sides are the same. Three plus two is the same as five."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "emoji",
+            "answerSource": "recall",
+            "stimulusText": "6 = 3 + 3",
+            "stimulusEmoji": "⚖️",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Six equals three plus three. Why is the equal sign used here?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced",
+              "the same"
+            ],
+            "acceptRule": "Any phrasing that shows the two sides balance or match counts.",
+            "signatureError": "Saying only the number six is not an explanation.",
+            "correctionBody": "The equal sign means both sides are the same. Six is the same as three plus three."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "emoji",
+            "answerSource": "recall",
+            "stimulusText": "7 = 7",
+            "stimulusEmoji": "⚖️",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Seven equals seven. What is the job of the equal sign between them?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced",
+              "the same"
+            ],
+            "acceptRule": "Any description of the sides being equal or balanced counts.",
+            "signatureError": "Just repeating the number seven is not an explanation.",
+            "correctionBody": "The equal sign means both sides are the same. Seven is the same as seven."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-ah5w-obj2-draw3",
+      "input": {
+        "objectiveText": "Explain what the equal sign means using the balance scale example",
+        "intent": "Engage students with a live tutor asking spoken-response questions that prompt them to say aloud what '=' means ('same as' or 'balanced') when looking at various scale images.",
+        "mode": "explain_concept",
+        "shape": "session-wide"
+      },
+      "elapsedMs": 14308,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "conceptClass": true,
+        "everyItemHasConcept": true,
+        "shapeHonored": true,
+        "instancesVary": true,
+        "noLeaks": true,
+        "conceptIntact": true,
+        "instanceSpoken": true,
+        "withSignatureError": true
+      },
+      "data": {
+        "title": "Balance Scale Meanings",
+        "description": "You will answer out loud to explain what the equal sign means.",
+        "challengeType": "explain_concept",
+        "gradeLevel": "1st grade",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "emoji",
+            "answerSource": "recall",
+            "stimulusText": "3 + 2 = 5",
+            "stimulusEmoji": "⚖️",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Three plus two equals five. What does the equal sign tell us about the two sides?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced"
+            ],
+            "acceptRule": "Any phrase stating the sides match or are equal counts as the correct idea.",
+            "signatureError": "Saying the sum, five, is NOT an explanation.",
+            "correctionBody": "The equal sign means both sides are the same. Three plus two is the same amount as five."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "emoji",
+            "answerSource": "recall",
+            "stimulusText": "4 = 4",
+            "stimulusEmoji": "⚖️",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Four equals four. What does the equal sign mean here?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced"
+            ],
+            "acceptRule": "Any phrase stating the sides match or are equal counts as the correct idea.",
+            "signatureError": "Reading the numbers back without explaining the sign is NOT correct.",
+            "correctionBody": "The equal sign means both sides are the same. Four is balanced with four."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "emoji",
+            "answerSource": "recall",
+            "stimulusText": "6 = 3 + 3",
+            "stimulusEmoji": "⚖️",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "Six equals three plus three. What does the equal sign tell us?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced"
+            ],
+            "acceptRule": "Any phrase stating the sides match or are equal counts as the correct idea.",
+            "signatureError": "Saying that the answer comes next is NOT correct.",
+            "correctionBody": "The equal sign means both sides are the same. Six is the same amount as three plus three."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "emoji",
+            "answerSource": "recall",
+            "stimulusText": "1 + 4 = 5",
+            "stimulusEmoji": "⚖️",
+            "conceptStatement": "The equal sign means both sides are the same.",
+            "stimulusCount": 0,
+            "ask": "One plus four equals five. What is the meaning of the equal sign?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "same as",
+            "alternates": [
+              "balanced"
+            ],
+            "acceptRule": "Any phrase stating the sides match or are equal counts as the correct idea.",
+            "signatureError": "Saying the sum, five, is NOT an explanation.",
+            "correctionBody": "The equal sign means both sides are the same. One plus four balances with five."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-f00i-obj3-draw1",
+      "input": {
+        "objectiveText": "Explain the secret rule behind a repeating or growing pattern",
+        "intent": "Have the tutor show a simple pattern (such as 2, 4, 6, 8 or red-blue-red-blue) and let students say the rule aloud into the microphone (e.g., 'plus two' or 'red then blue').",
+        "mode": "explain_concept",
+        "shape": "per-item"
+      },
+      "elapsedMs": 10936,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "conceptClass": true,
+        "everyItemHasConcept": true,
+        "shapeHonored": true,
+        "instancesVary": true,
+        "noLeaks": true,
+        "conceptIntact": true,
+        "instanceSpoken": true,
+        "withSignatureError": true
+      },
+      "data": {
+        "title": "Pattern Rules",
+        "description": "Practice explaining pattern rules out loud!",
+        "challengeType": "explain_concept",
+        "gradeLevel": "Grade 1",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "red, blue, red, blue",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern alternates between red and blue.",
+            "stimulusCount": 0,
+            "ask": "Look at the colors: red, blue, red, blue. What is the repeating rule?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "red then blue",
+            "alternates": [
+              "alternating red and blue"
+            ],
+            "acceptRule": "Any phrasing that names the correct alternating color order counts as the rule.",
+            "signatureError": "Naming just one color or saying the last color is NOT the rule.",
+            "correctionBody": "The pattern goes red then blue over and over. Say red then blue."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "2, 4, 6, 8",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern grows by adding two each time.",
+            "stimulusCount": 0,
+            "ask": "Listen to the numbers: two, four, six, eight. What is the growing rule?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "plus two",
+            "alternates": [
+              "add two",
+              "count by twos"
+            ],
+            "acceptRule": "Any words that describe adding two or counting by twos count as the rule.",
+            "signatureError": "Saying the next number ten is NOT the rule.",
+            "correctionBody": "The numbers grow by adding two each time. The rule is plus two."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "square, circle, square, circle",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern alternates between a square and a circle.",
+            "stimulusCount": 0,
+            "ask": "Look at the shapes: square, circle, square, circle. What is the repeating rule?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "square then circle",
+            "alternates": [
+              "alternating square and circle"
+            ],
+            "acceptRule": "Any phrasing that names the correct alternating shape order counts as the rule.",
+            "signatureError": "Naming only one shape is NOT the rule.",
+            "correctionBody": "The shapes repeat in order as square then circle."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "5, 10, 15, 20",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern grows by adding five each time.",
+            "stimulusCount": 0,
+            "ask": "Listen to the numbers: five, ten, fifteen, twenty. What is the growing rule?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "plus five",
+            "alternates": [
+              "add five",
+              "count by fives"
+            ],
+            "acceptRule": "Any words that describe adding five or counting by fives count as the rule.",
+            "signatureError": "Saying the next number twenty-five is NOT the rule.",
+            "correctionBody": "The numbers grow by adding five each step. The rule is plus five."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-f00i-obj3-draw2",
+      "input": {
+        "objectiveText": "Explain the secret rule behind a repeating or growing pattern",
+        "intent": "Have the tutor show a simple pattern (such as 2, 4, 6, 8 or red-blue-red-blue) and let students say the rule aloud into the microphone (e.g., 'plus two' or 'red then blue').",
+        "mode": "explain_concept",
+        "shape": "per-item"
+      },
+      "elapsedMs": 14732,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "conceptClass": true,
+        "everyItemHasConcept": true,
+        "shapeHonored": true,
+        "instancesVary": true,
+        "noLeaks": true,
+        "conceptIntact": true,
+        "instanceSpoken": true,
+        "withSignatureError": true
+      },
+      "data": {
+        "title": "Pattern Rules",
+        "description": "Listen to the patterns and say their rules out loud.",
+        "challengeType": "explain_concept",
+        "gradeLevel": "Grade 1",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "red, blue, red, blue",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern alternates between red and blue.",
+            "stimulusCount": 0,
+            "ask": "Red, blue, red, blue. What is the repeating rule of this pattern?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "red then blue",
+            "alternates": [
+              "alternating red and blue"
+            ],
+            "acceptRule": "Any description of the alternating color sequence counts as the answer.",
+            "signatureError": "Saying the last color, blue, is NOT an explanation of the rule.",
+            "correctionBody": "The rule is red then blue because those colors take turns over and over."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "2, 4, 6, 8",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern grows by adding two each time.",
+            "stimulusCount": 0,
+            "ask": "Two, four, six, eight. What is the growing rule of this pattern?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "plus two",
+            "alternates": [
+              "add two",
+              "counting by twos"
+            ],
+            "acceptRule": "Saying skip counting by twos counts as the correct rule.",
+            "signatureError": "Saying the next number, ten, is NOT an explanation of the rule.",
+            "correctionBody": "The rule is plus two because the numbers go up by two each time."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "square, circle, square, circle",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern alternates between a square and a circle.",
+            "stimulusCount": 0,
+            "ask": "Square, circle, square, circle. What is the repeating rule of this pattern?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "square then circle",
+            "alternates": [
+              "alternating square and circle"
+            ],
+            "acceptRule": "Any phrasing naming the alternating shapes counts as the answer.",
+            "signatureError": "Saying the final shape, circle, is NOT an explanation of the rule.",
+            "correctionBody": "The rule is square then circle because those shapes repeat in that order."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "5, 10, 15, 20",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern grows by adding five each time.",
+            "stimulusCount": 0,
+            "ask": "Five, ten, fifteen, twenty. What is the growing rule of this pattern?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "plus five",
+            "alternates": [
+              "add five",
+              "counting by fives"
+            ],
+            "acceptRule": "Saying counting by fives counts as the correct rule.",
+            "signatureError": "Saying the next number, twenty-five, is NOT an explanation of the rule.",
+            "correctionBody": "The rule is plus five because we add five for every new step."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-f00i-obj3-draw3",
+      "input": {
+        "objectiveText": "Explain the secret rule behind a repeating or growing pattern",
+        "intent": "Have the tutor show a simple pattern (such as 2, 4, 6, 8 or red-blue-red-blue) and let students say the rule aloud into the microphone (e.g., 'plus two' or 'red then blue').",
+        "mode": "explain_concept",
+        "shape": "per-item"
+      },
+      "elapsedMs": 19049,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "conceptClass": true,
+        "everyItemHasConcept": true,
+        "shapeHonored": true,
+        "instancesVary": true,
+        "noLeaks": true,
+        "conceptIntact": true,
+        "instanceSpoken": true,
+        "withSignatureError": true
+      },
+      "data": {
+        "title": "Pattern Rules",
+        "description": "Answer out loud to explain the secret rules behind these patterns.",
+        "challengeType": "explain_concept",
+        "gradeLevel": "Grade 1",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "2, 4, 6, 8",
+            "stimulusEmoji": "",
+            "conceptStatement": "This number pattern grows by adding two each time.",
+            "stimulusCount": 0,
+            "ask": "Two, four, six, eight. What is the rule for how this pattern grows?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "plus two",
+            "alternates": [
+              "add two",
+              "counting by twos"
+            ],
+            "acceptRule": "Any clear statement that the numbers increase by two counts as the right rule.",
+            "signatureError": "Saying the next number, ten, is NOT the rule.",
+            "correctionBody": "The rule for this pattern is plus two because every number goes up by two."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "red, blue, red, blue",
+            "stimulusEmoji": "",
+            "conceptStatement": "This repeating pattern alternates between red and blue.",
+            "stimulusCount": 0,
+            "ask": "Red, blue, red, blue. What is the rule that repeats in this pattern?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "red then blue",
+            "alternates": [
+              "alternating red and blue"
+            ],
+            "acceptRule": "Any words describing the alternating red and blue sequence count as the rule.",
+            "signatureError": "Saying the name of just one color is NOT the rule.",
+            "correctionBody": "The rule is red then blue because those two colors repeat over and over."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "explain_concept",
+            "action": "explain_concept",
+            "answerKind": "voice",
+            "responseClass": "concept_statement",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "5, 10, 15, 20",
+            "stimulusEmoji": "",
+            "conceptStatement": "This pattern grows by adding five at each step.",
+            "stimulusCount": 0,
+            "ask": "Five, ten, fifteen, twenty. How does this number pattern grow?",
+            "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+            "expectedAnswer": "plus five",
+            "alternates": [
+              "add five",
+              "counting by fives"
+            ],
+            "acceptRule": "Any description indicating counting by fives counts as the rule.",
+            "signatureError": "Saying the final number, twenty, is NOT the rule.",
+            "correctionBody": "The rule is plus five because each step adds five more."
+          }
+        ]
+      }
+    },
+    {
+      "name": "refuses-procedure",
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "No matching practice is available for this task.",
+        "challengeType": "explain_concept",
+        "gradeLevel": "Grade 2",
+        "items": []
+      },
+      "checks": {
+        "shipsNothing": true
+      }
+    }
+  ],
+  "finishedAt": "2026-09-07T15:45:36.460Z",
+  "passed": true
+}

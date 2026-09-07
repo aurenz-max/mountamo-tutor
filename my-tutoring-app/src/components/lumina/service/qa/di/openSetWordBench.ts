@@ -91,6 +91,37 @@ export type OpenSetBucket =
   | 'rationalised-chain'
   | 'same-category'
   | 'category-word'
+  // ── di-spoken-practice explain_concept (`concept_statement`, item 36) ──
+  // A THIRD group, for a different CLASS: the target is an idea, not a word,
+  // so the valid side splits by HOW the idea is worded (canonical / paraphrase
+  // / childlike / partial) and the wrong side by WHY a true-sounding turn is
+  // not an explanation. See conceptStatementBench.ts.
+  | 'valid-canonical'
+  | 'valid-paraphrase'
+  | 'valid-childlike'
+  | 'valid-partial'
+  | 'answer-not-explanation'
+  | 'adjacent-concept'
+  | 'negated-keyword'
+  // ── di-worked-procedure decide steps (`procedure_step`, brief 2026-09-07) ──
+  // A FOURTH group, for a class whose target is a MOVE: the wrong side splits
+  // by WHICH wrong move was made (the column flipped, the decrement forgotten,
+  // a regroup where none was needed, the right move landing wrong) and by the
+  // turn that names a number with no move at all. See workedProcedureBench.ts.
+  | 'flipped-column'
+  | 'forgot-decrement'
+  | 'unneeded-regroup'
+  | 'wrong-landing'
+  | 'no-move'
+  | 'wrong-number'
+  // ── di-deduction (`deduction`, brief 2026-09-07 concept 3) ──
+  // A FIFTH group, for a class whose target is a VERDICT plus a REASON from a
+  // rule: the confident yes on a cannot_tell case (the rule run backwards), the
+  // plain wrong direction, and the right verdict with the reason missing. See
+  // deductionBench.ts.
+  | 'affirmed-consequent'
+  | 'wrong-verdict'
+  | 'verdict-no-reason'
   // ── shared: properties of the turn, not of the rule ──
   | 'echo'
   | 'nonword'

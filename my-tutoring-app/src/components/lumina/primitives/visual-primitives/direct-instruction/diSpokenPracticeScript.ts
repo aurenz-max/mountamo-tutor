@@ -48,10 +48,12 @@
  * generator drops the item rather than laundering it through a free-text field.
  */
 
-import type {
-  JudgedCueOptions,
-  JudgedScriptItem,
-  ResponseClassId,
+import {
+  opensWithSentinel,
+  type JudgedCueOptions,
+  type JudgedCueSurface,
+  type JudgedScriptItem,
+  type ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
 
 // ── Modes ────────────────────────────────────────────────────────────────────
@@ -69,8 +71,16 @@ import type {
  * needs a second stimulus, a menu, and a menu-shaped judging contract. Its
  * answer rides `closed_set_choice`, not open production — see
  * `findChoiceMenuDefects` for what makes that claim honest.
+ *
+ * `explain_concept` is the first OPEN-PROPOSITION mode (qa/di item 36): the
+ * child says, in their own words, what a shown instance MEANS or what RULE it
+ * follows, and the judge decides whether the utterance expresses the concept
+ * rather than whether it contains a token. Its answer rides
+ * `concept_statement` — see `findConceptDefects` for what code can check and
+ * the generator's review call for what it cannot.
  */
-export type SpokenPracticeMode = 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice';
+export type SpokenPracticeMode =
+  | 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice' | 'explain_concept';
 
 /** How the stimulus APPEARS. `none` still carries stimulusText — the tutor
  *  says it ("Listen: cat…"), nothing is printed. `pair` draws TWO pictures side
@@ -93,6 +103,7 @@ export const MODE_SHAPE: Record<
   read_aloud: { stimulusKind: 'text', answerSource: 'decode', label: 'Read It Aloud' },
   count_and_say: { stimulusKind: 'objects', answerSource: 'recall', label: 'Count and Say' },
   compare_choice: { stimulusKind: 'pair', answerSource: 'recall', label: 'Which Word?' },
+  explain_concept: { stimulusKind: 'text', answerSource: 'recall', label: 'Say Why' },
 };
 
 /**
@@ -113,6 +124,7 @@ export const HOW_TO_PLAY: Record<SpokenPracticeMode, string> = {
   read_aloud: 'I will show you a word, and you read it out loud.',
   count_and_say: 'Count the pictures, then say how many out loud.',
   compare_choice: 'I will show you two things and say the words, and you say the one that fits.',
+  explain_concept: 'I will show you something, and you tell me what it means in your own words.',
 };
 
 // ── The item ─────────────────────────────────────────────────────────────────
@@ -141,6 +153,13 @@ export interface SpokenPracticeItem extends JudgedScriptItem {
   choices?: string[];
   /** 'objects' mode: how many to draw. Code NEVER prints the numeral. */
   stimulusCount: number;
+  /** 'explain_concept' ONLY: the ONE sentence the judge holds — the idea the
+   *  child must express, in any words. Spoken back as the affirmation ("Yes,
+   *  the equal sign means both sides have the same amount."), which is the
+   *  DISTAR firm-up rather than a clipped echo of a token. `expectedAnswer` and
+   *  `alternates` are ANCHOR PHRASINGS of it (≤ 4 words each), examples for the
+   *  judge and never a required wording. Absent on every other mode. */
+  conceptStatement?: string;
   /** The tutor's scripted question, ending in the hand-over. Generated. */
   ask: string;
   /** Spoken on the opener and whenever the ACTION changes. CODE-OWNED from
@@ -174,8 +193,39 @@ export const numberWordFor = (n: number): string => NUMBER_WORDS[n - 1] ?? Strin
 export const wordCount = (text: string): number =>
   text.trim().split(/\s+/).filter(Boolean).length;
 
+/** explain_concept anchors are EXAMPLES for the judge, never a required wording,
+ *  so they stay short: a five-year-old's "plus two" is the whole answer. */
+export const CONCEPT_ANCHOR_MAX_WORDS = 4;
+/** The one sentence the judge holds and speaks back as the affirmation. Long
+ *  enough to be a proposition, short enough to be a firm-up rather than a lecture. */
+export const CONCEPT_STATEMENT_MIN_WORDS = 4;
+export const CONCEPT_STATEMENT_MAX_WORDS = 12;
+
 const isNumberWord = (text: string): boolean =>
   NUMBER_WORDS.includes(text.trim().toLowerCase());
+
+const TENS_WORDS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+/**
+ * The tokens a numeral is SPOKEN as, 1-120, for the gate that checks an ask
+ * says its stimulus ("10, 20, 30, 40" → thirty, forty). The benched spoken
+ * ANSWER class still stops at 20 — this only decides whether the tutor's own
+ * voice carried the instance, which an explain pattern above twenty needs
+ * (the third pilot dropped "10, 20, 30, 40" for an ask that said it perfectly).
+ */
+const spokenNumberTokens = (n: number): string[] => {
+  if (n >= 1 && n <= 20) return [NUMBER_WORDS[n - 1]];
+  if (n > 20 && n < 100) {
+    const tens = TENS_WORDS[Math.floor(n / 10)];
+    const ones = n % 10;
+    return ones ? [tens, NUMBER_WORDS[ones - 1]] : [tens];
+  }
+  if (n >= 100 && n <= 120) {
+    const rest = n - 100;
+    return ['hundred', ...(rest ? spokenNumberTokens(rest) : [])];
+  }
+  return [];
+};
 
 /**
  * A bare numeral is a WRITTEN form; the child SAYS a number word. Normalising
@@ -229,6 +279,16 @@ export const deriveResponseClass = (
   if (mode === 'read_aloud') {
     // The printed stimulus is the utterance; its length picks the class.
     return wordCount(stimulusText) >= 3 ? 'sentence_read_aloud' : 'short_spoken_word';
+  }
+  if (mode === 'explain_concept') {
+    // The child produces a PROPOSITION in any words; `expectedAnswer` is only
+    // the primary ANCHOR phrasing the judge is shown, and an anchor is short by
+    // design (≤ 4 words) so the contract stays readable. The class is
+    // `concept_statement` — and it is the class that gates, not the length:
+    // while the record is `blocked`, `validateJudgedScriptPack` refuses every
+    // item here, which is standing gate 1 doing its job on the first open
+    // proposition the family has had (qa/di item 36).
+    return wordCount(answer) <= CONCEPT_ANCHOR_MAX_WORDS ? 'concept_statement' : null;
   }
   // say_answer
   if (isNumberWord(answer)) return 'number_word_to_20';
@@ -415,6 +475,106 @@ export function findChoiceMenuDefects(items: readonly SpokenPracticeItem[]): Cho
   return defects;
 }
 
+// ── Concept gate — what code CAN check about an open proposition ─────────────
+
+export interface ConceptDefect {
+  itemId: string;
+  reason:
+    | 'missing_concept'        // no conceptStatement, or outside 4-12 words
+    | 'anchor_too_long'        // an anchor over 4 words is a sentence, not an example
+    | 'too_many_anchors'       // > 3 anchors is a word list, not a concept
+    | 'anchors_not_distinct'   // two anchors the ear cannot tell apart add nothing
+    | 'anchor_echoes_stimulus' // an anchor inside the instance makes ECHO un-refusable
+    | 'concept_in_ask'         // the concept sentence, or a run of it, in the ask
+    | 'sentinel_in_concept';   // a concept sentence opening with "Yes"/"My turn"
+  detail: string[];
+}
+
+/**
+ * A run of this many concept-sentence tokens inside the ask is the concept
+ * leaking, not the subject being named. Four, not three: the SUBJECT of a
+ * concept sentence is legitimately in the ask ("What does THE EQUAL SIGN tell
+ * us?" against "THE EQUAL SIGN means both sides have the same amount"), and it
+ * is three tokens long. The PREDICATE is the leak, and a four-token run cannot
+ * be the subject alone. Anchors are scanned at any length by `findAnswerLeaks`.
+ */
+const CONCEPT_RUN_LEAK = 4;
+
+const hasTokenRun = (haystack: string, needle: string, run: number): boolean => {
+  const need = tokenize(needle);
+  for (let i = 0; i + run <= need.length; i++) {
+    if (containsPhrase(haystack, need.slice(i, i + run).join(' '))) return true;
+  }
+  return false;
+};
+
+/**
+ * STRUCTURE ONLY — and the docblock says so because the first design note for
+ * this mode said "code-validated acceptableConcepts", and that is not a thing.
+ * Nothing in the objective text grounds a paraphrase: "= means both sides are
+ * the same" is printed nowhere a token inventory can find it. So the split is
+ * the one `planSpokenPractice` already uses — code checks SHAPE (present,
+ * bounded, distinct, no echo, no leak), and the generator's per-session review
+ * call checks MEANING (is the concept true and grade-appropriate for THIS
+ * stimulus; does each anchor mean the same thing). A reader looking here for
+ * the grounding that proves an anchor is right will not find it; it is in the
+ * review, and it is a semantic judgment, like lesson coverage.
+ *
+ * What the seven reasons protect, in the order they matter:
+ *   1. The judge must be HANDED an idea — no concept sentence, nothing to judge.
+ *   2-3. Anchors are examples, not a required wording; a long one, or a long
+ *      LIST of them, turns the class back into token matching.
+ *   4. Two anchors the ear cannot separate are one anchor written twice.
+ *   5. An anchor that sits inside the instance ("red blue" for "red, blue, red,
+ *      blue") makes the ECHO bucket un-refusable: reading the screen would count.
+ *   6. The concept in the ask is THE leak — the coverage judge files it as
+ *      recall of a sentence just heard, not an explanation.
+ *   7. The concept sentence is SPOKEN inside the affirmation, so a sentinel
+ *      opener in it would be a verdict the reducer misreads.
+ */
+export function findConceptDefects(items: readonly SpokenPracticeItem[]): ConceptDefect[] {
+  const defects: ConceptDefect[] = [];
+  for (const item of items) {
+    if (item.mode !== 'explain_concept') continue;
+    const concept = (item.conceptStatement ?? '').trim();
+    const conceptWords = wordCount(concept);
+    if (!concept || conceptWords < CONCEPT_STATEMENT_MIN_WORDS
+      || conceptWords > CONCEPT_STATEMENT_MAX_WORDS) {
+      defects.push({ itemId: item.id, reason: 'missing_concept', detail: [concept] });
+      continue;
+    }
+    if (opensWithSentinel(concept)) {
+      defects.push({ itemId: item.id, reason: 'sentinel_in_concept', detail: [concept] });
+      continue;
+    }
+    const anchors = [item.expectedAnswer, ...item.alternates].map((a) => a.trim()).filter(Boolean);
+    const long = anchors.filter((a) => wordCount(a) > CONCEPT_ANCHOR_MAX_WORDS);
+    if (long.length) {
+      defects.push({ itemId: item.id, reason: 'anchor_too_long', detail: long });
+      continue;
+    }
+    if (anchors.length > 3) {
+      defects.push({ itemId: item.id, reason: 'too_many_anchors', detail: anchors });
+      continue;
+    }
+    const overlapping = anchors.filter((a, i) =>
+      anchors.some((other, j) => i !== j && sharesEar(a, other)));
+    if (overlapping.length) {
+      defects.push({ itemId: item.id, reason: 'anchors_not_distinct', detail: overlapping });
+      continue;
+    }
+    const echoing = anchors.filter((a) => containsPhrase(item.stimulusText, a));
+    if (echoing.length) {
+      defects.push({ itemId: item.id, reason: 'anchor_echoes_stimulus', detail: echoing });
+      continue;
+    }
+    if (hasTokenRun(item.ask, concept, CONCEPT_RUN_LEAK)) {
+      defects.push({ itemId: item.id, reason: 'concept_in_ask', detail: [concept] });
+    }
+  }
+  return defects;
+}
+
 // ── Arithmetic-consistency gate — the fact on screen is the ground truth ─────
 
 /** A printed two-operand fact: "3 + 2", "7 − 4", "2 x 3", optionally "= ?". */
@@ -508,11 +668,18 @@ export function findUnspokenStimulus(items: readonly SpokenPracticeItem[]): Unsp
   const results: UnspokenStimulus[] = [];
   for (const item of items) {
     if (item.stimulusRole === 'visual_target') continue;
+    // explain_concept joins the arithmetic case for the arithmetic reason: the
+    // INSTANCE ("3 + 2 = 5", "2, 4, 6, 8") is not the answer — the concept is —
+    // so the ask must say it aloud, and a printed pattern under "what is the
+    // rule?" asks a pre-reader to explain something they were never told. A
+    // pictured instance (emoji) is exempt exactly as say_answer's is.
     const spoken = item.mode === 'compare_choice'
       ? [item.stimulusText, item.stimulusText2 ?? ''].filter((t) => t.trim()).join(' ')
       : item.mode === 'say_answer' && (item.stimulusKind === 'text' || item.stimulusKind === 'none')
         ? item.stimulusText
-        : null;
+        : item.mode === 'explain_concept' && item.stimulusKind === 'text'
+          ? item.stimulusText
+          : null;
     if (spoken === null) continue;
     const askTokens = new Set(tokenize(item.ask));
     const missing = Array.from(new Set(tokenize(spoken)))
@@ -520,8 +687,8 @@ export function findUnspokenStimulus(items: readonly SpokenPracticeItem[]): Unsp
       .filter((token) => {
         if (askTokens.has(token)) return false;
         if (/^\d+$/.test(token)) {
-          const n = Number.parseInt(token, 10);
-          return !(n >= 1 && n <= 20 && askTokens.has(numberWordFor(n)));
+          const spokenAs = spokenNumberTokens(Number.parseInt(token, 10));
+          return !(spokenAs.length && spokenAs.every((w) => askTokens.has(w)));
         }
         return !NUMBER_WORDS.includes(token) || !askTokens.has(String(NUMBER_WORDS.indexOf(token) + 1));
       });
@@ -529,6 +696,240 @@ export function findUnspokenStimulus(items: readonly SpokenPracticeItem[]): Unsp
   }
   return results;
 }
+
+// ── Concept anchors — normalised once, for the plan and the build alike ─────
+
+/** At most this many anchors ride an explain item: the primary and two more.
+ *  They are EXAMPLES for the judge; a fourth is a word list. */
+export const CONCEPT_ANCHOR_MAX_ALTERNATES = 2;
+
+/**
+ * The anchor set a judge is shown, tidied rather than refused. The model
+ * (and the planner) routinely offer a redundant wording ("same as" beside
+ * "the same as"), a fourth example, or the instance itself as an anchor; the
+ * third pilot lost 6/6 items of a whole session to `anchors_not_distinct` on
+ * ONE planned "same as" — every stamped item carried the same redundancy.
+ * Redundancy is noise, not a defect: the contained wording is dropped, the
+ * list is capped, and an alternate that sits inside the instance (the echo)
+ * is dropped because the judge must be able to refuse the read-back. Only a
+ * PRIMARY that echoes the instance still drops the item (`findConceptDefects`).
+ */
+export const normalizeConceptAnchors = (
+  primary: string,
+  alternates: readonly string[],
+  stimulusText = '',
+): string[] => {
+  const kept: string[] = [];
+  for (const raw of alternates) {
+    const a = raw.trim();
+    if (!a || a.toLowerCase() === primary.trim().toLowerCase()) continue;
+    if (sharesEar(a, primary) || sharesEar(primary, a)) continue;
+    if (kept.some((k) => sharesEar(a, k) || sharesEar(k, a))) continue;
+    if (stimulusText && containsPhrase(stimulusText, a)) continue;
+    kept.push(a);
+    if (kept.length === CONCEPT_ANCHOR_MAX_ALTERNATES) break;
+  }
+  return kept;
+};
+
+/**
+ * Anchors against THIS ask. Returns the primary to ship ('' when every anchor
+ * is a word of the ask — a genuine leak, and the item drops) and the ask-safe
+ * alternates. See the call site in `buildSpokenItem` for why.
+ */
+export const reconcileConceptAnchors = (
+  primary: string,
+  alternates: readonly string[],
+  ask: string,
+): { primary: string; alternates: string[] } => {
+  const safe = alternates.filter((a) => !containsPhrase(ask, a));
+  if (!containsPhrase(ask, primary)) return { primary, alternates: safe };
+  return safe.length ? { primary: safe[0], alternates: safe.slice(1) } : { primary: '', alternates: [] };
+};
+
+// ── Raw → item — the generation boundary, in one place ──────────────────────
+
+/** Counting draws what it can draw (1-10); the floor is the benched
+ *  number-word class's floor — "zero"/"none" spoken is unbenched. */
+export const MIN_COUNT = 1;
+export const MAX_COUNT = 10;
+
+/** What the model emits per item — flat, every field optional and untrusted. */
+export interface RawSpokenItem {
+  stimulusText?: unknown;
+  stimulusEmoji?: unknown;
+  stimulusText2?: unknown;
+  stimulusEmoji2?: unknown;
+  stimulusCount?: unknown;
+  printStimulus?: unknown;
+  ask?: unknown;
+  expectedAnswer?: unknown;
+  alsoAccept?: unknown;
+  conceptStatement?: unknown;
+  acceptRule?: unknown;
+  signatureError?: unknown;
+  correctionBody?: unknown;
+}
+
+const str = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+
+const clampCount = (value: unknown): number => {
+  const n = typeof value === 'number' ? Math.round(value) : Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(n)) return MIN_COUNT;
+  return Math.max(MIN_COUNT, Math.min(MAX_COUNT, n));
+};
+
+/**
+ * Build one item, or null if it cannot ship. Both refusals are gates, not
+ * fallbacks: a class that cannot be placed is standing gate 1, and a missing
+ * ask/answer is an item with nothing to judge.
+ *
+ * Lives in the SCRIPT module rather than the generator so the DI drive adapter
+ * can build a bench fixture through it without importing the Gemini client —
+ * the shipped gate is what a bench must go through, or it benches a contract
+ * the primitive does not use (`openSetWordBench.ts`).
+ *
+ * `menu` (compare_choice) and `concept` (a session-planned explain_concept
+ * anchor set) are the two code-owned, session-wide slots stamped INTO every
+ * item: the model writes the instance around them and never re-emits them.
+ */
+export const buildSpokenItem = (
+  raw: RawSpokenItem,
+  index: number,
+  mode: SpokenPracticeMode,
+  menu: readonly string[] = [],
+  concept?: { conceptStatement: string; anchors: readonly string[] },
+): SpokenPracticeItem | null => {
+  const shape = MODE_SHAPE[mode];
+  const stimulusText = str(raw.stimulusText);
+  const ask = str(raw.ask);
+  if (!ask || !stimulusText) return null;
+  // A pair with one thing in it is not a comparison, and a pair with nothing
+  // drawn is two names a pre-reader cannot hold — both are missing halves of
+  // the stimulus, refused here rather than rendered as a blank side.
+  const stimulusText2 = str(raw.stimulusText2);
+  const stimulusEmoji2 = str(raw.stimulusEmoji2).slice(0, 8);
+  if (mode === 'compare_choice'
+    && (!stimulusText2 || !str(raw.stimulusEmoji) || !stimulusEmoji2)) return null;
+
+  // count_and_say: the COUNT is the truth and the answer is computed from it.
+  // Trusting a model-written number word here is how "seven" ends up under six
+  // bears (LLM emits the window, code builds the answer).
+  const stimulusCount = mode === 'count_and_say' ? clampCount(raw.stimulusCount) : 0;
+  const spokenAnswer = normalizeSpokenAnswer(concept ? concept.anchors[0] ?? '' : str(raw.expectedAnswer));
+  // The menu is the objective's OWN wording, so a case- or inflection-drifted
+  // answer is snapped back to it: the cue reads the menu and the answer aloud
+  // in the same breath, and they must be the same word when it does.
+  const expectedAnswer = mode === 'count_and_say'
+    ? numberWordFor(stimulusCount)
+    : menu.find((c) => c.toLowerCase() === spokenAnswer.toLowerCase()) ?? spokenAnswer;
+  if (!expectedAnswer) return null;
+  // Reading preserves the printed utterance, including supported numeral → word
+  // normalization. A symbol NAME is recall and cannot be relabeled as decoding.
+  if (mode === 'read_aloud'
+    && normalizeSpokenAnswer(stimulusText).toLowerCase() !== expectedAnswer.toLowerCase()) return null;
+
+  const responseClass = deriveResponseClass(mode, expectedAnswer, stimulusText);
+  if (!responseClass) return null;
+
+  const offered = (concept ? concept.anchors.slice(1).join(',') : str(raw.alsoAccept))
+    .split(',')
+    .map((a) => normalizeSpokenAnswer(a))
+    .filter(Boolean)
+    // An "alternate" identical to the answer adds noise to the contract — and
+    // after normalisation the common case IS identical, because the model
+    // routinely offers the digit and the word as if they were two answers.
+    .filter((a) => a.toLowerCase() !== expectedAnswer.toLowerCase())
+    .slice(0, 4);
+  // Explain anchors are tidied, not refused (see `normalizeConceptAnchors`),
+  // and then reconciled with THIS item's ask: the ask must name the thing being
+  // explained ("what does the EQUAL sign tell us?"), so an anchor that is a
+  // word of that name ("equal") is in every ask by construction and would fail
+  // the leak gate on every item — the fresh draw `…i08t` shipped 0/6 twice on
+  // exactly that. An anchor the ask contains is no example the judge needs
+  // (the judge is told words from the ask are not the test), so it is dropped;
+  // a PRIMARY the ask contains hands over to the first ask-safe alternate. A
+  // stamped set may therefore ride as a SUBSET on some items —
+  // `hasConceptCoverage` checks the subset, never byte-equality.
+  const reconciled = mode === 'explain_concept'
+    ? reconcileConceptAnchors(expectedAnswer, normalizeConceptAnchors(expectedAnswer, offered, stimulusText), ask)
+    : { primary: expectedAnswer, alternates: offered };
+  const alternates = reconciled.alternates;
+  if (!reconciled.primary) return null;
+
+  const stimulusEmoji = str(raw.stimulusEmoji).slice(0, 8);
+  // 'objects' needs something to draw; without an emoji the mode has no
+  // stimulus at all, so fall back to a neutral counter rather than a blank board.
+  const emoji = mode === 'count_and_say' && !stimulusEmoji ? '🔵' : stimulusEmoji;
+
+  // How the stimulus APPEARS. say_answer varies three ways: a picture, printed
+  // text, or nothing at all — and the last is pedagogy, not layout. Showing the
+  // word during a sound-manipulation task turns an auditory skill into a visual
+  // one. explain_concept reuses the picture branch only: its instance is
+  // printed or pictured, never withheld (the child explains what they SEE).
+  const listenOnly = mode === 'say_answer' && raw.printStimulus === false && !emoji;
+  const stimulusKind = mode === 'say_answer'
+    ? listenOnly ? 'none' : emoji ? 'emoji' : 'text'
+    : mode === 'explain_concept'
+      ? emoji ? 'emoji' : 'text'
+      : shape.stimulusKind;
+  const pair = mode === 'compare_choice';
+  const explain = mode === 'explain_concept';
+
+  return {
+    id: `dsp-${index + 1}`,
+    mode,
+    action: mode,
+    answerKind: 'voice',
+    responseClass,
+    stimulusKind,
+    answerSource: shape.answerSource,
+    stimulusText,
+    stimulusEmoji: emoji,
+    ...(pair ? { stimulusText2, stimulusEmoji2, choices: [...menu] } : {}),
+    ...(explain ? { conceptStatement: concept?.conceptStatement ?? str(raw.conceptStatement) } : {}),
+    stimulusCount,
+    ask,
+    // Code-owned, per MODE — the model wrote filler here on the first live run.
+    howToPlay: HOW_TO_PLAY[mode],
+    expectedAnswer: reconciled.primary,
+    alternates,
+    acceptRule: str(raw.acceptRule),
+    signatureError: str(raw.signatureError),
+    correctionBody: str(raw.correctionBody) || `The answer is ${expectedAnswer}.`,
+  };
+};
+
+/** Drop every item that leaks its own answer, prints a count, asks a
+ *  question with no problem in it (an ask that never says its stimulus — run
+ *  436dcb5616cb), contradicts its own printed fact ("3 + 2 → six"), offers a
+ *  narrowed / unspeakable choice menu ("longer or heavier?" out of four), or
+ *  hands the judge a malformed concept (no sentence, an anchor that echoes the
+ *  instance, the concept inside the ask). All are content-contract refusals;
+ *  logged by id so the tester shows what was dropped. */
+export const gateSpokenItems = (items: SpokenPracticeItem[]): {
+  kept: SpokenPracticeItem[];
+  dropped: string[];
+  /** WHY each dropped item dropped — the field a regeneration must fix. The
+   *  second explain pilot lost 5 of 6 pattern items to code gates with only ids
+   *  in the log, which is a finding nobody can act on. */
+  reasons: Record<string, string[]>;
+} => {
+  const reasons: Record<string, string[]> = {};
+  const flag = (id: string, why: string) => { (reasons[id] ??= []).push(why); };
+  for (const leak of findAnswerLeaks(items)) flag(leak.itemId, `leak: "${leak.answer}" in ${leak.field}`);
+  for (const id of findPrintedNumerals(items)) flag(id, 'printed numeral in objects stimulus');
+  for (const u of findUnspokenStimulus(items)) flag(u.itemId, `ask never says: ${u.missing.join(', ')}`);
+  for (const m of findArithmeticMismatches(items)) flag(m.itemId, `fact says ${m.computed}, item says ${m.claimed}`);
+  for (const d of findChoiceMenuDefects(items)) flag(d.itemId, `menu ${d.reason}: ${d.detail.join(', ')}`);
+  for (const d of findConceptDefects(items)) flag(d.itemId, `concept ${d.reason}: ${d.detail.join(', ')}`);
+  const bad = new Set(Object.keys(reasons));
+  return {
+    kept: items.filter((item) => !bad.has(item.id)),
+    dropped: Array.from(bad),
+    reasons,
+  };
+};
 
 // ── Cues — the DISTAR skeleton, code-owned ──────────────────────────────────
 
@@ -547,6 +948,15 @@ export function findUnspokenStimulus(items: readonly SpokenPracticeItem[]): Unsp
  * item: the answer, its alternates, the two generated judging clauses, and the
  * two verdict branch lines.
  */
+/**
+ * The turn stated as a FACT, never an order. "Then wait for the learner." is
+ * the exact imperative shape `findPerformedStageDirections` flags — ten-frame's
+ * tutor wrapped it in an invented bracket tag and read "[WAIT silently]" to a
+ * child — and this pack carried it from birth because nothing ran
+ * `checkPackGates` over it until the DI drive adapter arrived (2026-09-07).
+ */
+const WAIT_FACT = 'You then stay silent while the learner answers. ';
+
 const judgingContract = (item: SpokenPracticeItem): string => {
   const accept = item.alternates.length
     ? `Also accept: ${item.alternates.map((a) => `"${a}"`).join(', ')}. `
@@ -560,10 +970,61 @@ const judgingContract = (item: SpokenPracticeItem): string => {
     ? `The learner is choosing one word from: ${item.choices.map((c) => `"${c}"`).join(', ')}. `
       + 'Judge only which of those words they said; anything else is not an answer to this question. '
     : '';
+  if (item.mode === 'explain_concept') return explainJudgingContract(item, rule, miss);
   return (
-    'Then wait for the learner. '
+    WAIT_FACT
     + `${menu}The correct answer is "${item.expectedAnswer}". ${accept}${rule}${miss}`
     + `If the answer is right, say exactly: "Yes, ${item.expectedAnswer}." `
+    + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${item.ask}"`
+  );
+};
+
+/** "The equal sign means…" → "the equal sign means…", so "Yes, the equal sign
+ *  means…" reads as one sentence; a trailing period is guaranteed. */
+export const conceptAffirmForm = (concept: string): string => {
+  const trimmed = concept.trim().replace(/[.!?]+$/, '');
+  return `${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}.`;
+};
+
+/**
+ * The concept-anchored clause — the only new script surface the mode adds
+ * (handoff §4). Two deliberate departures from the token modes, both benched:
+ *
+ *   - The judge is handed ONE idea and told that WORDS ARE NOT THE TEST. The
+ *     anchors are examples; a child's own phrasing with none of those words
+ *     counts, and the anchor words inside a sentence that means the opposite
+ *     ("they are NOT the same") do not. That last sentence is the whole reason
+ *     the class exists — it is the bucket a word-matching judge fails.
+ *   - The AFFIRMATION restates the CONCEPT SENTENCE, not `expectedAnswer`.
+ *     "Yes, both sides the same." is a clipped echo of a token; "Yes, the equal
+ *     sign means both sides have the same amount." is the DISTAR firm-up.
+ *
+ * Code-owned, like the menu clause: the refusals that belong to the CLASS
+ * (echo, the answer instead of the meaning, the name of the thing on screen, a
+ * turn with no idea in it) cannot be left to a generated `signatureError` to
+ * remember — that clause adds the SKILL's own adjacent misconception on top.
+ *
+ * NO MODEL IN THE ASK, at any tier. The re-teach lives in the correction, which
+ * is already model-then-re-elicit; modeling the concept before the ask would
+ * put the answer in the ask (the leak `findConceptDefects` refuses).
+ */
+const explainJudgingContract = (item: SpokenPracticeItem, rule: string, miss: string): string => {
+  const concept = item.conceptStatement?.trim() ?? '';
+  const examples = [item.expectedAnswer, ...item.alternates]
+    .map((a) => a.trim()).filter(Boolean).map((a) => `"${a}"`).join(', ');
+  return (
+    WAIT_FACT
+    + 'The learner is explaining in their own words, and there is no single right wording. '
+    + `The idea they must express: "${concept}" `
+    + `Any wording that means that counts — for example ${examples} — and so does a child's own `
+    + 'phrasing that uses none of those words, as long as the idea is there. Judge the MEANING '
+    + 'of what you heard, not the words. '
+    + 'Those same words inside a sentence that means the OPPOSITE, or a different idea, are wrong. '
+    + `${rule}${miss}`
+    + `The stimulus read back ("${item.stimulusText}") is NOT an explanation, and neither is a `
+    + 'bare number or the name of what is on screen. A turn with no idea in it, or "I don\'t '
+    + 'know", is wrong — run the correction. '
+    + `If the idea is right, say exactly: "Yes, ${conceptAffirmForm(concept)}" `
     + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${item.ask}"`
   );
 };
@@ -651,3 +1112,27 @@ export const contextFor = (item: SpokenPracticeItem): Record<string, string> => 
   }
   return state;
 };
+
+// ── The cue surface — exported once, spread by the component and the harness ─
+
+/**
+ * Every field of the pack that can reach the tutor (`JudgedCueSurface`). The
+ * component spreads this and adds only what the screen does with the verdict;
+ * the DI drive adapter (`service/qa/di/diDrivePlan.ts`) names it so the
+ * headless harness replays production strings rather than a Python replica —
+ * a second consumer is exactly why a port exports its surface once.
+ */
+export const diSpokenPracticePackBase = (
+  items: SpokenPracticeItem[],
+): JudgedCueSurface<SpokenPracticeItem> => ({
+  primitiveType: 'di-spoken-practice',
+  activityLine: 'live direct instruction spoken practice',
+  items,
+  itemCue,
+  moveOnCue,
+  completeCue,
+  // Returns '' on decode items; the runner sends nothing and the button is
+  // hidden, so the tutor can never read the child their own task.
+  pronounceCue: (item) => pronounceCue(item),
+  contextFor,
+});

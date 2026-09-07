@@ -43,31 +43,29 @@ import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
 import { createDiscretePool } from '../math/numberPoolService';
 import {
   planSpokenPractice, modeForSpokenPlan, buildPlannedSpokenItems, hasPlannedCoverage,
-  spokenChoiceMenu, hasChoiceCoverage,
+  spokenChoiceMenu, hasChoiceCoverage, spokenConceptPlan, hasConceptCoverage,
 } from './spokenPracticePlan';
 import type { DiSpokenPracticeData } from '../../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
 import {
-  deriveResponseClass,
-  findAnswerLeaks,
-  findArithmeticMismatches,
-  findChoiceMenuDefects,
-  findPrintedNumerals,
-  findUnspokenStimulus,
-  normalizeSpokenAnswer,
-  numberWordFor,
-  HOW_TO_PLAY,
-  MODE_SHAPE,
+  buildSpokenItem,
+  CONCEPT_ANCHOR_MAX_WORDS,
+  CONCEPT_STATEMENT_MAX_WORDS,
+  CONCEPT_STATEMENT_MIN_WORDS,
+  gateSpokenItems,
+  MAX_COUNT,
+  MIN_COUNT,
+  type RawSpokenItem,
   type SpokenPracticeItem,
   type SpokenPracticeMode,
 } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 
+/** Task interpretation and review are semantic judgments (spokenPracticePlan's
+ *  ruling); the explain review below is the same authority one layer down. */
+const REVIEW_MODEL = 'gemini-flash-latest';
+
 const DEFAULT_ITEM_COUNT = 4;
 const MAX_ITEM_COUNT = 6;
 const MIN_ITEM_COUNT = 3;
-/** Counting stays inside the benched number-word class and floors at 1 —
- *  "zero"/"none" spoken is unbenched (di-shapes rung 2 residual). */
-const MIN_COUNT = 1;
-const MAX_COUNT = 10;
 
 // ── Eval-mode routing (Fork A discipline: code stamps the mode) ──────────────
 
@@ -98,6 +96,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + 'word menu on every item, so the menu is not a hint — knowing which word fits the pair is '
       + 'the skill. Use it when the objective names the words the child must produce.',
     schemaDescription: "'compare_choice' (say which word describes a pair)",
+  },
+  explain_concept: {
+    promptDoc:
+      '"explain_concept": the child sees ONE instance (an equation, a pattern, a ten rod) and says '
+      + 'IN THEIR OWN WORDS what it means, why it is so, or what rule governs it. The answer is an '
+      + 'IDEA with many correct wordings, judged on meaning; the ask never states the concept. Use it '
+      + 'for explain / describe / tell-why objectives whose answer is a short proposition.',
+    schemaDescription: "'explain_concept' (say in your own words what it means or what the rule is)",
   },
 };
 
@@ -164,7 +170,16 @@ const itemSchema: Schema = {
       type: Type.STRING,
       description:
         'What the child should SAY — 1 to 3 words, sayable by a five-year-old. For count_and_say '
-        + 'leave this empty; the count decides it.',
+        + 'leave this empty; the count decides it. explain_concept: the PRIMARY ANCHOR — the shortest '
+        + `correct wording of the idea, 1-${CONCEPT_ANCHOR_MAX_WORDS} words ("plus two", "both sides the same"); an example `
+        + 'for the judge, never a required wording.',
+    },
+    conceptStatement: {
+      type: Type.STRING,
+      description:
+        `explain_concept ONLY: the idea in ONE sentence, ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS} words, true for THIS instance `
+        + '("This pattern grows by adding two each time."). The judge holds it, and speaks it back as '
+        + 'the affirmation. Empty string for every other mode.',
     },
     alsoAccept: {
       type: Type.STRING,
@@ -221,142 +236,6 @@ const buildSchema = (count: number): Schema => ({
   required: ['title', 'items'],
 });
 
-// ── Raw → item ──────────────────────────────────────────────────────────────
-
-interface RawItem {
-  stimulusText?: unknown;
-  stimulusEmoji?: unknown;
-  stimulusText2?: unknown;
-  stimulusEmoji2?: unknown;
-  stimulusCount?: unknown;
-  printStimulus?: unknown;
-  ask?: unknown;
-  expectedAnswer?: unknown;
-  alsoAccept?: unknown;
-  acceptRule?: unknown;
-  signatureError?: unknown;
-  correctionBody?: unknown;
-}
-
-const str = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
-
-const clampCount = (value: unknown): number => {
-  const n = typeof value === 'number' ? Math.round(value) : Number.parseInt(String(value ?? ''), 10);
-  if (!Number.isFinite(n)) return MIN_COUNT;
-  return Math.max(MIN_COUNT, Math.min(MAX_COUNT, n));
-};
-
-/**
- * Build one item, or null if it cannot ship. Both refusals are gates, not
- * fallbacks: a class that cannot be placed is standing gate 1, and a missing
- * ask/answer is an item with nothing to judge.
- */
-const buildItem = (
-  raw: RawItem,
-  index: number,
-  mode: SpokenPracticeMode,
-  menu: readonly string[] = [],
-): SpokenPracticeItem | null => {
-  const shape = MODE_SHAPE[mode];
-  const stimulusText = str(raw.stimulusText);
-  const ask = str(raw.ask);
-  if (!ask || !stimulusText) return null;
-  // A pair with one thing in it is not a comparison, and a pair with nothing
-  // drawn is two names a pre-reader cannot hold — both are missing halves of
-  // the stimulus, refused here rather than rendered as a blank side.
-  const stimulusText2 = str(raw.stimulusText2);
-  const stimulusEmoji2 = str(raw.stimulusEmoji2).slice(0, 8);
-  if (mode === 'compare_choice'
-    && (!stimulusText2 || !str(raw.stimulusEmoji) || !stimulusEmoji2)) return null;
-
-  // count_and_say: the COUNT is the truth and the answer is computed from it.
-  // Trusting a model-written number word here is how "seven" ends up under six
-  // bears (LLM emits the window, code builds the answer).
-  const stimulusCount = mode === 'count_and_say' ? clampCount(raw.stimulusCount) : 0;
-  const spokenAnswer = normalizeSpokenAnswer(str(raw.expectedAnswer));
-  // The menu is the objective's OWN wording, so a case- or inflection-drifted
-  // answer is snapped back to it: the cue reads the menu and the answer aloud
-  // in the same breath, and they must be the same word when it does.
-  const expectedAnswer = mode === 'count_and_say'
-    ? numberWordFor(stimulusCount)
-    : menu.find((c) => c.toLowerCase() === spokenAnswer.toLowerCase()) ?? spokenAnswer;
-  if (!expectedAnswer) return null;
-  // Reading preserves the printed utterance, including supported numeral → word
-  // normalization. A symbol NAME is recall and cannot be relabeled as decoding.
-  if (mode === 'read_aloud'
-    && normalizeSpokenAnswer(stimulusText).toLowerCase() !== expectedAnswer.toLowerCase()) return null;
-
-  const responseClass = deriveResponseClass(mode, expectedAnswer, stimulusText);
-  if (!responseClass) return null;
-
-  const alternates = str(raw.alsoAccept)
-    .split(',')
-    .map((a) => normalizeSpokenAnswer(a))
-    .filter(Boolean)
-    // An "alternate" identical to the answer adds noise to the contract — and
-    // after normalisation the common case IS identical, because the model
-    // routinely offers the digit and the word as if they were two answers.
-    .filter((a) => a.toLowerCase() !== expectedAnswer.toLowerCase())
-    .slice(0, 4);
-
-  const stimulusEmoji = str(raw.stimulusEmoji).slice(0, 8);
-  // 'objects' needs something to draw; without an emoji the mode has no
-  // stimulus at all, so fall back to a neutral counter rather than a blank board.
-  const emoji = mode === 'count_and_say' && !stimulusEmoji ? '🔵' : stimulusEmoji;
-
-  // How the stimulus APPEARS. Only say_answer varies: a picture, printed text,
-  // or nothing at all — and the last is pedagogy, not layout. Showing the word
-  // during a sound-manipulation task turns an auditory skill into a visual one.
-  const listenOnly = mode === 'say_answer' && raw.printStimulus === false && !emoji;
-  const stimulusKind = mode !== 'say_answer'
-    ? shape.stimulusKind
-    : listenOnly ? 'none' : emoji ? 'emoji' : 'text';
-  const pair = mode === 'compare_choice';
-
-  return {
-    id: `dsp-${index + 1}`,
-    mode,
-    action: mode,
-    answerKind: 'voice',
-    responseClass,
-    stimulusKind,
-    answerSource: shape.answerSource,
-    stimulusText,
-    stimulusEmoji: emoji,
-    ...(pair ? { stimulusText2, stimulusEmoji2, choices: [...menu] } : {}),
-    stimulusCount,
-    ask,
-    // Code-owned, per MODE — the model wrote filler here on the first live run.
-    howToPlay: HOW_TO_PLAY[mode],
-    expectedAnswer,
-    alternates,
-    acceptRule: str(raw.acceptRule),
-    signatureError: str(raw.signatureError),
-    correctionBody: str(raw.correctionBody) || `The answer is ${expectedAnswer}.`,
-  };
-};
-
-/** Drop every item that leaks its own answer, prints a count, asks a
- *  question with no problem in it (an ask that never says its stimulus — run
- *  436dcb5616cb), contradicts its own printed fact ("3 + 2 → six"), or offers a
- *  narrowed / unspeakable choice menu ("longer or heavier?" out of four). All
- *  are content-contract refusals; logged by id so the tester shows what was
- *  dropped. */
-const dropLeakingItems = (items: SpokenPracticeItem[]): {
-  kept: SpokenPracticeItem[];
-  dropped: string[];
-} => {
-  const bad = new Set(findAnswerLeaks(items).map((leak) => leak.itemId));
-  for (const id of findPrintedNumerals(items)) bad.add(id);
-  for (const unspoken of findUnspokenStimulus(items)) bad.add(unspoken.itemId);
-  for (const mismatch of findArithmeticMismatches(items)) bad.add(mismatch.itemId);
-  for (const defect of findChoiceMenuDefects(items)) bad.add(defect.itemId);
-  return {
-    kept: items.filter((item) => !bad.has(item.id)),
-    dropped: Array.from(bad),
-  };
-};
-
 // ── Number seeds — code-owned entropy (numberPoolService doctrine) ───────────
 
 /**
@@ -411,6 +290,7 @@ const buildPrompt = (
   intent: string | undefined,
   seedSection: string,
   menu: readonly string[],
+  concept?: { conceptStatement: string; anchors: readonly string[] },
 ): string => `Write ${count} spoken Direct Instruction practice items for a ${gradeLevel} learner.
 
 TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}
@@ -438,6 +318,8 @@ THE RULES THAT MATTER MOST:
 
 4. THE ANSWER IS 1-3 SHORT SPOKEN WORDS. If the honest answer to your ask is a sentence or an
    open-ended list, the item does not belong in this format — write a different item.
+   (explain_concept is the one exception: the CHILD may say up to ten words, and your
+   "expectedAnswer"/"alsoAccept" are short ANCHOR wordings of the idea, not the required answer.)
 
 5. "acceptRule" AND "signatureError" ARE THE HARD PART, AND THEY ARE WHY THIS FORMAT WORKS.
    Think about how a child who HAS the skill might sound wrong, and how a child who LACKS it
@@ -457,7 +339,38 @@ THE RULES THAT MATTER MOST:
 6. THE CORRECTION RE-TEACHES, it does not scold, and it does not end with a question (the
    application re-asks by itself). Never begin it with "Yes" or "My turn".
 
-${mode === 'compare_choice'
+${mode === 'explain_concept'
+    ? `EXPLAINING SPECIFICS: every item shows ONE instance and asks the child to say what it means or what
+rule it follows, in their own words. This is the one mode where the answer is an IDEA, not a token.
+- "stimulusText" is the INSTANCE the child looks at — an equation ("3 + 2 = 5"), a pattern ("2, 4, 6, 8",
+  "red, blue, red, blue"), a base-ten picture. ${count} items means ${count} DIFFERENT instances${concept
+      ? ' of the SAME concept'
+      : ', each with its own rule'}. Vary what is on screen; a concept asked over the same equation twice is recall.
+  If the objective names a KIND of thing (a REPEATING pattern, a GROWING pattern, an equation with two
+  sides), every instance is that kind and never its sibling — a growing pattern under a repeating-pattern
+  objective is rejected by the reviewer, and so is a shrinking one under "repeating or growing".
+- Your "ask" must SAY the instance out loud ("Three plus two equals five. What does the equal sign tell
+  us?" / "Two, four, six, eight. What is the rule of this pattern?") and then ask the bare question.
+  ⚠ The ask must NOT state, hint, or half-state the idea, and must NOT contain any anchor wording. Never
+  model the concept before asking — the re-teach lives in "correctionBody" and nowhere else.
+${concept
+      ? `- The concept and its anchors are FIXED for this session and stamped in by the application: the idea is
+  "${concept.conceptStatement}" and the anchors are ${concept.anchors.map((a) => `"${a}"`).join(', ')}. Leave
+  "expectedAnswer", "alsoAccept" and "conceptStatement" EMPTY — they are ignored — and write ${count} different
+  instances this idea is true of.`
+      : `- "conceptStatement" is the idea for THIS instance in ONE sentence, ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS} words, TRUE and
+  grade-appropriate ("This pattern grows by adding two each time."). "expectedAnswer" is its shortest correct
+  wording (1-${CONCEPT_ANCHOR_MAX_WORDS} words: "plus two") and "alsoAccept" holds 1-2 more short wordings ("add two, counting
+  by twos"). Every anchor must name the SPECIFIC unit or amount of THIS instance ("plus two", "red then
+  blue") — never a generic that fits any pattern ("it repeats", "alternating", "it goes up"); a generic is
+  half an answer and the reviewer rejects it. None of them may be the instance read back.`}
+- "acceptRule" names the wordings that count even without the anchor words ("any words that say the two
+  sides match or are even count"). "signatureError" names the TRUE-BUT-NOT-AN-EXPLANATION answers: the
+  result ("saying the sum, five, is NOT an explanation"), the next term, the thing's name, and the
+  documented misconception ("saying = means the answer comes next is NOT correct").
+- "correctionBody" states the idea plainly, then shows it on this instance. One or two sentences.
+- Leave "printStimulus" and "stimulusCount" alone; give "stimulusEmoji" only when a picture IS the instance.`
+    : mode === 'compare_choice'
     ? `COMPARING SPECIFICS: every item shows TWO things and asks which word describes them. The word menu is
 FIXED and the same on every item: ${menu.join(', ')}. The child says exactly one of those words.
 - Put the FIRST thing in "stimulusText"/"stimulusEmoji" and the SECOND in "stimulusText2"/"stimulusEmoji2".
@@ -494,6 +407,54 @@ give the emoji and keep "stimulusText" to the thing pictured — then the ask as
 without naming it.`}${seedSection}
 
 Return the JSON only.`;
+
+// ── Explain review — the semantic half of the concept gate ──────────────────
+
+/**
+ * ONE flash-latest call per explain session, and the only place an anchor's
+ * MEANING is checked. `findConceptDefects` (script module) proves an item's
+ * SHAPE; nothing in the sources grounds a paraphrase, so whether "both sides
+ * the same" is what = means for THIS stimulus is a semantic judgment — the
+ * same authority split as `planSpokenPractice`'s plan + review, one layer down.
+ * A rejected item is dropped by id; a rejected SESSION (instances do not vary)
+ * empties it, and the retry loop draws again once. Two failures ship `items: []`
+ * — pedagogy over runnability.
+ */
+const reviewConceptItems = async (
+  items: SpokenPracticeItem[],
+  context: { topic: string; gradeLevel: string; objectiveText?: string; intent?: string },
+): Promise<{ kept: SpokenPracticeItem[]; rejected: string[]; reason: string }> => {
+  if (!items.length) return { kept: [], rejected: [], reason: '' };
+  const response = await ai.models.generateContent({
+    model: REVIEW_MODEL,
+    contents: `Independently check these spoken EXPLAIN items against the objective.
+CONTEXT: ${JSON.stringify(context)}
+ITEMS: ${JSON.stringify(items.map((i) => ({
+      id: i.id, instance: i.stimulusText, ask: i.ask, conceptStatement: i.conceptStatement,
+      anchors: [i.expectedAnswer, ...i.alternates], acceptRule: i.acceptRule, signatureError: i.signatureError,
+    })))}
+For EACH item: is conceptStatement a TRUE, grade-appropriate statement of what the objective asks the
+child to explain, for THIS instance? Does every anchor mean the same thing as the concept sentence?
+Would a child who says only an anchor have shown the understanding the objective names? Does the ask
+give the idea away? Reject the ITEM (by id) on any no. Reject the SESSION only if two items show the
+SAME thing on screen (the same equation, the same pattern) — different equations that happen to share
+a total ("3 + 2 = 5" and "1 + 4 = 5") are different instances and are fine.
+Return rejectedIds (empty if all pass), sessionValid, and a short reason.`,
+    config: {
+      responseMimeType: 'application/json', maxOutputTokens: 8192, httpOptions: { timeout: 45000 },
+      responseSchema: { type: Type.OBJECT, properties: {
+        rejectedIds: { type: Type.ARRAY, items: { type: Type.STRING } },
+        sessionValid: { type: Type.BOOLEAN }, reason: { type: Type.STRING },
+      }, required: ['rejectedIds', 'sessionValid', 'reason'] },
+    },
+  });
+  const verdict = JSON.parse(response.text || '{}') as { rejectedIds?: unknown; sessionValid?: unknown; reason?: unknown };
+  const reason = typeof verdict.reason === 'string' ? verdict.reason : '';
+  if (verdict.sessionValid !== true) return { kept: [], rejected: items.map((i) => i.id), reason };
+  const rejected = new Set(Array.isArray(verdict.rejectedIds)
+    ? verdict.rejectedIds.filter((id): id is string => typeof id === 'string') : []);
+  return { kept: items.filter((i) => !rejected.has(i.id)), rejected: Array.from(rejected), reason };
+};
 
 // ── Generate ────────────────────────────────────────────────────────────────
 
@@ -575,12 +536,15 @@ export const generateDiSpokenPractice = async (
   // planned task allocates its targets directly, with no second model call.
   const menu = spokenChoiceMenu(plan);
   if (menu.length) count = Math.min(MAX_ITEM_COUNT, Math.max(count, menu.length));
+  // A named-concept explain plan likewise hands over a session-wide SLOT (the
+  // sentence + anchors) that code stamps into every generated instance.
+  const concept = spokenConceptPlan(plan);
 
-  if (plan.targets.length && !menu.length) {
+  if (plan.targets.length && !menu.length && !concept) {
     count = Math.max(count, plan.targets.length);
     // Plans have a six-target ceiling. Every required target is allocated before
     // repetition, and every dependent field comes from the same checked mapping.
-    const result = dropLeakingItems(buildPlannedSpokenItems(plan, count));
+    const result = gateSpokenItems(buildPlannedSpokenItems(plan, count));
     if (!hasPlannedCoverage(plan, result.kept, count)) {
       console.error('[DiSpokenPractice] planned session incomplete after gates:', result.dropped);
       return empty();
@@ -599,33 +563,64 @@ export const generateDiSpokenPractice = async (
   let items: SpokenPracticeItem[] = [];
   let dropped: string[] = [];
   let seeds: number[] = [];
+  // An explain session is gated twice (shape, then a semantic review), so it
+  // is asked for spare capacity and shipped at `count` — "ask 5-8, ship 5":
+  // a distinctness/meaning guard with no headroom empties the session on two
+  // rejected items (the first pilot: 3/6 fresh draws shipped nothing). The
+  // survivors POOL across the two attempts, deduped by instance, instead of
+  // each attempt replacing the last.
+  const explain = mode === 'explain_concept';
+  const askCount = explain ? Math.min(MAX_ITEM_COUNT, count + 2) : count;
+  let pool: SpokenPracticeItem[] = [];
 
   // One retry: a truncated or leaky first pass is common enough on flash-lite
   // that a second ask is cheaper than shipping a short session. The seed pool
   // re-rolls per attempt, so a retry escapes a degenerate first draw too.
   const menuCovered = () => !menu.length || hasChoiceCoverage(menu, items);
-  for (let attempt = 0; attempt < 2 && (items.length < MIN_ITEM_COUNT || !menuCovered()); attempt++) {
+  const conceptCovered = () => !concept || hasConceptCoverage(concept, items);
+  for (let attempt = 0; attempt < 2 && (items.length < MIN_ITEM_COUNT || !menuCovered() || !conceptCovered()); attempt++) {
     try {
       // A menu session is about objects, never numbers — the seed pool would
-      // only invite arithmetic into a measurement lesson.
-      const seeded = menu.length ? { section: '', seeds: [] } : buildSeedSection(mode);
+      // only invite arithmetic into a measurement lesson. An explain session's
+      // child never SAYS a number, so the seeds' "target number" instruction
+      // has nothing to attach to there either.
+      const seeded = menu.length || mode === 'explain_concept' ? { section: '', seeds: [] } : buildSeedSection(mode);
       seeds = seeded.seeds;
       const parsed = await callModel(
-        buildPrompt(topic, gradeLevel, mode, count,
-          [config?.objectiveText, intent].filter(Boolean).join(' — ') || undefined, seeded.section, menu),
-        count,
+        buildPrompt(topic, gradeLevel, mode, askCount,
+          [config?.objectiveText, intent].filter(Boolean).join(' — ') || undefined, seeded.section, menu, concept),
+        askCount,
       );
       if (typeof parsed.title === 'string' && parsed.title.trim()) title = parsed.title.trim();
       if (typeof parsed.description === 'string' && parsed.description.trim()) {
         description = parsed.description.trim();
       }
-      const raw = Array.isArray(parsed.items) ? (parsed.items as RawItem[]) : [];
+      const raw = Array.isArray(parsed.items) ? (parsed.items as RawSpokenItem[]) : [];
       const built = raw
-        .map((item, i) => buildItem(item, i, mode, menu))
+        .map((item, i) => buildSpokenItem(item, i, mode, menu, concept))
         .filter((item): item is SpokenPracticeItem => item !== null);
-      const result = dropLeakingItems(built);
+      const result = gateSpokenItems(built);
       items = result.kept;
       dropped = result.dropped;
+      if (dropped.length) console.warn('[DiSpokenPractice] gate drops:', result.reasons);
+      // The semantic half of the concept gate — shape passed, now meaning.
+      if (explain) {
+        const review = items.length
+          ? await reviewConceptItems(items, { topic, gradeLevel, objectiveText: config?.objectiveText, intent })
+          : { kept: [], rejected: [], reason: '' };
+        if (review.rejected.length) {
+          console.warn(`[DiSpokenPractice] explain review rejected ${review.rejected.join(', ')}: ${review.reason}`);
+          dropped = [...dropped, ...review.rejected];
+        }
+        const seen = new Set(pool.map((i) => i.stimulusText.trim().toLowerCase()));
+        for (const item of review.kept) {
+          const key = item.stimulusText.trim().toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          pool.push(item);
+        }
+        items = pool.slice(0, count).map((item, i) => ({ ...item, id: `dsp-${i + 1}` }));
+      }
       if (items.length > 0 && attempt > 0) {
         console.warn('[DiSpokenPractice] first attempt yielded no usable items; retry succeeded');
       }
@@ -641,6 +636,12 @@ export const generateDiSpokenPractice = async (
     const missing = menu.filter((word) => !items.some(
       (i) => i.expectedAnswer.trim().toLowerCase() === word.trim().toLowerCase()));
     console.error(`[DiSpokenPractice] menu incomplete — never asked: ${missing.join(', ')}`);
+    items = [];
+  }
+  // A named concept asked over the same instance twice is recall of a sentence;
+  // a session whose items lost the planned sentence is not the plan.
+  if (concept && items.length && !hasConceptCoverage(concept, items)) {
+    console.error('[DiSpokenPractice] concept session incomplete — instances repeat or the planned anchors drifted');
     items = [];
   }
 
@@ -673,6 +674,7 @@ export const generateDiSpokenPractice = async (
     droppedForLeak: dropped.length,
     droppedIds: dropped,
     menu: menu.join(',') || undefined,
+    concept: concept?.conceptStatement ?? (mode === 'explain_concept' ? 'per-item' : undefined),
     withAcceptRule: items.filter((i) => i.acceptRule).length,
     withSignatureError: items.filter((i) => i.signatureError).length,
     responseClasses: Array.from(new Set(items.map((i) => i.responseClass))),

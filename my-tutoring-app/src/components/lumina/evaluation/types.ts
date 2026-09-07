@@ -3519,7 +3519,7 @@ export interface DiSentenceReadingMetrics extends BasePrimitiveMetrics {
  */
 export interface DiSpokenPracticeMetrics extends BasePrimitiveMetrics {
   type: 'di-spoken-practice';
-  challengeType: 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice';
+  challengeType: 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice' | 'explain_concept';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts (corrections + 1 each)
@@ -3527,6 +3527,57 @@ export interface DiSpokenPracticeMetrics extends BasePrimitiveMetrics {
   hintsViewed: number;            // tap-to-hear taps
   overallAccuracy: number;        // 0-100, average per-challenge score
   averageAttemptsPerChallenge: number;
+}
+
+/**
+ * The talk-through subtraction pack (the first "DI for Older Learners" pack,
+ * brief 2026-09-07). A CHALLENGE here is one judged STEP — a column decision
+ * or a column difference — not a whole problem, so `totalChallenges` counts
+ * steps and `problemCount` says how many problems they made up. The regroup
+ * split is the pack's diagnostic signal: a child who subtracts every column
+ * right and regroups every column wrong is the exact profile this pack exists
+ * to find.
+ */
+export interface DiWorkedProcedureMetrics extends BasePrimitiveMetrics {
+  type: 'di-worked-procedure';
+  challengeType: 'subtract_no_regroup' | 'subtract_regroup';
+  totalChallenges: number;        // judged steps
+  problemCount: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;            // hear-the-problem taps
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  regroupStepsTotal: number;
+  regroupStepsCorrect: number;
+  /** Silent per-step response time; no timer is ever shown. */
+  meanResponseMs: number | null;
+}
+
+/**
+ * The rule-and-case deduction pack (the second "DI for Older Learners" pack,
+ * brief 2026-09-07 concept 3). A CHALLENGE is one judged CASE — a conclusion,
+ * a rule-out, or a can't-tell — and `ruleCount` says how many rules they were
+ * drawn from. The cannot_tell split is the pack's diagnostic signal: a child
+ * who concludes and denies every case right and affirms the consequent every
+ * time is the exact profile this pack exists to find.
+ */
+export interface DiDeductionMetrics extends BasePrimitiveMetrics {
+  type: 'di-deduction';
+  challengeType: 'conclude' | 'deny' | 'cannot_tell';
+  totalChallenges: number;        // judged cases
+  ruleCount: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;            // hear-the-rule taps
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  cannotTellTotal: number;
+  cannotTellCorrect: number;
+  /** Silent per-case response time; no timer is ever shown. */
+  meanResponseMs: number | null;
 }
 
 // -----------------------------------------------------------------------------
@@ -3775,6 +3826,8 @@ export type PrimitiveMetrics =
   | DiShapesMetrics
   | DiSentenceReadingMetrics
   | DiSpokenPracticeMetrics
+  | DiWorkedProcedureMetrics
+  | DiDeductionMetrics
   // History
   | CauseEffectChainMetrics
   | EraExplorerMetrics;

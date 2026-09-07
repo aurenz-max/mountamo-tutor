@@ -114,6 +114,9 @@ export function DiSpokenPracticeScriptPanel({ items }: Props) {
               )}
               <Row label="How to play" tone="text-slate-400">{item.howToPlay || '—'}</Row>
               <Row label="Ask" tone="text-cyan-200">{item.ask}</Row>
+              {item.conceptStatement && (
+                <Row label="Concept" tone="text-emerald-200">{item.conceptStatement}</Row>
+              )}
               <Row label="Answer" tone="text-emerald-300">
                 &ldquo;{item.expectedAnswer}&rdquo;
                 {item.alternates.length > 0 && (

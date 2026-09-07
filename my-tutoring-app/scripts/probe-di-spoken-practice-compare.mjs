@@ -95,13 +95,19 @@ try {
     }
   }
 
-  // ── REFUSAL: the out-of-scope explain shape must still ship nothing ───────
+  // ── REFUSAL: an explain objective under a compare_choice PIN still ships nothing ──
+  // 2026-09-07: explain_concept now exists (qa/di item 36), so this objective is
+  // no longer out of scope for the PACK — it is out of scope for THIS PIN. The
+  // planner plans explain_concept, the pin says compare_choice, and the conflict
+  // refuses rather than laundering a proposition through a menu. The positive
+  // half (unpinned routing → explain_concept → a full session) lives in
+  // probe-di-spoken-practice-explain.mjs.
   const explain = await generateDiSpokenPractice(
     'understanding the equal sign with balance scales', 'first grade',
     { objectiveText: 'Explain what the equal sign means using the balance scale example',
       intent: 'The child explains in their own words what the equal sign means.',
       targetEvalMode: 'compare_choice' });
-  result('refuses-open-explanation', { data: explain,
+  result('refuses-open-explanation-under-compare-pin', { data: explain,
     checks: { shipsNothing: explain.items.length === 0 } });
 
   evidence.finishedAt = new Date().toISOString();

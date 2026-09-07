@@ -1,0 +1,70 @@
+[1/4] Firebase sign-in…
+[2/4] Generating real content + fetching tutoring block (probe&live)…
+      tier-1 status: warn; scaffold keys: ['taskDescription', 'contextKeys', 'scaffoldingLevels', 'commonStruggles', 'aiDirectives']
+      BENCH: 1 stimulus/stimuli, 14 scored probes
+      ⚠ pack gates: ['item "bench-concept-equal-sign": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-growing-pattern": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-repeating-pattern": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.', 'item "bench-concept-ten-rod": response class "concept_statement" is BLOCKED — BENCH OWED — qa/HANDOFF-di-spoken-practice-explain-2026-09-07.md §5 (qa/di/BACKLOG.md item 36). First caller di-spoken-practice `explain_concept`; the class is refused here until `/tutor-test di-spoken-practice --di-bench` clears it on the conceptStatementBench key.']
+[3/4] Run 1/1: connecting ws://localhost:8000/api/lumina-tutor, driving 24 beats…
+  [ask:bench-concept-growing-pattern] spoke (618280 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:valid-canonical:plus two] spoke (231684 b64 audio bytes) Yes, this pattern grows by adding two each time.
+  [reanchor:bench-concept-growing-pattern:0] spoke (586248 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:valid-canonical:you add two every time] spoke (238120 b64 audio bytes) Yes, this pattern grows by adding two each time.
+  [reanchor:bench-concept-growing-pattern:1] spoke (583688 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:valid-paraphrase:it jumps by two] spoke (227204 b64 audio bytes) Yes, this pattern grows by adding two each time.
+  [reanchor:bench-concept-growing-pattern:2] spoke (580488 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:valid-paraphrase:every number is two more than the one before] spoke (223364 b64 audio bytes) Yes, this pattern grows by adding two each time.
+  [reanchor:bench-concept-growing-pattern:3] spoke (565124 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:valid-childlike:it's like, two more, two more, two more] spoke (224004 b64 audio bytes) Yes, this pattern grows by adding two each time.
+  [reanchor:bench-concept-growing-pattern:4] spoke (562564 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:valid-partial:twos] spoke (1101444 b64 audio bytes) My turn: The rule is add two. Two, add two is four, add two is six, add two is eight. Your…
+  [reanchor:bench-concept-growing-pattern:5] spoke (565764 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:echo:two four six eight] spoke (1120004 b64 audio bytes) My turn: The rule is add two. Two, add two is four, add two is six, add two is eight. Your…
+  [probe:bench-concept-growing-pattern:answer-not-explanation:ten] spoke (1152004 b64 audio bytes) My turn: The rule is add two. Two, add two is four, add two is six, add two is eight. Your…
+  [reanchor:bench-concept-growing-pattern:7] spoke (573444 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:adjacent-concept:it goes up] spoke (1142404 b64 audio bytes) My turn: The rule is add two. Two, add two is four, add two is six, add two is eight. Your…
+  [probe:bench-concept-growing-pattern:adjacent-concept:it counts] spoke (1155844 b64 audio bytes) My turn: The rule is add two. Two, add two is four, add two is six, add two is eight. Your…
+  [reanchor:bench-concept-growing-pattern:9] spoke (583684 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:negated-keyword:it's not plus two, it's plus one] spoke (1152004 b64 audio bytes) My turn: The rule is add two. Two, add two is four, add two is six, add two is eight. Your…
+  [probe:bench-concept-growing-pattern:negated-keyword:you take away two each time] spoke (1150724 b64 audio bytes) My turn: The rule is add two. Two, add two is four, add two is six, add two is eight. Your…
+  [reanchor:bench-concept-growing-pattern:11] spoke (578564 b64 audio bytes) Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this patte…
+  [probe:bench-concept-growing-pattern:off-task:I don't know] spoke (1136004 b64 audio bytes) My turn: The rule is add two. Two, add two is four, add two is six, add two is eight. Your…
+  [probe:bench-concept-growing-pattern:off-task:um] spoke (314884 b64 audio bytes) Two, four, six, eight. What's the rule of this pattern?
+
+==============================================================================
+BENCH: concept_statement via di-spoken-practice - verdicts vs the hand-authored key
+==============================================================================
+  adjacent-concept    2/2  agreed
+  answer-not-explanation  1/1  agreed
+  echo                1/1  agreed
+  negated-keyword     2/2  agreed
+  off-task            1/2  agreed
+  valid-canonical     2/2  agreed
+  valid-childlike     1/1  agreed
+  valid-paraphrase    2/2  agreed
+  valid-partial       0/1  agreed
+------------------------------------------------------------------------------
+  ! 1 probe(s) drew NO VERDICT - the tutor said nothing the reducer
+    could classify. These are LOOP failures, not judge failures, and they
+    make the probes they cover vacuous:
+      bench-concept-growing-pattern/off-task: "um" -> Two, four, six, eight. What's the rule of this pattern?
+
+  OK - ZERO false affirmations in the hard REFUSE buckets.
+
+  . 1 missed valid answer(s) - reported, does NOT block:
+      bench-concept-growing-pattern: "twos" (valid-partial) -> REFUSE
+
+  . 1 SOFT disagreement(s) in valid-partial - recorded, does NOT block:
+      bench-concept-growing-pattern/valid-partial: "twos" -> REFUSE
+
+  VERDICT: PASS - zero false affirmations. `concept_statement` holds through di-spoken-practice on this evidence.
+==============================================================================
+
+[4/4] Report: C:\Users\xbox3\claude web tutor\my-tutoring-app\qa\tutor-reports\di-spoken-practice-live-di-bench-bench-concept-growing-pattern-2026-09-07.md
+  CONFIRMED HIGH [1/1]: di-no-verdict @probe:bench-concept-growing-pattern:off-task:um — answered "um" and the tutor opened with neither sentinel — the loop stalls here: "Two, four, six, eight. What's the rule of this pattern?"
+  CONFIRMED HIGH [1/1]: open-set-probe-vacuous @* — 1 probe(s) drew no classifiable verdict — those trials measured nothing and the bench cannot be read as covering them.
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-growing-pattern:answer-not-explanation:ten — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-growing-pattern:adjacent-concept:it goes up — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-growing-pattern:adjacent-concept:it counts — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-growing-pattern:negated-keyword:it's not plus two, it's plus one — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-growing-pattern:negated-keyword:you take away two each time — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  CONFIRMED WARN [1/1]: di-correction-verbatim-repeat @probe:bench-concept-growing-pattern:off-task:I don't know — the correction is word-for-word the previous one on this item — DISTAR firms by escalating, not by repeating
+  PLUMBING OK: output transcription is flowing (tutor voice observable as text).

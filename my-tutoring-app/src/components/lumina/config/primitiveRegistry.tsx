@@ -181,6 +181,8 @@ import DiMathFacts from '../primitives/visual-primitives/direct-instruction/DiMa
 import DiShapes from '../primitives/visual-primitives/direct-instruction/DiShapes';
 import DiSentenceReading from '../primitives/visual-primitives/direct-instruction/DiSentenceReading';
 import DiSpokenPractice from '../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
+import DiWorkedProcedure from '../primitives/visual-primitives/direct-instruction/DiWorkedProcedure';
+import DiDeduction from '../primitives/visual-primitives/direct-instruction/DiDeduction';
 import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
 import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
 import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
@@ -1991,6 +1993,26 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'di-spoken-practice': {
     component: DiSpokenPractice,
     sectionTitle: 'Say It Out Loud',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'di-worked-procedure': {
+    component: DiWorkedProcedure,
+    sectionTitle: 'Talk It Through',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'di-deduction': {
+    component: DiDeduction,
+    sectionTitle: 'Use the Rule',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
