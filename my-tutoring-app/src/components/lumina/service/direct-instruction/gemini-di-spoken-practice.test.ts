@@ -5,7 +5,7 @@ vi.mock('../geminiClient', () => ({ ai: { models: { generateContent } } }));
 
 import { generateDiSpokenPractice } from './gemini-di-spoken-practice';
 import { buildPlannedSpokenItems, hasPlannedCoverage, parseSpokenPlan, spokenSourceTokens } from './spokenPracticePlan';
-import { contextFor, findAnswerLeaks, findUnspokenStimulus, itemCue, pronounceCue }
+import { contextFor, findAnswerLeaks, findChoiceMenuDefects, findUnspokenStimulus, itemCue, pronounceCue }
   from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 
 const objective = 'Identify the plus sign (+) and equal sign (=) as math symbols';
@@ -59,10 +59,18 @@ describe('named target ownership through the generation boundary', () => {
   });
 
   it('rejects the original incompatible pin rather than relabeling recall as decoding', async () => {
-    acceptPlan();
+    generateContent.mockResolvedValue(reply(named()));
     const data = await gen('read_aloud');
     expect(data.items).toEqual([]);
     expect(data.challengeType).toBe('read_aloud');
+  });
+
+  it('retries a plan-mode conflict inside the planning budget', async () => {
+    generateContent.mockResolvedValueOnce(reply({ task: 'read_aloud', closedSet: false, targets: [] }));
+    acceptPlan();
+    const data = await gen();
+    expect(data.items).toHaveLength(4);
+    expect(generateContent).toHaveBeenCalledTimes(3);
   });
 
   it.each(['mixed', 'say_answer|read_aloud'])('chooses a coherent allowed task for %s', async pin => {
@@ -79,6 +87,24 @@ describe('named target ownership through the generation boundary', () => {
     const data = await gen();
     expect(new Set(data.items.map(i => i.stimulusText))).toEqual(new Set(['+', '=']));
     expect(generateContent).toHaveBeenCalledTimes(4);
+  });
+
+  it('reviews open/empty plans too, so a misclassified named set cannot bypass coverage', async () => {
+    generateContent.mockResolvedValueOnce(reply({ task: 'say_answer', closedSet: false, targets: [] }));
+    generateContent.mockResolvedValueOnce(reply({ valid: false, reason: 'This objective explicitly requires + and =.' }));
+    acceptPlan();
+    const data = await gen();
+    expect(new Set(data.items.map(i => i.stimulusText))).toEqual(new Set(['+', '=']));
+    expect(generateContent).toHaveBeenCalledTimes(4);
+  });
+
+  it('owns the glyph even when a model redundantly emits a corrupted copy', async () => {
+    const plan = named();
+    plan.targets[1].stimulusText = '_';
+    acceptPlan(plan);
+    const data = await gen();
+    expect(data.items.some(i => i.stimulusText === '=')).toBe(true);
+    expect(data.items.some(i => i.stimulusText === '_')).toBe(false);
   });
 
   it('exhausted plan reviews produce an empty session, never an unscoped fallback', async () => {
@@ -106,9 +132,36 @@ describe('named target ownership through the generation boundary', () => {
     expect(buildPlannedSpokenItems(plan, 1)).toEqual([]);
   });
 
+  it('can name pictures without printing or pronouncing their labels', async () => {
+    const text = 'Name the cat and dog pictures.';
+    acceptPlan(named([
+      { ...target('cat', 'cat', text), stimulusId: 'picture', stimulusText: 'cat', stimulusEmoji: '🐈' },
+      { ...target('dog', 'dog', text), stimulusId: 'picture', stimulusText: 'dog', stimulusEmoji: '🐕' },
+    ]));
+    const data = await gen('say_answer', text);
+    expect(data.items).toHaveLength(4);
+    expect(data.items.every(i => i.stimulusKind === 'emoji' && pronounceCue(i) === '')).toBe(true);
+    expect(findAnswerLeaks(data.items)).toEqual([]);
+  });
+
   it('rejects fabricated grounding and duplicate targets without silently dropping them', () => {
     expect(() => parseSpokenPlan(named([target('?', 'question mark', 'not in input')]), [objective])).toThrow();
     expect(() => parseSpokenPlan(named([target('+', 'plus'), target('+', 'plus sign')]), [objective])).toThrow();
+  });
+
+  it('expands the session to fit five required targets instead of truncating to four', async () => {
+    const text = 'Name the symbols . , ? ! ;';
+    acceptPlan(named([
+      target('.', 'period', text), target(',', 'comma', text), target('?', 'question mark', text),
+      target('!', 'exclamation mark', text), target(';', 'semicolon', text),
+    ]));
+    const data = await gen('say_answer', text);
+    expect(data.items).toHaveLength(5);
+    expect(new Set(data.items.map(i => i.stimulusText))).toEqual(new Set(['.', ',', '?', '!', ';']));
+  });
+
+  it('rejects an oversized required set rather than silently slicing it', () => {
+    expect(() => parseSpokenPlan(named(Array.from({ length: 7 }, () => target('+', 'plus'))), [objective])).toThrow();
   });
 });
 
@@ -147,5 +200,110 @@ describe('neighboring tasks retain their delivery and identity', () => {
     const data = await gen('count_and_say', 'Count groups of bears within five');
     expect(data.items.map(i => i.expectedAnswer)).toEqual(['two', 'three', 'four', 'five']);
     expect(data.items.every(i => i.stimulusKind === 'objects')).toBe(true);
+  });
+});
+
+// ── compare_choice — code owns the MENU, the model writes the pairs ──────────
+
+/**
+ * The shape both frozen `kindergarten-compare-attributes` draws refused with
+ * `items: []` (lesson-bench item 30c). What is being tested is the split: the
+ * plan enumerates the four words the objective NAMES and the generator has to
+ * come back having asked all four — a session that quietly covers two of them
+ * is the named-set failure, not a thin session.
+ */
+const compareObjective =
+  'Describe the size and weight of objects using words like longer, shorter, heavier, and lighter.';
+const MENU = ['longer', 'shorter', 'heavier', 'lighter'];
+
+const menuTarget = (word: string) => ({
+  stimulusId: spokenSourceTokens([compareObjective]).find(t => t.text === word)?.id,
+  sourceId: 's1', stimulusText: '', expectedAnswer: word, stimulusEmoji: '', alsoAccept: '',
+});
+const menuPlan = (targets = MENU.map(menuTarget)) =>
+  ({ task: 'compare_choice', closedSet: true, targets });
+
+const pairAsk = (a: string, b: string, about: string) =>
+  `Here is ${a}, and here is ${b}. Is ${about} longer, shorter, heavier, or lighter?`;
+const pairRaw = (
+  a: string, ae: string, b: string, be: string, about: string, expectedAnswer: string,
+) => ({
+  stimulusText: a, stimulusEmoji: ae, stimulusText2: b, stimulusEmoji2: be,
+  ask: pairAsk(a, b, about), expectedAnswer,
+  correctionBody: `${about} is ${expectedAnswer} than the other one.`,
+});
+const FULL_MENU_DRAW = [
+  pairRaw('a feather', '🪶', 'a rock', '🪨', 'the rock', 'heavier'),
+  pairRaw('a pencil', '✏️', 'a crayon', '🖍️', 'the pencil', 'longer'),
+  pairRaw('an ant', '🐜', 'an elephant', '🐘', 'the ant', 'lighter'),
+  pairRaw('a train', '🚂', 'a car', '🚗', 'the car', 'shorter'),
+];
+const compareGen = (items: unknown[]) => {
+  generateContent.mockResolvedValueOnce(reply(menuPlan()));
+  generateContent.mockResolvedValueOnce(reply({ valid: true, reason: 'All four words are required.' }));
+  for (const draw of items) generateContent.mockResolvedValueOnce(reply(draw));
+  return generateDiSpokenPractice(
+    "Compare and describe objects' attributes (longer/shorter, heavier/lighter)",
+    'kindergarten',
+    { objectiveText: compareObjective, targetEvalMode: 'compare_choice' },
+  );
+};
+
+describe('compare_choice — the closed-set comparative session', () => {
+  it('ships a pair session that asks every word the objective named', async () => {
+    const data = await compareGen([{ title: 'Which Word?', items: FULL_MENU_DRAW }]);
+    expect(data.challengeType).toBe('compare_choice');
+    expect(data.items).toHaveLength(4);
+    expect(new Set(data.items.map(i => i.expectedAnswer))).toEqual(new Set(MENU));
+    for (const i of data.items) {
+      expect(i.stimulusKind).toBe('pair');
+      expect(i.responseClass).toBe('closed_set_choice');
+      expect(i.choices).toEqual(MENU);
+      expect(i.stimulusEmoji).toBeTruthy();
+      expect(i.stimulusEmoji2).toBeTruthy();
+      expect(itemCue(i, { opening: false, howToPlay: false }))
+        .toContain('The learner is choosing one word from: "longer", "shorter", "heavier", "lighter".');
+      expect(contextFor(i).stimulus).toBe(`${i.stimulusText} and ${i.stimulusText2}`);
+      expect(pronounceCue(i)).toContain(`${i.stimulusText} and ${i.stimulusText2}`);
+    }
+    expect(findAnswerLeaks(data.items)).toEqual([]);
+    expect(findChoiceMenuDefects(data.items)).toEqual([]);
+    expect(findUnspokenStimulus(data.items)).toEqual([]);
+    expect(generateContent).toHaveBeenCalledTimes(3); // plan, review, one item draw
+  });
+
+  it('ships NOTHING when every ask narrowed the menu to a two-way guess', async () => {
+    // "Is the rock longer or heavier?" — the shape the wxyu draw's own intent
+    // proposed. Dropped by the menu gate, both attempts, so the session refuses.
+    const narrowed = FULL_MENU_DRAW.map(item => ({
+      ...item, ask: item.ask.replace('longer, shorter, heavier, or lighter', 'longer or heavier'),
+    }));
+    const data = await compareGen([{ items: narrowed }, { items: narrowed }]);
+    expect(data.items).toEqual([]);
+    expect(generateContent).toHaveBeenCalledTimes(4); // plan, review, two item draws
+  });
+
+  it('refuses a session that covers only part of the named menu, however clean', async () => {
+    // Three well-formed items that would pass every other gate — and leave
+    // "shorter" untaught. A partial menu is the failure, not a thin session.
+    const partial = FULL_MENU_DRAW.slice(0, 3);
+    const data = await compareGen([{ items: partial }, { items: partial }]);
+    expect(data.items).toEqual([]);
+    expect(generateContent).toHaveBeenCalledTimes(4);
+  });
+
+  it('refuses a pair with nothing drawn on one side', async () => {
+    const halfDrawn = FULL_MENU_DRAW.map(item => ({ ...item, stimulusEmoji2: '' }));
+    const data = await compareGen([{ items: halfDrawn }, { items: halfDrawn }]);
+    expect(data.items).toEqual([]);
+  });
+
+  it('refuses the plan itself when the objective never enumerated the words', async () => {
+    generateContent.mockResolvedValue(reply({ task: 'compare_choice', closedSet: false, targets: [] }));
+    const data = await generateDiSpokenPractice('measurement', 'kindergarten', {
+      objectiveText: 'Compare two objects and describe them.', targetEvalMode: 'compare_choice',
+    });
+    expect(data.items).toEqual([]);
+    expect(data.description).toBe('No matching practice is available for this task.');
   });
 });

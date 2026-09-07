@@ -1,0 +1,920 @@
+{
+  "startedAt": "2026-09-06T12:07:15.181Z",
+  "results": [
+    {
+      "name": "selection-3rvk",
+      "routing": {
+        "slots": 7,
+        "changed": 7,
+        "kept": 0,
+        "mixed": 1,
+        "blend": 0
+      },
+      "picked": [
+        {
+          "objectiveId": "obj3",
+          "objectiveText": "Describe the size and weight of objects using words like longer, shorter, heavier, and lighter.",
+          "instanceId": "obj3-spoken-attribute-description",
+          "intent": "Live direct instruction where the tutor shows two objects and asks the student to finish sentences aloud using the exact descriptive words: longer, shorter, heavier, or lighter.",
+          "mode": "compare_choice"
+        }
+      ],
+      "checks": {
+        "foundSpokenSlot": true,
+        "routesToCompareChoice": true
+      }
+    },
+    {
+      "name": "selection-wxyu",
+      "routing": {
+        "slots": 7,
+        "changed": 6,
+        "kept": 1,
+        "mixed": 1,
+        "blend": 0
+      },
+      "picked": [
+        {
+          "objectiveId": "obj3",
+          "objectiveText": "Explain the difference between size words like longer, shorter, heavier, and lighter using your own words",
+          "instanceId": "obj3-spoken-explanation",
+          "intent": "Direct instruction spoken practice where the live tutor prompts the learner with simple scenarios (e.g., 'If a stick reaches further across the table, is it longer or heavier?') and the student answers aloud using the correct descriptive word.",
+          "mode": "compare_choice"
+        }
+      ],
+      "checks": {
+        "foundSpokenSlot": true,
+        "routesToCompareChoice": true
+      }
+    },
+    {
+      "name": "generate-3rvk-obj3-draw1",
+      "input": {
+        "objectiveText": "Describe the size and weight of objects using words like longer, shorter, heavier, and lighter.",
+        "intent": "Live direct instruction where the tutor shows two objects and asks the student to finish sentences aloud using the exact descriptive words: longer, shorter, heavier, or lighter.",
+        "mode": "compare_choice"
+      },
+      "elapsedMs": 6780,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "pairs": true,
+        "closedSetClass": true,
+        "menuCovered": true,
+        "noLeaks": true,
+        "menuIntact": true,
+        "bothThingsSpoken": true
+      },
+      "data": {
+        "title": "Size and Weight Word Practice",
+        "description": "Listen to the two objects and say out loud which word describes them.",
+        "challengeType": "compare_choice",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a feather",
+            "stimulusEmoji": "🪶",
+            "stimulusText2": "a brick",
+            "stimulusEmoji2": "🧱",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a feather, and here is a brick. Is the feather longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "lighter",
+            "alternates": [
+              "light"
+            ],
+            "acceptRule": "Saying a close synonym or speaking the word clearly at the end of the phrase counts.",
+            "signatureError": "Saying heavier or naming the object instead of the attribute is not correct.",
+            "correctionBody": "A feather weighs less than a brick, so the feather is lighter."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a train",
+            "stimulusEmoji": "🚂",
+            "stimulusText2": "a toy car",
+            "stimulusEmoji2": "🚗",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a train, and here is a toy car. Is the train longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "longer",
+            "alternates": [
+              "long"
+            ],
+            "acceptRule": "Saying the descriptive word clearly on its own counts as the answer.",
+            "signatureError": "Saying shorter or naming the vehicle instead of the size word is not correct.",
+            "correctionBody": "The train stretches out further than the toy car, so the train is longer."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a pencil",
+            "stimulusEmoji": "✏️",
+            "stimulusText2": "a crayon",
+            "stimulusEmoji2": "🖍️",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a pencil, and here is a crayon. Is the crayon longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "shorter",
+            "alternates": [
+              "short"
+            ],
+            "acceptRule": "Saying the attribute clearly even if spoken in a full sentence counts as the answer.",
+            "signatureError": "Saying longer or naming the tool instead of the size word is not correct.",
+            "correctionBody": "The crayon does not stretch out as far as the pencil, so the crayon is shorter."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a bowling ball",
+            "stimulusEmoji": "🎳",
+            "stimulusText2": "a tennis ball",
+            "stimulusEmoji2": "🎾",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a bowling ball, and here is a tennis ball. Is the bowling ball longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "heavier",
+            "alternates": [
+              "heavy"
+            ],
+            "acceptRule": "Saying the weight word with emphasis counts as the correct answer.",
+            "signatureError": "Saying lighter or naming the ball instead of the attribute is not correct.",
+            "correctionBody": "The bowling ball pulls down with more weight than the tennis ball, so the bowling ball is heavier."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-3rvk-obj3-draw2",
+      "input": {
+        "objectiveText": "Describe the size and weight of objects using words like longer, shorter, heavier, and lighter.",
+        "intent": "Live direct instruction where the tutor shows two objects and asks the student to finish sentences aloud using the exact descriptive words: longer, shorter, heavier, or lighter.",
+        "mode": "compare_choice"
+      },
+      "elapsedMs": 8427,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "pairs": true,
+        "closedSetClass": true,
+        "menuCovered": true,
+        "noLeaks": true,
+        "menuIntact": true,
+        "bothThingsSpoken": true
+      },
+      "data": {
+        "title": "Comparing Sizes and Weights",
+        "description": "You will compare two things and answer out loud.",
+        "challengeType": "compare_choice",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a feather",
+            "stimulusEmoji": "🪶",
+            "stimulusText2": "a rock",
+            "stimulusEmoji2": "🪨",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a feather, and here is a rock. Is the feather longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "lighter",
+            "alternates": [
+              "light"
+            ],
+            "acceptRule": "Saying a closely related comparative form that means the same thing counts as correct.",
+            "signatureError": "Naming the other object instead of the attribute is not the answer.",
+            "correctionBody": "A feather weighs less than a rock, so the feather is lighter."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a train",
+            "stimulusEmoji": "🚆",
+            "stimulusText2": "a car",
+            "stimulusEmoji2": "🚗",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a train, and here is a car. Is the train longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "longer",
+            "alternates": [
+              "long"
+            ],
+            "acceptRule": "Stretching out the word while saying the correct choice still counts.",
+            "signatureError": "Saying the opposite attribute is not the answer.",
+            "correctionBody": "A train stretches out more than a car, so the train is longer."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "an elephant",
+            "stimulusEmoji": "🐘",
+            "stimulusText2": "a mouse",
+            "stimulusEmoji2": "🐁",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is an elephant, and here is a mouse. Is the elephant longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "heavier",
+            "alternates": [
+              "heavy"
+            ],
+            "acceptRule": "Describing the weight with extra emphasis while using the target word still counts.",
+            "signatureError": "Saying the size comparison instead of the weight comparison is not the answer.",
+            "correctionBody": "An elephant has much more weight than a mouse, so the elephant is heavier."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a crayon",
+            "stimulusEmoji": "🖍️",
+            "stimulusText2": "a broom",
+            "stimulusEmoji2": "🧹",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a crayon, and here is a broom. Is the crayon longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "shorter",
+            "alternates": [
+              "short"
+            ],
+            "acceptRule": "Saying the target word clearly at the end of the sentence counts as the answer.",
+            "signatureError": "Repeating the second object's name back instead of the attribute is not the answer.",
+            "correctionBody": "A crayon takes up less space end to end than a broom, so the crayon is shorter."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-3rvk-obj3-draw3",
+      "input": {
+        "objectiveText": "Describe the size and weight of objects using words like longer, shorter, heavier, and lighter.",
+        "intent": "Live direct instruction where the tutor shows two objects and asks the student to finish sentences aloud using the exact descriptive words: longer, shorter, heavier, or lighter.",
+        "mode": "compare_choice"
+      },
+      "elapsedMs": 12030,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "pairs": true,
+        "closedSetClass": true,
+        "menuCovered": true,
+        "noLeaks": true,
+        "menuIntact": true,
+        "bothThingsSpoken": true
+      },
+      "data": {
+        "title": "Comparing Size and Weight",
+        "description": "You will answer out loud to compare how things look and weigh.",
+        "challengeType": "compare_choice",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a feather",
+            "stimulusEmoji": "🪶",
+            "stimulusText2": "a rock",
+            "stimulusEmoji2": "🪨",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a feather, and here is a rock. Is the feather longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "lighter",
+            "alternates": [
+              "light"
+            ],
+            "acceptRule": "Saying a close synonym for the weight or size that matches the physical truth counts as the answer.",
+            "signatureError": "Naming the other attribute word like heavier is not the right choice for a feather compared to a rock.",
+            "correctionBody": "A feather weighs very little, so a feather is lighter than a rock."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a train",
+            "stimulusEmoji": "🚂",
+            "stimulusText2": "a car",
+            "stimulusEmoji2": "🚗",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a train, and here is a car. Is the train longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "longer",
+            "alternates": [
+              "long"
+            ],
+            "acceptRule": "Describing the physical length clearly using the correct root word counts as the answer.",
+            "signatureError": "Saying shorter for a large train is the opposite of the correct size comparison.",
+            "correctionBody": "A train stretches out much further than a car, so the train is longer."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a pencil",
+            "stimulusEmoji": "✏️",
+            "stimulusText2": "a school bus",
+            "stimulusEmoji2": "🚌",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a pencil, and here is a school bus. Is the pencil longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "shorter",
+            "alternates": [
+              "short"
+            ],
+            "acceptRule": "Stating the correct comparison word even with a slight pause before it counts as the answer.",
+            "signatureError": "Calling the pencil longer than a school bus mixes up the two objects.",
+            "correctionBody": "A pencil does not stretch as far as a school bus, so the pencil is shorter."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "an elephant",
+            "stimulusEmoji": "🐘",
+            "stimulusText2": "a mouse",
+            "stimulusEmoji2": "🐁",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is an elephant, and here is a mouse. Is the elephant longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "heavier",
+            "alternates": [
+              "heavy"
+            ],
+            "acceptRule": "Saying the correct weight word clearly at the end of the sentence counts as the answer.",
+            "signatureError": "Calling an elephant lighter than a mouse confuses size and weight.",
+            "correctionBody": "An elephant weighs a tremendous amount, so the elephant is heavier."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-wxyu-obj3-draw1",
+      "input": {
+        "objectiveText": "Explain the difference between size words like longer, shorter, heavier, and lighter using your own words",
+        "intent": "Direct instruction spoken practice where the live tutor prompts the learner with simple scenarios (e.g., 'If a stick reaches further across the table, is it longer or heavier?') and the student answers aloud using the correct descriptive word.",
+        "mode": "compare_choice"
+      },
+      "elapsedMs": 9879,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "pairs": true,
+        "closedSetClass": true,
+        "menuCovered": true,
+        "noLeaks": true,
+        "menuIntact": true,
+        "bothThingsSpoken": true
+      },
+      "data": {
+        "title": "Comparing Size and Weight",
+        "description": "You will compare things out loud and tell us which word fits best.",
+        "challengeType": "compare_choice",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a feather",
+            "stimulusEmoji": "🪶",
+            "stimulusText2": "a rock",
+            "stimulusEmoji2": "🪨",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a feather, and here is a rock. Is the rock longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "heavier",
+            "alternates": [
+              "more heavy"
+            ],
+            "acceptRule": "Saying a close descriptive form or synonyms like 'much heavier' counts as the target word.",
+            "signatureError": "Saying 'lighter' because the rock is small is the wrong attribute.",
+            "correctionBody": "A heavy rock weighs more than a feather, so the rock is heavier."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a pencil",
+            "stimulusEmoji": "✏️",
+            "stimulusText2": "a crayon",
+            "stimulusEmoji2": "🖍️",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a pencil, and here is a crayon. Is the pencil longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "longer",
+            "alternates": [
+              "more long"
+            ],
+            "acceptRule": "Describing the length measurement aloud before the final word still counts.",
+            "signatureError": "Saying 'shorter' confuses the pencil with the smaller item.",
+            "correctionBody": "A standard pencil extends further in length than a crayon, so the pencil is longer."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a leaf",
+            "stimulusEmoji": "🍃",
+            "stimulusText2": "a tree branch",
+            "stimulusEmoji2": "🪵",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a leaf, and here is a tree branch. Is the leaf longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "shorter",
+            "alternates": [
+              "more short"
+            ],
+            "acceptRule": "Saying 'it is shorter' counts as the correct answer.",
+            "signatureError": "Saying 'longer' by mixing up the two objects is incorrect.",
+            "correctionBody": "The leaf stretches less distance than the tree branch, so the leaf is shorter."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a metal key",
+            "stimulusEmoji": "🔑",
+            "stimulusText2": "a fluffy pillow",
+            "stimulusEmoji2": "🛌",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a metal key, and here is a fluffy pillow. Is the metal key longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "lighter",
+            "alternates": [
+              "more light"
+            ],
+            "acceptRule": "Stating the answer with extra emphasis counts as correct.",
+            "signatureError": "Saying 'heavier' because metal feels strong is a common size-weight mix-up.",
+            "correctionBody": "Even though a pillow is big, a key weighs very little in your hand, so the key is lighter."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-wxyu-obj3-draw2",
+      "input": {
+        "objectiveText": "Explain the difference between size words like longer, shorter, heavier, and lighter using your own words",
+        "intent": "Direct instruction spoken practice where the live tutor prompts the learner with simple scenarios (e.g., 'If a stick reaches further across the table, is it longer or heavier?') and the student answers aloud using the correct descriptive word.",
+        "mode": "compare_choice"
+      },
+      "elapsedMs": 8941,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "pairs": true,
+        "closedSetClass": true,
+        "menuCovered": true,
+        "noLeaks": true,
+        "menuIntact": true,
+        "bothThingsSpoken": true
+      },
+      "data": {
+        "title": "Comparing Size and Weight",
+        "description": "You will answer out loud to describe how objects compare in size and weight.",
+        "challengeType": "compare_choice",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a pencil",
+            "stimulusEmoji": "✏️",
+            "stimulusText2": "a bridge",
+            "stimulusEmoji2": "🌉",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a pencil, and here is a bridge. Is the bridge longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "longer",
+            "alternates": [
+              "it is longer",
+              "much longer"
+            ],
+            "acceptRule": "Saying the attribute alone or in a short phrase that clearly selects the correct menu word counts as the answer.",
+            "signatureError": "Naming the first object instead of the attribute is NOT the answer.",
+            "correctionBody": "The bridge stretches out much further than a pencil, so it is longer."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a giant tree",
+            "stimulusEmoji": "🌳",
+            "stimulusText2": "a twig",
+            "stimulusEmoji2": "🌿",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a giant tree, and here is a twig. Is the twig longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "shorter",
+            "alternates": [
+              "it is shorter",
+              "much shorter"
+            ],
+            "acceptRule": "Saying the attribute alone or in a short phrase that clearly selects the correct menu word counts as the answer.",
+            "signatureError": "Naming the first object instead of the attribute is NOT the answer.",
+            "correctionBody": "The twig does not reach nearly as far as the big tree, so it is shorter."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a feather",
+            "stimulusEmoji": "🪶",
+            "stimulusText2": "a rock",
+            "stimulusEmoji2": "🪨",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a feather, and here is a rock. Is the rock longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "heavier",
+            "alternates": [
+              "it is heavier",
+              "much heavier"
+            ],
+            "acceptRule": "Saying the attribute alone or in a short phrase that clearly selects the correct menu word counts as the answer.",
+            "signatureError": "Naming the first object instead of the attribute is NOT the answer.",
+            "correctionBody": "A rock pulls down with a lot more weight than a soft feather, so it is heavier."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a bowling ball",
+            "stimulusEmoji": "🎳",
+            "stimulusText2": "a soap bubble",
+            "stimulusEmoji2": "🫧",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a bowling ball, and here is a soap bubble. Is the soap bubble longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "lighter",
+            "alternates": [
+              "it is lighter",
+              "much lighter"
+            ],
+            "acceptRule": "Saying the attribute alone or in a short phrase that clearly selects the correct menu word counts as the answer.",
+            "signatureError": "Naming the first object instead of the attribute is NOT the answer.",
+            "correctionBody": "A soap bubble floats gently in the air with almost no pull at all, so it is lighter."
+          }
+        ]
+      }
+    },
+    {
+      "name": "generate-wxyu-obj3-draw3",
+      "input": {
+        "objectiveText": "Explain the difference between size words like longer, shorter, heavier, and lighter using your own words",
+        "intent": "Direct instruction spoken practice where the live tutor prompts the learner with simple scenarios (e.g., 'If a stick reaches further across the table, is it longer or heavier?') and the student answers aloud using the correct descriptive word.",
+        "mode": "compare_choice"
+      },
+      "elapsedMs": 8858,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "pairs": true,
+        "closedSetClass": true,
+        "menuCovered": true,
+        "noLeaks": true,
+        "menuIntact": true,
+        "bothThingsSpoken": true
+      },
+      "data": {
+        "title": "Comparing Sizes and Weights",
+        "description": "Listen to the items and answer out loud.",
+        "challengeType": "compare_choice",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a feather",
+            "stimulusEmoji": "🪶",
+            "stimulusText2": "a rock",
+            "stimulusEmoji2": "🪨",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a feather, and here is a rock. Is the rock longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "heavier",
+            "alternates": [],
+            "acceptRule": "Any clear statement of the word heavier, even if preceded by extra words, counts as the answer.",
+            "signatureError": "Saying lighter because feathers and rocks are often confused in riddles is not the correct word for a rock compared to a feather.",
+            "correctionBody": "A rock sinks down and has much more weight than a feather, so the rock is heavier."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a pencil",
+            "stimulusEmoji": "✏️",
+            "stimulusText2": "a crayon",
+            "stimulusEmoji2": "🖍️",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a pencil, and here is a crayon. Is the pencil longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "longer",
+            "alternates": [],
+            "acceptRule": "Saying the target word alone or at the end of a sentence counts as the correct answer.",
+            "signatureError": "Saying shorter by mixing up the two objects is incorrect.",
+            "correctionBody": "A standard pencil stretches further across the table than a crayon, so the pencil is longer."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a leaf",
+            "stimulusEmoji": "🍃",
+            "stimulusText2": "a tree branch",
+            "stimulusEmoji2": "🪵",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a leaf, and here is a tree branch. Is the leaf longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "shorter",
+            "alternates": [],
+            "acceptRule": "Producing the correct word clearly when prompted counts as the answer.",
+            "signatureError": "Saying longer by confusing the leaf with the branch is incorrect.",
+            "correctionBody": "A single leaf does not stretch out as far as a branch, so the leaf is shorter."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "compare_choice",
+            "action": "compare_choice",
+            "answerKind": "voice",
+            "responseClass": "closed_set_choice",
+            "stimulusKind": "pair",
+            "answerSource": "recall",
+            "stimulusText": "a metal spoon",
+            "stimulusEmoji": "🥄",
+            "stimulusText2": "a cotton ball",
+            "stimulusEmoji2": "🧶",
+            "choices": [
+              "longer",
+              "shorter",
+              "heavier",
+              "lighter"
+            ],
+            "stimulusCount": 0,
+            "ask": "Here is a metal spoon, and here is a cotton ball. Is the cotton ball longer, shorter, heavier, or lighter?",
+            "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+            "expectedAnswer": "lighter",
+            "alternates": [],
+            "acceptRule": "Any clear utterance of the correct menu word counts as the answer.",
+            "signatureError": "Saying heavier for the cotton ball is incorrect.",
+            "correctionBody": "A fluffy cotton ball floats and has almost no weight compared to metal, so the cotton ball is lighter."
+          }
+        ]
+      }
+    },
+    {
+      "name": "refuses-open-explanation",
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "No matching practice is available for this task.",
+        "challengeType": "compare_choice",
+        "gradeLevel": "first grade",
+        "items": []
+      },
+      "checks": {
+        "shipsNothing": true
+      }
+    }
+  ],
+  "finishedAt": "2026-09-06T12:08:17.660Z",
+  "passed": true
+}

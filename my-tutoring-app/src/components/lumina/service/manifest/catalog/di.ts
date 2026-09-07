@@ -938,7 +938,9 @@ export const DI_CATALOG: ComponentDefinition[] = [
       + 'and the tutor judges the audio in-band. The stimulus is generated per objective — printed text, a '
       + 'picture, a group of pictures to count, or nothing at all (the tutor says it). Use this when the '
       + 'skill is genuinely verbal and there is NO manipulative the child needs to touch: recall answers, '
-      + 'reading a short printed item aloud, and counting a group and saying how many. '
+      + 'reading a short printed item aloud, counting a group and saying how many, and saying which word '
+      + 'from a set the objective NAMES (longer/shorter, heavier/lighter) describes two things shown side '
+      + 'by side. '
       + 'ESSENTIAL where a tutor-driven spoken loop is the right modality but no bespoke primitive exists.',
     constraints:
       'Requires microphone + live audio tutor. The answer must be 1-3 short spoken words from a CLOSED set — '
@@ -968,6 +970,17 @@ export const DI_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['read_aloud'],
         description: 'Decode printed words or numerals aloud. Naming a displayed symbol or picture is recall: use say_answer. The printed text itself is the utterance.',
+      },
+      {
+        // The objective supplies the menu, so the act is production over a
+        // closed set — harder than counting, easier than unaided recall,
+        // because the words are heard on every ask (`closed_set_choice`).
+        evalMode: 'compare_choice',
+        label: 'Which Word?',
+        beta: 2.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['compare_choice'],
+        description: 'Two things are shown side by side and the child SAYS which word from a set the objective names (longer/shorter, heavier/lighter, more/fewer) describes them. Use when the objective enumerates the comparison words the child must produce. The tutor reads the whole word menu on every item.',
       },
       {
         evalMode: 'say_answer',

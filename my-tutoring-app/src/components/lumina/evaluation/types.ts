@@ -3512,14 +3512,14 @@ export interface DiSentenceReadingMetrics extends BasePrimitiveMetrics {
 
 /**
  * The content-generic pack. Its `challengeType` describes the ACT (recall /
- * decode / enumerate) rather than a subject, because one instance of this
- * primitive can serve any skill whose answer is a short spoken word. IRT
- * evidence therefore lands on the objective's own skill, and the eval mode
- * only says which of the three acts produced it.
+ * decode / enumerate / choose from a stated menu) rather than a subject, because
+ * one instance of this primitive can serve any skill whose answer is a short
+ * spoken word. IRT evidence therefore lands on the objective's own skill, and
+ * the eval mode only says which of the four acts produced it.
  */
 export interface DiSpokenPracticeMetrics extends BasePrimitiveMetrics {
   type: 'di-spoken-practice';
-  challengeType: 'say_answer' | 'read_aloud' | 'count_and_say';
+  challengeType: 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts (corrections + 1 each)

@@ -1,0 +1,1336 @@
+{
+  "startedAt": "2026-09-06T01:23:01.893Z",
+  "results": [
+    {
+      "name": "automatic-lesson-routing",
+      "routing": {
+        "slots": 7,
+        "changed": 7,
+        "kept": 0,
+        "mixed": 0,
+        "blend": 0
+      },
+      "manifest": {
+        "objectiveBlocks": [
+          {
+            "objectiveId": "probe-0",
+            "objectiveText": "Identify the plus sign (+) and equal sign (=) as math symbols",
+            "objectiveVerb": "apply",
+            "components": [
+              {
+                "componentId": "di-spoken-practice",
+                "instanceId": "symbols-1",
+                "intent": "Identify the plus sign (+) and equal sign (=) as math symbols",
+                "config": {
+                  "targetEvalMode": "say_answer"
+                }
+              }
+            ]
+          },
+          {
+            "objectiveId": "probe-1",
+            "objectiveText": "Name the question mark (?) and exclamation mark (!) shown on screen.",
+            "objectiveVerb": "apply",
+            "components": [
+              {
+                "componentId": "di-spoken-practice",
+                "instanceId": "punctuation",
+                "intent": "Name the question mark (?) and exclamation mark (!) shown on screen.",
+                "config": {
+                  "targetEvalMode": "say_answer"
+                }
+              }
+            ]
+          },
+          {
+            "objectiveId": "probe-2",
+            "objectiveText": "When shown = or +, say its name: equal sign and plus sign.",
+            "objectiveVerb": "apply",
+            "components": [
+              {
+                "componentId": "di-spoken-practice",
+                "instanceId": "rephrased-symbols",
+                "intent": "When shown = or +, say its name: equal sign and plus sign.",
+                "config": {
+                  "targetEvalMode": "say_answer"
+                }
+              }
+            ]
+          },
+          {
+            "objectiveId": "probe-3",
+            "objectiveText": "Read the printed words cat and dog aloud.",
+            "objectiveVerb": "apply",
+            "components": [
+              {
+                "componentId": "di-spoken-practice",
+                "instanceId": "word-reading",
+                "intent": "Read the printed words cat and dog aloud.",
+                "config": {
+                  "targetEvalMode": "read_aloud"
+                }
+              }
+            ]
+          },
+          {
+            "objectiveId": "probe-4",
+            "objectiveText": "Read the printed numerals 2 and 5 aloud.",
+            "objectiveVerb": "apply",
+            "components": [
+              {
+                "componentId": "di-spoken-practice",
+                "instanceId": "numeral-reading",
+                "intent": "Read the printed numerals 2 and 5 aloud.",
+                "config": {
+                  "targetEvalMode": "read_aloud"
+                }
+              }
+            ]
+          },
+          {
+            "objectiveId": "probe-5",
+            "objectiveText": "Listen to addition facts within five and say the sum.",
+            "objectiveVerb": "apply",
+            "components": [
+              {
+                "componentId": "di-spoken-practice",
+                "instanceId": "listening-arithmetic",
+                "intent": "Listen to addition facts within five and say the sum.",
+                "config": {
+                  "targetEvalMode": "say_answer"
+                }
+              }
+            ]
+          },
+          {
+            "objectiveId": "probe-6",
+            "objectiveText": "Count displayed groups of bears within five and say how many.",
+            "objectiveVerb": "apply",
+            "components": [
+              {
+                "componentId": "di-spoken-practice",
+                "instanceId": "counting",
+                "intent": "Count displayed groups of bears within five and say how many.",
+                "config": {
+                  "targetEvalMode": "count_and_say"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "checks": {
+        "symbols-1": true,
+        "punctuation": true,
+        "rephrased-symbols": true,
+        "word-reading": true,
+        "numeral-reading": true,
+        "listening-arithmetic": true,
+        "counting": true
+      }
+    },
+    {
+      "name": "symbols-1",
+      "input": {
+        "name": "symbols-1",
+        "objective": "Identify the plus sign (+) and equal sign (=) as math symbols",
+        "mode": "say_answer",
+        "targets": [
+          "+",
+          "="
+        ]
+      },
+      "elapsedMs": 5158,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "Look, then answer out loud!",
+        "challengeType": "say_answer",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "=",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "equal sign",
+            "alternates": [
+              "equals sign",
+              "equals",
+              "equal"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called equal sign."
+          },
+          {
+            "id": "dsp-2",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "+",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "plus sign",
+            "alternates": [
+              "plus"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called plus sign."
+          },
+          {
+            "id": "dsp-3",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "=",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "equal sign",
+            "alternates": [
+              "equals sign",
+              "equals",
+              "equal"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called equal sign."
+          },
+          {
+            "id": "dsp-4",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "+",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "plus sign",
+            "alternates": [
+              "plus"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called plus sign."
+          }
+        ]
+      }
+    },
+    {
+      "name": "symbols-2",
+      "input": {
+        "name": "symbols-2",
+        "objective": "Identify the plus sign (+) and equal sign (=) as math symbols",
+        "mode": "say_answer",
+        "targets": [
+          "+",
+          "="
+        ]
+      },
+      "elapsedMs": 4569,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "Look, then answer out loud!",
+        "challengeType": "say_answer",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "=",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "equal sign",
+            "alternates": [
+              "equals",
+              "equal",
+              "equals sign"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called equal sign."
+          },
+          {
+            "id": "dsp-2",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "+",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "plus sign",
+            "alternates": [
+              "plus"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called plus sign."
+          },
+          {
+            "id": "dsp-3",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "=",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "equal sign",
+            "alternates": [
+              "equals",
+              "equal",
+              "equals sign"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called equal sign."
+          },
+          {
+            "id": "dsp-4",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "+",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "plus sign",
+            "alternates": [
+              "plus"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called plus sign."
+          }
+        ]
+      }
+    },
+    {
+      "name": "symbols-3",
+      "input": {
+        "name": "symbols-3",
+        "objective": "Identify the plus sign (+) and equal sign (=) as math symbols",
+        "mode": "say_answer",
+        "targets": [
+          "+",
+          "="
+        ]
+      },
+      "elapsedMs": 5619,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "Look, then answer out loud!",
+        "challengeType": "say_answer",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "=",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "equal sign",
+            "alternates": [
+              "equals sign",
+              "equals",
+              "equal"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called equal sign."
+          },
+          {
+            "id": "dsp-2",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "+",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "plus sign",
+            "alternates": [
+              "plus"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called plus sign."
+          },
+          {
+            "id": "dsp-3",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "=",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "equal sign",
+            "alternates": [
+              "equals sign",
+              "equals",
+              "equal"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called equal sign."
+          },
+          {
+            "id": "dsp-4",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "+",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "plus sign",
+            "alternates": [
+              "plus"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called plus sign."
+          }
+        ]
+      }
+    },
+    {
+      "name": "punctuation",
+      "input": {
+        "name": "punctuation",
+        "objective": "Name the question mark (?) and exclamation mark (!) shown on screen.",
+        "mode": "say_answer",
+        "targets": [
+          "?",
+          "!"
+        ]
+      },
+      "elapsedMs": 5955,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "Look, then answer out loud!",
+        "challengeType": "say_answer",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "!",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "exclamation mark",
+            "alternates": [
+              "exclamation point"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called exclamation mark."
+          },
+          {
+            "id": "dsp-2",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "?",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "question mark",
+            "alternates": [],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called question mark."
+          },
+          {
+            "id": "dsp-3",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "!",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "exclamation mark",
+            "alternates": [
+              "exclamation point"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called exclamation mark."
+          },
+          {
+            "id": "dsp-4",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "?",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "question mark",
+            "alternates": [],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called question mark."
+          }
+        ]
+      }
+    },
+    {
+      "name": "rephrased-symbols",
+      "input": {
+        "name": "rephrased-symbols",
+        "objective": "When shown = or +, say its name: equal sign and plus sign.",
+        "mode": "say_answer",
+        "targets": [
+          "=",
+          "+"
+        ]
+      },
+      "elapsedMs": 4546,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "Look, then answer out loud!",
+        "challengeType": "say_answer",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "=",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "equal sign",
+            "alternates": [
+              "equals",
+              "equals sign"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called equal sign."
+          },
+          {
+            "id": "dsp-2",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "+",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "plus sign",
+            "alternates": [
+              "plus"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called plus sign."
+          },
+          {
+            "id": "dsp-3",
+            "targetId": "target-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "=",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "equal sign",
+            "alternates": [
+              "equals",
+              "equals sign"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called equal sign."
+          },
+          {
+            "id": "dsp-4",
+            "targetId": "target-2",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusRole": "visual_target",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "+",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "What is this called?",
+            "howToPlay": "Look, then say its name.",
+            "expectedAnswer": "plus sign",
+            "alternates": [
+              "plus"
+            ],
+            "acceptRule": "",
+            "signatureError": "",
+            "correctionBody": "This is called plus sign."
+          }
+        ]
+      }
+    },
+    {
+      "name": "word-reading",
+      "input": {
+        "name": "word-reading",
+        "objective": "Read the printed words cat and dog aloud.",
+        "mode": "read_aloud",
+        "targets": [
+          "cat",
+          "dog"
+        ]
+      },
+      "elapsedMs": 3864,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "Look, then answer out loud!",
+        "challengeType": "read_aloud",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "targetId": "target-2",
+            "mode": "read_aloud",
+            "action": "read_aloud",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusKind": "text",
+            "answerSource": "decode",
+            "stimulusText": "dog",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Read it out loud.",
+            "howToPlay": "Read what you see out loud.",
+            "expectedAnswer": "dog",
+            "alternates": [],
+            "acceptRule": "Sounding out and then reading the whole printed text correctly counts.",
+            "signatureError": "",
+            "correctionBody": "It says dog."
+          },
+          {
+            "id": "dsp-2",
+            "targetId": "target-1",
+            "mode": "read_aloud",
+            "action": "read_aloud",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusKind": "text",
+            "answerSource": "decode",
+            "stimulusText": "cat",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Read it out loud.",
+            "howToPlay": "Read what you see out loud.",
+            "expectedAnswer": "cat",
+            "alternates": [],
+            "acceptRule": "Sounding out and then reading the whole printed text correctly counts.",
+            "signatureError": "",
+            "correctionBody": "It says cat."
+          },
+          {
+            "id": "dsp-3",
+            "targetId": "target-2",
+            "mode": "read_aloud",
+            "action": "read_aloud",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusKind": "text",
+            "answerSource": "decode",
+            "stimulusText": "dog",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Read it out loud.",
+            "howToPlay": "Read what you see out loud.",
+            "expectedAnswer": "dog",
+            "alternates": [],
+            "acceptRule": "Sounding out and then reading the whole printed text correctly counts.",
+            "signatureError": "",
+            "correctionBody": "It says dog."
+          },
+          {
+            "id": "dsp-4",
+            "targetId": "target-1",
+            "mode": "read_aloud",
+            "action": "read_aloud",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusKind": "text",
+            "answerSource": "decode",
+            "stimulusText": "cat",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Read it out loud.",
+            "howToPlay": "Read what you see out loud.",
+            "expectedAnswer": "cat",
+            "alternates": [],
+            "acceptRule": "Sounding out and then reading the whole printed text correctly counts.",
+            "signatureError": "",
+            "correctionBody": "It says cat."
+          }
+        ]
+      }
+    },
+    {
+      "name": "numeral-reading",
+      "input": {
+        "name": "numeral-reading",
+        "objective": "Read the printed numerals 2 and 5 aloud.",
+        "mode": "read_aloud",
+        "targets": [
+          "2",
+          "5"
+        ]
+      },
+      "elapsedMs": 5451,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "Look, then answer out loud!",
+        "challengeType": "read_aloud",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "targetId": "target-2",
+            "mode": "read_aloud",
+            "action": "read_aloud",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusKind": "text",
+            "answerSource": "decode",
+            "stimulusText": "5",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Read it out loud.",
+            "howToPlay": "Read what you see out loud.",
+            "expectedAnswer": "five",
+            "alternates": [],
+            "acceptRule": "Sounding out and then reading the whole printed text correctly counts.",
+            "signatureError": "",
+            "correctionBody": "It says five."
+          },
+          {
+            "id": "dsp-2",
+            "targetId": "target-1",
+            "mode": "read_aloud",
+            "action": "read_aloud",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusKind": "text",
+            "answerSource": "decode",
+            "stimulusText": "2",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Read it out loud.",
+            "howToPlay": "Read what you see out loud.",
+            "expectedAnswer": "two",
+            "alternates": [],
+            "acceptRule": "Sounding out and then reading the whole printed text correctly counts.",
+            "signatureError": "",
+            "correctionBody": "It says two."
+          },
+          {
+            "id": "dsp-3",
+            "targetId": "target-2",
+            "mode": "read_aloud",
+            "action": "read_aloud",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusKind": "text",
+            "answerSource": "decode",
+            "stimulusText": "5",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Read it out loud.",
+            "howToPlay": "Read what you see out loud.",
+            "expectedAnswer": "five",
+            "alternates": [],
+            "acceptRule": "Sounding out and then reading the whole printed text correctly counts.",
+            "signatureError": "",
+            "correctionBody": "It says five."
+          },
+          {
+            "id": "dsp-4",
+            "targetId": "target-1",
+            "mode": "read_aloud",
+            "action": "read_aloud",
+            "answerKind": "voice",
+            "responseClass": "short_spoken_word",
+            "stimulusKind": "text",
+            "answerSource": "decode",
+            "stimulusText": "2",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Read it out loud.",
+            "howToPlay": "Read what you see out loud.",
+            "expectedAnswer": "two",
+            "alternates": [],
+            "acceptRule": "Sounding out and then reading the whole printed text correctly counts.",
+            "signatureError": "",
+            "correctionBody": "It says two."
+          }
+        ]
+      }
+    },
+    {
+      "name": "listening-arithmetic",
+      "input": {
+        "name": "listening-arithmetic",
+        "objective": "Listen to addition facts within five and say the sum.",
+        "mode": "say_answer"
+      },
+      "elapsedMs": 4903,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Adding Within Five",
+        "description": "Listen to the addition facts and say the sums out loud.",
+        "challengeType": "say_answer",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "2 + 1",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Two plus one. What is two plus one?",
+            "howToPlay": "I will ask, and you say the answer out loud.",
+            "expectedAnswer": "three",
+            "alternates": [],
+            "acceptRule": "Counting up aloud from two to three counts as the correct answer.",
+            "signatureError": "Saying one of the numbers from the problem instead of the sum is not the answer.",
+            "correctionBody": "Two plus one is three. You can count on from two to get three."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "4 + 1",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Four plus one. What is four plus one?",
+            "howToPlay": "I will ask, and you say the answer out loud.",
+            "expectedAnswer": "five",
+            "alternates": [],
+            "acceptRule": "Counting aloud to five and stopping there counts as the correct answer.",
+            "signatureError": "Repeating the four from the prompt is not the answer.",
+            "correctionBody": "Four plus one is five. The next counting number after four is five."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "say_answer",
+            "action": "say_answer",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "stimulusKind": "text",
+            "answerSource": "recall",
+            "stimulusText": "2 + 2",
+            "stimulusEmoji": "",
+            "stimulusCount": 0,
+            "ask": "Two plus two. What is two plus two?",
+            "howToPlay": "I will ask, and you say the answer out loud.",
+            "expectedAnswer": "four",
+            "alternates": [],
+            "acceptRule": "Counting by twos or counting out loud to four counts as the answer.",
+            "signatureError": "Saying two because it is in the problem is not the answer.",
+            "correctionBody": "Two plus two is four. Doubles facts help you find the total fast."
+          }
+        ]
+      }
+    },
+    {
+      "name": "counting",
+      "input": {
+        "name": "counting",
+        "objective": "Count displayed groups of bears within five and say how many.",
+        "mode": "count_and_say"
+      },
+      "elapsedMs": 5099,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Counting Bear Friends",
+        "description": "You will count the bears out loud with your voice.",
+        "challengeType": "count_and_say",
+        "gradeLevel": "kindergarten",
+        "items": [
+          {
+            "id": "dsp-1",
+            "mode": "count_and_say",
+            "action": "count_and_say",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "stimulusKind": "objects",
+            "answerSource": "recall",
+            "stimulusText": "bears",
+            "stimulusEmoji": "🐻",
+            "stimulusCount": 3,
+            "ask": "Look at the bears. How many bears are there?",
+            "howToPlay": "Count the pictures, then say how many out loud.",
+            "expectedAnswer": "three",
+            "alternates": [],
+            "acceptRule": "Counting aloud that lands on the correct final number counts as the correct answer.",
+            "signatureError": "Saying a random number that is not the final counted total is incorrect.",
+            "correctionBody": "Let us count them together one by one. There are three bears."
+          },
+          {
+            "id": "dsp-2",
+            "mode": "count_and_say",
+            "action": "count_and_say",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "stimulusKind": "objects",
+            "answerSource": "recall",
+            "stimulusText": "bears",
+            "stimulusEmoji": "🐻",
+            "stimulusCount": 4,
+            "ask": "Count the bears you see on the screen. How many?",
+            "howToPlay": "Count the pictures, then say how many out loud.",
+            "expectedAnswer": "four",
+            "alternates": [],
+            "acceptRule": "Counting aloud that lands on the correct final number counts as the correct answer.",
+            "signatureError": "Saying a random number that is not the final counted total is incorrect.",
+            "correctionBody": "Touch and count each one carefully. There are four bears."
+          },
+          {
+            "id": "dsp-3",
+            "mode": "count_and_say",
+            "action": "count_and_say",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "stimulusKind": "objects",
+            "answerSource": "recall",
+            "stimulusText": "bears",
+            "stimulusEmoji": "🐻",
+            "stimulusCount": 5,
+            "ask": "Check the group of bears. How many are there in all?",
+            "howToPlay": "Count the pictures, then say how many out loud.",
+            "expectedAnswer": "five",
+            "alternates": [],
+            "acceptRule": "Counting aloud that lands on the correct final number counts as the correct answer.",
+            "signatureError": "Saying a random number that is not the final counted total is incorrect.",
+            "correctionBody": "Let us count them slowly from the beginning. There are five bears."
+          },
+          {
+            "id": "dsp-4",
+            "mode": "count_and_say",
+            "action": "count_and_say",
+            "answerKind": "voice",
+            "responseClass": "number_word_to_20",
+            "stimulusKind": "objects",
+            "answerSource": "recall",
+            "stimulusText": "bears",
+            "stimulusEmoji": "🐻",
+            "stimulusCount": 1,
+            "ask": "Look closely at the bears. How many do you count?",
+            "howToPlay": "Count the pictures, then say how many out loud.",
+            "expectedAnswer": "one",
+            "alternates": [],
+            "acceptRule": "Counting aloud that lands on the correct final number counts as the correct answer.",
+            "signatureError": "Saying a random number that is not the final counted total is incorrect.",
+            "correctionBody": "Point and count each bear to be sure. There is one bear."
+          }
+        ]
+      }
+    },
+    {
+      "name": "wrong-pin-refused",
+      "input": {
+        "name": "wrong-pin-refused",
+        "objective": "Identify the plus sign (+) and equal sign (=) as math symbols",
+        "mode": "read_aloud",
+        "empty": true
+      },
+      "elapsedMs": 12211,
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      },
+      "data": {
+        "title": "Say It Out Loud",
+        "description": "No matching practice is available for this task.",
+        "challengeType": "read_aloud",
+        "gradeLevel": "kindergarten",
+        "items": []
+      }
+    },
+    {
+      "name": "saved-lesson-slot",
+      "summary": {
+        "slots": 8,
+        "changed": 1,
+        "kept": 7,
+        "mixed": 1,
+        "blend": 0
+      },
+      "slot": {
+        "componentId": "di-spoken-practice",
+        "instanceId": "obj2-symbol-spotter",
+        "title": "Name the Symbol",
+        "intent": "Show an isolated math symbol (+ or =) and have the child say 'plus' or 'equals' out loud into the microphone for immediate tutor feedback.",
+        "config": {
+          "count": 4,
+          "difficulty": "medium",
+          "targetEvalMode": "say_answer",
+          "objectiveText": "Identify the plus sign (+) and equal sign (=) as math symbols"
+        }
+      },
+      "hydrated": {
+        "type": "di-spoken-practice",
+        "instanceId": "obj2-symbol-spotter",
+        "data": {
+          "title": "Say It Out Loud",
+          "description": "Look, then answer out loud!",
+          "challengeType": "say_answer",
+          "gradeLevel": "kindergarten",
+          "items": [
+            {
+              "id": "dsp-1",
+              "targetId": "target-1",
+              "mode": "say_answer",
+              "action": "say_answer",
+              "answerKind": "voice",
+              "responseClass": "short_spoken_word",
+              "stimulusRole": "visual_target",
+              "stimulusKind": "text",
+              "answerSource": "recall",
+              "stimulusText": "+",
+              "stimulusEmoji": "",
+              "stimulusCount": 0,
+              "ask": "What is this called?",
+              "howToPlay": "Look, then say its name.",
+              "expectedAnswer": "plus",
+              "alternates": [
+                "plus sign"
+              ],
+              "acceptRule": "",
+              "signatureError": "",
+              "correctionBody": "This is called plus."
+            },
+            {
+              "id": "dsp-2",
+              "targetId": "target-2",
+              "mode": "say_answer",
+              "action": "say_answer",
+              "answerKind": "voice",
+              "responseClass": "short_spoken_word",
+              "stimulusRole": "visual_target",
+              "stimulusKind": "text",
+              "answerSource": "recall",
+              "stimulusText": "=",
+              "stimulusEmoji": "",
+              "stimulusCount": 0,
+              "ask": "What is this called?",
+              "howToPlay": "Look, then say its name.",
+              "expectedAnswer": "equals",
+              "alternates": [
+                "equal",
+                "equal sign",
+                "equals sign"
+              ],
+              "acceptRule": "",
+              "signatureError": "",
+              "correctionBody": "This is called equals."
+            },
+            {
+              "id": "dsp-3",
+              "targetId": "target-1",
+              "mode": "say_answer",
+              "action": "say_answer",
+              "answerKind": "voice",
+              "responseClass": "short_spoken_word",
+              "stimulusRole": "visual_target",
+              "stimulusKind": "text",
+              "answerSource": "recall",
+              "stimulusText": "+",
+              "stimulusEmoji": "",
+              "stimulusCount": 0,
+              "ask": "What is this called?",
+              "howToPlay": "Look, then say its name.",
+              "expectedAnswer": "plus",
+              "alternates": [
+                "plus sign"
+              ],
+              "acceptRule": "",
+              "signatureError": "",
+              "correctionBody": "This is called plus."
+            },
+            {
+              "id": "dsp-4",
+              "targetId": "target-2",
+              "mode": "say_answer",
+              "action": "say_answer",
+              "answerKind": "voice",
+              "responseClass": "short_spoken_word",
+              "stimulusRole": "visual_target",
+              "stimulusKind": "text",
+              "answerSource": "recall",
+              "stimulusText": "=",
+              "stimulusEmoji": "",
+              "stimulusCount": 0,
+              "ask": "What is this called?",
+              "howToPlay": "Look, then say its name.",
+              "expectedAnswer": "equals",
+              "alternates": [
+                "equal",
+                "equal sign",
+                "equals sign"
+              ],
+              "acceptRule": "",
+              "signatureError": "",
+              "correctionBody": "This is called equals."
+            }
+          ]
+        }
+      },
+      "checks": {
+        "mode": true,
+        "count": true,
+        "coverage": true,
+        "noLeaks": true,
+        "suppliedProblem": true,
+        "arithmetic": true,
+        "noPrintedCounts": true,
+        "visualNamingNoPronunciation": true
+      }
+    }
+  ],
+  "finishedAt": "2026-09-06T01:24:07.881Z",
+  "passed": true
+}

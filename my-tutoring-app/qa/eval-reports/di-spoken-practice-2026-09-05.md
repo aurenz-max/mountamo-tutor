@@ -58,3 +58,73 @@ same objective text, `targetEvalMode: 'read_aloud'` — see the Data lines below
 None yet — both issues are GENERATOR/CATALOG fixes, no product ruling needed. DSP-2 may surface a rule worth
 generalizing to other DI-family multi-mode packs (`di-math-facts`, `di-letter-sounds`) if the probe finds the
 same identity-mismatch shape elsewhere; that would earn a new Systemic Pattern, not yet warranted at n=1.
+
+## Follow-up implementation and runtime retest — 2026-09-05
+
+**DSP-1 and DSP-2 resolved for the reported task.** Visual naming is `say_answer`, with a displayed target,
+an answer-free question, and no pronunciation shortcut. Required targets are interpreted once, independently
+reviewed, and allocated in code before repetition. Source token IDs preserve exact printed glyphs; the model
+does not rewrite `=` per item. Stimulus, answer, alternatives, correction, and private judging cue share the
+same checked mapping. After item gates, an incomplete planned session is refused rather than shipped thin.
+
+Catalog descriptions now distinguish naming from decoding inside the lesson selector's 160-character window.
+The shared resolver was not changed. Explicit incompatible pins are refused, not silently reclassified;
+the planner can choose a coherent mode within an allowed blend or unconstrained request.
+
+Source tracing corrected the original causal claim: the saved manifest already pins `read_aloud`, and the
+three original isolated probes explicitly supplied that pin. They bypassed the generator's automatic selector.
+The saved package alone does not establish which upstream stage originally wrote the bad pin.
+
+### Evidence, including failed implementation passes
+
+[Development logs](di-spoken-practice-2026-09-05-development.log) preserve planning refusals, retries,
+gate rejection counts, and selector decisions across all five passes.
+
+| Pass | Result and resulting change |
+|---|---|
+| [First planner](di-spoken-practice-2026-09-05-retest.json) | Direct glyph/quote emission still corrupted `=` or its grounding; all three original-objective draws were empty. Replaced copying with selection of code-owned source token IDs. |
+| [Token references](di-spoken-practice-2026-09-05-retest-v2.json) | Original naming 3/3 and saved slot passed; reviewer incorrectly rejected open arithmetic/counting plans. Clarified task-plan versus generated-session contracts. |
+| [Review contract](di-spoken-practice-2026-09-05-retest-v3.json) | Original naming 2/3; a wrong planner mode was refused. Moved mode compatibility into the bounded planning retry. Manual content review also found arithmetic scope drift, filed below as DSP-3. |
+| [Retry path](di-spoken-practice-2026-09-05-retest-v4.json) | Original coverage 1/3: Flash Lite recast naming as generic recall, and its review approved the empty plan, reopening all-`+` output. Changed semantic planning/review to `gemini-flash-latest`, the repository's existing judging tier. |
+| [Final implementation](di-spoken-practice-2026-09-05-retest-v5.json) | All final mechanical checks passed. Original naming 3/3, punctuation naming 1/1, paraphrase 1/1, named word/numeral reading 2/2, arithmetic/counting 2/2, and wrong-pin refusal 1/1. |
+
+Final automatic **lesson-level** routing: 7/7 intended modes across three naming objectives and four reading,
+arithmetic, and counting controls. The saved full manifest, including its sibling components and original
+`read_aloud` pin, was re-resolved: `obj2-symbol-spotter` changed to `say_answer`, then ran through its production
+context-native registry dispatch with objective config. It returned four valid items covering `+` and `=`.
+This verifies saved-slot selection/hydration, not a newly assembled full lesson or a microphone sitting.
+
+Final named plans used their first attempt. The deliberately incompatible pin exhausted its two attempts and
+returned empty, as required. The final arithmetic draw kept 3/4 items (one existing gate rejection); counting
+kept 4/4. Independent inspection confirmed the final arithmetic sums and counts stayed within five and that
+the displayed naming symbols had correct names/alternates. The 66-second final matrix is a small sample,
+not a reliability-rate estimate. Earlier failures remain recorded above.
+
+**Offline verification:** 56/56 focused tests, including missing-target reviews, the generic-plan bypass,
+corrupted copied glyphs, post-filter coverage loss, exhausted retries, incompatible and blended pins, numeral
+normalization, and rendered stimulus/answer visibility and pronunciation controls. Model responses are mocked
+in those tests; the JSON artifacts above contain actual model output. No live audio judgment was exercised.
+
+**Type check:** final whole-project check matches the 770-diagnostic baseline exactly, with no new diagnostics.
+An intermediate check briefly had 771 due to a concurrent `phonemeExplorerScript.ts` change outside this task;
+that unrelated delta was gone by the final check.
+
+### Remaining finding: say_answer numeric scope (DSP-3)
+
+- **Severity:** HIGH, observed in one of the earlier live draws; frequency unmeasured.
+- **Evidence:** `retest-v3.json`, `listening-arithmetic`, objective "Listen to addition facts within five and
+  say the sum." Accepted facts included `3 + 3 → six`, `3 + 4 → seven`, and `2 + 5 → seven`.
+- **Boundary:** the existing arithmetic gate checks the fact against its answer; it does not verify the
+  objective's range. The initial probe's mechanical checks missed this; inspecting the actual values caught it.
+- **Status:** open. The final draw stayed in range but does not retire this earlier counterexample. The numeric
+  generation path needs its own source-grounded range contract and baseline probe; introduced-versus-existing
+  rate was not established here. Executor: `/eval-fix DSP-3`.
+
+Current mode status: `read_aloud` PASS on reading controls, `count_and_say` PASS on the sampled counting task,
+`say_answer` naming PASS but overall FAIL while DSP-3 remains open. Original report and results above are historical.
+
+### Workflow lessons applied
+
+The repository eval-fix skill now calls out source references instead of model copying, validating empty/open
+plans as well as enumerated ones, calibrating the semantic reviewer on valid and invalid inputs, and measuring
+usable-session yield. A second model call or an all-empty result is not itself evidence of a robust repair.

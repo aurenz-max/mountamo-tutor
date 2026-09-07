@@ -31,14 +31,20 @@ try {
     { name: 'rephrased-symbols', objective: 'When shown = or +, say its name: equal sign and plus sign.', mode: 'say_answer', targets: ['=', '+'] },
     { name: 'word-reading', objective: 'Read the printed words cat and dog aloud.', mode: 'read_aloud', targets: ['cat', 'dog'] },
     { name: 'numeral-reading', objective: 'Read the printed numerals 2 and 5 aloud.', mode: 'read_aloud', targets: ['2', '5'] },
-    { name: 'listening-arithmetic', objective: 'Listen to addition facts within five and say the sum.', mode: 'say_answer' },
-    { name: 'counting', objective: 'Count displayed groups of bears within five and say how many.', mode: 'count_and_say' },
+    { name: 'listening-arithmetic', objective: 'Listen to addition facts within five and say the sum.', mode: 'say_answer', maxNumber: 5 },
+    { name: 'counting', objective: 'Count displayed groups of bears within five and say how many.', mode: 'count_and_say', maxNumber: 5 },
     { name: 'wrong-pin-refused', objective: original, mode: 'read_aloud', empty: true },
   ];
   const inspect = (data, test) => ({
     mode: data.challengeType === test.mode,
     count: test.empty ? data.items.length === 0 : data.items.length >= 3,
     coverage: !test.targets || test.targets.every(t => data.items.some(i => i.stimulusText === t)),
+    // Independent fixture expectations, not another invocation of a production
+    // gate. DSP-3 passed arithmetic consistency while exceeding "within five".
+    numericScope: !test.maxNumber || data.items.every(i =>
+      ['one', 'two', 'three', 'four', 'five'].slice(0, test.maxNumber).includes(i.expectedAnswer)),
+    namingIsPlanned: test.mode !== 'say_answer' || !test.targets
+      || data.items.every(i => i.stimulusRole === 'visual_target' && Boolean(i.targetId)),
     noLeaks: gates.findAnswerLeaks(data.items).length === 0,
     suppliedProblem: gates.findUnspokenStimulus(data.items).length === 0,
     arithmetic: gates.findArithmeticMismatches(data.items).length === 0,

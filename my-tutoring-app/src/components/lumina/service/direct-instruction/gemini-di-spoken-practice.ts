@@ -41,12 +41,16 @@ import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
 import { createDiscretePool } from '../math/numberPoolService';
-import { planSpokenPractice, modeForSpokenPlan, buildPlannedSpokenItems, hasPlannedCoverage } from './spokenPracticePlan';
+import {
+  planSpokenPractice, modeForSpokenPlan, buildPlannedSpokenItems, hasPlannedCoverage,
+  spokenChoiceMenu, hasChoiceCoverage,
+} from './spokenPracticePlan';
 import type { DiSpokenPracticeData } from '../../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
 import {
   deriveResponseClass,
   findAnswerLeaks,
   findArithmeticMismatches,
+  findChoiceMenuDefects,
   findPrintedNumerals,
   findUnspokenStimulus,
   normalizeSpokenAnswer,
@@ -87,6 +91,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + 'The numeral is never printed.',
     schemaDescription: "'count_and_say' (say how many)",
   },
+  compare_choice: {
+    promptDoc:
+      '"compare_choice": TWO things are on screen and the child says which word from a fixed, '
+      + 'stated set describes them (longer/shorter, heavier/lighter). The tutor reads the WHOLE '
+      + 'word menu on every item, so the menu is not a hint — knowing which word fits the pair is '
+      + 'the skill. Use it when the objective names the words the child must produce.',
+    schemaDescription: "'compare_choice' (say which word describes a pair)",
+  },
 };
 
 // ── Schema — one bounded array of flat items ────────────────────────────────
@@ -99,13 +111,28 @@ const itemSchema: Schema = {
       description:
         'The stimulus. say_answer: the printed prompt ("2 + 1") or, if nothing is printed, the '
         + 'word the tutor says aloud. read_aloud: the exact text the child reads. count_and_say: '
-        + 'the PLURAL object word ("bears"). Never contains the answer on a say_answer item.',
+        + 'the PLURAL object word ("bears"). compare_choice: the FIRST of the two things being '
+        + 'compared, as its everyday name ("a feather"). Never contains the answer on a '
+        + 'say_answer or compare_choice item.',
     },
     stimulusEmoji: {
       type: Type.STRING,
       description:
         'ONE emoji picturing the stimulus, or an empty string. Required for count_and_say '
-        + '(it is what gets drawn). Never an emoji that spells out the answer.',
+        + '(it is what gets drawn) and for compare_choice (the FIRST of the two things). '
+        + 'Never an emoji that spells out the answer.',
+    },
+    stimulusText2: {
+      type: Type.STRING,
+      description:
+        'compare_choice ONLY: the SECOND thing being compared, as its everyday name ("a rock"). '
+        + 'Empty string for every other mode. Must not contain any word from the choice menu.',
+    },
+    stimulusEmoji2: {
+      type: Type.STRING,
+      description:
+        'compare_choice ONLY: ONE emoji for the second thing, different from the first. '
+        + 'Empty string for every other mode.',
     },
     printStimulus: {
       type: Type.BOOLEAN,
@@ -199,6 +226,8 @@ const buildSchema = (count: number): Schema => ({
 interface RawItem {
   stimulusText?: unknown;
   stimulusEmoji?: unknown;
+  stimulusText2?: unknown;
+  stimulusEmoji2?: unknown;
   stimulusCount?: unknown;
   printStimulus?: unknown;
   ask?: unknown;
@@ -226,19 +255,31 @@ const buildItem = (
   raw: RawItem,
   index: number,
   mode: SpokenPracticeMode,
+  menu: readonly string[] = [],
 ): SpokenPracticeItem | null => {
   const shape = MODE_SHAPE[mode];
   const stimulusText = str(raw.stimulusText);
   const ask = str(raw.ask);
   if (!ask || !stimulusText) return null;
+  // A pair with one thing in it is not a comparison, and a pair with nothing
+  // drawn is two names a pre-reader cannot hold — both are missing halves of
+  // the stimulus, refused here rather than rendered as a blank side.
+  const stimulusText2 = str(raw.stimulusText2);
+  const stimulusEmoji2 = str(raw.stimulusEmoji2).slice(0, 8);
+  if (mode === 'compare_choice'
+    && (!stimulusText2 || !str(raw.stimulusEmoji) || !stimulusEmoji2)) return null;
 
   // count_and_say: the COUNT is the truth and the answer is computed from it.
   // Trusting a model-written number word here is how "seven" ends up under six
   // bears (LLM emits the window, code builds the answer).
   const stimulusCount = mode === 'count_and_say' ? clampCount(raw.stimulusCount) : 0;
+  const spokenAnswer = normalizeSpokenAnswer(str(raw.expectedAnswer));
+  // The menu is the objective's OWN wording, so a case- or inflection-drifted
+  // answer is snapped back to it: the cue reads the menu and the answer aloud
+  // in the same breath, and they must be the same word when it does.
   const expectedAnswer = mode === 'count_and_say'
     ? numberWordFor(stimulusCount)
-    : normalizeSpokenAnswer(str(raw.expectedAnswer));
+    : menu.find((c) => c.toLowerCase() === spokenAnswer.toLowerCase()) ?? spokenAnswer;
   if (!expectedAnswer) return null;
   // Reading preserves the printed utterance, including supported numeral → word
   // normalization. A symbol NAME is recall and cannot be relabeled as decoding.
@@ -270,6 +311,7 @@ const buildItem = (
   const stimulusKind = mode !== 'say_answer'
     ? shape.stimulusKind
     : listenOnly ? 'none' : emoji ? 'emoji' : 'text';
+  const pair = mode === 'compare_choice';
 
   return {
     id: `dsp-${index + 1}`,
@@ -281,6 +323,7 @@ const buildItem = (
     answerSource: shape.answerSource,
     stimulusText,
     stimulusEmoji: emoji,
+    ...(pair ? { stimulusText2, stimulusEmoji2, choices: [...menu] } : {}),
     stimulusCount,
     ask,
     // Code-owned, per MODE — the model wrote filler here on the first live run.
@@ -295,7 +338,8 @@ const buildItem = (
 
 /** Drop every item that leaks its own answer, prints a count, asks a
  *  question with no problem in it (an ask that never says its stimulus — run
- *  436dcb5616cb), or contradicts its own printed fact ("3 + 2 → six"). All
+ *  436dcb5616cb), contradicts its own printed fact ("3 + 2 → six"), or offers a
+ *  narrowed / unspeakable choice menu ("longer or heavier?" out of four). All
  *  are content-contract refusals; logged by id so the tester shows what was
  *  dropped. */
 const dropLeakingItems = (items: SpokenPracticeItem[]): {
@@ -306,6 +350,7 @@ const dropLeakingItems = (items: SpokenPracticeItem[]): {
   for (const id of findPrintedNumerals(items)) bad.add(id);
   for (const unspoken of findUnspokenStimulus(items)) bad.add(unspoken.itemId);
   for (const mismatch of findArithmeticMismatches(items)) bad.add(mismatch.itemId);
+  for (const defect of findChoiceMenuDefects(items)) bad.add(defect.itemId);
   return {
     kept: items.filter((item) => !bad.has(item.id)),
     dropped: Array.from(bad),
@@ -365,6 +410,7 @@ const buildPrompt = (
   count: number,
   intent: string | undefined,
   seedSection: string,
+  menu: readonly string[],
 ): string => `Write ${count} spoken Direct Instruction practice items for a ${gradeLevel} learner.
 
 TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}
@@ -411,15 +457,33 @@ THE RULES THAT MATTER MOST:
 6. THE CORRECTION RE-TEACHES, it does not scold, and it does not end with a question (the
    application re-asks by itself). Never begin it with "Yes" or "My turn".
 
-${mode === 'count_and_say'
-    ? `COUNTING SPECIFICS: give the plural object word in "stimulusText" ("bears"), one emoji for it,
+${mode === 'compare_choice'
+    ? `COMPARING SPECIFICS: every item shows TWO things and asks which word describes them. The word menu is
+FIXED and the same on every item: ${menu.join(', ')}. The child says exactly one of those words.
+- Put the FIRST thing in "stimulusText"/"stimulusEmoji" and the SECOND in "stimulusText2"/"stimulusEmoji2".
+  Both need an emoji — the pair IS the screen. Use two different everyday things a five-year-old knows,
+  and make the comparison true in REAL LIFE (a feather and a rock), never a matter of how big the
+  pictures happen to look.
+- Your "ask" must NAME BOTH THINGS OUT LOUD and then read the WHOLE menu, every time, in the order above:
+  "Here is a feather, and here is a rock. Is the rock longer, shorter, heavier, or lighter?"
+  ⚠ Reading the whole menu is the ONE exception to rule 1 — it is safe precisely BECAUSE every word is
+  offered every time, so the ask says nothing about which is right. An ask that offers only some of the
+  words ("longer or heavier?") narrows the field for the child and the item is DROPPED.
+- Neither thing's name may contain a menu word OR ITS ROOT. "the longer stick" hands the answer
+  over, and so do "a LONG pencil", "a HEAVY rock" and "a LIGHT feather" — describe the things by
+  WHAT THEY ARE ("a pencil", "a rock", "a feather"), never by the attribute being asked about.
+- "expectedAnswer" is exactly one menu word, spelled as written above. Across the ${count} items use
+  EVERY menu word at least once; a menu word that is never asked leaves that part of the skill untested.
+- Leave "printStimulus" and "stimulusCount" alone.`
+    : mode === 'count_and_say'
+      ? `COUNTING SPECIFICS: give the plural object word in "stimulusText" ("bears"), one emoji for it,
 and a "stimulusCount" from ${MIN_COUNT} to ${MAX_COUNT}. Leave "expectedAnswer" empty — the count decides it.
 Never write a digit anywhere.`
-    : mode === 'read_aloud'
-      ? `READING SPECIFICS: "stimulusText" is the exact text the child reads and "expectedAnswer" is that
+      : mode === 'read_aloud'
+        ? `READING SPECIFICS: "stimulusText" is the exact text the child reads and "expectedAnswer" is that
 same text. The printed words ARE the task here, so they are not a leak — but your "ask" still must
 not contain them ("What word?" / "Read it out loud.").`
-      : `SPEAKING SPECIFICS FOR LISTENING/ARITHMETIC: the tutor's VOICE is how the problem reaches the child — your "ask" must SAY
+        : `SPEAKING SPECIFICS FOR LISTENING/ARITHMETIC: the tutor's VOICE is how the problem reaches the child — your "ask" must SAY
 the problem itself and then hand it over ("Two plus one. What is two plus one?" / "Listen: cat. Now say it
 without the /k/."). Never write an ask that only points at the screen ("Here is a problem. What is the
 answer?") — a child who cannot read hears a question with no problem in it. The printed stimulus is
@@ -494,7 +558,7 @@ export const generateDiSpokenPractice = async (
   });
   let plan;
   try {
-    plan = await planSpokenPractice(topic, gradeLevel, intent, config?.objectiveText);
+    plan = await planSpokenPractice(topic, gradeLevel, intent, config?.objectiveText, resolution?.allowedTypes);
   } catch (error) {
     console.error('[DiSpokenPractice] incomplete session:', error);
     return empty();
@@ -505,7 +569,14 @@ export const generateDiSpokenPractice = async (
     console.error(`[DiSpokenPractice] task/mode conflict: ${plan.task} cannot run as ${mode}`);
     return empty();
   }
-  if (plan.targets.length) {
+  // A compare_choice plan hands over a MENU, not a stimulus mapping: code owns
+  // WHICH words must be produced, the model writes the object pairs around them,
+  // and `hasChoiceCoverage` re-checks the set after the gates. Every other
+  // planned task allocates its targets directly, with no second model call.
+  const menu = spokenChoiceMenu(plan);
+  if (menu.length) count = Math.min(MAX_ITEM_COUNT, Math.max(count, menu.length));
+
+  if (plan.targets.length && !menu.length) {
     count = Math.max(count, plan.targets.length);
     // Plans have a six-target ceiling. Every required target is allocated before
     // repetition, and every dependent field comes from the same checked mapping.
@@ -532,13 +603,16 @@ export const generateDiSpokenPractice = async (
   // One retry: a truncated or leaky first pass is common enough on flash-lite
   // that a second ask is cheaper than shipping a short session. The seed pool
   // re-rolls per attempt, so a retry escapes a degenerate first draw too.
-  for (let attempt = 0; attempt < 2 && items.length < MIN_ITEM_COUNT; attempt++) {
+  const menuCovered = () => !menu.length || hasChoiceCoverage(menu, items);
+  for (let attempt = 0; attempt < 2 && (items.length < MIN_ITEM_COUNT || !menuCovered()); attempt++) {
     try {
-      const seeded = buildSeedSection(mode);
+      // A menu session is about objects, never numbers — the seed pool would
+      // only invite arithmetic into a measurement lesson.
+      const seeded = menu.length ? { section: '', seeds: [] } : buildSeedSection(mode);
       seeds = seeded.seeds;
       const parsed = await callModel(
         buildPrompt(topic, gradeLevel, mode, count,
-          [config?.objectiveText, intent].filter(Boolean).join(' — ') || undefined, seeded.section),
+          [config?.objectiveText, intent].filter(Boolean).join(' — ') || undefined, seeded.section, menu),
         count,
       );
       if (typeof parsed.title === 'string' && parsed.title.trim()) title = parsed.title.trim();
@@ -547,7 +621,7 @@ export const generateDiSpokenPractice = async (
       }
       const raw = Array.isArray(parsed.items) ? (parsed.items as RawItem[]) : [];
       const built = raw
-        .map((item, i) => buildItem(item, i, mode))
+        .map((item, i) => buildItem(item, i, mode, menu))
         .filter((item): item is SpokenPracticeItem => item !== null);
       const result = dropLeakingItems(built);
       items = result.kept;
@@ -558,6 +632,16 @@ export const generateDiSpokenPractice = async (
     } catch (error) {
       console.error('[DiSpokenPractice] generation failed:', error);
     }
+  }
+
+  // A menu the objective NAMED but the session never asked is the named-set
+  // failure this plan exists to prevent, so a partial menu ships nothing —
+  // the same refusal `hasPlannedCoverage` makes for an allocated target set.
+  if (menu.length && items.length && !hasChoiceCoverage(menu, items)) {
+    const missing = menu.filter((word) => !items.some(
+      (i) => i.expectedAnswer.trim().toLowerCase() === word.trim().toLowerCase()));
+    console.error(`[DiSpokenPractice] menu incomplete — never asked: ${missing.join(', ')}`);
+    items = [];
   }
 
   // No curated fallback exists for a content-generic pack, and inventing one
@@ -588,6 +672,7 @@ export const generateDiSpokenPractice = async (
     kept: items.length,
     droppedForLeak: dropped.length,
     droppedIds: dropped,
+    menu: menu.join(',') || undefined,
     withAcceptRule: items.filter((i) => i.acceptRule).length,
     withSignatureError: items.filter((i) => i.signatureError).length,
     responseClasses: Array.from(new Set(items.map((i) => i.responseClass))),

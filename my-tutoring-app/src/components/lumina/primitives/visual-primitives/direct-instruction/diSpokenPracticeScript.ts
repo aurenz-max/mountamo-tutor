@@ -59,14 +59,23 @@ import type {
 /**
  * L1 task identities. These are genuinely different acts, not difficulty
  * tiers: produce an answer you were not shown / say aloud the thing you were
- * shown / enumerate a set. `answerSource` and `stimulusKind` are stamped from
- * the mode in code (Fork A — Gemini never emits a challenge type).
+ * shown / enumerate a set / pick the word that describes a pair.
+ * `answerSource` and `stimulusKind` are stamped from the mode in code (Fork A
+ * — Gemini never emits a challenge type).
+ *
+ * `compare_choice` is the one whose STIMULUS is plural, and that is the whole
+ * reason it is a mode rather than a flavour of say_answer: the question is not
+ * "what is this?" but "which of these stated words describes THESE TWO?", so it
+ * needs a second stimulus, a menu, and a menu-shaped judging contract. Its
+ * answer rides `closed_set_choice`, not open production — see
+ * `findChoiceMenuDefects` for what makes that claim honest.
  */
-export type SpokenPracticeMode = 'say_answer' | 'read_aloud' | 'count_and_say';
+export type SpokenPracticeMode = 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice';
 
 /** How the stimulus APPEARS. `none` still carries stimulusText — the tutor
- *  says it ("Listen: cat…"), nothing is printed. */
-export type StimulusKind = 'text' | 'emoji' | 'objects' | 'none';
+ *  says it ("Listen: cat…"), nothing is printed. `pair` draws TWO pictures side
+ *  by side and prints neither label (the tutor names both aloud). */
+export type StimulusKind = 'text' | 'emoji' | 'objects' | 'none' | 'pair';
 
 /**
  * Where the answer comes from — and therefore whether the printed stimulus is
@@ -83,6 +92,7 @@ export const MODE_SHAPE: Record<
   say_answer: { stimulusKind: 'text', answerSource: 'recall', label: 'Say the Answer' },
   read_aloud: { stimulusKind: 'text', answerSource: 'decode', label: 'Read It Aloud' },
   count_and_say: { stimulusKind: 'objects', answerSource: 'recall', label: 'Count and Say' },
+  compare_choice: { stimulusKind: 'pair', answerSource: 'recall', label: 'Which Word?' },
 };
 
 /**
@@ -102,6 +112,7 @@ export const HOW_TO_PLAY: Record<SpokenPracticeMode, string> = {
   say_answer: 'I will ask, and you say the answer out loud.',
   read_aloud: 'I will show you a word, and you read it out loud.',
   count_and_say: 'Count the pictures, then say how many out loud.',
+  compare_choice: 'I will show you two things and say the words, and you say the one that fits.',
 };
 
 // ── The item ─────────────────────────────────────────────────────────────────
@@ -118,8 +129,16 @@ export interface SpokenPracticeItem extends JudgedScriptItem {
   /** The stimulus content. Printed when `stimulusKind` is 'text'; spoken by
    *  tap-to-hear on recall items; the object word in 'objects' mode. */
   stimulusText: string;
-  /** One emoji for 'emoji' / 'objects' modes; '' otherwise. */
+  /** One emoji for 'emoji' / 'objects' / 'pair' modes; '' otherwise. */
   stimulusEmoji: string;
+  /** 'pair' mode: the SECOND thing being compared. Absent on every other mode. */
+  stimulusText2?: string;
+  /** 'pair' mode: the second thing's emoji. Absent on every other mode. */
+  stimulusEmoji2?: string;
+  /** 'pair' mode: the closed word menu the child chooses from, spoken in full on
+   *  every ask. Its completeness is what makes the ask carry no answer — see
+   *  `findChoiceMenuDefects`. Absent on every other mode. */
+  choices?: string[];
   /** 'objects' mode: how many to draw. Code NEVER prints the numeral. */
   stimulusCount: number;
   /** The tutor's scripted question, ending in the hand-over. Generated. */
@@ -200,6 +219,13 @@ export const deriveResponseClass = (
   if (mode === 'count_and_say') {
     return isNumberWord(answer) ? 'number_word_to_20' : null;
   }
+  if (mode === 'compare_choice') {
+    // The child says ONE word from a menu the tutor read out in full. That is
+    // `closed_set_choice`, not open production — but only while the menu really
+    // is closed and complete, which `findChoiceMenuDefects` (not this function)
+    // is what enforces. The length clamp stays: a menu word is a word.
+    return wordCount(answer) <= 3 ? 'closed_set_choice' : null;
+  }
   if (mode === 'read_aloud') {
     // The printed stimulus is the utterance; its length picks the class.
     return wordCount(stimulusText) >= 3 ? 'sentence_read_aloud' : 'short_spoken_word';
@@ -228,7 +254,7 @@ const containsPhrase = (haystack: string, needle: string): boolean => {
 export interface AnswerLeak {
   itemId: string;
   /** Which surface leaked — the field name a fix must target. */
-  field: 'ask' | 'howToPlay' | 'stimulusText';
+  field: 'ask' | 'howToPlay' | 'stimulusText' | 'stimulusText2';
   answer: string;
 }
 
@@ -245,12 +271,23 @@ export function findAnswerLeaks(items: readonly SpokenPracticeItem[]): AnswerLea
   const leaks: AnswerLeak[] = [];
   for (const item of items) {
     const answers = [item.expectedAnswer, ...item.alternates].filter((a) => a.trim());
-    const surfaces: Array<{ field: AnswerLeak['field']; text: string }> = [
-      { field: 'ask', text: item.ask },
-      { field: 'howToPlay', text: item.howToPlay },
-    ];
+    const surfaces: Array<{ field: AnswerLeak['field']; text: string }> = [];
+    // The second exemption, and the only one that is not about `decode`: a
+    // compare_choice ask CARRIES the menu, so it contains the answer by
+    // construction. That is safe ONLY because `findChoiceMenuDefects` requires
+    // EVERY choice in every ask — a menu that is always complete tells the child
+    // nothing, while a menu narrowed to two of four words is a leak that gate
+    // catches. Exempting the ask here without that gate would be laundering.
+    if (item.mode !== 'compare_choice') surfaces.push({ field: 'ask', text: item.ask });
+    surfaces.push({ field: 'howToPlay', text: item.howToPlay });
     if (item.answerSource === 'recall' && item.stimulusKind === 'text') {
       surfaces.push({ field: 'stimulusText', text: item.stimulusText });
+    }
+    // On a pair the OBJECTS are never the answer (the comparison word is), so
+    // both object words are scanned: "the longer stick" hands it over.
+    if (item.stimulusKind === 'pair') {
+      surfaces.push({ field: 'stimulusText', text: item.stimulusText });
+      surfaces.push({ field: 'stimulusText2', text: item.stimulusText2 ?? '' });
     }
     for (const { field, text } of surfaces) {
       for (const answer of answers) {
@@ -270,6 +307,112 @@ export function findPrintedNumerals(items: readonly SpokenPracticeItem[]): strin
   return items
     .filter((item) => item.stimulusKind === 'objects' && /\d/.test(item.stimulusText))
     .map((item) => item.id);
+}
+
+// ── Choice-menu gate — what makes a spoken menu a CLOSED set ────────────────
+
+export interface ChoiceMenuDefect {
+  itemId: string;
+  /** Why this menu cannot be judged honestly — the field a regeneration must fix. */
+  reason: 'too_few_choices' | 'answer_not_in_menu' | 'menu_not_spoken' | 'choices_not_separable'
+    | 'menu_word_in_stimulus';
+  /** The words at fault: the choices missing from the ask, the overlapping pair,
+   *  or the object-name tokens that gave a menu word away. */
+  detail: string[];
+}
+
+/**
+ * `closed_set_choice` is only honest while the set really is closed, and this
+ * is the gate that says so — the counterpart to `findAnswerLeaks`' exemption of
+ * the compare_choice ask.
+ *
+ * FOUR WAYS A MENU STOPS BEING ONE, in the order they matter:
+ *   1. Fewer than two words is not a choice.
+ *   2. An answer outside the menu means the child was asked one question and
+ *      graded on another.
+ *   3. Two choices where one contains the other ("long" inside "longer") cannot
+ *      be told apart by ear — the class's own ear-separability note, and the
+ *      item to DROP rather than judge leniently.
+ *   4. An object NAMED with a menu word, or its stem: "a long pencil" against a
+ *      menu holding "longer" is the answer said out loud before the question.
+ *   5. THE ONE THAT DOES THE WORK: an ask that reads only SOME of the words has
+ *      narrowed the field for the child. "Is it longer or heavier?" on a
+ *      four-word menu is a two-way guess wearing a four-way costume, and it is
+ *      also the exact shape the model reaches for unprompted (the wxyu draw's
+ *      intent proposed it verbatim). Requiring the WHOLE menu in every ask is
+ *      what makes the answer-leak exemption above safe.
+ */
+/**
+ * Can these two choices be told apart BY EAR? Two ways they cannot, and the
+ * second is the one that matters for a single-word menu:
+ *   - one is a whole-token subsequence of the other ("A cat" inside "A cat and
+ *     a dog") — the class note's own example, and what `containsPhrase` sees.
+ *   - one single word OPENS the other ("long" inside "longer"). Token matching
+ *     is blind to this by design (it is what stops "cat" hitting "catalog"),
+ *     but a child who says the stem has said neither word and both — exactly
+ *     the ambiguity `closed_set_choice` requires a pack to refuse.
+ */
+const sharesEar = (choice: string, other: string): boolean => {
+  if (containsPhrase(other, choice)) return true;
+  const a = tokenize(choice);
+  const b = tokenize(other);
+  return a.length === 1 && b.length === 1 && sharesStem(a[0], b[0]);
+};
+
+/**
+ * Do two words share enough of an opening to hand one over by ear?
+ *
+ * FOUND LIVE, first real generation (probe 2026-09-06): flash-lite wrote "a long
+ * pencil" against a menu containing "longer", and every whole-token gate passed
+ * it — `containsPhrase` is deliberately blind to substrings (it is what stops
+ * "cat" hitting "catalog"). But a five-year-old hearing "here is a LONG pencil …
+ * is the pencil longer, shorter, heavier, or lighter?" has been told the answer
+ * by the adjective. Four characters is the threshold that separates the real
+ * pairs (long/longer, heavy/heavier, light/lighter, short/shorter) from the
+ * accidental ones (leaf/lighter, ladybug/lighter).
+ */
+const sharesStem = (a: string, b: string): boolean => {
+  const x = a.toLowerCase();
+  const y = b.toLowerCase();
+  let i = 0;
+  while (i < x.length && i < y.length && x[i] === y[i]) i += 1;
+  return i >= 4;
+};
+
+export function findChoiceMenuDefects(items: readonly SpokenPracticeItem[]): ChoiceMenuDefect[] {
+  const defects: ChoiceMenuDefect[] = [];
+  for (const item of items) {
+    if (item.mode !== 'compare_choice') continue;
+    const choices = (item.choices ?? []).map((c) => c.trim()).filter(Boolean);
+    if (choices.length < 2) {
+      defects.push({ itemId: item.id, reason: 'too_few_choices', detail: choices });
+      continue;
+    }
+    if (!choices.some((c) => c.toLowerCase() === item.expectedAnswer.trim().toLowerCase())) {
+      defects.push({ itemId: item.id, reason: 'answer_not_in_menu', detail: choices });
+      continue;
+    }
+    const overlapping = choices.filter((c, i) =>
+      choices.some((other, j) => i !== j && sharesEar(c, other)));
+    if (overlapping.length) {
+      defects.push({ itemId: item.id, reason: 'choices_not_separable', detail: overlapping });
+      continue;
+    }
+    // The stem case (see `sharesStem`): naming a thing "a long pencil" answers
+    // the question before it is asked, and no whole-word gate can see it.
+    const giveaway = [item.stimulusText, item.stimulusText2 ?? '']
+      .flatMap(tokenize)
+      .filter((token) => choices.some((c) => sharesStem(token, c)));
+    if (giveaway.length) {
+      defects.push({ itemId: item.id, reason: 'menu_word_in_stimulus', detail: giveaway });
+      continue;
+    }
+    const unspoken = choices.filter((c) => !containsPhrase(item.ask, c));
+    if (unspoken.length) {
+      defects.push({ itemId: item.id, reason: 'menu_not_spoken', detail: unspoken });
+    }
+  }
+  return defects;
 }
 
 // ── Arithmetic-consistency gate — the fact on screen is the ground truth ─────
@@ -326,6 +469,11 @@ export function findArithmeticMismatches(
  *  tokens are never required of it. */
 const OPERATOR_TOKENS = new Set(['x']);
 
+/** An article is not the name of the thing. Requiring one would drop a correct
+ *  ask for saying "the rock" where the stimulus said "a rock" — a false drop,
+ *  and the only reason this list exists. */
+const ARTICLE_TOKENS = new Set(['a', 'an', 'the']);
+
 export interface UnspokenStimulus {
   itemId: string;
   /** The stimulus tokens the ask never says — what a regeneration must add. */
@@ -341,11 +489,16 @@ export interface UnspokenStimulus {
  * the carrier. DISTAR asks state the item ("Two plus one. What is two plus
  * one?"), so an ask that never says its own stimulus is a defective item.
  *
- * Scope is deliberately narrow — `say_answer` with a 'text' or 'none'
- * stimulus. The other shapes must NOT state theirs: read_aloud's stimulus is
- * the answer (leak gate bans it from the ask), count_and_say's count is the
- * answer, and an 'emoji'/'objects' stimulus word spoken aloud would name the
- * picture the child is being asked about.
+ * Scope is `say_answer` with a 'text' or 'none' stimulus, PLUS every
+ * `compare_choice` pair. The other shapes must NOT state theirs: read_aloud's
+ * stimulus is the answer (leak gate bans it from the ask), count_and_say's
+ * count is the answer, and an 'emoji'/'objects' stimulus word spoken aloud
+ * would name the picture the child is being asked about.
+ *
+ * A pair is the opposite case and belongs here for the same reason the
+ * arithmetic ask does: the two OBJECTS are not the answer — the comparison word
+ * is — so naming them aloud is the task, and an ask that shows two pictures
+ * without saying what they are asks a pre-reader to compare two unnamed things.
  *
  * Digits match their number word in either direction ("2" is satisfied by
  * "two" and vice versa) — the ask is spoken, so both forms reach the child
@@ -354,12 +507,16 @@ export interface UnspokenStimulus {
 export function findUnspokenStimulus(items: readonly SpokenPracticeItem[]): UnspokenStimulus[] {
   const results: UnspokenStimulus[] = [];
   for (const item of items) {
-    if (item.mode !== 'say_answer') continue;
     if (item.stimulusRole === 'visual_target') continue;
-    if (item.stimulusKind !== 'text' && item.stimulusKind !== 'none') continue;
+    const spoken = item.mode === 'compare_choice'
+      ? [item.stimulusText, item.stimulusText2 ?? ''].filter((t) => t.trim()).join(' ')
+      : item.mode === 'say_answer' && (item.stimulusKind === 'text' || item.stimulusKind === 'none')
+        ? item.stimulusText
+        : null;
+    if (spoken === null) continue;
     const askTokens = new Set(tokenize(item.ask));
-    const missing = tokenize(item.stimulusText)
-      .filter((token) => !OPERATOR_TOKENS.has(token))
+    const missing = Array.from(new Set(tokenize(spoken)))
+      .filter((token) => !OPERATOR_TOKENS.has(token) && !ARTICLE_TOKENS.has(token))
       .filter((token) => {
         if (askTokens.has(token)) return false;
         if (/^\d+$/.test(token)) {
@@ -396,9 +553,16 @@ const judgingContract = (item: SpokenPracticeItem): string => {
     : '';
   const rule = item.acceptRule.trim() ? `${item.acceptRule.trim()} ` : '';
   const miss = item.signatureError.trim() ? `${item.signatureError.trim()} ` : '';
+  // The menu clause is CODE-OWNED, like the sentinels: `closed_set_choice` is a
+  // class the judge may only work in when it has been handed the whole set, so
+  // that sentence cannot be left to a generated `acceptRule` to remember.
+  const menu = item.mode === 'compare_choice' && item.choices?.length
+    ? `The learner is choosing one word from: ${item.choices.map((c) => `"${c}"`).join(', ')}. `
+      + 'Judge only which of those words they said; anything else is not an answer to this question. '
+    : '';
   return (
     'Then wait for the learner. '
-    + `The correct answer is "${item.expectedAnswer}". ${accept}${rule}${miss}`
+    + `${menu}The correct answer is "${item.expectedAnswer}". ${accept}${rule}${miss}`
     + `If the answer is right, say exactly: "Yes, ${item.expectedAnswer}." `
     + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${item.ask}"`
   );
@@ -444,8 +608,14 @@ export const completeCue = (): string =>
  * outright), closed structurally instead of per-pack.
  */
 export const pronounceCue = (item: SpokenPracticeItem): string => {
-  if (item.answerSource === 'decode' || item.stimulusRole === 'visual_target' || !item.stimulusText.trim()) return '';
-  return `[SAY_HEAR] Say exactly: "${item.stimulusText.trim()}" Then stop — say nothing else.`;
+  if (item.answerSource === 'decode' || item.stimulusRole === 'visual_target') return '';
+  // A pair re-hears BOTH things. Naming them is never a leak here (the answer is
+  // the comparison word), and hearing only one of two would be a broken replay.
+  const spoken = item.mode === 'compare_choice'
+    ? [item.stimulusText, item.stimulusText2].map((t) => (t ?? '').trim()).filter(Boolean).join(' and ')
+    : item.stimulusText.trim();
+  if (!spoken) return '';
+  return `[SAY_HEAR] Say exactly: "${spoken}" Then stop — say nothing else.`;
 };
 
 /**
@@ -473,7 +643,11 @@ export const pronounceCue = (item: SpokenPracticeItem): string => {
 export const contextFor = (item: SpokenPracticeItem): Record<string, string> => {
   const state: Record<string, string> = { challengeType: item.mode };
   if (item.answerSource !== 'decode' && item.stimulusRole !== 'visual_target') {
-    state.stimulus = item.stimulusText;
+    // Stimulus side only, as ever — for a pair that is both objects and NOT the
+    // menu: the menu rides the scripted cue, where its wording is exact.
+    state.stimulus = item.mode === 'compare_choice' && (item.stimulusText2 ?? '').trim()
+      ? `${item.stimulusText} and ${item.stimulusText2}`
+      : item.stimulusText;
   }
   return state;
 };

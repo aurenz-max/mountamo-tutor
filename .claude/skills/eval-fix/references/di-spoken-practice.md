@@ -91,3 +91,25 @@ but correcting routing does not itself guarantee complete target coverage.
 Letter naming is currently excluded by the catalog; do not use the prompt's
 `b, d, p` example as authorization to expand that response class. These cases
 are a proposed verification matrix, not results from newly executed live calls.
+
+## Implementation lessons from the follow-up
+
+The follow-up implementation and dated results are appended to the original
+eval report; the observations above describe the pre-fix source.
+
+- A first planner still emitted `_` for `=` and corrupted its own source quotes.
+  Rejecting those plans prevented bad items but left empty activities. The repair
+  retained source tokens in code and asked the model to select token IDs.
+- A planner/reviewer pair using Flash Lite sometimes approved an empty generic
+  plan for symbol naming. That routed back to the old all-`+` generator path.
+  The plan and review now use the repository's semantic-judging model,
+  `gemini-flash-latest`; source references and post-filter coverage remain code-owned.
+- Reviewing every plan initially rejected valid arithmetic/counting plans because
+  the reviewer mistook a task plan for a finished session. The reviewer needs the
+  same precise distinction between enumerated targets and open practice.
+- UI inspection found another consumer: tap-to-hear would pronounce a naming
+  target. Visual naming now withholds that affordance and loose stimulus context,
+  while the actual question and private judging/correction contract remain available.
+
+These findings explain why an added validator or model call cannot alone certify
+a repair. Preserve failed passes and check nearby valid tasks as well as the bug.

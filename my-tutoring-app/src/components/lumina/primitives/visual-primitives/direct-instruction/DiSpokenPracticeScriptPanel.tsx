@@ -107,7 +107,11 @@ export function DiSpokenPracticeScriptPanel({ items }: Props) {
               <Row label="Stimulus">
                 {item.stimulusEmoji ? `${item.stimulusEmoji} ` : ''}
                 {item.stimulusText || <em className="text-slate-500">(spoken only)</em>}
+                {item.stimulusText2 && ` · ${item.stimulusEmoji2 ?? ''} ${item.stimulusText2}`}
               </Row>
+              {item.choices && item.choices.length > 0 && (
+                <Row label="Menu" tone="text-slate-300">{item.choices.join(' · ')}</Row>
+              )}
               <Row label="How to play" tone="text-slate-400">{item.howToPlay || '—'}</Row>
               <Row label="Ask" tone="text-cyan-200">{item.ask}</Row>
               <Row label="Answer" tone="text-emerald-300">

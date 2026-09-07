@@ -87,6 +87,7 @@ const MODE_ICON: Record<SpokenPracticeMode, string> = {
   say_answer: '💬',
   read_aloud: '📖',
   count_and_say: '🔢',
+  compare_choice: '⚖️',
 };
 
 /** Misconception Loop S1 — the task identity, named so a distilled sentence
@@ -95,6 +96,8 @@ const TASK_PHRASE: Record<SpokenPracticeMode, string> = {
   say_answer: 'producing a spoken answer to a stimulus the child was not shown the answer to',
   read_aloud: 'reading printed text aloud (decoding, not recall)',
   count_and_say: 'counting a group of pictures and saying how many',
+  compare_choice:
+    'saying which word from a stated set describes two things shown side by side',
 };
 
 /** PLATFORM PROP CONTRACT: registry primitives mount as
@@ -180,7 +183,8 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!hasSubmitted) return [];
     return phaseResultsFromSummary(items, runner.summary, (it) => ({
-      label: `${MODE_SHAPE[it.mode].label} — ${it.stimulusText}`,
+      label: `${MODE_SHAPE[it.mode].label} — ${it.stimulusText2
+        ? `${it.stimulusText} / ${it.stimulusText2}` : it.stimulusText}`,
       icon: MODE_ICON[it.mode],
     }));
   }, [hasSubmitted, runner.summary, items]);
@@ -202,6 +206,21 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
         return (
           <div className="text-center text-7xl leading-none" role="img" aria-label="picture clue">
             {item.stimulusEmoji}
+          </div>
+        );
+      case 'pair':
+        // Two pictures, no labels: the tutor names both aloud (the unspoken-
+        // stimulus gate requires it), so printing them would only ask a
+        // pre-reader to read what they are already being told.
+        return (
+          <div className="flex items-center justify-center gap-6">
+            <div className="text-center text-7xl leading-none" role="img" aria-label={item.stimulusText}>
+              {item.stimulusEmoji}
+            </div>
+            <span className="text-2xl text-slate-500">·</span>
+            <div className="text-center text-7xl leading-none" role="img" aria-label={item.stimulusText2 ?? ''}>
+              {item.stimulusEmoji2}
+            </div>
           </div>
         );
       case 'objects':

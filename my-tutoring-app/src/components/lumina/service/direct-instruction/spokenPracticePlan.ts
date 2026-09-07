@@ -5,8 +5,12 @@ import {
   type SpokenPracticeItem, type SpokenPracticeMode,
 } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 
-const TASKS = ['visual_naming', 'read_aloud', 'say_answer', 'count_and_say', 'unsupported'] as const;
+const TASKS = ['visual_naming', 'read_aloud', 'say_answer', 'count_and_say', 'compare_choice', 'unsupported'] as const;
 type Task = typeof TASKS[number];
+// Task interpretation and review are semantic judgments, like lesson coverage.
+// Flash Lite approved empty generic plans for explicit symbol-naming sets in
+// the DSP retest. Keep it for open item generation, not the plan's authority.
+const PLAN_MODEL = 'gemini-flash-latest';
 
 export interface SpokenTarget {
   id: string;
@@ -42,7 +46,9 @@ const planSchema = (sources: string[]): Schema => ({
     task: { type: Type.STRING, enum: [...TASKS] },
     closedSet: { type: Type.BOOLEAN },
     targets: {
-      type: Type.ARRAY, maxItems: '6',
+      // flash-latest rejects maxItems in responseSchema; parseSpokenPlan owns
+      // the six-target ceiling (same API constraint as lesson coverage).
+      type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
@@ -91,13 +97,30 @@ export function parseSpokenPlan(raw: unknown, sources: string[]): SpokenPractice
     if (task === 'read_aloud' && (stimulusEmoji
       || normalizeSpokenAnswer(stimulusText).toLowerCase() !== expectedAnswer.toLowerCase()
       || alternates.length)) throw new Error('Reading target does not match printed text');
+    // A compare_choice target is a MENU WORD, not a stimulus: the required word
+    // quoted from the objective's own text ("longer"), grounded through the same
+    // token inventory that grounds a printed symbol. The two OBJECTS each item
+    // compares are not in the objective and are written later, by the item
+    // generator — which is why this task alone plans a set without planning
+    // items (see `buildPlannedSpokenItems`, which refuses to build them).
+    if (task === 'compare_choice' && (stimulusEmoji
+      || normalizeSpokenAnswer(stimulusText).toLowerCase() !== expectedAnswer.toLowerCase()
+      || alternates.length)) throw new Error('Comparative target is not a quoted menu word');
     return { id: `target-${i + 1}`, stimulusText, stimulusEmoji, expectedAnswer, alternates, sourceQuote };
   });
   if (new Set(targets.map(t => t.stimulusEmoji || t.stimulusText.toLowerCase())).size !== targets.length) {
     throw new Error('Duplicate targets');
   }
   if ((task === 'visual_naming' || value.closedSet) && targets.length === 0) throw new Error('Missing targets');
-  if (targets.length && task !== 'visual_naming' && task !== 'read_aloud') throw new Error('Unsupported target task');
+  if (targets.length && task !== 'visual_naming' && task !== 'read_aloud' && task !== 'compare_choice') {
+    throw new Error('Unsupported target task');
+  }
+  // The MENU is the task. One word is not a choice, and a comparative task
+  // whose words were never enumerated cannot claim `closed_set_choice` — it is
+  // open production wearing a menu, which is the class this pack refuses.
+  if (task === 'compare_choice' && (!value.closedSet || targets.length < 2)) {
+    throw new Error('Comparative choice needs an enumerated menu of two or more words');
+  }
   return { task, closedSet: value.closedSet, targets };
 }
 
@@ -107,6 +130,7 @@ export function modeForSpokenPlan(plan: SpokenPracticePlan): SpokenPracticeMode 
 
 export async function planSpokenPractice(
   topic: string, gradeLevel: string, intent?: string, objectiveText?: string,
+  allowedModes?: readonly string[],
 ): Promise<SpokenPracticePlan> {
   const sources = [objectiveText, intent, topic].filter((s): s is string => Boolean(s));
   const context = JSON.stringify({ topic, gradeLevel, objectiveText, intent });
@@ -114,7 +138,7 @@ export async function planSpokenPractice(
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
+        model: PLAN_MODEL,
         contents: `Plan the learning task for spoken practice. Interpret the supplied text; do not write practice items.
 CONTEXT: ${context}
 SOURCES: ${JSON.stringify(sources.map((text, i) => ({ id: `s${i + 1}`, text })))}
@@ -126,10 +150,16 @@ TASKS:
 - read_aloud: decode printed words or numerals; the printed text itself is the utterance.
 - say_answer: listening recall, arithmetic, or spoken manipulation of sounds/words.
 - count_and_say: count displayed objects and say the total (1-10).
+- compare_choice: the text names a FIXED SET of comparison words (longer/shorter, heavier/lighter,
+  more/fewer) and the child says which one describes TWO things they are shown. Choose this only
+  when the words themselves are enumerated. targets are those WORDS: select each from the token
+  inventory, set expectedAnswer to the same word, and leave alsoAccept empty. Never invent the pair
+  of objects being compared — a later generator writes those around your menu.
 - unsupported: letter NAMES, open-ended answers, unsupported representations, or an impossible scope.
 An answer must be 1-3 short spoken words. Letter names are not supported by this pack.
 closedSet is true ONLY when the objective/intent explicitly enumerates a finite required set for
-visual naming or reading. A numerical range, arithmetic topic, or phonics pattern is not such a set.
+visual naming, reading, or comparative choice (which is ALWAYS closedSet — its menu is the task).
+A numerical range, arithmetic topic, or phonics pattern is not such a set.
 For a closed set, extract EVERY required target, once each, regardless of prominence in the topic.
 For visual_naming without a named set, choose 3-4 distinct, scope-appropriate exemplars.
 For reading without a named set and for other tasks, targets is empty and closedSet is false.
@@ -141,18 +171,30 @@ For reading, expectedAnswer is the printed text (digits may become spoken number
 For naming, expectedAnswer/alsoAccept contain correct names, not definitions or associated concepts.
 Do not truncate a required set larger than six: use unsupported with no targets instead.
 ${feedback}`,
-        config: { responseMimeType: 'application/json', responseSchema: planSchema(sources), maxOutputTokens: 2048,
-          httpOptions: { timeout: 20000 } },
+        config: { responseMimeType: 'application/json', responseSchema: planSchema(sources), maxOutputTokens: 8192,
+          httpOptions: { timeout: 45000 } },
       });
       const plan = parseSpokenPlan(JSON.parse(response.text || '{}'), sources);
+      const plannedMode = modeForSpokenPlan(plan);
+      if (plannedMode && allowedModes && !allowedModes.includes(plannedMode)) {
+        throw new Error(`Task ${plan.task} conflicts with requested modes ${allowedModes.join(', ')}. `
+          + 'Recheck the learner action. Do not change the objective or invent a different task to fit the mode.');
+      }
       // Review even an empty/open plan: otherwise misclassifying a named set
       // as generic practice would bypass the coverage contract entirely.
       {
         const review = await ai.models.generateContent({
-          model: 'gemini-flash-lite-latest',
+          model: PLAN_MODEL,
           contents: `Independently check this proposed spoken-practice plan against the ORIGINAL context.
 CONTEXT: ${context}
 PLAN: ${JSON.stringify(plan)}
+This is a TASK PLAN, not the generated practice session. Its targets array is ONLY for visual
+naming, explicitly enumerated reading targets, and compare_choice — where the targets are the
+required comparison WORDS themselves (the objects each item compares are written later, so their
+absence here is correct and is NOT grounds for rejection). For listening recall, arithmetic, counting,
+or reading from a range/pattern, targets MUST be empty and closedSet false: a later generator
+writes those items. A numerical range (within five), a phonics pattern, or an arithmetic topic
+does NOT enumerate a required set. Do not reject a valid open plan for lacking practice items.
 Reject if the task changes the requested learner action, any required named member is missing,
 any target is outside scope, a symbol glyph or picture is wrong/ambiguous, any name/alternate is
 incorrect, or a letter-name task was admitted. Check EVERY displayed stimulus against its answer.
@@ -160,7 +202,7 @@ A named list must be marked closedSet and fully represented, even if another mem
 Reading must decode the printed text; naming a symbol/picture must retrieve its name without printing it.
 Do not approve merely because quotes occur in the input. Return valid and a short reason.`,
           config: {
-            responseMimeType: 'application/json', maxOutputTokens: 1024, httpOptions: { timeout: 20000 },
+            responseMimeType: 'application/json', maxOutputTokens: 8192, httpOptions: { timeout: 45000 },
             responseSchema: { type: Type.OBJECT, properties: {
               valid: { type: Type.BOOLEAN }, reason: { type: Type.STRING },
             }, required: ['valid', 'reason'] },
@@ -182,7 +224,11 @@ Do not approve merely because quotes occur in the input. Return valid and a shor
  * once; it never independently re-emits the glyph, answer, or correction per slot. */
 export function buildPlannedSpokenItems(plan: SpokenPracticePlan, count: number): SpokenPracticeItem[] {
   const mode = modeForSpokenPlan(plan);
-  if (!mode || !plan.targets.length || plan.targets.length > count) return [];
+  // compare_choice plans a MENU, not a stimulus mapping — there is no checked
+  // stimulus→answer pair here to repeat, because the pair of objects is content
+  // the item generator writes. Its coverage is verified by `hasChoiceCoverage`
+  // over the generated items instead.
+  if (!mode || mode === 'compare_choice' || !plan.targets.length || plan.targets.length > count) return [];
   const offset = Math.floor(Math.random() * plan.targets.length);
   return Array.from({ length: count }, (_, i) => {
     const t = plan.targets[(i + offset) % plan.targets.length];
@@ -210,4 +256,21 @@ export function hasPlannedCoverage(plan: SpokenPracticePlan, items: SpokenPracti
   return items.length === count && plan.targets.every(t => items.some(item =>
     item.targetId === t.id && item.stimulusText === t.stimulusText
     && item.stimulusEmoji === t.stimulusEmoji && item.expectedAnswer === t.expectedAnswer));
+}
+
+/** The required comparison words for a menu plan, in the objective's own order
+ *  and wording. Empty for every other task. */
+export function spokenChoiceMenu(plan: SpokenPracticePlan): string[] {
+  return plan.task === 'compare_choice' ? plan.targets.map(t => t.expectedAnswer) : [];
+}
+
+/** Coverage for a menu plan: every required word must be PRODUCED at least once.
+ *  Repetition across items is fine — an unasked menu word is not, because a
+ *  four-word objective assessed on two words is the named-set failure this plan
+ *  exists to prevent. Run AFTER the item gates, like `hasPlannedCoverage`. */
+export function hasChoiceCoverage(
+  menu: readonly string[], items: readonly SpokenPracticeItem[],
+): boolean {
+  return menu.every(word => items.some(
+    item => item.expectedAnswer.trim().toLowerCase() === word.trim().toLowerCase()));
 }

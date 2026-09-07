@@ -13,6 +13,7 @@ import {
   deriveResponseClass,
   findAnswerLeaks,
   findArithmeticMismatches,
+  findChoiceMenuDefects,
   findPrintedNumerals,
   findUnspokenStimulus,
   itemCue,
@@ -303,5 +304,137 @@ describe('tap-to-hear never reads the child their own task', () => {
     // phonics-blender shipped the opposite of this: its third tap spoke the
     // answer outright. Closed at the source rather than per pack.
     expect(pronounceCue(item({ mode: 'read_aloud', answerSource: 'decode' }))).toBe('');
+  });
+});
+
+// ── compare_choice — the menu is what makes the exemption safe ───────────────
+
+const MENU = ['longer', 'shorter', 'heavier', 'lighter'];
+
+const pairItem = (over: Partial<SpokenPracticeItem> = {}): SpokenPracticeItem => item({
+  mode: 'compare_choice',
+  action: 'compare_choice',
+  responseClass: 'closed_set_choice',
+  stimulusKind: 'pair',
+  stimulusText: 'a feather',
+  stimulusEmoji: '🪶',
+  stimulusText2: 'a rock',
+  stimulusEmoji2: '🪨',
+  choices: MENU,
+  ask: 'Here is a feather, and here is a rock. Is the rock longer, shorter, heavier, or lighter?',
+  howToPlay: 'I will show you two things and say the words, and you say the one that fits.',
+  expectedAnswer: 'heavier',
+  acceptRule: '',
+  signatureError: '',
+  correctionBody: 'The rock is heavier than the feather.',
+  ...over,
+});
+
+describe('compare_choice — a spoken menu, and the gate that keeps it closed', () => {
+  it('places a menu word in the closed-set class, not open production', () => {
+    expect(deriveResponseClass('compare_choice', 'heavier', 'a rock')).toBe('closed_set_choice');
+  });
+
+  it('still refuses a menu "word" that is really a sentence', () => {
+    expect(deriveResponseClass('compare_choice', 'the rock is much heavier than that', 'a rock'))
+      .toBeNull();
+  });
+
+  it('accepts an ask that reads the WHOLE menu', () => {
+    expect(findChoiceMenuDefects([pairItem()])).toEqual([]);
+  });
+
+  it('DROPS the two-of-four ask — a narrowed menu is a leak wearing a menu costume', () => {
+    // The exact shape the wxyu draw's own intent proposed ("is it longer or heavier?").
+    const narrowed = pairItem({
+      ask: 'Here is a feather, and here is a rock. Is the rock longer or heavier?',
+    });
+    expect(findChoiceMenuDefects([narrowed])).toEqual([
+      { itemId: 'dsp-1', reason: 'menu_not_spoken', detail: ['shorter', 'lighter'] },
+    ]);
+  });
+
+  it('drops an answer that is not on the menu it read out', () => {
+    expect(findChoiceMenuDefects([pairItem({ expectedAnswer: 'bigger' })])).toEqual([
+      { itemId: 'dsp-1', reason: 'answer_not_in_menu', detail: MENU },
+    ]);
+  });
+
+  it('drops a one-word menu — that is not a choice', () => {
+    expect(findChoiceMenuDefects([pairItem({ choices: ['heavier'] })])).toEqual([
+      { itemId: 'dsp-1', reason: 'too_few_choices', detail: ['heavier'] },
+    ]);
+  });
+
+  it('drops choices the ear cannot separate', () => {
+    const overlapping = pairItem({
+      choices: ['long', 'longer'],
+      expectedAnswer: 'longer',
+      ask: 'Here is a feather, and here is a rock. Is the rock long, or longer?',
+    });
+    expect(findChoiceMenuDefects([overlapping])).toEqual([
+      { itemId: 'dsp-1', reason: 'choices_not_separable', detail: ['long', 'longer'] },
+    ]);
+  });
+
+  it("drops the object NAMED with the answer's root — found live, 2026-09-06", () => {
+    // flash-lite's own first real draw. Every whole-token gate passed it:
+    // "long" is not the token "longer", but a child hears the answer anyway.
+    const giveaway = pairItem({
+      stimulusText: 'a long pencil',
+      stimulusText2: 'a crayon',
+      expectedAnswer: 'longer',
+      ask: 'Here is a long pencil, and here is a crayon. Is the pencil longer, shorter, heavier, or lighter?',
+    });
+    expect(findAnswerLeaks([giveaway])).toEqual([]); // the whole-token scan cannot see it
+    expect(findChoiceMenuDefects([giveaway])).toEqual([
+      { itemId: 'dsp-1', reason: 'menu_word_in_stimulus', detail: ['long'] },
+    ]);
+  });
+
+  it('leaves an object that merely shares a first letter alone', () => {
+    // "leaf"/"lighter" is the accidental pair the four-character threshold spares.
+    const fine = pairItem({
+      stimulusText: 'an elephant',
+      stimulusText2: 'a leaf',
+      expectedAnswer: 'lighter',
+      ask: 'Here is an elephant, and here is a leaf. Is the leaf longer, shorter, heavier, or lighter?',
+    });
+    expect(findChoiceMenuDefects([fine])).toEqual([]);
+  });
+
+  it('exempts the ask from the leak scan ONLY because the menu is always complete', () => {
+    expect(findAnswerLeaks([pairItem()])).toEqual([]);
+  });
+
+  it('still catches the answer hidden in either object name', () => {
+    expect(findAnswerLeaks([pairItem({ stimulusText: 'a heavier box' })]))
+      .toEqual([{ itemId: 'dsp-1', field: 'stimulusText', answer: 'heavier' }]);
+    expect(findAnswerLeaks([pairItem({ stimulusText2: 'the heavier one' })]))
+      .toEqual([{ itemId: 'dsp-1', field: 'stimulusText2', answer: 'heavier' }]);
+  });
+
+  it('requires the ask to NAME BOTH things — a pre-reader cannot compare two unnamed pictures', () => {
+    const halfSpoken = pairItem({
+      ask: 'Look at these. Is the rock longer, shorter, heavier, or lighter?',
+    });
+    expect(findUnspokenStimulus([halfSpoken]))
+      .toEqual([{ itemId: 'dsp-1', missing: ['feather'] }]);
+    expect(findUnspokenStimulus([pairItem()])).toEqual([]);
+  });
+
+  it('hands the judge the menu in code, not in a generated clause', () => {
+    const cue = itemCue(pairItem(), { opening: false, howToPlay: false });
+    expect(cue).toContain(
+      'The learner is choosing one word from: "longer", "shorter", "heavier", "lighter".');
+    expect(cue).toContain('The correct answer is "heavier"');
+    expect(cue).toContain('If the answer is right, say exactly: "Yes, heavier."');
+  });
+
+  it('re-hears BOTH things, and pushes both as stimulus state without the menu', () => {
+    expect(pronounceCue(pairItem()))
+      .toBe('[SAY_HEAR] Say exactly: "a feather and a rock" Then stop — say nothing else.');
+    expect(contextFor(pairItem()))
+      .toEqual({ challengeType: 'compare_choice', stimulus: 'a feather and a rock' });
   });
 });
