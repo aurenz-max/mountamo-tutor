@@ -11,6 +11,9 @@ import { ImageInsetRenderer } from './ImageInsetRenderer';
 import { NumberLineInsetRenderer } from './NumberLineInsetRenderer';
 import { DefinitionBoxInsetRenderer } from './DefinitionBoxInsetRenderer';
 import { EquationSetupInsetRenderer } from './EquationSetupInsetRenderer';
+import { NumberSentenceInsetRenderer } from './NumberSentenceInsetRenderer';
+import { ArrangementInsetRenderer } from './ArrangementInsetRenderer';
+import { GlyphCardInsetRenderer } from './GlyphCardInsetRenderer';
 
 interface InsetRendererProps {
   inset: Inset;
@@ -27,6 +30,11 @@ interface InsetRendererProps {
 /**
  * Routes inset data to the correct inline renderer.
  * Renders inside a subtle glass container with optional label.
+ *
+ * The three K-first STIMULUS insets (`number-sentence`, `arrangement`,
+ * `glyph-card`, KC redesign P1) render static here — stimulus only, never
+ * input. The one pointing surface (knowledge-check `point_to`) imports
+ * `NumberSentenceTokens` directly and owns the tap.
  */
 export const InsetRenderer: React.FC<InsetRendererProps> = ({ inset, className = '', onCompletionChange }) => {
   const renderInset = () => {
@@ -40,6 +48,9 @@ export const InsetRenderer: React.FC<InsetRendererProps> = ({ inset, className =
       case 'number-line':     return <NumberLineInsetRenderer data={inset} />;
       case 'definition-box':  return <DefinitionBoxInsetRenderer data={inset} />;
       case 'equation-setup':  return <EquationSetupInsetRenderer data={inset} onCompletionChange={onCompletionChange} />;
+      case 'number-sentence': return <NumberSentenceInsetRenderer data={inset} />;
+      case 'arrangement':     return <ArrangementInsetRenderer data={inset} />;
+      case 'glyph-card':      return <GlyphCardInsetRenderer data={inset} />;
       default:                return null;
     }
   };

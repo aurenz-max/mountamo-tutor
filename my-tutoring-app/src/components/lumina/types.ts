@@ -454,7 +454,11 @@ export type ProblemType =
   | 'sequencing_activity'
   | 'categorization_activity'
   | 'scenario_question'
-  | 'short_answer';
+  | 'short_answer'
+  /** KC redesign P2 (2026-09-05): a PRODUCTION item — the child sees or hears a
+   *  stimulus that is not the answer and says a name / sound / number word, or
+   *  points at a position or form. See `ProductionProblemData`. */
+  | 'production';
 
 export type ProblemDifficulty = 'easy' | 'medium' | 'hard';
 
@@ -471,7 +475,13 @@ export type InsetType =
   | 'image'
   | 'number-line'
   | 'definition-box'
-  | 'equation-setup';
+  | 'equation-setup'
+  // ── K-first STIMULUS insets (KC redesign P1, 2026-09-05). Stimulus only, never
+  //    input (qa/di/BACKLOG.md item 17 ruling). Code-built from a small scope, so
+  //    the answer is never rendered on the stimulus — see service/insets/build.ts.
+  | 'number-sentence'
+  | 'arrangement'
+  | 'glyph-card';
 
 export interface BaseInset {
   insetType: InsetType;
@@ -580,6 +590,75 @@ export interface EquationSetupInset extends BaseInset {
   rationale: string;
 }
 
+// ── K-first STIMULUS insets (KC redesign P1) ─────────────────────────────────
+
+/** One addressable token of a printed number sentence. `kind` lets a renderer
+ *  size operators and blanks; `id` is what a `point_to` item targets. */
+export interface NumberSentenceToken {
+  id: string;
+  text: string;
+  kind: 'number' | 'operator' | 'blank';
+}
+
+/**
+ * A printed equation as addressable tokens — `3 − 1 = 2` as five slots. No
+ * token is ever pre-highlighted; the blank `□` sits only where a `how_many`
+ * item asks for the result. Large glyphs, no colour by default.
+ */
+export interface NumberSentenceInset extends BaseInset {
+  insetType: 'number-sentence';
+  tokens: NumberSentenceToken[];
+}
+
+export type ArrangementLayout = 'scattered' | 'row' | 'ten-frame' | 'array' | 'before-after' | 'groups';
+
+/**
+ * A set of emoji objects in a code-built layout. `count` objects are drawn;
+ * `removed` (take-away) are drawn crossed out INSIDE the count, so the
+ * remaining set is `count - removed`; `groups` (put-together) splits the count
+ * into clusters drawn with a gap between them. No digits anywhere on the
+ * stimulus.
+ */
+export interface ArrangementInset extends BaseInset {
+  insetType: 'arrangement';
+  emoji: string;
+  /** Objects drawn in total, 1..10. */
+  count: number;
+  layout: ArrangementLayout;
+  /** Objects drawn crossed out (taken away). 0 ≤ removed < count. */
+  removed?: number;
+  /** `groups` layout: cluster sizes, each ≥ 1, summing to `count`. */
+  groups?: number[];
+  /** `array`: columns per row (2..5). */
+  columns?: number;
+  /** Short spoken name of the object ("apples") so the blind tutor can SAY the
+   *  stimulus. Never rendered. */
+  objectName?: string;
+}
+
+export type GlyphCardGlyphKind = 'numeral' | 'letter' | 'word' | 'operator' | 'shape';
+
+/**
+ * ONE large printed symbol: a numeral, a letter (either case), a short
+ * decodable word, an operator, or a shape outline (SVG polygon from `sides`).
+ * The glyph's NAME never appears on the card — the card is the stimulus.
+ */
+export interface GlyphCardInset extends BaseInset {
+  insetType: 'glyph-card';
+  glyphKind: GlyphCardGlyphKind;
+  /** The printed text for numeral / letter / word / operator. Empty for shape. */
+  glyph: string;
+  /** `shape` only: sides for the polygon (0 = circle, 3..8). */
+  sides?: number;
+  /** `shape` only: draw the code-owned di-shapes exemplar for this name
+   *  (circle · oval · triangle · square · rectangle · hexagon · pentagon ·
+   *  rhombus · trapezoid) instead of a regular polygon from `sides` — the
+   *  invariants that make a rectangle a rectangle live in that table. */
+  shapeName?: string;
+  /** `word` only: draw phoneme boxes under the letters. */
+  phonemeBoxes?: boolean;
+}
+
 export type Inset =
   | KatexInset
   | DataTableInset
@@ -589,7 +668,15 @@ export type Inset =
   | ImageInset
   | NumberLineInset
   | DefinitionBoxInset
-  | EquationSetupInset;
+  | EquationSetupInset
+  | NumberSentenceInset
+  | ArrangementInset
+  | GlyphCardInset;
+
+/** Insets a pre-reader can read: picturable, sayable by the blind tutor, and
+ *  built from a scope small enough that code owns the answer. */
+export const K_STIMULUS_INSET_TYPES: readonly InsetType[] =
+  ['number-sentence', 'arrangement', 'glyph-card', 'number-line'] as const;
 
 /** The curriculum subject_ids used to scope curriculum attribution. Single source of
  *  truth for the Gemini schema `enum`s (manifest, practice, knowledge-check orchestrator)
@@ -749,6 +836,52 @@ export interface ShortAnswerProblemData extends BaseProblemData {
   question: string;
 }
 
+// ── Production Problem (KC redesign P2, 2026-09-05) ──────────────────────────
+
+/**
+ * The production KINDS — chosen by the objective's verb in code
+ * (`service/knowledge-check/knowledgeCheckPlan.ts`), never by the orchestrator.
+ *  - say_it    sees ONE thing (glyph-card) and says its name / value.
+ *  - point_to  points at a position or form in a shown stimulus (the honest tap
+ *              per the DI ruling: tap only for position / form / build).
+ *  - how_many  says a number word for a shown arrangement or a missing result.
+ */
+export type ProductionKind = 'say_it' | 'point_to' | 'how_many';
+
+/**
+ * A production item: stimulus ≠ answer, the child PRODUCES. One data type
+ * serves both surfaces — the judged loop asks for the spoken/pointed answer
+ * and ignores `options`; the tap surface (no mic) renders `options` as the
+ * closed fallback menu. `options` always contains the correct answer, so the
+ * menu is the same closed-set arithmetic every MCQ already grades against.
+ */
+export interface ProductionProblemData extends BaseProblemData {
+  type: 'production';
+  kind: ProductionKind;
+  /** The spoken ask, ≤ 12 words. Never contains the answer token. */
+  ask: string;
+  /** What the child sees. Required — a production item without a stimulus is
+   *  the recall-over-emoji shape this type replaces. */
+  stimulus: Inset;
+  /** Canonical spoken answer ("minus", "three", "triangle"). For `point_to`
+   *  this is the spoken NAME of the target, for the affirmation line. */
+  expectedAnswer: string;
+  /** Equally correct spoken forms ("take away", "3"). */
+  alternates: string[];
+  /** `point_to` over a number-sentence: the token id the child must touch. */
+  targetTokenId?: string;
+  /** Tap-surface fallback menu (also the choices on a no-mic device). */
+  options: MultipleChoiceOption[];
+  correctOptionId: string;
+
+  // Evaluation props (optional, auto-injected by the KC container)
+  instanceId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: any) => void;
+  preReader?: boolean;
+  onAskTutor?: (message: string) => void;
+}
+
 // Union type for all problem data
 export type ProblemData =
   | MultipleChoiceProblemData
@@ -758,7 +891,8 @@ export type ProblemData =
   | SequencingActivityProblemData
   | CategorizationActivityProblemData
   | ScenarioQuestionProblemData
-  | ShortAnswerProblemData;
+  | ShortAnswerProblemData
+  | ProductionProblemData;
 
 // Type selection for parallel generation (mirrors backend TYPE_SELECTION_SCHEMA)
 export interface ProblemTypeSelection {

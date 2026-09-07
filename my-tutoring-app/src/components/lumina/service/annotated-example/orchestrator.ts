@@ -36,6 +36,12 @@ import type {
   AnnotatedPlannedInsetType,
 } from '../../primitives/annotated-example/types';
 import type { Inset } from '../../types';
+
+const ANNOTATED_PLANNED_INSET_TYPES: ReadonlySet<string> = new Set([
+  'katex', 'data-table', 'passage', 'chart', 'code', 'number-line', 'definition-box', 'equation-setup',
+]);
+const isAnnotatedPlannedInsetType = (t: string): t is Exclude<AnnotatedPlannedInsetType, null> =>
+  ANNOTATED_PLANNED_INSET_TYPES.has(t);
 import {
   buildIntentFaithfulFallback,
   formatAuthoringContractForPrompt,
@@ -470,8 +476,13 @@ async function runPlanningStage(
     : 'medium';
 
   const rawInset = raw.insetType;
+  // The shared module also authors the K stimulus insets (number-sentence,
+  // arrangement, glyph-card — KC redesign P1); this pipeline plans only its
+  // own text-problem subset, so narrow past the shared guard.
   const insetType: AnnotatedPlannedInsetType =
-    typeof rawInset === 'string' && isAuthorableInsetType(rawInset) ? rawInset : null;
+    typeof rawInset === 'string' && isAuthorableInsetType(rawInset) && isAnnotatedPlannedInsetType(rawInset)
+      ? rawInset
+      : null;
 
   const problemStatement =
     typeof raw.problemStatement === 'string' ? raw.problemStatement.trim() : '';

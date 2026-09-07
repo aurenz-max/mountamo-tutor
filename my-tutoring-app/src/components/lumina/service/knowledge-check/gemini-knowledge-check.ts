@@ -29,8 +29,15 @@ import {
   KnowledgeCheckPlan,
   KnowledgeCheckVisualType,
   VisualPrimitive,
+  K_STIMULUS_INSET_TYPES,
 } from "../../types";
 import { runKnowledgeCheckOrchestrator, type KcLessonObjective } from './gemini-knowledge-check-orchestrator';
+// The shared inset module (KC redesign P0): schema fragment + author guidance
+// were duplicated here and in annotated-example; now one copy.
+import { getInsetSchema, buildInsetPrompt } from '../insets';
+// The code-owned plan skeleton + production items (KC redesign P2/P3).
+import { planKnowledgeCheckSlots, type KcLegacySlot, type KcPlanSkeleton } from './knowledgeCheckPlan';
+import { buildProductionProblem } from './productionGenerator';
 
 // ============================================================================
 // BLOOM'S TAXONOMY TIERS (IRT §6.8)
@@ -213,12 +220,16 @@ const PRE_READER_PROBLEM_TYPES = new Set<ProblemType>(['multiple_choice', 'true_
  * picture-primary options and forbids the phantom-visual references the census
  * caught ("the box", "the picture below", "the math sentence below").
  */
-const PRE_READER_MC_PALETTE = `
+const preReaderMcPalette = (insetType?: InsetType): string => `
 ## PRE-READER (KINDERGARTEN) PALETTE — MANDATORY
 This question is READ ALOUD to a 5-year-old who CANNOT read. Obey ALL rules:
 - The QUESTION is at most 12 words, one short spoken sentence.
-- Do NOT reference any picture, diagram, chart, box, or "below/above/here" — NO
-  visual is shown on screen. The ONLY picture is the emoji on each option.
+${insetType
+    ? `- The ONLY picture on screen is the ${insetType} rendered above the question (the "inset"). The question may refer to it plainly ("on the number line") and MUST be unanswerable without it. Do NOT reference any OTHER picture, diagram, box, or "below/here".`
+    : `- Do NOT reference any picture, diagram, chart, box, or "below/above/here" — NO
+  visual is shown on screen. The ONLY picture is the emoji on each option. Never
+  ask about a number line, a hop, a "landing" spot, or anything the child would
+  have to see.`}
 - Each option is a single concrete, picturable thing (1-3 words) that a
   kindergartner knows.
 - Provide an "emoji" for EVERY option — one obvious emoji that depicts that
@@ -232,206 +243,9 @@ This question is READ ALOUD to a 5-year-old who CANNOT read. Obey ALL rules:
 // INSET SCHEMAS (Rich inline content generated atomically with problems)
 // ============================================================================
 
-/**
- * Build the Gemini schema fragment for a specific inset type.
- * Returns null when no inset is requested — backward compatible.
- */
-function getInsetSchema(insetType?: InsetType): Schema | null {
-  if (!insetType) return null;
-
-  const baseProps: Record<string, Schema> = {
-    insetType: { type: Type.STRING, description: `Must be "${insetType}"` },
-    label: { type: Type.STRING, description: 'Display label, e.g. "Figure 1", "Table A", "Equation"' },
-  };
-
-  switch (insetType) {
-    case 'katex':
-      return {
-        type: Type.OBJECT,
-        properties: {
-          ...baseProps,
-          expression: { type: Type.STRING, description: 'LaTeX expression string (e.g. "\\\\frac{d}{dx}[x^3]")' },
-          displayMode: { type: Type.STRING, enum: ['display', 'inline'], description: '"display" for centered block, "inline" for flow' },
-          caption: { type: Type.STRING, description: 'Optional description below the expression' },
-        },
-        required: ['insetType', 'expression', 'displayMode'],
-      };
-
-    case 'data-table':
-      return {
-        type: Type.OBJECT,
-        properties: {
-          ...baseProps,
-          headers: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Column headers' },
-          rows: {
-            type: Type.ARRAY,
-            items: { type: Type.ARRAY, items: { type: Type.STRING } },
-            description: '2D array of cell values',
-          },
-          caption: { type: Type.STRING, description: 'Optional table caption' },
-        },
-        required: ['insetType', 'headers', 'rows'],
-      };
-
-    case 'passage':
-      return {
-        type: Type.OBJECT,
-        properties: {
-          ...baseProps,
-          text: { type: Type.STRING, description: 'The passage text. Use \\n for line breaks in poetry.' },
-          format: { type: Type.STRING, enum: ['prose', 'poem', 'quote', 'letter', 'source'], description: 'Typography style' },
-          attribution: { type: Type.STRING, description: 'Author/source attribution' },
-        },
-        required: ['insetType', 'text', 'format'],
-      };
-
-    case 'chart':
-      return {
-        type: Type.OBJECT,
-        properties: {
-          ...baseProps,
-          chartType: { type: Type.STRING, enum: ['bar', 'line', 'pie'], description: 'Chart visualization type' },
-          title: { type: Type.STRING, description: 'Chart title' },
-          xLabel: { type: Type.STRING, description: 'X-axis label' },
-          yLabel: { type: Type.STRING, description: 'Y-axis label' },
-          data: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                label: { type: Type.STRING },
-                value: { type: Type.NUMBER },
-              },
-              required: ['label', 'value'],
-            },
-            description: 'Data points (3-8 items)',
-          },
-        },
-        required: ['insetType', 'chartType', 'title', 'data'],
-      };
-
-    case 'code':
-      return {
-        type: Type.OBJECT,
-        properties: {
-          ...baseProps,
-          code: { type: Type.STRING, description: 'Source code content' },
-          language: { type: Type.STRING, description: 'Programming language (e.g. python, javascript, java)' },
-        },
-        required: ['insetType', 'code', 'language'],
-      };
-
-    case 'number-line':
-      return {
-        type: Type.OBJECT,
-        properties: {
-          ...baseProps,
-          min: { type: Type.NUMBER, description: 'Left end of number line' },
-          max: { type: Type.NUMBER, description: 'Right end of number line' },
-          ticks: { type: Type.ARRAY, items: { type: Type.NUMBER }, description: 'Tick mark positions' },
-          points: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                value: { type: Type.NUMBER },
-                label: { type: Type.STRING },
-              },
-              required: ['value', 'label'],
-            },
-            description: 'Named points on the line',
-          },
-        },
-        required: ['insetType', 'min', 'max', 'ticks'],
-      };
-
-    case 'definition-box':
-      return {
-        type: Type.OBJECT,
-        properties: {
-          ...baseProps,
-          term: { type: Type.STRING, description: 'The vocabulary term' },
-          definition: { type: Type.STRING, description: 'The definition' },
-          partOfSpeech: { type: Type.STRING, description: 'e.g. noun, verb, adjective' },
-          exampleSentence: { type: Type.STRING, description: 'Example usage in a sentence' },
-        },
-        required: ['insetType', 'term', 'definition'],
-      };
-
-    case 'image':
-      // Image insets require base64 — not practical for Gemini text generation.
-      // Handled separately via image generation pipeline.
-      return null;
-
-    default:
-      return null;
-  }
-}
-
-/**
- * Build prompt instructions for inset generation.
- * Injected into any generator prompt when insetType is specified.
- */
-function buildInsetPrompt(insetType?: InsetType): string {
-  if (!insetType) return '';
-
-  const guidance: Record<string, string> = {
-    'katex': `
-## INSET: Mathematical Expression (KaTeX)
-Generate a LaTeX mathematical expression that is CENTRAL to the question.
-The question MUST require reading/interpreting the expression to answer.
-Use proper LaTeX notation (\\frac, \\sqrt, ^, _, \\sum, \\int, Greek letters, etc.).
-The expression should be complex enough to be worth rendering — not just "x + 2".`,
-
-    'data-table': `
-## INSET: Data Table
-Generate a data table with 3-6 columns and 3-8 rows of realistic data.
-The question MUST require reading specific values from the table to answer.
-Distractors should be plausible misreadings (wrong row, adjacent column, etc.).
-Include meaningful headers and varied data that supports multiple question angles.`,
-
-    'passage': `
-## INSET: Text Passage
-Generate a passage (2-4 paragraphs for prose, 8-16 lines for poetry, 1-3 paragraphs for quotes/letters/sources).
-The question MUST require comprehending the passage to answer — not just surface recall.
-For poetry: use \\n for line breaks. For prose: write continuous paragraphs.
-Include an attribution if appropriate (author name, title, date).`,
-
-    'chart': `
-## INSET: Chart Data
-Generate realistic data points (3-8 items) for a chart visualization.
-The question MUST require interpreting the chart data to answer.
-Include a descriptive title and axis labels where appropriate.
-Make sure data values create clear patterns or comparisons the question can test.`,
-
-    'code': `
-## INSET: Code Block
-Generate a code snippet (5-20 lines) in the specified or appropriate language.
-The question MUST require reading/tracing the code to answer.
-Include realistic variable names, proper indentation, and clear logic.
-For "find the bug" questions: include exactly one subtle, realistic bug.`,
-
-    'number-line': `
-## INSET: Number Line
-Generate a number line with appropriate range, tick marks, and labeled points.
-The question MUST require interpreting positions or distances on the number line.
-Use grade-appropriate numbers (integers for elementary, fractions/decimals for middle school).`,
-
-    'definition-box': `
-## INSET: Definition Box
-Generate a vocabulary term with its definition, part of speech, and example sentence.
-The question MUST require understanding the definition to answer — not just recognizing the word.
-Choose terms with nuanced meanings that support analysis-level questions.`,
-  };
-
-  return (guidance[insetType] || '') + `
-
-CRITICAL: The inset content and question MUST be internally consistent.
-- The question is UNANSWERABLE without the inset.
-- Distractors are derived from plausible misinterpretations of the inset.
-- The inset and question are generated TOGETHER as one coherent unit.
-`;
-}
+// The schema fragment + author guidance moved to the shared module
+// (service/insets — KC redesign P0, 2026-09-05). getInsetSchema / buildInsetPrompt
+// keep their optional signatures; the implementation is imported above.
 
 /**
  * Inject the inset schema property into a problem schema.
@@ -721,7 +535,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${readerFitPrompt}${insetPrompt}${visualPrompt}${isPreReader ? PRE_READER_MC_PALETTE : ''}
+${bloomsPrompt}${readerFitPrompt}${insetPrompt}${visualPrompt}${isPreReader ? preReaderMcPalette(insetType) : ''}
 ## Your Mission:
 Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}${visualType ? `\nEach problem MUST populate the schema's flat ${visualType} fields; the rendered visual is the evidence the question asks about.` : ''}
 
@@ -1835,8 +1649,75 @@ export const generateKnowledgeCheck = async (
       topic, gradeLevel, preciseGrade: config?.preciseGrade, count, bloomsTier,
     });
 
+    // ── KC redesign P3: the plan is SET-SIZED in code, not `count`-sized. ──
+    // With lesson objectives, code builds the slot list (≥2 per objective, one
+    // per named element); production slots are built here with no model call,
+    // and only the remaining `legacy` slots go to the orchestrator. Without
+    // objectives (tester / direct callers) the path is unchanged.
+    const preReader = isPreReaderGradeKey(gradeLevel);
+    const objectives = config?.objectives ?? [];
+    const productionProblems: ProblemData[] = [];
+    const legacySlots: KcLegacySlot[] = [];
+    let skeleton: KcPlanSkeleton | null = null;
+    if (objectives.length > 0) {
+      skeleton = planKnowledgeCheckSlots(
+        objectives.map((o) => ({ id: o.id, text: o.text, subskillId: o.subskillId, skillId: o.skillId, grade: o.grade })),
+        { preReader, count },
+      );
+      const used = new Set<string>();
+      const dropped: string[] = [];
+      for (const slot of skeleton.slots) {
+        if (slot.kind === 'legacy') { legacySlots.push(slot); continue; }
+        const objective = objectives.find((o) => o.id === slot.objectiveId);
+        const built = buildProductionProblem(slot, {
+          gradeLevel,
+          preReader,
+          grade: config?.preciseGrade,
+          objectiveText: objective?.text ?? topic,
+          used,
+        });
+        if (built) {
+          if (objective?.subskillId) { built.subskillId = objective.subskillId; built.skillId = objective.skillId; }
+          productionProblems.push(built);
+        } else {
+          // A slot that could not be built honestly becomes a legacy slot so
+          // the objective still gets its two opportunities — and is reported.
+          dropped.push(`${slot.productionKind}/${slot.stimulus}${slot.element ? `:${slot.element}` : ''}@${slot.objectiveId}`);
+          legacySlots.push({ kind: 'legacy', objectiveId: slot.objectiveId, angle: slot.angle });
+        }
+      }
+      console.log('[Knowledge Check] Set-sized plan:', {
+        requestedCount: count,
+        planned: skeleton.slots.length,
+        production: productionProblems.length,
+        legacy: legacySlots.length,
+        budget: skeleton.budget,
+        droppedGeneric: skeleton.droppedGeneric,
+        legacyObjectives: skeleton.legacyObjectiveIds,
+        namedSets: Object.fromEntries(Object.entries(skeleton.namedSets).map(([k, v]) => [k, `${v.kind}:${v.elements.join(',')}`])),
+        ...(dropped.length ? { unbuildable: dropped } : {}),
+        countDelta: skeleton.slots.length - count,
+      });
+    }
+
+    const legacyCount = skeleton ? legacySlots.length : count;
+    const legacyObjectiveIds = new Set(legacySlots.map((s) => s.objectiveId));
+    // The orchestrator briefs the legacy slots; it does not size them — each
+    // objective carries the exact count the skeleton assigned it.
+    const legacyObjectives = skeleton
+      ? objectives
+        .filter((o) => legacyObjectiveIds.has(o.id))
+        .map((o) => ({ ...o, problemCount: legacySlots.filter((s) => s.objectiveId === o.id).length }))
+      : config?.objectives;
+
+    if (legacyCount === 0 && productionProblems.length > 0) {
+      // Every slot was a production item — no orchestrator call at all.
+      console.log(`[Knowledge Check] Orchestrated: ${productionProblems.length} production problems, 0 legacy`);
+      return productionProblems;
+    }
+
     const plan = await runKnowledgeCheckOrchestrator(
-      topic, gradeLevel, count, bloomsTier, context, config?.objectives, config?.preciseGrade,
+      topic, gradeLevel, legacyCount, bloomsTier, context, legacyObjectives, config?.preciseGrade,
     );
 
     // PRE-band routing floor: a pre-reader cannot do text-column / drag / typing
@@ -1848,6 +1729,12 @@ export const generateKnowledgeCheck = async (
           p.problemType = 'multiple_choice';
           p.insetType = null; // insets (tables/charts/passages) are also non-band at K
           p.visualType = null; // K keeps its proven picture-primary option surface
+        }
+        // Reading insets (katex, passage, table, chart, code, definition) are
+        // band-gated out at K in CODE (KC redesign §3); a picturable, sayable
+        // number line stays. Both surfaces render whatever survives here.
+        if (p.insetType && !K_STIMULUS_INSET_TYPES.includes(p.insetType)) {
+          p.insetType = null;
         }
         // Even an allowed MCQ/TF keeps the existing K contract: picture options,
         // not an added Grade-1 visual evidence panel.
@@ -1880,11 +1767,20 @@ export const generateKnowledgeCheck = async (
       });
     }
 
-    const problems = results.filter((p): p is ProblemData => p !== null);
+    const legacyProblems = results.filter((p): p is ProblemData => p !== null);
 
-    if (problems.length === 0) {
+    if (legacyProblems.length === 0 && productionProblems.length === 0) {
       throw new Error('[Knowledge Check] All generators failed — no problems produced');
     }
+
+    // Merge in lesson order: for each objective, its production items first,
+    // then its orchestrated ones; untagged legacy problems trail.
+    const objectiveOrder = new Map(objectives.map((o, i) => [o.id, i]));
+    const rank = (p: ProblemData) => objectiveOrder.get(p.objectiveId ?? '') ?? Number.MAX_SAFE_INTEGER;
+    const problems: ProblemData[] = [...productionProblems, ...legacyProblems]
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => rank(a.p) - rank(b.p) || (a.p.type === 'production' ? -1 : b.p.type === 'production' ? 1 : 0) || a.i - b.i)
+      .map(({ p }) => p);
 
     // Stamp the orchestrator's subject guess onto every problem. This is the KC's
     // primitive-level subject signal — it rides each problem's evaluation submission and
@@ -1894,7 +1790,7 @@ export const generateKnowledgeCheck = async (
       for (const p of problems) p.subject = plan.subject;
     }
 
-    console.log(`[Knowledge Check] Orchestrated: ${problems.length}/${plan.problems.length} problems generated`);
+    console.log(`[Knowledge Check] Orchestrated: ${legacyProblems.length}/${plan.problems.length} orchestrated + ${productionProblems.length} production = ${problems.length} problems`);
     console.log(`  Arc: ${plan.assessmentArc}`);
     return problems;
   }

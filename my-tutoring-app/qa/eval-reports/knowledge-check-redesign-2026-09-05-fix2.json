@@ -1,0 +1,833 @@
+{
+  "startedAt": "2026-09-06T02:29:07.931Z",
+  "judge": true,
+  "packages": [
+    {
+      "file": "kindergarten-shapes-20260905194513-99mt",
+      "topic": "shapes",
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Find and point to different shapes hidden in real-world objects around the room",
+          "problems": [
+            "multiple_choice",
+            "multiple_choice"
+          ]
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+          "problems": [
+            "production/say_it",
+            "production/say_it",
+            "production/say_it",
+            "production/say_it"
+          ]
+        },
+        {
+          "id": "obj3",
+          "text": "Compare shapes by looking at their straight sides and corners",
+          "problems": [
+            "multiple_choice",
+            "true_false"
+          ]
+        }
+      ],
+      "genMs": 9518,
+      "oracle": [
+        {
+          "check": "clustering",
+          "where": "multiple_choice answer positions",
+          "detail": "3/3 answers are \"B\" — answers cluster instead of spreading"
+        }
+      ],
+      "judgedViable": true,
+      "items": [
+        "choice",
+        "choice",
+        "say_it",
+        "say_it",
+        "say_it",
+        "say_it",
+        "choice",
+        "true_false"
+      ],
+      "gateIssues": [],
+      "before": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 4,
+          "kcItems": 1
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 6,
+          "kcItems": 1
+        },
+        {
+          "id": "obj3",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 2,
+          "kcItems": 2
+        }
+      ],
+      "beforeConstraints": [
+        "generation_failure@obj2-tracer-finger-draw",
+        "insufficient_items@shapes-final-knowledge-check"
+      ],
+      "problems": [
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which thing is shaped like a circle?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Window",
+              "emoji": "🪟"
+            },
+            {
+              "id": "B",
+              "text": "Clock",
+              "emoji": "⏰"
+            },
+            {
+              "id": "C",
+              "text": "Pizza slice",
+              "emoji": "🍕"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "A clock is round and curved with no corners, which makes it a circle. A window has four straight sides like a square, and a pizza slice has three sides like a triangle.",
+          "teachingNote": "Have students trace a circle in the air with their finger and look for other circular objects in the room.",
+          "successCriteria": [
+            "Identify a circle in everyday objects"
+          ],
+          "objectiveId": "obj1",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which thing belongs in the rectangle group?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Wheel",
+              "emoji": "🛞"
+            },
+            {
+              "id": "B",
+              "text": "Door",
+              "emoji": "🚪"
+            },
+            {
+              "id": "C",
+              "text": "Coin",
+              "emoji": "🪙"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "A door has four straight sides with opposite sides equal, making it a rectangle. A wheel and a coin are both round with no straight sides, so they belong in the circle group. Therefore, the door is the correct item to place in the rectangle group.",
+          "teachingNote": "Provide students with real objects like coins, books, toy wheels, and classroom doors to trace with their fingers. Tracing straight edges versus curved lines helps kindergarteners physically feel the difference between rectangles and circles.",
+          "successCriteria": [
+            "Identify real-world objects that are shaped like rectangles.",
+            "Sort familiar everyday items into shape categories."
+          ],
+          "objectiveId": "obj1",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_say_it_4",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "This one is called rectangle.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the names of basic shapes like circles, squares, triangles, and rectangles"
+          ],
+          "kind": "say_it",
+          "ask": "What shape is this?",
+          "stimulus": {
+            "insetType": "glyph-card",
+            "glyphKind": "shape",
+            "glyph": "",
+            "sides": 4,
+            "shapeName": "rectangle"
+          },
+          "expectedAnswer": "rectangle",
+          "alternates": [],
+          "options": [
+            {
+              "id": "A",
+              "text": "triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "B",
+              "text": "square",
+              "emoji": "🟦"
+            },
+            {
+              "id": "C",
+              "text": "rectangle",
+              "emoji": "▬"
+            }
+          ],
+          "correctOptionId": "C",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_say_it_3",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "This one is called triangle.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the names of basic shapes like circles, squares, triangles, and rectangles"
+          ],
+          "kind": "say_it",
+          "ask": "What shape is this?",
+          "stimulus": {
+            "insetType": "glyph-card",
+            "glyphKind": "shape",
+            "glyph": "",
+            "sides": 3,
+            "shapeName": "triangle"
+          },
+          "expectedAnswer": "triangle",
+          "alternates": [],
+          "options": [
+            {
+              "id": "A",
+              "text": "triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "B",
+              "text": "square",
+              "emoji": "🟦"
+            },
+            {
+              "id": "C",
+              "text": "circle",
+              "emoji": "⚪"
+            }
+          ],
+          "correctOptionId": "A",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_say_it_2",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "This one is called square.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the names of basic shapes like circles, squares, triangles, and rectangles"
+          ],
+          "kind": "say_it",
+          "ask": "What shape is this?",
+          "stimulus": {
+            "insetType": "glyph-card",
+            "glyphKind": "shape",
+            "glyph": "",
+            "sides": 4,
+            "shapeName": "square"
+          },
+          "expectedAnswer": "square",
+          "alternates": [],
+          "options": [
+            {
+              "id": "A",
+              "text": "triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "B",
+              "text": "rectangle",
+              "emoji": "▬"
+            },
+            {
+              "id": "C",
+              "text": "square",
+              "emoji": "🟦"
+            }
+          ],
+          "correctOptionId": "C",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_say_it_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "This one is called circle.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the names of basic shapes like circles, squares, triangles, and rectangles"
+          ],
+          "kind": "say_it",
+          "ask": "What shape is this?",
+          "stimulus": {
+            "insetType": "glyph-card",
+            "glyphKind": "shape",
+            "glyph": "",
+            "sides": 0,
+            "shapeName": "circle"
+          },
+          "expectedAnswer": "circle",
+          "alternates": [],
+          "options": [
+            {
+              "id": "A",
+              "text": "triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "B",
+              "text": "circle",
+              "emoji": "⚪"
+            },
+            {
+              "id": "C",
+              "text": "square",
+              "emoji": "🟦"
+            }
+          ],
+          "correctOptionId": "B",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which shape has three straight sides?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Square",
+              "emoji": "🟦"
+            },
+            {
+              "id": "B",
+              "text": "Triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "C",
+              "text": "Circle",
+              "emoji": "🟡"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "A triangle has three straight sides that connect at three corners. A square has four straight sides, and a circle is round with zero straight sides.",
+          "teachingNote": "Encourage students to trace each side with their finger while counting aloud: 1, 2, 3!",
+          "successCriteria": [
+            "Identify a triangle by its three straight sides",
+            "Distinguish between shapes with zero, three, and four straight sides"
+          ],
+          "objectiveId": "obj3",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "true_false",
+          "id": "tf_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "statement": "A square has 4 corners.",
+          "correct": true,
+          "rationale": "A square is a special shape that always has 4 straight sides of the same length and 4 corners where the sides meet. Counting the corners is a great way to help us name and check our shapes.",
+          "teachingNote": "Have students use their fingers to point and count the corners on a paper square together to make the concept tactile.",
+          "successCriteria": [
+            "Identify the number of corners on a square",
+            "Compare shapes by counting corners"
+          ],
+          "objectiveId": "obj3",
+          "subject": "MATHEMATICS"
+        }
+      ],
+      "after": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 5,
+          "kcItems": 2,
+          "notes": "Finding shapes in everyday objects is taught through story narration and assessed across 5 direct items in the media hunt and final knowledge check."
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 9,
+          "kcItems": 4,
+          "notes": "All four target shapes (circle, square, triangle, rectangle) are taught and directly assessed with multiple spoken naming and identification items."
+        },
+        {
+          "id": "obj3",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 1,
+          "kcItems": 1,
+          "notes": "Direct shape comparison is assessed by only 1 item (problem 6). Other dedicated activities test drawing/building or single-shape side counting rather than comparative analysis."
+        }
+      ],
+      "afterConstraints": [
+        "insufficient_items@shapes-final-knowledge-check: Objective 3 has only one item directly comparing shapes by their sides/corners in the final check, failing the 2-item minimum requirement.",
+        "off_target_assessment@obj3-builder-side-count: Tasks in obj3-builder-side-count and obj3-sorter-attribute-sorting test building shapes on a grid or counting features of individual shapes rather than comparing shapes."
+      ],
+      "afterStatus": "warn",
+      "afterCoverage": 0.833
+    },
+    {
+      "file": "kindergarten-addition-20260905190456-xr70",
+      "topic": "addition",
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Combine two groups of physical objects to find the total amount",
+          "problems": [
+            "production/how_many",
+            "production/how_many"
+          ]
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the plus sign (+) and equal sign (=) as math symbols",
+          "problems": [
+            "production/point_to",
+            "production/point_to"
+          ]
+        },
+        {
+          "id": "obj3",
+          "text": "Explain how putting things together makes a bigger number",
+          "problems": [
+            "multiple_choice",
+            "multiple_choice"
+          ]
+        }
+      ],
+      "genMs": 11229,
+      "oracle": [],
+      "judgedViable": true,
+      "items": [
+        "how_many",
+        "how_many",
+        "point_to",
+        "point_to",
+        "choice",
+        "choice"
+      ],
+      "gateIssues": [],
+      "before": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 13,
+          "kcItems": 2
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 5,
+          "kcItems": 1
+        },
+        {
+          "id": "obj3",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 1,
+          "kcItems": 1
+        }
+      ],
+      "beforeConstraints": [
+        "insufficient_items@obj2-symbol-spotter",
+        "off_target_assessment@obj3-number-line-hops",
+        "off_target_assessment@obj3-math-facts-fluency"
+      ],
+      "problems": [
+        {
+          "type": "production",
+          "id": "prod_how_many_6",
+          "difficulty": "medium",
+          "gradeLevel": "kindergarten",
+          "rationale": "Counting what is shown gives five.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Combine two groups of physical objects to find the total amount"
+          ],
+          "kind": "how_many",
+          "ask": "How many altogether?",
+          "stimulus": {
+            "insetType": "arrangement",
+            "emoji": "🚗",
+            "count": 5,
+            "layout": "groups",
+            "groups": [
+              4,
+              1
+            ],
+            "objectName": "cars"
+          },
+          "expectedAnswer": "five",
+          "alternates": [
+            "5"
+          ],
+          "options": [
+            {
+              "id": "A",
+              "text": "5",
+              "emoji": "5️⃣"
+            },
+            {
+              "id": "B",
+              "text": "4",
+              "emoji": "4️⃣"
+            },
+            {
+              "id": "C",
+              "text": "3",
+              "emoji": "3️⃣"
+            }
+          ],
+          "correctOptionId": "A",
+          "objectiveId": "obj1",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_how_many_5",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "Counting what is shown gives four.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Combine two groups of physical objects to find the total amount"
+          ],
+          "kind": "how_many",
+          "ask": "How many altogether?",
+          "stimulus": {
+            "insetType": "arrangement",
+            "emoji": "🧸",
+            "count": 4,
+            "layout": "groups",
+            "groups": [
+              1,
+              3
+            ],
+            "objectName": "bears"
+          },
+          "expectedAnswer": "four",
+          "alternates": [
+            "4"
+          ],
+          "options": [
+            {
+              "id": "A",
+              "text": "4",
+              "emoji": "4️⃣"
+            },
+            {
+              "id": "B",
+              "text": "3",
+              "emoji": "3️⃣"
+            },
+            {
+              "id": "C",
+              "text": "2",
+              "emoji": "2️⃣"
+            }
+          ],
+          "correctOptionId": "A",
+          "objectiveId": "obj1",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_point_to_8",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "The equals sign is the one you touch.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the plus sign (+) and equal sign (=) as math symbols"
+          ],
+          "kind": "point_to",
+          "ask": "Touch the equals sign.",
+          "stimulus": {
+            "insetType": "number-sentence",
+            "tokens": [
+              {
+                "id": "t1",
+                "text": "3",
+                "kind": "number"
+              },
+              {
+                "id": "t2",
+                "text": "+",
+                "kind": "operator"
+              },
+              {
+                "id": "t3",
+                "text": "2",
+                "kind": "number"
+              },
+              {
+                "id": "t4",
+                "text": "=",
+                "kind": "operator"
+              },
+              {
+                "id": "t5",
+                "text": "5",
+                "kind": "number"
+              }
+            ]
+          },
+          "expectedAnswer": "equals",
+          "alternates": [
+            "equal",
+            "equals sign",
+            "equal sign",
+            "is the same as"
+          ],
+          "targetTokenId": "t4",
+          "options": [
+            {
+              "id": "t1",
+              "text": "3"
+            },
+            {
+              "id": "t2",
+              "text": "+"
+            },
+            {
+              "id": "t3",
+              "text": "2"
+            },
+            {
+              "id": "t4",
+              "text": "="
+            },
+            {
+              "id": "t5",
+              "text": "5"
+            }
+          ],
+          "correctOptionId": "t4",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_point_to_7",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "The plus sign is the one you touch.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the plus sign (+) and equal sign (=) as math symbols"
+          ],
+          "kind": "point_to",
+          "ask": "Touch the plus sign.",
+          "stimulus": {
+            "insetType": "number-sentence",
+            "tokens": [
+              {
+                "id": "t1",
+                "text": "4",
+                "kind": "number"
+              },
+              {
+                "id": "t2",
+                "text": "+",
+                "kind": "operator"
+              },
+              {
+                "id": "t3",
+                "text": "1",
+                "kind": "number"
+              },
+              {
+                "id": "t4",
+                "text": "=",
+                "kind": "operator"
+              },
+              {
+                "id": "t5",
+                "text": "5",
+                "kind": "number"
+              }
+            ]
+          },
+          "expectedAnswer": "plus",
+          "alternates": [
+            "plus sign",
+            "add",
+            "put together"
+          ],
+          "targetTokenId": "t2",
+          "options": [
+            {
+              "id": "t1",
+              "text": "4"
+            },
+            {
+              "id": "t2",
+              "text": "+"
+            },
+            {
+              "id": "t3",
+              "text": "1"
+            },
+            {
+              "id": "t4",
+              "text": "="
+            },
+            {
+              "id": "t5",
+              "text": "5"
+            }
+          ],
+          "correctOptionId": "t2",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "You have two cars and get one more car. How many?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Two cars",
+              "emoji": "2️⃣"
+            },
+            {
+              "id": "B",
+              "text": "Three cars",
+              "emoji": "3️⃣"
+            },
+            {
+              "id": "C",
+              "text": "Four cars",
+              "emoji": "4️⃣"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "When you start with 2 cars and add 1 more car, you count up one number to get 3 cars altogether. Putting groups together makes a bigger number, so 2 plus 1 equals 3.",
+          "teachingNote": "Encourage young learners to use their fingers or physical counters to model the two groups and then count all together to find the total.",
+          "successCriteria": [
+            "Add two small groups of objects (2 and 1) to find the sum within 5",
+            "Demonstrate understanding that combining groups creates a larger quantity"
+          ],
+          "objectiveId": "obj3",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "How many total steps were taken in all?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Two steps",
+              "emoji": "2️⃣"
+            },
+            {
+              "id": "B",
+              "text": "Four steps",
+              "emoji": "4️⃣"
+            },
+            {
+              "id": "C",
+              "text": "Five steps",
+              "emoji": "5️⃣"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "Starting at zero and jumping forward two steps brings us to two. Taking two more steps forward brings us to four, which means two plus two equals four total steps.",
+          "teachingNote": "Have students physically hop forward along a taped number line on the floor to connect physical motion with addition.",
+          "successCriteria": [
+            "Use a number line to find the sum of two numbers.",
+            "Recognize that moving forward on a number line increases the total count."
+          ],
+          "inset": {
+            "insetType": "number-line",
+            "min": 0,
+            "max": 5,
+            "ticks": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "label": "Number Line",
+            "points": [
+              {
+                "value": 0,
+                "label": "Start"
+              },
+              {
+                "value": 2,
+                "label": "Hop"
+              },
+              {
+                "value": 4,
+                "label": "Land"
+              }
+            ]
+          },
+          "objectiveId": "obj3",
+          "subject": "MATHEMATICS"
+        }
+      ],
+      "after": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 13,
+          "kcItems": 2,
+          "notes": "Directly assessed across multiple items combining concrete groups/dice pips to find totals."
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 11,
+          "kcItems": 2,
+          "notes": "Both plus (+) and equal (=) signs are identified through naming, tile placement, and direct selection."
+        },
+        {
+          "id": "obj3",
+          "category": "TAUGHT_NOT_ASSESSED",
+          "items": 0,
+          "kcItems": 0,
+          "notes": "No items require explaining that joining makes a bigger number; blocks test subtraction hops, fact recall, or addition counts."
+        }
+      ],
+      "afterConstraints": [
+        "off_target_assessment@obj3-math-facts-fluency: obj3 items in obj3-number-line-hops, obj3-math-facts-fluency, and final-assessment test number line hops and addition facts rather than explaining why joining makes a bigger number."
+      ],
+      "afterStatus": "fail",
+      "afterCoverage": 0.667
+    }
+  ]
+}

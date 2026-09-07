@@ -7,7 +7,8 @@ import {
   SequencingActivityProblem,
   CategorizationActivityProblem,
   ScenarioQuestionProblem,
-  ShortAnswerProblem
+  ShortAnswerProblem,
+  ProductionProblem,
 } from '../primitives/problem-primitives';
 import { ProblemType } from '../types';
 
@@ -91,6 +92,14 @@ export const PROBLEM_TYPE_REGISTRY: Record<ProblemType, ProblemTypeConfig> = {
     bestFor: 'Open-ended responses, explanation practice, brief written expression',
     description: 'Ask students to provide a brief written response to a question',
     exampleUseCase: 'Explaining a concept in their own words or providing reasoning'
+  },
+
+  production: {
+    component: ProductionProblem,
+    complexity: 'simple',
+    bestFor: 'K-2 production: name a shown numeral/letter/shape, count a shown set, point to a sign',
+    description: 'A shown stimulus that is not the answer; the child says or points (tap surface renders the closed fallback menu)',
+    exampleUseCase: 'Touch the minus sign in 3 − 1 = 2; how many apples are left; what number is this'
   }
 };
 

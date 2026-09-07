@@ -1,0 +1,1718 @@
+{
+  "startedAt": "2026-09-06T02:23:58.583Z",
+  "judge": true,
+  "packages": [
+    {
+      "file": "kindergarten-subtraction-20260905220159-e1b7",
+      "topic": "subtraction",
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Demonstrate taking away objects from a small group to see what remains",
+          "problems": [
+            "production/how_many",
+            "production/how_many"
+          ]
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the minus sign and the equals sign in a simple take-away sentence",
+          "problems": [
+            "production/point_to",
+            "production/point_to"
+          ]
+        }
+      ],
+      "genMs": 3,
+      "oracle": [],
+      "judgedViable": true,
+      "items": [
+        "how_many",
+        "how_many",
+        "point_to",
+        "point_to"
+      ],
+      "gateIssues": [],
+      "before": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 13,
+          "kcItems": 2
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 7,
+          "kcItems": 2
+        }
+      ],
+      "beforeConstraints": [],
+      "problems": [
+        {
+          "type": "production",
+          "id": "prod_how_many_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "Counting what is shown gives one.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Demonstrate taking away objects from a small group to see what remains"
+          ],
+          "kind": "how_many",
+          "ask": "Some frogs are crossed out. How many are left?",
+          "stimulus": {
+            "insetType": "arrangement",
+            "emoji": "🐸",
+            "count": 5,
+            "layout": "before-after",
+            "removed": 4,
+            "objectName": "frogs"
+          },
+          "expectedAnswer": "one",
+          "alternates": [
+            "1"
+          ],
+          "options": [
+            {
+              "id": "A",
+              "text": "3",
+              "emoji": "3️⃣"
+            },
+            {
+              "id": "B",
+              "text": "2",
+              "emoji": "2️⃣"
+            },
+            {
+              "id": "C",
+              "text": "1",
+              "emoji": "1️⃣"
+            }
+          ],
+          "correctOptionId": "C",
+          "objectiveId": "obj1"
+        },
+        {
+          "type": "production",
+          "id": "prod_how_many_2",
+          "difficulty": "medium",
+          "gradeLevel": "kindergarten",
+          "rationale": "Counting what is shown gives two.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Demonstrate taking away objects from a small group to see what remains"
+          ],
+          "kind": "how_many",
+          "ask": "Some apples are crossed out. How many are left?",
+          "stimulus": {
+            "insetType": "arrangement",
+            "emoji": "🍎",
+            "count": 4,
+            "layout": "before-after",
+            "removed": 2,
+            "objectName": "apples"
+          },
+          "expectedAnswer": "two",
+          "alternates": [
+            "2"
+          ],
+          "options": [
+            {
+              "id": "A",
+              "text": "4",
+              "emoji": "4️⃣"
+            },
+            {
+              "id": "B",
+              "text": "1",
+              "emoji": "1️⃣"
+            },
+            {
+              "id": "C",
+              "text": "2",
+              "emoji": "2️⃣"
+            }
+          ],
+          "correctOptionId": "C",
+          "objectiveId": "obj1"
+        },
+        {
+          "type": "production",
+          "id": "prod_point_to_3",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "The minus sign is the one you touch.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the minus sign and the equals sign in a simple take-away sentence"
+          ],
+          "kind": "point_to",
+          "ask": "Touch the minus sign.",
+          "stimulus": {
+            "insetType": "number-sentence",
+            "tokens": [
+              {
+                "id": "t1",
+                "text": "5",
+                "kind": "number"
+              },
+              {
+                "id": "t2",
+                "text": "−",
+                "kind": "operator"
+              },
+              {
+                "id": "t3",
+                "text": "1",
+                "kind": "number"
+              },
+              {
+                "id": "t4",
+                "text": "=",
+                "kind": "operator"
+              },
+              {
+                "id": "t5",
+                "text": "4",
+                "kind": "number"
+              }
+            ]
+          },
+          "expectedAnswer": "minus",
+          "alternates": [
+            "minus sign",
+            "take away",
+            "subtract"
+          ],
+          "targetTokenId": "t2",
+          "options": [
+            {
+              "id": "t1",
+              "text": "5"
+            },
+            {
+              "id": "t2",
+              "text": "−"
+            },
+            {
+              "id": "t3",
+              "text": "1"
+            },
+            {
+              "id": "t4",
+              "text": "="
+            },
+            {
+              "id": "t5",
+              "text": "4"
+            }
+          ],
+          "correctOptionId": "t2",
+          "objectiveId": "obj2"
+        },
+        {
+          "type": "production",
+          "id": "prod_point_to_4",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "The equals sign is the one you touch.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the minus sign and the equals sign in a simple take-away sentence"
+          ],
+          "kind": "point_to",
+          "ask": "Touch the equals sign.",
+          "stimulus": {
+            "insetType": "number-sentence",
+            "tokens": [
+              {
+                "id": "t1",
+                "text": "4",
+                "kind": "number"
+              },
+              {
+                "id": "t2",
+                "text": "−",
+                "kind": "operator"
+              },
+              {
+                "id": "t3",
+                "text": "1",
+                "kind": "number"
+              },
+              {
+                "id": "t4",
+                "text": "=",
+                "kind": "operator"
+              },
+              {
+                "id": "t5",
+                "text": "3",
+                "kind": "number"
+              }
+            ]
+          },
+          "expectedAnswer": "equals",
+          "alternates": [
+            "equal",
+            "equals sign",
+            "equal sign",
+            "is the same as"
+          ],
+          "targetTokenId": "t4",
+          "options": [
+            {
+              "id": "t1",
+              "text": "4"
+            },
+            {
+              "id": "t2",
+              "text": "−"
+            },
+            {
+              "id": "t3",
+              "text": "1"
+            },
+            {
+              "id": "t4",
+              "text": "="
+            },
+            {
+              "id": "t5",
+              "text": "3"
+            }
+          ],
+          "correctOptionId": "t4",
+          "objectiveId": "obj2"
+        }
+      ],
+      "after": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 13,
+          "kcItems": 2,
+          "notes": "Directly practiced and assessed through interactive story scenes, ten-frame removals, and final check questions."
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 7,
+          "kcItems": 2,
+          "notes": "Both minus and equals signs are directly introduced and independently assessed via tile building and direct identification items."
+        }
+      ],
+      "afterConstraints": [],
+      "afterStatus": "pass",
+      "afterCoverage": 1
+    },
+    {
+      "file": "kindergarten-subtraction-for-kindergarten-20260905202425-mb4f",
+      "topic": "subtraction",
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Demonstrate taking away objects from a small group to see what remains",
+          "problems": [
+            "production/how_many",
+            "production/how_many"
+          ]
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the minus sign and the equals sign in a simple take-away sentence",
+          "problems": [
+            "production/point_to",
+            "production/point_to"
+          ]
+        }
+      ],
+      "genMs": 1,
+      "oracle": [],
+      "judgedViable": true,
+      "items": [
+        "how_many",
+        "how_many",
+        "point_to",
+        "point_to"
+      ],
+      "gateIssues": [],
+      "before": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 12,
+          "kcItems": 1
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 2,
+          "kcItems": 2
+        }
+      ],
+      "beforeConstraints": [
+        "off_target_assessment@obj2-di-math-facts",
+        "insufficient_items@final-assessment-subtraction"
+      ],
+      "problems": [
+        {
+          "type": "production",
+          "id": "prod_how_many_5",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "Counting what is shown gives two.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Demonstrate taking away objects from a small group to see what remains"
+          ],
+          "kind": "how_many",
+          "ask": "Some cookies are crossed out. How many are left?",
+          "stimulus": {
+            "insetType": "arrangement",
+            "emoji": "🍪",
+            "count": 5,
+            "layout": "before-after",
+            "removed": 3,
+            "objectName": "cookies"
+          },
+          "expectedAnswer": "two",
+          "alternates": [
+            "2"
+          ],
+          "options": [
+            {
+              "id": "A",
+              "text": "4",
+              "emoji": "4️⃣"
+            },
+            {
+              "id": "B",
+              "text": "1",
+              "emoji": "1️⃣"
+            },
+            {
+              "id": "C",
+              "text": "2",
+              "emoji": "2️⃣"
+            }
+          ],
+          "correctOptionId": "C",
+          "objectiveId": "obj1"
+        },
+        {
+          "type": "production",
+          "id": "prod_how_many_6",
+          "difficulty": "medium",
+          "gradeLevel": "kindergarten",
+          "rationale": "Counting what is shown gives two.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Demonstrate taking away objects from a small group to see what remains"
+          ],
+          "kind": "how_many",
+          "ask": "Some bears are crossed out. How many are left?",
+          "stimulus": {
+            "insetType": "arrangement",
+            "emoji": "🧸",
+            "count": 4,
+            "layout": "before-after",
+            "removed": 2,
+            "objectName": "bears"
+          },
+          "expectedAnswer": "two",
+          "alternates": [
+            "2"
+          ],
+          "options": [
+            {
+              "id": "A",
+              "text": "4",
+              "emoji": "4️⃣"
+            },
+            {
+              "id": "B",
+              "text": "3",
+              "emoji": "3️⃣"
+            },
+            {
+              "id": "C",
+              "text": "2",
+              "emoji": "2️⃣"
+            }
+          ],
+          "correctOptionId": "C",
+          "objectiveId": "obj1"
+        },
+        {
+          "type": "production",
+          "id": "prod_point_to_7",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "The minus sign is the one you touch.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the minus sign and the equals sign in a simple take-away sentence"
+          ],
+          "kind": "point_to",
+          "ask": "Touch the minus sign.",
+          "stimulus": {
+            "insetType": "number-sentence",
+            "tokens": [
+              {
+                "id": "t1",
+                "text": "4",
+                "kind": "number"
+              },
+              {
+                "id": "t2",
+                "text": "−",
+                "kind": "operator"
+              },
+              {
+                "id": "t3",
+                "text": "1",
+                "kind": "number"
+              },
+              {
+                "id": "t4",
+                "text": "=",
+                "kind": "operator"
+              },
+              {
+                "id": "t5",
+                "text": "3",
+                "kind": "number"
+              }
+            ]
+          },
+          "expectedAnswer": "minus",
+          "alternates": [
+            "minus sign",
+            "take away",
+            "subtract"
+          ],
+          "targetTokenId": "t2",
+          "options": [
+            {
+              "id": "t1",
+              "text": "4"
+            },
+            {
+              "id": "t2",
+              "text": "−"
+            },
+            {
+              "id": "t3",
+              "text": "1"
+            },
+            {
+              "id": "t4",
+              "text": "="
+            },
+            {
+              "id": "t5",
+              "text": "3"
+            }
+          ],
+          "correctOptionId": "t2",
+          "objectiveId": "obj2"
+        },
+        {
+          "type": "production",
+          "id": "prod_point_to_8",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "The equals sign is the one you touch.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the minus sign and the equals sign in a simple take-away sentence"
+          ],
+          "kind": "point_to",
+          "ask": "Touch the equals sign.",
+          "stimulus": {
+            "insetType": "number-sentence",
+            "tokens": [
+              {
+                "id": "t1",
+                "text": "5",
+                "kind": "number"
+              },
+              {
+                "id": "t2",
+                "text": "−",
+                "kind": "operator"
+              },
+              {
+                "id": "t3",
+                "text": "3",
+                "kind": "number"
+              },
+              {
+                "id": "t4",
+                "text": "=",
+                "kind": "operator"
+              },
+              {
+                "id": "t5",
+                "text": "2",
+                "kind": "number"
+              }
+            ]
+          },
+          "expectedAnswer": "equals",
+          "alternates": [
+            "equal",
+            "equals sign",
+            "equal sign",
+            "is the same as"
+          ],
+          "targetTokenId": "t4",
+          "options": [
+            {
+              "id": "t1",
+              "text": "5"
+            },
+            {
+              "id": "t2",
+              "text": "−"
+            },
+            {
+              "id": "t3",
+              "text": "3"
+            },
+            {
+              "id": "t4",
+              "text": "="
+            },
+            {
+              "id": "t5",
+              "text": "2"
+            }
+          ],
+          "correctOptionId": "t4",
+          "objectiveId": "obj2"
+        }
+      ],
+      "after": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 13,
+          "kcItems": 2,
+          "notes": "Demonstrated and assessed across interactive scene act-outs, ten-frame removal tasks, and final assessment word-and-picture subtraction problems."
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 7,
+          "kcItems": 2,
+          "notes": "Both the minus sign and equals sign are explicitly introduced in symbol-explorer, built in equation-builder, and directly identified in final-assessment."
+        }
+      ],
+      "afterConstraints": [
+        "off_target_assessment@obj2-di-math-facts: obj2-di-math-facts assesses computing subtraction facts orally rather than identifying the minus and equals signs."
+      ],
+      "afterStatus": "pass",
+      "afterCoverage": 1
+    },
+    {
+      "file": "kindergarten-shapes-20260905194513-99mt",
+      "topic": "shapes",
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Find and point to different shapes hidden in real-world objects around the room",
+          "problems": [
+            "multiple_choice",
+            "multiple_choice"
+          ]
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the names of basic shapes like circles, squares, triangles, and rectangles",
+          "problems": [
+            "production/say_it",
+            "production/say_it",
+            "production/say_it",
+            "multiple_choice"
+          ]
+        },
+        {
+          "id": "obj3",
+          "text": "Compare shapes by looking at their straight sides and corners",
+          "problems": [
+            "true_false",
+            "multiple_choice"
+          ]
+        }
+      ],
+      "genMs": 22606,
+      "oracle": [
+        {
+          "check": "answer-leak",
+          "where": "problem#6(multiple_choice)",
+          "detail": "question stem contains the answer \"Triangle\" and no distractor: \"Which one is a triangle?\""
+        },
+        {
+          "check": "clustering",
+          "where": "multiple_choice answer positions",
+          "detail": "3/4 answers are \"B\" — answers cluster instead of spreading"
+        }
+      ],
+      "judgedViable": false,
+      "items": [
+        "choice",
+        "choice",
+        "say_it",
+        "say_it",
+        "say_it",
+        "true_false",
+        "choice"
+      ],
+      "gateIssues": [
+        "not judged-viable"
+      ],
+      "before": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 4,
+          "kcItems": 1
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 6,
+          "kcItems": 1
+        },
+        {
+          "id": "obj3",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 2,
+          "kcItems": 2
+        }
+      ],
+      "beforeConstraints": [
+        "generation_failure@obj2-tracer-finger-draw",
+        "insufficient_items@shapes-final-knowledge-check"
+      ],
+      "problems": [
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which object looks like a circle?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Window",
+              "emoji": "🪟"
+            },
+            {
+              "id": "B",
+              "text": "Clock",
+              "emoji": "⏰"
+            },
+            {
+              "id": "C",
+              "text": "Pizza slice",
+              "emoji": "🍕"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "A clock is round and curved with no corners, making it a circle. A window usually has four straight sides like a square, and a slice of pizza has three sides like a triangle.",
+          "teachingNote": "Have children trace shapes in the air with their finger to connect the curved outline of a circle with the round shape of the clock.",
+          "successCriteria": [
+            "Identify everyday objects that are shaped like a circle",
+            "Differentiate circular objects from squares and triangles"
+          ],
+          "objectiveId": "obj1",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which object looks like a rectangle?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Door",
+              "emoji": "🚪"
+            },
+            {
+              "id": "B",
+              "text": "Ball",
+              "emoji": "⚽"
+            },
+            {
+              "id": "C",
+              "text": "Book",
+              "emoji": "📖"
+            }
+          ],
+          "correctOptionId": "A",
+          "rationale": "A door is shaped like a rectangle because it has four straight sides and four square corners. A ball is completely round, which makes it a circle or sphere. An open book has curved lines and does not make a clean rectangle shape.",
+          "teachingNote": "Have students use their fingers to trace the two long sides and two short sides of a classroom door. Comparing straight sides to the curved shape of a ball reinforces early geometric distinctions.",
+          "successCriteria": [
+            "Identify a rectangle among familiar real-world objects."
+          ],
+          "objectiveId": "obj1",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_say_it_11",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "This one is called triangle.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the names of basic shapes like circles, squares, triangles, and rectangles"
+          ],
+          "kind": "say_it",
+          "ask": "What shape is this?",
+          "stimulus": {
+            "insetType": "glyph-card",
+            "glyphKind": "shape",
+            "glyph": "",
+            "sides": 3
+          },
+          "expectedAnswer": "triangle",
+          "alternates": [],
+          "options": [
+            {
+              "id": "A",
+              "text": "triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "B",
+              "text": "pentagon",
+              "emoji": "⬠"
+            },
+            {
+              "id": "C",
+              "text": "circle",
+              "emoji": "⚪"
+            }
+          ],
+          "correctOptionId": "A",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_say_it_10",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "This one is called square.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the names of basic shapes like circles, squares, triangles, and rectangles"
+          ],
+          "kind": "say_it",
+          "ask": "What shape is this?",
+          "stimulus": {
+            "insetType": "glyph-card",
+            "glyphKind": "shape",
+            "glyph": "",
+            "sides": 4
+          },
+          "expectedAnswer": "square",
+          "alternates": [],
+          "options": [
+            {
+              "id": "A",
+              "text": "square",
+              "emoji": "🟦"
+            },
+            {
+              "id": "B",
+              "text": "hexagon",
+              "emoji": "⬡"
+            },
+            {
+              "id": "C",
+              "text": "pentagon",
+              "emoji": "⬠"
+            }
+          ],
+          "correctOptionId": "A",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_say_it_9",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "This one is called circle.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the names of basic shapes like circles, squares, triangles, and rectangles"
+          ],
+          "kind": "say_it",
+          "ask": "What shape is this?",
+          "stimulus": {
+            "insetType": "glyph-card",
+            "glyphKind": "shape",
+            "glyph": "",
+            "sides": 0
+          },
+          "expectedAnswer": "circle",
+          "alternates": [],
+          "options": [
+            {
+              "id": "A",
+              "text": "hexagon",
+              "emoji": "⬡"
+            },
+            {
+              "id": "B",
+              "text": "triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "C",
+              "text": "circle",
+              "emoji": "⚪"
+            }
+          ],
+          "correctOptionId": "C",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which one is a triangle?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Circle",
+              "emoji": "⚪"
+            },
+            {
+              "id": "B",
+              "text": "Triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "C",
+              "text": "Square",
+              "emoji": "🟩"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "A triangle is a shape with three straight sides and three corners. The red shape has three points, making it a triangle. Circles are round with no corners, and squares have four straight sides.",
+          "teachingNote": "Encourage young learners to count the three sharp corners or points on a triangle using their fingers.",
+          "successCriteria": [
+            "Identify and name a triangle from a set of basic geometric shapes."
+          ],
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "true_false",
+          "id": "tf_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "statement": "A square has 4 corners that look the same.",
+          "correct": true,
+          "rationale": "A square is a special shape that always has four straight sides of the exact same length and four square corners, which are all identical. Children often confuse shapes when corners do not point the same way, but a square's corners are always uniform.",
+          "teachingNote": "Have students use their fingers to point and count the four corners on square blocks or paper cutouts to build tactile understanding.",
+          "successCriteria": [
+            "Identify the number of corners on a square",
+            "Recognize that a square has identical corners"
+          ],
+          "objectiveId": "obj3",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which shape has more straight sides?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Triangle",
+              "emoji": "🔺"
+            },
+            {
+              "id": "B",
+              "text": "Rectangle",
+              "emoji": "🚪"
+            },
+            {
+              "id": "C",
+              "text": "Circle",
+              "emoji": "⚪"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "A rectangle has 4 straight sides, while a triangle has only 3 straight sides. Since 4 is a bigger number than 3, the rectangle has more sides. A circle is round and does not have any straight sides.",
+          "teachingNote": "Encourage students to trace and count each straight side with their finger to connect counting with geometric attributes.",
+          "successCriteria": [
+            "Count the number of straight sides on basic 2D shapes.",
+            "Compare two shapes to determine which has more sides."
+          ],
+          "objectiveId": "obj3",
+          "subject": "MATHEMATICS"
+        }
+      ],
+      "after": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 5,
+          "kcItems": 2,
+          "notes": "Students are repeatedly prompted to identify hidden shapes within real-world objects across 5 independent items."
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 9,
+          "kcItems": 4,
+          "notes": "All 4 target shapes (circle, square, triangle, rectangle) are assessed with multiple direct oral naming and identification items."
+        },
+        {
+          "id": "obj3",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 1,
+          "kcItems": 1,
+          "notes": "Only 1 item (shapes-final-knowledge-check#problems[7]) directly requires comparing shapes by side count; other blocks assess counting sides or construction rather than comparative evaluation."
+        }
+      ],
+      "afterConstraints": [
+        "insufficient_items@: Objective 3 requires comparing shapes by sides and corners, but only one assessment item requires students to make a direct comparison.",
+        "off_target_assessment@: Blocks obj3-sorter-attribute-sorting and obj3-builder-side-count assess isolated side-counting and shape building rather than comparing shapes."
+      ],
+      "afterStatus": "warn",
+      "afterCoverage": 0.833
+    },
+    {
+      "file": "kindergarten-addition-20260905190456-xr70",
+      "topic": "addition",
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Combine two groups of physical objects to find the total amount",
+          "problems": [
+            "production/how_many",
+            "production/how_many"
+          ]
+        },
+        {
+          "id": "obj2",
+          "text": "Identify the plus sign (+) and equal sign (=) as math symbols",
+          "problems": [
+            "production/point_to",
+            "production/point_to"
+          ]
+        },
+        {
+          "id": "obj3",
+          "text": "Explain how putting things together makes a bigger number",
+          "problems": [
+            "multiple_choice",
+            "multiple_choice"
+          ]
+        }
+      ],
+      "genMs": 13063,
+      "oracle": [],
+      "judgedViable": true,
+      "items": [
+        "how_many",
+        "how_many",
+        "point_to",
+        "point_to",
+        "choice",
+        "choice"
+      ],
+      "gateIssues": [
+        "items \"p0-how_many\" → \"p1-how_many\" (action \"how_many\"): consecutive asks recite a byte-identical 14-word line — give the invariant mode a short repeat ask"
+      ],
+      "before": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 13,
+          "kcItems": 2
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 5,
+          "kcItems": 1
+        },
+        {
+          "id": "obj3",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 1,
+          "kcItems": 1
+        }
+      ],
+      "beforeConstraints": [
+        "insufficient_items@obj2-symbol-spotter",
+        "off_target_assessment@obj3-number-line-hops",
+        "off_target_assessment@obj3-math-facts-fluency"
+      ],
+      "problems": [
+        {
+          "type": "production",
+          "id": "prod_how_many_13",
+          "difficulty": "medium",
+          "gradeLevel": "kindergarten",
+          "rationale": "Counting what is shown gives five.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Combine two groups of physical objects to find the total amount"
+          ],
+          "kind": "how_many",
+          "ask": "Both groups are put together. How many altogether?",
+          "stimulus": {
+            "insetType": "arrangement",
+            "emoji": "🍎",
+            "count": 5,
+            "layout": "groups",
+            "groups": [
+              3,
+              2
+            ],
+            "objectName": "apples"
+          },
+          "expectedAnswer": "five",
+          "alternates": [
+            "5"
+          ],
+          "options": [
+            {
+              "id": "A",
+              "text": "4",
+              "emoji": "4️⃣"
+            },
+            {
+              "id": "B",
+              "text": "5",
+              "emoji": "5️⃣"
+            },
+            {
+              "id": "C",
+              "text": "3",
+              "emoji": "3️⃣"
+            }
+          ],
+          "correctOptionId": "B",
+          "objectiveId": "obj1",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_how_many_12",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "Counting what is shown gives five.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Combine two groups of physical objects to find the total amount"
+          ],
+          "kind": "how_many",
+          "ask": "Both groups are put together. How many altogether?",
+          "stimulus": {
+            "insetType": "arrangement",
+            "emoji": "🐟",
+            "count": 5,
+            "layout": "groups",
+            "groups": [
+              4,
+              1
+            ],
+            "objectName": "fish"
+          },
+          "expectedAnswer": "five",
+          "alternates": [
+            "5"
+          ],
+          "options": [
+            {
+              "id": "A",
+              "text": "3",
+              "emoji": "3️⃣"
+            },
+            {
+              "id": "B",
+              "text": "5",
+              "emoji": "5️⃣"
+            },
+            {
+              "id": "C",
+              "text": "4",
+              "emoji": "4️⃣"
+            }
+          ],
+          "correctOptionId": "B",
+          "objectiveId": "obj1",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_point_to_15",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "The equals sign is the one you touch.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the plus sign (+) and equal sign (=) as math symbols"
+          ],
+          "kind": "point_to",
+          "ask": "Touch the equals sign.",
+          "stimulus": {
+            "insetType": "number-sentence",
+            "tokens": [
+              {
+                "id": "t1",
+                "text": "4",
+                "kind": "number"
+              },
+              {
+                "id": "t2",
+                "text": "+",
+                "kind": "operator"
+              },
+              {
+                "id": "t3",
+                "text": "1",
+                "kind": "number"
+              },
+              {
+                "id": "t4",
+                "text": "=",
+                "kind": "operator"
+              },
+              {
+                "id": "t5",
+                "text": "5",
+                "kind": "number"
+              }
+            ]
+          },
+          "expectedAnswer": "equals",
+          "alternates": [
+            "equal",
+            "equals sign",
+            "equal sign",
+            "is the same as"
+          ],
+          "targetTokenId": "t4",
+          "options": [
+            {
+              "id": "t1",
+              "text": "4"
+            },
+            {
+              "id": "t2",
+              "text": "+"
+            },
+            {
+              "id": "t3",
+              "text": "1"
+            },
+            {
+              "id": "t4",
+              "text": "="
+            },
+            {
+              "id": "t5",
+              "text": "5"
+            }
+          ],
+          "correctOptionId": "t4",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "production",
+          "id": "prod_point_to_14",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "rationale": "The plus sign is the one you touch.",
+          "teachingNote": "",
+          "successCriteria": [
+            "Identify the plus sign (+) and equal sign (=) as math symbols"
+          ],
+          "kind": "point_to",
+          "ask": "Touch the plus sign.",
+          "stimulus": {
+            "insetType": "number-sentence",
+            "tokens": [
+              {
+                "id": "t1",
+                "text": "1",
+                "kind": "number"
+              },
+              {
+                "id": "t2",
+                "text": "+",
+                "kind": "operator"
+              },
+              {
+                "id": "t3",
+                "text": "3",
+                "kind": "number"
+              },
+              {
+                "id": "t4",
+                "text": "=",
+                "kind": "operator"
+              },
+              {
+                "id": "t5",
+                "text": "4",
+                "kind": "number"
+              }
+            ]
+          },
+          "expectedAnswer": "plus",
+          "alternates": [
+            "plus sign",
+            "add",
+            "put together"
+          ],
+          "targetTokenId": "t2",
+          "options": [
+            {
+              "id": "t1",
+              "text": "1"
+            },
+            {
+              "id": "t2",
+              "text": "+"
+            },
+            {
+              "id": "t3",
+              "text": "3"
+            },
+            {
+              "id": "t4",
+              "text": "="
+            },
+            {
+              "id": "t5",
+              "text": "4"
+            }
+          ],
+          "correctOptionId": "t2",
+          "objectiveId": "obj2",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Two apples and one more apple make how many?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Two",
+              "emoji": "2️⃣"
+            },
+            {
+              "id": "B",
+              "text": "Three",
+              "emoji": "3️⃣"
+            },
+            {
+              "id": "C",
+              "text": "Four",
+              "emoji": "4️⃣"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "When you start with two apples and add one more, you count forward by one to reach three. Combining two groups into one group makes a larger total amount. That means two plus one gives us three apples altogether.",
+          "teachingNote": "Have students use counters or fingers to physically represent joining two items and one item together.",
+          "successCriteria": [
+            "Count to combine two small groups of objects up to five.",
+            "Identify that adding items together results in a greater quantity."
+          ],
+          "objectiveId": "obj3",
+          "subject": "MATHEMATICS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Frog hops from two to which bigger number?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Three",
+              "emoji": "3️⃣"
+            },
+            {
+              "id": "B",
+              "text": "Four",
+              "emoji": "4️⃣"
+            },
+            {
+              "id": "C",
+              "text": "Two",
+              "emoji": "2️⃣"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "The number line shows a hop starting at 2 and landing on 4. When we hop forward on the number line, we are adding to reach a bigger number. Therefore, the frog lands on the new total of 4.",
+          "teachingNote": "Use physical movement or finger-hopping along a number path to reinforce that addition means jumping forward to larger numbers.",
+          "successCriteria": [
+            "Identify the landing number after hopping forward on a number line",
+            "Understand that moving right on a number line represents adding to get a larger total"
+          ],
+          "inset": {
+            "insetType": "number-line",
+            "min": 0,
+            "max": 5,
+            "ticks": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "label": "Frog Hop",
+            "points": [
+              {
+                "value": 2,
+                "label": "Start"
+              },
+              {
+                "value": 4,
+                "label": "Land"
+              }
+            ]
+          },
+          "objectiveId": "obj3",
+          "subject": "MATHEMATICS"
+        }
+      ],
+      "after": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 13,
+          "kcItems": 2,
+          "notes": "Students combine two groups of objects across multiple independent act-out stories, dice-rolling sums, and final assessment grouping problems."
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 11,
+          "kcItems": 2,
+          "notes": "Both plus and equals symbols are identified through equation building, oral decoding, and point-to tasks in the final assessment."
+        },
+        {
+          "id": "obj3",
+          "category": "TAUGHT_NOT_ASSESSED",
+          "items": 0,
+          "kcItems": 0,
+          "notes": "The concept that joining makes a bigger number is introduced in obj3-start-vs-end, but no assessment item requires students to explain this principle."
+        }
+      ],
+      "afterConstraints": [
+        "primitive_limitation@obj3-math-facts-fluency: di-math-facts tests addition fact recall rather than assessing conceptual explanation of why putting groups together makes a bigger number.",
+        "off_target_assessment@obj3-number-line-hops: obj3-number-line-hops features 3 out of 4 challenges asking students to hop backward (subtraction), which fails to assess addition or obj3.",
+        "insufficient_items@obj2-symbol-spotter: obj2-symbol-spotter intended to test both + and =, but all 4 items presented only the plus sign (+).",
+        "off_target_assessment@obj1-ten-frame-counters: obj1-ten-frame-counters has twoColorMode disabled and only prompts single counts (e.g., place 4 counters) rather than combining two groups."
+      ],
+      "afterStatus": "fail",
+      "afterCoverage": 0.667
+    },
+    {
+      "file": "kindergarten-decoding-cvc-words-with-short-a-20260905200116-rw3p",
+      "topic": "Decoding CVC words with short a",
+      "objectives": [
+        {
+          "id": "obj1",
+          "text": "Listen to and identify the short 'a' sound in spoken words.",
+          "problems": [
+            "multiple_choice",
+            "true_false"
+          ]
+        },
+        {
+          "id": "obj2",
+          "text": "Connect letter sounds to written letters to decode simple CVC words.",
+          "problems": [
+            "multiple_choice",
+            "multiple_choice"
+          ]
+        },
+        {
+          "id": "obj3",
+          "text": "Read a short CVC word all the way through to discover the secret word.",
+          "problems": [
+            "multiple_choice",
+            "multiple_choice"
+          ]
+        }
+      ],
+      "genMs": 21138,
+      "oracle": [],
+      "judgedViable": false,
+      "items": [
+        "choice",
+        "true_false",
+        "choice",
+        "choice"
+      ],
+      "gateIssues": [
+        "not judged-viable"
+      ],
+      "before": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_INSUFFICIENTLY",
+          "items": 3,
+          "kcItems": 3
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 6,
+          "kcItems": 2
+        },
+        {
+          "id": "obj3",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 9,
+          "kcItems": 0
+        }
+      ],
+      "beforeConstraints": [
+        "off_target_assessment@obj1-phoneme-explorer",
+        "insufficient_items@final-assessment-knowledge-check"
+      ],
+      "problems": [
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which word has the short a sound?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Cat",
+              "emoji": "🐱"
+            },
+            {
+              "id": "B",
+              "text": "Sun",
+              "emoji": "☀️"
+            },
+            {
+              "id": "C",
+              "text": "Pig",
+              "emoji": "🐷"
+            }
+          ],
+          "correctOptionId": "A",
+          "rationale": "When we say 'cat', we hear the short a sound in the middle: /c/ /a/ /t/. The word 'sun' has a short u sound, and 'pig' has a short i sound.",
+          "teachingNote": "Have students stretch out the middle sound of each word using continuous phoneme blending (e.g., c-aaaa-t) to clearly hear the short 'a' vowel sound.",
+          "successCriteria": [
+            "Identify the medial short 'a' vowel sound in spoken CVC words",
+            "Distinguish the short 'a' sound from other short vowel sounds"
+          ],
+          "objectiveId": "obj1",
+          "subject": "LANGUAGE_ARTS"
+        },
+        {
+          "type": "true_false",
+          "id": "tf_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "statement": "The word bat has the short a sound like apple.",
+          "correct": true,
+          "rationale": "The word bat contains the short 'a' vowel sound, just like the word apple. When we say bat, we hear the /a/ sound in the middle, which is the same sound we make at the beginning of apple.",
+          "teachingNote": "Help students connect the middle sound of CVC words to familiar starting sounds like the short 'a' in apple.",
+          "successCriteria": [
+            "Identify the short a sound in CVC words",
+            "Compare vowel sounds between words"
+          ],
+          "objectiveId": "obj1",
+          "subject": "LANGUAGE_ARTS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which animal has the middle short a sound?",
+          "options": [
+            {
+              "id": "A",
+              "text": "dog",
+              "emoji": "🐶"
+            },
+            {
+              "id": "B",
+              "text": "cat",
+              "emoji": "🐱"
+            },
+            {
+              "id": "C",
+              "text": "pig",
+              "emoji": "🐷"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "The word cat has the short a sound in the middle. When we stretch out the sounds /k/, /a/, and /t/, we hear short a in the center. The words dog and pig have different middle vowel sounds.",
+          "teachingNote": "Have students tap out the three phonemes on their fingers (/k/ - /a/ - /t/) to isolate and emphasize the middle short vowel sound.",
+          "successCriteria": [
+            "Identify the short a sound in the middle of a spoken CVC word.",
+            "Distinguish the short a sound from other short vowel sounds."
+          ],
+          "objectiveId": "obj2",
+          "subject": "LANGUAGE_ARTS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "What word do the sounds m, a, and p make?",
+          "options": [
+            {
+              "id": "A",
+              "text": "map",
+              "emoji": "🗺️"
+            },
+            {
+              "id": "B",
+              "text": "mop",
+              "emoji": "🧹"
+            },
+            {
+              "id": "C",
+              "text": "cap",
+              "emoji": "🧢"
+            }
+          ],
+          "correctOptionId": "A",
+          "rationale": "Blending the beginning sound /m/, the short a vowel sound /æ/, and the ending sound /p/ creates the word \"map\". The word \"mop\" has a short o sound instead, and \"cap\" starts with the /k/ sound.",
+          "teachingNote": "Have students practice continuous blending by stretching out the sounds /mmmaaaap/ before saying the whole word smoothly.",
+          "successCriteria": [
+            "Blend individual phonemes /m/, /æ/, and /p/ to decode a CVC word with short a."
+          ],
+          "objectiveId": "obj2",
+          "subject": "LANGUAGE_ARTS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Which animal has the short a sound?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Dog",
+              "emoji": "🐶"
+            },
+            {
+              "id": "B",
+              "text": "Cat",
+              "emoji": "🐱"
+            },
+            {
+              "id": "C",
+              "text": "Pig",
+              "emoji": "🐷"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "Cat has the short a vowel sound in the middle, like in apple. When we say cat slowly, we hear the /k/, /a/, and /t/ sounds. Dog and pig have different middle vowel sounds.",
+          "teachingNote": "Encourage students to open their mouths wide and make the short a sound like they are biting an apple to help isolate the medial vowel sound in CVC words.",
+          "successCriteria": [
+            "Identify the medial short a vowel sound in a CVC word",
+            "Distinguish short a from other short vowel sounds"
+          ],
+          "objectiveId": "obj3",
+          "subject": "LANGUAGE_ARTS"
+        },
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "easy",
+          "gradeLevel": "kindergarten",
+          "question": "Read the word 'van' all the way through to match.",
+          "options": [
+            {
+              "id": "A",
+              "text": "van",
+              "emoji": "🚐"
+            },
+            {
+              "id": "B",
+              "text": "box",
+              "emoji": "📦"
+            },
+            {
+              "id": "C",
+              "text": "cup",
+              "emoji": "🥤"
+            }
+          ],
+          "correctOptionId": "A",
+          "rationale": "The word 'van' has the starting sound /v/, the short a sound /ă/ in the middle, and the ending sound /n/. When we blend those sounds together from left to right, they make the word 'van'! A box and a cup have completely different vowel and consonant sounds.",
+          "teachingNote": "Guide students to tap out each sound (/v/, /ă/, /n/) with their fingers before blending them smoothly together. Emphasize the medial short 'a' sound to help students contrast it with short 'o' in box and short 'u' in cup.",
+          "successCriteria": [
+            "Decode a CVC word with the short a vowel sound",
+            "Blend individual phonemes from left to right to read a whole word"
+          ],
+          "objectiveId": "obj3",
+          "subject": "LANGUAGE_ARTS"
+        }
+      ],
+      "after": [
+        {
+          "id": "obj1",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 4,
+          "kcItems": 4,
+          "notes": "While obj1-phoneme-explorer off-targetly isolates initial consonants (/m/, /h/, /f/, /s/), final-assessment-knowledge-check provides distinct items directly assessing identification of the short 'a' sound."
+        },
+        {
+          "id": "obj2",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 9,
+          "kcItems": 1,
+          "notes": "Assessed directly through 4 CVC blending items in obj2-phonics-blender, 4 spelling challenges in obj2-cvc-speller, and problem 3 in final-assessment-knowledge-check."
+        },
+        {
+          "id": "obj3",
+          "category": "ASSESSED_SUFFICIENTLY",
+          "items": 10,
+          "kcItems": 1,
+          "notes": "Assessed directly through 5 reading items in obj3-di-word-reading, 4 real-vs-nonsense items in obj3-word-workout, and problem 5 in final-assessment-knowledge-check."
+        }
+      ],
+      "afterConstraints": [
+        "off_target_assessment@obj1-phoneme-explorer: obj1-phoneme-explorer challenges isolate initial consonant phonemes (/m/, /h/, /f/, /s/) rather than the target short 'a' vowel sound."
+      ],
+      "afterStatus": "pass",
+      "afterCoverage": 1
+    }
+  ]
+}

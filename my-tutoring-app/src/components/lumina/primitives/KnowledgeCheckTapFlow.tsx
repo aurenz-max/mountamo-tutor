@@ -661,6 +661,8 @@ export function getQuestionText(problem: ProblemData | undefined): string {
       return problem.scenarioQuestion;
     case 'short_answer':
       return problem.question;
+    case 'production':
+      return problem.ask;
     default:
       return '';
   }

@@ -94,6 +94,10 @@ export interface KcLessonObjective {
   subskillId?: string;
   skillId?: string;
   grade?: string;
+  /** KC redesign P3: how many problems the code-owned plan skeleton assigned to
+   *  this objective. When set, the orchestrator must plan exactly that many
+   *  for it — it briefs slots, it does not size them. */
+  problemCount?: number;
 }
 
 const VISUAL_TASK_RE = /\b(map|symbol|legend|picture|image|visual|coin|shape|color|diagram|invention|before[- /]?after|look at|shown)\b/i;
@@ -245,8 +249,8 @@ The cognitive tier sets the KIND of thinking, expressed WITHIN the ${audience} b
 ${context ? `## Additional Context\n${context}\n` : ''}
 ${objectives && objectives.length > 0 ? `## Lesson Objectives (tag every problem)
 This assessment covers these lesson objectives:
-${objectives.map(o => `- ${o.id}: "${o.text}"`).join('\n')}
-Set each problem's "objectiveId" to the id of the SINGLE objective it primarily assesses. Spread coverage — every objective should be assessed at least once when the problem count allows.
+${objectives.map(o => `- ${o.id}: "${o.text}"${o.problemCount ? ` — plan EXACTLY ${o.problemCount} problem${o.problemCount === 1 ? '' : 's'} tagged to this objective` : ''}`).join('\n')}
+Set each problem's "objectiveId" to the id of the SINGLE objective it primarily assesses. ${objectives.some(o => o.problemCount) ? 'The per-objective counts above are fixed by the lesson plan: honor them exactly, and tag every problem.' : 'Spread coverage — every objective should be assessed at least once when the problem count allows.'}
 Each objective's brief must test THAT objective's own verb and angle — not restate another objective's task with the words swapped. Read each objective's text as naming a DIFFERENT skill: if one objective says "listen and identify a sound" and another says "read a word all the way through," their briefs must produce visibly different tasks (an auditory single-sound judgment vs. a whole-word decode), never the same question shape wearing two objectiveIds. Before finalizing, compare every pair of briefs tagged to different objectives — if two would read as the same question with different words, rewrite the weaker one to actually test its own objective.
 ` : ''}
 ## Rules

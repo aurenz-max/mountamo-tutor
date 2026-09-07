@@ -161,6 +161,12 @@ describe('answer-material fork', () => {
       blank: ['voice', 'short_spoken_word'],
       match: ['voice', 'closed_set_choice'],
       sort: ['voice', 'closed_set_choice'],
+      // KC redesign P2 — the production kinds. `say_it` narrows per card
+      // (numeral → number word, letter → letter_name, shape → shape_name);
+      // this is its widest class.
+      say_it: ['voice', 'short_spoken_word'],
+      how_many: ['voice', 'number_word_to_20'],
+      point_to: ['gesture', 'manipulation'],
     };
     for (const [kind, [answerKind, responseClass]] of Object.entries(expected)) {
       expect(answerKindFor(kind as KnowledgeCheckItemKind)).toBe(answerKind);

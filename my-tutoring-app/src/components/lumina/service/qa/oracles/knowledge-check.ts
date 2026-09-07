@@ -50,7 +50,12 @@ import { asRecordArray, checkAnswerVariety, containsWord } from './helpers';
 // Local pre-reader grade test (kept self-contained so the oracle stays a pure
 // function with no component-util coupling). Mirrors utils/isPreReaderGrade.
 const PRE_READER_GRADE_RE = /(kinder|preschool|pre-?k\b|prek|toddler|pre-?reader|^\s*gk\s*$|grade\s*k\b|^\s*k\s*$)/i;
-const PRE_READER_KC_TYPES = new Set(['multiple_choice', 'true_false']);
+// R2 FORKED (KC redesign P2, 2026-09-05): a `production` item — a shown
+// stimulus the child names / counts / points at — is K-capable by construction
+// (no reading; the stimulus is a picture, a glyph, or a printed sentence).
+const PRE_READER_KC_TYPES = new Set(['multiple_choice', 'true_false', 'production']);
+const PRODUCTION_KINDS = new Set(['say_it', 'point_to', 'how_many']);
+const STIMULUS_INSETS = new Set(['number-sentence', 'arrangement', 'glyph-card']);
 
 export const knowledgeCheckOracle: ContentOracle = {
   componentId: 'knowledge-check',
@@ -97,6 +102,10 @@ export const knowledgeCheckOracle: ContentOracle = {
         case 'categorization_activity':
           checked++;
           checkCategorization(p, where, violations);
+          break;
+        case 'production':
+          checked++;
+          checkProduction(p, where, violations);
           break;
         default:
           if (type) uncheckedTypes.add(type);
@@ -297,5 +306,72 @@ function checkCategorization(p: Record<string, unknown>, where: string, violatio
   // clustering: every item resolves to a single category — nothing to sort.
   if (categories.length >= 2 && usedCats.size === 1 && items.length >= 3) {
     violations.push({ check: 'clustering', where, detail: `all ${items.length} items belong to one category — nothing to sort` });
+  }
+}
+
+/**
+ * production (KC redesign P2). The component grades a tap by
+ * `optionId === correctOptionId` (or, for point_to, by the token id), and the
+ * judged loop grades speech against `expectedAnswer`. Both keys must resolve,
+ * the stimulus must be one of the three K stimulus insets, and the ask must
+ * not name the answer (point_to excepted — naming the sign and asking for its
+ * form IS the task). Structure only; whether "three" is the right count for
+ * the picture is re-derived from the inset itself where it can be.
+ */
+function checkProduction(
+  p: Record<string, unknown>,
+  where: string,
+  violations: OracleViolation[],
+): void {
+  const kind = String(p.kind ?? '');
+  if (!PRODUCTION_KINDS.has(kind)) {
+    violations.push({ check: 'schema', where, detail: `unknown production kind "${kind}"` });
+    return;
+  }
+  const stimulus = (p.stimulus ?? null) as Record<string, unknown> | null;
+  const insetType = stimulus ? String(stimulus.insetType ?? '') : '';
+  if (!stimulus || !STIMULUS_INSETS.has(insetType)) {
+    violations.push({ check: 'schema', where, detail: `production item without a stimulus inset (got "${insetType || 'none'}") — a production item over nothing is the recall-over-emoji shape this type replaces` });
+    return;
+  }
+  const expected = String(p.expectedAnswer ?? '').trim();
+  if (!expected) violations.push({ check: 'answer-key-desync', where, detail: 'expectedAnswer is empty — the judged loop has nothing to grade against' });
+
+  const options = asRecordArray(p.options);
+  const correctOptionId = String(p.correctOptionId ?? '');
+  if (options.length < 2) {
+    violations.push({ check: 'schema', where, detail: `only ${options.length} fallback option(s) — the tap surface needs at least 2` });
+  } else if (!options.some((o) => String(o.id) === correctOptionId)) {
+    violations.push({ check: 'answer-key-desync', where, detail: `correctOptionId "${correctOptionId}" resolves to no option [${options.map((o) => String(o.id)).join(', ')}] — no tap can ever be correct` });
+  }
+
+  const ask = String(p.ask ?? '');
+  if (kind !== 'point_to' && expected && containsWord(ask, expected)) {
+    violations.push({ check: 'answer-leak', where, detail: `the ask "${ask}" names the answer "${expected}"` });
+  }
+
+  if (kind === 'point_to') {
+    const tokens = asRecordArray(stimulus.tokens);
+    const target = String(p.targetTokenId ?? '');
+    if (insetType !== 'number-sentence') {
+      violations.push({ check: 'schema', where, detail: `point_to needs a number-sentence stimulus, got "${insetType}"` });
+    } else if (!tokens.some((t) => String(t.id) === target)) {
+      violations.push({ check: 'answer-key-desync', where, detail: `targetTokenId "${target}" is not a token of the sentence` });
+    } else if (target !== correctOptionId) {
+      violations.push({ check: 'answer-key-desync', where, detail: `targetTokenId "${target}" ≠ correctOptionId "${correctOptionId}" — the two surfaces would grade different taps` });
+    }
+  }
+
+  if (kind === 'how_many' && insetType === 'arrangement') {
+    const count = Number(stimulus.count);
+    const removed = Number(stimulus.removed ?? 0);
+    const remaining = count - removed;
+    const digits = options.find((o) => String(o.id) === correctOptionId);
+    if (Number.isFinite(remaining) && digits && Number(String(digits.text)) !== remaining) {
+      violations.push({ check: 'answer-key-desync', where, detail: `the picture shows ${remaining} remaining but the keyed option reads "${String(digits.text)}"` });
+    }
+    if (Number.isFinite(remaining) && remaining < 1) {
+      violations.push({ check: 'schema', where, detail: 'remaining count is 0 — zero is not a benched spoken answer' });
+    }
   }
 }

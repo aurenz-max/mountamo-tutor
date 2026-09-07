@@ -64,6 +64,9 @@ import {
 } from '../ui';
 import { isPreReaderGrade } from '../utils/kindergartenMode';
 import { KnowledgeCheckTapFlow } from './KnowledgeCheckTapFlow';
+import { InsetRenderer, NumberSentenceTokens } from './problem-primitives/insets';
+import { ObjectCollection, ComparisonPanel } from './visual-primitives';
+import type { VisualObjectCollection, VisualComparisonData } from '../types';
 import {
   itemsFromProblems,
   knowledgeCheckPackBase,
@@ -100,6 +103,10 @@ const ITEM_ICONS: Record<KnowledgeCheckItem['kind'], string> = {
   blank: '💬',
   match: '🔗',
   sort: '🗂️',
+  // Production kinds (KC redesign P2): the child names, counts, or points.
+  say_it: '🗣️',
+  how_many: '🔢',
+  point_to: '👆',
 };
 
 // ─── Per-problem evaluation bridge ───────────────────────────────────────────
@@ -226,6 +233,9 @@ const KnowledgeCheckJudged: React.FC<{
     switch (item.kind) {
       case 'true_false': return item.correctBool ? 'True' : 'False';
       case 'blank': return item.answerWord ?? '';
+      case 'say_it':
+      case 'how_many': return item.expectedAnswer ?? '';
+      case 'point_to': return `${item.expectedAnswer ?? ''} sign`;
       default: return correctOptionText(item);
     }
   };
@@ -236,10 +246,10 @@ const KnowledgeCheckJudged: React.FC<{
   const pack = useMemo<JudgedScriptPack<KnowledgeCheckItem>>(() => ({
     ...knowledgeCheckPackBase(items),
     statusLines: {
-      ready: (item) => item.kind === 'choice_tap'
+      ready: (item) => item.answerKind === 'gesture'
         ? 'Listen, then touch the one you pick.'
         : 'Listen, then say your answer out loud.',
-      retry: (item) => item.kind === 'choice_tap'
+      retry: (item) => item.answerKind === 'gesture'
         ? 'Have another look — touch the one you pick.'
         : 'Have another go — say your answer.',
       noVerdict: () => 'One more time — say it out loud.',
@@ -291,6 +301,17 @@ const KnowledgeCheckJudged: React.FC<{
     if (runner.isAwaitingGesture()) return;
     setTappedId(optionId);
     // The match is CODE-COMPUTED; the cue tells the tutor which line to say.
+    runner.submitGestureAttempt(tapVerdictCue(item, index));
+  };
+
+  /** point_to: the child touched a token of the printed number sentence. */
+  const handleTapToken = (item: KnowledgeCheckItem, tokenId: string) => {
+    if (!runner.canAttempt || item.kind !== 'point_to') return;
+    if (runner.isAwaitingGesture()) return;
+    if (item.stimulus?.insetType !== 'number-sentence') return;
+    const index = item.stimulus.tokens.findIndex((t) => t.id === tokenId);
+    if (index < 0) return;
+    setTappedId(tokenId);
     runner.submitGestureAttempt(tapVerdictCue(item, index));
   };
 
@@ -362,6 +383,44 @@ const KnowledgeCheckJudged: React.FC<{
       <div className="space-y-4">
         <div className="rounded-2xl border border-blue-400/20 bg-gradient-to-br from-blue-500/10 to-slate-900/50 p-6">
           {prompt}
+          {/* Production kinds (KC redesign P2): the STIMULUS the child names,
+              counts, or points at. Static for the spoken kinds; for point_to
+              the tokens are the one honest tap surface of this pack. */}
+          {item.kind === 'point_to' && item.stimulus?.insetType === 'number-sentence' && (
+            <div className={`mt-5 ${motion.reveal}`} key={`${item.id}-tokens`}>
+              <NumberSentenceTokens
+                data={item.stimulus}
+                onTokenTap={(tokenId) => handleTapToken(item, tokenId)}
+                tappedId={tappedId}
+                revealId={runner.revealHeld && reveal?.itemId === item.id ? (item.targetTokenId ?? null) : null}
+                disabled={!runner.canAttempt}
+              />
+            </div>
+          )}
+          {(item.kind === 'say_it' || item.kind === 'how_many') && item.stimulus && (
+            <div className={`mt-4 ${motion.reveal}`} key={`${item.id}-stimulus`}>
+              <InsetRenderer inset={item.stimulus} className="border-0 bg-transparent p-0 my-0" />
+            </div>
+          )}
+          {/* Legacy MC/TF evidence — the planned inset (a number line) or
+              picture key the question was written against. The tap surface
+              always rendered these; the judged surface must too, or "what
+              number do you land on?" has no number line. */}
+          {item.inset && (
+            <div className={`mt-4 ${motion.reveal}`} key={`${item.id}-inset`}>
+              <InsetRenderer inset={item.inset} className="border-0 bg-transparent p-0 my-0" />
+            </div>
+          )}
+          {item.visual?.type === 'object-collection' && (
+            <div className={`mt-4 ${motion.reveal}`} key={`${item.id}-visual`}>
+              <ObjectCollection data={item.visual.data as VisualObjectCollection} />
+            </div>
+          )}
+          {item.visual?.type === 'comparison-panel' && (
+            <div className={`mt-4 ${motion.reveal}`} key={`${item.id}-visual`}>
+              <ComparisonPanel data={item.visual.data as VisualComparisonData} />
+            </div>
+          )}
           {/* The focus card — the thing being sorted or matched. */}
           {(item.kind === 'sort' || item.kind === 'match') && (
             <div className={`mt-4 flex justify-center ${motion.reveal}`} key={item.id}>

@@ -108,33 +108,76 @@ import type {
   FillInBlanksProblemData,
   MatchingActivityProblemData,
   CategorizationActivityProblemData,
+  ProductionProblemData,
+  Inset,
+  VisualPrimitive,
 } from '../types';
 import { MAX_SENTENCE_WORDS } from './visual-primitives/direct-instruction/diSentenceReadingScript';
+import {
+  serializeInsetForPrompt,
+  spokenArrangement,
+  spokenGlyphCard,
+  spokenNumberSentence,
+} from '../service/insets/serialize';
+import { findInsetAnswerLeaks } from '../service/insets/leaks';
 
 // ============================================================================
 // Item model
 // ============================================================================
 
+/**
+ * The six click-era kinds plus the three PRODUCTION kinds of the KC redesign
+ * (P2, 2026-09-05): the child sees a stimulus that is NOT the answer and
+ * produces — says a name / value (`say_it`), says a count (`how_many`), or
+ * points at a form in a printed sentence (`point_to`, the honest tap per the
+ * DI ruling: tap only for position / form / build).
+ */
 export type KnowledgeCheckItemKind =
   | 'true_false'
   | 'choice'
   | 'choice_tap'
   | 'blank'
   | 'match'
-  | 'sort';
+  | 'sort'
+  | 'say_it'
+  | 'point_to'
+  | 'how_many';
 
-/** Standing gate 1: what each kind's answer is MADE of. */
+/** Standing gate 1: what each kind's answer is MADE of. `say_it` narrows per
+ *  item (`responseClassForProduction`) — this is its widest class. */
 export const responseClassFor = (kind: KnowledgeCheckItemKind): ResponseClassId =>
   kind === 'true_false'
     ? 'yes_no'
-    : kind === 'blank'
+    : kind === 'blank' || kind === 'say_it'
       ? 'short_spoken_word'
-      : kind === 'choice_tap'
-        ? 'manipulation'
-        : 'closed_set_choice';
+      : kind === 'how_many'
+        ? 'number_word_to_20'
+        : kind === 'choice_tap' || kind === 'point_to'
+          ? 'manipulation'
+          : 'closed_set_choice';
+
+/** The benched class a production item's answer belongs to, by what the card
+ *  shows: a numeral → number word; a letter → letter name (build-ahead); a
+ *  shape → shape name; an operator → one short word. */
+export const responseClassForProduction = (p: ProductionProblemData): ResponseClassId => {
+  if (p.kind === 'point_to') return 'manipulation';
+  if (p.kind === 'how_many') return 'number_word_to_20';
+  if (p.stimulus.insetType === 'glyph-card') {
+    switch (p.stimulus.glyphKind) {
+      case 'numeral': return Number(p.stimulus.glyph) > 20 ? 'number_word_to_120' : 'number_word_to_20';
+      case 'letter': return 'letter_name';
+      case 'shape': return 'shape_name';
+      default: return 'short_spoken_word';
+    }
+  }
+  return 'short_spoken_word';
+};
 
 export const answerKindFor = (kind: KnowledgeCheckItemKind): 'voice' | 'gesture' =>
-  kind === 'choice_tap' ? 'gesture' : 'voice';
+  kind === 'choice_tap' || kind === 'point_to' ? 'gesture' : 'voice';
+
+export const isProductionKind = (kind: KnowledgeCheckItemKind): boolean =>
+  kind === 'say_it' || kind === 'point_to' || kind === 'how_many';
 
 export interface KnowledgeCheckOption {
   id: string;
@@ -165,6 +208,19 @@ export interface KnowledgeCheckItem extends JudgedScriptItem {
   /** choice_tap only: why this draw could not be spoken (probe/report datum,
    *  never rendered). */
   tapReason?: string;
+  /** Production kinds: what the child SEES (stimulus ≠ answer). */
+  stimulus?: Inset;
+  /** Legacy MC/TF: the orchestrator-planned evidence the problem was written
+   *  against (a number line, a picture key). The judged surface renders it and
+   *  the contract describes it — a question written about a number line that
+   *  is not on screen ("what number do you land on?") is unanswerable. */
+  inset?: Inset;
+  visual?: VisualPrimitive;
+  /** Production kinds: the canonical spoken answer, plus equally-correct forms. */
+  expectedAnswer?: string;
+  alternates?: string[];
+  /** point_to: the number-sentence token the child must touch. */
+  targetTokenId?: string;
 }
 
 // ── Small helpers (family idiom) ────────────────────────────────────────────
@@ -278,6 +334,8 @@ const itemsFromTrueFalse = (
     problemIndex,
     prompt: statement,
     correctBool: !!p.correct,
+    ...(p.inset ? { inset: p.inset } : {}),
+    ...(p.visual ? { visual: p.visual } : {}),
   }];
 };
 
@@ -314,6 +372,8 @@ const itemsFromChoice = (
       prompt,
       options,
       correctOptionId: p.correctOptionId,
+      ...(p.inset ? { inset: p.inset } : {}),
+      ...(p.visual ? { visual: p.visual } : {}),
     }];
   }
 
@@ -332,6 +392,8 @@ const itemsFromChoice = (
     options,
     correctOptionId: p.correctOptionId,
     tapReason,
+    ...(p.inset ? { inset: p.inset } : {}),
+    ...(p.visual ? { visual: p.visual } : {}),
   }];
 };
 
@@ -435,6 +497,52 @@ const itemsFromSort = (
   });
 };
 
+/**
+ * Production items (KC redesign P2). KEEP-OR-DROP like every other builder:
+ * the ask must be speakable, the answer must be one to three plain words
+ * clean of sentinels, the stimulus must exist, a `point_to` target must
+ * resolve to a token, and the per-type inset leak rule must pass — the
+ * generator already ran it, but this is the runtime's own gate (belt and
+ * suspenders, the same posture as `choiceSpokenReason`).
+ */
+const itemsFromProduction = (
+  p: ProductionProblemData,
+  problemIndex: number,
+): KnowledgeCheckItem[] => {
+  const prompt = sanitize(p.ask ?? '');
+  if (!promptUsable(prompt)) return [];
+  if (!p.stimulus) return [];
+  const answer = sanitize(p.expectedAnswer ?? '');
+  if (!answer || wordsIn(answer) > 3 || opensWithSentinel(answer)) return [];
+  if (VERDICT_WORDS.has(normalizeWord(answer))) return [];
+  const alternates = (p.alternates ?? []).map(sanitize).filter((a) => a && !opensWithSentinel(a));
+  if (p.kind === 'point_to') {
+    if (p.stimulus.insetType !== 'number-sentence') return [];
+    if (!p.targetTokenId || !p.stimulus.tokens.some((t) => t.id === p.targetTokenId)) return [];
+  }
+  if (findInsetAnswerLeaks(p.stimulus, {
+    kind: p.kind, ask: prompt, expectedAnswer: answer, alternates, targetTokenId: p.targetTokenId,
+  }).length > 0) return [];
+  const options = (p.options ?? []).map((o) => ({ id: o.id, text: sanitize(o.text), emoji: o.emoji }));
+  return [{
+    id: `p${problemIndex}-${p.kind}`,
+    kind: p.kind,
+    answerKind: answerKindFor(p.kind),
+    responseClass: responseClassForProduction(p),
+    action: p.kind,
+    problemIndex,
+    prompt,
+    stimulus: p.stimulus,
+    expectedAnswer: answer,
+    alternates,
+    ...(p.targetTokenId ? { targetTokenId: p.targetTokenId } : {}),
+    // The fallback menu rides along for the harness's plain-wrong answer and
+    // the reveal; the judged stage never renders it for a production kind.
+    options,
+    correctOptionId: p.correctOptionId,
+  }];
+};
+
 const itemsFromProblem = (p: ProblemData, problemIndex: number): KnowledgeCheckItem[] => {
   switch (p.type) {
     case 'true_false': return itemsFromTrueFalse(p, problemIndex);
@@ -442,6 +550,7 @@ const itemsFromProblem = (p: ProblemData, problemIndex: number): KnowledgeCheckI
     case 'fill_in_blanks': return itemsFromBlanks(p, problemIndex);
     case 'matching_activity': return itemsFromMatching(p, problemIndex);
     case 'categorization_activity': return itemsFromSort(p, problemIndex);
+    case 'production': return itemsFromProduction(p, problemIndex);
     default: return []; // sequencing (slice 2b), scenario, short_answer
   }
 };
@@ -452,6 +561,11 @@ const itemsFromProblem = (p: ProblemData, problemIndex: number): KnowledgeCheckI
  * label repeats by construction (word-sorter's shipped shape), and the item
  * being placed is new every time. true_false is exempt for the same reason a
  * yes/no round is — the verdict pair is the response CLASS, not content.
+ * PRODUCTION kinds are exempt for sort's reason: their key is (stimulus ×
+ * answer) and the stimulus is a fresh draw each time (a new arrangement, the
+ * other letter case, a different sentence) — the generator's `used` set keeps
+ * identical stimuli apart, so a repeated "three" is a new count, not recall
+ * of the tutor's last sentence.
  */
 export const answerKeyOf = (item: KnowledgeCheckItem): string | undefined => {
   switch (item.kind) {
@@ -551,6 +665,12 @@ export const howToPlayFor = (item: KnowledgeCheckItem): string => {
       return 'We match things that go together. I name one, and you tell me its partner! ';
     case 'sort':
       return 'We sort things into groups. I name one, and you tell me which group it goes in! ';
+    case 'say_it':
+      return 'I show you one thing on a card, and you tell me what it is out loud! ';
+    case 'how_many':
+      return 'I show you a picture. If some are crossed out, they were taken away. You count, and tell me how many! ';
+    case 'point_to':
+      return 'I name a sign, and you touch that sign in the number sentence on the screen! ';
   }
 };
 
@@ -582,6 +702,12 @@ export const askFor = (item: KnowledgeCheckItem): string => {
       return `Your turn. Which one goes with ${item.focusText} — ${choicesSpokenFor(item)}? Tell me which one.`;
     case 'sort':
       return `Your turn. Which group does ${item.focusText} go in — ${choicesSpokenFor(item)}? Tell me which one.`;
+    case 'say_it':
+      return `Your turn. Look at the card. ${item.prompt}`;
+    case 'how_many':
+      return `Your turn. Look at the picture. ${item.prompt}`;
+    case 'point_to':
+      return `Your turn. Look at the number sentence. ${item.prompt}`;
   }
 };
 
@@ -609,6 +735,11 @@ export const affirmLine = (item: KnowledgeCheckItem): string => {
       return `Yes, ${item.focusText} goes with ${stripEnd(correctOptionText(item))}.`;
     case 'sort':
       return `Yes, ${item.focusText} goes in ${stripEnd(correctOptionText(item))}.`;
+    case 'say_it':
+    case 'how_many':
+      return `Yes, ${item.expectedAnswer}.`;
+    case 'point_to':
+      return `Yes! That is the ${item.expectedAnswer} sign.`;
   }
 };
 
@@ -634,6 +765,12 @@ export const correctionLine = (item: KnowledgeCheckItem): string => {
       return `My turn: think about which one really belongs with ${item.focusText}. Your turn. Is it ${choicesSpokenFor(item)}? Tell me which one.`;
     case 'sort':
       return `My turn: think about what kind of thing ${item.focusText} is. Your turn. Which group — ${choicesSpokenFor(item)}? Tell me which one.`;
+    case 'say_it':
+      return `My turn: look at the card again, and think about what it is called. Your turn. ${item.prompt}`;
+    case 'how_many':
+      return `My turn: let's count again, slowly, one at a time. Your turn. ${item.prompt}`;
+    case 'point_to':
+      return `My turn: look at each sign, one at a time. Your turn. ${item.prompt}`;
   }
 };
 
@@ -652,6 +789,12 @@ export const closeLineFor = (item: KnowledgeCheckItem): string => {
       return `${cap(item.focusText ?? '')} goes with ${stripEnd(correctOptionText(item))}. `;
     case 'sort':
       return `${cap(item.focusText ?? '')} goes in ${stripEnd(correctOptionText(item))}. `;
+    case 'say_it':
+      return `It is ${item.expectedAnswer}. `;
+    case 'how_many':
+      return `The answer is ${item.expectedAnswer}. `;
+    case 'point_to':
+      return `That one is the ${item.expectedAnswer} sign. `;
   }
 };
 
@@ -686,6 +829,21 @@ const NO_FLOOR_HANDBACK =
  * "yes"/"no" far more often than "true"/"false", and both pairs are full
  * answers.
  */
+/** What the blind tutor is told a LEGACY item shows — the planned evidence
+ *  (a number line, a picture key). Empty when the problem is text-only. */
+const evidenceDescription = (item: KnowledgeCheckItem): string => {
+  const parts: string[] = [];
+  if (item.inset) parts.push(`The screen shows this evidence: ${serializeInsetForPrompt(item.inset)}.`);
+  if (item.visual?.type === 'object-collection') {
+    const items = (item.visual.data as { items?: Array<{ name: string; icon: string; count: number }> }).items ?? [];
+    if (items.length) parts.push(`The screen shows these pictures: ${items.map((i) => `${i.count} × ${i.name} (${i.icon})`).join(', ')}.`);
+  } else if (item.visual?.type === 'comparison-panel') {
+    const panels = (item.visual.data as { panels?: Array<{ label: string; collection: { items: Array<{ name: string; icon: string }> } }> }).panels ?? [];
+    if (panels.length) parts.push(`The screen shows two pictures side by side: ${panels.map((p) => `"${p.label}" — ${p.collection.items.map((i) => `${i.name} (${i.icon})`).join(', ')}`).join('; ')}.`);
+  }
+  return parts.length ? `${parts.join(' ')} ` : '';
+};
+
 const trueFalseContract = (item: KnowledgeCheckItem): string => {
   const truth = item.correctBool ? 'TRUE' : 'FALSE';
   const acceptTrue = item.correctBool
@@ -695,6 +853,7 @@ const trueFalseContract = (item: KnowledgeCheckItem): string => {
     ? `"false", "no", "nope", or "wrong"`
     : `"true", "yes", "yeah", or "right"`;
   return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner decides, and their think time is unbounded. `
+    + evidenceDescription(item)
     + `Never say whether the statement is true during their turn. `
     + `The statement is ${truth}. `
     + `Any of ${acceptTrue} is a CORRECT answer, on its own or inside a short sentence. `
@@ -731,6 +890,7 @@ const spokenChoiceContract = (item: KnowledgeCheckItem): string => {
       ? `Saying "${item.focusText}" back to you names no partner; treat it as no answer and stay silent while they think. `
       : `Naming two choices, or hedging between them, commits to nothing; stay silent and let them settle on one. `;
   return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. `
+    + evidenceDescription(item)
     + `Never say which one is right and never hint at it. `
     + `The learner answers OUT LOUD, by telling you which choice they pick. `
     + `The choices, in the order you just said them, are: ${numbered}. `
@@ -772,13 +932,77 @@ const blankContract = (item: KnowledgeCheckItem): string =>
  * The verdict for a tap arrives by a separate [KC_TAP] cue with the match
  * code-computed, so this contract carries no verdict branches at all.
  */
-const tapContract = (): string =>
-  `The quoted line is the ONLY thing you say on this turn. The learner answers with their hands, `
+const tapContract = (item: KnowledgeCheckItem): string =>
+  `The quoted line is the ONLY thing you say on this turn. ${evidenceDescription(item)}The learner answers with their hands, `
   + `by touching a choice on the screen — there is nothing for you to listen for, and anything you `
   + `hear while they work is thinking out loud, not an answer. The activity tells you what they `
   + `chose and which line to say; until it does, you have nothing to judge and nothing to say. `
   + `Never say which choice is right, and never describe the choices beyond the question you just asked. `
   + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
+
+/** What the blind tutor is told the child is LOOKING at. The tutor needs it
+ *  to judge ("is that the numeral on the card?"); it never enters the runtime
+ *  state block (answer-free by construction — see `stimulusFor`). */
+const stimulusDescription = (item: KnowledgeCheckItem): string => {
+  const s = item.stimulus;
+  if (!s) return '';
+  switch (s.insetType) {
+    case 'glyph-card': return `The screen shows ${spokenGlyphCard(s)}. `;
+    case 'arrangement': return `The screen shows ${spokenArrangement(s)}. `;
+    case 'number-sentence': return `The screen shows the printed number sentence ${spokenNumberSentence(s)}. `;
+    default: return '';
+  }
+};
+
+const acceptedForms = (item: KnowledgeCheckItem): string => {
+  const forms = [item.expectedAnswer ?? '', ...(item.alternates ?? [])].filter(Boolean).map((a) => `"${a}"`);
+  return forms.join(', ');
+};
+
+/**
+ * say_it. The child names ONE shown thing. Accept the name on its own or in a
+ * short sentence; for a letter card the letter's SOUND is a right answer too
+ * (letter_name class notes: a five-year-old gives either). THE SIGNATURE
+ * ERROR is a near neighbour said fluently — the next numeral, a look-alike
+ * letter, a shape with one more side — which the contract must refuse.
+ */
+const sayItContract = (item: KnowledgeCheckItem): string => {
+  const letter = item.stimulus?.insetType === 'glyph-card' && item.stimulus.glyphKind === 'letter';
+  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. `
+    + stimulusDescription(item)
+    + `Never say what it is called during their turn. `
+    + `The answer is ${acceptedForms(item)}. `
+    + `Any of those said on its own, or inside a short sentence, is CORRECT. `
+    + (letter ? `The letter's SOUND, said on its own, is also correct — a young child gives the sound as readily as the name. ` : '')
+    + `A different name, number or word — however confident — is wrong. `
+    + TWO_BRANCH_LAW
+    + `If the answer is right, say exactly: "${affirmLine(item)}" and stop. `
+    + `If it is wrong, say exactly: "${correctionLine(item)}" and stop — the learner tries again while you stay silent. `
+    + `If they trail off and you truly cannot tell what they said, do not guess and do not judge: say exactly "Tell me that one again." and wait for them. `
+    + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
+};
+
+/**
+ * how_many. The child counts what is shown and says the total (or what is
+ * left). Counting aloud is THINKING — the answer is the number they land on
+ * and stop at. THE SIGNATURE ERROR on a take-away picture is the START count
+ * (every object counted, the cross-outs ignored); on a plain picture it is
+ * an off-by-one.
+ */
+const howManyContract = (item: KnowledgeCheckItem): string => {
+  const digits = (item.alternates ?? []).find((a) => /^\d+$/.test(a)) ?? '';
+  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. `
+    + stimulusDescription(item)
+    + `Never say the count during their turn. `
+    + `The correct answer is "${item.expectedAnswer}"${digits ? ` (${digits})` : ''}. `
+    + `The number word or the numeral, said on its own or inside a short sentence ("${item.expectedAnswer} left"), is the answer. `
+    + `Counting out loud — one, two, three — is thinking, not an answer: wait for the number they stop on. If they stop on a number and say nothing more, that number is their answer. `
+    + `A different number is wrong, however confident. `
+    + TWO_BRANCH_LAW
+    + `If the answer is right, say exactly: "${affirmLine(item)}" and stop. `
+    + `If it is wrong, say exactly: "${correctionLine(item)}" and stop — the learner tries again while you stay silent. `
+    + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
+};
 
 const contractFor = (item: KnowledgeCheckItem): string => {
   switch (item.kind) {
@@ -787,7 +1011,10 @@ const contractFor = (item: KnowledgeCheckItem): string => {
     case 'match':
     case 'sort': return spokenChoiceContract(item);
     case 'blank': return blankContract(item);
-    case 'choice_tap': return tapContract();
+    case 'choice_tap':
+    case 'point_to': return tapContract(item);
+    case 'say_it': return sayItContract(item);
+    case 'how_many': return howManyContract(item);
   }
 };
 
@@ -850,6 +1077,18 @@ export const tapVerdictCue = (
   item: KnowledgeCheckItem,
   tappedIndex: number,
 ): string => {
+  // point_to: the index is a TOKEN position in the printed sentence.
+  if (item.kind === 'point_to' && item.stimulus?.insetType === 'number-sentence') {
+    const tokens = item.stimulus.tokens;
+    const correct = tokens.findIndex((t) => t.id === item.targetTokenId);
+    const isRight = tappedIndex === correct;
+    const touched = tokens[tappedIndex];
+    const line = isRight ? affirmLine(item) : correctionLine(item);
+    return `[KC_TAP] The learner touched the "${touched?.text ?? '?'}" in position ${tappedIndex + 1} of ${tokens.length}. `
+      + `${isRight ? 'That is the correct sign.' : 'That is not the correct sign.'} `
+      + `Say exactly: "${line}" and stop${isRight ? '' : ' — the learner tries again while you stay silent'}. `
+      + `${NEVER_PERFORM}${NO_FLOOR_HANDBACK}`;
+  }
   const options = item.options ?? [];
   const correct = options.findIndex((o) => o.id === item.correctOptionId);
   const isRight = tappedIndex === correct;
@@ -875,6 +1114,9 @@ export const stimulusFor = (item: KnowledgeCheckItem): string => {
     case 'choice_tap': return item.prompt;
     case 'match': return `Which one goes with ${item.focusText}?`;
     case 'sort': return `Which group does ${item.focusText} go in?`;
+    case 'say_it':
+    case 'how_many':
+    case 'point_to': return item.prompt; // the stimulus description lives in the contract
   }
 };
 
@@ -950,6 +1192,66 @@ export const knowledgeCheckHarnessAnswers = (
           }
         : {}),
       leakTokens: [], // "true"/"false" are the menu of every TF ask by design
+    };
+  }
+
+  if (item.kind === 'point_to' && item.stimulus?.insetType === 'number-sentence') {
+    const tokens = item.stimulus.tokens;
+    const correct = tokens.findIndex((t) => t.id === item.targetTokenId);
+    // The plain wrong is the OTHER operator (the discrimination the objective
+    // names); fall back to any other position.
+    const otherOperator = tokens.findIndex((t, i) => i !== correct && t.kind === 'operator');
+    const wrong = otherOperator >= 0 ? otherOperator : tokens.findIndex((_, i) => i !== correct);
+    return {
+      correct: item.expectedAnswer ?? '',
+      plainWrong: tokens[wrong]?.text ?? '?',
+      placed: { correct: Math.max(0, correct), wrong: Math.max(0, wrong) },
+      signatureWrong: {
+        text: tokens[wrong]?.text ?? '?',
+        why: 'the OTHER sign in the sentence — the exact confusion the objective names '
+          + '(minus for equals); a verdict that affirms it has graded "touched a sign", not "touched THE sign"',
+      },
+      // The ask NAMES the sign by design ("touch the minus sign"): the name is
+      // the question side for a point item, so nothing is a leak token here.
+      leakTokens: [],
+    };
+  }
+
+  if (item.kind === 'say_it' || item.kind === 'how_many') {
+    const answer = item.expectedAnswer ?? '';
+    const wrongOption = (item.options ?? []).find((o) => o.id !== item.correctOptionId);
+    const stimulus = item.stimulus;
+    let signature: { text: string; why: string } | undefined;
+    if (item.kind === 'how_many' && stimulus?.insetType === 'arrangement') {
+      if ((stimulus.removed ?? 0) > 0) {
+        signature = {
+          text: String(stimulus.count),
+          why: 'the START count — every object counted and the crossed-out ones ignored; '
+            + 'fluent, confident, and exactly the misread a take-away picture exists to catch',
+        };
+      } else {
+        signature = {
+          text: String(stimulus.count + 1),
+          why: 'an off-by-one count said confidently — the near miss a judge scoring "said a number" affirms',
+        };
+      }
+    } else if (stimulus?.insetType === 'glyph-card' && stimulus.glyphKind === 'numeral') {
+      signature = {
+        text: String(Number(stimulus.glyph) + 1),
+        why: 'the NEXT numeral said fluently — the neighbour a child reaches by counting on instead of reading the card',
+      };
+    } else if (wrongOption) {
+      signature = {
+        text: stripEnd(sanitize(wrongOption.text)),
+        why: 'a plausible neighbour (a look-alike letter, a shape one side off) named confidently',
+      };
+    }
+    return {
+      correct: answer,
+      plainWrong: wrongOption ? stripEnd(sanitize(wrongOption.text)) : 'banana',
+      ...(signature ? { signatureWrong: signature } : {}),
+      leakTokens: [...tokensOf(answer), ...(item.alternates ?? []).flatMap(tokensOf)]
+        .filter((w) => w.length >= 3),
     };
   }
 

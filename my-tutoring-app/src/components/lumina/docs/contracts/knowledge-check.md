@@ -224,3 +224,29 @@ problem needs a picture.
   surface; in judged mode the tutor's scripted ask IS the read-aloud (G3 closes in the
   strong form for judged sessions). R7/R8: unchanged shape via the bridges. Machine gates +
   3-probe live build green; headless drive + mic row #111 owed. `qa/di/BACKLOG.md` item 23.
+- 2026-09-05 — **KC REDESIGN P0–P3 pilot (lesson-bench BACKLOG item 25; di item 23 slice 3).**
+  Design: `qa/HANDOFF-knowledge-check-redesign-2026-09-05.md`. **R2 FORKED, not broken.** The
+  K floor was "MCQ/TF only, picture options, no on-screen stimulus"; it now reads **"K = the
+  picture-primary MCQ/TF surface for orchestrated problems, PLUS `production` items over a K
+  stimulus inset"** — a `production` problem (`kind: say_it | point_to | how_many`) shows a
+  `number-sentence`, `arrangement` or `glyph-card` the child names, counts, or points at. It
+  is K-capable by construction (no reading; the oracle's PRE floor admits it; the tap surface
+  `ProductionProblem.tsx` renders the shipped fallback menu picture-primary with the K
+  read-aloud beat). **R1** extends: `correctOptionId` resolves AND `expectedAnswer` is
+  non-empty AND a `point_to` target resolves to a token that equals `correctOptionId` (oracle
+  `checkProduction`). **R4/R8** unchanged: production items carry `objectiveId`/subskill ids
+  from the slot; the Bloom pin still reaches the orchestrator for legacy slots. **R9** extends:
+  a production item's stimulus is code-built and leak-checked (`findInsetAnswerLeaks`, one
+  rule per inset type) both in the generator and again at the runtime build gate. **NEW
+  structural rule (P3):** with lesson objectives the plan is SET-SIZED in code
+  (`knowledgeCheckPlan.ts`: ≥2 slots per objective, one per named element, K budget 8 that
+  drops generic angles first and never a named element); the curator `count` is a hint and
+  the delta is logged. Insets: the two schema/guidance copies are ONE module
+  (`service/insets/`, item 17 P1 debt closed); annotated-example imports the shim. Gates:
+  tsc 770 = baseline, `typecheck:lumina` 0, vitest 844 (new: namedSet, plan, leaks, production
+  generator, production di-script incl. shared pack gates + catalog contract), runtime probe
+  `scripts/probe-kc-redesign.mjs` (live generator → oracle → script gate → coverage judge on
+  the five KC-only packages; results in `qa/eval-reports/knowledge-check-redesign-2026-09-05.*`).
+  **Owed:** browser walk of the three renderers + `point_to` gesture on the judged surface
+  (HUMAN-CHECKS), headless `--di` drive of a production set, P4 kinds (`picture-scene`,
+  `spoken-cue`, `read_it`, `sort_one`, `which_reason`), P5 journey adapter + β per kind.

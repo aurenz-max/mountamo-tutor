@@ -7,3 +7,4 @@ export { SequencingActivityProblem } from './SequencingActivityProblem';
 export { CategorizationActivityProblem } from './CategorizationActivityProblem';
 export { ScenarioQuestionProblem } from './ScenarioQuestionProblem';
 export { ShortAnswerProblem } from './ShortAnswerProblem';
+export { ProductionProblem } from './ProductionProblem';
