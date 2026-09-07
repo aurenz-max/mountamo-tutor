@@ -45,6 +45,7 @@ my-tutoring-app/qa/lesson-planner/**/blind-review/
 my-tutoring-app/qa/lesson-planner/**/lexical/
 my-tutoring-app/qa/lesson-planner/**/semantic/
 my-tutoring-app/qa/lesson-planner/**/discovery-cache/
+my-tutoring-app/qa/lesson-planner/**/capabilities/
 my-tutoring-app/qa/lesson-planner/**/runs/
 my-tutoring-app/qa/lesson-planner/**/*sweep*/
 my-tutoring-app/qa/lesson-planner/mode-card-ab/
