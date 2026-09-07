@@ -620,6 +620,23 @@ type BaseTenBlocksConfig = {
   difficulty?: string;
 };
 
+/**
+ * Grade → default number range when the curator supplies none (every ad-hoc /
+ * free-topic lesson — curriculum-launched objectives carry their own numberRange).
+ * Mirrors the free-text GRADE BAND GUIDELINES prose below, but feeds it through
+ * `createNumberPool` so the prompt takes the reliable "INFER GRADE BAND FROM
+ * RANGE" path instead of asking the model to self-select a band from prose with
+ * no binding to the resolved grade. Without this, grade-1 ad-hoc lessons landed
+ * in the 2-3 band (3-digit numbers, zero tens) on ~1/3-1/2 of draws — see
+ * qa/lesson-bench/BACKLOG.md item 26(d).
+ */
+function defaultRangeForGrade(grade?: string): { min: number; max: number } | undefined {
+  if (grade === 'K' || grade === '1') return { min: 1, max: 20 };
+  if (grade === '2' || grade === '3') return { min: 1, max: 999 };
+  if (grade === '4' || grade === '5') return { min: 1, max: 9999 };
+  return undefined;
+}
+
 export const generateBaseTenBlocks = async (ctx: GenerationContext): Promise<BaseTenBlocksData> => {
   const { topic } = ctx;
   const gradeContext = ctx.gradeContext;
@@ -642,11 +659,16 @@ export const generateBaseTenBlocks = async (ctx: GenerationContext): Promise<Bas
   const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
     ? evalConstraint.allowedTypes[0]
     : undefined;
+  // Structured range: the curator's own numberRange wins; otherwise derive one from
+  // the resolved grade so ad-hoc/free-topic lessons still get a deterministic pool
+  // instead of asking the model to self-select a band from prose (item 26(d)).
+  const effectiveNumberRange = config?.numberRange ?? defaultRangeForGrade(ctx.grade);
+
   // Best-effort place count for the PROMPT's structural shape (post-process uses
   // the resolved gradeBand/maxPlace, which is authoritative). Infer from the
-  // manifest numberRange when present, else default to 3-digit (2-3 band).
-  const promptPlaces = config?.numberRange
-    ? (config.numberRange.max >= 1000 ? 4 : config.numberRange.max <= 20 ? 2 : 3)
+  // effective numberRange when present, else default to 3-digit (2-3 band).
+  const promptPlaces = effectiveNumberRange
+    ? (effectiveNumberRange.max >= 1000 ? 4 : effectiveNumberRange.max <= 20 ? 2 : 3)
     : 3;
   const tierSection = pinnedType && supportTier
     ? buildTierPromptSection(pinnedType, supportTier, promptPlaces)
@@ -666,7 +688,7 @@ export const generateBaseTenBlocks = async (ctx: GenerationContext): Promise<Bas
     && supportTier !== 'easy'
     && !!pinnedType
     && (BT_ZEROGAP_TYPES as readonly string[]).includes(pinnedType);
-  const pool = createNumberPool(config?.numberRange, { minNonZeroDigits: zeroGapActive ? 1 : 2 });
+  const pool = createNumberPool(effectiveNumberRange, { minNonZeroDigits: zeroGapActive ? 1 : 2 });
   console.log(`[BaseTenBlocks] pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
 
   const rangeSection = pool?.toPromptSection({
