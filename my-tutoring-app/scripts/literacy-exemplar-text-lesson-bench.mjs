@@ -64,10 +64,10 @@ State limitations and uncovered requirements honestly. Intent must explicitly pr
   }));
   r.hydrationMs=Math.round(performance.now()-start);
   const allowed=new Set('sitpn');
-  r.targetInspection=r.components.filter(c=>['letter-sound-link','phonics-blender','cvc-speller','phoneme-explorer'].includes(c.componentId)).map(c=>{
+  r.targetInspection=r.components.filter(c=>['letter-sound-link','phonics-blender','cvc-speller','phoneme-explorer','word-workout'].includes(c.componentId)).map(c=>{
    const entries=[...(c.data?.challenges??[]),...(c.data?.words??[])];
-   const targets=entries.flatMap(e=>[...(typeof e.targetLetter==='string'?[{field:'targetLetter',text:e.targetLetter}]:[]),...(typeof e.targetWord==='string'?[{field:'targetWord',text:e.targetWord}]:[])]);
-   return {instanceId:c.instanceId,componentId:c.componentId,targets,outsideLetterSet:targets.filter(t=>[...t.text.toLowerCase()].some(l=>!allowed.has(l))),status:targets.length?'checked':'unknown',note:'Only explicit targetLetter/targetWord fields checked, not narration, pictures, options, instruction quality, or other fields.'};
+   const targets=entries.flatMap(e=>[...(c.componentId==='phoneme-explorer'&&typeof e.word==='string'?[{field:'word',text:e.word}]:[]),...(typeof e.targetLetter==='string'?[{field:'targetLetter',text:e.targetLetter}]:[]),...(typeof e.targetWord==='string'?[{field:'targetWord',text:e.targetWord}]:[])]);
+   return {instanceId:c.instanceId,componentId:c.componentId,targets,outsideLetterSet:targets.filter(t=>[...t.text.toLowerCase()].some(l=>!allowed.has(l))),status:targets.length?'checked':'unknown',note:'Only explicit targetLetter/targetWord and phoneme-explorer word fields checked, not narration, pictures, options, instruction quality, or other fields.'};
   });
   const manifest={topic,gradeLevel:'kindergarten',subject:'LANGUAGE_ARTS',themeColor:'#6366f1',layout,objectiveBlocks:objectives.map(o=>({objectiveId:o.id,objectiveText:o.text,objectiveVerb:o.verb,components:layout.filter(a=>a.objectiveIds.includes(o.id))}))};
   const curatorBrief={...sharedBrief,title:r.plan.title,objectives};
