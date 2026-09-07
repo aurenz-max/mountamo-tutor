@@ -30,3 +30,24 @@ backend/reports/
 # Evidence ships curated under qa/ — raw runtime logs never enter the repo.
 backend/logs/
 my-tutoring-app/qa/lesson-bench/journeys/runs/
+
+# lesson-bench packages: 60-100KB hydrated lesson dumps, regenerated per /lesson-coverage
+# run. 20 pre-existing ones are already committed (left as history, not rewritten) but
+# new packages accumulate too fast to review/commit individually going forward.
+my-tutoring-app/qa/lesson-bench/packages/
+
+# lesson-planner A/B harnesses (scripts/lesson-planner-*.mjs) each write raw per-lesson
+# output to their own scratch directory. Shape-based, not name-based, so a new experiment
+# never needs a new line here: only named fixtures/ inputs and written *.md reports survive.
+my-tutoring-app/qa/lesson-planner/**/records/
+my-tutoring-app/qa/lesson-planner/**/packages/
+my-tutoring-app/qa/lesson-planner/**/blind-review/
+my-tutoring-app/qa/lesson-planner/**/lexical/
+my-tutoring-app/qa/lesson-planner/**/semantic/
+my-tutoring-app/qa/lesson-planner/**/discovery-cache/
+my-tutoring-app/qa/lesson-planner/**/runs/
+my-tutoring-app/qa/lesson-planner/**/*sweep*/
+my-tutoring-app/qa/lesson-planner/mode-card-ab/
+my-tutoring-app/qa/lesson-planner/open-topic/
+my-tutoring-app/qa/lesson-planner/staged-ab/
+my-tutoring-app/qa/lesson-planner/staged-full-catalog/
