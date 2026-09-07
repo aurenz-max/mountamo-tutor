@@ -1045,7 +1045,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'production',
-        affordances: { representation: 'symbolic' },
+        // The target word card always carries its emoji, and at PRE the picture
+        // too (RhymeStudio.tsx: showWordImage = isPreReader || …) — the child
+        // hears the word and SEES the thing, then produces. Tagged symbolic alone,
+        // Q3 read this picture-first K block as a symbols-first opener
+        // (…p5m6 obj3, 2026-09-06).
+        affordances: { representation: ['pictorial', 'symbolic'] },
         label: 'Think of a Rhyme (Tier 4)',
         beta: 5.0,
         scaffoldingMode: 4,
