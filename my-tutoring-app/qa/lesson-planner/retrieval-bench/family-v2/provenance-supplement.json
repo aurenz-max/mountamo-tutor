@@ -1,5 +1,0 @@
-{
-  "runner": "scripts/lesson-planner-retrieval-bench-v2.mjs",
-  "sha256": "2f19051db6c84aa326401e427489a5386d5eb323d96eb32fee3c2296ba304594",
-  "note": "Actual executed v2 runner, supplementing the protocol shared source list."
-}
