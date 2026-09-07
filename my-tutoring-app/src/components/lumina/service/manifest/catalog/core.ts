@@ -363,7 +363,11 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       + 'ESSENTIAL for building fluency and automaticity at any grade level.',
     constraints: 'Best for factual recall (not reasoning or multi-step problems). '
       + 'Challenges should have single correct answers. Keep to 8-15 challenges per session for engagement. '
-      + 'No timers — never frame challenges around speed or deadlines.',
+      + 'No timers — never frame challenges around speed or deadlines. '
+      + 'NOT for a K-2 Language Arts beginning/middle-sound identification objective — '
+      + 'phoneme-explorer already owns that ground answered ALOUD (spoken-first ruling); '
+      + 'picking fast-fact there duplicates it tap-only. Fine for other K-2 LA automaticity '
+      + '(sight words, vocabulary) where no spoken-native primitive already claims the objective.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap'], role: ['apply', 'assess'], minutes: 3 },
     evalModes: [
       {
