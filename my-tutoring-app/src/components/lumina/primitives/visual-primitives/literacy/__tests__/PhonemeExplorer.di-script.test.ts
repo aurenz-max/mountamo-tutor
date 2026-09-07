@@ -59,6 +59,15 @@ const ISOLATE = itemFromChallenge({
     { word: 'cake', emoji: '🍰', correct: false },
   ],
 })!;
+const MEDIAL = itemFromChallenge({
+  id: 'c1m', mode: 'medial', targetWord: 'pig', targetEmoji: '🐷', vowel: 'i',
+  choices: [
+    { word: 'wig', emoji: '👩', correct: true },
+    { word: 'bag', emoji: '👜', correct: false },
+    { word: 'log', emoji: '🪵', correct: false },
+    { word: 'mug', emoji: '☕', correct: false },
+  ],
+})!;
 const BLEND = itemFromChallenge({
   id: 'c2', mode: 'blend', phonemeSequence: ['k', 'a', 't'], word: 'cat', emoji: '🐱',
 })!;
@@ -71,7 +80,7 @@ const MANIPULATE = itemFromChallenge({
   resultWord: 'bat', resultEmoji: '🦇',
 })!;
 
-const ITEMS: PhonemeExplorerItem[] = [ISOLATE, BLEND, SEGMENT, MANIPULATE];
+const ITEMS: PhonemeExplorerItem[] = [ISOLATE, MEDIAL, BLEND, SEGMENT, MANIPULATE];
 
 /**
  * The pack exactly as the component assembles it, from the EXPORTED surface —
@@ -111,6 +120,7 @@ describe('phoneme-explorer pack · structural gates', () => {
     for (const item of ITEMS) expect(item.answerKind).toBe('voice');
     expect(responseClassFor('segment')).toBe('number_word_to_20');
     expect(responseClassFor('isolate')).toBe('short_spoken_word');
+    expect(responseClassFor('medial')).toBe('short_spoken_word');
     expect(responseClassFor('blend')).toBe('short_spoken_word');
     expect(responseClassFor('manipulate')).toBe('short_spoken_word');
     expect(SEGMENT.answer).toBe('three');
@@ -245,6 +255,8 @@ describe('phoneme-explorer pack · corrections and contracts', () => {
     expect(itemCue(BLEND)).toContain('/k/ … aaa … /t/ … cat');
     expect(itemCue(SEGMENT)).toContain('Three sounds');
     expect(itemCue(MANIPULATE)).toContain('cat becomes bat');
+    expect(itemCue(MEDIAL)).toContain('pig has iii in the middle');
+    expect(itemCue(MEDIAL)).toContain('Wig has iii in the middle too');
   });
 
   it('names what looks like an answer and is not, per mode', () => {
@@ -252,6 +264,7 @@ describe('phoneme-explorer pack · corrections and contracts', () => {
     expect(itemCue(BLEND)).toContain('separate sounds with NO word at the end');
     expect(itemCue(SEGMENT)).toContain('Saying the word "sheep" back is not an answer');
     expect(itemCue(MANIPULATE)).toContain('"cat" said back is NOT the answer');
+    expect(itemCue(MEDIAL)).toContain('"pig" said back is NOT the answer');
   });
 
   it('carries the accept side — counting or sounding out that LANDS on the answer', () => {
@@ -384,7 +397,7 @@ describe('phoneme-explorer · DI harness surface', () => {
     expect(surface.contextFor(SEGMENT)).toEqual({ challengeType: 'segment', stimulus: 'sheep' });
   });
 
-  it('exempts ONLY the isolate menu clause from the leak oracle, and only when spoken', () => {
+  it('exempts ONLY a menu-kind menu clause from the leak oracle, and only when spoken', () => {
     // The four cards ARE the question — reading them aloud is the ask. Every
     // other mode's ask is answer-free, so the oracle stays flat there; emptying
     // leakTokens instead would switch the oracle off.
@@ -392,6 +405,9 @@ describe('phoneme-explorer · DI harness surface', () => {
     expect(ISOLATE.answer).toBe('moon');
     // ... and the exemption is a SPAN OF THE ASK, not a paraphrase of it.
     expect(itemCue(ISOLATE)).toContain(leakExemptSpanFor(ISOLATE)!);
+    // medial is the second MENU kind, so it earns the same exemption.
+    expect(leakExemptSpanFor(MEDIAL)).toBe('The words are: wig, bag, log, mug.');
+    expect(itemCue(MEDIAL)).toContain(leakExemptSpanFor(MEDIAL)!);
     for (const item of [BLEND, SEGMENT, MANIPULATE]) {
       expect(leakExemptSpanFor(item)).toBeUndefined();
     }
@@ -429,6 +445,7 @@ describe('phoneme-explorer · DI harness surface', () => {
     const manipulate = phonemeExplorerHarnessAnswers(MANIPULATE);
     expect(manipulate.signatureWrong!.text).toBe('cat');          // unchanged original
     expect(itemCue(MANIPULATE)).toContain('"cat" said back is NOT the answer');
+    expect(itemCue(MEDIAL)).toContain('"pig" said back is NOT the answer');
   });
 
   it('a plain wrong is a real alternative, never the answer', () => {
@@ -438,9 +455,11 @@ describe('phoneme-explorer · DI harness surface', () => {
       expect(answers.plainWrong.toLowerCase()).not.toBe(item.answer.toLowerCase());
       expect(answers.leakTokens).toEqual([item.answer]);
     }
-    // isolate's plain wrong is a card the stage actually renders.
-    expect((ISOLATE.menu ?? []).map((c) => c.word))
-      .toContain(phonemeExplorerHarnessAnswers(ISOLATE).plainWrong);
+    // A menu kind's plain wrong is a card the stage actually renders.
+    for (const menuItem of [ISOLATE, MEDIAL]) {
+      expect((menuItem.menu ?? []).map((c) => c.word))
+        .toContain(phonemeExplorerHarnessAnswers(menuItem).plainWrong);
+    }
   });
 
   it('the isolate ask cannot hand over a card inside its own SOUND label', () => {
@@ -457,6 +476,103 @@ describe('phoneme-explorer · DI harness surface', () => {
         { word: 'cake', emoji: '🍰', correct: false },
       ],
     })).toBeNull();
+  });
+});
+
+// ── 9. medial — the design ruling, pinned ───────────────────────────
+
+describe('phoneme-explorer pack · medial (middle-sound match)', () => {
+  it('NEVER names the vowel in the ask — extracting it IS the skill', () => {
+    // The ruling this mode was built on. "Which word has iii in the middle?"
+    // hands over the extraction step and leaves a task that is isolate wearing
+    // a different label; the vowel is spoken only in the correction, where the
+    // answer is already earned.
+    const ask = spokenLine(itemCue(MEDIAL));
+    expect(ask).toContain('same middle sound as pig');
+    expect(ask).not.toContain('iii');
+    // ... and the correction, which is judge-side, does name it.
+    expect(itemCue(MEDIAL)).toContain('pig has iii in the middle');
+  });
+
+  it('speaks the stimulus but never prints it as a card', () => {
+    // The stimulus really does carry the target middle sound, so a card
+    // carrying it is answerable by repeating what was just heard.
+    expect(itemFromChallenge({
+      id: 'x', mode: 'medial', targetWord: 'pig', targetEmoji: '🐷', vowel: 'i',
+      choices: [
+        { word: 'wig', emoji: '👩', correct: true },
+        { word: 'pig', emoji: '🐷', correct: false },
+        { word: 'log', emoji: '🪵', correct: false },
+        { word: 'mug', emoji: '☕', correct: false },
+      ],
+    })).toBeNull();
+  });
+
+  it('drops an item whose middle vowel cannot be said — the correction is built on it', () => {
+    const base = {
+      id: 'x', mode: 'medial' as const, targetWord: 'pig', targetEmoji: '🐷',
+      choices: [
+        { word: 'wig', emoji: '👩', correct: true },
+        { word: 'bag', emoji: '👜', correct: false },
+        { word: 'log', emoji: '🪵', correct: false },
+        { word: 'mug', emoji: '☕', correct: false },
+      ],
+    };
+    expect(itemFromChallenge({ ...base, vowel: '' })).toBeNull();
+    // 'y' is not one of the five short vowels phonemeVoice can spell out.
+    expect(itemFromChallenge({ ...base, vowel: 'x' })).toBeNull();
+    expect(itemFromChallenge({ ...base, vowel: 'i' })?.vowelSpoken).toBe('iii');
+  });
+
+  it('the ask survives the hard tier by making the child READ the cards', () => {
+    // medial has no worked example and no instruction furniture, so enumeration
+    // is its ONE ask-side tier lever — and it is a real one.
+    const quiet = itemFromChallenge({
+      id: 'c1', mode: 'medial', targetWord: 'pig', targetEmoji: '🐷', vowel: 'i',
+      readOptionsAloud: false,
+      choices: [
+        { word: 'wig', emoji: '👩', correct: true },
+        { word: 'bag', emoji: '👜', correct: false },
+        { word: 'log', emoji: '🪵', correct: false },
+        { word: 'mug', emoji: '☕', correct: false },
+      ],
+    })!;
+    const ask = spokenLine(itemCue(quiet));
+    expect(ask).toContain('Read the cards');
+    expect(ask).not.toContain('The words are:');
+    expect(leakExemptSpanFor(quiet)).toBeUndefined();
+  });
+
+  it('pushes the stimulus word to the tutor, never the vowel', () => {
+    // The context channel must not carry what the ask deliberately withholds.
+    expect(stimulusFor(MEDIAL)).toBe('pig — cards: wig, bag, log, mug');
+    expect(stimulusFor(MEDIAL)).not.toContain('iii');
+  });
+
+  it('SELECTS its answer, so a heard word does not disqualify it — but its stimulus is heard', () => {
+    // Same exemption isolate earns, for the same reason: the cards are visible
+    // at the moment of the ask. What medial adds to `heard` is its STIMULUS,
+    // which the tutor speaks aloud — so it can hand over a LATER blend answer.
+    const kept = itemsFromChallenges([
+      { id: 'c1', mode: 'medial', targetWord: 'cat', targetEmoji: '🐈', vowel: 'a',
+        choices: [
+          { word: 'hat', emoji: '👒', correct: true },
+          { word: 'hot', emoji: '🌶', correct: false },
+          { word: 'hut', emoji: '🛖', correct: false },
+          { word: 'hit', emoji: '🎯', correct: false },
+        ] },
+      // 'cat' was spoken as the stimulus above, so blending to it is now recall.
+      { id: 'c2', mode: 'blend', phonemeSequence: ['k', 'a', 't'], word: 'cat', emoji: '🐈' },
+      // ... while a second menu item reusing a heard word still SELECTS.
+      { id: 'c3', mode: 'medial', targetWord: 'pig', targetEmoji: '🐷', vowel: 'i',
+        choices: [
+          { word: 'wig', emoji: '👩', correct: true },
+          { word: 'hat', emoji: '👒', correct: false },
+          { word: 'log', emoji: '🪵', correct: false },
+          { word: 'mug', emoji: '☕', correct: false },
+        ] },
+    ]);
+    expect(kept.map((i) => i.id)).toEqual(['c1', 'c3']);
   });
 });
 

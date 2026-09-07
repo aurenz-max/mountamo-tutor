@@ -4,8 +4,7 @@ import type { GenerationContext, SupportTier } from "../generation/generationCon
 import { clampGradeToK2 } from "../scopeContext";
 import { PhonemeExplorerData } from "../../primitives/visual-primitives/literacy/PhonemeExplorer";
 import {
-  resolveEvalModeConstraint,
-  logEvalModeResolution,
+  resolveEvalModes,
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
@@ -14,9 +13,9 @@ import { buildRemediationPrompt } from '../generation/remediationPrompt';
 // Architecture
 // ---------------------------------------------------------------------------
 //
-// PhonemeExplorer has four structurally-distinct challenge modes (isolate,
-// blend, segment, manipulate), each with its own field set. A SINGLE Gemini
-// call juggling all four in one mode-multiplexed schema (~15 conditional
+// PhonemeExplorer has five structurally-distinct challenge modes (isolate,
+// medial, blend, segment, manipulate), each with its own field set. A SINGLE
+// Gemini call juggling all of them in one mode-multiplexed schema (~15 conditional
 // fields, only id+mode required) is unreliable: flash-lite degenerates to
 // emitting empty {id, mode} shells that the validator backfills with "word"
 // and "???" placeholders.
@@ -33,10 +32,11 @@ import { buildRemediationPrompt } from '../generation/remediationPrompt';
 // ---------------------------------------------------------------------------
 
 // DI MODALITY (2026-08-11): every mode is answered ALOUD and judged by the
-// live tutor in-band. Only `isolate` still carries 4 choices — they are the
-// on-screen MENU (the question side, unmarked); the other three modes emit the
-// ANSWER as a field and no choices at all. `phonemeExplorerScript.ts` owns the
-// leak/sayability gates that drop an item the tutor could not honestly ask.
+// live tutor in-band. Only the MENU modes (`isolate`, `medial`) carry 4 choices
+// — they are the on-screen MENU (the question side, unmarked); the other three
+// modes emit the ANSWER as a field and no choices at all.
+// `phonemeExplorerScript.ts` owns the leak/sayability gates that drop an item
+// the tutor could not honestly ask.
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   isolate: {
     promptDoc:
@@ -46,6 +46,29 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `distractors starting with clearly DIFFERENT sounds). The exampleWord must NOT be one of the 4 `
       + `choices. This mode is BEGINNING-sound only. K: single consonants. Grade 1: blends/digraphs as onsets.`,
     schemaDescription: "'isolate' (say the menu word with the target initial sound)",
+  },
+  // Added 2026-09-05 (lesson-bench BACKLOG item 23). The supply gap it closes:
+  // two independent K "Decoding CVC words with short a" draws produced an
+  // objective shaped "identify the short 'a' sound in spoken words" and BOTH
+  // came back off_target_assessment, because every mode this primitive had was
+  // an INITIAL-sound or whole-word task. Shape ruled by the user: a minimal-pair
+  // CHOICE answered aloud, NOT "say the middle sound" — producing an isolated
+  // vowel is an unbenched response class, and the menu keeps this on the already
+  // benched `short_spoken_word` judge.
+  medial: {
+    promptDoc:
+      `"medial": The tutor SAYS one CVC word (never printed — the child hears it and sees only a picture) `
+      + `and reads a 4-word menu aloud; the student SAYS which menu word has the same MIDDLE sound. `
+      + `Set ONLY targetWord (the spoken CVC stimulus), targetEmoji and vowel (the single SHORT vowel letter `
+      + `in the middle of targetWord — one of a, e, i, o, u). YOU DO NOT WRITE THE MENU — `
+      + `the four cards are built from a curated word bank in code, so do not attempt to supply choices. `
+      + `Your whole job is a stimulus a five-year-old knows and can picture, fitted to the topic. `
+      + `Use a DIFFERENT middle vowel across the challenges wherever the topic allows it. `
+      + `targetWord must be a real, concrete, picturable CVC word with a true SHORT vowel — never a long vowel, `
+      + `never a silent-e word ("cake", "bike"), never an r-controlled word ("car", "bird") — and its `
+      + `targetEmoji must depict it unmistakably, because the word is NEVER PRINTED and the picture is the `
+      + `child's only way to recover it.`,
+    schemaDescription: "'medial' (say the menu word with the same middle vowel sound)",
   },
   blend: {
     promptDoc:
@@ -95,7 +118,11 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
-const ALL_MODES = ['isolate', 'blend', 'segment', 'manipulate'] as const;
+// Order IS the ladder: buildModePlan filters this list and round-robins in it,
+// so a blended plan runs easy→hard. medial sits between isolate (β 1.5) and
+// blend (β 2.5) at β 2.0 — the same closed-set act, one step further into the
+// word.
+const ALL_MODES = ['isolate', 'medial', 'blend', 'segment', 'manipulate'] as const;
 type PhonemeMode = typeof ALL_MODES[number];
 export type PhonemeRemediationMove = 'contrast_phoneme' | 'blend_through' | 'segment_boundary' | 'isolate_operation';
 
@@ -104,7 +131,9 @@ export function phonemeRemediationMoveFor(
   remediationFocus?: string,
 ): PhonemeRemediationMove | undefined {
   if (!remediationFocus?.trim()) return undefined;
-  if (mode === 'isolate') return 'contrast_phoneme';
+  // medial IS a phoneme contrast — a wrong card differs from the answer in
+  // exactly the sound under test, which is what contrast_phoneme remediates.
+  if (mode === 'isolate' || mode === 'medial') return 'contrast_phoneme';
   if (mode === 'blend') return 'blend_through';
   if (mode === 'segment') return 'segment_boundary';
   return 'isolate_operation';
@@ -196,13 +225,151 @@ export function resolvePhonemeSupportScaffold(
     case 'manipulate':
       scaffold.showOperationDetail = !hard;
       break;
+    case 'medial':
     case 'segment':
-      // segment has no instruction furniture of its own — the target word IS the
-      // stimulus and the options are the answer surface.
+      // Neither has instruction furniture of its own — the spoken target word IS
+      // the stimulus. Their tier lever is the shared pair above: at hard (and
+      // above K) the picture cue goes and the tutor stops enumerating the menu,
+      // so a medial item's four cards must be READ rather than heard.
       break;
   }
 
   return scaffold;
+}
+
+// ---------------------------------------------------------------------------
+// medial — the MENU IS BUILT IN CODE. (2026-09-05)
+//
+// Three prompt iterations could not stop flash-lite inventing a word to finish
+// a rhyming set: told to hold the rime, it completed "rim/rum/…" with "rom",
+// "ran/run/…" with "ren" and "rin", and "map/mop/…" with "mep". Measured across
+// draws that was 8 of 20 cards on the first pass and still 4 of 15 with an
+// explicit real-words rule AND a word bank in the prompt.
+//
+// It matters more here than it would elsewhere because of WHO reads the card: a
+// pre-reader's access to a menu word is its picture, and an invented word gets
+// an invented picture — "dag" shipped as 🎒, "rud" as 🪵. The child sees a
+// backpack and hears a non-word.
+//
+// So the model no longer authors the menu. It authors what it is good at — a
+// topic-fitting, picturable STIMULUS word and the vowel in it — and code fills
+// the four cards from this bank. A non-word is then structurally impossible
+// rather than discouraged. (This is the family's standing division of labour:
+// the LLM emits scope, code builds structure and the answer.)
+//
+// Ordered so that the common consonant frames line up across vowels (hat/hot/
+// hut/hit, cap/cop/cup/…): `buildMedialChoices` prefers a distractor sharing the
+// target's ending, which is what makes the item a VOWEL test rather than a
+// whole-word test — and falls back to any real word of the right vowel, which
+// is exactly the fallback the model refused to take.
+const MEDIAL_WORD_BANK: Record<string, { word: string; emoji: string }[]> = {
+  a: [
+    { word: 'hat', emoji: '🎩' }, { word: 'cat', emoji: '🐱' }, { word: 'bat', emoji: '🦇' },
+    { word: 'cap', emoji: '🧢' }, { word: 'map', emoji: '🗺️' }, { word: 'bag', emoji: '👜' },
+    { word: 'pan', emoji: '🍳' }, { word: 'fan', emoji: '🪭' }, { word: 'can', emoji: '🥫' },
+    { word: 'jam', emoji: '🍓' }, { word: 'rat', emoji: '🐀' }, { word: 'tag', emoji: '🏷️' },
+  ],
+  e: [
+    { word: 'net', emoji: '🥅' }, { word: 'jet', emoji: '✈️' }, { word: 'bed', emoji: '🛏️' },
+    { word: 'pen', emoji: '🖊️' }, { word: 'hen', emoji: '🐔' }, { word: 'ten', emoji: '🔟' },
+    { word: 'leg', emoji: '🦵' }, { word: 'web', emoji: '🕸️' }, { word: 'egg', emoji: '🥚' },
+    { word: 'vet', emoji: '🩺' }, { word: 'bell', emoji: '🔔' }, { word: 'nest', emoji: '🪺' },
+  ],
+  i: [
+    { word: 'hit', emoji: '🏏' }, { word: 'pig', emoji: '🐷' }, { word: 'wig', emoji: '👱' },
+    { word: 'lip', emoji: '👄' }, { word: 'zip', emoji: '🤐' }, { word: 'dig', emoji: '⛏️' },
+    { word: 'pin', emoji: '📌' }, { word: 'fin', emoji: '🐟' }, { word: 'win', emoji: '🏆' },
+    { word: 'six', emoji: '6️⃣' }, { word: 'lid', emoji: '🫙' }, { word: 'fish', emoji: '🐠' },
+  ],
+  o: [
+    { word: 'hot', emoji: '🔥' }, { word: 'dog', emoji: '🐶' }, { word: 'log', emoji: '🪵' },
+    { word: 'mop', emoji: '🧹' }, { word: 'top', emoji: '🔝' }, { word: 'hop', emoji: '🐰' },
+    { word: 'pot', emoji: '🍲' }, { word: 'fox', emoji: '🦊' }, { word: 'box', emoji: '📦' },
+    { word: 'sock', emoji: '🧦' }, { word: 'rock', emoji: '🪨' }, { word: 'frog', emoji: '🐸' },
+  ],
+  u: [
+    { word: 'hut', emoji: '🛖' }, { word: 'sun', emoji: '☀️' }, { word: 'run', emoji: '🏃' },
+    { word: 'bun', emoji: '🍞' }, { word: 'cup', emoji: '🥤' }, { word: 'pup', emoji: '🐶' },
+    { word: 'bug', emoji: '🐛' }, { word: 'rug', emoji: '🧶' }, { word: 'mug', emoji: '☕' },
+    { word: 'nut', emoji: '🥜' }, { word: 'duck', emoji: '🦆' }, { word: 'drum', emoji: '🥁' },
+  ],
+};
+
+const VOWEL_KEYS = ['a', 'e', 'i', 'o', 'u'];
+
+/**
+ * Rotation seed for one item's menu. Keyed to the STIMULUS, not to the item's
+ * position, for two reasons: the same word drawn at slot 1 and slot 4 would
+ * otherwise get two different menus, and — the one that matters — an item whose
+ * cards change between draws is a DIFFERENT item wearing the same id, which is
+ * exactly what an IRT β estimate cannot absorb. Same stimulus ⇒ same four cards,
+ * every time.
+ */
+const menuSeedFor = (targetWord: string): number => {
+  let h = 0;
+  for (const ch of targetWord.trim().toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) % 100003;
+  return h;
+};
+
+/** The part of a word after its middle vowel — "cat" → "t". Used to prefer a
+ *  menu that varies ONLY the vowel, the sharpest form of the ask. */
+const codaAfterVowel = (word: string, vowel: string): string => {
+  const at = word.toLowerCase().indexOf(vowel.toLowerCase());
+  return at < 0 ? '' : word.toLowerCase().slice(at + 1);
+};
+
+/**
+ * The four cards for ONE medial item: 1 correct (same vowel as the stimulus,
+ * never the stimulus itself) and 3 distractors, one from each of three other
+ * vowels. `rotation` walks the bank across a session's items so five challenges
+ * do not all reach for "hat".
+ *
+ * Returns null when the vowel is unknown — the caller drops the item rather
+ * than shipping a menu it could not build.
+ */
+function buildMedialChoices(
+  targetWord: string,
+  vowel: string,
+  rotation: number,
+): { word: string; emoji: string; correct: boolean }[] | null {
+  const v = vowel.trim().toLowerCase();
+  const target = targetWord.trim().toLowerCase();
+  const bank = MEDIAL_WORD_BANK[v];
+  if (!bank) return null;
+  const coda = codaAfterVowel(target, v);
+
+  // Same vowel, not the stimulus, ending-match first — "cat" pulls "hat".
+  const sameVowel = bank.filter((e) => e.word !== target);
+  if (sameVowel.length === 0) return null;
+  const matched = sameVowel.filter((e) => coda && codaAfterVowel(e.word, v) === coda);
+  const pool = matched.length ? matched : sameVowel;
+  const correct = pool[rotation % pool.length];
+
+  const others = VOWEL_KEYS.filter((k) => k !== v);
+  const distractors: { word: string; emoji: string }[] = [];
+  for (let i = 0; i < 3; i++) {
+    const otherVowel = others[(rotation + i) % others.length];
+    const otherBank = (MEDIAL_WORD_BANK[otherVowel] ?? []).filter(
+      (e) => e.word !== target && !distractors.some((d) => d.word === e.word) && e.word !== correct.word,
+    );
+    if (otherBank.length === 0) return null;
+    // Prefer the minimal pair — "cat" → "hot", "hut", "hit" — then anything real.
+    const rimeMatch = otherBank.filter(
+      (e) => coda && codaAfterVowel(e.word, otherVowel) === coda,
+    );
+    const from = rimeMatch.length ? rimeMatch : otherBank;
+    distractors.push(from[rotation % from.length]);
+  }
+
+  const cards = [
+    { ...correct, correct: true },
+    ...distractors.map((d) => ({ ...d, correct: false })),
+  ];
+  // Deterministic placement — the answer must not always sit first.
+  const at = rotation % cards.length;
+  const [answer] = cards.splice(0, 1);
+  cards.splice(at, 0, answer);
+  return cards;
 }
 
 const SYSTEM_INSTRUCTION =
@@ -224,6 +391,7 @@ const gradeGuidelines: Record<string, string> = {
 - Use different phonemes across challenges (don't repeat the same letter)
 - All words must be concrete, picturable objects a child can recognize
 - For isolate: initial sounds ONLY
+- For medial: SHORT vowels in 3-letter CVC words ONLY (cat, pig, bed, hop, sun) — never long vowels, silent-e or r-controlled words
 - For blend: 3-phoneme CVC words ONLY
 - For segment: 3-phoneme CVC words ONLY
 - For manipulate: initial consonant substitution ONLY`,
@@ -232,7 +400,8 @@ const gradeGuidelines: Record<string, string> = {
 - Use a wider vocabulary but keep words concrete and picturable
 - Words can be up to 5 letters
 - Include a mix of consonant and vowel sounds
-- For isolate: initial/beginning sounds ONLY (the component cannot present final or medial sounds)
+- For isolate: initial/beginning sounds ONLY (isolate cannot present final or medial sounds — middle sounds have their own "medial" mode, and there is no ending-sound mode here at all)
+- For medial: SHORT vowels; CVC or simple CVCC words (fast, jump) — never long vowels, silent-e or r-controlled words
 - For blend: 3-4 phoneme words
 - For segment: 3-4 phoneme words
 - For manipulate: initial and final substitution, simple deletion`,
@@ -241,7 +410,8 @@ const gradeGuidelines: Record<string, string> = {
 - Can include less common consonant sounds and digraphs
 - Words can be up to 6 letters but must still be concrete and picturable
 - Use grade-appropriate vocabulary
-- For isolate: initial/beginning sounds ONLY (the component cannot present final or medial sounds)
+- For isolate: initial/beginning sounds ONLY (isolate cannot present final or medial sounds — middle sounds have their own "medial" mode, and there is no ending-sound mode here at all)
+- For medial: SHORT vowels still, but a wider word shape (CVC, CVCC, CCVC — stamp, brush, clock)
 - For blend: 4-5 phoneme words
 - For segment: 4-5 phoneme words
 - For manipulate: all operations (substitute, delete, add)`,
@@ -293,6 +463,25 @@ function modeItemSchema(mode: PhonemeMode): Schema {
           choices: choicesSchema,
         },
         required: ["phoneme", "phonemeSound", "exampleWord", "exampleEmoji", "choices"],
+      };
+    case 'medial':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          remediationMove,
+          targetWord: { type: Type.STRING, description: "The SPOKEN stimulus word — a real, concrete, picturable CVC word with a short vowel (e.g. 'cat'). Never printed on screen." },
+          targetEmoji: { type: Type.STRING, description: "A single emoji depicting targetWord. MUST visually match — it is the child's only on-screen access to the word." },
+          // The letter, not free text. The script maps it to a spoken vowel
+          // ("a" -> "aaa"); asking the model to write the sound invites the
+          // mnemonic form ("aaa, as in apple") that leaked a card word out of
+          // isolate's phonemeSound.
+          vowel: {
+            type: Type.STRING,
+            enum: ["a", "e", "i", "o", "u"],
+            description: "The single SHORT vowel letter in the MIDDLE of targetWord.",
+          },
+        },
+        required: ["targetWord", "targetEmoji", "vowel"],
       };
     case 'blend':
       return {
@@ -430,7 +619,7 @@ MODE SPEC — ${doc}
 CRITICAL RULES:
 - Every emoji MUST visually depict the word it's paired with. Only standard, widely-recognized emojis.
 - Every field must be fully, concretely populated — NEVER use placeholder text like "word" or "???".
-${mode === 'isolate' ? '- Use a DIFFERENT target phoneme for each challenge (do not repeat the same letter).\n' : ''}${mode === 'isolate' ? '- The correct choice MUST start with the same sound as the phoneme; distractors start with DIFFERENT sounds. The exampleWord must NOT appear among the choices.\n' : ''}${mode === 'blend' ? '- phonemeSequence must be accurate phonemes and word must be EXACTLY the word they blend into.\n' : ''}${mode === 'segment' ? '- segments must be the word\'s true SOUNDS in order, not its letters ("sheep" → ["sh","ee","p"], 3 sounds).\n' : ''}${mode === 'manipulate' ? '- operationDescription must be clear and must NEVER contain resultWord (it is spoken with the microphone open); resultWord is the true result of the operation.\n' : ''}
+${mode === 'isolate' ? '- Use a DIFFERENT target phoneme for each challenge (do not repeat the same letter).\n' : ''}${mode === 'isolate' ? '- The correct choice MUST start with the same sound as the phoneme; distractors start with DIFFERENT sounds. The exampleWord must NOT appear among the choices.\n' : ''}${mode === 'medial' ? '- Use a DIFFERENT middle vowel across the challenges where the topic allows it (do not make every item short a).\n- The correct choice has the SAME middle vowel as targetWord; ALL THREE distractors have a DIFFERENT middle vowel. targetWord must NOT appear among the choices.\n- ALL FOUR cards must be REAL words a five-year-old knows. Never invent a word to complete a rhyming set — change the onset and keep the word real ("sun" -> run, ran, hen, pin), because each card is shown with a picture and an invented word has no picture.\n' : ''}${mode === 'blend' ? '- phonemeSequence must be accurate phonemes and word must be EXACTLY the word they blend into.\n' : ''}${mode === 'segment' ? '- segments must be the word\'s true SOUNDS in order, not its letters ("sheep" → ["sh","ee","p"], 3 sounds).\n' : ''}${mode === 'manipulate' ? '- operationDescription must be clear and must NEVER contain resultWord (it is spoken with the microphone open); resultWord is the true result of the operation.\n' : ''}
 Relate words to the topic "${topic}" when possible, but prioritize phonological accuracy and emoji availability.`;
 
   const response = await ai.models.generateContent({
@@ -476,6 +665,17 @@ Relate words to the topic "${topic}" when possible, but prioritize phonological 
     .slice(0, count)
     .map((ch: RawChallenge) => {
       ch.mode = mode;
+      if (mode === 'medial') {
+        // The menu is OURS, not the model's — see MEDIAL_WORD_BANK. Anything the
+        // model sent under `choices` is discarded, and an item whose vowel the
+        // bank does not know gets no menu and fails validation below (drop,
+        // never backfill).
+        const built = typeof ch.targetWord === 'string' && typeof ch.vowel === 'string'
+          ? buildMedialChoices(ch.targetWord, ch.vowel, menuSeedFor(ch.targetWord))
+          : null;
+        if (built) ch.choices = built;
+        else delete ch.choices;
+      }
       return ch;
     })
     .filter((ch) => {
@@ -493,8 +693,11 @@ Relate words to the topic "${topic}" when possible, but prioritize phonological 
 
 type PhonemeExplorerConfig = Partial<{
   mode: string;
-  /** Target eval mode from the IRT calibration system. */
+  /** Target eval mode from the IRT calibration system. Wins over intent, no LLM call. */
   targetEvalMode: string;
+  /** Parent objective text (stamped by flattenManifestToLayout) — the secondary
+   *  routing signal when nothing is pinned. */
+  objectiveText: string;
 }>;
 
 /**
@@ -512,12 +715,28 @@ export const generatePhonemeExplorer = async (
   const config = ctx.raw as PhonemeExplorerConfig;
 
   // ── Eval mode resolution → which modes are allowed ─────────────────
-  const evalConstraint = resolveEvalModeConstraint(
+  //
+  // Migrated off the pin-only `resolveEvalModeConstraint` with the `medial`
+  // slice, because a pin-only resolver is half the supply fix: an objective
+  // shaped "identify the short 'a' sound in spoken words" that arrives WITHOUT
+  // a pin fell straight through to mixed, and mixed spends 1 of 5 items on the
+  // mode the objective actually asked for. `resolveEvalModes` reads the intent
+  // and the parent objective against this primitive's own catalog mode
+  // descriptions, so the new mode is reachable on the unpinned path too.
+  const resolution = await resolveEvalModes(
     'phoneme-explorer',
-    config?.targetEvalMode,
+    {
+      targetEvalMode: config?.targetEvalMode,
+      intent,
+      objectiveText: config?.objectiveText,
+    },
     CHALLENGE_TYPE_DOCS,
   );
-  logEvalModeResolution('PhonemeExplorer', config?.targetEvalMode, evalConstraint);
+  console.log(
+    `[PhonemeExplorer] modes: ${resolution
+      ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})`
+      : 'mixed'} → types [${(resolution?.allowedTypes ?? ['all']).join(', ')}]`,
+  );
 
   // Ladder rung from the canonical curriculum grade (ctx.grade) first; the prose
   // gradeLevel band never matched ["K","1","2"] and pinned every objective to "K".
@@ -526,7 +745,7 @@ export const generatePhonemeExplorer = async (
     (["K", "1", "2"].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : "K") as "K" | "1" | "2",
   );
 
-  const allowed = evalConstraint?.allowedTypes ?? [...ALL_MODES];
+  const allowed = resolution?.allowedTypes ?? [...ALL_MODES];
   const plan = buildModePlan(allowed, TOTAL_CHALLENGES);
   const distinctModes = Array.from(new Set(plan));
 
@@ -620,6 +839,8 @@ const isWord = (v: unknown): v is string =>
 
 const isNonEmptyString = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0;
 
+const SHORT_VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
+
 function validateModeChallenge(ch: RawChallenge, mode: PhonemeMode): boolean {
   switch (mode) {
     case 'isolate': {
@@ -634,6 +855,25 @@ function validateModeChallenge(ch: RawChallenge, mode: PhonemeMode): boolean {
       if (new Set(words).size !== words.length) return false;
       // The example is a SECOND right answer if it sits in the menu.
       if (words.includes((ch.exampleWord as string).trim().toLowerCase())) return false;
+      return true;
+    }
+    case 'medial': {
+      if (!isWord(ch.targetWord) || !isNonEmptyString(ch.targetEmoji)) return false;
+      if (typeof ch.vowel !== 'string' || !SHORT_VOWELS.has(ch.vowel.trim().toLowerCase())) return false;
+      const choices = ch.choices;
+      if (!Array.isArray(choices) || choices.length !== 4) return false;
+      const typed = choices as { word?: unknown; emoji?: unknown; correct?: unknown }[];
+      if (!typed.every((c) => isWord(c.word) && isNonEmptyString(c.emoji))) return false;
+      if (typed.filter((c) => c.correct === true).length !== 1) return false;
+      const words = typed.map((c) => (c.word as string).trim().toLowerCase());
+      if (new Set(words).size !== words.length) return false;
+      // The stimulus is SPOKEN in the ask — a card carrying it is answerable by
+      // repeating what was just heard, with no vowel work at all.
+      if (words.includes((ch.targetWord as string).trim().toLowerCase())) return false;
+      // The vowel must genuinely be IN the stimulus. The model reaches for a
+      // plausible-looking letter under a topic constraint, and a mismatch makes
+      // the CORRECTION ("cat has ooo in the middle") teach the wrong thing.
+      if (!(ch.targetWord as string).toLowerCase().includes(ch.vowel.trim().toLowerCase())) return false;
       return true;
     }
     case 'blend': {

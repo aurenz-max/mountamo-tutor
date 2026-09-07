@@ -1,0 +1,566 @@
+{
+  "startedAt": "2026-09-06T01:33:49.371Z",
+  "results": [
+    {
+      "name": "lesson-routing-pins-medial",
+      "routing": {
+        "slots": 1,
+        "changed": 1,
+        "kept": 0,
+        "mixed": 0,
+        "blend": 1
+      },
+      "pinned": "isolate|medial",
+      "checks": {
+        "pinsMedial": true
+      }
+    },
+    {
+      "name": "pinned-medial",
+      "input": {
+        "componentId": "phoneme-explorer",
+        "instanceId": "probe-pinned-medial",
+        "intent": "Listen to and identify the short 'a' sound in spoken words",
+        "config": {
+          "objectiveText": "Listen to and identify the short 'a' sound in spoken words",
+          "targetEvalMode": "medial"
+        }
+      },
+      "elapsedMs": 926,
+      "checks": {
+        "generated": true,
+        "allSurviveGates": true,
+        "everyItemMedial": true,
+        "askNeverNamesVowel": true,
+        "askAsksForSameMiddleSound": true,
+        "correctionNamesVowelInBoth": true,
+        "vowelIsReallyInTheWord": true,
+        "stimulusNotOnACard": true,
+        "exactlyOneCorrectPerMenu": true,
+        "distractorsChangeTheVowel": true,
+        "noDuplicateAsks": true,
+        "leakOracleExemptsOnlyTheMenu": true
+      },
+      "data": {
+        "title": "Sound Safari: Decoding CVC words with short a",
+        "challenges": [
+          {
+            "targetWord": "cat",
+            "targetEmoji": "🐱",
+            "vowel": "a",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "hot",
+                "emoji": "🔥",
+                "correct": false
+              },
+              {
+                "word": "hut",
+                "emoji": "🛖",
+                "correct": false
+              },
+              {
+                "word": "hat",
+                "emoji": "🎩",
+                "correct": true
+              },
+              {
+                "word": "net",
+                "emoji": "🥅",
+                "correct": false
+              }
+            ],
+            "id": "c1"
+          },
+          {
+            "targetWord": "pig",
+            "targetEmoji": "🐷",
+            "vowel": "i",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "rug",
+                "emoji": "🧶",
+                "correct": false
+              },
+              {
+                "word": "tag",
+                "emoji": "🏷️",
+                "correct": false
+              },
+              {
+                "word": "leg",
+                "emoji": "🦵",
+                "correct": false
+              },
+              {
+                "word": "dig",
+                "emoji": "⛏️",
+                "correct": true
+              }
+            ],
+            "id": "c2"
+          },
+          {
+            "targetWord": "dog",
+            "targetEmoji": "🐶",
+            "vowel": "o",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "log",
+                "emoji": "🪵",
+                "correct": true
+              },
+              {
+                "word": "bag",
+                "emoji": "👜",
+                "correct": false
+              },
+              {
+                "word": "leg",
+                "emoji": "🦵",
+                "correct": false
+              },
+              {
+                "word": "dig",
+                "emoji": "⛏️",
+                "correct": false
+              }
+            ],
+            "id": "c3"
+          },
+          {
+            "targetWord": "sun",
+            "targetEmoji": "☀️",
+            "vowel": "u",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "ten",
+                "emoji": "🔟",
+                "correct": false
+              },
+              {
+                "word": "bun",
+                "emoji": "🍞",
+                "correct": true
+              },
+              {
+                "word": "win",
+                "emoji": "🏆",
+                "correct": false
+              },
+              {
+                "word": "hop",
+                "emoji": "🐰",
+                "correct": false
+              }
+            ],
+            "id": "c4"
+          },
+          {
+            "targetWord": "bed",
+            "targetEmoji": "🛏️",
+            "vowel": "e",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "lid",
+                "emoji": "🫙",
+                "correct": false
+              },
+              {
+                "word": "ten",
+                "emoji": "🔟",
+                "correct": true
+              },
+              {
+                "word": "hop",
+                "emoji": "🐰",
+                "correct": false
+              },
+              {
+                "word": "pup",
+                "emoji": "🐶",
+                "correct": false
+              }
+            ],
+            "id": "c5"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unpinned-intent-only",
+      "input": {
+        "componentId": "phoneme-explorer",
+        "instanceId": "probe-unpinned-intent-only",
+        "intent": "Listen to and identify the short 'a' sound in spoken words",
+        "config": {
+          "objectiveText": "Listen to and identify the short 'a' sound in spoken words"
+        }
+      },
+      "elapsedMs": 1544,
+      "checks": {
+        "generated": true,
+        "allSurviveGates": true,
+        "everyItemMedial": true,
+        "askNeverNamesVowel": true,
+        "askAsksForSameMiddleSound": true,
+        "correctionNamesVowelInBoth": true,
+        "vowelIsReallyInTheWord": true,
+        "stimulusNotOnACard": true,
+        "exactlyOneCorrectPerMenu": true,
+        "distractorsChangeTheVowel": true,
+        "noDuplicateAsks": true,
+        "leakOracleExemptsOnlyTheMenu": true
+      },
+      "data": {
+        "title": "Sound Safari: Decoding CVC words with short a",
+        "challenges": [
+          {
+            "targetWord": "cat",
+            "targetEmoji": "🐱",
+            "vowel": "a",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "hot",
+                "emoji": "🔥",
+                "correct": false
+              },
+              {
+                "word": "hut",
+                "emoji": "🛖",
+                "correct": false
+              },
+              {
+                "word": "hat",
+                "emoji": "🎩",
+                "correct": true
+              },
+              {
+                "word": "net",
+                "emoji": "🥅",
+                "correct": false
+              }
+            ],
+            "id": "c1"
+          },
+          {
+            "targetWord": "pig",
+            "targetEmoji": "🐷",
+            "vowel": "i",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "rug",
+                "emoji": "🧶",
+                "correct": false
+              },
+              {
+                "word": "tag",
+                "emoji": "🏷️",
+                "correct": false
+              },
+              {
+                "word": "leg",
+                "emoji": "🦵",
+                "correct": false
+              },
+              {
+                "word": "dig",
+                "emoji": "⛏️",
+                "correct": true
+              }
+            ],
+            "id": "c2"
+          },
+          {
+            "targetWord": "dog",
+            "targetEmoji": "🐶",
+            "vowel": "o",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "log",
+                "emoji": "🪵",
+                "correct": true
+              },
+              {
+                "word": "bag",
+                "emoji": "👜",
+                "correct": false
+              },
+              {
+                "word": "leg",
+                "emoji": "🦵",
+                "correct": false
+              },
+              {
+                "word": "dig",
+                "emoji": "⛏️",
+                "correct": false
+              }
+            ],
+            "id": "c3"
+          },
+          {
+            "targetWord": "sun",
+            "targetEmoji": "☀️",
+            "vowel": "u",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "ten",
+                "emoji": "🔟",
+                "correct": false
+              },
+              {
+                "word": "bun",
+                "emoji": "🍞",
+                "correct": true
+              },
+              {
+                "word": "win",
+                "emoji": "🏆",
+                "correct": false
+              },
+              {
+                "word": "hop",
+                "emoji": "🐰",
+                "correct": false
+              }
+            ],
+            "id": "c4"
+          },
+          {
+            "targetWord": "bed",
+            "targetEmoji": "🛏️",
+            "vowel": "e",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "lid",
+                "emoji": "🫙",
+                "correct": false
+              },
+              {
+                "word": "ten",
+                "emoji": "🔟",
+                "correct": true
+              },
+              {
+                "word": "hop",
+                "emoji": "🐰",
+                "correct": false
+              },
+              {
+                "word": "pup",
+                "emoji": "🐶",
+                "correct": false
+              }
+            ],
+            "id": "c5"
+          }
+        ]
+      }
+    },
+    {
+      "name": "hard-tier",
+      "input": {
+        "componentId": "phoneme-explorer",
+        "instanceId": "probe-hard-tier",
+        "intent": "Listen to and identify the short 'a' sound in spoken words",
+        "config": {
+          "objectiveText": "Listen to and identify the short 'a' sound in spoken words",
+          "targetEvalMode": "medial",
+          "difficulty": "hard",
+          "objectiveGrade": "1"
+        }
+      },
+      "elapsedMs": 974,
+      "checks": {
+        "generated": true,
+        "allSurviveGates": true,
+        "everyItemMedial": true,
+        "askNeverNamesVowel": true,
+        "askAsksForSameMiddleSound": true,
+        "correctionNamesVowelInBoth": true,
+        "vowelIsReallyInTheWord": true,
+        "stimulusNotOnACard": true,
+        "exactlyOneCorrectPerMenu": true,
+        "distractorsChangeTheVowel": true,
+        "noDuplicateAsks": true,
+        "tierStamped": true,
+        "askStopsEnumerating": true,
+        "noExemptionWhenUnspoken": true
+      },
+      "data": {
+        "title": "Sound Safari: Decoding CVC words with short a",
+        "supportTier": "hard",
+        "challenges": [
+          {
+            "targetWord": "cat",
+            "targetEmoji": "🐱",
+            "vowel": "a",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "hot",
+                "emoji": "🔥",
+                "correct": false
+              },
+              {
+                "word": "hut",
+                "emoji": "🛖",
+                "correct": false
+              },
+              {
+                "word": "hat",
+                "emoji": "🎩",
+                "correct": true
+              },
+              {
+                "word": "net",
+                "emoji": "🥅",
+                "correct": false
+              }
+            ],
+            "id": "c1",
+            "showChoiceEmoji": false,
+            "readOptionsAloud": false
+          },
+          {
+            "targetWord": "dog",
+            "targetEmoji": "🐶",
+            "vowel": "o",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "log",
+                "emoji": "🪵",
+                "correct": true
+              },
+              {
+                "word": "bag",
+                "emoji": "👜",
+                "correct": false
+              },
+              {
+                "word": "leg",
+                "emoji": "🦵",
+                "correct": false
+              },
+              {
+                "word": "dig",
+                "emoji": "⛏️",
+                "correct": false
+              }
+            ],
+            "id": "c2",
+            "showChoiceEmoji": false,
+            "readOptionsAloud": false
+          },
+          {
+            "targetWord": "pig",
+            "targetEmoji": "🐷",
+            "vowel": "i",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "rug",
+                "emoji": "🧶",
+                "correct": false
+              },
+              {
+                "word": "tag",
+                "emoji": "🏷️",
+                "correct": false
+              },
+              {
+                "word": "leg",
+                "emoji": "🦵",
+                "correct": false
+              },
+              {
+                "word": "dig",
+                "emoji": "⛏️",
+                "correct": true
+              }
+            ],
+            "id": "c3",
+            "showChoiceEmoji": false,
+            "readOptionsAloud": false
+          },
+          {
+            "targetWord": "sun",
+            "targetEmoji": "☀️",
+            "vowel": "u",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "ten",
+                "emoji": "🔟",
+                "correct": false
+              },
+              {
+                "word": "bun",
+                "emoji": "🍞",
+                "correct": true
+              },
+              {
+                "word": "win",
+                "emoji": "🏆",
+                "correct": false
+              },
+              {
+                "word": "hop",
+                "emoji": "🐰",
+                "correct": false
+              }
+            ],
+            "id": "c4",
+            "showChoiceEmoji": false,
+            "readOptionsAloud": false
+          },
+          {
+            "targetWord": "pen",
+            "targetEmoji": "🖊️",
+            "vowel": "e",
+            "mode": "medial",
+            "choices": [
+              {
+                "word": "rock",
+                "emoji": "🪨",
+                "correct": false
+              },
+              {
+                "word": "run",
+                "emoji": "🏃",
+                "correct": false
+              },
+              {
+                "word": "hen",
+                "emoji": "🐔",
+                "correct": true
+              },
+              {
+                "word": "fan",
+                "emoji": "🪭",
+                "correct": false
+              }
+            ],
+            "id": "c5",
+            "showChoiceEmoji": false,
+            "readOptionsAloud": false
+          }
+        ]
+      }
+    }
+  ],
+  "finishedAt": "2026-09-06T01:33:54.740Z",
+  "passed": true
+}

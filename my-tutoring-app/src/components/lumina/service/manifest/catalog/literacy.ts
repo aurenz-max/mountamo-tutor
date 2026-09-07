@@ -1365,18 +1365,23 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'phoneme-explorer',
     misconceptionScope: 'primitive',
     description:
-      'Live Direct Instruction phoneme awareness with a spoken tutor — beginning/INITIAL-sound focus, NOT for '
-      + 'rhyme or ending-sound objectives. The tutor asks, waits, judges the child’s spoken answer from the audio, '
-      + 'and its own affirmation moves the lesson on. ALL FOUR modes are ANSWERED ALOUD: Sound Match (hear a sound '
-      + 'and a 4-word menu, SAY the word that starts with it), Sound Blend (hear the sounds one at a time, SAY the '
-      + 'word they make), Sound Count (hear a word, SAY how many sounds it has — the word is deliberately never '
-      + 'printed, so letters cannot be counted), Sound Swap (hear a word and one change, SAY the new word). '
+      'Live Direct Instruction phoneme awareness with a spoken tutor — BEGINNING sounds and MIDDLE (short-vowel) '
+      + 'sounds, NOT for rhyme or ending-sound objectives. The tutor asks, waits, judges the child’s spoken answer '
+      + 'from the audio, and its own affirmation moves the lesson on. ALL FIVE modes are ANSWERED ALOUD: Sound Match '
+      + '(hear a sound and a 4-word menu, SAY the word that starts with it), Middle Sound Match (hear a CVC word — '
+      + 'never printed — and a 4-word menu, SAY the word with the SAME MIDDLE VOWEL: "same middle sound as cat: hat '
+      + 'or hot?"; THIS is the mode for "identify the short a/e/i/o/u sound in spoken words" and any medial-vowel '
+      + 'auditory-awareness objective), Sound Blend (hear the sounds one at a time, SAY the word they make), Sound '
+      + 'Count (hear a word, SAY how many sounds it has — the word is deliberately never printed, so letters cannot '
+      + 'be counted), Sound Swap (hear a word and one change, SAY the new word). '
       + 'Every tile and card is tap-to-hear; there are no answer buttons and nothing to click to advance. '
       + 'Requires a microphone. ESSENTIAL for K-2 literacy.',
     constraints: 'Use concrete, picturable words with clear emoji matches. Isolate matches the '
-      + 'INITIAL/beginning phoneme only (route ending-sound or rhyme tasks to rhyme-studio / poetry-lab). '
+      + 'INITIAL/beginning phoneme only and medial matches the MIDDLE short vowel only (route ending-sound or '
+      + 'rhyme tasks to rhyme-studio / poetry-lab). '
       + 'K: CVC words. Spoken answers are WORDS or COUNTS — the child is never asked to produce an isolated '
-      + 'letter sound. Requires the live tutor and a microphone.',
+      + 'letter sound, which is why the medial mode is a same-middle-sound CHOICE rather than "say the middle '
+      + 'sound". Requires the live tutor and a microphone.',
     // reader: 'none' — shipped judged-loop port (port 6, 2026-08-11) and USER-DRIVEN
     // 2026-08-12 ("this passes human check"): the runner owns every cue, all four modes are
     // answered aloud, and segment deliberately never prints the word.
@@ -1410,6 +1415,22 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         description:
           'Identify the INITIAL phoneme — hear a sound and a 4-word menu, SAY the word that starts with it. '
           + 'The cards stay on screen as the menu; the answer is spoken, judged by the live tutor.',
+      },
+      {
+        evalMode: 'medial',
+        label: 'Middle Sound Match (Tier 2)',
+        beta: 2.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['medial'],
+        // The stimulus word is never printed, so the screen is picture-only —
+        // the same reason segment carries this override.
+        affordances: { representation: 'pictorial' },
+        description:
+          'Identify the MIDDLE short-vowel sound — hear a CVC word (never printed, picture only) and a 4-word '
+          + 'menu, SAY the menu word with the SAME middle sound ("same middle sound as cat: hat, hot, hut or '
+          + 'hit?"). This is the mode for "identify the short a/e/i/o/u sound in spoken words" and every other '
+          + 'medial-vowel auditory-awareness objective. The stimulus word said straight back is the signature '
+          + 'error and takes the correction.',
       },
       {
         evalMode: 'blend',
@@ -1501,6 +1522,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           response: 'Treat the unchanged word as not yet answered: the scripted correction makes the change aloud, then asks again.',
         },
         {
+          pattern: 'Says MY word back when asked which CARD has the same middle sound - "cat" for "same middle sound as cat"',
+          response: 'Treat my own word as not yet answered: the scripted correction names the middle sound in my word and in the right card, then asks again.',
+        },
+        {
           pattern: 'Goes quiet after being asked',
           response: 'Say the question once more, then wait for them alone.',
         },
@@ -1522,7 +1547,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             'The first [PE_ITEM] of a session, and any later one that carries a how-to-play sentence, has the '
             + 'greeting, the action and the question INSIDE its quoted line. Speak that quote exactly and add '
             + 'nothing of your own: no separate greeting, no how-to-play of your own wording, no rephrased '
-            + 'question. This activity has four different actions and one session can mix them, so a how-to-play '
+            + 'question. This activity has five different actions and one session can mix them, so a how-to-play '
             + 'sentence arriving mid-session means the action just changed; it is deliberate and it is the whole '
             + 'instruction the child gets. This OVERRIDES any "keep it to one sentence" cap from a lesson switch.',
         },
@@ -1531,8 +1556,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           instruction:
             'The answer is ONE word or ONE number from the child\'s own mouth, named per item in the cue\'s '
             + 'judging rule along with what looks like an answer and is not: the separate sounds with no word at '
-            + 'the end, the original or example word said back unchanged (fluent and confident, which makes it '
-            + 'the signature error), the word said back when a COUNT was asked for, and the name of a letter. '
+            + 'the end, the original, example or STIMULUS word said back unchanged (fluent and confident, and it '
+            + 'really does carry the target sound, which is what makes it the signature error), the word said '
+            + 'back when a COUNT was asked for, and the name of a letter. '
             + 'All of those take the correction branch, warmly. LAW: never say the answer before the child has '
             + 'been affirmed — the microphone is open the whole time; the scripted correction is the one place '
             + 'the answer is spoken, and only because the attempt is already judged.',
