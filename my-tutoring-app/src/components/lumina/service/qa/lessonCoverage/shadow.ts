@@ -7,10 +7,8 @@
  *   - never throws, never blocks, never mutates the exhibit;
  *   - no regeneration, no retries beyond the evaluator's single fallback.
  *
- * Call sites: `/api/lumina/build-stream` (after the stream closes) and the
- * `buildCompleteExhibitFromManifest` action in `/api/lumina`. On a serverless
- * host the detached promise may be cut when the response ends — that costs a
- * row, not a lesson, and the console line is emitted before the file write.
+ * Retained for offline research. Both lesson API call sites were removed on
+ * 2026-09-07; this helper is not part of lesson delivery.
  */
 import type { ExhibitData } from '../../../types';
 import { isLessonCoverageEvalEnabled } from './config';

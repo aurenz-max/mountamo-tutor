@@ -1,5 +1,7 @@
 # Lesson Bench — queue
 
+> **Paused by user request (2026-09-07):** manifest self-evaluation, coverage-judge iteration, and synthetic lesson journeys. `/lesson-coverage` and `/lesson-journey` are retired; instructions and open items below are historical, not an active pull queue. Preserve evidence and independent primitive fixes; resume this workflow only on explicit request.
+
 **What it is.** A whole ASSEMBLED lesson, scored against a curriculum item, replayed
 byte-for-byte in the real app so a human rates the identical artifact the machine rated.
 The unit of work is a **Lesson Package** (`service/qa/lessonBench/lessonPackage.ts`):
@@ -616,6 +618,8 @@ anything, silently degrading (a) to MC/TF fallback. This looks like a different 
 diff doesn't touch abstract "explain the rule" prompts with no concrete named target to plan around. **Check for
 overlap with `qa/eval-reports/di-spoken-practice-2026-09-05-retest-v2.json` before starting** — it may already be
 mid-diagnosis. Executor: `/eval-fix di-spoken-practice` on a plan step that has no closed named-set target to name.
+
+**(a)+(b) ✅ CLOSED 2026-09-07 via `qa/di/BACKLOG.md` item 36 — `di-spoken-practice[explain_concept]`, the first open-proposition mode (`concept_statement` BENCHED, [run record](../di-bench/run-2026-09-07-concept-statement.md)).** Confirm, before/after: **same package** — `…ah5w` obj2 `ASSESSED_INDIRECTLY` n=3 + `generation_failure`, `…f00i` obj3 `INDIRECTLY` n=1 + `generation_failure`, both reproduced unchanged on re-judge (control ✓). **Fresh generation** (`topic-trace?package=true`, judged `--source confirm`, scored): 9 fresh packages carrying 10 explain-pinned spoken blocks — **6 shipped items, and all 6 objectives landed `ASSESSED_SUFFICIENTLY`**: `…g2e0` obj2 n=5 · `…02j5` obj2 n=5 (lesson PASS 1.00) · `…2k01` obj2 n=6 · `…0ic5` obj3 n=5 (PASS 1.00) · `…gckl` obj3 n=4 · `…fkyc` obj2 n=9 (PASS 1.00). The 4 empties (`…i08t`, `…di3p` — pre-fix "equal" anchor leak; `…xpnk`, `…57wg` — draw variance, both re-draw non-empty) keep their objective `INDIRECTLY`/`INSUFFICIENTLY` with `generation_failure`, i.e. exactly the before state — the mode never makes a lesson worse. Fresh-draw yield is the residual (di item 36 (1)). Note the curator's briefs vary per draw: `…b4i5` wrote obj2 as "balanced or not balanced" (pinned `compare_choice`, refused — separable-menu drop) and `…dip9` obj3 as "create your own pattern and explain it"; neither is this mode's shape (di 36 (2)). `evals.jsonl` +11 rows `source=confirm`; the explain-verb census now has its first non-DI-bespoke `SUFFICIENT` rows.
 
 **(c) CONTENT, not yet routed — Q3 order fail, `annotated-example` opens a fresh objective directly on symbols,
 6/10 lessons** (`…kbg3` obj2, `…xr3w` obj3, `…j2q2` obj3, `…1i72` obj2, `…3w6h` obj3, `…f00i` obj3 — all cite

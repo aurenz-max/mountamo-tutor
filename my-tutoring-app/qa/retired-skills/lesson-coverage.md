@@ -1,7 +1,4 @@
----
-name: lesson-coverage
-description: One assembled Lumina lesson, end to end — produce a package, judge objective coverage (the shadow judge that runs on every build-stream lesson), score the form checks by code, rate it in the rail, route every signal to the owning executor, confirm by re-eval. Rows in qa/lesson-coverage/evals.jsonl; packages and queue in qa/lesson-bench/.
----
+> RETIRED 2026-09-07 by user request. Historical reference only; do not execute or resume this workflow without an explicit request.
 
 # Lesson Coverage — One Lesson: Judged, Scored, Rated, Routed
 

@@ -303,11 +303,12 @@ describe('shadow mode', () => {
   beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'lesson-coverage-')); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); delete process.env.LUMINA_COVERAGE_EVAL; delete process.env.LUMINA_COVERAGE_EVAL_DIR; });
 
-  it('config: explicit on/off wins, default is on outside production', () => {
+  it('config: explicit on/off wins, default is off in every environment', () => {
     expect(isLessonCoverageEvalEnabled({ LUMINA_COVERAGE_EVAL: 'off', NODE_ENV: 'development' } as NodeJS.ProcessEnv)).toBe(false);
     expect(isLessonCoverageEvalEnabled({ LUMINA_COVERAGE_EVAL: '1', NODE_ENV: 'production' } as NodeJS.ProcessEnv)).toBe(true);
     expect(isLessonCoverageEvalEnabled({ NODE_ENV: 'production' } as NodeJS.ProcessEnv)).toBe(false);
-    expect(isLessonCoverageEvalEnabled({ NODE_ENV: 'development' } as NodeJS.ProcessEnv)).toBe(true);
+    expect(isLessonCoverageEvalEnabled({ NODE_ENV: 'development' } as NodeJS.ProcessEnv)).toBe(false);
+    expect(isLessonCoverageEvalEnabled({} as NodeJS.ProcessEnv)).toBe(false);
   });
 
   it('disabled → no model call, null', async () => {
@@ -317,6 +318,7 @@ describe('shadow mode', () => {
   });
 
   it('enabled → evaluates, appends one JSON row, swallows nothing into the caller', async () => {
+    process.env.LUMINA_COVERAGE_EVAL = '1';
     process.env.LUMINA_COVERAGE_EVAL_DIR = dir;
     respond({ objectives: [{ objectiveId: 'obj1', category: 'ASSESSED_SUFFICIENTLY', taught: true, assessed: true, assessmentEvidence: ['obj1-spotter#challenges[0]', 'obj1-spotter#challenges[1]'], instructionEvidence: [], masteryInferenceSupported: true, severity: 'NONE', notes: '' }], detectedConstraints: [], summary: 'ok' });
     const ev = await runLessonCoverageShadowEval(FIXTURES.fullCoverage(), { source: 'test', lessonId: 'row-1', persist: { console: false } });
@@ -327,6 +329,7 @@ describe('shadow mode', () => {
   });
 
   it('a model failure still yields (and persists) an error row rather than throwing', async () => {
+    process.env.LUMINA_COVERAGE_EVAL = '1';
     process.env.LUMINA_COVERAGE_EVAL_DIR = dir;
     generateContent.mockRejectedValue(new Error('down'));
     const ev = await runLessonCoverageShadowEval(FIXTURES.fullCoverage(), { source: 'test', lessonId: 'row-err', persist: { console: false } });

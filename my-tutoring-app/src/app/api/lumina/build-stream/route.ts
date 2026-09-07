@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { buildCompleteExhibitFromManifest } from '@/components/lumina/service/geminiService';
-import { runLessonCoverageShadowEval } from '@/components/lumina/service/qa/lessonCoverage/shadow';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,11 +35,6 @@ export async function POST(request: NextRequest) {
         await sendEvent({ type: 'exhibit-complete', exhibit });
         await writer.close();
 
-        // POST-GENERATION EVAL (shadow). Runs AFTER the stream has closed, so
-        // the student never waits on it; persists an objective-coverage verdict
-        // per lesson (qa/lesson-coverage/evals.jsonl). Never throws, never
-        // touches the exhibit. Kill switch: LUMINA_COVERAGE_EVAL=0.
-        void runLessonCoverageShadowEval(exhibit, { source: 'build-stream' });
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         try {

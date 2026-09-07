@@ -1,22 +1,21 @@
 # Lesson objective-coverage eval (shadow)
 
-How to act on the rows: `/lesson-coverage` (`.claude/skills/lesson-coverage/SKILL.md`) — produce → judge → score → rate → diagnose →
-route → rerun/confirm → calibrate. That skill also owns the Lesson Bench package, the code scorer and the human rail (`qa/lesson-bench/`);
-`scripts/lesson-bench.mjs score` merges this judge's stored verdict (`coverage`) as rubric check Q4. A curriculum SEQUENCE is `/lesson-journey`.
+**Paused by user request, 2026-09-07.** Automatic lesson self-evaluation is disconnected
+from both lesson API paths. The `evaluateLessonCoverage` API action returns HTTP 410.
+The lesson-coverage and lesson-journey skills are retired; historical instructions are
+in `qa/retired-skills/`. Do not resume judge-driven manifest iteration without an explicit request.
+Existing packages, verdicts, offline scripts, and deterministic QA remain available.
 
 **Question it answers, per objective:** was it taught, was it assessed, and is the assessment enough to infer mastery?
 **Why:** a lesson can look valid while the student is never asked to demonstrate an objective it claims to teach
 (phonics: the continuant guard kept t/p out of every production item; `unaskableLetters` said so, nothing read it).
 
-## Where it runs
+## Retained offline tooling
 
-- **Runtime, shadow.** `/api/lumina/build-stream` judges every assembled lesson AFTER the stream closes
-  (`service/qa/lessonCoverage/shadow.ts`). Never blocks, never regenerates, never touches the exhibit.
-  `/api/lumina` action `buildCompleteExhibitFromManifest` does the same fire-and-forget.
-- **On demand.** `/api/lumina` action `evaluateLessonCoverage` (`params.exhibit` or `params.package`) returns the verdict;
-  `node scripts/lesson-coverage.mjs eval <package.json|dir>` judges Lesson Bench packages (`--write` stores it as `coverage`).
-- **Kill switch.** `LUMINA_COVERAGE_EVAL=0|1` (default ON outside production). Rows go to `LUMINA_COVERAGE_EVAL_DIR`
-  (default this directory).
+`node scripts/lesson-coverage.mjs eval <package.json|dir>` still supports explicit research.
+The offline shadow helper defaults OFF in every environment. `LUMINA_COVERAGE_EVAL=1`
+only enables that helper when called manually; it cannot re-enable evaluation in the API.
+Rows go to `LUMINA_COVERAGE_EVAL_DIR` (default this directory).
 
 ## What it reads
 

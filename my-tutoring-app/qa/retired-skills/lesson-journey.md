@@ -1,7 +1,4 @@
----
-name: lesson-journey
-description: Audit a curriculum SEQUENCE ("is Phonics 1 ready, then Phonics 2?") with content-aware synthetic learner journeys over frozen lesson packages — prerequisites, personas, cold/delayed probes, replay through the production mastery engine. One lesson at a time is /lesson-coverage.
----
+> RETIRED 2026-09-07 by user request. Historical reference only; do not execute or resume this workflow without an explicit request.
 
 # Lesson Journey — Lesson Content to Learner Evidence to Next-Step Audit
 

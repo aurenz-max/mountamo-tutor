@@ -1,5 +1,7 @@
 # Lesson journeys
 
+> **Paused by user request (2026-09-07):** manifest self-evaluation, coverage-judge iteration, and synthetic lesson journeys. `/lesson-coverage` and `/lesson-journey` are retired; instructions and open items below are historical, not an active pull queue. Preserve evidence and independent primitive fixes; resume this workflow only on explicit request.
+
 From `my-tutoring-app`:
 
 ```powershell

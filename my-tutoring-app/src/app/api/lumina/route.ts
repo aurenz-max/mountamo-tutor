@@ -78,29 +78,14 @@ export async function POST(request: NextRequest) {
           params.manifest,
           params.curatorBrief
         );
-        // Shadow objective-coverage eval — same contract as build-stream (fire-and-forget, never throws).
-        void (async () => {
-          const { runLessonCoverageShadowEval } = await import('@/components/lumina/service/qa/lessonCoverage/shadow');
-          await runLessonCoverageShadowEval(exhibitFromManifest, { source: 'api' });
-        })();
         return NextResponse.json(exhibitFromManifest);
 
-      // Developer/admin tooling: evaluate an assembled exhibit (or a Lesson Bench
-      // package) synchronously and return the verdict. Persists a row unless
-      // params.persist === false. Not a student-facing path.
-      case 'evaluateLessonCoverage': {
-        const { evaluateLessonCoverage } = await import('@/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage');
-        const { persistLessonCoverageEval } = await import('@/components/lumina/service/qa/lessonCoverage/sink');
-        let exhibit = params.exhibit;
-        if (!exhibit && params.package) {
-          const { exhibitFromPackage, parseLessonPackage } = await import('@/components/lumina/service/qa/lessonBench/lessonPackage');
-          exhibit = exhibitFromPackage(parseLessonPackage(params.package));
-        }
-        if (!exhibit) return NextResponse.json({ error: 'evaluateLessonCoverage needs params.exhibit or params.package' }, { status: 400 });
-        const coverage = await evaluateLessonCoverage(exhibit, { source: 'api-eval', lessonId: params.lessonId });
-        if (params.persist !== false) await persistLessonCoverageEval(coverage);
-        return NextResponse.json(coverage);
-      }
+      // Retired with the lesson self-evaluation workflow (2026-09-07).
+      case 'evaluateLessonCoverage':
+        return NextResponse.json(
+          { error: 'Lesson coverage self-evaluation is paused.' },
+          { status: 410 },
+        );
 
       // ============================================
       // CURATOR BRIEF & INTRO
