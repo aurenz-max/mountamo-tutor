@@ -250,6 +250,8 @@ rail labels); `/lesson-journey` owns a sequence; the `/lesson-bench` skill is go
 endpoint beside `di_run_logs.py` once the app runs where the disk is not local (item 2's shape); (d) Phase 2 defect spec → smallest
 patch → re-eval (1 attempt), only after (a) agrees. No gate before (a). Executor: `/lesson-coverage` (report · diagnose · route · confirm · calibrate).
 
+- **2026-09-06 — instrument health from the rhyming pass.** 11/69 rows carry `usedSchemaFallback`; only 2 of the 11 store a reason (both `coverage eval timed out after 45000ms`, one of them the user's live build-stream lesson `…o2cg`, total latency 57s; the loose-JSON retry then PASSED 1.00). The other 9 have `usedSchemaFallback: true` with no `schemaError` — the sink drops the reason on the non-timeout path, so the fallback mix (schema 400 vs truncation vs timeout) is unknowable from the ledger. Executor: `sink.ts` / `evaluateLessonCoverage.ts` — persist the caught error text on every fallback; then read the mix before touching `COVERAGE_EVAL_TIMEOUT_MS`. Not a lesson defect; not a threshold change.
+
 ### 20. ✅ **SHIPPED 2026-09-05 — `di-math-facts[name_numeral]`, the supply answer. MATH OPENS THE COVERAGE JUDGE — first MATHEMATICS row ever in `evals.jsonl` (all 20 prior rows were LANGUAGE_ARTS/phonics); numeral recognition/naming has no direct catalog eval mode.** Row: `kindergarten-counting-objects-to-10-20260905174750-c71j` (fresh `topic-trace?package=true` generation, source=script, `/lesson-coverage` ad hoc run — not build-stream, not a fixture). **WARN, coverage 0.75, 1/2 objectives sufficient:**
 obj1 "Count a group of up to 10 real objects by touching them one by one" → **ASSESSED_SUFFICIENTLY** (9 items: counting-board 7 + final-counting-check 2).
 obj2 "Recognize and name the written numbers 1 through 10 in order" → **ASSESSED_INDIRECTLY [WARNING]**. The manifest picked three components for it — `number-tracer[trace]` (handwriting production, and only digits 1–5 of the 5 sampled — `insufficient_items`), `hundreds-chart[highlight_sequence]` (tap cells on an already-ordered row), `number-sequencer[before_after]` (type the neighbour of a given number) — and the judge cited **two** `off_target_assessment` constraints: both proxy a neighbour skill (motor tracing, position-tapping, sequencing) instead of recognizing/naming a shown numeral. Checked the catalog directly: none of number-tracer's 4 modes (trace/copy/write/sequence), hundreds-chart's 4 (highlight_sequence/complete_pattern/describe_pattern/determine_interval), or number-sequencer's 4 (count_from/before_after/order_cards/fill_missing) is a receptive/expressive numeral-ID task — this is a **SUPPLY gap**, not a manifest miss (manifest-passes-generator-works doctrine holds; there is nothing for a generator fix to read here).
@@ -295,11 +297,7 @@ retrieval — neither touches the "bigger number" concept; only 1 item, `final-a
 Scorer: **BROKEN** — `G1`/`Q8` fail (`equation-builder[build-simple]` declares `reads: developing`, i.e. the child must read
 alone, at the pre-reader K band), `Q9` fails (known-block minutes 47 vs the 40min pre-reader cap, 10/10 blocks tagged).
 
-**(a) + (b) — primitive-scoped, moved to `qa/EVAL_TRACKER.md` as `DSP-1`/`DSP-2`** (generator/catalog defects on
-`di-spoken-practice`, not lesson-specific): DSP-1 is the named-set drop, **partial fix landed** (0/3 → 1/3 live,
-tsc 770=baseline, `confirm` still owed on an assembled lesson); DSP-2 is the `read_aloud`-vs-`say_answer`
-identity mismatch the probe surfaced, **routed to `/eval-fix di-spoken-practice`**, needs a multi-objective probe
-before touching the shared resolver. Full write-up: [eval-reports/di-spoken-practice-2026-09-05.md](../eval-reports/di-spoken-practice-2026-09-05.md).
+**(a) + (b) — DSP-1/DSP-2 resolved 2026-09-05.** Reviewed source-token targets, code-owned coverage, and visual naming delivery replace the prompt-only patch. Final original-objective probes 3/3; automatic lesson routing 7/7; saved full-manifest selection plus production registry hydration covers both symbols. No new full-lesson or microphone sitting. DSP-3 (generic arithmetic range) remains in the primitive tracker. [Evidence and failed passes](../eval-reports/di-spoken-practice-2026-09-05.md).
 
 **(c) content/mode, routed.** obj3's "explain … bigger number" is a conceptual/verbal objective; the manifest reached for
 computation-fluency and number-line blocks instead of anything that argues FOR the concept. `comparison-panel`'s own gates
@@ -382,13 +380,42 @@ medial-sound-in-a-spoken-word identification. **This is a SUPPLY gap, not a mani
 (`feedback_manifest-passes-generator-works` holds — there is nothing for a generator fix to read; no catalog
 primitive/mode currently tests "hear a CVC word, identify its medial vowel" for K). Both draws left the
 objective at 1 valid item in the final knowledge-check, short of `MIN_SUFFICIENT_ASSESSMENT_ITEMS`.
-Executor: `/add-eval-modes phoneme-explorer` (or `di-letter-sounds`) — needs a design decision on interaction
-shape (yes/no vowel-match discrimination vs. minimal-pair choice, e.g. "which word has the same middle sound as
-cat: dog or hat?") before it can ship; not run in this push. Gate once it ships:
-`/lesson-coverage confirm` on both rows above, before/after + fresh ×3. **n=2, same topic** — replicate on 1-2
-more K "identify medial vowel" draws (short e/i/o/u siblings of the same subskill) before calling this a class
-beyond CVC-short-a, though the catalog-description evidence makes it likely this reproduces on every short-vowel
-CVC topic, not just "a".
+**SUPPLY SHIPPED 2026-09-05 — `phoneme-explorer[medial]`, the fifth mode.** Shape ruled by the user:
+a minimal-pair CHOICE answered aloud, NOT "say the middle sound" — producing a bare vowel is an unbenched
+response class, and a menu keeps the item on the already-benched `short_spoken_word` judge. The tutor SAYS a
+CVC word (never printed — a child who can read "cat" and "hat" matches the letter `a` on sight and never
+hears a vowel; picture + tap-to-hear carry it, segment's rule), four cards stay on screen unmarked, and the
+child SAYS the one with the same middle sound. β 2.0 between isolate (1.5) and blend (2.5), backend prior
+added. The ask NEVER names the vowel — extracting it from the stimulus IS the skill; the vowel is spoken only
+in the DISTAR correction, where the answer is already earned.
+Two things beyond the mode itself:
+- **The generator moved off the pin-only `resolveEvalModeConstraint` to `resolveEvalModes`.** Pin-only was
+  half a fix: an objective arriving WITHOUT a pin fell through to mixed, which spends 1 of 5 items on the
+  mode the objective asked for — the same 1-item shortfall this finding is about.
+- **The medial MENU IS BUILT IN CODE from a curated bank, not by the model.** Three prompt iterations could
+  not stop flash-lite inventing a word to finish a rhyming set ("rom" for rim/rum, "ren"/"rin" for ran/run,
+  "mep" for map/mop): 8 of 20 cards on the first pass, still 4 of 15 with an explicit real-words rule AND a
+  word bank IN the prompt. It matters here more than elsewhere because a pre-reader's access to a card is its
+  PICTURE — "dag" shipped as 🎒, "rud" as 🪵, so the child sees a backpack and hears a non-word. The model
+  now authors only the stimulus + its vowel; code fills all four cards (rime-match preferred, so "cat" pulls
+  hat/hot/hut/hit and "dog" pulls "log"), seeded from the STIMULUS so one item id keeps one menu for IRT.
+
+Verified at runtime, real Gemini, `scripts/probe-phoneme-medial.mjs` (evidence:
+`qa/eval-reports/phoneme-medial-probe-2026-09-05.json`): the lesson-level selector now pins medial for this
+exact objective (`∅` → `isolate|medial`); pinned, unpinned-intent-only and hard-tier draws each produce 5/5
+medial items surviving every build gate, with the ask never naming the vowel, the stimulus never on a card,
+all four cards real words across four distinct vowels, and the hard tier withdrawing enumeration so the child
+READS the menu. tsc 770 = baseline, literacy vitest 1267 pass (6 new medial cases in
+`PhonemeExplorer.di-script.test.ts`).
+
+**GATE CLEARED 2026-09-06 — `/lesson-coverage confirm` on both rows, before/after + fresh ×3 each.** Before:
+both frozen packages re-judge IDENTICAL to their stored verdict (`rw3p` WARN/0.83, `7ngg` WARN/0.75 — judge is
+stable, not the variable). After: **6/6 fresh `rerun` draws PASS, coverage 1.00, obj1 ASSESSED_SUFFICIENTLY** —
+every draw routed `phoneme-explorer[medial]` for obj1 (the router pin landed) and every draw cleared
+`MIN_SUFFICIENT_ASSESSMENT_ITEMS` (items=2 to 6). The SUPPLY gap is closed: this objective shape no longer WARNs.
+Two residuals surfaced across the 6 draws, filed as item 27 (not blocking — margin was thin on 2/6 draws, exactly
+at the 2-item floor). Packages: `…-20260906014922-xbby`, `…-20260906015020-eprf`, `…-20260906015113-5dhw` (from
+`rw3p`); `…-20260906015203-8zzk`, `…-20260906015357-r8wt`, `…-20260906015521-bewv` (from `7ngg`).
 
 **CONTENT fix — SHIPPED same session, independent of the gap above.** The first draw's final knowledge-check
 also had its OWN bug: problem index 4 (tagged `obj3`, "read a CVC word to discover the secret word") was a
@@ -448,6 +475,12 @@ floor) — not re-filed here.
 
 Gate before (a)/(b) count as done: `/lesson-coverage confirm` on this package + the addition package (item 21) once
 either lands, since both cite the same class. Package: `kindergarten-subtraction-for-kindergarten-20260905202425-mb4f.json`.
+
+### 25. **KNOWLEDGE-CHECK REDESIGN — design handoff, 2026-09-05 (user: "KC is showing we need a redesign, I'm seeing it come up all over the place").** [HANDOFF-knowledge-check-redesign-2026-09-05.md](../HANDOFF-knowledge-check-redesign-2026-09-05.md). Census of 38 judged lessons / 78 objectives / 20 packages: KC sized 1.3–2.5 items per objective against a ≥2 rule (0 KC items on 40 objectives); 5/5 objectives with KC as the ONLY surface were `ASSESSED_INSUFFICIENTLY`; named-set drop ×5 (KC-1 class); 5 `off_target_assessment` (recognition for production objectives, all phonics); **79/79 K problems are MC/TF**; the K palette forbids any on-screen stimulus. Three structural gaps: count-driven plan, no stimulus channel at K, pick-from-N kinds. Design: set-sized plan in code (`namedSet` from DSP-1), five K-first stimulus insets (`number-sentence`, `arrangement`, `glyph-card`, `picture-scene`, `spoken-cue`), nine production kinds mapped from the objective verb (`say_it`, `point_to`, `how_many`, `yes_no`, `which_one`, `read_it`, `sort_one`, `which_reason`, `build_it`), Bloom modes demoted to difficulty within a kind. Phases P0–P5 with runtime gates; pilot on K subtraction. Executors: P0/P1 direct edit (contract-first), P2/P4 `/add-di-loop knowledge-check` (= di item 23 slice 3), P3 `/eval-fix knowledge-check`, P5 `/lesson-journey`. Three user decisions listed in §10 (KC `minutes`, `point_to` vs `say_it` at K, kinds as eval modes). Supersedes the KC-1 prompt-patch route.
+
+- **2026-09-05 (night) — P0–P3 BUILT (working tree), pilot confirmed on K subtraction; P4/P5 open.** Report: [eval-reports/knowledge-check-redesign-2026-09-05.md](../eval-reports/knowledge-check-redesign-2026-09-05.md). Two corrections to the handoff on the way in: `namedSet` is a NEW lexical extractor (DSP-1's is a model plan + review), and the kinds needed a `ProblemType 'production'` DATA type with a fallback menu so a no-mic device still works. Shipped: `service/insets/` (one module, item 17 P1 debt closed), insets `number-sentence` / `arrangement` (incl. two `groups`) / `glyph-card` (shapes from the di-shapes exemplar table), kinds `say_it` / `point_to` / `how_many` in the script + `KnowledgeCheck.tsx` + `ProductionProblem.tsx`, set-sized plan skeleton (`knowledgeCheckPlan.ts`, ≥2 per objective, one per named element, K budget 8), code-only `productionGenerator.ts`, orchestrator `problemCount` per legacy objective, oracle `checkProduction`, R2 FORKED in the contract. **Coverage judge before→after on the five KC-only packages:** `…e1b7` PASS→PASS (0 model calls), `…mb4f` WARN 0.75→**PASS 1.00** (obj2 both signs, KC-1 closed), `…99mt` obj2 kc 1→4 (all four shapes) but obj3 compare still INSUFFICIENT, `…xr70` obj2 INSUFFICIENT→**SUFFICIENT** (+ and =) but obj3 explain TAUGHT_NOT_ASSESSED, `…rw3p` (legacy-only control) obj1 INSUFFICIENT→SUFFICIENT PASS 1.00. The two still-open are exactly the P4 kinds (`which_reason`, `which_one` over two cards). Gates: tsc 770 = baseline, `typecheck:lumina` 0, vitest 4770 + new suites. §10: `minutes` NOT raised (budget 8, delta logged); `point_to` at K / `say_it` at G1 built; kinds-as-eval-modes deferred. Owed: mic **#135**, headless `--di` drive, P4, P5, then re-judge 26(a) explain rows.
+
+- **2026-09-06 evidence (rhyming pass, item 28) — the 7th final-KC `off_target_assessment` row, and the first for a CREATE verb.** `kindergarten-rhyming-20260906033528-p5m6` `final-rhyme-check` declares obj3 "Create your own fun rhyming words" and emits 5 MC + 1 TF recognition items (two of them the same stem, "Which word rhymes with cat?"). The plan has no kind for open production judged by RULE ("say any word that rhymes with X"); `say_it` today is glyph-card naming only. Fold into P4 as a rule-judged `say_it` variant (expected = a rime family, the judge accepts any real word in it — exactly what `rhyme-studio[production]` already does), or route CREATE verbs to the primitive that owns the production surface and let the KC carry recognition only. Same class across the 7 rows: phonics ×4 (grapheme→phoneme production), counting ×1, equal-sign explain ×1, rhyming create ×1. Cosmetic, not a bug: all five MC problems share the Gemini id `mc_1` — `knowledgeCheckScript.ts` keys items by problem index, so nothing collides at runtime.
 
 - **2026-09-05 (evening) — two skills split by AXIS, and Q4 joined the scoreboard.** `/lesson-bench` → `/lesson-journey`
   (sequence only); the per-lesson verbs (produce · judge · score · rate · route · rerun · confirm · calibrate) now live in
@@ -551,3 +584,318 @@ either lands, since both cite the same class. Package: `kindergarten-subtraction
   10/10; typecheck 802 = baseline (0 new, all pre-existing/unrelated to catalog files). **A/B not yet run at this scale** — the
   item-13 gate was validated at 24-29/201; going straight to 100% is a much bigger jump than any prior batch. Recommend one
   `affordance-ab.mjs --runs 3` sanity pass before trusting the tags to move selection broadly (queue below).
+
+### 26. **GRADE 1 MATH OPENS — `/lesson-coverage sweep` across 5 units, 10 fresh packages (2026-09-05).** Topics picked
+one per unit from the live curriculum tree (`/curriculum Mathematics --grade 1`: OPS001/NBT001/MEAS001/GEOM001/PTRN001)
+for primitive variety, all `gradeLevel=1st grade` (regrouping resolved to Grade 2 — see (e)). Packages:
+`grade-1-addition-within-10-using-ten-frames-…kbg3`, `1st-grade-add-to-and-take-from-word-problems-within-20-…xr3w`,
+`1st-grade-understanding-the-equal-sign-with-balance-scales-…ah5w`, `1st-grade-counting-to-120-on-a-hundreds-chart-…x2yo`,
+`grade-1-tens-and-ones-place-value-with-base-ten-blocks-…vhjy`, `grade-2-adding-two-digit-numbers-within-100-with-regroup-…j2q2`,
+`1st-grade-telling-time-to-the-hour-and-half-hour-…1i72`, `grade-1-identifying-and-counting-coins-…3w6h`,
+`grade-1-partitioning-shapes-into-halves-and-fourths-…imq9`, `grade-1-repeating-and-growing-patterns-…f00i`.
+All 10 judged WARN (0 fail), coverage 0.67–0.83, `source=lesson-coverage-sweep`. Grade 1 in `evals.jsonl` goes 0→10 rows.
+
+**(a) ROUTED 2026-09-07 → `qa/di/BACKLOG.md` item 36 — the "explain" verb is unassessable in grade-1 math, 10/10 lessons.** Every one of
+the 10 curator briefs wrote a third objective with an `explain`/`describe` verb ("explain what the equal sign means",
+"explain how regrouping works", "describe the number patterns…", "explain why pieces must be the exact same size"…),
+and in **all 10**, that objective landed `ASSESSED_INDIRECTLY` or `ASSESSED_INSUFFICIENTLY` — zero reached
+`ASSESSED_SUFFICIENTLY`. The assessing blocks are consistently MC/true-false recognition (`equation-builder[true-false]`,
+`knowledge-check`) or a primitive that tests the adjacent skill instead (sorting equal/unequal shares, setting a clock,
+computing a sum) — never an item that requires the student to produce an explanation. This is the SUPPLY gap the routing
+table names directly ("a K–2 production verb needs a SPOKEN mode → `/add-di-loop`"), and it is not scattered — it is
+the SAME third-objective shape on every single draw. Executor: `/add-di-loop` scoped to whichever primitive the curator
+already reaches for on explain-verb math objectives (see (b) — it's usually `di-spoken-practice`, and it's already
+failing outright rather than under-assessing).
+
+**(b) ROUTED 2026-09-07 → `qa/di/BACKLOG.md` item 36 (merged with (a), same root cause) — `di-spoken-practice` returns an empty item list on an "explain the rule/meaning"
+prompt, 2/10 lessons (`obj2-spoken-practice` in the equal-sign package, `obj3-speak-the-rule` in the patterns
+package).** Both blocks generated zero items with a note that "no matching practice is available" — the curator made
+the doctrinally-correct choice (spoken production for a K-2 explain verb) and the generator declined to produce
+anything, silently degrading (a) to MC/TF fallback. This looks like a different symptom than the in-flight
+`gemini-di-spoken-practice.test.ts` work (named-target ownership / plan-mode conflicts / glyph ownership) — that
+diff doesn't touch abstract "explain the rule" prompts with no concrete named target to plan around. **Check for
+overlap with `qa/eval-reports/di-spoken-practice-2026-09-05-retest-v2.json` before starting** — it may already be
+mid-diagnosis. Executor: `/eval-fix di-spoken-practice` on a plan step that has no closed named-set target to name.
+
+**(c) CONTENT, not yet routed — Q3 order fail, `annotated-example` opens a fresh objective directly on symbols,
+6/10 lessons** (`…kbg3` obj2, `…xr3w` obj3, `…j2q2` obj3, `…1i72` obj2, `…3w6h` obj3, `…f00i` obj3 — all cite
+"annotated-example opens obj*N* on symbols before any concrete or pictorial block"). Two more lessons hit the same
+Q3 shape via a different opening block (`…ah5w` obj3 via `equation-builder[true-false]`, `…x2yo` obj1 via
+`number-line[jump]`) — 8/10 total, but `annotated-example` alone accounts for 6. One package (`…vhjy` obj3) hit the
+NOTATION_OBJECTIVE exemption correctly (the objective's target IS digit notation) — the scorer is not over-firing,
+the curator really is placing worked/symbolic examples as an objective's FIRST block on this topic set. This is a
+SELECTION/ASSEMBLY-layer ordering gap distinct from the already-tracked `AE-1..AE-4` (redundant solve steps inside
+one annotated-example) — no existing `EVAL_TRACKER` entry covers placement order. Executor: trace whether
+`annotated-example`'s catalog affordances (`representation`) or the curator prompt constrain it to a non-opening
+slot; if not, that's the fix (same shape as the number-tracer/hundreds-chart NOTATION_OBJECTIVE precedent in item 13
+— confirm before filing as a defect vs. an objective that's legitimately notation-first).
+
+**(d) ✅ FIXED 2026-09-05 — CONTENT: `base-ten-blocks` had no deterministic number range for ad-hoc/free-topic
+lessons, so it asked the model to self-select a grade band from prose.** Root cause traced in
+`gemini-base-ten-blocks.ts`: when the curator supplies a `numberRange` (curriculum-launched lessons), the prompt
+takes a reliable path — "INFER GRADE BAND FROM RANGE" — because the range is already a concrete number list. When
+the curator supplies none (every ad-hoc `/lesson-coverage`/`/eval-test`/`/topic-trace` call), the prompt instead
+showed K-1 **and** 2-3 **and** 4-5 bands together as a menu and asked `gemini-flash-lite-latest` to pick one from
+the loose `${gradeContext}` prose — with no binding to the already-resolved `ctx.grade`. Confirmed at n=4 pre-fix
+draws on `"Tens and ones place value with base ten blocks"` / grade 1: 2/4 `base-ten-blocks` blocks (one `build`,
+one `decompose`) landed in the 2-3 band (905/801/503/505; 204/503/107/308 — all zero-tens 3-digit numbers) while
+2/4 stayed correctly 2-digit. **Fix:** `defaultRangeForGrade(ctx.grade)` derives the K-1/2-3/4-5 range from the
+already-canonical grade whenever the curator gives none, feeding the SAME reliable "INFER GRADE BAND FROM RANGE"
+path curriculum-launched lessons already use (`gemini-base-ten-blocks.ts` — new function + `effectiveNumberRange`
+threaded through `promptPlaces` and `createNumberPool`). **Verified:** 6 fresh draws post-fix (10 `base-ten-blocks`
+blocks across `build`, `decompose`, `regroup` modes) — 100% landed within the grade-1 range (11-20), 0 off-band vs.
+2/4 before. `/lesson-coverage eval` + `score` on one fresh draw (`…3clk`): WARN 0.67, no `off_target_assessment` on
+any base-ten-blocks block (the remaining WARN is (a)'s explain-verb class + a new single-repro obj1
+grouping-vs-decomposing direction mismatch, not filed — n=1). Gates: existing generator test 7/7, tsc 0 new errors
+on the file, `lessonBench`+`lessonCoverage`+`exhibitAssembly` vitest 79/79. **Open question, NOT fixed here:** the
+`decompose` mode was still selected for a grade-1 lesson even though the generator's own doc comments scope
+`decompose` to grades 4-5 — a MODE-layer question (should this eval mode even be reachable at grade 1?) distinct
+from the number-range bug just closed. Numbers-wise it's now grade-1-safe regardless; worth a `/curriculum-fit` or
+`/add-eval-modes` look if `decompose` keeps showing up on K-2 draws.
+
+**(e) INSTRUMENT/PIPELINE, single repro, needs a decision before a fix — ad-hoc `topic-trace` gradeLevel can drift
+under the caller.** `…j2q2` was requested with `gradeLevel=1st grade` (`provenance.generationRequest.gradeLevel`
+confirms it) but the manifest came back `gradeLevel: "Grade 2"` (`provenance.gradeLevel`, `manifest.gradeLevel`) —
+Gemini's manifest schema has an ungated, `required` `gradeLevel: STRING` field
+(`service/manifest/gemini-manifest.ts:198`) that the model is free to re-decide from the topic's apparent difficulty,
+and `flattenManifest.ts:70` (`lessonGrade = objectives.find(o => o.grade)?.grade ?? manifest.gradeLevel`) trusts that
+self-authored value as the per-objective grade fallback whenever objectives aren't curriculum-launched (true for
+every ad-hoc `/lesson-coverage`, `/eval-test`, and `/topic-trace` QA call, and for any production path that hits
+`useObjectives` without `preBuiltObjectives`). Net effect: the ENTIRE lesson silently generated at `ctx.grade==='2'`
+instead of the requested `'1'`. **Not a one-line fix without a ruling**: when the caller passes a vague band
+(`elementary`, the query-param default) letting Gemini refine to a precise grade is plausibly a feature, not a bug —
+the fix needs to distinguish "caller gave a precise grade-shaped string" (always win) from "caller gave a band"
+(Gemini may refine). File to `qa/HUMAN-CHECKS.md` or scope as `/eval-fix` on `gemini-manifest.ts` + `flattenManifest.ts`
+once that distinction is ruled on. Blast radius not yet audited beyond these two call sites.
+
+**(f) Noise, not filed — single-repro off-target drift, one each, no class yet:** `ten-frame` (`twoColorMode`
+disabled defeats a "combine two groups" addition objective, `…kbg3`), `hundreds-chart` (defaults to skip-counting
+instead of row/column location, `…x2yo`), `number-line` (jumps of +4 instead of counting by ones, `…x2yo`),
+`place-value-chart` (tests digit-ID instead of the assigned addition-modeling objective, `…j2q2`). Each is a single
+row — per the report doctrine, not yet a class. Watch for repeats on the next grade-1 math draw before routing.
+
+Gate before (a)-(d) count as fixed: `/lesson-coverage confirm` on the cited package + a fresh draw ×3 per this
+skill's `rerun` mechanics. (e) needs the grade-precision ruling first.
+
+### 27. **Two residuals surfaced confirming item 23's `phoneme-explorer[medial]` supply fix, 6/6 fresh draws
+(2026-09-06, `/lesson-coverage confirm`).** Neither blocked the PASS verdict (obj1 still cleared
+`MIN_SUFFICIENT_ASSESSMENT_ITEMS` on every draw), but both repeated enough across the 6 draws to be a class,
+not noise.
+
+**(a) MODE — the medial menu doesn't lock to the objective's named vowel.** 4/6 draws had `phoneme-explorer`
+generate its 5 challenges across MULTIPLE vowels (1 on short 'a', the other 4 drifting to /e/,/i/,/o/,/u/)
+even though the objective names ONE target ("identify the short 'a' sound"). Judge flagged
+`off_target_assessment` on it every time this happened. It never dropped the objective below WARN because the
+knowledge-check supplies 1-2 backup items, but one draw (`…8zzk`) landed at EXACTLY 2 on-target items —
+zero margin above the floor, and a schema-fallback retry on that same eval call (45s timeout) means the
+verdict there is less trustworthy than the other 5. The other 2/6 draws (`…5dhw`, `…r8wt`) locked all 5
+items to short 'a' cleanly — so this is intermittent generation, not structural. Executor: read
+`phonemeExplorerScript.ts`'s medial-menu builder — the stimulus-selection step likely samples a random
+vowel per challenge instead of pinning the objective's target vowel when one is named; `/eval-fix
+phoneme-explorer` once that mechanism is confirmed.
+
+**(b) SELECTION/MODE — `di-letter-sounds[first_sound_in_word]`/`[letter_sound]` still gets pinned onto a
+medial-vowel objective it structurally cannot pass.** 4/6 draws kept a `di-letter-sounds` block on obj1
+alongside `phoneme-explorer[medial]`, and every one of those 4 came back `off_target_assessment` or (new
+signal, `…bewv`) `primitive_limitation`: *"required continuant onsets for first_sound_in_word, leading to
+items testing m, s, f, and r instead of short /a/"* — i.e. the mode is CONSTITUTIONALLY initial-consonant-only
+(per its own catalog description, cited in item 23), so pinning it to a medial-vowel objective can never
+produce an on-target item; it just sits in the lesson as inert padding the judge always dings. Executor:
+`resolveEvalModes.ts` — this objective shape should route ONLY to `phoneme-explorer[medial]` (+ optionally
+`isolate` for a consonant sub-target), never to `di-letter-sounds`, for a "listen and identify vowel" verb.
+
+Packages: the 6 confirm-run drops under item 23's gate-cleared note above. Gate:
+`/lesson-coverage confirm` again on whichever package the fix lands on, watching specifically for
+`off_target_assessment`/`primitive_limitation` on obj1 to disappear.
+
+### 28. **`kindergarten rhyming` first pass (2026-09-06, `/lesson-coverage`) — coverage PASSES 3/3 on both fresh draws AND the user's live lesson; one tag fact fixed in-slice (Q3), two form findings routed, one residual.**
+Rows: `kindergarten-rhyming-20260906033528-p5m6` (script), `kindergarten-rhyming-fun-with-words-20260906034157-t872` (lesson-coverage-skill),
+`kindergarten-language-arts-rhyme-recognition-production-20260906033544-o2cg` (build-stream — the user's own drive; "this is such a good media player").
+Judge: 3× PASS 1.00, every objective `ASSESSED_SUFFICIENTLY` (p5m6 13/17/9 items; t872 15/11/9; o2cg 8/13/9). rhyme-studio's spoken trio carries the
+lesson — recognition (yes/no), identification (say the rhyme), production (9 open oral items = obj3 "create") — with media-player / poetry-lab / KC as extra evidence.
+
+Scorer on p5m6, before → after: `G6 ✗ Q3 ✗ Q8 ?` → `G6 ✗ Q3 ✓ Q8 ?`.
+- **Fixed in slice (a tag that was not a fact).** `rhyme-studio[production]` carried `representation: 'symbolic'`, but `RhymeStudio.tsx` renders the target's
+  emoji always and its picture at PRE (`showWordImage = isPreReader || …`), so the block is picture-first. Q3 therefore read the ONLY block of obj3 as a
+  symbols-first opener. Tag → `['pictorial', 'symbolic']` (`catalog/literacy.ts`, rationale docblock). Same package re-scored: Q3 fail → pass, judge untouched
+  (Q4 never reads tags). Fresh t872: Q3 ✓. Agreement table: no labeled package contains rhyme-studio, so no human/machine row moved. Gates: vitest **107/107**
+  (bench + coverage + assembly + rhyme-studio + affordances), full tsc **770 = baseline** (0 new).
+- **Routed.** (a) G6 `poetry-lab[rhyme_hunt]` tap-only in K literacy — 2/2 fresh + o2cg → `qa/di/BACKLOG.md` **item 33** (`/add-di-loop poetry-lab`, closed_set_choice).
+  (b) G6 `media-player[listen_and_look]` tap-only + Q8 unknown (no reader verdict by design) → `qa/media-player-reimagining/BACKLOG.md` evidence under Queue;
+  B5 owns the ruling (spoken PRE answer vs a listening-comprehension exception to G6). (c) final-KC `off_target_assessment` for a CREATE verb → item 25 evidence
+  (7th row of that class; rule-judged `say_it` is the P4 shape). (d) judge fallback bookkeeping (9/11 fallbacks store no reason) → item 19 note.
+- **Residual (one row, not a class).** t872 `generation_failure` on `obj2-word-sorter-rhyme` (`word-sorter[binary_sort]`, count 6, "sort spoken words into a
+  rhyming family vs not"); the judge still found obj2 sufficient elsewhere. A re-probe with `componentId=word-sorter` did not select the block, so the reason is
+  unrecorded. Executor when it repeats: `/topic-fidelity word-sorter` on "rhyming" @ kindergarten, binary_sort.
+- **Not a bug.** All five KC multiple-choice problems share the Gemini id `mc_1`; `knowledgeCheckScript.ts` keys items by problem index, so nothing collides.
+
+### 29. **`kindergarten-decompose-numbers-up-to-5` first pass (2026-09-06, `/lesson-coverage`) — a SUPPLY gap (no counter-based split primitive) and a SELECTION mismatch (strategy-picker read as decomposition), both routed.**
+Row: `kindergarten-decompose-numbers-up-to-5-into-pairs-in-multiple-20260906034411-uqnm` (fresh `topic-trace?package=true`, source=script). Judge: **FAIL, coverage 0.50, 1/3 sufficient, BLOCKING.**
+
+obj1 "model splitting a group of ≤5 objects into two smaller groups using counters" → `TAUGHT_NOT_ASSESSED` [CRITICAL], `off_target_assessment`: `counting-board[count]` only runs `count_all` challenges (touch-and-count one line of objects) and `ten-frame[build]` only asks to place N counters on the frame — neither ever asks the child to split a group into two parts. obj2 "show different ways to break the same number into pairs using drawings" → `ASSESSED_INSUFFICIENTLY` [WARNING]: `strategy-picker[guided]` generated ADDITION-strategy problems (2+2, 1+4; `assignedStrategy` `draw-objects`/`counting-on`) — it teaches strategies for solving a sum, never mentions pairs, so it's off-target entirely; `number-bond[decompose]` DOES find all pairs for 3/4/5 (`allPairs`) but renders on-screen counters (`showCounters: true`), not student-produced drawings — judge flagged `primitive_limitation`, "no freeform drawing response mechanism." obj3 "describe how two smaller groups make up the total" → `ASSESSED_SUFFICIENTLY` (8 items, di-spoken-practice + knowledge-check).
+
+**(a) SUPPLY — BUILT 2026-09-06, `ten-frame[decompose]`. Re-judge owed.**
+
+_Original routing, kept because its catalog reading is still the grounding:_
+
+**(a-orig) SUPPLY, routed — handoff written.** The only catalog primitive that assesses "decompose a
+number ≤5 into all pairs" is `number-bond[decompose]`. Neither `counting-board` (modes `count`/
+`subitize`/`subitize_perceptual`/`count_on`/`group`/`compare`, confirmed against its contract) nor
+`ten-frame` (modes `build`/`subitize`/`make_ten`/`operate`, confirmed against its contract) has a
+split-into-two-groups eval mode — and `ten-frame`'s `twoColorMode` schema field, which looked like
+a ready-made split mechanic, turned out on inspection to be a static POSITIONAL pre-coloring, not
+an interactive per-counter group choice (`TenFrame.tsx:538`); `counting-board`'s `compare`/
+`group_count` "two groups" arrangement is the same — layout only, no group-assignment interaction
+anywhere in either primitive. `number-bond[decompose]`'s drag-to-two-circles gesture is the only
+real split mechanic that exists, and it runs inside the DI/Live-tutor loop even though the child
+doesn't speak. Full grounding, three candidate designs, and files-to-touch:
+[HANDOFF-decompose-to-5-counter-split-2026-09-06.md](../HANDOFF-decompose-to-5-counter-split-2026-09-06.md).
+Executor: `/curriculum-fit number-bond` first (per the handoff), then `/add-eval-modes` on
+whichever primitive it names.
+
+**RESOLUTION (2026-09-06).** Handoff candidate **(A)**, homed on **`ten-frame`** — a new `split`
+challenge type behind a new `decompose` eval mode (β 2.0, backend registry updated to match).
+Chosen over `counting-board` because the objective says "using counters", because `allowFlip` and
+the `twoColorDecompositionsExplored` metric were both already sitting in ten-frame unused, and
+because `build` had already proved a placement can be judged in-band. Not (B): routing obj1 to
+`number-bond[decompose]` adds no supply and leaves obj2 open. Not (C): (A) came in pilot-sized.
+
+**One correction to the handoff's own reasoning, worth carrying forward:** it argues (A) is cheaper
+than (B) because counting-board/ten-frame need no live tutor session while number-bond does. That
+is stale — `CountingBoard.tsx` and `TenFrame.tsx` both open "DI modality. The Live tutor owns the
+clock in every mode" and both run `useJudgedScriptRunner`. All three candidates were equally
+DI-bound; the real argument for (A) was supply, not modality.
+
+**The mechanic.** The frame opens with the whole group already on it, all red; taps FLIP a counter
+red↔yellow and never add or remove one, so the total cannot drift and the only variable is where
+the line between the groups falls (the two-colour counter, in software). Commits on stillness like
+`build`. The verdict is computed in code and handed to the tutor as a ruling: `correct` /
+`empty_part` (flipped all or none — the signature miss) / `repeat`.
+
+**The session is the unit, which is new for this family.** "In more than one way" is not assessable
+from one item however well judged, so the component keeps a per-total ledger of pairs the child has
+produced; a later item on the same total that repeats one is corrected, and the rule stands down
+once that total's ways are exhausted. Ordinal 1 asks "a way", later ones ask "a DIFFERENT way".
+
+**Verified:** `typecheck:lumina` 0 · tsc **770 = baseline** · full suite **4817/4817** · 47 pack
+cases + 25 stage cases · **3/3 live generator draws** on this item's own topic
+(`scripts/probe-ten-frame-split.mjs`, evidence `qa/eval-reports/ten-frame-split-2026-09-06.json`),
+each returning 6 split challenges with totals {3:2, 4:2, 5:2} — every total repeated, none beyond
+its ways · an unpinned intent probe routed this item's exact obj1 text to `decompose` while
+`build`/`make_ten` controls did not drift. Contract: **R9** in `docs/contracts/ten-frame.md`.
+
+**⚠ A test in this slice was briefly VACUOUS and it is worth knowing why:** a shell round-trip
+turned the `\b` word boundaries in the new pair-leak regex into literal backspace bytes, so the
+assertion passed against a string that did contain the banned word. Caught by the live probe
+failing where the unit test did not. Both are fixed and the helper carries the note.
+
+**STILL OWED (do not read this item as fully closed):**
+- `/lesson-coverage confirm` on `…-20260906034411-uqnm` — obj1 should leave `TAUGHT_NOT_ASSESSED`.
+  This is the gate below and it has NOT been run; the build is verified, the re-judge is not.
+- Fresh ×3 on the topic, per the gate.
+- A real-browser drive. The jsdom stage tests exercise flip / stillness commit / ledger / reveal,
+  but not paint, hit targets or the live tutor's voice → HUMAN-CHECKS.
+- obj2's "using drawings" demand is UNTOUCHED. `split` closes obj1 only. No K math primitive has a
+  freeform drawing surface, which is the `/curriculum-fit` sweep the handoff flagged and the
+  question of whether obj2 is asking for supply that does not exist.
+
+**(b) SELECTION — FIXED in-slice, confirmed 2/2 fresh.** `strategy-picker`'s catalog `description`
+in `math.ts` reworded to state it solves a FIXED addition/subtraction equation and explicitly
+"NOT a decomposition primitive... For 'show different ways to break a number into pairs,' use
+number-bond[decompose] instead." Verified: two independent fresh `topic-trace?package=true` draws
+on the same topic post-fix (`…-decomposing-numbers-up-to-5-into-number-pairs-20260906041244-66ol`
+and the confirm run above it) both selected `number-bond[decompose]` directly for obj2 —
+`strategy-picker` no longer appears in the block set at all. tsc **770 = baseline** (0 new). A
+third fresh draw is owed once the dev server (down mid-session) is back up. The 66ol confirm run
+also resurfaced the SUPPLY gap (a) identically (`ASSESSED_INDIRECTLY`, same `off_target_assessment`
+on `counting-board`/`ten-frame`) — expected, (a) is unfixed — plus one unrelated residual: obj3's
+`di-spoken-practice` block generated `items: []` for an open-ended "explain the pairs" prompt, the
+same already-flagged class at item 21(c) (open-ended verbal explanation) — not a new finding, not
+folded into this item.
+
+Gate: `/lesson-coverage confirm` on this package before/after (a), plus fresh ×3 —
+**UNRUN as of 2026-09-06; (a) is built and machine-verified, not yet re-judged.**
+
+### 30. **`kindergarten-compare-attributes` first pass (2026-09-05, `/lesson-coverage`) — a CONTENT bug fixed in-slice on fresh generation; two findings routed.**
+Row 1: `kindergarten-compare-and-describe-objects-attributes-longer-s-20260906034421-3rvk` (fresh
+`topic-trace?package=true`, topic "Compare and describe objects' attributes (longer/shorter,
+heavier/lighter) using direct observation and manipulation"). Judge: **WARN, coverage 0.67, 1/3
+sufficient.** obj1 (length comparison) → ASSESSED_SUFFICIENTLY. obj2 (heavier/lighter by hand) →
+ASSESSED_INDIRECTLY. obj3 (describe with the four words) → ASSESSED_INSUFFICIENTLY, `notes`: "heavier
+and lighter are never sorted or produced." `off_target_assessment @final-assessment-attributes:
+includes counting tasks (prod_how_many_12 and prod_how_many_11) unrelated to measurement attributes."
+
+**(a) CONTENT — FIXED.** Opened `final-assessment-attributes#problems[0..1]`: two `how_many`
+production items (count the fish, count the bears) carrying obj1's `successCriteria` verbatim
+("Compare two real objects side-by-side to show which one is longer or shorter") — a pure
+counting item mislabeled as comparison evidence. Traced to `kindForObjective()` in
+[knowledgeCheckPlan.ts](../../src/components/lumina/service/knowledge-check/knowledgeCheckPlan.ts):
+obj1's text contains "show" (matches `DEMONSTRATE_RE`) and "objects" (matches `OBJECTS_RE`), so the
+demonstrate+objects catch-all fired and forced a `how_many` production kind on a comparison
+objective that has no count/combine language at all — it should have fallen through to `null`
+(legacy MC/TF, which IS what correctly happened for obj2/obj3's true_false comparison items).
+Fix: added `COMPARE_ATTRIBUTE_RE` (compare/longer/shorter/taller/heavier/lighter/bigger/smaller/
+larger/wider/narrower) and guarded the count/combine/demonstrate+objects branch on it, so an
+attribute-comparison objective always falls to legacy regardless of incidental verb overlap.
+Regression test added (`knowledgeCheckPlan.test.ts`, the exact 3rvk obj1 text) — 12/12 pass.
+**Verified on FRESH generation** (`…-20260906035023-wxyu`, same topic+grade, independent draw):
+the re-judged final assessment (`measurement-review-check`) now carries only on-target MC/TF
+comparison items (longer/heavier/lighter); `off_target_assessment` on the final assessment is
+GONE. Remaining WARN (coverage 0.67, obj2/obj3 `ASSESSED_INDIRECTLY`) is the two findings below,
+present on BOTH the pre-fix and post-fix draws — confirmed real, not fixed by (a). Gates: `tsc`
+770 = baseline (0 new), touched suite 12/12, `lessonBench`+`lessonCoverage`+`exhibitAssembly`
+79/79.
+
+**(b) SELECTION, routed.** `balance-scale` was picked for obj2 (heavier/lighter by hand) on BOTH
+draws (`obj2-balance-scale-explore`, `obj2-balance-scale-intro`) and both times generated missing-
+addend algebra ("Find the mystery number that makes both sides balance") — nothing to do with
+weight. The component (`BalanceScale.tsx`) has zero weight-comparison concept; the catalog
+description ([math.ts:1111-1114](../../src/components/lumina/service/manifest/catalog/math.ts))
+calls it "ESSENTIAL for pre-algebra and algebra," K-2 mode is "concrete, mystery number" — a
+numeric equation primitive, not a physical-weight one. The curator appears to be matching on the
+literal word "balance" (as in a balance/seesaw for weighing) rather than the catalog's actual
+function — same failure shape as item 29(b) (strategy-picker's "draw" matching "drawings"). This
+lesson already has the correct primitive for weight (`compare-objects[compare_two]`,
+`obj2-compare-objects-weight`), so balance-scale is pure noise here, not a supply gap. Executor:
+sharpen `balance-scale`'s catalog `description` in `math.ts` to rule out weight/physical-object
+comparison explicitly (direct edit, no fork) — then `/lesson-coverage confirm` fresh ×3 that it
+stops being selected for attribute-comparison objectives. Aggregate report shows only 2 prior
+`balance-scale` rows (avg cov 0.75); watch for recurrence before treating this as systemic.
+
+**(c) SUPPLY + ruling, routed.** `di-spoken-practice` generated **0 items** for obj3's "describe
+with your own words" slot on BOTH draws (`obj3-spoken-attribute-description`,
+`obj3-spoken-explanation`) — a correct refusal, not a crash: `spokenPracticePlan.ts`'s task enum
+(`visual_naming` / `read_aloud` / `say_answer` / `count_and_say` / `unsupported`) and the
+generic-pack item schema (ONE `stimulusText`/`stimulusEmoji` per item) have no shape for a
+comparative descriptive utterance about TWO observed objects — the honest-empty path
+([gemini-di-spoken-practice.ts:563-569](../../src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts))
+is pedagogy-over-runnability working as designed, but it leaves obj3 with no production evidence
+for the named vocabulary set. Aggregate report: di-spoken-practice already the primitive with the
+worst hit rate in the whole `evals.jsonl` set (9 rows, 4 fail / 4 warn, avg cov 0.72) — this is
+the SAME class, not a new one. Executor: `qa/di/BACKLOG.md` (owns spoken-modality supply gaps) —
+a two-stimulus comparative `say_answer` shape needs its own eval-mode design, not a same-push
+patch. Separately, `⚠ primitive_limitation @obj2-compare-objects-weight` / `@obj2-spoken-compare-
+weight` on both draws ("screen-based primitives cannot verify physical hefting") is a product-
+scope question — is a visual/verbal proxy acceptable evidence for a hands-on K standard, or does
+it require the take-home/parent-observed surface as the ONLY valid evidence? → `qa/HUMAN-CHECKS.md`
+ruling, not a code fix.
+
+**(c) SUPPLY — CLOSED 2026-09-06.** `di-spoken-practice[compare_choice]` shipped (qa/di item 34;
+[report](../eval-reports/di-spoken-practice-compare-choice-2026-09-06.md)): code owns the menu
+extracted from the objective, the model writes the object pairs, and a session that asks three of
+four named words ships nothing. Confirmed on BOTH frozen packages with a fresh slot spliced in —
+**3rvk obj3 `ASSESSED_INSUFFICIENTLY` → `ASSESSED_SUFFICIENTLY`, lesson coverage 0.67 → 0.83**
+(1/3 → 2/3 sufficient). **wxyu obj3 loses its `generation_failure` (evidence 6→8) but stays
+`ASSESSED_INDIRECTLY`, and the judge says why: its verb is EXPLAIN ("in your own words"), so
+closed-set selection is not the evidence it needs.** That is the handoff's out-of-scope line drawn
+by the judge, not asserted — the explain shape stays with item **21(c)**. Selection verified too:
+both manifests, stripped of pins, route obj3 to `compare_choice` through the real
+`resolveLessonEvalModes`. Gates: tsc 770 = baseline, `typecheck:lumina` 0, vitest 570/570, live
+probe 9/9. Owed: **mic #137**; NOT swept (no other `evals.jsonl` row converted — pilot-then-sweep).
+
+Gate: (b) `balance-scale` catalog sharpening is the remaining open half of item 30 — `/lesson-coverage
+confirm` fresh ×3 that it stops being selected for attribute-comparison objectives.
+
+### 31. ✅ **SELECTION — SHIPPED 2026-09-07 (first `/lesson-coverage produce` on 1st-grade literacy, package `…l5no`) — `fast-fact[recognize]` duplicated an already-spoken primitive tap-only.** Package `1st-grade-decoding-words-with-consonant-blends-and-digraph-20260907031147-l5no`: obj1 ("Listen to and identify special sounds made by letter teams like sh, ch, th, and bl") got BOTH `phoneme-explorer[isolate]` (already Live-DI, `answers: ['spoken']`, requires mic — exactly this objective's shape) AND `fast-fact[recognize]` (a second, tap-only 4-way picture-cue block assessing the same digraphs). Bench G6 correctly flagged the tap-only block; **first-pass routing misdiagnosed it as a SUPPLY gap** (queued `/add-di-loop fast-fact` at `qa/di/BACKLOG.md` item 35) **before checking whether an existing catalog primitive already covered the objective spoken — it did.** `phoneme-explorer`'s own catalog description says "ESSENTIAL for K-2 literacy" and explicitly owns beginning/medial-sound identification; porting fast-fact would have built a second DI surface for ground already held. Corrected diagnosis: SELECTION — the resolver had no catalog signal telling it fast-fact is the wrong tool once a spoken-native primitive already claims the objective. **Fix:** one constraint line added to `fast-fact`'s catalog entry ([core.ts:364](../../src/components/lumina/service/manifest/catalog/core.ts)) — "NOT for a K-2 Language Arts beginning/middle-sound identification objective — phoneme-explorer already owns that ground answered ALOUD," leaving fast-fact's other K-2 LA automaticity use (sight words, vocabulary) untouched. **Confirmed same-day, ONE fresh draw** (`grade-1-decoding-words-with-consonant-blends-and-digraph-20260907032728-6i2p`, same topic+grade): fast-fact no longer appears anywhere in the package; bench **G6 ✓**. `qa/di/BACKLOG.md` item 35 retracted as mis-routed — see that file's history. Gates: tsc 770 = baseline (0 new). **Not swept ×3** (pilot-then-sweep; one fresh draw only) and no other `evals.jsonl` row checked for the same fast-fact-vs-DI-primitive collision shape — that sweep is the residual, not this item.
+
+### 32. **MODE, opened same package — `phoneme-explorer[blend]` + `sound-swap[addition]` were pinned for an ISOLATE objective.** Same fresh draw (`…6i2p`): obj1's real ask is "Listen to and identify individual sounds in spoken words **before seeing the letters**" — `phoneme-explorer` has an `isolate` mode built for exactly this ("Sound Match, Tier 1") — but the resolver pinned `blend` instead, and additionally selected the distinct `sound-swap` primitive, which tested CVC phoneme addition **with the printed word visible** (judge: `off_target_assessment` ×2, "tested blending rather than isolation… tested CVC phoneme addition with text shown"). Coverage dropped to `ASSESSED_INSUFFICIENTLY` (only 1 final-check item touches real isolation). Layer: MODE (the eval-mode pin) compounded by SELECTION (`sound-swap` printing the word contradicts phoneme-explorer's own "never printed" doctrine for this objective shape — worth checking whether `sound-swap` should be excluded from beginning-sound isolation objectives the same way item 31 excluded fast-fact). Executor: trace `resolveLessonEvalModes.ts`'s pin for this objective text against `phoneme-explorer`'s `evalModes[].description` (isolate vs blend vs manipulate) — sharpen the description the resolver reads, or the resolver's verb matching. Gate: `/lesson-coverage confirm` on `…6i2p` after the fix, obj1 category improves past `ASSESSED_INSUFFICIENTLY`; not yet diagnosed further (one draw only).

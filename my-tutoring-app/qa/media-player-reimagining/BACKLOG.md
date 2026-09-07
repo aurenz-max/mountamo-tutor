@@ -30,6 +30,8 @@ not new launch surfaces.
 
 ## Queue (top = next)
 
+**Evidence 2026-09-06 (`/lesson-coverage kindergarten rhyming`, package `kindergarten-rhyming-20260906033528-p5m6`; the user played the same lesson live and called the media player "so good").** The coverage judge counted the three `listen_and_look` checks as direct evidence for obj1 (PASS 1.00). The bench's form scorer records two things for this queue: (1) **G6** — `listen_and_look` is `answers: ['tap']` and role `apply`, so in a K LANGUAGE_ARTS lesson it is a tap-only production block under the spoken-first ruling; the check is a picture menu ("Which two things sounded the same at the end?" → frog+bug / frog+log / frog+star), i.e. a `closed_set_choice` the child could SAY. Decide in B5 whether the PRE band gets a spoken answer (`/add-di-loop media-player`, listen_and_look only) or whether listening-comprehension is ruled an exception to G6 — a user ruling, not a scorer tweak. (2) **Q8 unknown** — no `reader` tag, by design (contract: no reader-fit verdict on file); the `/reader-fit media-player` PRE audit already named in B5 closes it. Neither changes the lesson's coverage verdict.
+
 ### B2 — EMERGING band polish (`listen_for_details`)
 Short-option enforcement audit + 🔊 option replay at G1 (options are read by
 [READ_KNOWLEDGE_CHECK] but there is no per-option replay button yet); `/eval-test` @ 1 ×3;

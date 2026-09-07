@@ -83,6 +83,15 @@ Grade strings are the pipeline's lowercase set (`kindergarten`, `elementary`, �
 rate: Dev → **Lesson Bench** → drop the package → play → rate → **Download labeled JSON**
 → `packages/<id>.labeled.json`; then `judge --write` and `score` that file.
 
+**Report the stream, not just the verdict.** Every `produce`/`judge`/`score` reply names
+the actual `componentId[evalMode]` picked per objective (`stream` in the score output, or
+walk `manifest.objectiveBlocks[].components[].{componentId,targetEvalMode}`) — not just
+pass/warn/fail. Reading the stream is what catches a SELECTION defect a status line
+hides: two blocks on one objective, a mode pinned that doesn't match the verb, a
+primitive whose catalog description doesn't actually fit here. Skipping straight to the
+judge verdict is how item 35 (`qa/di/BACKLOG.md`) got routed to a DI port that a sibling
+block already made unnecessary — see the doctrine line in `diagnose` below.
+
 Three rules the scorer keeps, and you must not relax:
 1. **Absent = unknown, never a fail.** An untagged axis, or a package with no `coverage`,
    lands in `scores.unknowns`. Fill the tag (`/add-affordances`) or run the judge; never
@@ -142,7 +151,7 @@ every instrument: a judge row lands in the first column, a rail label in the sec
 | Layer | Judge signal | Rail reason (`BLOCK_REASONS` / `LESSON_REASONS`) | Executor | Never |
 |---|---|---|---|---|
 | **CONTENT** — the generator's output for this topic | `NOT_TAUGHT` with blocks present but about something else · `TAUGHT_NOT_ASSESSED` with an assess block whose items miss the target · `ASSESSED_INSUFFICIENTLY` (named set sampled, `count` ignored) · `generation_failure` (block in MISSING BLOCKS) | `not-this-skill` · `answer-shown` · `too-few-problems` (single-mode pin) · `weak` | `/topic-fidelity <gen>` · `/eval-fix <gen>` ("N challenges = N problems"), then a live probe | a curator or manifest rule (user ruling ×N) · widening the objective text · padding with repeats · leaving a silent fallback |
-| **SUPPLY** — no catalog primitive or mode assesses that verb at that grade | `TAUGHT_NOT_ASSESSED` with no `apply`/`assess`-role block · `primitive_limitation` | — (the rater sees a gap, not a block) | `/curriculum-fit`, then `/add-eval-modes` on the nearest primitive or `/primitive`; a K–2 production verb needs a SPOKEN mode → `/add-di-loop` | a manifest rule forcing a block · a ban |
+| **SUPPLY** — no catalog primitive or mode assesses that verb at that grade | `TAUGHT_NOT_ASSESSED` with no `apply`/`assess`-role block · `primitive_limitation` | — (the rater sees a gap, not a block) | `/curriculum-fit`, then `/add-eval-modes` on the nearest primitive or `/primitive`; a K–2 production verb needs a SPOKEN mode → `/add-di-loop` | a manifest rule forcing a block · a ban · **opening a DI-port item off a G6/tap-only citation before checking every OTHER block on the same objective — an already-`spoken` sibling means the gap is SELECTION (a redundant weaker pick), not SUPPLY** |
 | **MODE** — the pinned eval mode | `ASSESSED_INDIRECTLY` · `off_target_assessment` | `too-few-problems` (multi-mode pin) · `flat` · `no-evidence` | fix the catalog `evalModes[].description` (the resolver reads it) · `resolveLessonEvalModes.ts` (direct edit) · `/add-eval-modes` for the direct mode | grading the primitive down · a grade floor |
 | **CONTRACT** — a guard withheld content on purpose | `content_guard` (`unaskableLetters`, any `*Reported` residual) | — | read `docs/contracts/<primitive>.md` (`/primitive-contract`); then `/add-eval-modes` for the withheld content, or re-scope the objective's evidence in the curriculum DRAFT, or a USER RULING | delete the guard · swap in out-of-set content |
 | **SELECTION** — the curator's choice: catalog line, affordance tag, brief | `NOT_TAUGHT` with NO block for the objective (the brief dropped it) | `does-not-belong` · `wrong-grade` · `symbols-first` · `needs-earlier` · `repeats-block` · `wrong-opener` · `wrong-order` · `missing` · `too-long` | `/add-affordances <id>` (a demand is a FACT: reader, modality, audience, representation, minutes, maxPerLesson) · `/topic-trace` (brief order / coverage) | a grade floor, `minGrade`, catalog filtering (`feedback_make-age-friendly-not-band-floor`) |
@@ -151,11 +160,19 @@ every instrument: a judge row lands in the first column, a rail label in the sec
 | **ASSEMBLY** — where a block sits in the played lesson | — | `too-much-reading` on a parent card | `exhibitAssembly.ts` (direct edit) → `rerun` | |
 | **INSTRUMENT** — the judge or the scorer | `discardedEvidence` on most objectives · `schemaError` · `status: error` · `NOT_EVALUATED` | machine ≠ human on a check AFTER reading the block | `service/qa/lessonCoverage/` + a fixture · `lessonBenchScorer.ts` + a test (say which side of the agreement table moved, and why) | reading the verdict as fact · tuning a threshold |
 
-Two doctrine lines that decide most rows:
+Three doctrine lines that decide most rows:
 - **The manifest passes the objective; the generator does the work.** A missing element
   of a named set is the generator's, not the curator's.
 - **Affordances are facts, not floors.** A tag or a guard never becomes a filter; the fix
   is a mode, a contract fork, or a ruling.
+- **A gap next to a hit is SELECTION, not SUPPLY.** Before routing a modality/G6 finding
+  to a new port, read every OTHER block pinned to the SAME objective. If one of them
+  already declares `answers: ['spoken']` for that exact shape, the catalog primitive
+  exists and the resolver just picked a second, weaker one too — the fix is a one-line
+  catalog `constraints` edit on the weaker primitive (`/lesson-coverage` item 31,
+  2026-09-07: `fast-fact[recognize]` duplicated `phoneme-explorer[isolate]` tap-only;
+  misdiagnosed as `/add-di-loop` first, cost a retraction). A DI port is for a verb
+  NO existing primitive answers aloud yet — check the catalog before opening one.
 
 ## route — the class becomes a queue entry
 

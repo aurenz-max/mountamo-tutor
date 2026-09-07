@@ -98,6 +98,18 @@ that interpretation against the objective before treating it as authoritative.
 Deterministic allocation over a wrongly extracted set is still wrong. Do not
 assume every bug needs a new planner.
 
+When the source already contains exact text, glyphs, or identifiers that the
+model corrupts while copying, let code retain that source and have the model
+select references into it. Validate selected membership and meaning separately.
+This changes who owns the value; replacing one observed wrong character does not.
+
+An interpreter, reviewer, or repair step is part of the failure path too. Test
+whether it can misclassify required content as optional/open practice and bypass
+the invariant. Review both the closed plan and the claimed absence of one.
+A second model call is not independent evidence of correctness by itself: use
+the repository's established model for semantic judging, calibrate it on known
+valid and invalid plans, and distinguish source integrity from semantic certainty.
+
 ### Guardrails must enforce the task
 
 Regex suits a defined syntactic grammar. It is not a general classifier for
@@ -181,6 +193,12 @@ retries, discarded items, and fallback usage; do not stop at the first green
 sample. A remaining violation of a required invariant keeps that finding open.
 Two passes out of three is improvement, not resolution. Zero observed failures
 in a small sample is supporting evidence, not proof of reliability.
+
+Record usable-session yield as well as invalid-content rejection. Test the
+reviewer's own contract: a valid open arithmetic/counting plan should not be
+rejected for lacking an enumerated target list. Do not call an all-empty result
+robust, or call a session correct solely because its production gates pass;
+independently inspect the original objective's scope and expected answers.
 
 If verification fails, revisit the causal account before adding another patch.
 If runtime access is unavailable, complete independent work and identify exactly

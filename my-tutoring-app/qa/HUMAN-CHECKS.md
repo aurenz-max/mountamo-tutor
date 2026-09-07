@@ -7,15 +7,63 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open — ONE list, newest first (as of 2026-09-04, `/lesson-bench` item 12)
+## Open — ONE list, newest first (as of 2026-09-05, `/lesson-coverage kindergarten` item 30)
 
-> **96 rows open.** **Newest five:** #133 di-letter-sounds + letter-sound-link STOPS (t p c k h d g b now produced as clipped sounds — is a five-year-old’s clipped /t/ or its keyword accepted, and does the voice read “/t/” cleanly, not “slash tee slash”?) · #132 Lesson Bench parent card (caregiver block behind the
-> child's path; lesson-bench item 12) · #131 3d-shape-explorer (all five modes spoken; di item 18) ·
-> #130 cause-effect-chain (port 25 — yes/no per card, a chain that commits on stillness, a spoken
-> root pick; di item 29) · #129 scroll-layout lesson focus (di item 31) · #128 judged pack past
-> block 1 (di item 30).
-> Next free ID is **#135**.
+> **100 rows open.** **Newest five:** #138 ten-frame `split`/`decompose` — the flip-to-partition
+> gesture, never touched by a child (does a K child discover that a counter turns over when you
+> tap it, and does "you already showed that way" land as a nudge rather than a punishment?) ·
+> #137 di-spoken-practice `compare_choice` MIC (the menu read
+> aloud on every ask — does a four-word menu spoken every item hold a five-year-old, or does it
+> become noise she stops hearing? and is a menu word affirmed reliably from audio?) · #136
+> compare-attributes weight-hefting evidence RULING (does a
+> visual/verbal proxy count for a hands-on K standard, or is take-home the only valid evidence?) ·
+> #135 knowledge-check PRODUCTION items (three K stimulus insets + `point_to` token tap on the judged surface; KC redesign P1–P3) · #134 di-math-facts name_numeral · #133 di-letter-sounds + letter-sound-link STOPS (t p c k h d g b now produced as clipped sounds — is a five-year-old’s clipped /t/ or its keyword accepted, and does the voice read “/t/” cleanly, not “slash tee slash”?).
+> Next free ID is **#139**.
+
+- **#137 🎤 `di-spoken-practice[compare_choice]` — the spoken menu, never heard by a child.**
+  Shipped 2026-09-06 (`qa/di/BACKLOG.md` item 34) fully machine-verified — 6/6 live draws, coverage
+  confirm 3rvk obj3 INSUFFICIENT → **SUFFICIENT** — but **no mic sitting**. The mode's whole design
+  bet is a code-owned clause the tutor speaks on every item: *"Here is a feather, and here is a rock.
+  Is the rock longer, shorter, heavier, or lighter?"* Three ear questions only a drive answers:
+  **(a)** does reading the whole four-word menu EVERY item stay a question, or turn into a jingle she
+  tunes out and guesses through? (the menu must be complete — that is the gate that makes it not a
+  leak — so shortening it is not the fix if this fails); **(b)** is a bare menu word ("heavier")
+  affirmed reliably from a five-year-old's audio, and is the near-pair longer/shorter separable by
+  ear at speed? **(c)** does the tap-to-hear replay ("a feather and a rock") land, or does hearing
+  the pair again without the question confuse the turn? Drive:
+  `direct-instruction-tester → Say It Out Loud`, objective *"Describe the size and weight of objects
+  using words like longer, shorter, heavier, and lighter."* Report:
+  [eval-reports/di-spoken-practice-compare-choice-2026-09-06.md](eval-reports/di-spoken-practice-compare-choice-2026-09-06.md).
 > Re-grep before filing; concurrent sessions in this lane are normal.
+
+- **#138 🖐️ `ten-frame[decompose]` — the flip-to-partition gesture, never touched by a child.**
+  Shipped 2026-09-06 (`qa/lesson-bench/BACKLOG.md` item 29(a), contract R9) machine-verified —
+  3/3 live generator draws, 47 pack + 25 stage cases, tsc at baseline — but **never driven in a
+  browser**. The frame opens with the whole group already on it, all red; a tap turns one counter
+  yellow, a second tap turns it back, and empty cells do nothing. Four questions jsdom cannot
+  answer:
+  **(a)** does a five-year-old DISCOVER the flip? The scripted line says it ("Tap a counter to turn
+  it yellow"), but a red disc that becomes a yellow disc on touch is a new affordance in this
+  product — if she taps empty cells expecting to add counters and nothing happens, the mode reads
+  as broken rather than as constrained. **(b)** is the red/yellow contrast legible at tablet size on
+  the glass frame, and is a 56px cell a fair hit target for a finger aiming at ONE counter among
+  five? **(c)** the correction for a repeat is the delicate one: *"that is a way to make five, and
+  it is the same way you showed me before"* — does that land as a nudge toward another way, or as
+  being told off for a right answer? This is the first time this family has judged a child across
+  items rather than within one, so it is the wording most likely to need softening.
+  **(d)** does the 3s stillness window fit a child who flips one counter, thinks, and flips
+  another — or does it commit mid-thought? Drive: `direct-instruction-tester → Ten Frame`,
+  objective *"Model how to split a group of up to 5 objects into two smaller groups using
+  counters."* Evidence: `qa/eval-reports/ten-frame-split-2026-09-06.json`. · OPEN
+
+### #136 — **RULING, not a browser check: does a visual/verbal weight-comparison proxy count as evidence for a hands-on "hold two objects in your hands" K standard, or must that objective's ONLY valid evidence be the take-home/parent-observed surface?** (`/lesson-coverage kindergarten`, compare-attributes package, lesson-bench item 30(c)). The coverage judge flags `primitive_limitation` on `obj2-compare-objects-weight`/`obj2-spoken-compare-weight` on every fresh draw ("screen-based primitives cannot verify or assess physical hefting of objects in hands") — this is architectural, not fixable by a better generator: no screen primitive can confirm a child actually held two objects. The lesson already carries a `take-home-activity` parent card for real hefting. Decide: (a) accept the visual/verbal comparison as sufficient in-lesson evidence and treat physical hefting as reinforcement only, (b) require the take-home card's (self-reported, unverifiable) completion as the ONLY evidence this objective is met, or (c) something else. Blocks `qa/lesson-bench/BACKLOG.md` item 30(c) from having a target to build toward. · OPEN
+
+### #135 — **knowledge-check PRODUCTION items (KC redesign P1–P3, lesson-bench item 25 / di item 23 slice 3): do the three K stimulus insets read on a tablet, and does the `point_to` tap commit on the judged surface?** A K subtraction lesson's final check now ships four code-built production items instead of four emoji MCQs: two `how_many` (an `arrangement` — emoji in a row / ten-frame with the taken-away ones crossed out; the child SAYS how many are left) and two `point_to` (a `number-sentence` `5 − 3 = 2` as large tokens; the child TOUCHES the minus sign, then the equals sign). Three things need eyes and one needs a finger.
+(a) **Renderers.** `ArrangementInsetRenderer` (row · ten-frame · scattered · crossed-out ✕ overlay legible at K size?), `NumberSentenceTokens` (five tokens fit one row on a 768-px tablet? the `□` blank reads as "missing", not as a broken glyph?), `GlyphCardInsetRenderer` (numeral / letter / shape outline — the `sides: 3` triangle and `sides: 0` circle from `shapeOutlinePoints`). Drive: a K lesson on "subtraction" (or "numbers 1 through 5", "shapes circle triangle") and reach the final check; or the tap surface with the mic off.
+(b) **The point_to gesture on the JUDGED surface.** With a mic: the tutor says "Touch the minus sign." and holds the bracket; touching a token must commit at once (`[KC_TAP]` → "Yes! That is the minus sign." / "My turn: look at each sign…"); touching a number token must be judged wrong, not ignored; the reveal ring must land on the target token only after the verdict; the second `point_to` ("Touch the equals sign.") must not inherit the first tap (tappedId resets on item open).
+(c) **The tap surface (no mic).** `ProductionProblem.tsx`: `how_many` shows the picture and three numeral cards (keycap emoji), one tap commits, the K read-aloud beat fires once (`[QUIZ_READ_ALOUD]`) and the 🔊 replays it; `point_to` renders the tokens as buttons and a wrong tap shows the target ring + Try again.
+(d) **Length and spoken counting.** A `how_many` child will count aloud "one, two, three… three!" — the contract tells the judge counting is thinking and to wait for the number they stop on; does a real judge hold?
+Headless: generator + oracle + script gate clean on all five KC-only packages, judged-viable, pack gates clean, coverage judge re-run in `qa/eval-reports/knowledge-check-redesign-2026-09-05.{json,log}`; vitest 844; tsc 770 = baseline. No browser or live drive yet. · OPEN
 
 ### #134 — **`di-math-facts[name_numeral]`: does a ten-numeral naming block hold a five-year-old, and does the tutor stay ON the naming task?** The pack's fifth mode (lesson-bench item 20) shows one printed numeral and the child says its name aloud. Two things need an ear.
 (a) **Length.** A naming session is now sized from the objective, not the pack default: "1 through 10" builds TEN items, where every other mode ships five. Ten DISTAR model→guide→test reps is the pedagogically right coverage (the coverage judge scored five items ASSESSED_INSUFFICIENTLY — "3, 5, 6, 7 and 8 are omitted") but it is untested against a real K attention span. If ten drags, the answer is a manifest-side split into two blocks, not a silent cap back to five.
