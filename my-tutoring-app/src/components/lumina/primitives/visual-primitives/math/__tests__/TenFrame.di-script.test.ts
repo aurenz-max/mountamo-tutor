@@ -29,12 +29,17 @@ import {
   isSayableAnswer,
   itemCue,
   itemFromChallenge,
+  itemsFromChallenges,
+  judgeSplit,
   moveOnCue,
   pronounceCue,
   responseClassFor,
+  splitKey,
+  splitVerdictCue,
   stimulusFor,
   tenFrameHarnessAnswers,
   tenFramePackBase,
+  waysToSplit,
   type TenFrameItem,
 } from '../tenFrameScript';
 import {
@@ -65,6 +70,15 @@ const add = (id = 'tf-5') =>
   itemFromChallenge({ id, type: 'add', targetCount: 5, addend1: 3, addend2: 2 }, READER)!;
 const subtract = (id = 'tf-6') =>
   itemFromChallenge({ id, type: 'subtract', targetCount: 4, startCount: 7 }, READER)!;
+/** Two split items on the SAME total — the shape the mode needs, because
+ *  "in more than one way" is not assessable from a single item. */
+const SPLITS = itemsFromChallenges(
+  [
+    { id: 'tf-7', type: 'split', targetCount: 5 },
+    { id: 'tf-8', type: 'split', targetCount: 5 },
+  ],
+  K,
+);
 
 const BUILD = build();
 const SUBITIZE = subitize();
@@ -73,7 +87,11 @@ const MAKE_TEN_READER = makeTenReader();
 const ADD = add();
 const SUBTRACT = subtract();
 
-const ITEMS: TenFrameItem[] = [BUILD, SUBITIZE, MAKE_TEN_K, MAKE_TEN_READER, ADD, SUBTRACT];
+const [SPLIT_FIRST, SPLIT_AGAIN] = SPLITS;
+
+const ITEMS: TenFrameItem[] = [
+  BUILD, SUBITIZE, MAKE_TEN_K, MAKE_TEN_READER, ADD, SUBTRACT, SPLIT_FIRST, SPLIT_AGAIN,
+];
 
 /**
  * The pack's CUE SURFACE — the real one. This used to be re-typed here, and a
@@ -104,6 +122,15 @@ describe('ten-frame pack · structural gates', () => {
     expect(answerKindFor('make_ten', 'K')).toBe('gesture');
     expect(responseClassFor('build', 'K')).toBe('manipulation');
     expect(responseClassFor('make_ten', 'K')).toBe('manipulation');
+
+    // `split` answers a PAIR, and a pair has no benched spoken class — which is
+    // the reason it is enacted, not the consequence. It is gesture at EVERY
+    // band, unlike make_ten: a reader who can say "two and three" has still not
+    // shown they can partition a set.
+    for (const band of ['K', '1-2'] as const) {
+      expect(answerKindFor('split', band)).toBe('gesture');
+      expect(responseClassFor('split', band)).toBe('manipulation');
+    }
 
     // Everything else reports a NUMBER, and the stepper that used to carry it
     // was a costume: a child who cannot subitize can still operate a stepper.
@@ -381,7 +408,14 @@ describe('ten-frame catalog · DI frame', () => {
     // say out loud that it needs a microphone.
     expect(entry.constraints).toMatch(/microphone/i);
     expect(entry.constraints).toMatch(/no Check button/i);
-    expect(entry.evalModes?.map((m) => m.evalMode)).toEqual(['build', 'subitize', 'make_ten', 'operate']);
+    // Ordered lowest β → highest, and `decompose` (2.0) sits between the
+    // concrete build and the pictorial subitize.
+    expect(entry.evalModes?.map((m) => m.evalMode))
+      .toEqual(['build', 'decompose', 'subitize', 'make_ten', 'operate']);
+    expect(entry.evalModes?.map((m) => m.beta)).toEqual([...entry.evalModes!].map((m) => m.beta).sort((a, b) => a - b));
+    // The mic sentence must no longer read as covering the whole primitive:
+    // build and decompose are judged from hands and need no spoken answer.
+    expect(entry.constraints).toMatch(/hands-only modes \(build, decompose\)/);
   });
 });
 
@@ -440,5 +474,184 @@ describe('ten-frame pack · headless drive answers', () => {
       expect(plainWrong).not.toMatch(/zero/);
       expect(plainWrong.length).toBeGreaterThan(0);
     }
+  });
+});
+
+// ── 9. `split` — the decomposition mode (contract R9) ───────────────────────
+
+/** Number words that would be a PART of a total of five if they appeared. */
+const PART_WORD = /\b(one|two|three|four)\b/i;
+
+/**
+ * "two groups" / "two colour groups" says HOW MANY GROUPS — the shape of the
+ * task, spoken in every ask. It is not a part of the total, and stripping it is
+ * what lets the leak assertion below stay blunt about everything else,
+ * including the "two" of a genuine pair, which is the thing it exists to catch.
+ *
+ * ⚠ This helper was silently VACUOUS once: a shell round-trip turned its two
+ * \b word boundaries into literal backspace bytes, so PART_WORD matched nothing
+ * and the leak test passed against a stimulus string that does say "two". If
+ * this assertion ever goes quiet, check the regex bytes before trusting it.
+ */
+const withoutGroupCount = (text: string) =>
+  text.replace(/\btwo (?:colour )?groups\b/gi, 'GROUPS');
+
+describe('ten-frame pack · split / decompose', () => {
+  it('seeds the WHOLE group and asks the child to partition it, never to build it', () => {
+    // The distinction is the whole mode: `build` hands the child an empty frame
+    // and asks for a quantity; `split` hands them the quantity and asks where
+    // the line goes. Seeding `shown = answer` is what makes the total
+    // un-driftable, so the only thing the item can measure is the partition.
+    expect(SPLIT_FIRST.shown).toBe(5);
+    expect(SPLIT_FIRST.answer).toBe(5);
+    expect(SPLIT_FIRST.answerKind).toBe('gesture');
+    expect(SPLIT_FIRST.commitAt).toBeUndefined();   // closes on stillness, like build
+  });
+
+  it('DROPS a group that cannot be split at all', () => {
+    // A group of one has no two non-empty parts, so the item would have no
+    // right answer. Dropped, not repaired — the family rule.
+    expect(itemFromChallenge({ id: 's0', type: 'split', targetCount: 1 }, K)).toBeNull();
+    expect(itemFromChallenge({ id: 's0b', type: 'split', targetCount: 0 }, K)).toBeNull();
+    expect(itemFromChallenge({ id: 's0c', type: 'split', targetCount: 11 }, K)).toBeNull();
+    // Two is the floor and it is legal: exactly one way (1+1).
+    expect(itemFromChallenge({ id: 's2', type: 'split', targetCount: 2 }, K)).not.toBeNull();
+    expect(waysToSplit(2)).toBe(1);
+    expect(waysToSplit(5)).toBe(4);   // ordered: 1+4, 2+3, 3+2, 4+1
+  });
+
+  it('stamps the ordinal per TOTAL so the second ask demands a different way', () => {
+    expect(SPLIT_FIRST.splitOrdinal).toBe(1);
+    expect(SPLIT_AGAIN.splitOrdinal).toBe(2);
+
+    // Ordinals are per-total, not per-session: a new total starts over at one,
+    // because the child has not shown any way to make IT yet.
+    const mixed = itemsFromChallenges(
+      [
+        { id: 'm1', type: 'split', targetCount: 4 },
+        { id: 'm2', type: 'split', targetCount: 5 },
+        { id: 'm3', type: 'split', targetCount: 4 },
+      ],
+      K,
+    );
+    expect(mixed.map((i) => i.splitOrdinal)).toEqual([1, 1, 2]);
+  });
+
+  it('asks for A way first and a DIFFERENT way after', () => {
+    const first = spokenLine(itemCue(SPLIT_FIRST));
+    expect(first).toContain('Here are five counters');
+    expect(first).toContain('turn some yellow');
+    expect(first).not.toMatch(/different/i);
+
+    const again = spokenLine(itemCue(SPLIT_AGAIN));
+    expect(again).toMatch(/DIFFERENT way/);
+  });
+
+  it('never names a pair in the ask, the how-to-play, the re-ask or the context push', () => {
+    // THE LEAK HERE IS A PAIR, not a count — and one pair spoken aloud answers
+    // every remaining item on that total, not just the one on screen. The TOTAL
+    // is public (the ask states it); the parts never are.
+    const surfaces = [
+      spokenLine(itemCue(SPLIT_FIRST, { opening: true, howToPlay: true })),
+      spokenLine(itemCue(SPLIT_AGAIN)),
+      spokenLine(pronounceCue(SPLIT_FIRST)),
+      stimulusFor(SPLIT_FIRST),
+    ];
+    for (const text of surfaces) {
+      // "five" is the TOTAL and is allowed — the ask states it. Any smaller
+      // number word would be a PART of it, i.e. half of the answer.
+      expect(withoutGroupCount(text)).not.toMatch(PART_WORD);
+    }
+  });
+
+  it('carries a SILENCE contract that bans pairs for the whole item', () => {
+    const cue = itemCue(SPLIT_FIRST);
+    expect(cue).toContain('stay completely silent');
+    expect(cue).toContain('Never suggest a pair of numbers that makes five');
+    expect(cue).toContain('never say how many to turn yellow');
+    expect(cue).not.toContain('If the answer is right');   // no spoken judging contract
+  });
+
+  it('judges the pair in CODE: any two non-empty groups are right', () => {
+    // There is no single right answer, which is the property that makes this a
+    // decomposition task rather than an arithmetic one.
+    expect(judgeSplit(SPLIT_FIRST, { a: 4, b: 1 })).toBe('correct');
+    expect(judgeSplit(SPLIT_FIRST, { a: 3, b: 2 })).toBe('correct');
+    expect(judgeSplit(SPLIT_FIRST, { a: 1, b: 4 })).toBe('correct');
+  });
+
+  it('refuses the signature miss: one group and an empty one', () => {
+    // Flipping all or none is the fluent, finished-looking action that is not a
+    // decomposition. It is the reason the mode needs a judge at all — every
+    // other state on this frame is already correct.
+    expect(judgeSplit(SPLIT_FIRST, { a: 5, b: 0 })).toBe('empty_part');
+    expect(judgeSplit(SPLIT_FIRST, { a: 0, b: 5 })).toBe('empty_part');
+    const verdict = splitVerdictCue(SPLIT_FIRST, { a: 5, b: 0 });
+    expect(verdict).toContain('EMPTY_PART');
+    expect(spokenLine(verdict).startsWith('My turn:')).toBe(true);
+    expect(spokenLine(verdict)).toContain('Not all red. Not all yellow.');
+    // The correction models the PROPERTY, never a pair — modelling "turn one
+    // yellow" would hand over a valid answer.
+    expect(withoutGroupCount(spokenLine(verdict))).not.toMatch(PART_WORD);
+  });
+
+  it('refuses a REPEAT while another way is still available, and accepts it once they run out', () => {
+    const shown = new Set([splitKey({ a: 3, b: 2 })]);
+    expect(judgeSplit(SPLIT_AGAIN, { a: 3, b: 2 }, shown)).toBe('repeat');
+    // Ordered pairs: 3+2 and 2+3 are different pictures and different bonds.
+    expect(judgeSplit(SPLIT_AGAIN, { a: 2, b: 3 }, shown)).toBe('correct');
+
+    const repeat = splitVerdictCue(SPLIT_AGAIN, { a: 3, b: 2 }, shown);
+    expect(repeat).toContain('REPEAT');
+    expect(spokenLine(repeat)).toContain('the same way you showed me before');
+    expect(spokenLine(repeat)).toContain('turn a different number of counters yellow');
+
+    // EXHAUSTION: a total of two has exactly one way, so once it is shown the
+    // item can never be answered any other way. Demanding a new one would make
+    // the item unwinnable, so the repeat rule stands down.
+    const two = itemFromChallenge({ id: 'x2', type: 'split', targetCount: 2 }, K)!;
+    const usedUp = new Set([splitKey({ a: 1, b: 1 })]);
+    expect(judgeSplit(two, { a: 1, b: 1 }, usedUp)).toBe('correct');
+  });
+
+  it('names the pair in exactly ONE place: the affirmation of what the child built', () => {
+    const hit = splitVerdictCue(SPLIT_FIRST, { a: 3, b: 2 });
+    expect(hit).toContain('CORRECT');
+    expect(spokenLine(hit)).toBe('Yes! Three red and two yellow make five.');
+  });
+
+  it('keeps every split verdict line free of a sentinel collision', () => {
+    const cues = [
+      { label: 'split-correct', text: splitVerdictCue(SPLIT_FIRST, { a: 3, b: 2 }) },
+      { label: 'split-empty', text: splitVerdictCue(SPLIT_FIRST, { a: 5, b: 0 }) },
+      { label: 'split-repeat', text: splitVerdictCue(SPLIT_AGAIN, { a: 3, b: 2 }, new Set([splitKey({ a: 3, b: 2 })])) },
+      { label: 'split-miscount', text: splitVerdictCue(SPLIT_FIRST, { a: 2, b: 2 }) },
+    ];
+    expect(findSentinelCollisions(cues)).toEqual([]);
+  });
+
+  it('routes the gesture channel through frameVerdictCue as a YELLOW count', () => {
+    // The harness and the stage both commit ONE number. The total is fixed by
+    // the item, so `b` determines `a` and no adapter needs a second field.
+    expect(frameVerdictCue(SPLIT_FIRST, 2)).toBe(splitVerdictCue(SPLIT_FIRST, { a: 3, b: 2 }));
+    expect(frameVerdictCue(SPLIT_FIRST, 5)).toContain('EMPTY_PART');
+  });
+
+  it('drives the harness at the signature miss, not at an arithmetic slip', () => {
+    const answers = tenFrameHarnessAnswers(SPLIT_FIRST);
+    expect(answers.placed).toEqual({ correct: 2, wrong: 5 });
+    expect(answers.signatureWrong?.text).toContain('all 5 turned yellow');
+    expect(answers.leakTokens).toEqual([]);
+    expect(judgeSplit(SPLIT_FIRST, { a: 5 - answers.placed!.correct, b: answers.placed!.correct }))
+      .toBe('correct');
+    expect(judgeSplit(SPLIT_FIRST, { a: 5 - answers.placed!.wrong, b: answers.placed!.wrong }))
+      .toBe('empty_part');
+  });
+
+  it('re-speaks the how-to-play when the action changes into a split', () => {
+    const crossing = moveOnCue(BUILD, SPLIT_FIRST, { howToPlay: true });
+    expect(crossing).toContain('Tap a counter to turn it yellow');
+    expect(actionFor('split', 'K')).toBe('split');
+    expect(actionFor('split', 'K')).not.toBe(actionFor('build', 'K'));
   });
 });

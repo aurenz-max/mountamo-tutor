@@ -1,0 +1,272 @@
+{
+  "startedAt": "2026-09-06T12:19:48.556Z",
+  "topic": "Decompose numbers up to 5 into pairs in multiple ways, using objects and drawings",
+  "objective": "Model how to split a group of up to 5 objects into two smaller groups using counters.",
+  "draws": [
+    {
+      "n": 1,
+      "title": "Splitting Numbers to 5",
+      "mode": "single",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "split",
+          "targetCount": 3,
+          "instruction": "Turn some of the 3 counters yellow to make two groups!"
+        },
+        {
+          "id": "c2",
+          "type": "split",
+          "targetCount": 3,
+          "instruction": "Turn some of the 3 counters yellow to make two groups!"
+        },
+        {
+          "id": "c3",
+          "type": "split",
+          "targetCount": 4,
+          "instruction": "Turn some of the 4 counters yellow to make two groups!"
+        },
+        {
+          "id": "c4",
+          "type": "split",
+          "targetCount": 4,
+          "instruction": "Turn some of the 4 counters yellow to make two groups!"
+        },
+        {
+          "id": "c5",
+          "type": "split",
+          "targetCount": 5,
+          "instruction": "Turn some of the 5 counters yellow to make two groups!"
+        },
+        {
+          "id": "c6",
+          "type": "split",
+          "targetCount": 5,
+          "instruction": "Turn some of the 5 counters yellow to make two groups!"
+        }
+      ],
+      "totals": {
+        "3": 2,
+        "4": 2,
+        "5": 2
+      },
+      "ordinals": [
+        {
+          "id": "c1",
+          "total": 3,
+          "nth": 1
+        },
+        {
+          "id": "c2",
+          "total": 3,
+          "nth": 2
+        },
+        {
+          "id": "c3",
+          "total": 4,
+          "nth": 1
+        },
+        {
+          "id": "c4",
+          "total": 4,
+          "nth": 2
+        },
+        {
+          "id": "c5",
+          "total": 5,
+          "nth": 1
+        },
+        {
+          "id": "c6",
+          "total": 5,
+          "nth": 2
+        }
+      ],
+      "firstAsk": "Hi! Time to work with the ten frame! The counters are all red. Tap a counter to turn it yellow — that makes two groups! Here are three counters. Your turn — turn some yellow to make two groups.",
+      "secondAsk": "Three counters again. Your turn — show me a DIFFERENT way to make two groups.",
+      "sampleCorrectVerdict": "Yes! Two red and one yellow make three.",
+      "sampleEmptyVerdict": "My turn: two groups means I can see red counters AND yellow counters. Not all red. Not all yellow. Your turn — turn some of them yellow, but leave some red.",
+      "failures": [],
+      "pass": true
+    },
+    {
+      "n": 2,
+      "title": "Splitting Groups of Objects",
+      "mode": "single",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "split",
+          "targetCount": 3,
+          "instruction": "Turn some of the 3 counters yellow to make two groups!"
+        },
+        {
+          "id": "c2",
+          "type": "split",
+          "targetCount": 3,
+          "instruction": "Turn some of the 3 counters yellow to make two groups!"
+        },
+        {
+          "id": "c3",
+          "type": "split",
+          "targetCount": 4,
+          "instruction": "Turn some of the 4 counters yellow to make two groups!"
+        },
+        {
+          "id": "c4",
+          "type": "split",
+          "targetCount": 4,
+          "instruction": "Turn some of the 4 counters yellow to make two groups!"
+        },
+        {
+          "id": "c5",
+          "type": "split",
+          "targetCount": 5,
+          "instruction": "Turn some of the 5 counters yellow to make two groups!"
+        },
+        {
+          "id": "c6",
+          "type": "split",
+          "targetCount": 5,
+          "instruction": "Turn some of the 5 counters yellow to make two groups!"
+        }
+      ],
+      "totals": {
+        "3": 2,
+        "4": 2,
+        "5": 2
+      },
+      "ordinals": [
+        {
+          "id": "c1",
+          "total": 3,
+          "nth": 1
+        },
+        {
+          "id": "c2",
+          "total": 3,
+          "nth": 2
+        },
+        {
+          "id": "c3",
+          "total": 4,
+          "nth": 1
+        },
+        {
+          "id": "c4",
+          "total": 4,
+          "nth": 2
+        },
+        {
+          "id": "c5",
+          "total": 5,
+          "nth": 1
+        },
+        {
+          "id": "c6",
+          "total": 5,
+          "nth": 2
+        }
+      ],
+      "firstAsk": "Hi! Time to work with the ten frame! The counters are all red. Tap a counter to turn it yellow — that makes two groups! Here are three counters. Your turn — turn some yellow to make two groups.",
+      "secondAsk": "Three counters again. Your turn — show me a DIFFERENT way to make two groups.",
+      "sampleCorrectVerdict": "Yes! Two red and one yellow make three.",
+      "sampleEmptyVerdict": "My turn: two groups means I can see red counters AND yellow counters. Not all red. Not all yellow. Your turn — turn some of them yellow, but leave some red.",
+      "failures": [],
+      "pass": true
+    },
+    {
+      "n": 3,
+      "title": "Splitting Numbers to 5",
+      "mode": "single",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "split",
+          "targetCount": 3,
+          "instruction": "Turn some of the 3 counters yellow to make two groups!"
+        },
+        {
+          "id": "c2",
+          "type": "split",
+          "targetCount": 3,
+          "instruction": "Turn some of the 3 counters yellow to make two groups!"
+        },
+        {
+          "id": "c3",
+          "type": "split",
+          "targetCount": 4,
+          "instruction": "Turn some of the 4 counters yellow to make two groups!"
+        },
+        {
+          "id": "c4",
+          "type": "split",
+          "targetCount": 4,
+          "instruction": "Turn some of the 4 counters yellow to make two groups!"
+        },
+        {
+          "id": "c5",
+          "type": "split",
+          "targetCount": 5,
+          "instruction": "Turn some of the 5 counters yellow to make two groups!"
+        },
+        {
+          "id": "c6",
+          "type": "split",
+          "targetCount": 5,
+          "instruction": "Turn some of the 5 counters yellow to make two groups!"
+        }
+      ],
+      "totals": {
+        "3": 2,
+        "4": 2,
+        "5": 2
+      },
+      "ordinals": [
+        {
+          "id": "c1",
+          "total": 3,
+          "nth": 1
+        },
+        {
+          "id": "c2",
+          "total": 3,
+          "nth": 2
+        },
+        {
+          "id": "c3",
+          "total": 4,
+          "nth": 1
+        },
+        {
+          "id": "c4",
+          "total": 4,
+          "nth": 2
+        },
+        {
+          "id": "c5",
+          "total": 5,
+          "nth": 1
+        },
+        {
+          "id": "c6",
+          "total": 5,
+          "nth": 2
+        }
+      ],
+      "firstAsk": "Hi! Time to work with the ten frame! The counters are all red. Tap a counter to turn it yellow — that makes two groups! Here are three counters. Your turn — turn some yellow to make two groups.",
+      "secondAsk": "Three counters again. Your turn — show me a DIFFERENT way to make two groups.",
+      "sampleCorrectVerdict": "Yes! Two red and one yellow make three.",
+      "sampleEmptyVerdict": "My turn: two groups means I can see red counters AND yellow counters. Not all red. Not all yellow. Your turn — turn some of them yellow, but leave some red.",
+      "failures": [],
+      "pass": true
+    }
+  ],
+  "summary": {
+    "draws": 3,
+    "passed": 3
+  }
+}

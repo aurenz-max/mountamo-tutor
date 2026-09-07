@@ -14,7 +14,7 @@ import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContex
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
 // ---------------------------------------------------------------------------
 
-type ChallengeType = 'build' | 'subitize' | 'make_ten' | 'add' | 'subtract';
+type ChallengeType = 'build' | 'subitize' | 'make_ten' | 'split' | 'add' | 'subtract';
 
 const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1 — fast-tap K-1 number sense)
 const MAX_INSTANCE_COUNT = 8;
@@ -23,6 +23,9 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
   build: 7,        // T1 bump — fast-tap "place N counters"
   subitize: 7,     // T1 bump — flash & identify
   make_ten: 7,     // T1 bump — closest match to PRD "count_shown" (counters shown, find complement)
+  split: 6,        // T1 — fast flip, but "a DIFFERENT way" needs room to run out
+                   // of ways honestly: totals 2-5 offer 1-4 ordered pairs each,
+                   // so six items across varied totals stays answerable.
   add: 5,          // hold at current (operate mode)
   subtract: 5,     // hold at current (operate mode)
 };
@@ -74,6 +77,18 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `targetCount = number of counters ALREADY shown (at least 1, and strictly less than frame capacity). `
       + `Use varied starting counts (3-8 for single frame). Focus on number bonds to 10.`,
     schemaDescription: "'make_ten' (find complement to 10)",
+  },
+  split: {
+    promptDoc:
+      `"split": The frame opens with targetCount RED counters already on it; the student turns SOME of them `
+      + `yellow, and where they put the line between the two colours is the decomposition (K.OA.3). `
+      + `targetCount = the size of the WHOLE group to be split — at least 2 (a group of one cannot be split) `
+      + `and no larger than the frame. K: 2-5 for "pairs to 5", up to 10 otherwise. `
+      + `VARY targetCount ACROSS CHALLENGES, but REPEAT each total at least twice: a total asked once can only `
+      + `ever show one way, and "decompose in more than one way" is the skill. A total of N has N-1 ways `
+      + `(five has four: 1+4, 2+3, 3+2, 4+1), so never ask the same total more times than it has ways. `
+      + `Good shape for a 6-item set: 3, 3, 4, 4, 5, 5. There is no addend/startCount field to set.`,
+    schemaDescription: "'split' (partition a group into two colour groups)",
   },
   add: {
     promptDoc:
@@ -161,6 +176,19 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
             : 'Hide the running count; the student tracks the quantity themselves while applying the strategy.',
       );
       break;
+    case 'split':
+      // The tier lever here is the TOTAL'S BRANCHING FACTOR, not a readout: a
+      // total of three has one way and asks for recognition, five has four and
+      // asks the child to search. Numbers stay inside pedagogical scope either
+      // way — a harder tier picks a richer total, never a bigger one.
+      promptLines.push(
+        tier === 'easy'
+          ? 'Favour the smallest totals in scope (2-3): few ways to find, so the student meets the idea that a group has parts before they have to search for them.'
+          : tier === 'hard'
+            ? 'Favour the largest totals in scope and repeat each of them the full number of times it has ways, so the student must search for a way they have not shown yet rather than finding any one.'
+            : 'Mix totals across the middle of the scope; repeat each total twice so a second way is always asked for.',
+      );
+      break;
     case 'add':
     case 'subtract':
       promptLines.push(
@@ -193,6 +221,8 @@ function buildInstruction(ch: TenFrameChallenge, mode: 'single' | 'double'): str
       return 'How many counters did you see?';
     case 'make_ten':
       return `There are ${ch.targetCount} counters on the frame. How many more do you need to make ${frameTarget}?`;
+    case 'split':
+      return `Turn some of the ${ch.targetCount} counters yellow to make two groups!`;
     case 'add':
       return `Show ${ch.addend1} + ${ch.addend2} on the frame!`;
     case 'subtract': {
@@ -280,11 +310,11 @@ function buildTenFrameSchema(count: number): Schema {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'build' (place counters), 'subitize' (flash and identify count), 'make_ten' (find complement to 10), 'add' (addition), 'subtract' (subtraction)"
+            description: "Challenge type: 'build' (place counters), 'subitize' (flash and identify count), 'make_ten' (find complement to 10), 'split' (partition a group into two colour groups), 'add' (addition), 'subtract' (subtraction)"
           },
           targetCount: {
             type: Type.NUMBER,
-            description: "Target number for this challenge (0-10 for single, 0-20 for double)"
+            description: "Target number for this challenge (0-10 for single, 0-20 for double). For 'split' this is the SIZE OF THE WHOLE GROUP to be partitioned (at least 2)."
           },
           startCount: {
             type: Type.NUMBER,
@@ -471,6 +501,8 @@ SPOKEN-ANSWER WINDOW (this activity is answered OUT LOUD to a live tutor):
 - Every answer the student says must be a whole number from 1 to 20. NEVER 0.
 - subitize → the answer is targetCount. make_ten → the answer is (frame capacity − targetCount).
   add → the answer is addend1 + addend2. subtract → the answer is targetCount.
+- 'build' and 'split' are answered WITH HANDS, not spoken, so this window does not
+  bind them — but 'split' still needs targetCount >= 2 (a group of one has no two parts).
 - Any challenge whose answer would be 0 or above 20 is discarded before the student sees it,
   so choosing such numbers wastes the slot.
 
@@ -497,6 +529,9 @@ REQUIREMENTS:
 4. Set initial counter count and positions to 0/empty for build challenges
 5. For subitize challenges, use flashDuration between 1000-2000ms
 6. For make_ten challenges, targetCount should be the number of counters ALREADY on the frame (must be less than frame capacity: <10 for single, <20 for double)
+6b. For split challenges, targetCount is the SIZE OF THE WHOLE GROUP to partition (>= 2, <= frame capacity).
+    Repeat each total at least twice across the set so a second, different way is actually asked for,
+    and never ask a total more times than it has ways (a total of N has N-1 ways)
 7. Include meaningful hints that guide without giving the answer
 8. Include narration text the AI tutor can use to introduce each challenge
 9. For Kindergarten: stick to single frame, numbers 1-10, build and subitize only
@@ -552,8 +587,16 @@ Return the complete ten frame configuration.
     data.mode = 'single';
   }
 
+  // split is a K decomposition skill on groups of 2-10 — a double frame adds
+  // twenty empty boxes around a group of five and nothing else. Single, always.
+  const isSplitEvalMode =
+    resolution?.allowedTypes.length === 1 && resolution.allowedTypes[0] === 'split';
+  if (isSplitEvalMode) {
+    data.mode = 'single';
+  }
+
   // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
-  const validTypes = ['build', 'subitize', 'make_ten', 'add', 'subtract'];
+  const validTypes = ['build', 'subitize', 'make_ten', 'split', 'add', 'subtract'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type)
   );
@@ -586,6 +629,18 @@ Return the complete ten frame configuration.
       if (ch.targetCount < 0 || ch.targetCount >= frameTarget) {
         ch.targetCount = Math.max(1, frameTarget - 3);
       }
+    }
+  }
+
+  // split: the total must be splittable and must fit the frame. A total of 0
+  // or 1 has no two-part decomposition at all, so it is repaired to the
+  // smallest one that does rather than dropped — unlike a spoken answer of
+  // zero, there is nothing unsayable here, only an unaskable number.
+  for (const ch of data.challenges as TenFrameChallenge[]) {
+    if (ch.type === 'split') {
+      const maxCount = data.mode === 'double' ? 20 : 10;
+      if (!Number.isInteger(ch.targetCount) || ch.targetCount < 2) ch.targetCount = 3;
+      if (ch.targetCount > maxCount) ch.targetCount = maxCount;
     }
   }
 
@@ -623,8 +678,9 @@ Return the complete ten frame configuration.
     if (config.counterColor !== undefined) data.counters.color = config.counterColor;
   }
 
-  // make_ten stays single-frame even if the manifest passed a double-frame override.
-  if (isMakeTenEvalMode) data.mode = 'single';
+  // make_ten and split stay single-frame even if the manifest passed a
+  // double-frame override.
+  if (isMakeTenEvalMode || isSplitEvalMode) data.mode = 'single';
 
   // ── The spoken-answer gate: KEEP OR DROP, never backfill ──────────────────
   // This activity is answered OUT LOUD to a live tutor, so an item whose answer
@@ -654,6 +710,13 @@ Return the complete ten frame configuration.
             && ch.targetCount >= 1
             && ch.targetCount < capacity
             && sayable(capacity - ch.targetCount);
+        case 'split':
+          // Gestural, and the total is PUBLIC (the ask states it), so the
+          // spoken bench does not bind. Two is the floor: a group of one has
+          // no two-part decomposition and the item would have no right answer.
+          return Number.isInteger(ch.targetCount)
+            && ch.targetCount >= 2
+            && ch.targetCount <= capacity;
         case 'add':
           return sayable(ch.addend1) && sayable(ch.addend2)
             && sayable((ch.addend1 ?? 0) + (ch.addend2 ?? 0))
@@ -683,11 +746,21 @@ Return the complete ten frame configuration.
       build: { type: 'build', targetCount: 5, hint: 'Fill up one whole row!', narration: "Let's start by building the number 5 on the ten frame." },
       subitize: { type: 'subitize', targetCount: 4, hint: 'Think about how many fit in one row.', narration: "Watch carefully — how many counters flash on the frame?", flashDuration: 1500 },
       make_ten: { type: 'make_ten', targetCount: 6, hint: 'Count the empty spaces!', narration: "Some counters are already here. How many more do we need?" },
+      split: { type: 'split', targetCount: 5, hint: 'Turn some yellow — but leave some red!', narration: "Here is a group of five. Let's break it into two groups." },
       add: { type: 'add', targetCount: 7, addend1: 3, addend2: 4, hint: 'Place 3, then add 4 more.', narration: "Let's add these numbers using the ten frame." },
       subtract: { type: 'subtract', targetCount: 5, startCount: 8, hint: 'Tap counters to take them off!', narration: "Let's practice taking away." },
     };
     console.log(`[TenFrame] No valid challenges — using ${fallbackType} fallback`);
-    data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
+    // split is the one mode whose skill a SINGLE item cannot assess: "decompose
+    // in more than one way" needs a second ask on the same total, and the
+    // component's distinctness rule only has something to compare against from
+    // item two onward. So its fallback is a pair, not a singleton.
+    data.challenges = fallbackType === 'split'
+      ? [
+          { id: 'c1', ...fallbacks.split },
+          { id: 'c2', ...fallbacks.split },
+        ] as TenFrameChallenge[]
+      : [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
   }
 
   // Final summary log

@@ -54,7 +54,7 @@ import {
 } from '@/components/lumina/primitives/knowledgeCheckScript';
 import {
   frameVerdictCue,
-  itemFromChallenge,
+  itemsFromChallenges as tenFrameItems,
   tenFrameHarnessAnswers,
   tenFramePackBase,
   type TenFrameBand,
@@ -531,9 +531,11 @@ const tenFrameAdapter: DiPortAdapter<TenFrameItem> = {
     const challenges = (data.challenges ?? []) as TenFrameChallengeLike[];
     const band = ((data.gradeBand as TenFrameBand) ?? 'K') as TenFrameBand;
     const capacity = data.mode === 'double' ? 20 : 10;
-    const items = challenges
-      .map((ch) => itemFromChallenge(ch, { capacity, band }))
-      .filter((item): item is TenFrameItem => item !== null);
+    // `itemsFromChallenges`, not a per-challenge map: it is the one producer of
+    // `splitOrdinal`, so the harness drives the same "show me a DIFFERENT way"
+    // ask the stage does instead of asking every split item as if it were the
+    // first one on its total.
+    const items = tenFrameItems(challenges, { capacity, band });
     return { items, dropped: challenges.length - items.length, surface: tenFramePackBase(items) };
   },
   answersFor: tenFrameHarnessAnswers,

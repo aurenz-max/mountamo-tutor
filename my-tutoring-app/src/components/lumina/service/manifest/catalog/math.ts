@@ -2136,8 +2136,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   // Math Phase 2 Primitives (K-5 Foundations)
   {
     id: 'ten-frame',
-    description: 'Live tutor-judged 2×5 grid manipulative for K-2 number sense (DI modality). The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the answer out loud for subitizing (counters flash, then hide — say how many you saw), for make-ten at grades 1-2 (how many more fill the frame), and for addition and subtraction on the frame; they answer WITH THEIR HANDS for building a number (place exactly N counters) and for make-ten at Kindergarten (tap the empty cells until the frame is full), where placing the counters IS the skill. Supports single frame (1-10) and double frame (1-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, subitizing, make-ten strategy, addition, and subtraction.',
-    constraints: 'Best for grades K-2. Requires a microphone: spoken answers are judged by the Live tutor and there is no Check button and no typed or stepper answer anywhere. Single frame for K, double frame for grades 1-2. Every spoken answer is a number word from 1 to 20 — challenges whose answer would be 0 (an empty frame, a subtraction down to nothing) or above 20 are discarded before the child sees them.',
+    description: 'Live tutor-judged 2×5 grid manipulative for K-2 number sense (DI modality). The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the answer out loud for subitizing (counters flash, then hide — say how many you saw), for make-ten at grades 1-2 (how many more fill the frame), and for addition and subtraction on the frame; they answer WITH THEIR HANDS for building a number (place exactly N counters), for DECOMPOSING a group (a group of counters arrives all red; turn some yellow to break it into two groups, and a different way each time), and for make-ten at Kindergarten (tap the empty cells until the frame is full), where working the counters IS the skill. Supports single frame (1-10) and double frame (1-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, subitizing, decomposing numbers into pairs (K.OA.3), make-ten strategy, addition, and subtraction.',
+    constraints: 'Best for grades K-2. A microphone is required for the SPOKEN modes (subitize, make-ten at grades 1-2, operate); the hands-only modes (build, decompose) are judged from what the child does on the frame and need no spoken answer. There is no Check button and no typed or stepper answer anywhere. Single frame for K, double frame for grades 1-2. Every spoken answer is a number word from 1 to 20 — challenges whose answer would be 0 (an empty frame, a subtraction down to nothing) or above 20 are discarded before the child sees them.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'build'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
@@ -2148,6 +2148,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['build'],
         description: 'Place exactly N counters on the frame; the tutor judges the placement. Concrete manipulative — lowest cognitive load.',
+      },
+      {
+        evalMode: 'decompose',
+        affordances: { answers: ['build'] },
+        label: 'Decompose (Partition)',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['split'],
+        description: 'Split a group of counters into two colour groups and, across the session, into a DIFFERENT pair each time. The answer is the partition the child enacts on the frame — CCSS K.OA.3, "decompose numbers less than or equal to 10 into pairs in more than one way". Concrete manipulative; no microphone needed.',
       },
       {
         evalMode: 'subitize',
@@ -2179,7 +2188,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     ],
     audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'LIVE-JUDGED ten frame practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the frame, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
+      taskDescription: 'LIVE-JUDGED ten frame practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the frame (placing counters, or turning some of them yellow to split a group into two), you judge what the cue reports, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
       contextKeys: ['challengeType', 'stimulus'],
       scaffoldingLevels: {
         level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
@@ -2190,6 +2199,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Long silence', response: 'Silence is the child thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
         { pattern: 'Counts the counters aloud on a flash item', response: 'The scripted correction handles this AFTER the attempt is judged: it re-models looking at the whole group, then re-asks. Never interrupt mid-attempt.' },
         { pattern: 'Says the total instead of how many more', response: 'The scripted correction re-models the number bond and re-elicits. Speak only that line.' },
+        { pattern: 'Turns every counter yellow, or none of them, on a split item', response: 'One group and an empty one is not two groups. The scripted correction re-models the property — both colours visible — without naming a pair. Speak only that line.' },
+        { pattern: 'Shows the same split again when asked for a different way', response: 'The cue tells you it is a repeat. Speak the scripted correction, which asks for a different number of yellows and still names no pair.' },
       ],
       aiDirectives: [
         {
@@ -2210,6 +2221,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           instruction:
             'When the cue tells you the child answers with their hands on the frame, say nothing at all while they work — no counting, no narration, no encouragement mid-placement. '
             + 'You will be told what they placed and whether it matches; only then do you speak the line the cue gives you.',
+        },
+        {
+          title: 'ON A SPLIT ITEM THE ANSWER IS A PAIR — AND IT IS NOT YOURS TO OFFER',
+          instruction:
+            'A split item shows a group of red counters and asks the child to turn some yellow. Any pair of two non-empty groups is a right answer, so there is nothing to hint toward and nothing to check for you: '
+            + 'the cue tells you what they did, whether it was right, and whether they have shown that exact pair already in this session. '
+            + 'NEVER suggest how many to turn yellow, never name two numbers that make the total, and never count the counters aloud — one pair spoken out loud answers every remaining split item on that total, not just the one in front of you. '
+            + 'You may name the pair in ONE place only: the affirmation the cue hands you after they have built it.',
         },
         {
           title: 'THE CHILD IS THINKING — WAIT',
@@ -4133,7 +4152,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'strategy-picker',
-    description: 'An interactive strategy-comparison activity where students solve the same problem using 2-3 different strategies (counting on, make-ten, doubles, tally marks, draw objects), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10.',
+    description: 'An interactive strategy-comparison activity where students solve the SAME addition/subtraction equation using 2-3 different strategies (counting on, make-ten, doubles, tally marks, or drawing a circle per addend), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10. NOT a decomposition primitive: the "draw objects" strategy draws the addends of a FIXED equation to find one sum — it does not find all the ways to split a number into pairs. For "show different ways to break a number into pairs," use number-bond[decompose] instead.',
     constraints: 'Numbers within 5 (K) or 10 (Grade 1). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {

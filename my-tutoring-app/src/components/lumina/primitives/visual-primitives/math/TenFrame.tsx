@@ -14,6 +14,12 @@
  *  - build: the child PLACES counters. The placement is the answer.
  *  - make_ten @ K: the child TAPS EMPTY CELLS to fill the frame; the counters
  *    they placed are the enacted complement (contract R6, untouched).
+ *  - split: the frame opens with the whole group already on it, all red, and
+ *    the child TURNS SOME YELLOW. Where they put the line between the colours
+ *    is the decomposition (contract R9). Taps flip; nothing is added or taken
+ *    away, so the total cannot drift and the partition is the only variable.
+ *    A later item on the same total asks for a DIFFERENT way — "in more than
+ *    one way" is half of K.OA.3 and no single item can assess it.
  *
  * WHY TWO MODES KEPT THEIR HANDS. Apply the costume test — can a child who
  * cannot do the skill still perform this action correctly? A stepper: yes,
@@ -85,9 +91,12 @@ import {
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   frameVerdictCue,
-  itemFromChallenge,
+  itemsFromChallenges,
+  splitKey,
   stimulusFor,
   tenFramePackBase,
+  SPLIT_COLOR_A,
+  SPLIT_COLOR_B,
   type TenFrameBand,
   type TenFrameItem,
 } from './tenFrameScript';
@@ -103,7 +112,7 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 export interface TenFrameChallenge {
   id: string;
-  type: 'build' | 'subitize' | 'make_ten' | 'add' | 'subtract';
+  type: 'build' | 'subitize' | 'make_ten' | 'split' | 'add' | 'subtract';
   /** Student-facing prompt. Synthesized deterministically by the generator from
    *  the numeric fields below — never authored by the LLM (see SP-17). Shown to
    *  readers only; the tutor SPEAKS the problem for everyone. */
@@ -162,6 +171,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   build: { label: 'Build', icon: '🧱' },
   subitize: { label: 'Subitize', icon: '👁️' },
   make_ten: { label: 'Make Ten', icon: '🎯' },
+  split: { label: 'Split', icon: '🔴🟡' },
   add: { label: 'Add', icon: '➕' },
   subtract: { label: 'Subtract', icon: '➖' },
 };
@@ -231,6 +241,11 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
   // ── Stage-payload state (the runner owns progression; this is the frame) ──
   const [filledCells, setFilledCells] = useState<Set<number>>(new Set());
+  /** `split` only: which of the seeded counters the child has turned yellow.
+   *  Always a subset of `filledCells` — a split tap FLIPS a counter, it never
+   *  adds or removes one, so the group the child is partitioning cannot change
+   *  size under them and the only thing the item can measure is the partition. */
+  const [flippedCells, setFlippedCells] = useState<Set<number>>(new Set());
   const [countersVisible, setCountersVisible] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
   const [flashAnswerReady, setFlashAnswerReady] = useState(false);
@@ -241,10 +256,22 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   const [reward, setReward] = useState<string | null>(null);
 
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** What the frame held when it last stopped changing. */
+  /** What the frame held when it last stopped changing. On `split` this is the
+   *  number turned YELLOW — the total is fixed by the item, so one number is
+   *  the whole pair and the gesture channel needs no second field. */
   const pendingPlacementRef = useRef(0);
   const placementChangesRef = useRef(0);
   const fullFrameEverRef = useRef(false);
+  /**
+   * Every partition the child has already shown, per total: `5 → {"3+2"}`.
+   *
+   * THE SESSION IS THE UNIT, not the item — "decompose in more than one way"
+   * (K.OA.3) cannot be assessed by any single item however well it is judged,
+   * so a repeat on a later item is a wrong answer the tutor corrects. Keyed by
+   * total because one session interleaves totals; a ref because a re-render in
+   * the middle of a settle window must not lose what came before.
+   */
+  const shownSplitsRef = useRef<Map<number, Set<string>>>(new Map());
 
   const stableInstanceIdRef = useRef(instanceId || `ten-frame-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -263,10 +290,8 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // Unaskable items are DROPPED here (zero answers, out-of-bench counts,
   // incoherent operations). Nothing is backfilled: a placeholder in a judged
   // loop becomes a spoken ask the tutor has to judge.
-  const items = useMemo<TenFrameItem[]>(() =>
-    challenges
-      .map((ch) => itemFromChallenge(ch, { capacity: totalCells, band: gradeBand }))
-      .filter((item): item is TenFrameItem => item !== null),
+  const items = useMemo<TenFrameItem[]>(
+    () => itemsFromChallenges(challenges, { capacity: totalCells, band: gradeBand }),
     [challenges, totalCells, gradeBand],
   );
 
@@ -292,7 +317,14 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     },
     diagnosisObservation: (item, { lastHeard }) =>
       item.answerKind === 'gesture'
-        ? {
+        ? item.kind === 'split'
+          ? {
+              challenge: `Split ${item.answer} counters into a red group and a yellow group`
+                + ((item.splitOrdinal ?? 1) > 1 ? ` — a way not yet shown this session.` : '.'),
+              expected: 'Both groups non-empty, and a pair not already shown for this total.',
+              observed: `Left ${item.answer - pendingPlacementRef.current} red, turned ${pendingPlacementRef.current} yellow.`,
+            }
+          : {
             challenge: item.kind === 'build'
               ? `Put ${item.answer} counters on the ten frame.`
               : `Fill the frame from ${item.shown} to ${item.capacity}.`,
@@ -318,10 +350,14 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     setFlashAnswerReady(false);
 
     // A completed frame never carries into the next challenge: build and add
-    // start empty, make-ten seeds its shown group, subtract seeds its start.
+    // start empty, make-ten seeds its shown group, subtract seeds its start,
+    // and split seeds the WHOLE group the child is about to partition.
     const seeded = item.kind === 'subitize' ? 0 : item.shown;
     setFilledCells(new Set(Array.from({ length: seeded }, (_, i) => i)));
-    pendingPlacementRef.current = seeded;
+    // Every split item starts all-red. Nothing about the previous partition
+    // survives into the next ask — a carried-over flip would be a free part.
+    setFlippedCells(new Set());
+    pendingPlacementRef.current = item.kind === 'split' ? 0 : seeded;
     // Subitize hides its counters until the flash runs; every other mode shows
     // whatever is on the frame.
     setCountersVisible(item.kind !== 'subitize');
@@ -374,7 +410,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       makeTenTotal: makeTenOutcomes.length,
       usedMakeTenStrategy: fullFrameEverRef.current,
       counterPlacementEfficiency: placementChangesRef.current <= targetSum,
-      twoColorDecompositionsExplored: 0,
+      // Finally a real number: DISTINCT partitions the child produced across
+      // the session, summed over every total they were asked to split. This
+      // field has carried a hardcoded 0 since the metric was written; `split`
+      // is the mode that measures it.
+      twoColorDecompositionsExplored: Array.from(shownSplitsRef.current.values())
+        .reduce((sum, ways) => sum + ways.size, 0),
       attemptsCount: summary.attemptsCount,
     };
 
@@ -410,6 +451,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       setReward(
         item.kind === 'subitize'
           ? `${item.answer} — ${numberWordFor(item.answer)} ${item.answer === 1 ? 'counter' : 'counters'}!`
+          : item.kind === 'split'
+            // The pair the CHILD produced, not a target — this is the only
+            // moment either part may appear on screen, and it appears as a
+            // record of their own work (`pendingPlacementRef` is the yellow
+            // count they committed).
+            ? `${item.answer - pendingPlacementRef.current} + ${pendingPlacementRef.current} = ${item.answer}`
           : item.kind === 'make_ten'
             ? `${item.shown} + ${item.answer} = ${item.capacity}`
             : item.kind === 'add'
@@ -438,7 +485,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       // cvc-speller does. Voice items keep whatever the child built.
       if (item.answerKind === 'gesture') {
         setFilledCells(new Set(Array.from({ length: item.shown }, (_, i) => i)));
-        pendingPlacementRef.current = item.shown;
+        // split goes back to all-red for the retry, and its pending gesture is
+        // a FLIP count, so it resets to zero rather than to the group size.
+        setFlippedCells(new Set());
+        pendingPlacementRef.current = item.kind === 'split' ? 0 : item.shown;
       }
     },
   });
@@ -456,6 +506,22 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     if (!item || item.answerKind !== 'gesture') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const onFrame = pendingPlacementRef.current;
+    if (item.kind === 'split') {
+      // The gesture payload is the YELLOW count; the verdict — including "you
+      // already showed that way" — is computed in the script module against the
+      // session ledger. RECORDED BEFORE THE CUE, and unconditionally: a way the
+      // child showed is a way they showed, whether or not the tutor liked it,
+      // and a repeat that is only recorded on success would let the same pair
+      // be re-offered forever.
+      const shown = shownSplitsRef.current.get(item.answer) ?? new Set<string>();
+      const alreadyShown = new Set(shown);
+      if (onFrame > 0 && onFrame < item.answer) {
+        shown.add(splitKey({ a: item.answer - onFrame, b: onFrame }));
+        shownSplitsRef.current.set(item.answer, shown);
+      }
+      runner.submitGestureAttempt(frameVerdictCue(item, onFrame, { alreadyShown }));
+      return;
+    }
     const enacted = item.kind === 'make_ten' ? Math.max(0, onFrame - item.shown) : onFrame;
     runner.submitGestureAttempt(frameVerdictCue(item, enacted));
   }, [runner]);
@@ -482,6 +548,24 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     // R4: subitizing is perceptual recognition, never tap-counting, and hidden
     // counters can never be manipulated.
     if (item.kind === 'subitize') return;
+
+    // split: the counters are the answer surface and the EMPTY cells are inert.
+    // A tap FLIPS a counter between red and yellow — it never adds or removes
+    // one, so the total the child was handed is the total they hand back and
+    // the only variable the item measures is where the line between the two
+    // groups falls. (This is the two-colour counter, in software: one disc, red
+    // on one face, yellow on the other. `allowFlip` finally has a mode.)
+    if (item.kind === 'split') {
+      if (!filledCells.has(cellIndex)) return;
+      SoundManager.tap();
+      const flipped = new Set(flippedCells);
+      if (flipped.has(cellIndex)) flipped.delete(cellIndex);
+      else flipped.add(cellIndex);
+      setFlippedCells(flipped);
+      placementChangesRef.current += 1;
+      armSettle(flipped.size);
+      return;
+    }
 
     // K make-ten: only the EMPTY cells are the answer surface. The seeded
     // counters are fixed and placed ones stay placed (R6); filling the frame
@@ -517,7 +601,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     if (item.answerKind === 'gesture') armSettle(placed.size);
     else pendingPlacementRef.current = placed.size;
   }, [
-    runner, evaluation.hasSubmitted, filledCells, totalCells,
+    runner, evaluation.hasSubmitted, filledCells, flippedCells, totalCells,
     armSettle, commitPlacement,
   ]);
 
@@ -536,13 +620,19 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
   // ── Rendering helpers ─────────────────────────────────────────────────────
   const colorForCell = useCallback((index: number): string => {
+    // `split` owns its palette outright: the tutor's lines NAME red and yellow,
+    // so a generator-chosen colour here would make her mouth disagree with the
+    // child's screen (tenFrameScript's SPLIT_COLOR_* docblock).
+    if (currentItem?.kind === 'split') {
+      return flippedCells.has(index) ? SPLIT_COLOR_B : SPLIT_COLOR_A;
+    }
     if (twoColorMode?.enabled) {
       return index < (twoColorMode.color1Count || 5)
         ? (twoColorMode.color1 || 'red')
         : (twoColorMode.color2 || 'yellow');
     }
     return counterColor;
-  }, [twoColorMode, counterColor]);
+  }, [twoColorMode, counterColor, flippedCells, currentItem?.kind]);
 
   const frameCount = mode === 'double' ? 2 : 1;
   const svgWidth = frameCount * (FRAME_COLS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2)
@@ -660,6 +750,9 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // The running count is the child's own trace of what they placed (R3/R7,
   // tier-governed) — but on add/subtract it EQUALS the number they are about to
   // say, so it is withdrawn there.
+  // `split` is deliberately absent: the honest readout there would be the two
+  // PARTS, which is the answer, and the total is already both on screen and in
+  // the ask. There is nothing left for a count readout to add.
   const showTrace = showCount && countersVisible
     && (kind === 'build' || kind === 'make_ten') && filledCells.size > 0;
 
@@ -690,7 +783,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
             )}
           </div>
           <LuminaBadge accent="cyan" className="text-xs">
-            {isGestureItem ? 'Use the frame' : 'Say it out loud'}
+            {kind === 'split' ? 'Make two groups' : isGestureItem ? 'Use the frame' : 'Say it out loud'}
           </LuminaBadge>
         </div>
         {!isPreReader && description && (
@@ -798,9 +891,11 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">
-                {isGestureItem
-                  ? 'Tap the frame to place your counters — the tutor checks when you stop.'
-                  : 'Work it out on the frame, then say your answer out loud.'}
+                {kind === 'split'
+                  ? 'Tap a counter to turn it yellow — the tutor checks when you stop.'
+                  : isGestureItem
+                    ? 'Tap the frame to place your counters — the tutor checks when you stop.'
+                    : 'Work it out on the frame, then say your answer out loud.'}
               </p>
             )}
 

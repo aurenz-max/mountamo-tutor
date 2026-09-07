@@ -19,6 +19,12 @@
  *  5. Every challenge owns its starting frame state; a completed make-ten never
  *     carries into the next challenge.
  *
+ *  6. (contract R9) `split` opens with the whole group already on the frame,
+ *     all red; taps FLIP a counter's colour and never add or remove one, so
+ *     the total cannot drift and the partition is the only thing the item
+ *     measures. It commits on stillness like `build`, and the pair it commits
+ *     is carried as a single number — how many turned yellow.
+ *
  *  Plus the leak this port introduced a gate for: the running-count readout is
  *  withdrawn on add/subtract, where it equals the number about to be spoken.
  *
@@ -529,5 +535,174 @@ describe('TenFrame stage · re-based and new leak gates', () => {
     )} />);
     openItem();
     expect(screen.queryByText(/Empty:/)).toBeNull();
+  });
+});
+
+
+describe('TenFrame stage · split is a partition, not a construction (contract R9)', () => {
+  /** Counter fills, in DOM order — the colour is the answer material here, so
+   *  the tests read it rather than trusting a count. */
+  const fills = () =>
+    Array.from(document.querySelectorAll<SVGCircleElement>('svg circle'))
+      .map((c) => c.getAttribute('fill'));
+  const RED = '#ef4444';
+  const YELLOW = '#eab308';
+
+  it('seeds the whole group all-red and leaves the empty cells inert', () => {
+    render(<TenFrame data={data('K', [challenge('s1', 'split', 5)])} />);
+    openItem();
+
+    // The group ARRIVES. The child is not asked to build it — `build` is the
+    // mode that does that, and conflating them is how the judge came back
+    // "only asks to place N counters on a frame".
+    expect(fills()).toEqual([RED, RED, RED, RED, RED]);
+
+    // Tapping an empty cell adds nothing: the total the child was handed is the
+    // total they hand back, so the only variable is where the colour line goes.
+    fireEvent.click(cells()[7]);
+    expect(fills()).toHaveLength(5);
+    expect(runnerState.gestureCues).toHaveLength(0);
+  });
+
+  it('flips a counter on tap and flips it back, without changing the total', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={data('K', [challenge('s1', 'split', 5)])} />);
+    openItem();
+
+    fireEvent.click(cells()[0]);
+    expect(fills()).toEqual([YELLOW, RED, RED, RED, RED]);
+
+    fireEvent.click(cells()[1]);
+    expect(fills()).toEqual([YELLOW, YELLOW, RED, RED, RED]);
+
+    // A second tap on the same counter turns it back — the two-colour counter
+    // has two faces, and a child who mis-taps must be able to undo it.
+    fireEvent.click(cells()[1]);
+    expect(fills()).toEqual([YELLOW, RED, RED, RED, RED]);
+    expect(fills()).toHaveLength(5);
+  });
+
+  it('commits on STILLNESS, carrying the yellow count, and nothing on screen commits it', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={data('K', [challenge('s1', 'split', 5)])} />);
+    openItem();
+
+    // No control closes a hands turn — that was the Check button's job and it
+    // does not exist here.
+    expect(screen.queryByRole('button', { name: /check/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /next/i })).toBeNull();
+
+    fireEvent.click(cells()[0]);
+    fireEvent.click(cells()[1]);
+    expect(runnerState.gestureCues).toHaveLength(0);   // still moving
+
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues).toHaveLength(1);
+    // Two turned yellow out of five → the pair is 3 and 2, computed in code.
+    expect(runnerState.gestureCues[0]).toContain('left 3 counters red and turned 2 yellow');
+    expect(runnerState.gestureCues[0]).toContain('CORRECT');
+  });
+
+  it('commits a wrong partition exactly as readily as a right one', () => {
+    // The property a Check button used to fake: if only correct states could
+    // commit, the mode would have no wrong answer and nothing to teach.
+    vi.useFakeTimers();
+    render(<TenFrame data={data('K', [challenge('s1', 'split', 4)])} />);
+    openItem();
+
+    for (const cell of cells().slice(0, 4)) fireEvent.click(cell);
+    expect(fills()).toEqual([YELLOW, YELLOW, YELLOW, YELLOW]);
+
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues).toHaveLength(1);
+    expect(runnerState.gestureCues[0]).toContain('EMPTY_PART');
+  });
+
+  it('remembers the ways already shown, so a repeat on the same total is corrected', () => {
+    // THE SESSION IS THE UNIT. "Decompose in more than one way" is not
+    // assessable from one item however well it is judged, so the ledger has to
+    // survive the advance between items.
+    vi.useFakeTimers();
+    render(<TenFrame data={data('K', [
+      challenge('s1', 'split', 5),
+      challenge('s2', 'split', 5),
+    ])} />);
+
+    openItem(0);
+    fireEvent.click(cells()[0]);
+    fireEvent.click(cells()[1]);
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues[0]).toContain('CORRECT');
+
+    // Item two, same total, same pair.
+    runnerState.awaiting = false;
+    openItem(1);
+    expect(fills()).toEqual([RED, RED, RED, RED, RED]);   // starts all-red again
+    fireEvent.click(cells()[3]);
+    fireEvent.click(cells()[4]);
+    act(() => { vi.advanceTimersByTime(3000); });
+
+    expect(runnerState.gestureCues).toHaveLength(2);
+    expect(runnerState.gestureCues[1]).toContain('REPEAT');
+    expect(runnerState.gestureCues[1]).toContain('already shown this exact pair');
+  });
+
+  it('accepts a different pair on the second ask', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={data('K', [
+      challenge('s1', 'split', 5),
+      challenge('s2', 'split', 5),
+    ])} />);
+
+    openItem(0);
+    fireEvent.click(cells()[0]);
+    act(() => { vi.advanceTimersByTime(3000); });
+
+    runnerState.awaiting = false;
+    openItem(1);
+    fireEvent.click(cells()[0]);
+    fireEvent.click(cells()[1]);
+    act(() => { vi.advanceTimersByTime(3000); });
+
+    expect(runnerState.gestureCues[1]).toContain('CORRECT');
+  });
+
+  it('clears the flips on a correction retry, back to the all-red group', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={data('K', [challenge('s1', 'split', 5)])} />);
+    const item = openItem();
+
+    for (const cell of cells().slice(0, 5)) fireEvent.click(cell);
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues[0]).toContain('EMPTY_PART');
+
+    runnerState.awaiting = false;
+    act(() => runnerState.options!.onCorrectionRetry?.(item, 1));
+    // The tutor re-modelled and re-asked; the working surface goes back to what
+    // the ask describes, not to the state that was just judged wrong.
+    expect(fills()).toEqual([RED, RED, RED, RED, RED]);
+  });
+
+  it('never prints a count readout on a split item — the honest one would be the answer', () => {
+    render(<TenFrame data={data('K', [challenge('s1', 'split', 5)])} />);
+    openItem();
+    // `build` and make-ten keep their trace; here the total is already on
+    // screen and in the ask, and the PARTS are what a readout would add.
+    expect(screen.queryByText(/^Counters:/)).toBeNull();
+  });
+
+  it('reveals the pair the CHILD built, and only after the tutor affirms', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={data('K', [challenge('s1', 'split', 5)])} />);
+    const item = openItem();
+
+    fireEvent.click(cells()[0]);
+    fireEvent.click(cells()[1]);
+    act(() => { vi.advanceTimersByTime(3000); });
+
+    expect(screen.queryByText('3 + 2 = 5')).toBeNull();   // nothing before the verdict
+    runnerState.revealHeld = true;
+    act(() => runnerState.options!.onAffirmed?.(item));
+    expect(screen.getByText('3 + 2 = 5')).not.toBeNull();
   });
 });
