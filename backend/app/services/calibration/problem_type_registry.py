@@ -40,6 +40,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     "ten-frame": {
         "build":     PriorConfig(1.5, "Concrete: place counters on frame"),
+        "decompose": PriorConfig(2.0, "Concrete: partition a group into two colour groups, a different pair each time (K.OA.3)"),
         "subitize":  PriorConfig(2.5, "Perceptual: flash count identification"),
         "make_ten":  PriorConfig(3.5, "Strategy: decompose to make 10"),
         "operate":   PriorConfig(4.5, "Symbolic: addition/subtraction with frame"),
@@ -620,9 +621,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # betas rank the act's own load (enumerate < decode < recall), and the skill
     # difficulty rides on the objective this instance was generated for.
     "di-spoken-practice": {
-        "count_and_say": PriorConfig(1.5, "Enumerate: count a group of pictures and say how many"),
-        "read_aloud":    PriorConfig(2.5, "Decode: read the printed stimulus aloud"),
-        "say_answer":    PriorConfig(3.0, "Recall: produce a spoken answer the child was not shown"),
+        "count_and_say":  PriorConfig(1.5, "Enumerate: count a group of pictures and say how many"),
+        # 2026-09-06: the closed-set comparative shape (lesson-bench item 30c).
+        # The menu is read aloud on every ask, so it sits between enumerating
+        # and unaided recall — production, but over words the child just heard.
+        "compare_choice": PriorConfig(2.0, "Closed set: say which named word describes a shown pair"),
+        "read_aloud":     PriorConfig(2.5, "Decode: read the printed stimulus aloud"),
+        "say_answer":     PriorConfig(3.0, "Recall: produce a spoken answer the child was not shown"),
     },
     "phoneme-explorer": {
         # DI modality (2026-08-11): every mode is answered ALOUD and judged by
@@ -630,6 +635,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         # is now "say how many sounds" (the word is never printed, so letters
         # cannot be counted). βs unchanged.
         "isolate":    PriorConfig(1.5, "Recognition: hear a sound + 4-word menu, SAY the word with that initial sound"),
+        # 2026-09-05 supply fix (lesson-bench item 23): no mode tested the MIDDLE
+        # vowel, so K "identify the short a sound in spoken words" objectives had
+        # nowhere to land. Same closed-set act as isolate, one step further into
+        # the word — the target is coarticulated rather than at the edge, so it
+        # sits just above isolate and just below blending.
+        "medial":     PriorConfig(2.0, "Recognition: hear a CVC word + 4-word menu, SAY the word with the same MIDDLE vowel"),
         "blend":      PriorConfig(2.5, "Guided: hear the phonemes one at a time, SAY the blended word"),
         "segment":    PriorConfig(3.5, "Application: hear a word (never printed), SAY how many sounds it has"),
         "manipulate": PriorConfig(5.0, "Production: hear a word and one sound change, SAY the new word"),
