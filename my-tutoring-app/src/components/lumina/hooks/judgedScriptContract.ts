@@ -55,7 +55,10 @@ export type ResponseClassId =
   | 'manipulation'
   | 'letter_name'
   | 'closed_set_choice'
-  | 'open_set_word';
+  | 'open_set_word'
+  | 'concept_statement'
+  | 'procedure_step'
+  | 'deduction';
 
 export type ResponseClassStatus =
   /** Bench sitting (or equivalent live-run evidence) exists. */
@@ -238,6 +241,94 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
       + 'ever sees the mild end; the bench drove past the cap and that is where its 11 no-verdict '
       + 'turns came from. A pack shipping this class must not raise `maxCorrections`, and the '
       + 'bench owes a fix to honor the cap before the next class is measured on it.',
+  },
+  concept_statement: {
+    status: 'benched',
+    evidence:
+      'BENCHED 2026-09-07 — qa/di-bench/run-2026-09-07-concept-statement.md (qa/di item 36), the family’s '
+      + 'third machine-scored class bench (`/tutor-test di-spoken-practice --di-bench`, one sitting per '
+      + 'stimulus). 56 scored probes over 4 stimuli across BOTH sub-shapes (a session-wide concept: the '
+      + 'equal sign, a ten rod; a per-instance rule: a growing and a repeating pattern) through the real '
+      + 'explain_concept contract. Gate = ZERO false affirmations in the hard REFUSE buckets AND '
+      + '`valid-paraphrase` affirmed ≥ 80%: 0/32 false affirmations, paraphrase 8/8 — "they match", "this '
+      + 'side and that side are even", "it jumps by two", "it takes turns, one color then the other", '
+      + '"they’re both ten", "it’s just the little cubes stuck together" all affirmed with no anchor '
+      + 'token in them — and every negated-keyword probe ("they are not the same", "it’s not plus two, '
+      + 'it’s plus one") refused. First caller di-spoken-practice `explain_concept`.',
+    notes:
+      'The child states an IDEA in their own words, 1-10 spoken words, and the judge decides whether '
+      + 'the utterance EXPRESSES the concept — not whether it contains a token. Open production of a '
+      + 'PROPOSITION: sits between closed_set_choice (a proposition from a printed menu) and '
+      + 'open_set_word (any word satisfying a rule), and is distinct from both — no menu bounds the '
+      + 'wrong answers, and the target is a MEANING, so token overlap is neither necessary ("they '
+      + 'match") nor sufficient ("they are NOT the same").\n'
+      + 'Four things a pack must do that the class cannot:\n'
+      + '(1) JUDGE MEANING, NOT WORDS. The clause hands the judge ONE concept sentence and 2-3 anchor '
+      + 'phrasings, and says explicitly that a five-year-old\'s paraphrase with none of those words '
+      + 'counts.\n'
+      + '(2) THE FOUR REFUSALS, each a bench bucket: ECHO (the stimulus read back), '
+      + 'ANSWER-NOT-EXPLANATION (the arithmetic result — "five"), ADJACENT-CONCEPT (the real '
+      + 'misconception — "= means the answer comes next"), NEGATED-KEYWORD (anchor tokens present, '
+      + 'idea absent — "they\'re not the same"). Plus OFF-TASK, shared with every open class.\n'
+      + '(3) THE CORRECTION CAP IS LOAD-BEARING exactly as open_set_word records: open items reach '
+      + 'long correction runs; never raise maxCorrections.\n'
+      + '(4) THE LENGTH CEILING IS ON THE ANCHORS, NOT THE CHILD. A rambling correct answer is '
+      + 'correct. Anchors ≤ 4 words, the concept sentence ≤ 12, so the affirm line stays speakable.',
+  },
+  procedure_step: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'USER BUILD-AHEAD RULING 2026-09-07 ("these are fantastic… then lets jump in"), from the '
+      + '"DI for Older Learners" design brief: the first sequence class — the child narrates a MOVE '
+      + 'and the numbers it produces, judged at the step where it happens. First caller '
+      + 'di-worked-procedure (talk-through subtraction). The bench fixture ships with the pack '
+      + '(service/qa/di/workedProcedureBench.ts, `/tutor-test di-worked-procedure --di-bench`); '
+      + 'the sitting is owed, and the mic row is HUMAN-CHECKS #140.',
+    notes:
+      'A DECISION plus its result, from a per-item CLOSED step grammar (regroup / no regroup, then '
+      + 'the numbers), judged on the move and not on the arithmetic alone. Sits above '
+      + 'number_word_to_20 (the result with no decision) and beside concept_statement (an idea with '
+      + 'no numbers). Four things a pack must do that the class cannot:\n'
+      + '(1) THE WRONG MOVE IS FLUENT AND TRUE AS A FACT. "Eight minus two is six" is correct '
+      + 'arithmetic and the signature error (smaller-from-larger); the contract names it, and the '
+      + 'CONTENT is built so the flip never lands on the right digit (the plan\'s flip ≠ result gate) '
+      + '— the judge always has two signals.\n'
+      + '(2) HALF A MOVE IS A NAMED MISCONCEPTION. A regroup that names the new ones and never the '
+      + 'decremented tens is forgot-to-decrement; it gets its own correction branch, ahead of the '
+      + 'general one.\n'
+      + '(3) A BARE NUMBER ON A DECIDE STEP IS NOT AN ANSWER — the ask is "tell me what you do".\n'
+      + '(4) THE CORRECTION CAP IS LOAD-BEARING exactly as the open classes record; never raise it. '
+      + 'A move-on must STATE the step so the page can carry it, or the next ask refers to a number '
+      + 'the page never showed.',
+  },
+  deduction: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'BUILD-AHEAD on the item-37 precedent (qa/di/BACKLOG.md item 38, 2026-09-07; handoff '
+      + 'qa/HANDOFF-di-deduction-2026-09-07.md, from the "DI for Older Learners" brief concept 3): the '
+      + 'second sequence class — the child states a VERDICT and the REASON that reaches it from a rule, '
+      + 'judged on meaning like concept_statement. First caller di-deduction (rule + case). The bench '
+      + 'fixture ships with the pack (service/qa/di/deductionBench.ts, `/tutor-test di-deduction '
+      + '--di-bench`); the sitting is owed, and the mic row is HUMAN-CHECKS #141.',
+    notes:
+      'A VERDICT (a conclusion sentence, or no / can\'t tell) plus a REASON that cites the rule, from '
+      + 'three code-built case shapes (conclude / deny / cannot_tell), judged on MEANING — "it\'s got '
+      + 'eight legs so it\'s not one" is a full answer to a deny case. Sits beside concept_statement (an '
+      + 'idea with no verdict) and procedure_step (a move with no rule). Four things a pack must do that '
+      + 'the class cannot:\n'
+      + '(1) THE SIGNATURE ERROR IS A CONFIDENT YES. "Yes, because it lays eggs" on a cannot_tell case '
+      + 'is fluent, cites the rule, and is wrong — the rule does not run backwards. The contract names it '
+      + 'first; the bench bucket `affirmed-consequent` must be zero-false-affirm.\n'
+      + '(2) A VERDICT WITH NO REASON IS HALF AN ANSWER on deny / cannot_tell — refused, with the "how do '
+      + 'you know?" firm-up as its own branch (ONE way, two-branch law). The accept clause names the '
+      + 'short forms a child uses ("nope, eight legs").\n'
+      + '(3) THE ECHO IS THE RULE READ BACK — true, and no conclusion; bucket `echo`.\n'
+      + '(4) THE CORRECTION CAP IS LOAD-BEARING exactly as the open classes record; never raise it. A '
+      + 'move-on must STATE the conclusion so the page can carry it.\n'
+      + 'CONTENT: the cannot_tell subject is ANONYMOUS ("this animal") by construction, so a child\'s '
+      + 'outside knowledge ("no, a turtle is a reptile") can never be a true answer the contract must '
+      + 'refuse; the named lookalike moves to the firm-up. Truth in the world is a generator REVIEW gate '
+      + '(gemini-flash-latest), never a contract clause.',
   },
 };
 
