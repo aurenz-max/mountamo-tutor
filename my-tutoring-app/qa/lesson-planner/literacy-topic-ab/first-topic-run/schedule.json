@@ -1,0 +1,26 @@
+[
+  {
+    "caseId": "phonics-sitpin",
+    "rep": 1,
+    "arm": "production",
+    "blindId": "lesson-a70ebb95-7d4"
+  },
+  {
+    "caseId": "phonics-sitpin",
+    "rep": 1,
+    "arm": "experimental",
+    "blindId": "lesson-fa900fac-d3b"
+  },
+  {
+    "caseId": "phonics-sitpin",
+    "rep": 2,
+    "arm": "experimental",
+    "blindId": "lesson-42d96a0e-04d"
+  },
+  {
+    "caseId": "phonics-sitpin",
+    "rep": 2,
+    "arm": "production",
+    "blindId": "lesson-3425697d-ddc"
+  }
+]

@@ -1,0 +1,397 @@
+{
+  "brief": {
+    "primitive": "intro_briefing",
+    "topic": "learn about phonics sitpin",
+    "subject": "General",
+    "gradeLevel": "kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+      "type": "scenario",
+      "content": "Imagine you are a sound detective walking through a secret letter forest, and every time you meet a letter, it whispers a special sound to you! Today, we are going to unlock the secret sounds of some very friendly letters that make up magic words.",
+      "visual": "🔤"
+    },
+    "bigIdea": {
+      "statement": "Letters make special sounds, and when we put those sounds together, we can read words all by ourselves!",
+      "whyItMatters": "Knowing letter sounds is like having a key to open up any book in the world so you can read amazing stories."
+    },
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Hear and produce individual letter sounds for s, i, t, p, and n",
+        "verb": "apply",
+        "icon": "search"
+      },
+      {
+        "id": "obj2",
+        "text": "Identify the written shapes of the letters s, i, t, p, and n",
+        "verb": "identify",
+        "icon": "pencil"
+      },
+      {
+        "id": "obj3",
+        "text": "Blend the sounds together to read simple words",
+        "verb": "create",
+        "icon": "lightbulb"
+      }
+    ],
+    "prerequisites": {
+      "shouldKnow": [
+        "Recognize that spoken words are made of sounds",
+        "Know that the alphabet has different letters"
+      ],
+      "quickCheck": {
+        "question": "Can you make the buzzing sound of a bee like 'zzzz'?",
+        "answer": "A buzzing sound made with the mouth.",
+        "hint": "Pretend you are a little bee flying around your classroom!"
+      }
+    },
+    "roadmap": [
+      {
+        "phase": "Sound Safari",
+        "description": "Listen to and copy fun letter sounds.",
+        "activities": [
+          "Play 'Echo the Sound' with the teacher",
+          "Make animal and letter sound pairings"
+        ]
+      },
+      {
+        "phase": "Letter Match",
+        "description": "Look at letter shapes and connect them to their sounds.",
+        "activities": [
+          "Trace letter shapes in the air",
+          "Match letter cards to spoken sounds"
+        ]
+      },
+      {
+        "phase": "Word Magic",
+        "description": "Blend sounds together to read real words.",
+        "activities": [
+          "Slide sounds together like a train on a track",
+          "Read secret words together as a class"
+        ]
+      }
+    ],
+    "connections": {
+      "buildingFrom": [
+        "Listening carefully to rhymes and spoken words",
+        "Recognizing shapes and drawing lines"
+      ],
+      "leadingTo": [
+        "Reading whole sentences and simple storybooks",
+        "Writing your own words and stories"
+      ],
+      "realWorld": [
+        "Reading signs on doors and cereal boxes at home",
+        "Writing your name on your colorful artwork"
+      ]
+    },
+    "mindset": {
+      "encouragement": "Learning new sounds can feel tricky at first, but with a little practice, you will be reading like a superstar!",
+      "growthTip": "If a sound is tricky to remember, make a fun hand motion to help your brain remember it!"
+    }
+  },
+  "briefLatencyMs": 3418,
+  "briefCalls": [
+    {
+      "method": "generateContent",
+      "model": "gemini-flash-lite-latest",
+      "phase": "shared-brief",
+      "startedAt": "2026-09-07T14:30:47.972Z",
+      "contents": "You are an expert curriculum designer creating engaging lesson plans for a given subject. Your task is to generate an Intro Briefing schema that orients students to new topics by providing context, relevance, clear objectives, and motivation.\n\nGenerate an Intro Briefing schema for the following topic:\n\n**Topic:** learn about phonics sitpin\n**Subject:** General\n**Grade Level:** kindergarten\n**Estimated Lesson Time:** 15-20 minutes\n\n## Educational Context\nThis content is for kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.\n\n## Guidelines for High-Quality Schemas\n\n### Hook Design\nChoose the hook type that best fits the content and grade level:\n- **scenario**: \"Imagine you're...\" - Places student in a relatable situation\n- **question**: Poses a thought-provoking question they'll want answered\n- **surprising_fact**: Shares something unexpected that creates curiosity\n- **story**: Brief narrative that introduces the concept naturally\n\nYounger students often respond better to scenarios and stories; older students engage with questions and surprising facts.\n\nFor **visualTheme**, pick the single menu value closest to what the hook is ABOUT (a hook about counting marbles is `counting`, not `game`). It is a category label, not student-facing text — the interface renders an icon for it.\n\n### Objective Writing\n- Start each objective with a measurable action verb\n- Keep objectives achievable within the estimated time\n- Use age-appropriate language\n\n**ORDERING — hard rule.** The objectives are TAUGHT in the order you list them, and\neach one becomes a block of activities in that sequence. The student meets objective 1\nfirst, so objective 1 must be the one they can succeed at on day one.\n\nOrder by these THREE rules, in this priority. Rule 1 beats rule 2, rule 2 beats rule 3.\n\n**RULE 1 — PREREQUISITE FIRST.** When the student cannot do objective X without already\nknowing objective Y, Y is listed first — whatever the two verbs are, and whichever is\nmore concrete. Examples: knowing that the last number counted tells you \"how many\"\n(cardinality) comes BEFORE counting a group to find how many; knowing the sound each\nletter makes comes BEFORE blending letters into whole words. If you are unsure whether\none truly requires the other, it is not a prerequisite — go to rule 2.\n\n**RULE 2 — CONCRETE BEFORE THE SYMBOL FOR IT.** With no prerequisite between them: when\none objective has the student work with real or pictured THINGS (objects to count,\nsounds to hear, a machine part to move) and another has them work with the WRITTEN\nSYMBOL for the same content (numerals, letters, notation, equations), the concrete\nobjective is listed FIRST — even when its verb sits at a higher Bloom level. A child\nmust count seven bears before \"7\" means anything; must hear the sounds in a word before\nmapping them to letters.\n- Example, and it is the most common failure: \"Apply counting to find how many objects\n  are in a group\" (apply, level 3) comes BEFORE \"Identify the numbers 1-10 in order\"\n  (identify, level 1). Counting real things is concrete; a grid of written numerals is\n  abstract. The higher Bloom verb goes first here, and that is correct.\n- This applies hardest at K-2 and in any first encounter with a notation, at any grade.\n- If both objectives are equally concrete, or the topic has no symbol/thing split\n  (naming the parts of a machine you can see, describing what a plant part does), this\n  rule is silent — go to rule 3.\n\n**RULE 3 — otherwise, NON-DECREASING Bloom order.** With rules 1 and 2 satisfied, do\nnot place a lower-level objective after a higher-level one. The most common mistake\nthis catches is appending a conceptual \"explain\" objective LAST, after an \"apply\"\nobjective: if a lesson needs the student to understand a concept AND use it, the\nunderstanding objective comes first — level (2) before level (3).\n\n**Verb categories, lowest Bloom level to highest:**\n- (1) identify — Remember: recognize, locate, name, list\n- (2) explain — Understand: describe, summarize, interpret, paraphrase\n- (2) compare — Understand: match, relate, distinguish, categorize\n- (3) apply — Apply: use, demonstrate, solve, implement\n- (4) analyze — Analyze: contrast, examine, differentiate\n- (5) evaluate — Evaluate: judge, assess, critique, justify\n- (6) create — Create: design, construct, produce, compose\n\nBefore you finalize: read objective 1 back and ask whether a student who has never met\nthis topic could start there today. If objective 1 asks them to recognize a symbol they\nhave not yet been given a meaning for, you have ordered it wrong — apply rule 2.\n\n### Prerequisites\n- List 2-4 genuine prerequisites (not too many)\n- Quick check should be answerable in under 30 seconds\n- The hint should scaffold thinking, not give the answer\n- Prerequisites should be from recent learning when possible\n\n### Roadmap Design\n- Use 3-5 phases typically\n- Phase names should be student-friendly\n- Each phase should have 1-3 concrete activities\n- The progression should feel logical and build confidence\n\n### Connections\n- **buildingFrom**: Concepts from previous grades/units that directly support this topic\n- **leadingTo**: Where this knowledge goes next in the curriculum\n- **realWorld**: Concrete, relatable applications students can visualize\n\n### Mindset Messages\n- Acknowledge potential difficulty without being discouraging\n- Reference common misconceptions or challenges\n- Provide actionable strategies, not just \"try hard\"\n- Match tone to grade level (warmer for younger, more mature for older)\n\n## Grade-Level Calibration\n\n**K-2:**\n- Hooks: Simple scenarios, familiar situations (home, playground, family)\n- Language: Short sentences, concrete words, avoid abstractions\n- Objectives: 2-3 max. Lead with the one where the child DOES something with real or\n  pictured things (\"apply\" is fine and often correct first at this age); symbol\n  recognition follows it, never opens.\n- Time: 10-15 minutes typical\n\n**3-5:**\n- Hooks: Can include surprising facts, more complex scenarios\n- Language: Can introduce some academic vocabulary with context\n- Objectives: 3-4, include some create/apply\n- Time: 15-25 minutes typical\n\n**6-8:**\n- Hooks: Questions, real-world problems, connections to current interests\n- Language: Academic vocabulary expected, more sophisticated reasoning\n- Objectives: 3-4, include analyze/evaluate\n- Time: 20-30 minutes typical\n\nCreate an engaging, age-appropriate Intro Briefing that will excite students about learning this topic!",
+      "config": {
+        "responseMimeType": "application/json",
+        "responseSchema": {
+          "type": "OBJECT",
+          "properties": {
+            "primitive": {
+              "type": "STRING",
+              "description": "Must be 'intro_briefing'"
+            },
+            "topic": {
+              "type": "STRING"
+            },
+            "subject": {
+              "type": "STRING"
+            },
+            "gradeLevel": {
+              "type": "STRING"
+            },
+            "estimatedTime": {
+              "type": "STRING"
+            },
+            "hook": {
+              "type": "OBJECT",
+              "properties": {
+                "type": {
+                  "type": "STRING",
+                  "enum": [
+                    "scenario",
+                    "question",
+                    "surprising_fact",
+                    "story"
+                  ],
+                  "description": "Type of hook: scenario (imagine situation), question (thought-provoking), surprising_fact (unexpected info), or story (narrative)"
+                },
+                "content": {
+                  "type": "STRING",
+                  "description": "Engaging opening that captures attention and connects to students' lives, age-appropriate and curiosity-creating"
+                },
+                "visualTheme": {
+                  "type": "STRING",
+                  "enum": [
+                    "counting",
+                    "numbers",
+                    "shapes",
+                    "patterns",
+                    "measurement",
+                    "money",
+                    "time",
+                    "calendar",
+                    "reading",
+                    "letters",
+                    "words",
+                    "writing",
+                    "story",
+                    "science",
+                    "nature",
+                    "animals",
+                    "plants",
+                    "space",
+                    "weather",
+                    "water",
+                    "earth",
+                    "experiment",
+                    "building",
+                    "machines",
+                    "art",
+                    "music",
+                    "sports",
+                    "food",
+                    "travel",
+                    "map",
+                    "history",
+                    "people",
+                    "question",
+                    "idea",
+                    "discovery",
+                    "game",
+                    "puzzle",
+                    "magic"
+                  ],
+                  "description": "The menu theme that best matches the hook. Code attaches the emoji — never write a glyph or a free-form word here."
+                }
+              },
+              "required": [
+                "type",
+                "content",
+                "visualTheme"
+              ]
+            },
+            "bigIdea": {
+              "type": "OBJECT",
+              "properties": {
+                "statement": {
+                  "type": "STRING",
+                  "description": "Core concept in one clear, memorable sentence using student-friendly language"
+                },
+                "whyItMatters": {
+                  "type": "STRING",
+                  "description": "Real-world relevance explaining why this topic is worth learning, connecting to students' lives and future learning"
+                }
+              },
+              "required": [
+                "statement",
+                "whyItMatters"
+              ]
+            },
+            "objectives": {
+              "type": "ARRAY",
+              "items": {
+                "type": "OBJECT",
+                "properties": {
+                  "id": {
+                    "type": "STRING",
+                    "description": "Unique identifier like obj1, obj2, etc."
+                  },
+                  "text": {
+                    "type": "STRING",
+                    "description": "Clear learning objective starting with an action verb"
+                  },
+                  "verb": {
+                    "type": "STRING",
+                    "enum": [
+                      "identify",
+                      "explain",
+                      "create",
+                      "analyze",
+                      "compare",
+                      "apply",
+                      "evaluate"
+                    ],
+                    "description": "Bloom's taxonomy verb category"
+                  },
+                  "icon": {
+                    "type": "STRING",
+                    "description": "Icon hint: search, message, pencil, lightbulb, scale, puzzle, check"
+                  }
+                },
+                "required": [
+                  "id",
+                  "text",
+                  "verb",
+                  "icon"
+                ]
+              },
+              "description": "3-4 specific, achievable learning objectives"
+            },
+            "prerequisites": {
+              "type": "OBJECT",
+              "properties": {
+                "shouldKnow": {
+                  "type": "ARRAY",
+                  "items": {
+                    "type": "STRING"
+                  },
+                  "description": "2-4 genuine prerequisites from recent learning"
+                },
+                "quickCheck": {
+                  "type": "OBJECT",
+                  "properties": {
+                    "question": {
+                      "type": "STRING",
+                      "description": "Simple question answerable in under 30 seconds to verify readiness"
+                    },
+                    "answer": {
+                      "type": "STRING",
+                      "description": "Expected answer to the question"
+                    },
+                    "hint": {
+                      "type": "STRING",
+                      "description": "Helpful hint that scaffolds thinking without giving the answer"
+                    }
+                  },
+                  "required": [
+                    "question",
+                    "answer",
+                    "hint"
+                  ]
+                }
+              },
+              "required": [
+                "shouldKnow",
+                "quickCheck"
+              ]
+            },
+            "roadmap": {
+              "type": "ARRAY",
+              "items": {
+                "type": "OBJECT",
+                "properties": {
+                  "phase": {
+                    "type": "STRING",
+                    "description": "Student-friendly phase name like Explore, Learn, Practice, Apply"
+                  },
+                  "description": {
+                    "type": "STRING",
+                    "description": "Brief description of what happens in this phase"
+                  },
+                  "activities": {
+                    "type": "ARRAY",
+                    "items": {
+                      "type": "STRING"
+                    },
+                    "description": "1-3 concrete activities for this phase"
+                  }
+                },
+                "required": [
+                  "phase",
+                  "description",
+                  "activities"
+                ]
+              },
+              "description": "3-5 learning phases that build confidence"
+            },
+            "connections": {
+              "type": "OBJECT",
+              "properties": {
+                "buildingFrom": {
+                  "type": "ARRAY",
+                  "items": {
+                    "type": "STRING"
+                  },
+                  "description": "Concepts from previous grades/units that directly support this topic"
+                },
+                "leadingTo": {
+                  "type": "ARRAY",
+                  "items": {
+                    "type": "STRING"
+                  },
+                  "description": "Where this knowledge goes next in the curriculum"
+                },
+                "realWorld": {
+                  "type": "ARRAY",
+                  "items": {
+                    "type": "STRING"
+                  },
+                  "description": "Concrete, relatable applications students can visualize"
+                }
+              },
+              "required": [
+                "buildingFrom",
+                "leadingTo",
+                "realWorld"
+              ]
+            },
+            "mindset": {
+              "type": "OBJECT",
+              "properties": {
+                "encouragement": {
+                  "type": "STRING",
+                  "description": "Warm, encouraging message acknowledging potential challenges but emphasizing achievability"
+                },
+                "growthTip": {
+                  "type": "STRING",
+                  "description": "Practical learning strategy or study tip specific to this content type"
+                }
+              },
+              "required": [
+                "encouragement",
+                "growthTip"
+              ]
+            }
+          },
+          "required": [
+            "primitive",
+            "topic",
+            "subject",
+            "gradeLevel",
+            "estimatedTime",
+            "hook",
+            "bigIdea",
+            "objectives",
+            "prerequisites",
+            "roadmap",
+            "connections",
+            "mindset"
+          ]
+        },
+        "temperature": 0.7
+      },
+      "modelVersion": "gemini-3.5-flash-lite",
+      "usage": {
+        "promptTokenCount": 1509,
+        "candidatesTokenCount": 849,
+        "totalTokenCount": 2358,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1509
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "responseText": "{\n  \"primitive\": \"intro_briefing\",\n  \"topic\": \"learn about phonics sitpin\",\n  \"subject\": \"General\",\n  \"gradeLevel\": \"kindergarten\",\n  \"estimatedTime\": \"15-20 minutes\",\n  \"hook\": {\n    \"type\": \"scenario\",\n    \"content\": \"Imagine you are a sound detective walking through a secret letter forest, and every time you meet a letter, it whispers a special sound to you! Today, we are going to unlock the secret sounds of some very friendly letters that make up magic words.\",\n    \"visualTheme\": \"letters\"\n  },\n  \"bigIdea\": {\n    \"statement\": \"Letters make special sounds, and when we put those sounds together, we can read words all by ourselves!\",\n    \"whyItMatters\": \"Knowing letter sounds is like having a key to open up any book in the world so you can read amazing stories.\"\n  },\n  \"objectives\": [\n    {\n      \"id\": \"obj1\",\n      \"text\": \"Hear and produce individual letter sounds for s, i, t, p, and n\",\n      \"verb\": \"apply\",\n      \"icon\": \"search\"\n    },\n    {\n      \"id\": \"obj2\",\n      \"text\": \"Identify the written shapes of the letters s, i, t, p, and n\",\n      \"verb\": \"identify\",\n      \"icon\": \"pencil\"\n    },\n    {\n      \"id\": \"obj3\",\n      \"text\": \"Blend the sounds together to read simple words\",\n      \"verb\": \"create\",\n      \"icon\": \"lightbulb\"\n    }\n  ],\n  \"prerequisites\": {\n    \"shouldKnow\": [\n      \"Recognize that spoken words are made of sounds\",\n      \"Know that the alphabet has different letters\"\n    ],\n    \"quickCheck\": {\n      \"question\": \"Can you make the buzzing sound of a bee like 'zzzz'?\",\n      \"answer\": \"A buzzing sound made with the mouth.\",\n      \"hint\": \"Pretend you are a little bee flying around your classroom!\"\n    }\n  },\n  \"roadmap\": [\n    {\n      \"phase\": \"Sound Safari\",\n      \"description\": \"Listen to and copy fun letter sounds.\",\n      \"activities\": [\n        \"Play 'Echo the Sound' with the teacher\",\n        \"Make animal and letter sound pairings\"\n      ]\n    },\n    {\n      \"phase\": \"Letter Match\",\n      \"description\": \"Look at letter shapes and connect them to their sounds.\",\n      \"activities\": [\n        \"Trace letter shapes in the air\",\n        \"Match letter cards to spoken sounds\"\n      ]\n    },\n    {\n      \"phase\": \"Word Magic\",\n      \"description\": \"Blend sounds together to read real words.\",\n      \"activities\": [\n        \"Slide sounds together like a train on a track\",\n        \"Read secret words together as a class\"\n      ]\n    }\n  ],\n  \"connections\": {\n    \"buildingFrom\": [\n      \"Listening carefully to rhymes and spoken words\",\n      \"Recognizing shapes and drawing lines\"\n    ],\n    \"leadingTo\": [\n      \"Reading whole sentences and simple storybooks\",\n      \"Writing your own words and stories\"\n    ],\n    \"realWorld\": [\n      \"Reading signs on doors and cereal boxes at home\",\n      \"Writing your name on your colorful artwork\"\n    ]\n  },\n  \"mindset\": {\n    \"encouragement\": \"Learning new sounds can feel tricky at first, but with a little practice, you will be reading like a superstar!\",\n    \"growthTip\": \"If a sound is tricky to remember, make a fun hand motion to help your brain remember it!\"\n  }\n}",
+      "latencyMs": 3415
+    }
+  ]
+}
