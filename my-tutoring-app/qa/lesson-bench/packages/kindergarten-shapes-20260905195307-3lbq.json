@@ -1800,8 +1800,8 @@
     },
     "holistic": [],
     "bucket": "RUNNABLE",
-    "judgedAt": "2026-09-05T20:25:26.360Z",
-    "judge": "tier-a@315f7bfb",
+    "judgedAt": "2026-09-06T01:47:39.946Z",
+    "judge": "tier-a@f7d32f47",
     "citations": [
       {
         "instanceId": "obj1-foundation-room-shapes",

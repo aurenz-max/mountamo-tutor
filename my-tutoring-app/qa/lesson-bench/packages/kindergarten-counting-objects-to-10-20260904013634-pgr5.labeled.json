@@ -1717,13 +1717,12 @@
       "Q3": 1,
       "Q6": 1,
       "Q7": 1,
-      "Q9": 1,
       "Q4": 1
     },
     "holistic": [],
     "bucket": "RUNNABLE",
-    "judgedAt": "2026-09-05T18:50:40.098Z",
-    "judge": "tier-a@315f7bfb",
+    "judgedAt": "2026-09-06T01:47:39.934Z",
+    "judge": "tier-a@f7d32f47",
     "citations": [],
     "unknowns": [
       {

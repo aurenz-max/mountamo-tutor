@@ -1391,6 +1391,89 @@
       }
     }
   ],
-  "scores": null,
+  "scores": {
+    "gates": {
+      "G1": 0,
+      "G4": 1,
+      "G6": 1
+    },
+    "checks": {
+      "Q8": 0,
+      "Q3": 1,
+      "Q6": 1,
+      "Q7": 1
+    },
+    "holistic": [],
+    "bucket": "BROKEN",
+    "judgedAt": "2026-09-06T01:47:39.929Z",
+    "judge": "tier-a@f7d32f47",
+    "citations": [
+      {
+        "instanceId": "obj2-equation-builder",
+        "checkId": "G1",
+        "note": "equation-builder[build-simple] declares reads: developing — the child must read alone at the pre-reader band"
+      },
+      {
+        "instanceId": "obj2-equation-builder",
+        "checkId": "Q8",
+        "note": "equation-builder[build-simple] declares reads: developing"
+      }
+    ],
+    "unknowns": [
+      {
+        "checkId": "Q9",
+        "note": "estimated block minutes 44 above the provisional pre-reader guide of 40 (9/9 blocks tagged) — advisory, not a fail"
+      },
+      {
+        "checkId": "Q4",
+        "note": "no coverage verdict on the package — lesson-coverage.mjs eval --write <pkg> lets the judge fill Q4"
+      }
+    ],
+    "evidence": {
+      "band": {
+        "grade": "K",
+        "preReader": true,
+        "k2": true,
+        "subject": "MATHEMATICS"
+      },
+      "streamOrder": [
+        "addition-subtraction-scene[act_out]",
+        "ten-frame[operate]",
+        "counting-board[count]",
+        "foundation-explorer",
+        "equation-builder[build-simple]",
+        "number-bond[decompose]",
+        "comparison-builder[compare_groups]",
+        "di-dice-roll[sum_two_dice]",
+        "knowledge-check[recall|apply]"
+      ],
+      "parentCards": [],
+      "parentCardMinutes": 0,
+      "minutes": 44,
+      "lengthCap": 40,
+      "knownMinuteBlocks": 9,
+      "streamBlocks": 9,
+      "tapOnlyProduction": [
+        "comparison-builder[compare_groups]"
+      ],
+      "notationObjectives": [
+        "obj2"
+      ],
+      "distinctPrimitives": 9,
+      "coverageJudge": null,
+      "notCodeJudged": [
+        "G1 catalog-band half (no grade floors by ruling)",
+        "G4 generator-emitted half",
+        "G6 visible-timer half",
+        "Q4 when the package carries no coverage verdict",
+        "G2",
+        "G3",
+        "G5",
+        "Q1",
+        "Q2",
+        "Q5"
+      ]
+    }
+  },
   "human": null
 }

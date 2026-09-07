@@ -1534,13 +1534,12 @@
       "Q3": 1,
       "Q6": 1,
       "Q7": 1,
-      "Q9": 0,
       "Q4": 0
     },
     "holistic": [],
     "bucket": "BROKEN",
-    "judgedAt": "2026-09-05T19:05:24.154Z",
-    "judge": "tier-a@315f7bfb",
+    "judgedAt": "2026-09-06T01:47:39.927Z",
+    "judge": "tier-a@f7d32f47",
     "citations": [
       {
         "instanceId": "obj2-equation-tiles",
@@ -1551,11 +1550,6 @@
         "instanceId": "obj2-equation-tiles",
         "checkId": "Q8",
         "note": "equation-builder[build-simple] declares reads: developing"
-      },
-      {
-        "instanceId": "lesson",
-        "checkId": "Q9",
-        "note": "known block minutes 47 exceed the pre-reader cap of 40 (10/10 blocks tagged)"
       },
       {
         "instanceId": "obj2-symbols-explorer",
@@ -1573,6 +1567,10 @@
         "instanceId": "obj3-number-line-hops",
         "checkId": "Q8",
         "note": "number-line[jump] has no reader verdict (no reader-fit / contract line)"
+      },
+      {
+        "checkId": "Q9",
+        "note": "estimated block minutes 47 above the provisional pre-reader guide of 40 (10/10 blocks tagged) — advisory, not a fail"
       }
     ],
     "evidence": {

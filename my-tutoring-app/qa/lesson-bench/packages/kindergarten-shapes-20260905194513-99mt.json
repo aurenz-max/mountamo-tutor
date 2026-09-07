@@ -1717,8 +1717,8 @@
     },
     "holistic": [],
     "bucket": "RUNNABLE",
-    "judgedAt": "2026-09-05T20:25:26.357Z",
-    "judge": "tier-a@315f7bfb",
+    "judgedAt": "2026-09-06T01:47:39.945Z",
+    "judge": "tier-a@f7d32f47",
     "citations": [
       {
         "instanceId": "obj3-comparison-sides-corners",

@@ -1340,6 +1340,85 @@
       }
     }
   ],
-  "scores": null,
+  "scores": {
+    "gates": {
+      "G1": 0,
+      "G4": 1,
+      "G6": 1
+    },
+    "checks": {
+      "Q8": 0,
+      "Q3": 1,
+      "Q6": 1,
+      "Q7": 1
+    },
+    "holistic": [],
+    "bucket": "BROKEN",
+    "judgedAt": "2026-09-06T01:47:39.930Z",
+    "judge": "tier-a@f7d32f47",
+    "citations": [
+      {
+        "instanceId": "obj2-equation-builder-1",
+        "checkId": "G1",
+        "note": "equation-builder[build-simple] declares reads: developing — the child must read alone at the pre-reader band"
+      },
+      {
+        "instanceId": "obj2-equation-builder-1",
+        "checkId": "Q8",
+        "note": "equation-builder[build-simple] declares reads: developing"
+      }
+    ],
+    "unknowns": [
+      {
+        "checkId": "Q4",
+        "note": "no coverage verdict on the package — lesson-coverage.mjs eval --write <pkg> lets the judge fill Q4"
+      }
+    ],
+    "evidence": {
+      "band": {
+        "grade": "K",
+        "preReader": true,
+        "k2": true,
+        "subject": "MATHEMATICS"
+      },
+      "streamOrder": [
+        "addition-subtraction-scene[act_out]",
+        "ten-frame[build]",
+        "foundation-explorer",
+        "equation-builder[build-simple]",
+        "comparison-builder[compare_groups]",
+        "di-dice-roll[compare_dice]",
+        "knowledge-check[mixed]"
+      ],
+      "parentCards": [
+        "obj1-take-home-activity-1"
+      ],
+      "parentCardMinutes": 10,
+      "minutes": 34,
+      "lengthCap": 40,
+      "knownMinuteBlocks": 7,
+      "streamBlocks": 7,
+      "tapOnlyProduction": [
+        "comparison-builder[compare_groups]"
+      ],
+      "notationObjectives": [
+        "obj2"
+      ],
+      "distinctPrimitives": 7,
+      "coverageJudge": null,
+      "notCodeJudged": [
+        "G1 catalog-band half (no grade floors by ruling)",
+        "G4 generator-emitted half",
+        "G6 visible-timer half",
+        "Q4 when the package carries no coverage verdict",
+        "G2",
+        "G3",
+        "G5",
+        "Q1",
+        "Q2",
+        "Q5"
+      ]
+    }
+  },
   "human": null
 }

@@ -1337,13 +1337,12 @@
       "Q8": 1,
       "Q3": 0,
       "Q6": 1,
-      "Q7": 1,
-      "Q9": 1
+      "Q7": 1
     },
     "holistic": [],
     "bucket": "RUNNABLE",
-    "judgedAt": "2026-09-05T11:42:39.035Z",
-    "judge": "tier-a@1a591c80",
+    "judgedAt": "2026-09-06T01:47:39.916Z",
+    "judge": "tier-a@f7d32f47",
     "citations": [
       {
         "instanceId": "obj1-annotated-example-touch-count",
@@ -1351,7 +1350,12 @@
         "note": "annotated-example opens obj1 on symbols before any concrete or pictorial block"
       }
     ],
-    "unknowns": [],
+    "unknowns": [
+      {
+        "checkId": "Q4",
+        "note": "no coverage verdict on the package — lesson-coverage.mjs eval --write <pkg> lets the judge fill Q4"
+      }
+    ],
     "evidence": {
       "band": {
         "preReader": false,
@@ -1378,16 +1382,17 @@
         "obj2"
       ],
       "distinctPrimitives": 7,
+      "coverageJudge": null,
       "notCodeJudged": [
         "G1 catalog-band half (no grade floors by ruling)",
         "G4 generator-emitted half",
         "G6 visible-timer half",
+        "Q4 when the package carries no coverage verdict",
         "G2",
         "G3",
         "G5",
         "Q1",
         "Q2",
-        "Q4",
         "Q5"
       ]
     }

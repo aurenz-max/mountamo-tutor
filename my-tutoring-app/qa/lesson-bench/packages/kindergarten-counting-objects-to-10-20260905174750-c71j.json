@@ -1185,6 +1185,78 @@
       }
     }
   ],
-  "scores": null,
+  "scores": {
+    "gates": {
+      "G1": 1,
+      "G4": 1,
+      "G6": 1
+    },
+    "checks": {
+      "Q8": 1,
+      "Q3": 1,
+      "Q6": 1,
+      "Q7": 1
+    },
+    "holistic": [],
+    "bucket": "RUNNABLE",
+    "judgedAt": "2026-09-06T01:47:39.937Z",
+    "judge": "tier-a@f7d32f47",
+    "citations": [],
+    "unknowns": [
+      {
+        "instanceId": "obj2-number-tracer",
+        "checkId": "Q3",
+        "note": "number-tracer[trace] opens obj2 on symbols, but the objective targets notation (\"Recognize and name the written numbers 1 through 10 in order\")"
+      },
+      {
+        "checkId": "Q4",
+        "note": "no coverage verdict on the package — lesson-coverage.mjs eval --write <pkg> lets the judge fill Q4"
+      }
+    ],
+    "evidence": {
+      "band": {
+        "grade": "K",
+        "preReader": true,
+        "k2": true,
+        "subject": "MATHEMATICS"
+      },
+      "streamOrder": [
+        "counting-board[count]",
+        "ten-frame[build]",
+        "number-tracer[trace]",
+        "hundreds-chart[highlight_sequence]",
+        "number-sequencer[before_after]",
+        "knowledge-check[recall|apply]"
+      ],
+      "parentCards": [
+        "obj1-take-home-count"
+      ],
+      "parentCardMinutes": 10,
+      "minutes": 28,
+      "lengthCap": 40,
+      "knownMinuteBlocks": 6,
+      "streamBlocks": 6,
+      "tapOnlyProduction": [
+        "hundreds-chart[highlight_sequence]"
+      ],
+      "notationObjectives": [
+        "obj2"
+      ],
+      "distinctPrimitives": 6,
+      "coverageJudge": null,
+      "notCodeJudged": [
+        "G1 catalog-band half (no grade floors by ruling)",
+        "G4 generator-emitted half",
+        "G6 visible-timer half",
+        "Q4 when the package carries no coverage verdict",
+        "G2",
+        "G3",
+        "G5",
+        "Q1",
+        "Q2",
+        "Q5"
+      ]
+    }
+  },
   "human": null
 }

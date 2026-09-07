@@ -1232,8 +1232,8 @@
     },
     "holistic": [],
     "bucket": "BROKEN",
-    "judgedAt": "2026-09-05T20:25:00.151Z",
-    "judge": "tier-a@315f7bfb",
+    "judgedAt": "2026-09-06T01:47:39.948Z",
+    "judge": "tier-a@f7d32f47",
     "citations": [
       {
         "instanceId": "obj2-equation-builder",
