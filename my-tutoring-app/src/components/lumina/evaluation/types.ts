@@ -2423,6 +2423,21 @@ export interface LetterSpotterMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+/** Mode-aware letter practice evidence; geometric thresholds remain provisional. */
+export interface LetterWorkshopMetrics extends BasePrimitiveMetrics {
+  type: 'letter-workshop';
+  challengeType: 'trace' | 'copy' | 'write' | 'mixed';
+  assessmentScope?: 'provisional-geometric-tracing' | 'provisional-geometric-formation';
+  modeResults?: Array<{ mode: 'trace' | 'copy' | 'write'; total: number; correct: number }>;
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface LetterSoundLinkMetrics extends BasePrimitiveMetrics {
   type: 'letter-sound-link';
   letterGroup: 1 | 2 | 3 | 4;
@@ -2484,6 +2499,19 @@ export interface WordFlipMetrics extends BasePrimitiveMetrics {
   correctCount: number;
   attemptsCount: number;          // total tries across all challenges
   firstTryCount: number;          // challenges answered correctly on the first try
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
+export interface YouAndMeMetrics extends BasePrimitiveMetrics {
+  type: 'you-and-me';
+  challengeType: 'describe_action' | 'describe_independent_action' | 'mixed';
+  modeResults?: Array<{ mode: 'describe_action' | 'describe_independent_action'; total: number; correct: number; accuracy: number }>;
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
   hintsViewed: number;
   overallAccuracy: number;        // 0-100, average per-challenge score
   averageAttemptsPerChallenge: number;
@@ -3792,10 +3820,12 @@ export type PrimitiveMetrics =
   | SoundSwapMetrics
   | LetterSpotterMetrics
   | LetterSoundLinkMetrics
+  | LetterWorkshopMetrics
   | CvcSpellerMetrics
   | PictureVocabularyMetrics
   | StoryTalkMetrics
   | WordFlipMetrics
+  | YouAndMeMetrics
   // Literacy (Wave 5)
   | WordWorkoutMetrics
   | WordSorterMetrics

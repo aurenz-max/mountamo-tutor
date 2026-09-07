@@ -1,0 +1,154 @@
+{
+  "primitive": "letter-workshop",
+  "domain": "literacy",
+  "subject": "LANGUAGE_ARTS",
+  "query_text": "Kindergarten and grade 1 Language Arts handwriting: assisted uppercase and lowercase letter formation. Children trace printed alphabet letters with a finger, pen, or mouse, following numbered starts, stroke directions, and writing lines. Covers all 26 letters in both cases, including cumulative letter Groups 1 (s a t i p n), 2 (+ c k e h r m d), 3 (+ g o u l f b), and 4 (+ j z w v y x q). Use for guided practice printing and forming letters with attention to stroke order, direction, and placement on writing lines. Each session contains 3-6 letter tracing challenges.",
+  "grades_probed": [
+    "K",
+    "1"
+  ],
+  "results": [
+    {
+      "subject": "LANGUAGE_ARTS",
+      "grade": [
+        "Kindergarten"
+      ],
+      "grade_requested": "K",
+      "n_candidates": 191,
+      "best_cosine": 0.8166,
+      "coherent": 4,
+      "top_k": [
+        {
+          "rank": 1,
+          "cosine": 0.8166,
+          "skill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5",
+          "skill_description": "Letter Formation",
+          "subskill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5-1760800776650-y2fm5tl6a",
+          "subskill_description": "Letter Formation Group 4 (Final): j, z, w, v, y, x, q\n\n**New Letters Introduced:**\nj, z, w, v, y, x, q (uppercase and lowercase)\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b, j, z, w, v, y, x, q\n\n**Focus:** Mastery of forming all letters of the alphabet correctly.",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 2,
+          "cosine": 0.8013,
+          "skill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5",
+          "skill_description": "Letter Formation",
+          "subskill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5-1760800722776-oukhhpfgf",
+          "subskill_description": "Letter Formation Group 2: c, k, e, h, r, m, d\n\n**New Letters Introduced:**\nc, k, e, h, r, m, d (uppercase and lowercase)\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the formation of the new letters while systematically reviewing the formation of letters from Group 1. Practice must pull from the full 13-letter cumulative list.",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 3,
+          "cosine": 0.7929,
+          "skill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5",
+          "skill_description": "Letter Formation",
+          "subskill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5-1760800754456-0gn2dt6jx",
+          "subskill_description": "Letter Formation Group 3: g, o, u, l, f, b\n\n**New Letters Introduced:**\ng, o, u, l, f, b (uppercase and lowercase)\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the formation of the new letters while reviewing all 13 previous letters. Practice must pull from the full 19-letter cumulative list.",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 4,
+          "cosine": 0.7902,
+          "skill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5",
+          "skill_description": "Letter Formation",
+          "subskill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5-1760800702280-4ydx8kdjo",
+          "subskill_description": "Letter Formation Group 1: s, a, t, i, p, n\n\n**New Letters Introduced:**\ns, a, t, i, p, n (uppercase and lowercase)\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Correctly forming the letters in this set. Activities should include tracing with guided strokes, and then progress to writing the letters independently. Emphasis is on starting in the right place and following the correct path for each stroke.",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 5,
+          "cosine": 0.7627,
+          "skill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r",
+          "skill_description": "Letter Recognition",
+          "subskill_id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r-1760799101964-1722qk9rw",
+          "subskill_description": "Letter Group 1: s, a, t, i, p, n\n\n**New Letters Introduced:**\ns, a, t, i, p, n\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Mastery of this first, high-utility set of letters and their primary sounds. All lessons and practice problems should ONLY use letters from the Full Practice Set. Students can immediately begin building words like: sat, pat, tap, sip, tip, pin, tin, sit, an, in, it.",
+          "grade": "Kindergarten"
+        }
+      ],
+      "verdict": "match",
+      "abstain_reason": null,
+      "tau": 0.6,
+      "min_coherent": 3,
+      "per_grade": [
+        {
+          "grade": "Kindergarten",
+          "best_cosine": 0.8166,
+          "coherent": 4,
+          "coherent_skill": 4,
+          "reason": null
+        }
+      ],
+      "coherent_skill": 4
+    },
+    {
+      "subject": "LANGUAGE_ARTS",
+      "grade": [
+        "1"
+      ],
+      "grade_requested": "1",
+      "n_candidates": 65,
+      "best_cosine": 0.7302,
+      "coherent": 3,
+      "top_k": [
+        {
+          "rank": 1,
+          "cosine": 0.7302,
+          "skill_id": "LA002-03",
+          "skill_description": "Writing Names and Labels",
+          "subskill_id": "LA002-03-a",
+          "subskill_description": "Write own first name using correct letter formation and capitalization. Focus: Name writing as foundational pencil-control and capitalization practice. Examples: Writing ALEX, writing MIA, first letter uppercase and remaining lowercase. Constraints: Assess capital first letter; accept any legible attempt at remaining letters.",
+          "grade": "1"
+        },
+        {
+          "rank": 2,
+          "cosine": 0.726,
+          "skill_id": "LA006-07",
+          "skill_description": "Spelling Patterns",
+          "subskill_id": "LA006-07-a",
+          "subskill_description": "Spell common CVC and CVCe words by dragging letters into the correct sequence to master vowel-consonant patterns. Focus: Encoding short and long vowel words. Examples: cat, dog, map, sit, cake, kite, bone, mule. Constraints: Provide visual cues for long vowel endings to distinguish from short vowels.",
+          "grade": "1"
+        },
+        {
+          "rank": 3,
+          "cosine": 0.7226,
+          "skill_id": "LA004-01",
+          "skill_description": "Nouns",
+          "subskill_id": "LA004-01-b",
+          "subskill_description": "Learners drag and drop words into two buckets to distinguish between common and proper nouns. Focus: Sorting words into common versus proper nouns. Examples: boy, Sam, city, London, dog, Rover, school, Lincoln School. Constraints: Start with names of people, then progress to specific places and days of the week.",
+          "grade": "1"
+        },
+        {
+          "rank": 4,
+          "cosine": 0.7223,
+          "skill_id": "LA002-01",
+          "skill_description": "Pre-Writing and Drawing",
+          "subskill_id": "LA002-01-b",
+          "subskill_description": "Add labels or letter strings to a drawing to identify key parts. Focus: Connecting drawing and early writing through labels and captions. Examples: Drawing of a dog labeled D or DOG, drawing of a house labeled HOS. Constraints: Accept invented spelling; reward any letter that represents the target word sound.",
+          "grade": "1"
+        },
+        {
+          "rank": 5,
+          "cosine": 0.7218,
+          "skill_id": "LA002-03",
+          "skill_description": "Writing Names and Labels",
+          "subskill_id": "LA002-03-b",
+          "subskill_description": "Write labels for objects in pictures using known letters and phonetic spelling. Focus: Applying letter knowledge to real-world labeling. Examples: Writing CAT under a cat picture, writing SUN under a sun picture. Constraints: Use only objects students can picture and name; accept phonetic spelling.",
+          "grade": "1"
+        }
+      ],
+      "verdict": "match",
+      "abstain_reason": null,
+      "tau": 0.6,
+      "min_coherent": 3,
+      "per_grade": [
+        {
+          "grade": "1",
+          "best_cosine": 0.7302,
+          "coherent": 3,
+          "coherent_skill": 2,
+          "reason": null
+        }
+      ],
+      "coherent_skill": 2
+    }
+  ]
+}

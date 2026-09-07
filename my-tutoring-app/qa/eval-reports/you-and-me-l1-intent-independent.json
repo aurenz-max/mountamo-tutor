@@ -1,0 +1,132 @@
+{
+  "type": "you-and-me",
+  "instanceId": "you-and-me-1788816035485",
+  "data": {
+    "title": "You & Me",
+    "description": "Describe what happened, then trade speaking roles.",
+    "gradeLevel": "kindergarten",
+    "challengeType": "describe_independent_action",
+    "challenges": [
+      {
+        "participants": [
+          {
+            "name": "Emma",
+            "emoji": "👧"
+          },
+          {
+            "name": "Noah",
+            "emoji": "👦"
+          }
+        ],
+        "object": "the picture",
+        "objectEmoji": "🖼️",
+        "action": "painted the picture",
+        "id": "you-and-me-1-1",
+        "sceneId": "you-and-me-scene-1",
+        "type": "describe_independent_action",
+        "actor": 0,
+        "speaker": 1
+      },
+      {
+        "participants": [
+          {
+            "name": "Emma",
+            "emoji": "👧"
+          },
+          {
+            "name": "Noah",
+            "emoji": "👦"
+          }
+        ],
+        "object": "the picture",
+        "objectEmoji": "🖼️",
+        "action": "painted the picture",
+        "id": "you-and-me-1-2",
+        "sceneId": "you-and-me-scene-1",
+        "type": "describe_independent_action",
+        "actor": 0,
+        "speaker": 0
+      },
+      {
+        "participants": [
+          {
+            "name": "Emma",
+            "emoji": "👧🏽"
+          },
+          {
+            "name": "Noah",
+            "emoji": "👦🏼"
+          }
+        ],
+        "object": "the book",
+        "objectEmoji": "📖",
+        "action": "opened the book",
+        "id": "you-and-me-2-1",
+        "sceneId": "you-and-me-scene-2",
+        "type": "describe_independent_action",
+        "actor": 1,
+        "speaker": 1
+      },
+      {
+        "participants": [
+          {
+            "name": "Emma",
+            "emoji": "👧🏽"
+          },
+          {
+            "name": "Noah",
+            "emoji": "👦🏼"
+          }
+        ],
+        "object": "the book",
+        "objectEmoji": "📖",
+        "action": "opened the book",
+        "id": "you-and-me-2-2",
+        "sceneId": "you-and-me-scene-2",
+        "type": "describe_independent_action",
+        "actor": 1,
+        "speaker": 0
+      },
+      {
+        "participants": [
+          {
+            "name": "Emma",
+            "emoji": "👧"
+          },
+          {
+            "name": "Noah",
+            "emoji": "👦"
+          }
+        ],
+        "object": "the crayons",
+        "objectEmoji": "🖍️",
+        "action": "packed away the crayons",
+        "id": "you-and-me-3-1",
+        "sceneId": "you-and-me-scene-3",
+        "type": "describe_independent_action",
+        "actor": 0,
+        "speaker": 1
+      },
+      {
+        "participants": [
+          {
+            "name": "Emma",
+            "emoji": "👧"
+          },
+          {
+            "name": "Noah",
+            "emoji": "👦"
+          }
+        ],
+        "object": "the crayons",
+        "objectEmoji": "🖍️",
+        "action": "packed away the crayons",
+        "id": "you-and-me-3-2",
+        "sceneId": "you-and-me-scene-3",
+        "type": "describe_independent_action",
+        "actor": 0,
+        "speaker": 0
+      }
+    ]
+  }
+}

@@ -164,6 +164,7 @@ export interface SentenceSchemaData {
 
 // Re-export rebuilt SentenceAnalyzer types
 export type { SentenceAnalyzerData, SentenceAnalyzerChallenge, SentenceWord } from './primitives/visual-primitives/literacy/SentenceAnalyzer';
+export type { YouAndMeData, YouAndMeChallenge } from './primitives/visual-primitives/literacy/YouAndMe';
 export type { StoryTalkData } from './primitives/visual-primitives/literacy/StoryTalk';
 export type { WordFlipData, WordFlipChallenge } from './primitives/visual-primitives/literacy/WordFlip';
 export type { DiDiceRollData, DiDiceRollChallenge, DiceComparison, DieValue } from './primitives/visual-primitives/direct-instruction/DiDiceRoll';
@@ -1433,6 +1434,7 @@ export type ComponentId =
   | 'comparison-panel'   // A vs B
   | 'generative-table'   // Structured data
   | 'sentence-analyzer'  // Linguistic breakdown
+  | 'you-and-me'         // Spoken I/you sentences from the current speaker's perspective
   | 'graph-board'        // Interactive polynomial graphing tool
 
   // Math & Science Engines
@@ -1547,6 +1549,7 @@ export type ComponentId =
   | 'opinion-builder'           // Argument/persuasive writing scaffold (grades 2-6)
   | 'revision-workshop'         // Edit and revise drafts with targeted feedback (grades 2-6)
   | 'letter-sound-link'         // Interactive letter-sound linking
+  | 'letter-workshop'          // Assisted uppercase/lowercase letter formation tracing (K-1)
   | 'letter-spotter'            // Interactive letter spotting and recognition
   | 'read-aloud-studio'         // Live-judged read-aloud fluency, one line at a time (grades 1-6)
   | 'rhyme-studio'              // Interactive rhyming word exploration and practice
@@ -2272,6 +2275,7 @@ export type { PictureVocabularyData } from './primitives/visual-primitives/liter
 export type { SoundSwapData } from './primitives/visual-primitives/literacy/SoundSwap';
 export type { LetterSpotterData } from './primitives/visual-primitives/literacy/LetterSpotter';
 export type { LetterSoundLinkData } from './primitives/visual-primitives/literacy/LetterSoundLink';
+export type { LetterWorkshopData } from './primitives/visual-primitives/literacy/LetterWorkshop';
 export type { CvcSpellerData } from './primitives/visual-primitives/literacy/CvcSpeller';
 export type { WordWorkoutData } from './primitives/visual-primitives/literacy/WordWorkout';
 export type { WordSorterData } from './primitives/visual-primitives/literacy/WordSorter';

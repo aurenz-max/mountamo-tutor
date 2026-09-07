@@ -51,6 +51,7 @@ import { generateSyllableClapper } from '../../literacy/gemini-syllable-clapper'
 import { generatePhonemeExplorer } from '../../literacy/gemini-phoneme-explorer';
 import { generateSoundSwap } from '../../literacy/gemini-sound-swap';
 import { generateLetterSpotter } from '../../literacy/gemini-letter-spotter';
+import { generateLetterWorkshop } from '../../literacy/gemini-letter-workshop';
 import { generateLetterSoundLink } from '../../literacy/gemini-letter-sound-link';
 import { generateCvcSpeller } from '../../literacy/gemini-cvc-speller';
 import { generateWordWorkout } from '../../literacy/gemini-word-workout';
@@ -59,6 +60,7 @@ import { generatePictureVocabulary } from '../../literacy/gemini-picture-vocabul
 import { generateInteractiveBook } from '../../literacy/gemini-interactive-book';
 import { generateStoryTalk } from '../../literacy/gemini-story-talk';
 import { generateWordFlip } from '../../literacy/gemini-word-flip';
+import { generateYouAndMe } from '../../literacy/gemini-you-and-me';
 
 // ============================================================================
 // Wave 1: Writing — Paragraph Architect
@@ -590,6 +592,12 @@ registerContextGenerator('picture-vocabulary', async (ctx) => ({
   data: await generatePictureVocabulary(ctx),
 }));
 
+registerContextGenerator('letter-workshop', async (ctx) => ({
+  type: 'letter-workshop',
+  instanceId: ctx.instanceId,
+  data: await generateLetterWorkshop(ctx),
+}));
+
 // ============================================================================
 // Reading Informational Text — Interactive Book
 // ============================================================================
@@ -647,4 +655,10 @@ registerContextGenerator('word-flip', async (ctx) => ({
   data: await generateWordFlip(ctx),
 }));
 
-console.log('📚 Literacy generators registered: 31 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip)');
+registerContextGenerator('you-and-me', async (ctx) => ({
+  type: 'you-and-me',
+  instanceId: ctx.instanceId,
+  data: await generateYouAndMe(ctx),
+}));
+
+console.log('📚 Literacy generators registered: 32 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip + You & Me)');

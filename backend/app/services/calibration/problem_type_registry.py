@@ -35,6 +35,16 @@ class PriorConfig:
 # =========================================================================
 
 PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
+    "you-and-me": {
+        "describe_action": PriorConfig(2.5, "Spoken I/you from a named speaker's perspective"),
+        "describe_independent_action": PriorConfig(3.5, "Bind myself/yourself to the actor of an independent action"),
+    },
+    # Design priors, not empirically calibrated. Copy/write feedback stays local.
+    "letter-workshop": {
+        "trace": PriorConfig(1.5, "Assisted letter tracing"),
+        "copy": PriorConfig(3.5, "Copy beside model; provisional practice"),
+        "write": PriorConfig(5.0, "Write from auditory cue; provisional practice"),
+    },
     # -----------------------------------------------------------------
     # Multi-phase math primitives (per-mode β)
     # -----------------------------------------------------------------

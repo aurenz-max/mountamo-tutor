@@ -8,6 +8,7 @@ import { ComparisonPanel } from '../primitives/ComparisonPanel';
 import { FormulaCard } from '../primitives/FormulaCard';
 import { MathVisuals } from '../primitives/MathVisuals';
 import SentenceAnalyzer from '../primitives/visual-primitives/literacy/SentenceAnalyzer';
+import YouAndMe from '../primitives/visual-primitives/literacy/YouAndMe';
 import { CustomVisual } from '../primitives/CustomVisual';
 import GraphBoard from '../primitives/GraphBoard';
 import ThreeDShapeExplorer from '../primitives/visual-primitives/math/ThreeDShapeExplorer';
@@ -204,6 +205,7 @@ import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureV
 import SoundSwap from '../primitives/visual-primitives/literacy/SoundSwap';
 import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotter';
 import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
+import LetterWorkshop from '../primitives/visual-primitives/literacy/LetterWorkshop';
 import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
 import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
@@ -370,6 +372,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'sentence-analyzer': {
     component: SentenceAnalyzer,
     sectionTitle: 'Sentence Analyzer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'you-and-me': {
+    component: YouAndMe,
+    sectionTitle: 'You & Me',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
@@ -2233,6 +2245,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'letter-sound-link': {
     component: LetterSoundLink,
     sectionTitle: 'Letter-Sound Link',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'letter-workshop': {
+    component: LetterWorkshop,
+    sectionTitle: 'Letter Workshop',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

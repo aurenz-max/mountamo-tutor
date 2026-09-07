@@ -58,6 +58,8 @@ export interface UsePrimitiveEvaluationOptions<TMetrics extends PrimitiveMetrics
 
   /** Whether to auto-submit on component unmount if there's pending work */
   autoSubmitOnUnmount?: boolean;
+  /** Keep provisional feedback in the local callback; never update adaptive state. */
+  localOnly?: boolean;
 }
 
 /**
@@ -163,6 +165,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     onSubmitSuccess,
     onSubmitError,
     autoSubmitOnUnmount = false,
+    localOnly = false,
   } = options;
 
   // Get context (may be null if no provider)
@@ -212,7 +215,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       // Use the synchronous latch (not the lagging `hasSubmitted` state) so the
       // unmount path can't re-submit an attempt submitResult already sent.
       if (
-        autoSubmitOnUnmount &&
+        autoSubmitOnUnmount && !localOnly &&
         pendingResultRef.current &&
         submittedAttemptRef.current !== pendingResultRef.current.attemptId
       ) {
@@ -220,7 +223,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
         evaluationContext?.submitEvaluation(pendingResultRef.current);
       }
     };
-  }, [autoSubmitOnUnmount, hasSubmitted, evaluationContext]);
+  }, [autoSubmitOnUnmount, hasSubmitted, evaluationContext, localOnly]);
 
   /**
    * Submit the evaluation result.
@@ -336,7 +339,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     onSubmit?.(result);
 
     // Submit to context if available
-    if (evaluationContext) {
+    if (evaluationContext && !localOnly) {
       setIsSubmitting(true);
 
       evaluationContext
@@ -356,7 +359,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       // No context, just mark as submitted locally
       setHasSubmitted(true);
       setSubmittedResult(result);
-      console.warn(
+      if (!localOnly) console.warn(
         '[usePrimitiveEvaluation] No EvaluationContext found. Result not sent to backend:',
         result
       );
@@ -379,6 +382,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     onSubmitSuccess,
     onSubmitError,
     evaluationContext,
+    localOnly,
     exhibitContext,
   ]);
 

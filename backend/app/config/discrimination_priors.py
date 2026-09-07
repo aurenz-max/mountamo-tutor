@@ -50,6 +50,10 @@ DEFAULT_DISCRIMINATION_PRIOR = DiscriminationPrior(a=1.4, c=0.0)
 # =========================================================================
 
 DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
+    "you-and-me": {
+        "describe_action": PATTERN_CONSTRUCTED_RESPONSE,
+        "describe_independent_action": PATTERN_CONSTRUCTED_RESPONSE,
+    },
     # Live-judged spoken constructed responses on a code-owned dice stimulus.
     "di-dice-roll": {
         "count_pips":   PATTERN_CONSTRUCTED_RESPONSE,

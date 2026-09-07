@@ -1,0 +1,194 @@
+[
+  {
+    "name": "trace",
+    "pass": true,
+    "status": 200,
+    "body": {
+      "type": "letter-workshop",
+      "instanceId": "letter-workshop-1788815691328",
+      "data": {
+        "title": "Letter Shape Practice",
+        "description": "Follow the path to practice your writing skills.",
+        "challengeType": "trace",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "trace",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "trace",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "trace",
+            "templateId": "lowercase-l"
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    }
+  },
+  {
+    "name": "copy",
+    "pass": true,
+    "status": 200,
+    "body": {
+      "type": "letter-workshop",
+      "instanceId": "letter-workshop-1788815692032",
+      "data": {
+        "title": "Letter Writing Practice",
+        "description": "Trace and copy the shapes to build your writing skills.",
+        "challengeType": "copy",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    }
+  },
+  {
+    "name": "mixed",
+    "pass": true,
+    "status": 200,
+    "body": {
+      "type": "letter-workshop",
+      "instanceId": "letter-workshop-1788815692757",
+      "data": {
+        "title": "Letter Practice",
+        "description": "Let us practice making shapes and forming lines together. Take your time and do your best.",
+        "challengeType": "trace",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "trace",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "lowercase-l"
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    }
+  },
+  {
+    "name": "blend",
+    "pass": true,
+    "status": 200,
+    "body": {
+      "type": "letter-workshop",
+      "instanceId": "letter-workshop-1788815693458",
+      "data": {
+        "title": "Letter Practice Session",
+        "description": "Take your time and do your best work as you practice your writing skills.",
+        "challengeType": "copy",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "lowercase-l"
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    }
+  },
+  {
+    "name": "intent-copy",
+    "pass": true,
+    "status": 200,
+    "body": {
+      "type": "letter-workshop",
+      "instanceId": "letter-workshop-1788815694159",
+      "data": {
+        "title": "Letter Writing Practice",
+        "description": "Look at the model and try writing your own on the line below.",
+        "challengeType": "copy",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "copy",
+            "templateId": "lowercase-l"
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    }
+  },
+  {
+    "name": "intent-write",
+    "pass": true,
+    "status": 200,
+    "body": {
+      "type": "letter-workshop",
+      "instanceId": "letter-workshop-1788815695681",
+      "data": {
+        "title": "Letter Practice Time",
+        "description": "Listen to the letter name and write what you hear.",
+        "challengeType": "write",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "write",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "write",
+            "templateId": "lowercase-l"
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "lowercase-l"
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    }
+  }
+]

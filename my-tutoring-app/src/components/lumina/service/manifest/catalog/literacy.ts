@@ -14,8 +14,113 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
+  {
+    id: 'you-and-me',
+    description:
+      'Kindergarten Language Arts spoken sentence production with the personal subject pronouns I and you. '
+      + 'Children describe familiar partner routines from the CURRENT NAMED SPEAKER\'S perspective. '
+      + 'Personal-pronoun mode uses I/you; independent-action mode uses myself/yourself with the same actor. '
+      + 'Across paired scenes the actor and action stay '
+      + 'the same while the speaker switches, so the required subject pronoun changes. '
+      + 'A live tutor prompts and judges each spoken sentence, with correction and retry.',
+    constraints:
+      'Requires a microphone and live tutor. Use short, familiar '
+      + 'past-tense actions and two clearly named participants per scene. The child speaks AS the named '
+      + 'speaker, addressing the other partner. I identifies the speaker as actor; you identifies the '
+      + 'listening partner as actor. Preserve each scene\'s participants, actor, action and object across '
+      + 'its two turns while swapping the speaker. The scripted runner owns the opening and turn prompts. '
+      + 'describe_action assesses I/you; describe_independent_action also requires correctly bound myself/yourself '
+      + 'for an action completed without help. Six turns per pinned mode; blends/mixed contain four turns per mode. '
+      + 'Do not assign possessives, third-person/object reflexives, independent writing, or transfer to real conversations.',
+    evalModes: [
+      { evalMode: 'describe_action', label: 'Describe the action (I / you)', beta: 2.5,
+        scaffoldingMode: 2, discrimination: 1.6, challengeTypes: ['describe_action'],
+        description: 'Use I or you as the subject when describing a partner routine from the named speaker perspective. No self form is required.' },
+      { evalMode: 'describe_independent_action', label: 'Did it independently (myself / yourself)', beta: 3.5,
+        scaffoldingMode: 2, discrimination: 1.6, challengeTypes: ['describe_independent_action'],
+        description: 'Use myself or yourself in guided speaking to express doing an action without help, binding the self form to the same actor as I or you. Assess both referents together.' },
+    ],
+    audioInput: JUDGED_AUDIO_INPUT,
+    tutoring: {
+      taskDescription: 'The child speaks AS {{speaker}} TO {{listener}} about {{actor}}. Scene: {{scene}} '
+        + 'Current task: {{challengeType}}. {{taskFocus}} Turn {{currentTurn}} of {{totalTurns}}. '
+        + 'The named role is the child’s pretend speaking position, not the tutor or the real child’s identity.',
+      contextKeys: ['challengeType', 'scene', 'speaker', 'listener', 'actor', 'taskFocus', 'modeHint', 'currentTurn', 'totalTurns', 'supportTier', 'tutorRevealPolicy'],
+      scaffoldingLevels: {
+        level1: 'Which partner is speaking now?',
+        level2: '{{speaker}} is speaking to {{listener}}. {{actor}} did the action. Speak from {{speaker}}’s place.',
+        level3: 'First picture {{speaker}} talking. Keep {{actor}} as the person who did the action. '
+          + '{{modeHint}}',
+      },
+      commonStruggles: [
+        { pattern: 'Keeps the same pronoun after the speaking role changes', response: 'The action stayed the same, but {{speaker}} is speaking now. Try from that partner’s place.' },
+        { pattern: 'Repeats the named scene instead of speaking as the partner', response: 'Pretend to be {{speaker}} talking to {{listener}}. Tell the action from that place.' },
+        { pattern: 'Says only a pronoun without an action', response: 'Tell what {{actor}} did in a sentence.' },
+        { pattern: 'Uses a self word for someone other than the subject', response: 'Keep the self word pointing to the same person who did the action.' },
+        { pattern: 'Omits a self word in describe_independent_action', response: '{{actor}} did the action without help. Add a self word that keeps that same person.' },
+      ],
+      aiDirectives: [
+        { title: 'SUPPORT WITHDRAWAL', instruction: 'Current support tier: {{supportTier}}. {{tutorRevealPolicy}} '
+          + 'This policy overrides the detail of generic scaffold levels and struggle hints. Keep scene replay available. '
+          + 'Do not add a scored justification question. The scripted correction after an actual wrong attempt remains available at every tier.' },
+        { title: 'SCRIPTED SPOKEN LOOP', instruction: 'The shared runner owns the opening and every advance. '
+          + 'On [YOU_AND_ME_ITEM], speak only its requested opening/ask, then wait. Do not add a greeting, model answer, extra question or next scene. '
+          + 'On [YOU_AND_ME_HEAR], repeat only the supplied scene and ask. On [YOU_AND_ME_MOVE_ON], follow its next-turn cue. '
+          + 'On [YOU_AND_ME_COMPLETE], say the supplied closing once and stop. Never read tags or judging instructions aloud. '
+          + 'Context updates are silent; changing names, mode or progress does not itself ask for speech.' },
+        { title: 'ROLE AND MODE BOUNDARIES', instruction: 'Use the latest item cue as the judging authority; roles and task can change within a session. '
+          + 'describe_action requires the appropriate I/you subject and action, never a self form. '
+          + 'describe_independent_action additionally requires myself/yourself bound to that SAME actor, expressing independent action. '
+          + 'Accept natural wording and age-appropriate grammar; never accept token presence, swapped referents, named-scene echoes or a bare pronoun. '
+          + 'Do not judge the child relative to the real tutor’s identity. Never claim conversational transfer from pictured rehearsal.' },
+        { title: 'HELP AND CORRECTION', instruction: 'Use at most one short scaffold when help is requested; levels and struggle responses must not supply the target pronoun or model sentence. '
+          + 'Apply self-word coaching only on independent-action items. Questions asking for help are not scored answers. '
+          + 'Never start hints, replay or off-task replies with the verdict openers Yes or My turn. '
+          + 'After an actual wrong attempt, follow the current item’s correction protocol: brief role explanation, its model, then re-elicit. '
+          + 'That post-attempt correction is the only modeling exception; never model during a hint or before the first attempt. '
+          + 'Keep correction caps and advancement with the runner. After an affirmation, stop; do not add another celebration or question.' },
+      ],
+    },
+    supportsEvaluation: true,
+    affordances: { representation: 'pictorial', answers: ['spoken'], role: 'apply', minutes: 5 },
+  },
+  {
+    id: 'letter-workshop',
+    description: 'Letter formation practice: trace guided strokes, copy a separate model onto blank writing lines, or write from an audible letter name and case. All 26 letters in both cases, with cumulative Groups 1-4 and 3-6 challenges.',
+    constraints: 'Code owns letter templates and scope. Use letters, letterCase, letterGroup (1-4), and count (3-6). Trace is assisted path following. Copy/write use provisional geometric feedback retained locally, excluded from adaptive updates pending calibration. Independent write hides the target until submission and requires audio playback. Mixed write after a model is practice, not an unaided baseline.',
+    evalModes: [
+      { evalMode: 'trace', label: 'Assisted tracing', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['trace'], description: 'Follow visible letter paths with numbered starts and direction arrows.' },
+      { evalMode: 'copy', label: 'Copy beside a model', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['copy'], description: 'Reproduce a separate visible letter model on blank writing lines. Provisional practice feedback.' },
+      { evalMode: 'write', label: 'Write from listening', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['write'], description: 'Produce a letter from its spoken name and case without a visible model. Provisional practice feedback.' },
+    ],
+    tutoring: {
+      taskDescription: 'Letter formation practice in {{challengeType}} mode, item {{challengeNumber}} of {{totalChallenges}}. Assistance: {{assistance}}. Current activity: {{interactionState}}. Results are provisional geometric feedback, not handwriting mastery.',
+      contextKeys: ['challengeType', 'letter', 'letterCase', 'assistance', 'challengeNumber', 'totalChallenges', 'instruction', 'interactionState', 'cueState', 'modelVisible', 'feedback', 'feedbackFocus', 'attemptCount', 'hintLevel', 'assessmentScope'],
+      scaffoldingLevels: {
+        level1: 'Offer one brief nudge. In trace, point to the visible starting dot. In copy, invite comparison with the separate model. In write without a model, say "You can hear the letter name again." Never name, describe, or infer the hidden letter.',
+        level2: 'Offer one concrete action tied to the current support. Trace: follow one visible stroke, then lift. Copy: notice how the visible model meets the writing lines. Write without a model: replay the audio, then make your own marks; do not describe target strokes.',
+        level3: 'When a model is visible, coach one visible part at a time, then let the child draw. Do not draw for the child. Without a visible model, limit help to replaying the cue and using the paper; do not supply a letter shape, letter name, or stroke recipe.',
+      },
+      commonStruggles: [
+        { pattern: 'Submitted trace starts away from its numbered dot or follows the wrong stroke order', response: 'After submission, point to one numbered start on the visible trace guide. Invite a retry from that dot.' },
+        { pattern: 'Submitted trace travels against its direction arrow', response: 'After submission, point to the visible arrow and invite one stroke in that direction.' },
+        { pattern: 'Submitted work leaves part of a visible model incomplete', response: 'Invite comparison of the child\'s marks with one missing part of the visible model. Never infer missing parts before a write model is revealed.' },
+        { pattern: 'Submitted work contains extra strokes', response: 'With a model visible, compare its separate strokes and the child\'s marks. Suggest lifting between strokes. Do not diagnose from pointer movement alone.' },
+        { pattern: 'The spoken letter cue has not played or failed', response: 'Point to Hear the letter name and invite retry. Do not replace the cue with a written target or guess the letter.' },
+        { pattern: 'Repeated clearing or retries', response: 'Offer one small action using only visible support. Let the child try again or move on without pressure.' },
+      ],
+      aiDirectives: [
+        { title: 'DRAWING AND AUDIO', instruction: 'Stay silent while interactionState is drawing or cueState is speaking. Context updates and pen lifts are not requests for speech. Never narrate live ink, count strokes aloud, or speak over the letter cue. Give at most one short sentence per requested moment, then wait.' },
+        { title: 'MODE AND TARGET BOUNDARY', instruction: 'Trace has an intentional visible guide; copy has a separate model, never an overlaid guide. In write, letter and letterCase are withheld even after feedback. Never infer the target from lesson history, a previous item, or objective metadata. The browser cue alone supplies the name. With no model visible, all hints stay procedural. Never claim unaided performance after a model was shown.' },
+        { title: 'MOMENTS', instruction: 'For [ACTIVITY_START] and [NEXT_ITEM], use only the current supplied instruction and assistance; never reuse a previous target. For [READ_ALOUD], read the supplied instruction once without elaboration. For [ANSWER_CORRECT] or [ANSWER_INCORRECT], use the supplied provisional feedback without inventing a diagnosis. For [ALL_COMPLETE], acknowledge practice without claiming mastery or prompting another task. Bracketed tags are private and must never be spoken.' },
+      ],
+    },
+    supportsEvaluation: true,
+    affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 5 },
+  },
   // ===== EXISTING PRIMITIVES =====
   {
     id: 'sentence-analyzer',

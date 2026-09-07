@@ -9,6 +9,8 @@ import {
   buildScaffoldPromptPreview,
 } from '@/components/lumina/service/qa/tutoring/scaffoldAudit';
 import { buildDiDrivePlan, isDiPort } from '@/components/lumina/service/qa/di/diDrivePlan';
+import { buildYouAndMeItems, youAndMePack } from '@/components/lumina/primitives/visual-primitives/literacy/youAndMeScript';
+import type { YouAndMeData } from '@/components/lumina/primitives/visual-primitives/literacy/YouAndMe';
 
 /**
  * GET /api/lumina/tutor-test — deterministic tutoring-scaffold QA (/tutor-test skill).
@@ -97,15 +99,21 @@ export async function GET(request: NextRequest) {
     const evalMode = searchParams.get('evalMode') || entry.evalModes?.[0]?.evalMode;
     const topic = searchParams.get('topic') || 'general practice';
     const gradeLevel = searchParams.get('gradeLevel') || 'elementary';
+    const difficulty = searchParams.get('difficulty') || undefined;
     try {
       const item = {
         componentId,
         instanceId: `tutor-test-${componentId}-${Date.now()}`,
-        config: { ...(evalMode ? { targetEvalMode: evalMode } : {}) },
+        config: { ...(evalMode ? { targetEvalMode: evalMode } : {}), ...(difficulty ? { difficulty } : {}) },
       };
       const result = await generateComponentContent(item, topic, gradeLevel);
       const generated = (result?.data ?? {}) as Record<string, unknown>;
-      const generatedBag = flattenGeneratedData(generated);
+      // Role names and mode help are derived by the production pack, not raw indices.
+      const youAndMeItems = componentId === 'you-and-me'
+        ? buildYouAndMeItems((generated as unknown as YouAndMeData).challenges) : null;
+      const generatedBag = youAndMeItems?.length
+        ? youAndMePack(youAndMeItems).contextFor(youAndMeItems[0])
+        : flattenGeneratedData(generated);
 
       const staticKeys = new Set(audit.dataBagKeys ?? []);
       const varResolution = [

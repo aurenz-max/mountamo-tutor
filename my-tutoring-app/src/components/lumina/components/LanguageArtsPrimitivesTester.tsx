@@ -34,12 +34,14 @@ import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExp
 import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
 import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotter';
 import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
+import LetterWorkshop from '../primitives/visual-primitives/literacy/LetterWorkshop';
 import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
 import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
 import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureVocabulary';
 import StoryTalk from '../primitives/visual-primitives/literacy/StoryTalk';
 import WordFlip from '../primitives/visual-primitives/literacy/WordFlip';
+import YouAndMe from '../primitives/visual-primitives/literacy/YouAndMe';
 
 import {
   EvaluationProvider,
@@ -68,12 +70,14 @@ type PrimitiveType =
   | 'sound-swap' | 'phoneme-explorer' | 'syllable-clapper'
   | 'letter-spotter'
   | 'letter-sound-link'
+  | 'letter-workshop'
   | 'cvc-speller'
   | 'word-workout'
   | 'word-sorter'
   | 'picture-vocabulary'
   | 'story-talk'
-  | 'word-flip';
+  | 'word-flip'
+  | 'you-and-me';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -108,6 +112,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'evidence-finder', label: 'Evidence Finder', icon: '🔍', topic: 'Finding text evidence for claims', strand: 'RI', wave: 2 },
   { value: 'interactive-book', label: 'Interactive Book', icon: '📖', topic: 'Animals and habitats', strand: 'RI', wave: 2 },
   // ===== W: Writing =====
+  { value: 'letter-workshop', label: 'Letter Workshop', icon: '\u270D', topic: 'Assisted uppercase and lowercase letter formation tracing', strand: 'W', wave: 6 },
   { value: 'paragraph-architect', label: 'Paragraph Architect', icon: '🍔', topic: 'Building an informational paragraph', strand: 'W', wave: 1 },
   { value: 'story-planner', label: 'Story Planner', icon: '✏️', topic: 'Planning a narrative story', strand: 'W', wave: 4 },
   { value: 'opinion-builder', label: 'Opinion Builder', icon: '💬', topic: 'Should students have recess every day?', strand: 'W', wave: 3 },
@@ -116,6 +121,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'read-aloud-studio', label: 'Read Aloud Studio', icon: '🎙️', topic: 'Fluency practice with model reading', strand: 'SL', wave: 4 },
   { value: 'story-talk', label: 'Story Talk', icon: '👂', topic: 'A squirrel hides an acorn', strand: 'SL', wave: 5 },
   // ===== L: Language =====
+  { value: 'you-and-me', label: 'You & Me', icon: '\uD83D\uDC65', topic: 'Speaker and listener pronouns in familiar routines', strand: 'L', wave: 6 },
   { value: 'sentence-builder', label: 'Sentence Builder', icon: '🧱', topic: 'Building compound sentences', strand: 'L', wave: 1 },
   { value: 'context-clues-detective', label: 'Context Clues', icon: '🕵️', topic: 'Determining word meaning from context', strand: 'L', wave: 2 },
   { value: 'figurative-language-finder', label: 'Figurative Language', icon: '🎨', topic: 'Finding similes and metaphors', strand: 'L', wave: 3 },
@@ -153,6 +159,22 @@ const PrimitiveRenderer: React.FC<{
   if (!data) return null;
 
   switch (componentId) {
+    case 'you-and-me':
+      return (
+        <YouAndMe data={{
+          ...(data as Parameters<typeof YouAndMe>[0]['data']),
+          instanceId: 'you-and-me-tester',
+          onEvaluationSubmit,
+        }} />
+      );
+    case 'letter-workshop':
+      return (
+        <LetterWorkshop data={{
+          ...(data as Parameters<typeof LetterWorkshop>[0]['data']),
+          instanceId: 'letter-workshop-tester',
+          onEvaluationSubmit,
+        }} />
+      );
     case 'phonics-blender':
       return <PhonicsBlender data={data as Parameters<typeof PhonicsBlender>[0]['data']} />;
     case 'decodable-reader':
@@ -335,6 +357,18 @@ const EvaluationResultsPanel: React.FC = () => {
                 {result.metrics && 'type' in result.metrics && (
                   <p className="text-xs text-slate-400 mt-1">{result.metrics.type}</p>
                 )}
+                {result.metrics.type === 'letter-workshop' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType} (practice checks)</span>
+                    <span>Paths met checks: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span className="col-span-2">Provisional geometric checks; independent writing is unassessed.</span>
+                  </div>
+                )}
                 {result.metrics.type === 'picture-vocabulary' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.challengeType}</span>
@@ -360,6 +394,17 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>First try: {result.metrics.firstTryCount}</span>
                     <span>Attempts: {result.metrics.attemptsCount}</span>
                     <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
+                )}
+                {result.metrics.type === 'you-and-me' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
                   </div>
                 )}
                 {result.metrics.type === 'interactive-book' && (

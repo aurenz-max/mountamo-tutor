@@ -1,0 +1,32 @@
+{
+  "type": "letter-workshop",
+  "instanceId": "letter-workshop-1788813754554",
+  "data": {
+    "title": "Fun Letter Tracing",
+    "description": "Trace the guide from the dot, following the arrows.",
+    "challengeType": "trace",
+    "challenges": [
+      {
+        "id": "letter-workshop-1",
+        "type": "trace",
+        "templateId": "uppercase-N"
+      },
+      {
+        "id": "letter-workshop-2",
+        "type": "trace",
+        "templateId": "lowercase-s"
+      },
+      {
+        "id": "letter-workshop-3",
+        "type": "trace",
+        "templateId": "lowercase-a"
+      },
+      {
+        "id": "letter-workshop-4",
+        "type": "trace",
+        "templateId": "lowercase-p"
+      }
+    ],
+    "gradeLevel": "kindergarten"
+  }
+}
