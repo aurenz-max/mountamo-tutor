@@ -1,0 +1,231 @@
+{
+  "id": "LA004-01-A",
+  "primitive": "word-sorter",
+  "mode": "binary_sort",
+  "draw": 1,
+  "subject": "LANGUAGE_ARTS",
+  "grade": "K",
+  "requirement": "Sort basic nouns (people, places, things) and action verbs using picture cards with 90% accuracy",
+  "requestedAt": "2026-09-07T19:31:15.717Z",
+  "inputHash": "4005a45b88a57639d1d4379a629a76219853b502b2868ebbd32bdc801685dd6c",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+    "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+    "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+    "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+    "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+    "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+    "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+    "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+  },
+  "params": {
+    "componentId": "word-sorter",
+    "evalMode": "binary_sort",
+    "topic": "Sort basic nouns (people, places, things) and action verbs using picture cards with 90% accuracy",
+    "intent": "Sort basic nouns (people, places, things) and action verbs using picture cards with 90% accuracy",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "word-sorter",
+    "evalMode": "binary_sort",
+    "duration": 2455,
+    "catalogMeta": {
+      "label": "Two Groups (Tier 1)",
+      "beta": 1.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "binary_sort"
+      ],
+      "description": "Hear a word, then SAY which of 2 groups it belongs with (nouns vs verbs, singular vs plural). Spoken production; nothing is tapped."
+    },
+    "validation": {
+      "challengeCount": 3,
+      "typesFound": [
+        "binary_sort"
+      ],
+      "payloadBytes": 2112,
+      "longestStringLength": 96,
+      "longestStringPath": "intent",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Fun Word Sorting Game",
+      "gradeLevel": "K",
+      "sortingTopic": "Nouns and Verbs",
+      "challenges": [
+        {
+          "id": "binary_sort-0",
+          "type": "binary_sort",
+          "instruction": "Sort these words into nouns and verbs",
+          "bucketLabels": [
+            "Nouns",
+            "Verbs"
+          ],
+          "bucketEmojis": [
+            "📦",
+            "🏃"
+          ],
+          "words": [
+            {
+              "id": "w3",
+              "word": "jump",
+              "emoji": "🦘",
+              "correctBucket": "Verbs"
+            },
+            {
+              "id": "w0",
+              "word": "cat",
+              "emoji": "🐱",
+              "correctBucket": "Nouns"
+            },
+            {
+              "id": "w2",
+              "word": "dog",
+              "emoji": "🐶",
+              "correctBucket": "Nouns"
+            },
+            {
+              "id": "w4",
+              "word": "ball",
+              "emoji": "⚽",
+              "correctBucket": "Nouns"
+            },
+            {
+              "id": "w1",
+              "word": "run",
+              "emoji": "🏃",
+              "correctBucket": "Verbs"
+            },
+            {
+              "id": "w5",
+              "word": "sit",
+              "emoji": "🪑",
+              "correctBucket": "Verbs"
+            }
+          ],
+          "showBucketEmojis": true,
+          "showFiledWords": true,
+          "namesSortCriterion": true
+        },
+        {
+          "id": "binary_sort-1",
+          "type": "binary_sort",
+          "instruction": "Sort these words into nouns and verbs",
+          "bucketLabels": [
+            "Nouns",
+            "Verbs"
+          ],
+          "bucketEmojis": [
+            "👶",
+            "⭐"
+          ],
+          "words": [
+            {
+              "id": "w1",
+              "word": "boy",
+              "emoji": "👦",
+              "correctBucket": "Nouns"
+            },
+            {
+              "id": "w0",
+              "word": "sleep",
+              "emoji": "😴",
+              "correctBucket": "Verbs"
+            },
+            {
+              "id": "w3",
+              "word": "girl",
+              "emoji": "👧",
+              "correctBucket": "Nouns"
+            },
+            {
+              "id": "w4",
+              "word": "play",
+              "emoji": "🧸",
+              "correctBucket": "Verbs"
+            },
+            {
+              "id": "w5",
+              "word": "book",
+              "emoji": "📖",
+              "correctBucket": "Nouns"
+            },
+            {
+              "id": "w2",
+              "word": "eat",
+              "emoji": "🍎",
+              "correctBucket": "Verbs"
+            }
+          ],
+          "showBucketEmojis": true,
+          "showFiledWords": true,
+          "namesSortCriterion": true
+        },
+        {
+          "id": "binary_sort-2",
+          "type": "binary_sort",
+          "instruction": "Sort these words into nouns and verbs",
+          "bucketLabels": [
+            "Nouns",
+            "Verbs"
+          ],
+          "bucketEmojis": [
+            "🌳",
+            "🎵"
+          ],
+          "words": [
+            {
+              "id": "w0",
+              "word": "sun",
+              "emoji": "☀️",
+              "correctBucket": "Nouns"
+            },
+            {
+              "id": "w2",
+              "word": "car",
+              "emoji": "🚗",
+              "correctBucket": "Nouns"
+            },
+            {
+              "id": "w5",
+              "word": "hop",
+              "emoji": "🐰",
+              "correctBucket": "Verbs"
+            },
+            {
+              "id": "w3",
+              "word": "sing",
+              "emoji": "🎤",
+              "correctBucket": "Verbs"
+            },
+            {
+              "id": "w1",
+              "word": "swim",
+              "emoji": "🏊",
+              "correctBucket": "Verbs"
+            },
+            {
+              "id": "w4",
+              "word": "tree",
+              "emoji": "🌲",
+              "correctBucket": "Nouns"
+            }
+          ],
+          "showBucketEmojis": true,
+          "showFiledWords": true,
+          "namesSortCriterion": true
+        }
+      ],
+      "difficulty": "easy",
+      "intent": "Sort basic nouns (people, places, things) and action verbs using picture cards with 90% accuracy",
+      "objectiveGrade": "K",
+      "supportTier": "easy"
+    }
+  },
+  "durationMs": 2476
+}

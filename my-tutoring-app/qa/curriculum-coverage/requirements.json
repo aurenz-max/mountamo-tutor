@@ -1,0 +1,2012 @@
+[
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759890862269-wi7duwcds-1759891079384-1c0fmvdz0",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Rhyme Recognition & Production",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759890862269-wi7duwcds",
+    "text": "Recognize if two spoken words rhyme (e.g., \"Do 'cat' and 'hat' rhyme?\")",
+    "legacyPrimitive": "rhyme-studio",
+    "legacyModes": [
+      "recognition"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759890862269-wi7duwcds-1759891391758-d81wh1iyj",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Rhyme Recognition & Production",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759890862269-wi7duwcds",
+    "text": "Identify the rhyming word from a spoken set of three (e.g., \"Which word rhymes with 'cat': 'dog' or 'hat'?\")",
+    "legacyPrimitive": "rhyme-studio",
+    "legacyModes": [
+      "identification"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759890862269-wi7duwcds-1759891656589-zkt9m9dvw",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Rhyme Recognition & Production",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759890862269-wi7duwcds",
+    "text": "Produce a word that rhymes with a given spoken word (e.g., \"Tell me a word that rhymes with 'sun'.\")",
+    "legacyPrimitive": "rhyme-studio",
+    "legacyModes": [
+      "production"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759892796584-kahj6kjfp-1759892949714-mjs5r6soc",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Syllable Blending & Segmentation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759892796584-kahj6kjfp",
+    "text": "Blend two or three spoken syllables to form a word (e.g., \"What word is 'cow'...'boy'?\")",
+    "legacyPrimitive": "syllable-clapper",
+    "legacyModes": [
+      "easy"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759892796584-kahj6kjfp-1759893001368-0fkezo1j7",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Syllable Blending & Segmentation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759892796584-kahj6kjfp",
+    "text": "Segment a spoken two or three-syllable word into its parts (e.g., \"How many parts in 'butterfly'? Let's clap it.\")",
+    "legacyPrimitive": "syllable-clapper",
+    "legacyModes": [
+      "easy",
+      "medium"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893531512-mruutzaat-1759893580666-q4j0gp4z1",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Onset-Rime Blending & Segmentation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893531512-mruutzaat",
+    "text": "Blend onset and rime (/c/ + /at/ -> cat)",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "blend"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893531512-mruutzaat-1759893604917-yyruvwv8q",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Onset-Rime Blending & Segmentation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893531512-mruutzaat",
+    "text": "Isolate onset and rime (cat -> /c/ + /at/)",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "segment"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893648419-uaxot7g1e-1759893773042-dsvn8cf78",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Phoneme Isolation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893648419-uaxot7g1e",
+    "text": "Identify the beginning sound in a word (/c/ in cat)",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "isolate"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893648419-uaxot7g1e-1759893962696-r8o64k057",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Phoneme Isolation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893648419-uaxot7g1e",
+    "text": "Identify the ending sound in a word (/t/ in cat)",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "isolate"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893648419-uaxot7g1e-1759893982742-qjrqi2rzn",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Phoneme Isolation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759893648419-uaxot7g1e",
+    "text": "Identify the medial sound in a word (/a/ in cat)",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "isolate"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894056254-8j978mv9m-1759894166754-vpuuyo6oo",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Phoneme Blending & Segmentation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894056254-8j978mv9m",
+    "text": "Blend three phonemes into a CVC word (/d/ /o/ /g/ -> dog).",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "blend"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894056254-8j978mv9m-1759894202976-bjxozxpf2",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Phoneme Blending & Segmentation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894056254-8j978mv9m",
+    "text": "Segment a CVC word into three phonemes (dog -> /d/ /o/ /g/).",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "segment"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894251607-206ii0872-1759894295397-sqd5vehl9",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Phoneme Manipulation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894251607-206ii0872",
+    "text": "Add a phoneme to a word or word part.",
+    "legacyPrimitive": "sound-swap",
+    "legacyModes": [
+      "addition"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894251607-206ii0872-1759894315151-dxcrrc3re",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Phoneme Manipulation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894251607-206ii0872",
+    "text": "Delete a phoneme from a word.",
+    "legacyPrimitive": "sound-swap",
+    "legacyModes": [
+      "deletion"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894251607-206ii0872-1759894337819-5p4aaqfjl",
+    "unit": "Phonological & Phonemic Awareness",
+    "unitId": "LANGUAGE_ARTS-U1759890612122-ura6j995z",
+    "skill": "Phoneme Manipulation",
+    "skillId": "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759894251607-206ii0872",
+    "text": "Substitute one phoneme for another.",
+    "legacyPrimitive": "sound-swap",
+    "legacyModes": [
+      "substitution"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r-1760799101964-1722qk9rw",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter Recognition",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r",
+    "text": "Letter Group 1: s, a, t, i, p, n\n\n**New Letters Introduced:**\ns, a, t, i, p, n\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Mastery of this first, high-utility set of letters and their primary sounds. All lessons and practice problems should ONLY use letters from the Full Practice Set. Students can immediately begin building words like: sat, pat, tap, sip, tip, pin, tin, sit, an, in, it.",
+    "legacyPrimitive": "letter-spotter",
+    "legacyModes": [
+      "name_it"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r-1759981601103-mom86mx2s",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter Recognition",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r",
+    "text": "Letter Group 2: c, k, e, h, r, m, d\n\n**New Letters Introduced:**\nc, k, e, h, r, m, d\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new letters while systematically reviewing the letters from Group 1. All lessons and practice problems MUST pull from the full 13-letter cumulative list. A good practice set will have a higher concentration of new letters but will always include review of previous letters.",
+    "legacyPrimitive": "letter-spotter",
+    "legacyModes": [
+      "name_it",
+      "find_it"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r-1759981636116-uef9lnfjv",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter Recognition",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r",
+    "text": "Letter Group 3: g, o, u, l, f, b\n\n**New Letters Introduced:**\ng, o, u, l, f, b\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new letters while reviewing all 13 previous letters. All lessons and practice problems MUST pull from the full 19-letter cumulative list. Note the intentional separation of 'b' from 'd' (in the previous group) to minimize reversals.",
+    "legacyPrimitive": "letter-spotter",
+    "legacyModes": [
+      "find_it",
+      "match_it"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r-1759981695758-qaft5lhrx",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter Recognition",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1759981508842-oqxxd334r",
+    "text": "Letter Group 4 (Final): j, z, w, v, y, x, q\n\n**New Letters Introduced:**\nj, z, w, v, y, x, q\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b, j, z, w, v, y, x, q\n\n**Focus:** Mastery of the full alphabet. All lessons and practice problems MUST pull from the entire 26-letter list. Pedagogical note: The letter 'q' should be taught as the digraph 'qu' as it almost never appears alone in English words.",
+    "legacyPrimitive": "letter-spotter",
+    "legacyModes": [
+      "match_it"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760799526213-qiw0u6nh9",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter-Sound Correspondence",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+    "text": "Letter-Sound Group 1: s, a, t, i, p, n\n\n**New Sounds Introduced:**\n/s/, /ă/, /t/, /ĭ/, /p/, /n/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Produce the correct, most common sound for each letter in the set when shown the grapheme (the letter shape). For example, when shown 'a', the student says /ă/ (as in 'apple'). It is crucial to teach clean sounds (e.g., a crisp /t/ sound, not \"tuh\").",
+    "legacyPrimitive": "letter-sound-link",
+    "legacyModes": [
+      "see_hear"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800254700-4p435buil",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter-Sound Correspondence",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+    "text": "Letter-Sound Group 2: c, k, e, h, r, m, d\n\n**New Sounds Introduced:**\n/k/, /ĕ/, /h/, /r/, /m/, /d/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the new sounds while systematically reviewing the sounds from Group 1. Practice problems must pull from the full 13-letter cumulative list. Note: 'c' and 'k' are introduced together as they make the same primary sound.",
+    "legacyPrimitive": "letter-sound-link",
+    "legacyModes": [
+      "see_hear",
+      "hear_see"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800328901-57eoonn7e",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter-Sound Correspondence",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+    "text": "Letter-Sound Group 3: g, o, u, l, f, b\n\n**New Sounds Introduced:**\n/g/, /ŏ/, /ŭ/, /l/, /f/, /b/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the new sounds while reviewing all 13 previous sounds. Practice problems must pull from the full 19-letter cumulative list.",
+    "legacyPrimitive": "letter-sound-link",
+    "legacyModes": [
+      "hear_see",
+      "keyword_match"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w-1760800444663-9kwcg9gy1",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter-Sound Correspondence",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760799187620-rng2mqi5w",
+    "text": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q\n\n**New Sounds Introduced:**\n/j/, /z/, /w/, /v/, /y/, /ks/, /kw/\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b, j, z, w, v, y, x, q\n\n**Focus:** Mastery of the sounds for the full alphabet. Note: 'x' makes the /ks/ sound and 'q' is taught as 'qu' making the /kw/ sound.",
+    "legacyPrimitive": "letter-sound-link",
+    "legacyModes": [
+      "keyword_match"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5-1760800702280-4ydx8kdjo",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter Formation",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5",
+    "text": "Letter Formation Group 1: s, a, t, i, p, n\n\n**New Letters Introduced:**\ns, a, t, i, p, n (uppercase and lowercase)\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n\n\n**Focus:** Correctly forming the letters in this set. Activities should include tracing with guided strokes, and then progress to writing the letters independently. Emphasis is on starting in the right place and following the correct path for each stroke.",
+    "legacyPrimitive": null,
+    "legacyModes": []
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5-1760800722776-oukhhpfgf",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter Formation",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5",
+    "text": "Letter Formation Group 2: c, k, e, h, r, m, d\n\n**New Letters Introduced:**\nc, k, e, h, r, m, d (uppercase and lowercase)\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d\n\n**Focus:** Introduce the formation of the new letters while systematically reviewing the formation of letters from Group 1. Practice must pull from the full 13-letter cumulative list.",
+    "legacyPrimitive": null,
+    "legacyModes": []
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5-1760800754456-0gn2dt6jx",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter Formation",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5",
+    "text": "Letter Formation Group 3: g, o, u, l, f, b\n\n**New Letters Introduced:**\ng, o, u, l, f, b (uppercase and lowercase)\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b\n\n**Focus:** Introduce the formation of the new letters while reviewing all 13 previous letters. Practice must pull from the full 19-letter cumulative list.",
+    "legacyPrimitive": null,
+    "legacyModes": []
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5-1760800776650-y2fm5tl6a",
+    "unit": "The Alphabet",
+    "unitId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2",
+    "skill": "Letter Formation",
+    "skillId": "LANGUAGE_ARTS-U1759978911500-uis7sy0k2-1760800643043-wbpkouvg5",
+    "text": "Letter Formation Group 4 (Final): j, z, w, v, y, x, q\n\n**New Letters Introduced:**\nj, z, w, v, y, x, q (uppercase and lowercase)\n\n**Full Practice Set (Cumulative):**\ns, a, t, i, p, n, c, k, e, h, r, m, d, g, o, u, l, f, b, j, z, w, v, y, x, q\n\n**Focus:** Mastery of forming all letters of the alphabet correctly.",
+    "legacyPrimitive": null,
+    "legacyModes": []
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok-1760823003565-cd4fvgbub",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Decoding CVC Words (Reading)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok",
+    "text": "Decode CVC words with Short 'a' (e.g., cat, map, van)\n\nFocus: Reading CVC words containing the short 'a' sound.\nExamples: cat, map, van, sad, tap, bag, ham, pan.",
+    "legacyPrimitive": "phonics-blender",
+    "legacyModes": [
+      "cvc"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok-1760823236853-3r5jzhwge",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Decoding CVC Words (Reading)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok",
+    "text": "Decode CVC words with Short 'e' (e.g., hen, wet, leg)\n\nFocus: Reading CVC words containing the short 'e' sound.\nExamples: hen, wet, leg, bed, pen, men, jet, red.",
+    "legacyPrimitive": "phonics-blender",
+    "legacyModes": [
+      "cvc"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok-1760823626266-e42ywekcw",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Decoding CVC Words (Reading)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok",
+    "text": "Decode CVC words with Short 'i' (e.g., pig, sit, fin)\n    Focus: Reading CVC words containing the short 'i' sound.\n    Examples: pig, sit, fin, big, win, lip, tin, dig.\n    Constraints: Generate activities that isolate the short 'i' sound for initial learning. Progress to activities that mix short 'i' words with previously learned short 'a' and 'e' words to test for discrimination (e.g., \"pat\", \"pet\", \"pit\").",
+    "legacyPrimitive": "phonics-blender",
+    "legacyModes": [
+      "cvc"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok-1760823888146-yw9p4scyi",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Decoding CVC Words (Reading)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok",
+    "text": "Decode CVC words with Short 'o'\n    Focus: Reading CVC words containing the short 'o' sound.\n    Examples: dog, hot, mop, log, top, pot, hop, fox.\n    Constraints: Generate activities that mix short 'o' words with previously learned short 'a', 'e', and 'i' words to ensure discrimination.",
+    "legacyPrimitive": "phonics-blender",
+    "legacyModes": [
+      "cvc"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok-1760823938634-a5k7iz5hs",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Decoding CVC Words (Reading)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok",
+    "text": "Decode CVC words with Short 'u'\n    Focus: Reading CVC words containing the short 'u' sound.\n    Examples: sun, bug, cup, mud, run, tub, gum, hug.\n    Constraints: Generate activities that mix short 'u' words with all four other short vowels to challenge the student's mastery of vowel sounds.",
+    "legacyPrimitive": "phonics-blender",
+    "legacyModes": [
+      "cvc"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok-1760823984365-e8ygg3bn4",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Decoding CVC Words (Reading)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760822839482-19crw91ok",
+    "text": "Decode CVC words with Mixed Short Vowels (e.g., cat, hen, pig)\n    Focus: This is a summative subskill for CVC decoding. Assess the student's ability to accurately and fluently read CVC words with any of the five short vowel sounds mixed together.\n    Task: Present lists of mixed words (e.g., hat, pet, sip, top, mud). Create minimal pair tasks where only the vowel changes (e.g., \"Which word is bag? bag, beg, big, bug\").",
+    "legacyPrimitive": "phonics-blender",
+    "legacyModes": [
+      "cvc"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0-1760823512648-v409wkeud",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Encoding CVC Words (Spelling)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0",
+    "text": "Encode CVC words with Short 'a'\n\nFocus: Spelling CVC words containing the short 'a' sound.\nTask: The system should present an audio prompt of a word (e.g., \"cat\") and the user must type or select the correct letters to spell it.\nExamples: cat, map, van, sad, tap, bag.",
+    "legacyPrimitive": "cvc-speller",
+    "legacyModes": [
+      "fill_vowel",
+      "spell_word"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0-1760824038874-zmdv6z9zk",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Encoding CVC Words (Spelling)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0",
+    "text": "Encode CVC words with Short 'e'\n    Focus: Spelling CVC words with the short 'e' sound when heard aloud.\n    Examples: hen, wet, leg, bed, men, red.",
+    "legacyPrimitive": "cvc-speller",
+    "legacyModes": [
+      "fill_vowel",
+      "spell_word"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0-1760823729451-bbdsv1vew",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Encoding CVC Words (Spelling)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0",
+    "text": "Encode CVC words with Short 'i'\n    Focus: Spelling CVC words containing the short 'i' sound when heard aloud.\n    Task: The system will provide an audio prompt of a word (e.g., \"sit\") and the user must type or select the correct letters to spell it.\n    Examples: sit, pig, fin, big, lip, win.\n    Constraints: Only use CVC words with the short 'i' sound. Provide corrective feedback for common errors, such as vowel confusion (e.g., spelling 'set' instead of 'sit').",
+    "legacyPrimitive": "cvc-speller",
+    "legacyModes": [
+      "fill_vowel",
+      "spell_word"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0-1760824110585-svywqtmer",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Encoding CVC Words (Spelling)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0",
+    "text": "Encode CVC words with Short 'o'\n    Focus: Spelling CVC words with the short 'o' sound when heard aloud.\n    Examples: dog, hot, mop, log, top.",
+    "legacyPrimitive": "cvc-speller",
+    "legacyModes": [
+      "fill_vowel",
+      "spell_word"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0-1760824164207-ev93fnk9j",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Encoding CVC Words (Spelling)",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760823322284-unz76uio0",
+    "text": "Encode CVC words with Short 'u'\n    Focus: Spelling CVC words with the short 'u' sound when heard aloud.\n    Examples: sun, bug, cup, mud, run.",
+    "legacyPrimitive": "cvc-speller",
+    "legacyModes": [
+      "fill_vowel",
+      "spell_word"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760824244843-pxqtvibjx-1760824269642-jnlj9x6ph",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Application of CVC Word Knowledge\nThis skill consolidates learning by asking students to use their CVC word knowledge in more complex tasks like reading sentences, building fluency, and checking for comprehension.",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760824244843-pxqtvibjx",
+    "text": "Discriminate between Real & Nonsense CVC Words\nFocus: To assess pure decoding skills by having the student apply phonics rules to both real and phonetically plausible nonsense words. This confirms they understand the CVC pattern, not just memorized a list of words.\n\nTask: Present the student with a pair of CVC words: one real word and one nonsense word. The student must read both and select the real word.\n\nExamples:\n\n    \"Which is a real word? map or mep\"\n\n    \"Find the real word: fin or fip\"\n\n    Constraints & Scaffolding:\n\n        Nonsense words must be phonetically plausible and follow the CVC pattern (e.g., zot, keg, sib). Avoid unpronounceable combinations (e.g., qbc).\n\n        Initially, use nonsense words that are very different from the real word.\n\n        Increase difficulty by using minimal pairs where only one letter is different (especially the vowel), forcing careful decoding (e.g., cat vs. cot).",
+    "legacyPrimitive": "word-workout",
+    "legacyModes": [
+      "real_vs_nonsense"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760824244843-pxqtvibjx-1760824451950-wyqvgah7n",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Application of CVC Word Knowledge\nThis skill consolidates learning by asking students to use their CVC word knowledge in more complex tasks like reading sentences, building fluency, and checking for comprehension.",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760824244843-pxqtvibjx",
+    "text": "    Read CVC Words in Decodable Phrases & Sentences\n\n    Focus: To transition the student from decoding isolated words to reading connected text for meaning. This builds foundational reading comprehension and syntax awareness.\n\n    Task: Generate short, highly controlled phrases and sentences for the student to read aloud. The system can then ask a simple comprehension question.\n\n    Examples:\n\n        Phrases: \"a red bug\", \"the big pig\", \"on top\", \"a wet cat\"\n\n        Sentences: \"The cat sat on the mat.\", \"A bug is in the cup.\", \"Did the dog run?\"\n\n    Constraints & Scaffolding:\n\n        Strictly use only mastered CVC words and a small, pre-defined set of high-frequency sight words (e.g., a, the, is, on, in, did, see). Do NOT introduce any words that are not decodable or on the sight word list.\n\n        Begin with 3-word phrases.\n\n        Progress to 4-5 word declarative sentences.\n\n        Finally, introduce simple questions ending in a question mark.",
+    "legacyPrimitive": "word-workout",
+    "legacyModes": [
+      "sentence_reading"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760824244843-pxqtvibjx-1760824564620-680ydkkz1",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Application of CVC Word Knowledge\nThis skill consolidates learning by asking students to use their CVC word knowledge in more complex tasks like reading sentences, building fluency, and checking for comprehension.",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760824244843-pxqtvibjx",
+    "text": "    Build Fluency with CVC Word Lists & Chains\n\n    Focus: To increase the speed and automaticity of CVC word recognition. The goal is for the student to read the words accurately and quickly, without needing to sound them out laboriously each time.\n\n    Task: Generate two types of activities:\n\n        Word Lists: A list of 5-10 mastered CVC words for timed reading.\n\n        Word Chains/Ladders: A sequence of words where only one letter changes from one word to the next. The student reads down the chain.\n\n    Examples:\n\n        Word List: [ cat, sun, pig, hot, bed, man, leg, cup ]\n\n        Word Chain: cat -> mat -> man -> pan -> pin -> fin\n\n    Constraints & Scaffolding:\n\n        Word lists should be a random mix of all mastered short vowels.\n\n        Word chains must follow the one-letter-change rule. They can change the initial, medial, or final sound.\n\n        These activities are often timed (e.g., \"How many words can you read in one minute?\"), which the UI should support.",
+    "legacyPrimitive": "word-workout",
+    "legacyModes": [
+      "word_chains"
+    ]
+  },
+  {
+    "id": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760824244843-pxqtvibjx-1760824630693-ilken2g1e",
+    "unit": "Phonics & Word Recognition",
+    "unitId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd",
+    "skill": "Application of CVC Word Knowledge\nThis skill consolidates learning by asking students to use their CVC word knowledge in more complex tasks like reading sentences, building fluency, and checking for comprehension.",
+    "skillId": "LANGUAGE_ARTS-U1760822592346-2hk0tywwd-1760824244843-pxqtvibjx",
+    "text": "    Match CVC Words to Pictures\n\n    Focus: To ensure the student is reading for meaning by connecting a decoded word to its visual representation. This is a direct check for comprehension and vocabulary.\n\n    Task: Present the student with a single CVC word and a set of 2-4 images. The student must select the image that matches the word.\n\n    Examples:\n\n        Target Word: sun\n\n        Image Choices: [ a picture of a sun ], [ a picture of a bug ], [ a picture of a cat ]\n\n    Constraints & Scaffolding:\n\n        The distractor images are very important. They should represent other CVC words that the student has learned.\n\n        To increase difficulty, make the distractor words phonetically similar to the target word. For the target pin, use images for pen and pan as distractors. This forces the student to pay close attention to the vowel sound.",
+    "legacyPrimitive": "word-workout",
+    "legacyModes": [
+      "picture_match"
+    ]
+  },
+  {
+    "id": "LA001-01-C",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Print Concepts",
+    "skillId": "LA001-01",
+    "text": "Follow text directionality (left-to-right, top-to-bottom, page-by-page)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA001-01-D",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Print Concepts",
+    "skillId": "LA001-01",
+    "text": "Distinguish between letters, words, and spaces in printed text",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA001-01-G",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Print Concepts",
+    "skillId": "LA001-01",
+    "text": "Recognize and count words within printed sentences",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA001-03-A",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Phonics and Word Recognition",
+    "skillId": "LA001-03",
+    "text": "Match and identify uppercase and lowercase letters in text",
+    "legacyPrimitive": "letter-spotter",
+    "legacyModes": [
+      "match_it"
+    ]
+  },
+  {
+    "id": "LA001-03-B",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Phonics and Word Recognition",
+    "skillId": "LA001-03",
+    "text": "Demonstrate one-to-one letter-sound correspondences for consonants and vowels",
+    "legacyPrimitive": "letter-sound-link",
+    "legacyModes": [
+      "see_hear",
+      "hear_see"
+    ]
+  },
+  {
+    "id": "LA001-03-C",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Phonics and Word Recognition",
+    "skillId": "LA001-03",
+    "text": "Distinguish between long and short vowel sounds in single-syllable words",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "isolate"
+    ]
+  },
+  {
+    "id": "LA001-03-D",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Phonics and Word Recognition",
+    "skillId": "LA001-03",
+    "text": "Blend and segment individual sounds (phonemes) in simple CVC words using manipulatives",
+    "legacyPrimitive": "phoneme-explorer",
+    "legacyModes": [
+      "blend",
+      "segment"
+    ]
+  },
+  {
+    "id": "LA001-03-E",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Phonics and Word Recognition",
+    "skillId": "LA001-03",
+    "text": "Read common high-frequency sight words in isolation and simple text",
+    "legacyPrimitive": "fast-fact",
+    "legacyModes": []
+  },
+  {
+    "id": "LA001-03-F",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Phonics and Word Recognition",
+    "skillId": "LA001-03",
+    "text": "Identify and read common consonant digraphs (sh, ch, th, wh) and blends (st, pl, br)",
+    "legacyPrimitive": "phonics-blender",
+    "legacyModes": [
+      "digraph"
+    ]
+  },
+  {
+    "id": "LA001-03-G",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Phonics and Word Recognition",
+    "skillId": "LA001-03",
+    "text": "Read and comprehend words with common endings (-s, -ing, -ed) and compound words",
+    "legacyPrimitive": "word-builder",
+    "legacyModes": []
+  },
+  {
+    "id": "LA001-03-H",
+    "unit": "Reading Foundations",
+    "unitId": "LA001",
+    "skill": "Phonics and Word Recognition",
+    "skillId": "LA001-03",
+    "text": "Apply phonics skills to distinguish between similarly spelled words in context",
+    "legacyPrimitive": "word-workout",
+    "legacyModes": [
+      "word_chains"
+    ]
+  },
+  {
+    "id": "LA003-01-A",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Comprehension and Collaboration",
+    "skillId": "LA003-01",
+    "text": "Follow two-step verbal instructions during classroom activities with 90% accuracy",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-01-D",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Comprehension and Collaboration",
+    "skillId": "LA003-01",
+    "text": "Ask and answer simple questions to get help or clarify understanding",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-01-E",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Comprehension and Collaboration",
+    "skillId": "LA003-01",
+    "text": "Demonstrate understanding of oral presentations by recalling 3 key details",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-01-F",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Comprehension and Collaboration",
+    "skillId": "LA003-01",
+    "text": "Express agreement or disagreement with peers using complete sentences and reasons",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-01-J",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Comprehension and Collaboration",
+    "skillId": "LA003-01",
+    "text": "Form specific questions when additional information is needed for understanding",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-02-B",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Presentation of Knowledge and Ideas",
+    "skillId": "LA003-02",
+    "text": "Speak audibly and clearly when sharing information with the class",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-02-C",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Presentation of Knowledge and Ideas",
+    "skillId": "LA003-02",
+    "text": "Describe familiar people, places, things, and events using complete sentences",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-02-E",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Presentation of Knowledge and Ideas",
+    "skillId": "LA003-02",
+    "text": "Sequence 3-4 events using transition words (first, next, last) when sharing personal stories",
+    "legacyPrimitive": "story-map",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-02-G",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Presentation of Knowledge and Ideas",
+    "skillId": "LA003-02",
+    "text": "Engage in presentation dialogue by asking and answering relevant questions",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA003-02-H",
+    "unit": "Speaking and Listening",
+    "unitId": "LA003",
+    "skill": "Presentation of Knowledge and Ideas",
+    "skillId": "LA003-02",
+    "text": "Deliver a focused 2-minute presentation comparing two objects or experiences",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-A",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Sort basic nouns (people, places, things) and action verbs using picture cards with 90% accuracy",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-C",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Use simple descriptive adjectives to enhance nouns (big ball, red car) during guided activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-D",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Distinguish between common and proper nouns using familiar examples (dog vs. Spot, city vs. Boston)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-E",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Use basic pronouns (I, my, your) and articles (a, an, the) in simple sentences",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-F",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Apply prepositions (in, on, under, between) to describe object locations during hands-on activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-G",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Create simple sentences using nouns, verbs, and adjectives with picture support",
+    "legacyPrimitive": "sentence-builder",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-H",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Use basic adverbs (quickly, slowly, loudly) to modify actions through movement activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-I",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Connect ideas using simple conjunctions (and, but) in guided storytelling",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-K",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Build complete sentences using mixed parts of speech with manipulative word cards",
+    "legacyPrimitive": "sentence-builder",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-01-L",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Parts of Speech",
+    "skillId": "LA004-01",
+    "text": "Participate in interactive grammar games combining multiple parts of speech concepts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-02-A",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Sentence Structure",
+    "skillId": "LA004-02",
+    "text": "Identify subject and action in spoken sentences through interactive games and songs",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-02-B",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Sentence Structure",
+    "skillId": "LA004-02",
+    "text": "Match subject-verb picture cards to create basic sentences (e.g., \"Dog runs\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-02-C",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Sentence Structure",
+    "skillId": "LA004-02",
+    "text": "Arrange word cards to form simple subject-verb-object sentences (e.g., \"Cat drinks milk\")",
+    "legacyPrimitive": "sentence-builder",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-02-D",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Sentence Structure",
+    "skillId": "LA004-02",
+    "text": "Distinguish between complete sentences and fragments using picture-word prompts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-02-E",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Sentence Structure",
+    "skillId": "LA004-02",
+    "text": "Add appropriate ending punctuation (., ?, !) to given sentences",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-02-F",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Sentence Structure",
+    "skillId": "LA004-02",
+    "text": "Create simple questions with correct word order and punctuation (e.g., \"Can I play?\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-02-G",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Sentence Structure",
+    "skillId": "LA004-02",
+    "text": "Expand simple sentences by adding descriptive words (e.g., \"The big cat sleeps softly\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-02-H",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Sentence Structure",
+    "skillId": "LA004-02",
+    "text": "Connect related ideas using basic conjunctions (and, but) to form compound sentences",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-A",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Identify singular and plural nouns through listening activities and physical objects",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-B",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Sort physical objects and picture cards into singular/plural categories",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-C",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Match basic singular-plural pairs using picture cards (-s endings only)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-D",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Identify and use articles \"a\" and \"the\" with singular nouns using picture prompts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-E",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Distinguish between \"a\" and \"an\" usage based on beginning sounds",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-F",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Form regular plurals with both -s and -es endings using picture supports",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-G",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Recognize and match common irregular plural pairs (e.g., mouse/mice, tooth/teeth)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-H",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Use articles in simple sentences with picture support (e.g., \"I see a cat.\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-I",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Create plural forms in guided speaking activities and games",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-J",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Distinguish between definite and indefinite articles in context",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-03-K",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Plurals and Articles",
+    "skillId": "LA004-03",
+    "text": "Use irregular plurals in guided speaking and storytelling activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-04-A",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Basic Pronouns",
+    "skillId": "LA004-04",
+    "text": "Identify basic pronouns (I, you, he, she) in pictures and spoken language",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-04-B",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Basic Pronouns",
+    "skillId": "LA004-04",
+    "text": "Use personal pronouns (I, you) correctly during daily classroom routines and conversations",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-04-C",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Basic Pronouns",
+    "skillId": "LA004-04",
+    "text": "Match singular pronouns (he, she) to corresponding pictures and people",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-04-F",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Basic Pronouns",
+    "skillId": "LA004-04",
+    "text": "Replace simple nouns with appropriate pronouns in sentences using pictures and spoken language",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-04-G",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Basic Pronouns",
+    "skillId": "LA004-04",
+    "text": "Use advanced possessive pronouns (his, her, their) to describe relationships and ownership",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-04-H",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Basic Pronouns",
+    "skillId": "LA004-04",
+    "text": "Distinguish between subject and object pronouns through interactive activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-04-I",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Basic Pronouns",
+    "skillId": "LA004-04",
+    "text": "Create simple sentences using mixed pronouns with magnetic words and illustrations",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-04-J",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Basic Pronouns",
+    "skillId": "LA004-04",
+    "text": "Use basic reflexive pronouns (myself, yourself) in guided speaking activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-05-B",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Prepositions",
+    "skillId": "LA004-05",
+    "text": "Follow single-step instructions using common prepositions in classroom activities (e.g., \"Put the pencil in the box\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-05-C",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Prepositions",
+    "skillId": "LA004-05",
+    "text": "Sort objects and pictures based on basic positional relationships (above/below, in front/behind)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-05-D",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Prepositions",
+    "skillId": "LA004-05",
+    "text": "Match preposition cards to corresponding pictures showing spatial relationships",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-05-E",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Prepositions",
+    "skillId": "LA004-05",
+    "text": "Use prepositions to describe locations of objects in self-created scenes or block structures",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-05-F",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Prepositions",
+    "skillId": "LA004-05",
+    "text": "Follow and create simple treasure maps using prepositional clues (next to, between, beside)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-05-H",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Prepositions",
+    "skillId": "LA004-05",
+    "text": "Create and follow multi-step instructions using directional prepositions (through, around, across)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-05-I",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Prepositions",
+    "skillId": "LA004-05",
+    "text": "Identify and categorize prepositions as location or direction words in spoken and written contexts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-A",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Identify action verbs in familiar songs and nursery rhymes (e.g., \"row,\" \"jump,\" \"sing\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-C",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Distinguish between action verbs and linking verbs (is, are, am) using picture cards",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-D",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Use present tense verbs correctly in simple spoken sentences with picture prompts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-E",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Apply basic subject-verb agreement in present tense (singular/plural subjects)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-F",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Differentiate between present and past tense using regular -ed endings",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-G",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Match common irregular past tense verbs to their present forms (run/ran, go/went)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-H",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Construct simple future tense statements using \"will\" with picture prompts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-I",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Create simple sentences using helping verbs (is, are, am) with continuous actions",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA004-06-J",
+    "unit": "Grammar Basics",
+    "unitId": "LA004",
+    "skill": "Verb Forms",
+    "skillId": "LA004-06",
+    "text": "Apply verb tenses (present, past, future) in guided storytelling activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-01-A",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Meaning",
+    "skillId": "LA005-01",
+    "text": "Match basic vocabulary words to corresponding pictures in common categories (e.g., animals, foods, colors)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-01-B",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Meaning",
+    "skillId": "LA005-01",
+    "text": "Sort vocabulary words into basic categories (e.g., animals, foods, colors) with 85% accuracy",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-01-C",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Meaning",
+    "skillId": "LA005-01",
+    "text": "Use new vocabulary words in complete oral sentences during guided activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-01-D",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Meaning",
+    "skillId": "LA005-01",
+    "text": "Group words by function and use (e.g., \"things we eat,\" \"things we wear,\" \"places we go\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-01-E",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Meaning",
+    "skillId": "LA005-01",
+    "text": "Identify and match basic opposite pairs using picture cards (e.g., big/small, hot/cold)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-01-F",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Meaning",
+    "skillId": "LA005-01",
+    "text": "Use descriptive words for physical properties (e.g., texture, size, shape) during hands-on activities",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-01-G",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Meaning",
+    "skillId": "LA005-01",
+    "text": "Match emotion vocabulary to situations and facial expressions using various media",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-01-H",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Meaning",
+    "skillId": "LA005-01",
+    "text": "Identify and use gradable concept words (e.g., tiny/small/big/huge, freezing/cold/cool/warm/hot)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-02-A",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Context Clues",
+    "skillId": "LA005-02",
+    "text": "Use picture clues in storybooks to predict meanings of unfamiliar words",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-02-D",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Context Clues",
+    "skillId": "LA005-02",
+    "text": "Match vocabulary words to corresponding story scene illustrations",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-02-F",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Context Clues",
+    "skillId": "LA005-02",
+    "text": "Create simple sentences using newly learned vocabulary words from stories",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-02-G",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Context Clues",
+    "skillId": "LA005-02",
+    "text": "Identify and demonstrate multiple meanings of common words (e.g., \"bat,\" \"run\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-02-H",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Context Clues",
+    "skillId": "LA005-02",
+    "text": "Use sentence context and picture clues to determine appropriate word meanings",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-02-I",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Context Clues",
+    "skillId": "LA005-02",
+    "text": "Solve simple word riddles using context clues and prior vocabulary knowledge",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-03-A",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Relationships",
+    "skillId": "LA005-03",
+    "text": "Match basic pairs of related objects from visual cards (e.g., sock/shoe, spoon/fork)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-03-B",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Relationships",
+    "skillId": "LA005-03",
+    "text": "Sort common objects into basic categories (e.g., food, animals, clothes)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-03-C",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Relationships",
+    "skillId": "LA005-03",
+    "text": "Create simple rhyming pairs using picture support (e.g., cat/hat, dog/log)",
+    "legacyPrimitive": "rhyme-studio",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-03-D",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Relationships",
+    "skillId": "LA005-03",
+    "text": "Match objects to their typical locations (e.g., bed/bedroom, book/library)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-03-E",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Relationships",
+    "skillId": "LA005-03",
+    "text": "Build three-word rhyming families with common endings (e.g., cat/hat/mat)",
+    "legacyPrimitive": "rhyme-studio",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-03-F",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Relationships",
+    "skillId": "LA005-03",
+    "text": "Create simple thematic word webs with 3-4 related items (e.g., farm: cow, pig, barn)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-03-G",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Relationships",
+    "skillId": "LA005-03",
+    "text": "Sort words and pictures by seasonal categories with reasoning (e.g., \"mittens go in winter because...\")",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-03-H",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Relationships",
+    "skillId": "LA005-03",
+    "text": "Build sequential word chains with logical connections (e.g., seed → plant → flower → bee)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-04-B",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Usage",
+    "skillId": "LA005-04",
+    "text": "Match vocabulary words to physical objects or pictures in classroom scavenger hunts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-04-C",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Usage",
+    "skillId": "LA005-04",
+    "text": "Use basic action words in following and giving classroom commands",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-04-F",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Usage",
+    "skillId": "LA005-04",
+    "text": "Apply vocabulary in structured activities (weather reports, counting exercises, simple experiments)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-04-G",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Usage",
+    "skillId": "LA005-04",
+    "text": "Create simple sentences using new vocabulary with magnetic words or writing tools",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-04-I",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Usage",
+    "skillId": "LA005-04",
+    "text": "Describe images or scenarios using multiple vocabulary words from a word bank",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-04-J",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Usage",
+    "skillId": "LA005-04",
+    "text": "Generate rhyming words and simple poems using target vocabulary",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA005-04-K",
+    "unit": "Vocabulary Development",
+    "unitId": "LA005",
+    "skill": "Word Usage",
+    "skillId": "LA005-04",
+    "text": "Participate in guided writing activities using new vocabulary (class stories, recipes)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-01-A",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Story Elements",
+    "skillId": "LA006-01",
+    "text": "Identify main characters in stories using picture clues and name their basic traits using emotion cards",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-01-B",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Story Elements",
+    "skillId": "LA006-01",
+    "text": "Match story settings to illustrations and identify key location changes throughout the story",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-01-C",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Story Elements",
+    "skillId": "LA006-01",
+    "text": "Sequence 3-4 major story events using picture cards and label beginning, middle, and end",
+    "legacyPrimitive": "story-map",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-01-D",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Story Elements",
+    "skillId": "LA006-01",
+    "text": "Identify problems and match appropriate solutions in simple stories using picture prompts",
+    "legacyPrimitive": "story-map",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-01-E",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Story Elements",
+    "skillId": "LA006-01",
+    "text": "Recognize and use story patterns, including repeated phrases and predictable sequences",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-01-F",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Story Elements",
+    "skillId": "LA006-01",
+    "text": "Connect illustrations to story meaning, including mood, character feelings, and plot clues",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-01-H",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Story Elements",
+    "skillId": "LA006-01",
+    "text": "Make predictions and identify simple morals or lessons in stories",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-A",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Match basic emotions to character expressions in picture books (e.g., smiling=happy, crying=sad)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-B",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Use picture clues to identify character feelings and environmental settings",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-C",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Predict simple story outcomes using visual prompts and prior knowledge",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-D",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Answer \"why\" questions about character actions in read-alouds using evidence",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-E",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Connect story events to personal experiences during guided discussions",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-F",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Identify basic cause-effect relationships in stories using verbal and visual clues",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-H",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Differentiate between explicitly stated details and those requiring inference",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-I",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Infer character thoughts and feelings from dialogue and actions",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-02-J",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Inference Making",
+    "skillId": "LA006-02",
+    "text": "Predict and discuss alternative story outcomes using \"What if?\" scenarios",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-03-A",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Main Idea and Details",
+    "skillId": "LA006-03",
+    "text": "Identify the main topic of a familiar story using picture clues and simple stories",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-03-B",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Main Idea and Details",
+    "skillId": "LA006-03",
+    "text": "Select the main idea from three choices after listening to a read-aloud story",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-03-D",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Main Idea and Details",
+    "skillId": "LA006-03",
+    "text": "Sort picture cards into 'Main Idea' and 'Supporting Details' categories",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-03-E",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Main Idea and Details",
+    "skillId": "LA006-03",
+    "text": "Use a simple web graphic organizer to connect main idea with supporting details",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-03-F",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Main Idea and Details",
+    "skillId": "LA006-03",
+    "text": "Participate in interactive storytelling to demonstrate main idea and details through movement or puppetry",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-03-H",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Main Idea and Details",
+    "skillId": "LA006-03",
+    "text": "Use digital tools to organize and match details with corresponding main ideas",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-03-I",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Main Idea and Details",
+    "skillId": "LA006-03",
+    "text": "Sequence story events to show how details build toward the main idea",
+    "legacyPrimitive": "story-map",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-03-J",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Main Idea and Details",
+    "skillId": "LA006-03",
+    "text": "Compare main ideas between two simple stories using guided discussion and visual aids",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-A",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Identify basic story elements (main character, setting) in a single story using picture prompts",
+    "legacyPrimitive": "story-map",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-B",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Match similar characters from different stories using visual aids",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-C",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Match similar settings from different stories using visual aids",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-D",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Use simple words to describe how two characters are alike",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-E",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Use simple words to describe how two characters are different",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-F",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Complete a teacher-guided Venn diagram comparing two characters",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-G",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Express story preferences using \"I like\" statements with one reason",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-H",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Compare two stories' main events using sequence cards",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-04-I",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Comparing Texts",
+    "skillId": "LA006-04",
+    "text": "Express story preferences using multiple reasons with \"because\"",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-06-A",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Text Features",
+    "skillId": "LA006-06",
+    "text": "Recognize that books have titles on their covers",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-06-B",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Text Features",
+    "skillId": "LA006-06",
+    "text": "Point to and name basic text features (title, author name, pictures)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-06-C",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Text Features",
+    "skillId": "LA006-06",
+    "text": "Identify page numbers and explain their purpose",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-06-D",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Text Features",
+    "skillId": "LA006-06",
+    "text": "Locate headings in simple nonfiction texts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-06-E",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Text Features",
+    "skillId": "LA006-06",
+    "text": "Match simple labels to parts of pictures or diagrams",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-06-F",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Text Features",
+    "skillId": "LA006-06",
+    "text": "Use picture captions to understand images with teacher support",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA006-06-G",
+    "unit": "Reading Comprehension",
+    "unitId": "LA006",
+    "skill": "Text Features",
+    "skillId": "LA006-06",
+    "text": "Find specific information using simple tables of contents",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA007-01-A",
+    "unit": "Creative Expression",
+    "unitId": "LA007",
+    "skill": "Imaginative Storytelling",
+    "skillId": "LA007-01",
+    "text": "Listen to and retell a simple story in own words using sequential terms (first, next, last)",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA007-01-B",
+    "unit": "Creative Expression",
+    "unitId": "LA007",
+    "skill": "Imaginative Storytelling",
+    "skillId": "LA007-01",
+    "text": "Create simple verbal stories using provided story starter prompts",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA007-01-D",
+    "unit": "Creative Expression",
+    "unitId": "LA007",
+    "skill": "Imaginative Storytelling",
+    "skillId": "LA007-01",
+    "text": "Draw and describe an original character with at least two distinct traits",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA007-01-H",
+    "unit": "Creative Expression",
+    "unitId": "LA007",
+    "skill": "Imaginative Storytelling",
+    "skillId": "LA007-01",
+    "text": "Develop and perform original stories incorporating setting, characters, and basic plot",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA007-02-B",
+    "unit": "Creative Expression",
+    "unitId": "LA007",
+    "skill": "Dramatic Play",
+    "skillId": "LA007-02",
+    "text": "Imitate familiar character voices from read-aloud stories",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  },
+  {
+    "id": "LA007-02-E",
+    "unit": "Creative Expression",
+    "unitId": "LA007",
+    "skill": "Dramatic Play",
+    "skillId": "LA007-02",
+    "text": "Create simple dialogue between two characters in guided dramatic play",
+    "legacyPrimitive": "ai-tutor-session",
+    "legacyModes": []
+  }
+]

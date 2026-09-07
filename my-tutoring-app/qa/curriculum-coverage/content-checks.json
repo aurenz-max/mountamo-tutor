@@ -1,0 +1,1448 @@
+[
+  {
+    "id": "LA004-01-A",
+    "primitive": "word-sorter",
+    "mode": "binary_sort",
+    "draw": 1,
+    "file": "LA004-01-A-word-sorter-binary_sort-1.json",
+    "inputHash": "4005a45b88a57639d1d4379a629a76219853b502b2868ebbd32bdc801685dd6c",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:31:15.717Z",
+    "durationMs": 2476,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 12,
+    "result": "sampled",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "12 usable items"
+      },
+      {
+        "name": "binary_sort-0/w3: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w0: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w2: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w4: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w1: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w5: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w1: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w0: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w3: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w4: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w5: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w2: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w0: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w2: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w5: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w3: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w1: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w4: answer names an existing group",
+        "pass": true
+      }
+    ],
+    "semantic": "Both draws supply nouns and action verbs with labels and emoji cues. The student says the category; there is no card manipulation. Noun examples do not systematically cover places, and ambiguous stand-alone verbs need context. This is partial support.",
+    "samples": [
+      {
+        "id": "binary_sort-0::w3",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: jump. Nouns, or Verbs?",
+        "answer": "Verbs",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "jump",
+        "emoji": "🦘"
+      },
+      {
+        "id": "binary_sort-0::w0",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: cat. Nouns, or Verbs?",
+        "answer": "Nouns",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "cat",
+        "emoji": "🐱"
+      },
+      {
+        "id": "binary_sort-0::w2",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: dog. Nouns, or Verbs?",
+        "answer": "Nouns",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "dog",
+        "emoji": "🐶"
+      },
+      {
+        "id": "binary_sort-0::w4",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: ball. Nouns, or Verbs?",
+        "answer": "Nouns",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "ball",
+        "emoji": "⚽"
+      },
+      {
+        "id": "binary_sort-0::w1",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: run. Nouns, or Verbs?",
+        "answer": "Verbs",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "run",
+        "emoji": "🏃"
+      },
+      {
+        "id": "binary_sort-0::w5",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: sit. Nouns, or Verbs?",
+        "answer": "Verbs",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "sit",
+        "emoji": "🪑"
+      },
+      {
+        "id": "binary_sort-1::w1",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: boy. Nouns, or Verbs?",
+        "answer": "Nouns",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "boy",
+        "emoji": "👦"
+      },
+      {
+        "id": "binary_sort-1::w0",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: sleep. Nouns, or Verbs?",
+        "answer": "Verbs",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "sleep",
+        "emoji": "😴"
+      },
+      {
+        "id": "binary_sort-1::w3",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: girl. Nouns, or Verbs?",
+        "answer": "Nouns",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "girl",
+        "emoji": "👧"
+      },
+      {
+        "id": "binary_sort-1::w4",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: play. Nouns, or Verbs?",
+        "answer": "Verbs",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "play",
+        "emoji": "🧸"
+      },
+      {
+        "id": "binary_sort-1::w5",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: book. Nouns, or Verbs?",
+        "answer": "Nouns",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "book",
+        "emoji": "📖"
+      },
+      {
+        "id": "binary_sort-1::w2",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: eat. Nouns, or Verbs?",
+        "answer": "Verbs",
+        "choices": [
+          "Nouns",
+          "Verbs"
+        ],
+        "stimulus": "eat",
+        "emoji": "🍎"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA004-01-A",
+    "primitive": "word-sorter",
+    "mode": "binary_sort",
+    "draw": 2,
+    "file": "LA004-01-A-word-sorter-binary_sort-2.json",
+    "inputHash": "1d2adaba2721a3bfd9ecdae5da8d60e60b1b2ee10c4f9818a3c95bdbd9889a5b",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:31:17.006Z",
+    "durationMs": 2621,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 12,
+    "result": "sampled",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "12 usable items"
+      },
+      {
+        "name": "binary_sort-0/w4: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w5: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w1: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w2: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w0: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-0/w3: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w2: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w4: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w0: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w3: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w5: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-1/w1: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w4: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w5: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w0: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w2: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w1: answer names an existing group",
+        "pass": true
+      },
+      {
+        "name": "binary_sort-2/w3: answer names an existing group",
+        "pass": true
+      }
+    ],
+    "semantic": "Both draws supply nouns and action verbs with labels and emoji cues. The student says the category; there is no card manipulation. Noun examples do not systematically cover places, and ambiguous stand-alone verbs need context. This is partial support.",
+    "samples": [
+      {
+        "id": "binary_sort-0::w4",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: ball. Things, or Actions?",
+        "answer": "Things",
+        "choices": [
+          "Things",
+          "Actions"
+        ],
+        "stimulus": "ball",
+        "emoji": "⚽"
+      },
+      {
+        "id": "binary_sort-0::w5",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: hop. Things, or Actions?",
+        "answer": "Actions",
+        "choices": [
+          "Things",
+          "Actions"
+        ],
+        "stimulus": "hop",
+        "emoji": "🐇"
+      },
+      {
+        "id": "binary_sort-0::w1",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: run. Things, or Actions?",
+        "answer": "Actions",
+        "choices": [
+          "Things",
+          "Actions"
+        ],
+        "stimulus": "run",
+        "emoji": "🏃"
+      },
+      {
+        "id": "binary_sort-0::w2",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: dog. Things, or Actions?",
+        "answer": "Things",
+        "choices": [
+          "Things",
+          "Actions"
+        ],
+        "stimulus": "dog",
+        "emoji": "🐶"
+      },
+      {
+        "id": "binary_sort-0::w0",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: cat. Things, or Actions?",
+        "answer": "Things",
+        "choices": [
+          "Things",
+          "Actions"
+        ],
+        "stimulus": "cat",
+        "emoji": "🐱"
+      },
+      {
+        "id": "binary_sort-0::w3",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: jump. Things, or Actions?",
+        "answer": "Actions",
+        "choices": [
+          "Things",
+          "Actions"
+        ],
+        "stimulus": "jump",
+        "emoji": "🦘"
+      },
+      {
+        "id": "binary_sort-1::w2",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: girl. People, or Actions?",
+        "answer": "People",
+        "choices": [
+          "People",
+          "Actions"
+        ],
+        "stimulus": "girl",
+        "emoji": "👧"
+      },
+      {
+        "id": "binary_sort-1::w4",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: mom. People, or Actions?",
+        "answer": "People",
+        "choices": [
+          "People",
+          "Actions"
+        ],
+        "stimulus": "mom",
+        "emoji": "👩"
+      },
+      {
+        "id": "binary_sort-1::w0",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: boy. People, or Actions?",
+        "answer": "People",
+        "choices": [
+          "People",
+          "Actions"
+        ],
+        "stimulus": "boy",
+        "emoji": "👦"
+      },
+      {
+        "id": "binary_sort-1::w3",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: eat. People, or Actions?",
+        "answer": "Actions",
+        "choices": [
+          "People",
+          "Actions"
+        ],
+        "stimulus": "eat",
+        "emoji": "🍎"
+      },
+      {
+        "id": "binary_sort-1::w5",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: play. People, or Actions?",
+        "answer": "Actions",
+        "choices": [
+          "People",
+          "Actions"
+        ],
+        "stimulus": "play",
+        "emoji": "⚽"
+      },
+      {
+        "id": "binary_sort-1::w1",
+        "kind": "sort",
+        "prompt": "Your turn. Listen: sleep. People, or Actions?",
+        "answer": "Actions",
+        "choices": [
+          "People",
+          "Actions"
+        ],
+        "stimulus": "sleep",
+        "emoji": "😴"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA004-06-E",
+    "primitive": "di-spoken-practice",
+    "mode": "say_answer",
+    "draw": 1,
+    "file": "LA004-06-E-di-spoken-practice-say_answer-1.json",
+    "inputHash": "f687443e451bbea6a7de34e63705f5a07c60b0fbc29971970401079544a4efb8",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:31:03.925Z",
+    "durationMs": 11791,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 0,
+    "result": "failed",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": false,
+        "detail": "0 usable items"
+      }
+    ],
+    "semantic": "Both draws return an empty items array. The component renders its no-practice state. The eval-test API pass is a false positive for actual usable content; this candidate cannot currently support the objective.",
+    "samples": [],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA004-06-E",
+    "primitive": "di-spoken-practice",
+    "mode": "say_answer",
+    "draw": 2,
+    "file": "LA004-06-E-di-spoken-practice-say_answer-2.json",
+    "inputHash": "fba96c9684ac6216835ead1d999fc38c79243ac61169ac999f3efd29df9d497e",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:31:07.540Z",
+    "durationMs": 9465,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 0,
+    "result": "failed",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": false,
+        "detail": "0 usable items"
+      }
+    ],
+    "semantic": "Both draws return an empty items array. The component renders its no-practice state. The eval-test API pass is a false positive for actual usable content; this candidate cannot currently support the objective.",
+    "samples": [],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA005-01-H",
+    "primitive": "picture-vocabulary",
+    "mode": "gradable_scale",
+    "draw": 1,
+    "file": "LA005-01-H-picture-vocabulary-gradable_scale-1.json",
+    "inputHash": "3350cc76057a61e26e5b3a9969872ff6350644eecd01af65f66aed968bd60b4a",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:30:54.945Z",
+    "durationMs": 1456,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 5,
+    "result": "sampled",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "5 usable items"
+      },
+      {
+        "name": "pv-1: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-1: spoken scale omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-2: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-2: spoken scale omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-3: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-3: spoken scale omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-4: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-4: spoken scale omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-5: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-5: spoken scale omits target",
+        "pass": true
+      }
+    ],
+    "semantic": "Reviewed both draws: size and temperature scales appear and their rungs are ordered. The task elicits missing vocabulary in an ordered list; it does not independently establish using all words in sentences.",
+    "samples": [
+      {
+        "id": "pv-1",
+        "kind": "scale",
+        "scale": [
+          "slow",
+          "medium",
+          "fast"
+        ],
+        "targetIndex": 1,
+        "prompt": "slow, hmm, fast",
+        "answer": "medium"
+      },
+      {
+        "id": "pv-2",
+        "kind": "scale",
+        "scale": [
+          "tiny",
+          "small",
+          "big",
+          "huge"
+        ],
+        "targetIndex": 1,
+        "prompt": "tiny, hmm, big, huge",
+        "answer": "small"
+      },
+      {
+        "id": "pv-3",
+        "kind": "scale",
+        "scale": [
+          "freezing",
+          "cold",
+          "cool",
+          "warm",
+          "hot"
+        ],
+        "targetIndex": 3,
+        "prompt": "freezing, cold, cool, hmm, hot",
+        "answer": "warm"
+      },
+      {
+        "id": "pv-4",
+        "kind": "scale",
+        "scale": [
+          "dark",
+          "dim",
+          "bright"
+        ],
+        "targetIndex": 1,
+        "prompt": "dark, hmm, bright",
+        "answer": "dim"
+      },
+      {
+        "id": "pv-5",
+        "kind": "scale",
+        "scale": [
+          "quiet",
+          "medium",
+          "loud"
+        ],
+        "targetIndex": 1,
+        "prompt": "quiet, hmm, loud",
+        "answer": "medium"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA005-01-H",
+    "primitive": "picture-vocabulary",
+    "mode": "gradable_scale",
+    "draw": 2,
+    "file": "LA005-01-H-picture-vocabulary-gradable_scale-2.json",
+    "inputHash": "06ba9f6b1f6f7f439e7acd3b0fb01f8ae702dd5aef930b607ad5926061eb5675",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:30:54.974Z",
+    "durationMs": 1359,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 5,
+    "result": "sampled",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "5 usable items"
+      },
+      {
+        "name": "pv-1: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-1: spoken scale omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-2: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-2: spoken scale omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-3: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-3: spoken scale omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-4: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-4: spoken scale omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-5: scale target agrees with answer",
+        "pass": true
+      },
+      {
+        "name": "pv-5: spoken scale omits target",
+        "pass": true
+      }
+    ],
+    "semantic": "Reviewed both draws: size and temperature scales appear and their rungs are ordered. The task elicits missing vocabulary in an ordered list; it does not independently establish using all words in sentences.",
+    "samples": [
+      {
+        "id": "pv-1",
+        "kind": "scale",
+        "scale": [
+          "freezing",
+          "cold",
+          "cool",
+          "warm",
+          "hot"
+        ],
+        "targetIndex": 2,
+        "prompt": "freezing, cold, hmm, warm, hot",
+        "answer": "cool"
+      },
+      {
+        "id": "pv-2",
+        "kind": "scale",
+        "scale": [
+          "tiny",
+          "small",
+          "big",
+          "huge"
+        ],
+        "targetIndex": 2,
+        "prompt": "tiny, small, hmm, huge",
+        "answer": "big"
+      },
+      {
+        "id": "pv-3",
+        "kind": "scale",
+        "scale": [
+          "dark",
+          "dim",
+          "bright"
+        ],
+        "targetIndex": 1,
+        "prompt": "dark, hmm, bright",
+        "answer": "dim"
+      },
+      {
+        "id": "pv-4",
+        "kind": "scale",
+        "scale": [
+          "quiet",
+          "soft",
+          "loud"
+        ],
+        "targetIndex": 1,
+        "prompt": "quiet, hmm, loud",
+        "answer": "soft"
+      },
+      {
+        "id": "pv-5",
+        "kind": "scale",
+        "scale": [
+          "slow",
+          "steady",
+          "fast"
+        ],
+        "targetIndex": 1,
+        "prompt": "slow, hmm, fast",
+        "answer": "steady"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA005-02-H",
+    "primitive": "picture-vocabulary",
+    "mode": "sentence_frame",
+    "draw": 1,
+    "file": "LA005-02-H-picture-vocabulary-sentence_frame-1.json",
+    "inputHash": "025b33b62ba4ee31eda3683eb90c1773d6142e05d3c8ce0ca0904b7bcdf3ce31",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:31:18.194Z",
+    "durationMs": 1710,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 5,
+    "result": "sampled",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "5 usable items"
+      },
+      {
+        "name": "pv-1: spoken frame omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-2: spoken frame omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-3: spoken frame omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-4: spoken frame omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-5: spoken frame omits target",
+        "pass": true
+      }
+    ],
+    "semantic": "The frames are reasonable sentence-context noun completions. Source rendering deliberately hides the answer emoji until solved; there is no contextual scene illustration. Picture-clue reasoning remains unmet.",
+    "samples": [
+      {
+        "id": "pv-1",
+        "kind": "frame",
+        "prompt": "The loud... hmm... what chugs down the metal tracks?",
+        "answer": "train"
+      },
+      {
+        "id": "pv-2",
+        "kind": "frame",
+        "prompt": "We look at the... hmm... what on the wall to check the time?",
+        "answer": "clock"
+      },
+      {
+        "id": "pv-3",
+        "kind": "frame",
+        "prompt": "I see a bright... hmm... what shining in the night sky?",
+        "answer": "star"
+      },
+      {
+        "id": "pv-4",
+        "kind": "frame",
+        "prompt": "The yellow... hmm... what swims in the blue pond?",
+        "answer": "duck"
+      },
+      {
+        "id": "pv-5",
+        "kind": "frame",
+        "prompt": "My family lives inside this cozy... hmm... what?",
+        "answer": "house"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA005-02-H",
+    "primitive": "picture-vocabulary",
+    "mode": "sentence_frame",
+    "draw": 2,
+    "file": "LA005-02-H-picture-vocabulary-sentence_frame-2.json",
+    "inputHash": "eed2e9a10dd63527c2aa41eac79a7da05c00c0c10f11e2dddedf55cbaf9cb8ce",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:31:19.628Z",
+    "durationMs": 1537,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 5,
+    "result": "sampled",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "5 usable items"
+      },
+      {
+        "name": "pv-1: spoken frame omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-2: spoken frame omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-3: spoken frame omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-4: spoken frame omits target",
+        "pass": true
+      },
+      {
+        "name": "pv-5: spoken frame omits target",
+        "pass": true
+      }
+    ],
+    "semantic": "The frames are reasonable sentence-context noun completions. Source rendering deliberately hides the answer emoji until solved; there is no contextual scene illustration. Picture-clue reasoning remains unmet.",
+    "samples": [
+      {
+        "id": "pv-1",
+        "kind": "frame",
+        "prompt": "I like to crunch a red... hmm... what?",
+        "answer": "apple"
+      },
+      {
+        "id": "pv-2",
+        "kind": "frame",
+        "prompt": "We live in a nice... hmm... what?",
+        "answer": "house"
+      },
+      {
+        "id": "pv-3",
+        "kind": "frame",
+        "prompt": "The yellow... hmm... what swims in the pond?",
+        "answer": "duck"
+      },
+      {
+        "id": "pv-4",
+        "kind": "frame",
+        "prompt": "The orange... hmm... what swims under water?",
+        "answer": "fish"
+      },
+      {
+        "id": "pv-5",
+        "kind": "frame",
+        "prompt": "I put my... hmm... what on my foot?",
+        "answer": "shoe"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA005-02-I",
+    "primitive": "di-spoken-practice",
+    "mode": "say_answer",
+    "draw": 1,
+    "file": "LA005-02-I-di-spoken-practice-say_answer-1.json",
+    "inputHash": "982a9226b14523232d626910cc965f922f5841683a30f0293ff9b1e225c974a2",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:30:57.620Z",
+    "durationMs": 6304,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 4,
+    "result": "failed",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "4 usable items"
+      },
+      {
+        "name": "dsp-1: riddle requires clue reasoning rather than an answer picture",
+        "pass": false,
+        "detail": "Source rendering shows stimulusEmoji before the answer; these icons depict the riddle solutions."
+      },
+      {
+        "name": "dsp-2: riddle requires clue reasoning rather than an answer picture",
+        "pass": false,
+        "detail": "Source rendering shows stimulusEmoji before the answer; these icons depict the riddle solutions."
+      },
+      {
+        "name": "dsp-3: riddle requires clue reasoning rather than an answer picture",
+        "pass": false,
+        "detail": "Source rendering shows stimulusEmoji before the answer; these icons depict the riddle solutions."
+      },
+      {
+        "name": "dsp-4: riddle requires clue reasoning rather than an answer picture",
+        "pass": false,
+        "detail": "Source rendering shows stimulusEmoji before the answer; these icons depict the riddle solutions."
+      }
+    ],
+    "semantic": "Every generated riddle displays an icon of its answer. The child can name the picture without interpreting the clues. This candidate fails the curriculum evidence requirement in both draws.",
+    "samples": [
+      {
+        "id": "dsp-1",
+        "kind": "riddle",
+        "emoji": "☀️",
+        "prompt": "I shine bright in the sky during the day and keep you warm. What am I?",
+        "answer": "sun"
+      },
+      {
+        "id": "dsp-2",
+        "kind": "riddle",
+        "emoji": "🐟",
+        "prompt": "I live in the water, I have fins, and I swim all day long. What am I?",
+        "answer": "fish"
+      },
+      {
+        "id": "dsp-3",
+        "kind": "riddle",
+        "emoji": "🍎",
+        "prompt": "I am a crunchy red or green fruit that grows on a tree and has a stem. What am I?",
+        "answer": "apple"
+      },
+      {
+        "id": "dsp-4",
+        "kind": "riddle",
+        "emoji": "🐶",
+        "prompt": "I have four legs, a furry tail, and I love to bark and play fetch. What am I?",
+        "answer": "dog"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA005-02-I",
+    "primitive": "di-spoken-practice",
+    "mode": "say_answer",
+    "draw": 2,
+    "file": "LA005-02-I-di-spoken-practice-say_answer-2.json",
+    "inputHash": "1066426458de4727b27a996d5daa49ddaa85d12be4b2caa7b574ba4c0642ee08",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:30:57.787Z",
+    "durationMs": 9752,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 4,
+    "result": "failed",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "4 usable items"
+      },
+      {
+        "name": "dsp-1: riddle requires clue reasoning rather than an answer picture",
+        "pass": false,
+        "detail": "Source rendering shows stimulusEmoji before the answer; these icons depict the riddle solutions."
+      },
+      {
+        "name": "dsp-2: riddle requires clue reasoning rather than an answer picture",
+        "pass": false,
+        "detail": "Source rendering shows stimulusEmoji before the answer; these icons depict the riddle solutions."
+      },
+      {
+        "name": "dsp-3: riddle requires clue reasoning rather than an answer picture",
+        "pass": false,
+        "detail": "Source rendering shows stimulusEmoji before the answer; these icons depict the riddle solutions."
+      },
+      {
+        "name": "dsp-4: riddle requires clue reasoning rather than an answer picture",
+        "pass": false,
+        "detail": "Source rendering shows stimulusEmoji before the answer; these icons depict the riddle solutions."
+      }
+    ],
+    "semantic": "Every generated riddle displays an icon of its answer. The child can name the picture without interpreting the clues. This candidate fails the curriculum evidence requirement in both draws.",
+    "samples": [
+      {
+        "id": "dsp-1",
+        "kind": "riddle",
+        "emoji": "☀️",
+        "prompt": "I am bright and yellow up in the sky during the day. What am I?",
+        "answer": "sun"
+      },
+      {
+        "id": "dsp-2",
+        "kind": "riddle",
+        "emoji": "🐟",
+        "prompt": "I live in the water, I have fins, and I can swim all day. What am I?",
+        "answer": "fish"
+      },
+      {
+        "id": "dsp-3",
+        "kind": "riddle",
+        "emoji": "🍎",
+        "prompt": "I am a crunchy red fruit that grows on a tree. What am I?",
+        "answer": "apple"
+      },
+      {
+        "id": "dsp-4",
+        "kind": "riddle",
+        "emoji": "🐶",
+        "prompt": "I have four legs, a wagging tail, and I like to bark. What am I?",
+        "answer": "dog"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA005-03-A",
+    "primitive": "picture-vocabulary",
+    "mode": "association",
+    "draw": 1,
+    "file": "LA005-03-A-picture-vocabulary-association-1.json",
+    "inputHash": "f2d5888ffa1f800065a63f02ebdcf337019e76ee97e61aad95d1e5f8f37238d0",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:30:56.334Z",
+    "durationMs": 1284,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 5,
+    "result": "sampled",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "5 usable items"
+      },
+      {
+        "name": "pv-1: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "🧦"
+      },
+      {
+        "name": "pv-1: partner differs from stimulus",
+        "pass": true
+      },
+      {
+        "name": "pv-2: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "🛌"
+      },
+      {
+        "name": "pv-2: partner differs from stimulus",
+        "pass": true
+      },
+      {
+        "name": "pv-3: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "📄"
+      },
+      {
+        "name": "pv-3: partner differs from stimulus",
+        "pass": true
+      },
+      {
+        "name": "pv-4: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "🥤"
+      },
+      {
+        "name": "pv-4: partner differs from stimulus",
+        "pass": true
+      },
+      {
+        "name": "pv-5: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "🔑"
+      },
+      {
+        "name": "pv-5: partner differs from stimulus",
+        "pass": true
+      }
+    ],
+    "semantic": "Pairs are everyday associations, but the student produces a partner aloud. No cards are matched. Draw 2 also contains baseEmoji=\"pillows\", plain text instead of a picture.",
+    "samples": [
+      {
+        "id": "pv-1",
+        "kind": "association",
+        "emoji": "🧦",
+        "stimulus": "sock",
+        "prompt": "What goes with sock?",
+        "answer": "shoe"
+      },
+      {
+        "id": "pv-2",
+        "kind": "association",
+        "emoji": "🛌",
+        "stimulus": "pillow",
+        "prompt": "What goes with pillow?",
+        "answer": "bed"
+      },
+      {
+        "id": "pv-3",
+        "kind": "association",
+        "emoji": "📄",
+        "stimulus": "paper",
+        "prompt": "What goes with paper?",
+        "answer": "pencil"
+      },
+      {
+        "id": "pv-4",
+        "kind": "association",
+        "emoji": "🥤",
+        "stimulus": "cup",
+        "prompt": "What goes with cup?",
+        "answer": "plate"
+      },
+      {
+        "id": "pv-5",
+        "kind": "association",
+        "emoji": "🔑",
+        "stimulus": "key",
+        "prompt": "What goes with key?",
+        "answer": "lock"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  },
+  {
+    "id": "LA005-03-A",
+    "primitive": "picture-vocabulary",
+    "mode": "association",
+    "draw": 2,
+    "file": "LA005-03-A-picture-vocabulary-association-2.json",
+    "inputHash": "29bc5cfb287b13b7d6e5ce10be94f0c9c2bf338b9ac7e3df6bb71892515b0f55",
+    "sourceHashes": {
+      "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+      "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+      "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+      "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+      "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+      "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+      "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+      "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+      "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+    },
+    "requestedAt": "2026-09-07T19:30:56.402Z",
+    "durationMs": 1384,
+    "httpStatus": 200,
+    "endpointStatus": "pass",
+    "itemCount": 5,
+    "result": "failed",
+    "checks": [
+      {
+        "name": "Student-facing item set is nonempty after production item conversion",
+        "pass": true,
+        "detail": "5 usable items"
+      },
+      {
+        "name": "pv-1: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "🔑"
+      },
+      {
+        "name": "pv-1: partner differs from stimulus",
+        "pass": true
+      },
+      {
+        "name": "pv-2: picture stimulus is a pictograph",
+        "pass": false,
+        "detail": "pillows"
+      },
+      {
+        "name": "pv-2: partner differs from stimulus",
+        "pass": true
+      },
+      {
+        "name": "pv-3: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "🥤"
+      },
+      {
+        "name": "pv-3: partner differs from stimulus",
+        "pass": true
+      },
+      {
+        "name": "pv-4: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "🐶"
+      },
+      {
+        "name": "pv-4: partner differs from stimulus",
+        "pass": true
+      },
+      {
+        "name": "pv-5: picture stimulus is a pictograph",
+        "pass": true,
+        "detail": "🍴"
+      },
+      {
+        "name": "pv-5: partner differs from stimulus",
+        "pass": true
+      }
+    ],
+    "semantic": "Pairs are everyday associations, but the student produces a partner aloud. No cards are matched. Draw 2 also contains baseEmoji=\"pillows\", plain text instead of a picture.",
+    "samples": [
+      {
+        "id": "pv-1",
+        "kind": "association",
+        "emoji": "🔑",
+        "stimulus": "key",
+        "prompt": "What goes with key?",
+        "answer": "lock"
+      },
+      {
+        "id": "pv-2",
+        "kind": "association",
+        "emoji": "pillows",
+        "stimulus": "pillow",
+        "prompt": "What goes with pillow?",
+        "answer": "bed"
+      },
+      {
+        "id": "pv-3",
+        "kind": "association",
+        "emoji": "🥤",
+        "stimulus": "cup",
+        "prompt": "What goes with cup?",
+        "answer": "plate"
+      },
+      {
+        "id": "pv-4",
+        "kind": "association",
+        "emoji": "🐶",
+        "stimulus": "dog",
+        "prompt": "What goes with dog?",
+        "answer": "bone"
+      },
+      {
+        "id": "pv-5",
+        "kind": "association",
+        "emoji": "🍴",
+        "stimulus": "fork",
+        "prompt": "What goes with fork?",
+        "answer": "spoon"
+      }
+    ],
+    "interaction": "not_tested",
+    "interactionNote": "Production item converters and cue builders executed. No live microphone/session was driven."
+  }
+]

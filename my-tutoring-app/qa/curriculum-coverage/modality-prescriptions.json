@@ -1,0 +1,252 @@
+{
+  "grammar-empty": {
+    "stimulus": "Hear a complete sentence context with one grammatical slot: The dogs ___ running.",
+    "response": "Say the missing word; retain the subject and sentence context through item conversion.",
+    "visibility": "Hide the completed sentence and answer word until feedback. A pictured subject may remain visible.",
+    "feedback": "Replay The dogs are running, explain the plural subject, then offer a fresh singular/plural contrast.",
+    "score": "Judge agreement in this sentence, not an isolated noun. Zero usable items must fail generation validation.",
+    "liveCheck": "Spoken completion, correction and retry"
+  },
+  "riddle-cues": {
+    "stimulus": "Hear/read: I shine bright in the sky during the day and keep you warm. What am I? Show a neutral question mark.",
+    "response": "Say the inferred answer from the clues.",
+    "visibility": "Mask the answer symbol, label and accessible answer text throughout the independent attempt. Picture naming keeps its picture visible under a different stimulus contract.",
+    "feedback": "After a correct answer or explicit teaching reveal, show the sun and connect it to the clues. A revealed answer is assisted; use a fresh riddle for an independent retry.",
+    "score": "Accept defensible clue-consistent answers. Verify the learner cannot identify the answer from the picture, alt text or tutor cue before responding.",
+    "liveCheck": "Clue-only attempt, reveal and fresh retry"
+  },
+  "picture-stimulus": {
+    "stimulus": "Show an actual pillow picture, not the string pillows in a picture field.",
+    "response": "Say a defensible related object in the existing association mode.",
+    "visibility": "Keep the base picture visible; hide the example partner answer until feedback.",
+    "feedback": "Explain the relationship to an accepted partner; do not replace invalid generated pictures with guessed answers.",
+    "score": "Validate image/emoji stimuli before retaining an item. This repair alone does not satisfy a visual-card matching requirement.",
+    "liveCheck": "Picture rendering and spoken association"
+  },
+  "picture-matching": {
+    "stimulus": "Show two picture sets: sock/spoon and shoe/fork, with shuffled partner positions.",
+    "response": "Connect or tap a pair of related pictures; use separate task identities for opposites, location or morphology.",
+    "visibility": "Both sets stay visible. Hide correct links, partner highlights and answer-revealing labels until submission.",
+    "feedback": "Show the chosen relationship and explain a mismatch before allowing a new match.",
+    "score": "Score the actual pair selected; allow all defensible pairs and reject ambiguous stimulus sets.",
+    "liveCheck": "Tap/drag pairing, error and correction"
+  },
+  "k-grammar-completion": {
+    "stimulus": "Hear I see ___ apple or a pronoun/tense context that determines the missing form.",
+    "response": "Produce the missing grammatical form aloud; sentence creation is a separate response contract.",
+    "visibility": "Expose needed context but hide the completed form. Do not require independent reading.",
+    "feedback": "Model the full sentence after the attempt and contrast the relevant form.",
+    "score": "Use context-sensitive accepted forms; distinguish an article, agreement, pronoun and tense trial.",
+    "liveCheck": "Contextual spoken grammar and retry"
+  },
+  "k-sentence-builder": {
+    "stimulus": "Show a scene and shuffled pictured word tiles with individual audio, such as dog / runs / The.",
+    "response": "Arrange tiles into a sentence and submit the ordered sequence.",
+    "visibility": "Tile words and audio are available; hide the assembled model sentence until feedback.",
+    "feedback": "Read back the submitted construction, identify its issue and support revision.",
+    "score": "Judge valid sentence structures, meaning and the requested punctuation. Tile assembly does not prove handwriting or spontaneous speech.",
+    "liveCheck": "Tile audio, construction and revision"
+  },
+  "letter-writing": {
+    "stimulus": "Trace: letter path on the writing surface. Copy: model beside a blank surface. Write: spoken letter name with a blank surface.",
+    "response": "Draw ordered strokes with pointer, touch or stylus; capture paths and pen lifts.",
+    "visibility": "Trace shows the path; copy removes the overlay but retains the side model; independent write hides the letter form and arrows until feedback.",
+    "feedback": "Overlay submitted strokes against the reference after submission. Offer a supported trace separately from an independent reattempt.",
+    "score": "Assess path coverage, formation and required stroke sequence with age-appropriate tolerances. Keep trace/copy/write outcomes separate and preserve cumulative letter groups and case.",
+    "liveCheck": "Stroke capture, pen lifts, clear and resubmit",
+    "reuseEvidence": ["src/components/lumina/primitives/LetterTracing.tsx", "src/components/practice/visuals/LetterTracing.tsx"],
+    "reuseFinding": "Both existing LetterTracing components display letters/guides only: neither captures drawing input nor scores strokes. Reuse display ideas and inspect number/shape tracing infrastructure for capture; interactive letter formation still needs implementation."
+  },
+  "print-concepts": {
+    "stimulus": "Use a real rendered book page, contents page or line of print.",
+    "response": "Point to a word/space/feature, track reading direction, count words or navigate to a named section as required.",
+    "visibility": "Keep print visible; hide target highlighting and navigation answers until the learner acts.",
+    "feedback": "Highlight the relevant print unit or show the correct route on the same page.",
+    "score": "Judge the selected region, tracking path, count or destination separately; page-feature recognition alone is insufficient.",
+    "liveCheck": "Page selection, tracking and navigation"
+  },
+  "sound-production": {
+    "stimulus": "Present the required word or letter with audio appropriate to the exact objective; separate phonemes, onset/rime and syllables.",
+    "response": "Produce the specified sound or sequence of chunks; a count or menu selection is separate recognition evidence.",
+    "visibility": "Do not model the requested answer sounds before the independent attempt. Letter visibility depends on whether correspondence is being assessed.",
+    "feedback": "Model the exact sound/chunks after the attempt and label imitation as assisted practice.",
+    "score": "Define judgeable sounds and exclusions per requirement. Retain teacher-reviewable audio where automatic isolated-sound judging is unreliable.",
+    "liveCheck": "Sound capture and per-sound judge limits"
+  },
+  "ending-sounds": {
+    "stimulus": "Hear words with controlled final-phoneme contrasts, for example cap and cat.",
+    "response": "Choose the matching ending sound or produce it in an explicitly separate production task.",
+    "visibility": "Hide printed endings for auditory assessment; ensure onset pictures cannot determine the correct choice.",
+    "feedback": "Replay and emphasize final sounds after the choice.",
+    "score": "Score final-phoneme evidence, not whole-word rhyme or initial-sound matching.",
+    "liveCheck": "Auditory contrast and chosen response"
+  },
+  "syllable-blending": {
+    "stimulus": "Play cow + boy as two syllables, or c + at as onset and rime, without decomposing the requested chunks.",
+    "response": "Say the combined whole word.",
+    "visibility": "Hide the whole-word label and identifying answer picture before the response.",
+    "feedback": "Join the original chunks and reveal the word after the attempt.",
+    "score": "Judge the whole word while validating that the audio preserves the objective's chunk boundaries.",
+    "liveCheck": "Chunk audio timing and spoken blend"
+  },
+  "vowel-contrast": {
+    "stimulus": "Play a controlled short/long vowel contrast such as cap/cape with equivalent contextual support.",
+    "response": "Choose the heard vowel contrast or produce the requested vowel in a separate task.",
+    "visibility": "Hide spelling cues when testing auditory discrimination; show orthography only for an explicit print-to-sound task.",
+    "feedback": "Replay the contrasting vowels and then connect sound to print if relevant.",
+    "score": "Require vowel-specific evidence; silent-e recognition must not stand in for listening discrimination.",
+    "liveCheck": "Vowel audio, selection and feedback"
+  },
+  "extended-decoding": {
+    "stimulus": "Show an in-scope inflected or compound word, with sentence context only when required.",
+    "response": "Read it aloud; answer a separate meaning question where the objective includes comprehension.",
+    "visibility": "Keep print visible but withhold tutor pronunciation and answer-identifying pictures before cold reading.",
+    "feedback": "Model decoding after the attempt, then use a new word to check independent transfer.",
+    "score": "Validate phonics scope and score decoding separately from word meaning.",
+    "liveCheck": "Cold reading and separate meaning response"
+  },
+  "oral-interaction": {
+    "stimulus": "Present a bounded conversation with missing information, such as an unclear direction the child needs to clarify.",
+    "response": "Ask an original relevant question and respond to the partner's next turn.",
+    "visibility": "Do not supply the exact question as a script to repeat; retain contextual pictures if needed.",
+    "feedback": "Respond to the child's actual question and discuss relevance or turn-taking after the exchange.",
+    "score": "Retain turn-level audio and rubric evidence; use teacher observation for behaviors the system cannot observe.",
+    "liveCheck": "Two-turn conversation and retained evidence"
+  },
+  "oral-sentence-production": {
+    "stimulus": "Show a meaningful scene or target vocabulary and ask the child to describe it.",
+    "response": "Produce an original sentence using the required concept or structure.",
+    "visibility": "Keep the scene visible; hide model sentences until feedback.",
+    "feedback": "Acknowledge meaning, then model or prompt revision of the specific missing structure.",
+    "score": "Accept multiple valid sentences; distinguish a fragment, irrelevant sentence and successful concept use.",
+    "liveCheck": "Open utterance capture and rubric judgment"
+  },
+  "oral-storytelling": {
+    "stimulus": "Offer a three-event picture plan or a story to retell, depending on the requirement.",
+    "response": "Record connected original language across the events.",
+    "visibility": "Keep planning pictures available; hide a scripted model retelling during independent production.",
+    "feedback": "Replay the child's narration and identify missing sequence links without replacing creative choices.",
+    "score": "Separate sequence, connected language and source fidelity; retain audio for review.",
+    "liveCheck": "Multi-event recording and review"
+  },
+  "picture-context": {
+    "stimulus": "Show a contextual scene and read the sentence or story containing the unfamiliar word.",
+    "response": "Explain or select the meaning using details from the supplied context.",
+    "visibility": "Keep useful scene clues visible; avoid a lone answer icon that turns inference into naming.",
+    "feedback": "Point back to the particular picture/text details that support the interpretation.",
+    "score": "Require context-consistent meaning, with a distinct evidence response when the objective asks for it.",
+    "liveCheck": "Scene visibility and contextual response"
+  },
+  "two-story-compare": {
+    "stimulus": "Read two short stories with distinct accessible picture references.",
+    "response": "Compare a character/event/detail across both, using speech or pictured same/different choices.",
+    "visibility": "Retain references to both stories; hide the completed comparison.",
+    "feedback": "Show the relevant evidence from each story side by side.",
+    "score": "Accept defensible comparisons grounded in both texts; referencing only one is incomplete.",
+    "liveCheck": "Two-story context and comparison response"
+  },
+  "semantic-web": {
+    "stimulus": "Offer picture nodes for a theme or logical chain with unrelated distractors.",
+    "response": "Connect related nodes and explain the chosen relationship when requested.",
+    "visibility": "Show the nodes; hide the completed network and relationship labels until submission.",
+    "feedback": "Discuss individual links and allow revision without imposing one arbitrary network.",
+    "score": "Judge defensible relations and explanations; accept multiple valid webs.",
+    "liveCheck": "Node linking and relationship explanation"
+  },
+  "spatial-expression": {
+    "stimulus": "Show objects in a scene with a fixed, unambiguous viewpoint.",
+    "response": "Describe the required relation aloud; object placement remains a separate response type.",
+    "visibility": "Keep the scene visible but hide its target relation label before the answer.",
+    "feedback": "Highlight the two reference objects and model their spatial relation.",
+    "score": "Judge relation and reference object; confirm left/right and front/behind are visually representable.",
+    "liveCheck": "Scene perspective and spoken description"
+  },
+  "spatial-paths": {
+    "stimulus": "Show a traversable scene with distinct over, under, through or around routes.",
+    "response": "Choose or draw the requested route and animate the object along it.",
+    "visibility": "Keep obstacles and routes visible; hide the correct-route highlight until submission.",
+    "feedback": "Replay the selected path and contrast the requested movement relation.",
+    "score": "Score path geometry or route identity, not merely the final destination cell.",
+    "liveCheck": "Route selection, animation and path scoring"
+  },
+  "picture-sorting": {
+    "stimulus": "Show recognizable pictures of people, places, things or quantities, with accessible category cues.",
+    "response": "Move cards into buckets when sorting cards is required; retain spoken categorization as a separate partial capability.",
+    "visibility": "Pictures and bucket cues stay visible; hide item-specific correct categories.",
+    "feedback": "Return a misplaced card with a category-specific explanation.",
+    "score": "Check actual bucket assignments and balanced requested categories, including places where specified.",
+    "liveCheck": "Picture recognition, card movement and retry"
+  },
+  "sort-explanation": {
+    "stimulus": "Retain the sorted item and selected category after categorization.",
+    "response": "Explain why this item belongs in that category.",
+    "visibility": "Show the child's categorization; withhold a model explanation until the rationale attempt.",
+    "feedback": "Connect a valid distinguishing feature to the selected category.",
+    "score": "Score the rationale separately; a correct category with an unrelated explanation is not full coverage.",
+    "liveCheck": "Follow-up rationale and separate judgment"
+  },
+  "main-idea-organizer": {
+    "stimulus": "Read a story and show a central-idea slot plus pictured detail cards, including related but unstated distractors.",
+    "response": "Choose a main idea and connect supporting details to it.",
+    "visibility": "Keep story references available; hide the completed web and correct-detail markers.",
+    "feedback": "Link each accepted detail to its actual story evidence.",
+    "score": "Separate main-idea choice from support links; topical similarity alone is insufficient.",
+    "liveCheck": "Idea selection and evidence links"
+  },
+  "story-reasoning": {
+    "stimulus": "Pause a story before the outcome and ask for a prediction and its supporting clue.",
+    "response": "Predict an outcome or explain a cause using the information available at that point.",
+    "visibility": "Hide future text, outcome images, captions and tutor spoilers until the response is captured.",
+    "feedback": "Reveal the outcome and compare it with the child's reasoning without treating every differing prediction as wrong.",
+    "score": "Judge plausibility and cited evidence using pre-reveal context; separate prediction quality from matching the author.",
+    "liveCheck": "Story reveal timing and reasoning capture"
+  },
+  "picture-story-sequence": {
+    "stimulus": "Read a short story and show three or four shuffled event pictures with optional audio.",
+    "response": "Order event cards and identify beginning, middle and end.",
+    "visibility": "Keep the event pictures visible; hide sequence numbers and the completed order.",
+    "feedback": "Replay the submitted order against the story and support moving a misplaced event.",
+    "score": "Score event ordering against the supplied story; avoid relying on print decoding.",
+    "liveCheck": "Event-card audio, ordering and revision"
+  },
+  "multiple-meanings": {
+    "stimulus": "Present two scenes for one word, such as a flying bat and a baseball bat, with separate sentence contexts.",
+    "response": "Select or explain the meaning that fits each context.",
+    "visibility": "Show both senses as legitimate options; hide the correct context-to-sense links.",
+    "feedback": "Compare how the same word refers to different things in the two sentences.",
+    "score": "Judge meaning per context; an isolated vocabulary label does not establish multiple meanings.",
+    "liveCheck": "Context-to-sense matching and explanation"
+  },
+  "rhyme-family": {
+    "stimulus": "Hear a base word and see three empty collection slots.",
+    "response": "Produce three distinct rhyming words aloud.",
+    "visibility": "Show previously accepted responses to prevent duplicates; hide unused example answers.",
+    "feedback": "Celebrate valid new rhymes and explain duplicates or non-rhymes without exhausting the remaining answer pool.",
+    "score": "Validate rhyme and uniqueness; accept valid words beyond a fixed exemplar list.",
+    "liveCheck": "Repeated spoken collection and duplicate handling"
+  },
+  "emotion-scenes": {
+    "stimulus": "Show a readable face and situation with enough context to support an emotion inference.",
+    "response": "Name or explain a plausible emotion, depending on the requirement.",
+    "visibility": "Keep facial and scene clues visible; hide emotion labels before the response.",
+    "feedback": "Connect the interpretation to facial or situational cues while acknowledging plausible alternatives.",
+    "score": "Accept supported near-synonyms and alternatives; reject ambiguous stimuli rather than forcing one label.",
+    "liveCheck": "Scene interpretation and flexible judgment"
+  },
+  "listening-presentation": {
+    "stimulus": "Play one shared short presentation containing at least three distinct factual details.",
+    "response": "Answer three independent recall questions about that same presentation.",
+    "visibility": "Withhold answer-bearing transcripts and avoid feedback that supplies answers to later questions; control replay according to the objective.",
+    "feedback": "Review source excerpts after the affected independent questions have been attempted.",
+    "score": "Link each answer to a different supplied detail and track any replay or assistance.",
+    "liveCheck": "Shared audio, recall questions and feedback order"
+  },
+  "curriculum-clarity": {
+    "stimulus": "Undetermined: the published requirement needs a concrete observable task before stimulus design.",
+    "response": "Specify what the child must say, select, arrange, draw or write; retain the original objective as provenance.",
+    "visibility": "Decide which clues are legitimate support only after the assessed action is defined.",
+    "feedback": "Define one successful example and one near-miss before implementing feedback.",
+    "score": "Resolve the observable evidence with curriculum review; do not invent a pass criterion and report the requirement as covered.",
+    "liveCheck": "Blocked on an observable task definition"
+  }
+}

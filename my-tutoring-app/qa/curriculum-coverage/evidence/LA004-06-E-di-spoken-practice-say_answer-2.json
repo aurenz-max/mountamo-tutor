@@ -1,0 +1,64 @@
+{
+  "id": "LA004-06-E",
+  "primitive": "di-spoken-practice",
+  "mode": "say_answer",
+  "draw": 2,
+  "subject": "LANGUAGE_ARTS",
+  "grade": "K",
+  "requirement": "Apply basic subject-verb agreement in present tense (singular/plural subjects)",
+  "requestedAt": "2026-09-07T19:31:07.540Z",
+  "inputHash": "fba96c9684ac6216835ead1d999fc38c79243ac61169ac999f3efd29df9d497e",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+    "src/components/lumina/service/manifest/catalog/di.ts": "9d5be1b25f589249f95b4b93f6a2aa94d75152b80068cd9617f0eaf45a07427a",
+    "src/components/lumina/service/literacy/gemini-picture-vocabulary.ts": "5c8aa6448901e5bd09ac2049ce01134a45e0d6a2b363062fa926be1ce6a550af",
+    "src/components/lumina/service/literacy/gemini-word-sorter.ts": "491b7805db10b397655b9e296734713b0c54a295fca241be9f68256afcdf7943",
+    "src/components/lumina/service/direct-instruction/gemini-di-spoken-practice.ts": "c04214db3a4971727a9358621d37de6fb52f609408d7a004ae8fc2897c695f4a",
+    "src/components/lumina/primitives/visual-primitives/literacy/PictureVocabulary.tsx": "b457a8e41e3c55d87b0daecb779eb1dbb52a1ceea9ac71134bb9ee3764618797",
+    "src/components/lumina/primitives/visual-primitives/literacy/WordSorter.tsx": "ec47a5631f6d07519d67699950a80c808c14763339cb4ee226e8edf3325893b7",
+    "src/components/lumina/primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx": "627a599afa8ad63875612fdfd5e54008099f09182d0bcfb473fd28ae6f78545c"
+  },
+  "params": {
+    "componentId": "di-spoken-practice",
+    "evalMode": "say_answer",
+    "topic": "Apply basic subject-verb agreement in present tense (singular/plural subjects)",
+    "intent": "Apply basic subject-verb agreement in present tense (singular/plural subjects)",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "di-spoken-practice",
+    "evalMode": "say_answer",
+    "duration": 9455,
+    "catalogMeta": {
+      "label": "Say the Answer",
+      "beta": 3,
+      "scaffoldingMode": 3,
+      "allowedChallengeTypes": [
+        "say_answer"
+      ],
+      "description": "Name a displayed symbol or picture, or answer a spoken problem. Recall, not decoding. Show visual naming targets without speaking their names or printing answers."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [title, description, challengeType, gradeLevel, items]",
+      "payloadBytes": 330,
+      "longestStringLength": 166,
+      "longestStringPath": "gradeLevel",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Subject-Verb Word Play",
+      "description": "Listen to the sentence and say the correct word out loud!",
+      "challengeType": "say_answer",
+      "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+      "items": []
+    }
+  },
+  "durationMs": 9465
+}
