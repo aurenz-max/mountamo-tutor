@@ -1,0 +1,122 @@
+[
+  {
+    "caseId": "ordinal-name",
+    "rep": 1,
+    "arm": "production",
+    "blindId": "lesson-dbfd4fe9-a69"
+  },
+  {
+    "caseId": "ordinal-name",
+    "rep": 1,
+    "arm": "experimental",
+    "blindId": "lesson-d0e4bc65-5fb"
+  },
+  {
+    "caseId": "ordinal-name",
+    "rep": 2,
+    "arm": "experimental",
+    "blindId": "lesson-fe547bc2-f35"
+  },
+  {
+    "caseId": "ordinal-name",
+    "rep": 2,
+    "arm": "production",
+    "blindId": "lesson-dce7b9a1-44c"
+  },
+  {
+    "caseId": "ordinal-tenth",
+    "rep": 1,
+    "arm": "experimental",
+    "blindId": "lesson-2e4fa00b-faf"
+  },
+  {
+    "caseId": "ordinal-tenth",
+    "rep": 1,
+    "arm": "production",
+    "blindId": "lesson-b566ce57-052"
+  },
+  {
+    "caseId": "ordinal-tenth",
+    "rep": 2,
+    "arm": "production",
+    "blindId": "lesson-b3404e2b-f0c"
+  },
+  {
+    "caseId": "ordinal-tenth",
+    "rep": 2,
+    "arm": "experimental",
+    "blindId": "lesson-d0357fb5-a3c"
+  },
+  {
+    "caseId": "teen-represent-16-19",
+    "rep": 1,
+    "arm": "production",
+    "blindId": "lesson-a0caf901-49d"
+  },
+  {
+    "caseId": "teen-represent-16-19",
+    "rep": 1,
+    "arm": "experimental",
+    "blindId": "lesson-d3257e4e-2c1"
+  },
+  {
+    "caseId": "teen-represent-16-19",
+    "rep": 2,
+    "arm": "experimental",
+    "blindId": "lesson-1d2212be-6b4"
+  },
+  {
+    "caseId": "teen-represent-16-19",
+    "rep": 2,
+    "arm": "production",
+    "blindId": "lesson-fec275fd-515"
+  },
+  {
+    "caseId": "teen-decompose-16-19",
+    "rep": 1,
+    "arm": "experimental",
+    "blindId": "lesson-07bc31d0-e2d"
+  },
+  {
+    "caseId": "teen-decompose-16-19",
+    "rep": 1,
+    "arm": "production",
+    "blindId": "lesson-2f9c2215-581"
+  },
+  {
+    "caseId": "teen-decompose-16-19",
+    "rep": 2,
+    "arm": "production",
+    "blindId": "lesson-7ce4d3c7-53f"
+  },
+  {
+    "caseId": "teen-decompose-16-19",
+    "rep": 2,
+    "arm": "experimental",
+    "blindId": "lesson-49711ea9-10d"
+  },
+  {
+    "caseId": "teen-equations",
+    "rep": 1,
+    "arm": "production",
+    "blindId": "lesson-8cd88b7d-949"
+  },
+  {
+    "caseId": "teen-equations",
+    "rep": 1,
+    "arm": "experimental",
+    "blindId": "lesson-2261dfb8-f53"
+  },
+  {
+    "caseId": "teen-equations",
+    "rep": 2,
+    "arm": "experimental",
+    "blindId": "lesson-faad2403-177"
+  },
+  {
+    "caseId": "teen-equations",
+    "rep": 2,
+    "arm": "production",
+    "blindId": "lesson-d050bf3e-d37"
+  }
+]

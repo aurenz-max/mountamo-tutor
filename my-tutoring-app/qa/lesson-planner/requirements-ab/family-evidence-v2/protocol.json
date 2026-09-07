@@ -1,0 +1,34 @@
+{
+  "cases": [
+    "ordinal-name",
+    "ordinal-tenth",
+    "teen-represent-16-19",
+    "teen-decompose-16-19",
+    "teen-equations"
+  ],
+  "repetitions": 2,
+  "grade": "kindergarten",
+  "fixtureSource": "curriculum-ab",
+  "catalogHash": "cf8ff16e07d58d8915b2c62e4b74da9d9a0b30eef25fca9d9359130ea83b06a2",
+  "sourceHashes": {
+    "scripts/lesson-planner-requirements-ab.mjs": "e08869ae5cae3d09444366ff63c8569c8425fb0cabec86c821c68aa46b9f6992",
+    "scripts/lib/lesson-planner-family-evidence.mjs": "4af09e53e55d31e8423e25aa1556ee62bb30b9befe86e7abd2e29e827b3ec181",
+    "scripts/lib/lesson-planner-family-search.mjs": "6b4ed2e896fd60a0ca815ed4e34c7abd863a6a5898efd64c27508005d53c5c76",
+    "scripts/lib/lesson-planner-requirements.mjs": "73e2a1510b9941ddebf038c5033f2bfcb4f83011f9769743bcf0c32ff7782ee1",
+    "scripts/lib/lesson-planner-pairs.mjs": "f24822ab6c6703f80b8299dbc1a52ca2c5338c9140fb6438b3659fe01e222467",
+    "scripts/lib/lesson-planner-pilot.mjs": "4e5c0486fa5921aa1f78673890ac7ef201b58928461db2f4f13299162189ecb1",
+    "scripts/lib/lesson-planner-discovery.mjs": "9a3c7a1edfe8dc75f065ea1bdf16b1414db5876992d45e58bedefb6bf3952918",
+    "scripts/lib/lesson-planner-topic.mjs": "1c781c6a05ee46601272521a9346247126975cfbd478f0a04298774194252b56",
+    "src/components/lumina/service/manifest/gemini-manifest.ts": "409d45084ba63911190591d42979e533e4b51ee722f1fd855a5da6aa09e9a948",
+    "src/components/lumina/service/manifest/flattenManifest.ts": "132666831e8f0bb8542a511b97dc8c8316b0140230bc40a8d6721bfe7fb40172",
+    "src/components/lumina/service/geminiService.ts": "fda2e156b7e8d683d97fa4e1c0482c0c05720620a03503fd2f72c51d99deb166",
+    "src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts": "1cd4be76d30c77648ae0104ec5fec2d285b6a87c33b9d04f818d63eadee98a8d"
+  },
+  "caveats": [
+    "Fixed objectives; topic-to-objective authoring not tested.",
+    "Exploratory 10-lesson follow-up, historical comparator only. Protected family retrieval, all family modes, explicit evidence requirements and supported base-ten numberRange binding change together. No generator or judge changes.",
+    "Two concurrent lessons, per-lesson parallel hydration.",
+    "API transport timeout 120 seconds in both arms.",
+    "Coverage judge is blinded to arm, not a substitute for human review."
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "caseId": "teen-represent-11-15",
+  "entryPoint": "curriculum",
+  "topic": "Compose and Decompose Numbers 11–19",
+  "learner": {
+    "grade": "K",
+    "independentReading": false
+  },
+  "lessonBudgetMinutes": 15,
+  "scopePolicy": "Preserve the supplied curriculum objective and number/position ranges. Keep kindergarten; report catalog conflicts rather than silently raising grade or weakening the objective.",
+  "requiredContributions": [
+    "meaningful_context",
+    "explanation_and_modeling",
+    "supported_investigation",
+    "supported_practice",
+    "application",
+    "closing_independent_assessment"
+  ],
+  "contributionDefinitions": {
+    "meaningful_context": "Orient the child and establish why this topic is interesting or useful.",
+    "explanation_and_modeling": "Introduce essential concepts or model a method before dependent practice. An explanatory display can make a complete contribution without assessment.",
+    "supported_investigation": "Let the child actively explore or try an idea in a form appropriate to the topic and available capabilities.",
+    "supported_practice": "Give supported opportunities to perform the selected objective tasks.",
+    "application": "Use an idea in a fresh example, problem or decision appropriate to the objective.",
+    "closing_independent_assessment": "Offer fresh opportunities to demonstrate selected objectives before hints or model answers. Identify what is not assessed."
+  },
+  "candidateGroups": [],
+  "candidateIds": [],
+  "capabilityNotes": [],
+  "assumptions": "User confirmed kindergarten to expose curriculum/catalog gaps. Non-reader and 15-minute session remain pilot assumptions. Objective text is user supplied; IDs and evidence criteria are tester-authored. No external curriculum IDs were looked up.",
+  "objective": {
+    "id": "teen-represent-11-15",
+    "text": "Represent numbers 11-15 as ten ones plus additional ones using manipulatives"
+  },
+  "targetEvidence": [
+    "teen-represent-11-15-e1",
+    "teen-represent-11-15-e2"
+  ],
+  "evidenceDefinitions": {
+    "teen-represent-11-15-e1": "Builds a target in 11-15 with ten ones and 1-5 additional ones.",
+    "teen-represent-11-15-e2": "Makes the ten-ones group and extra ones distinguishable through learner manipulation."
+  }
+}

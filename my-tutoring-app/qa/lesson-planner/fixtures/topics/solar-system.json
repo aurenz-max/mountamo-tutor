@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "caseId": "solar-system",
+  "objective": {
+    "id": "solar-system",
+    "text": "Identify the Sun as a star and Earth as a planet, recognize that planets orbit the Sun, and distinguish the Sun, Earth and Moon in a simple solar-system model."
+  },
+  "learner": {
+    "grade": "K",
+    "independentReading": false
+  },
+  "lessonBudgetMinutes": 15,
+  "assumptions": "Exploratory topic-to-objective fixture authored for this experiment, not retrieved curriculum. Phonics sitpin interpreted as s,i,t,p,n (not SATPIN). One objective per topic; no multi-objective composition.",
+  "requiredContributions": [
+    "meaningful_context",
+    "explanation_and_modeling",
+    "supported_investigation",
+    "comparison_and_description_practice",
+    "application_to_fresh_examples",
+    "closing_independent_assessment"
+  ],
+  "contributionDefinitions": {
+    "meaningful_context": "Give a concrete age-appropriate reason to learn this topic and orient the child.",
+    "explanation_and_modeling": "Explain or demonstrate the core idea or procedure before dependent practice, with accessible visual/spoken support.",
+    "supported_investigation": "Let the child actively explore, notice, test or try the target idea with support, using a form appropriate to the topic; physical manipulation is not mandatory for informational topics.",
+    "comparison_and_description_practice": "Provide varied supported practice of the objective performance. This identifier is shared with the pilot, but comparison is required only when the objective calls for it.",
+    "application_to_fresh_examples": "Use the learned idea in a fresh example or meaningful decision; for phonics decode fresh in-set words, and for counting use new arrangements.",
+    "closing_independent_assessment": "Close with fresh opportunities to demonstrate the objective before hints or model answers, followed by a sense of completion. Record evidence limits."
+  },
+  "targetEvidence": [
+    "identities",
+    "orbit",
+    "transfer"
+  ],
+  "evidenceDefinitions": {
+    "identities": "Distinguish the Sun, Earth and Moon and identify Sun as star and Earth as planet.",
+    "orbit": "Describe or demonstrate Earth going around the Sun, and Moon around Earth.",
+    "transfer": "Interpret a fresh model without depending on exact picture positions or implying schematic sizes/distances are to scale."
+  },
+  "candidateGroups": [],
+  "candidateIds": [],
+  "capabilityNotes": [],
+  "candidateSource": "Use --catalog all; identical live catalog universe for both arms."
+}

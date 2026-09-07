@@ -1,0 +1,31 @@
+{
+  "cases": [
+    "ordinal-name",
+    "ordinal-tenth",
+    "teen-represent-16-19",
+    "teen-decompose-16-19",
+    "teen-equations"
+  ],
+  "repetitions": 2,
+  "grade": "kindergarten",
+  "fixtureSource": "curriculum-ab",
+  "catalogHash": "3b424ff792fe1a7f8071109c665323f5f86da190b6fc20605e47fa150da32c22",
+  "sourceHashes": {
+    "scripts/lesson-planner-production-ab.mjs": "b7641900a364ab7c7ab1db0dfbe0da44d1e1f2cc9f5410928c3fb501aa276a67",
+    "scripts/lib/lesson-planner-compile.mjs": "66b6f13b0a6fcea2f606c41d000ccc42b1f096d08a89769429ae7358447c243b",
+    "scripts/lib/lesson-planner-pilot.mjs": "4e5c0486fa5921aa1f78673890ac7ef201b58928461db2f4f13299162189ecb1",
+    "scripts/lib/lesson-planner-discovery.mjs": "9a3c7a1edfe8dc75f065ea1bdf16b1414db5876992d45e58bedefb6bf3952918",
+    "scripts/lib/lesson-planner-topic.mjs": "1c781c6a05ee46601272521a9346247126975cfbd478f0a04298774194252b56",
+    "src/components/lumina/service/manifest/gemini-manifest.ts": "409d45084ba63911190591d42979e533e4b51ee722f1fd855a5da6aa09e9a948",
+    "src/components/lumina/service/manifest/flattenManifest.ts": "132666831e8f0bb8542a511b97dc8c8316b0140230bc40a8d6721bfe7fb40172",
+    "src/components/lumina/service/geminiService.ts": "fda2e156b7e8d683d97fa4e1c0482c0c05720620a03503fd2f72c51d99deb166",
+    "src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts": "1cd4be76d30c77648ae0104ec5fec2d285b6a87c33b9d04f818d63eadee98a8d"
+  },
+  "caveats": [
+    "Fixed objectives; topic-to-objective authoring not tested.",
+    "Production default has no duration parameter; experimental retains its 15-minute target.",
+    "Two concurrent lessons, per-lesson parallel hydration.",
+    "API transport timeout 120 seconds in both arms.",
+    "Coverage judge is blinded to arm, not a substitute for human review."
+  ]
+}

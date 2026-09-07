@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "caseId": "ordinal-tenth",
+  "entryPoint": "curriculum",
+  "topic": "Understand ordinal numbers",
+  "learner": {
+    "grade": "K",
+    "independentReading": false
+  },
+  "lessonBudgetMinutes": 15,
+  "scopePolicy": "Preserve the supplied curriculum objective and number/position ranges. Keep kindergarten; report catalog conflicts rather than silently raising grade or weakening the objective.",
+  "requiredContributions": [
+    "meaningful_context",
+    "explanation_and_modeling",
+    "supported_investigation",
+    "supported_practice",
+    "application",
+    "closing_independent_assessment"
+  ],
+  "contributionDefinitions": {
+    "meaningful_context": "Orient the child and establish why this topic is interesting or useful.",
+    "explanation_and_modeling": "Introduce essential concepts or model a method before dependent practice. An explanatory display can make a complete contribution without assessment.",
+    "supported_investigation": "Let the child actively explore or try an idea in a form appropriate to the topic and available capabilities.",
+    "supported_practice": "Give supported opportunities to perform the selected objective tasks.",
+    "application": "Use an idea in a fresh example, problem or decision appropriate to the objective.",
+    "closing_independent_assessment": "Offer fresh opportunities to demonstrate selected objectives before hints or model answers. Identify what is not assessed."
+  },
+  "candidateGroups": [],
+  "candidateIds": [],
+  "capabilityNotes": [],
+  "assumptions": "User confirmed kindergarten to expose curriculum/catalog gaps. Non-reader and 15-minute session remain pilot assumptions. Objective text is user supplied; IDs and evidence criteria are tester-authored. No external curriculum IDs were looked up.",
+  "objective": {
+    "id": "ordinal-tenth",
+    "text": "Extend ordinal number understanding to tenth position (sixth through tenth)"
+  },
+  "targetEvidence": [
+    "ordinal-tenth-e1",
+    "ordinal-tenth-e2"
+  ],
+  "evidenceDefinitions": {
+    "ordinal-tenth-e1": "Recognizes positions sixth through tenth in a line with an explicit starting end.",
+    "ordinal-tenth-e2": "Names ordinal positions sixth through tenth; first-through-fifth work alone is not sufficient."
+  }
+}

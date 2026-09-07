@@ -1,0 +1,522 @@
+{
+  "fixture": {
+    "version": 1,
+    "caseId": "teen-represent-16-19",
+    "entryPoint": "curriculum",
+    "topic": "Compose and Decompose Numbers 11–19",
+    "learner": {
+      "grade": "K",
+      "independentReading": false
+    },
+    "lessonBudgetMinutes": 15,
+    "scopePolicy": "Preserve the supplied curriculum objective and number/position ranges. Keep kindergarten; report catalog conflicts rather than silently raising grade or weakening the objective.",
+    "requiredContributions": [
+      "meaningful_context",
+      "explanation_and_modeling",
+      "supported_investigation",
+      "supported_practice",
+      "application",
+      "closing_independent_assessment"
+    ],
+    "contributionDefinitions": {
+      "meaningful_context": "Orient the child and establish why this topic is interesting or useful.",
+      "explanation_and_modeling": "Introduce essential concepts or model a method before dependent practice. An explanatory display can make a complete contribution without assessment.",
+      "supported_investigation": "Let the child actively explore or try an idea in a form appropriate to the topic and available capabilities.",
+      "supported_practice": "Give supported opportunities to perform the selected objective tasks.",
+      "application": "Use an idea in a fresh example, problem or decision appropriate to the objective.",
+      "closing_independent_assessment": "Offer fresh opportunities to demonstrate selected objectives before hints or model answers. Identify what is not assessed."
+    },
+    "candidateGroups": [],
+    "candidateIds": [],
+    "capabilityNotes": [],
+    "assumptions": "User confirmed kindergarten to expose curriculum/catalog gaps. Non-reader and 15-minute session remain pilot assumptions. Objective text is user supplied; IDs and evidence criteria are tester-authored. No external curriculum IDs were looked up.",
+    "objective": {
+      "id": "teen-represent-16-19",
+      "text": "Represent numbers 16-19 as ten ones plus additional ones using manipulatives"
+    },
+    "targetEvidence": [
+      "teen-represent-16-19-e1",
+      "teen-represent-16-19-e2"
+    ],
+    "evidenceDefinitions": {
+      "teen-represent-16-19-e1": "Builds a target in 16-19 with ten ones and 6-9 additional ones.",
+      "teen-represent-16-19-e2": "Makes the ten-ones group and extra ones distinguishable through learner manipulation."
+    }
+  },
+  "objective": {
+    "id": "teen-represent-16-19",
+    "text": "Represent numbers 16-19 as ten ones plus additional ones using manipulatives",
+    "verb": "apply",
+    "icon": "🎯",
+    "grade": "K"
+  },
+  "originalBrief": {
+    "primitive": "intro_briefing",
+    "topic": "Represent numbers 16-19 as ten ones plus additional ones using manipulatives",
+    "subject": "General",
+    "gradeLevel": "kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+      "type": "scenario",
+      "content": "Imagine you are building a super tall tower out of 18 blocks! It is getting so tall that you want to make sure it doesn't fall over. What if we bundle 10 blocks together to make one big solid tower base, and then count the rest right on top?",
+      "visual": "🧮"
+    },
+    "bigIdea": {
+      "statement": "Big numbers like 16, 17, 18, and 19 are just a group of ten ones plus some extra ones!",
+      "whyItMatters": "Knowing how to make a group of ten helps us count big piles of toys, snacks, and blocks super fast without getting confused."
+    },
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Build numbers 16 through 19 using real objects by making a group of ten and adding extra ones",
+        "verb": "apply",
+        "icon": "puzzle"
+      },
+      {
+        "id": "obj2",
+        "text": "Identify numbers 16-19 and match them to a ten-group plus extra ones",
+        "verb": "identify",
+        "icon": "search"
+      }
+    ],
+    "prerequisites": {
+      "shouldKnow": [
+        "Count objects up to 10 reliably",
+        "Recognize numbers 1 through 10",
+        "Understand that a group of 10 items can be called 'a ten'"
+      ],
+      "quickCheck": {
+        "question": "Can you count out 10 counting bears and put them in a cup?",
+        "answer": "Ten bears in a cup",
+        "hint": "Count slowly, touching each bear one by one until you reach your last finger: ten!"
+      }
+    },
+    "roadmap": [
+      {
+        "phase": "Explore",
+        "description": "Get our hands ready by building a magic ten-frame or ten-bundle.",
+        "activities": [
+          "Gather 10 counters into a special ten-box",
+          "Practice saying 'a group of ten'"
+        ]
+      },
+      {
+        "phase": "Learn",
+        "description": "Add extra counters next to our ten-group to make new numbers.",
+        "activities": [
+          "Place one ten and 6 extra counters to make 16",
+          "Practice building 17, 18, and 19 using manipulatives"
+        ]
+      },
+      {
+        "phase": "Practice",
+        "description": "Play a quick building game to show off our number superpowers.",
+        "activities": [
+          "Match mystery counters to their correct number card"
+        ]
+      }
+    ],
+    "connections": {
+      "buildingFrom": [
+        "Counting numbers 1 through 10",
+        "Making ten with fingers and objects"
+      ],
+      "leadingTo": [
+        "Counting up to 20 and beyond",
+        "Understanding place value with tens and ones"
+      ],
+      "realWorld": [
+        "Counting 17 crayons in a big box where 10 are bundled together",
+        "Counting 18 blocks in a toy bin"
+      ]
+    },
+    "mindset": {
+      "encouragement": "Building big numbers can feel tricky when there are so many pieces, but remember: we always start by making our friendly group of ten first!",
+      "growthTip": "Use your fingers or line up your toys in a neat row so you don't lose count of your extra ones."
+    }
+  },
+  "brief": {
+    "primitive": "intro_briefing",
+    "topic": "Represent numbers 16-19 as ten ones plus additional ones using manipulatives",
+    "subject": "General",
+    "gradeLevel": "kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+      "type": "scenario",
+      "content": "Imagine you are building a super tall tower out of 18 blocks! It is getting so tall that you want to make sure it doesn't fall over. What if we bundle 10 blocks together to make one big solid tower base, and then count the rest right on top?",
+      "visual": "🧮"
+    },
+    "bigIdea": {
+      "statement": "Big numbers like 16, 17, 18, and 19 are just a group of ten ones plus some extra ones!",
+      "whyItMatters": "Knowing how to make a group of ten helps us count big piles of toys, snacks, and blocks super fast without getting confused."
+    },
+    "objectives": [
+      {
+        "id": "teen-represent-16-19",
+        "text": "Represent numbers 16-19 as ten ones plus additional ones using manipulatives",
+        "verb": "apply",
+        "icon": "🎯",
+        "grade": "K"
+      }
+    ],
+    "prerequisites": {
+      "shouldKnow": [
+        "Count objects up to 10 reliably",
+        "Recognize numbers 1 through 10",
+        "Understand that a group of 10 items can be called 'a ten'"
+      ],
+      "quickCheck": {
+        "question": "Can you count out 10 counting bears and put them in a cup?",
+        "answer": "Ten bears in a cup",
+        "hint": "Count slowly, touching each bear one by one until you reach your last finger: ten!"
+      }
+    },
+    "roadmap": [
+      {
+        "phase": "Explore",
+        "description": "Get our hands ready by building a magic ten-frame or ten-bundle.",
+        "activities": [
+          "Gather 10 counters into a special ten-box",
+          "Practice saying 'a group of ten'"
+        ]
+      },
+      {
+        "phase": "Learn",
+        "description": "Add extra counters next to our ten-group to make new numbers.",
+        "activities": [
+          "Place one ten and 6 extra counters to make 16",
+          "Practice building 17, 18, and 19 using manipulatives"
+        ]
+      },
+      {
+        "phase": "Practice",
+        "description": "Play a quick building game to show off our number superpowers.",
+        "activities": [
+          "Match mystery counters to their correct number card"
+        ]
+      }
+    ],
+    "connections": {
+      "buildingFrom": [
+        "Counting numbers 1 through 10",
+        "Making ten with fingers and objects"
+      ],
+      "leadingTo": [
+        "Counting up to 20 and beyond",
+        "Understanding place value with tens and ones"
+      ],
+      "realWorld": [
+        "Counting 17 crayons in a big box where 10 are bundled together",
+        "Counting 18 blocks in a toy bin"
+      ]
+    },
+    "mindset": {
+      "encouragement": "Building big numbers can feel tricky when there are so many pieces, but remember: we always start by making our friendly group of ten first!",
+      "growthTip": "Use your fingers or line up your toys in a neat row so you don't lose count of your extra ones."
+    }
+  },
+  "briefLatencyMs": 3194,
+  "briefCalls": [
+    {
+      "method": "generateContent",
+      "model": "gemini-flash-lite-latest",
+      "phase": "shared-brief",
+      "startedAt": "2026-09-07T02:57:02.079Z",
+      "contents": "You are an expert curriculum designer creating engaging lesson plans for a given subject. Your task is to generate an Intro Briefing schema that orients students to new topics by providing context, relevance, clear objectives, and motivation.\n\nGenerate an Intro Briefing schema for the following topic:\n\n**Topic:** Represent numbers 16-19 as ten ones plus additional ones using manipulatives\n**Subject:** General\n**Grade Level:** kindergarten\n**Estimated Lesson Time:** 15-20 minutes\n\n## Educational Context\nThis content is for kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.\n\n## Guidelines for High-Quality Schemas\n\n### Hook Design\nChoose the hook type that best fits the content and grade level:\n- **scenario**: \"Imagine you're...\" - Places student in a relatable situation\n- **question**: Poses a thought-provoking question they'll want answered\n- **surprising_fact**: Shares something unexpected that creates curiosity\n- **story**: Brief narrative that introduces the concept naturally\n\nYounger students often respond better to scenarios and stories; older students engage with questions and surprising facts.\n\nFor **visualTheme**, pick the single menu value closest to what the hook is ABOUT (a hook about counting marbles is `counting`, not `game`). It is a category label, not student-facing text — the interface renders an icon for it.\n\n### Objective Writing\n- Start each objective with a measurable action verb\n- Keep objectives achievable within the estimated time\n- Use age-appropriate language\n\n**ORDERING — hard rule.** The objectives are TAUGHT in the order you list them, and\neach one becomes a block of activities in that sequence. The student meets objective 1\nfirst, so objective 1 must be the one they can succeed at on day one.\n\nOrder by these THREE rules, in this priority. Rule 1 beats rule 2, rule 2 beats rule 3.\n\n**RULE 1 — PREREQUISITE FIRST.** When the student cannot do objective X without already\nknowing objective Y, Y is listed first — whatever the two verbs are, and whichever is\nmore concrete. Examples: knowing that the last number counted tells you \"how many\"\n(cardinality) comes BEFORE counting a group to find how many; knowing the sound each\nletter makes comes BEFORE blending letters into whole words. If you are unsure whether\none truly requires the other, it is not a prerequisite — go to rule 2.\n\n**RULE 2 — CONCRETE BEFORE THE SYMBOL FOR IT.** With no prerequisite between them: when\none objective has the student work with real or pictured THINGS (objects to count,\nsounds to hear, a machine part to move) and another has them work with the WRITTEN\nSYMBOL for the same content (numerals, letters, notation, equations), the concrete\nobjective is listed FIRST — even when its verb sits at a higher Bloom level. A child\nmust count seven bears before \"7\" means anything; must hear the sounds in a word before\nmapping them to letters.\n- Example, and it is the most common failure: \"Apply counting to find how many objects\n  are in a group\" (apply, level 3) comes BEFORE \"Identify the numbers 1-10 in order\"\n  (identify, level 1). Counting real things is concrete; a grid of written numerals is\n  abstract. The higher Bloom verb goes first here, and that is correct.\n- This applies hardest at K-2 and in any first encounter with a notation, at any grade.\n- If both objectives are equally concrete, or the topic has no symbol/thing split\n  (naming the parts of a machine you can see, describing what a plant part does), this\n  rule is silent — go to rule 3.\n\n**RULE 3 — otherwise, NON-DECREASING Bloom order.** With rules 1 and 2 satisfied, do\nnot place a lower-level objective after a higher-level one. The most common mistake\nthis catches is appending a conceptual \"explain\" objective LAST, after an \"apply\"\nobjective: if a lesson needs the student to understand a concept AND use it, the\nunderstanding objective comes first — level (2) before level (3).\n\n**Verb categories, lowest Bloom level to highest:**\n- (1) identify — Remember: recognize, locate, name, list\n- (2) explain — Understand: describe, summarize, interpret, paraphrase\n- (2) compare — Understand: match, relate, distinguish, categorize\n- (3) apply — Apply: use, demonstrate, solve, implement\n- (4) analyze — Analyze: contrast, examine, differentiate\n- (5) evaluate — Evaluate: judge, assess, critique, justify\n- (6) create — Create: design, construct, produce, compose\n\nBefore you finalize: read objective 1 back and ask whether a student who has never met\nthis topic could start there today. If objective 1 asks them to recognize a symbol they\nhave not yet been given a meaning for, you have ordered it wrong — apply rule 2.\n\n### Prerequisites\n- List 2-4 genuine prerequisites (not too many)\n- Quick check should be answerable in under 30 seconds\n- The hint should scaffold thinking, not give the answer\n- Prerequisites should be from recent learning when possible\n\n### Roadmap Design\n- Use 3-5 phases typically\n- Phase names should be student-friendly\n- Each phase should have 1-3 concrete activities\n- The progression should feel logical and build confidence\n\n### Connections\n- **buildingFrom**: Concepts from previous grades/units that directly support this topic\n- **leadingTo**: Where this knowledge goes next in the curriculum\n- **realWorld**: Concrete, relatable applications students can visualize\n\n### Mindset Messages\n- Acknowledge potential difficulty without being discouraging\n- Reference common misconceptions or challenges\n- Provide actionable strategies, not just \"try hard\"\n- Match tone to grade level (warmer for younger, more mature for older)\n\n## Grade-Level Calibration\n\n**K-2:**\n- Hooks: Simple scenarios, familiar situations (home, playground, family)\n- Language: Short sentences, concrete words, avoid abstractions\n- Objectives: 2-3 max. Lead with the one where the child DOES something with real or\n  pictured things (\"apply\" is fine and often correct first at this age); symbol\n  recognition follows it, never opens.\n- Time: 10-15 minutes typical\n\n**3-5:**\n- Hooks: Can include surprising facts, more complex scenarios\n- Language: Can introduce some academic vocabulary with context\n- Objectives: 3-4, include some create/apply\n- Time: 15-25 minutes typical\n\n**6-8:**\n- Hooks: Questions, real-world problems, connections to current interests\n- Language: Academic vocabulary expected, more sophisticated reasoning\n- Objectives: 3-4, include analyze/evaluate\n- Time: 20-30 minutes typical\n\nCreate an engaging, age-appropriate Intro Briefing that will excite students about learning this topic!",
+      "config": {
+        "responseMimeType": "application/json",
+        "responseSchema": {
+          "type": "OBJECT",
+          "properties": {
+            "primitive": {
+              "type": "STRING",
+              "description": "Must be 'intro_briefing'"
+            },
+            "topic": {
+              "type": "STRING"
+            },
+            "subject": {
+              "type": "STRING"
+            },
+            "gradeLevel": {
+              "type": "STRING"
+            },
+            "estimatedTime": {
+              "type": "STRING"
+            },
+            "hook": {
+              "type": "OBJECT",
+              "properties": {
+                "type": {
+                  "type": "STRING",
+                  "enum": [
+                    "scenario",
+                    "question",
+                    "surprising_fact",
+                    "story"
+                  ],
+                  "description": "Type of hook: scenario (imagine situation), question (thought-provoking), surprising_fact (unexpected info), or story (narrative)"
+                },
+                "content": {
+                  "type": "STRING",
+                  "description": "Engaging opening that captures attention and connects to students' lives, age-appropriate and curiosity-creating"
+                },
+                "visualTheme": {
+                  "type": "STRING",
+                  "enum": [
+                    "counting",
+                    "numbers",
+                    "shapes",
+                    "patterns",
+                    "measurement",
+                    "money",
+                    "time",
+                    "calendar",
+                    "reading",
+                    "letters",
+                    "words",
+                    "writing",
+                    "story",
+                    "science",
+                    "nature",
+                    "animals",
+                    "plants",
+                    "space",
+                    "weather",
+                    "water",
+                    "earth",
+                    "experiment",
+                    "building",
+                    "machines",
+                    "art",
+                    "music",
+                    "sports",
+                    "food",
+                    "travel",
+                    "map",
+                    "history",
+                    "people",
+                    "question",
+                    "idea",
+                    "discovery",
+                    "game",
+                    "puzzle",
+                    "magic"
+                  ],
+                  "description": "The menu theme that best matches the hook. Code attaches the emoji — never write a glyph or a free-form word here."
+                }
+              },
+              "required": [
+                "type",
+                "content",
+                "visualTheme"
+              ]
+            },
+            "bigIdea": {
+              "type": "OBJECT",
+              "properties": {
+                "statement": {
+                  "type": "STRING",
+                  "description": "Core concept in one clear, memorable sentence using student-friendly language"
+                },
+                "whyItMatters": {
+                  "type": "STRING",
+                  "description": "Real-world relevance explaining why this topic is worth learning, connecting to students' lives and future learning"
+                }
+              },
+              "required": [
+                "statement",
+                "whyItMatters"
+              ]
+            },
+            "objectives": {
+              "type": "ARRAY",
+              "items": {
+                "type": "OBJECT",
+                "properties": {
+                  "id": {
+                    "type": "STRING",
+                    "description": "Unique identifier like obj1, obj2, etc."
+                  },
+                  "text": {
+                    "type": "STRING",
+                    "description": "Clear learning objective starting with an action verb"
+                  },
+                  "verb": {
+                    "type": "STRING",
+                    "enum": [
+                      "identify",
+                      "explain",
+                      "create",
+                      "analyze",
+                      "compare",
+                      "apply",
+                      "evaluate"
+                    ],
+                    "description": "Bloom's taxonomy verb category"
+                  },
+                  "icon": {
+                    "type": "STRING",
+                    "description": "Icon hint: search, message, pencil, lightbulb, scale, puzzle, check"
+                  }
+                },
+                "required": [
+                  "id",
+                  "text",
+                  "verb",
+                  "icon"
+                ]
+              },
+              "description": "3-4 specific, achievable learning objectives"
+            },
+            "prerequisites": {
+              "type": "OBJECT",
+              "properties": {
+                "shouldKnow": {
+                  "type": "ARRAY",
+                  "items": {
+                    "type": "STRING"
+                  },
+                  "description": "2-4 genuine prerequisites from recent learning"
+                },
+                "quickCheck": {
+                  "type": "OBJECT",
+                  "properties": {
+                    "question": {
+                      "type": "STRING",
+                      "description": "Simple question answerable in under 30 seconds to verify readiness"
+                    },
+                    "answer": {
+                      "type": "STRING",
+                      "description": "Expected answer to the question"
+                    },
+                    "hint": {
+                      "type": "STRING",
+                      "description": "Helpful hint that scaffolds thinking without giving the answer"
+                    }
+                  },
+                  "required": [
+                    "question",
+                    "answer",
+                    "hint"
+                  ]
+                }
+              },
+              "required": [
+                "shouldKnow",
+                "quickCheck"
+              ]
+            },
+            "roadmap": {
+              "type": "ARRAY",
+              "items": {
+                "type": "OBJECT",
+                "properties": {
+                  "phase": {
+                    "type": "STRING",
+                    "description": "Student-friendly phase name like Explore, Learn, Practice, Apply"
+                  },
+                  "description": {
+                    "type": "STRING",
+                    "description": "Brief description of what happens in this phase"
+                  },
+                  "activities": {
+                    "type": "ARRAY",
+                    "items": {
+                      "type": "STRING"
+                    },
+                    "description": "1-3 concrete activities for this phase"
+                  }
+                },
+                "required": [
+                  "phase",
+                  "description",
+                  "activities"
+                ]
+              },
+              "description": "3-5 learning phases that build confidence"
+            },
+            "connections": {
+              "type": "OBJECT",
+              "properties": {
+                "buildingFrom": {
+                  "type": "ARRAY",
+                  "items": {
+                    "type": "STRING"
+                  },
+                  "description": "Concepts from previous grades/units that directly support this topic"
+                },
+                "leadingTo": {
+                  "type": "ARRAY",
+                  "items": {
+                    "type": "STRING"
+                  },
+                  "description": "Where this knowledge goes next in the curriculum"
+                },
+                "realWorld": {
+                  "type": "ARRAY",
+                  "items": {
+                    "type": "STRING"
+                  },
+                  "description": "Concrete, relatable applications students can visualize"
+                }
+              },
+              "required": [
+                "buildingFrom",
+                "leadingTo",
+                "realWorld"
+              ]
+            },
+            "mindset": {
+              "type": "OBJECT",
+              "properties": {
+                "encouragement": {
+                  "type": "STRING",
+                  "description": "Warm, encouraging message acknowledging potential challenges but emphasizing achievability"
+                },
+                "growthTip": {
+                  "type": "STRING",
+                  "description": "Practical learning strategy or study tip specific to this content type"
+                }
+              },
+              "required": [
+                "encouragement",
+                "growthTip"
+              ]
+            }
+          },
+          "required": [
+            "primitive",
+            "topic",
+            "subject",
+            "gradeLevel",
+            "estimatedTime",
+            "hook",
+            "bigIdea",
+            "objectives",
+            "prerequisites",
+            "roadmap",
+            "connections",
+            "mindset"
+          ]
+        },
+        "temperature": 0.7
+      },
+      "modelVersion": "gemini-3.5-flash-lite",
+      "usage": {
+        "promptTokenCount": 1520,
+        "candidatesTokenCount": 909,
+        "totalTokenCount": 2429,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1520
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "responseText": "{\n  \"primitive\": \"intro_briefing\",\n  \"topic\": \"Represent numbers 16-19 as ten ones plus additional ones using manipulatives\",\n  \"subject\": \"General\",\n  \"gradeLevel\": \"kindergarten\",\n  \"estimatedTime\": \"15-20 minutes\",\n  \"hook\": {\n    \"type\": \"scenario\",\n    \"content\": \"Imagine you are building a super tall tower out of 18 blocks! It is getting so tall that you want to make sure it doesn't fall over. What if we bundle 10 blocks together to make one big solid tower base, and then count the rest right on top?\",\n    \"visualTheme\": \"counting\"\n  },\n  \"bigIdea\": {\n    \"statement\": \"Big numbers like 16, 17, 18, and 19 are just a group of ten ones plus some extra ones!\",\n    \"whyItMatters\": \"Knowing how to make a group of ten helps us count big piles of toys, snacks, and blocks super fast without getting confused.\"\n  },\n  \"objectives\": [\n    {\n      \"id\": \"obj1\",\n      \"text\": \"Build numbers 16 through 19 using real objects by making a group of ten and adding extra ones\",\n      \"verb\": \"apply\",\n      \"icon\": \"puzzle\"\n    },\n    {\n      \"id\": \"obj2\",\n      \"text\": \"Identify numbers 16-19 and match them to a ten-group plus extra ones\",\n      \"verb\": \"identify\",\n      \"icon\": \"search\"\n    }\n  ],\n  \"prerequisites\": {\n    \"shouldKnow\": [\n      \"Count objects up to 10 reliably\",\n      \"Recognize numbers 1 through 10\",\n      \"Understand that a group of 10 items can be called 'a ten'\"\n    ],\n    \"quickCheck\": {\n      \"question\": \"Can you count out 10 counting bears and put them in a cup?\",\n      \"answer\": \"Ten bears in a cup\",\n      \"hint\": \"Count slowly, touching each bear one by one until you reach your last finger: ten!\"\n    }\n  },\n  \"roadmap\": [\n    {\n      \"phase\": \"Explore\",\n      \"description\": \"Get our hands ready by building a magic ten-frame or ten-bundle.\",\n      \"activities\": [\n        \"Gather 10 counters into a special ten-box\",\n        \"Practice saying 'a group of ten'\"\n      ]\n    },\n    {\n      \"phase\": \"Learn\",\n      \"description\": \"Add extra counters next to our ten-group to make new numbers.\",\n      \"activities\": [\n        \"Place one ten and 6 extra counters to make 16\",\n        \"Practice building 17, 18, and 19 using manipulatives\"\n      ]\n    },\n    {\n      \"phase\": \"Practice\",\n      \"description\": \"Play a quick building game to show off our number superpowers.\",\n      \"activities\": [\n        \"Match mystery counters to their correct number card\"\n      ]\n    }\n  ],\n  \"connections\": {\n    \"buildingFrom\": [\n      \"Counting numbers 1 through 10\",\n      \"Making ten with fingers and objects\"\n    ],\n    \"leadingTo\": [\n      \"Counting up to 20 and beyond\",\n      \"Understanding place value with tens and ones\"\n    ],\n    \"realWorld\": [\n      \"Counting 17 crayons in a big box where 10 are bundled together\",\n      \"Counting 18 blocks in a toy bin\"\n    ]\n  },\n  \"mindset\": {\n    \"encouragement\": \"Building big numbers can feel tricky when there are so many pieces, but remember: we always start by making our friendly group of ten first!\",\n    \"growthTip\": \"Use your fingers or line up your toys in a neat row so you don't lose count of your extra ones.\"\n  }\n}",
+      "latencyMs": 3193
+    }
+  ]
+}

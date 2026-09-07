@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "caseId": "open-phonics-sitpin",
+  "entryPoint": "topic",
+  "topic": "Phonics with s, i, t, p, n: common letter sounds and short-i words made only from those letters",
+  "learner": {
+    "grade": "K",
+    "independentReading": false
+  },
+  "lessonBudgetMinutes": 15,
+  "scopePolicy": "Choose a coherent first lesson within the budget; explicitly defer related learning questions when they need another session. Do not compress every possible machine topic into this session.",
+  "requiredContributions": [
+    "meaningful_context",
+    "explanation_and_modeling",
+    "supported_investigation",
+    "supported_practice",
+    "application",
+    "closing_independent_assessment"
+  ],
+  "contributionDefinitions": {
+    "meaningful_context": "Orient the child and establish why this topic is interesting or useful.",
+    "explanation_and_modeling": "Introduce essential concepts or model a method before dependent practice. An explanatory display can make a complete contribution without assessment.",
+    "supported_investigation": "Let the child actively explore or try an idea in a form appropriate to the topic and available capabilities.",
+    "supported_practice": "Give supported opportunities to perform the selected objective tasks.",
+    "application": "Use an idea in a fresh example, problem or decision appropriate to the objective.",
+    "closing_independent_assessment": "Offer fresh opportunities to demonstrate selected objectives before hints or model answers. Identify what is not assessed."
+  },
+  "candidateGroups": [],
+  "candidateIds": [],
+  "capabilityNotes": [],
+  "assumptions": "Open-topic generalization pilot. K/non-reader, 15 minutes; no prewritten learning objectives or preferred primitive IDs. Sitpin means s,i,t,p,n (not SATPIN); counting stays 1-10."
+}

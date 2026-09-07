@@ -1,0 +1,2315 @@
+[
+  {
+    "id": "excavators",
+    "topic": "Excavators and dump trucks",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/excavators/lexical/discovery-excavators-topic-descriptions-2026-09-07T02-26-18-681Z-77b70ee4.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "bec5ea0ad471285e67753a7a6d93455616b4317130809cd9acccf75d190f2148",
+    "recall": {
+      "expected": [
+        "machine-profile",
+        "hydraulics-lab",
+        "excavator-arm-simulator",
+        "dump-truck-loader"
+      ],
+      "hits": [
+        "machine-profile",
+        "hydraulics-lab",
+        "excavator-arm-simulator",
+        "dump-truck-loader"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "poolSize": 28,
+    "topical": [
+      "dump-truck-loader",
+      "excavator-arm-simulator",
+      "ramp-lab",
+      "bridge-builder",
+      "fact-file",
+      "hydraulics-lab",
+      "lever-lab",
+      "machine-profile"
+    ],
+    "planningMs": 10721,
+    "queryMs": 0,
+    "onlineMs": 10721,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "comparison-panel",
+      "fast-fact/recognize",
+      "how-it-works/guided",
+      "dump-truck-loader/load",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-roles",
+        "question": "What special job does each big machine do?",
+        "text": "Identify excavators as diggers with buckets and dump trucks as haulers with tilting beds.",
+        "connection": "Learners must recognize each machine's identity and core function before exploring how they interact on a work site.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects the excavator when prompted for digging or scooping dirt",
+          "Selects the dump truck when prompted for carrying or dumping a load"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "comparison-panel",
+          "machine-profile"
+        ]
+      },
+      {
+        "id": "operate-coordination",
+        "question": "How do dirt movers load, carry, and empty dirt in the right order?",
+        "text": "Sequence the full process: scoop dirt, fill the truck bed, drive, and tilt the bed to dump.",
+        "connection": "Once the individual tools are identified, children explore their cooperative workflow in an interactive loop.",
+        "dependsOn": [
+          "identify-roles"
+        ],
+        "evidenceCriteria": [
+          "Places dirt into the truck bed rather than spilling outside the bed",
+          "Triggers the bed tilt mechanism to empty dirt at the destination drop zone"
+        ],
+        "candidateIds": [
+          "dump-truck-loader",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "excavators",
+    "topic": "Excavators and dump trucks",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/excavators/semantic/discovery-excavators-topic-descriptions-2026-09-07T02-26-33-259Z-c7b298e7.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "bec5ea0ad471285e67753a7a6d93455616b4317130809cd9acccf75d190f2148",
+    "recall": {
+      "expected": [
+        "machine-profile",
+        "hydraulics-lab",
+        "excavator-arm-simulator",
+        "dump-truck-loader"
+      ],
+      "hits": [
+        "machine-profile",
+        "excavator-arm-simulator",
+        "dump-truck-loader"
+      ],
+      "missing": [
+        "hydraulics-lab"
+      ],
+      "recall": 0.75
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 27,
+        "expected": [
+          "machine-profile",
+          "hydraulics-lab",
+          "excavator-arm-simulator",
+          "dump-truck-loader"
+        ],
+        "hits": [
+          "machine-profile",
+          "excavator-arm-simulator",
+          "dump-truck-loader"
+        ],
+        "missing": [
+          "hydraulics-lab"
+        ],
+        "recall": 0.75
+      },
+      {
+        "limit": 10,
+        "poolSize": 31,
+        "expected": [
+          "machine-profile",
+          "hydraulics-lab",
+          "excavator-arm-simulator",
+          "dump-truck-loader"
+        ],
+        "hits": [
+          "machine-profile",
+          "excavator-arm-simulator",
+          "dump-truck-loader"
+        ],
+        "missing": [
+          "hydraulics-lab"
+        ],
+        "recall": 0.75
+      },
+      {
+        "limit": 15,
+        "poolSize": 36,
+        "expected": [
+          "machine-profile",
+          "hydraulics-lab",
+          "excavator-arm-simulator",
+          "dump-truck-loader"
+        ],
+        "hits": [
+          "machine-profile",
+          "hydraulics-lab",
+          "excavator-arm-simulator",
+          "dump-truck-loader"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 20,
+        "poolSize": 41,
+        "expected": [
+          "machine-profile",
+          "hydraulics-lab",
+          "excavator-arm-simulator",
+          "dump-truck-loader"
+        ],
+        "hits": [
+          "machine-profile",
+          "hydraulics-lab",
+          "excavator-arm-simulator",
+          "dump-truck-loader"
+        ],
+        "missing": [],
+        "recall": 1
+      }
+    ],
+    "poolSize": 31,
+    "topical": [
+      "dump-truck-loader",
+      "excavator-arm-simulator",
+      "construction-sequence-planner",
+      "foundation-builder",
+      "lever-lab",
+      "ramp-lab",
+      "bridge-builder",
+      "transport-challenge",
+      "machine-profile",
+      "engine-explorer",
+      "digital-skills-sim",
+      "feature-exhibit",
+      "knowledge-check",
+      "fast-fact"
+    ],
+    "planningMs": 11887,
+    "queryMs": 157,
+    "onlineMs": 12048,
+    "indexMs": 1730,
+    "cacheHit": false,
+    "selected": [
+      "curator-brief",
+      "comparison-panel",
+      "excavator-arm-simulator",
+      "dump-truck-loader/load",
+      "how-it-works/sequence",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-roles-and-parts",
+        "question": "What special jobs do an excavator's bucket and a dump truck's bed do?",
+        "text": "Identify that an excavator scoops up dirt with its bucket while a dump truck carries and dumps dirt with its tilting bed.",
+        "connection": "Establishes the complementary identity, primary working parts, and roles of both machines before looking at how they operate together.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects the excavator when asked which machine digs dirt out of the ground",
+          "Selects the dump truck when asked which machine holds and carries the load across the site"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "machine-profile",
+          "comparison-panel"
+        ]
+      },
+      {
+        "id": "coordinate-teamwork-loop",
+        "question": "How do an excavator and dump truck work together step by step to move a pile of dirt?",
+        "text": "Sequence the cooperative workflow: the excavator scoops dirt, fills the dump truck until full, and the dump truck drives and tips its bed to dump.",
+        "connection": "Builds directly on knowing each machine's role to understand their real-world interaction and the basic concept of loading until full.",
+        "dependsOn": [
+          "identify-roles-and-parts"
+        ],
+        "evidenceCriteria": [
+          "Controls or sequences the excavator filling the truck bed",
+          "Triggers the dump truck to tip and empty its bed when full"
+        ],
+        "candidateIds": [
+          "dump-truck-loader",
+          "excavator-arm-simulator",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "sea-otters",
+    "topic": "Sea otters",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/sea-otters/lexical/discovery-sea-otters-topic-descriptions-2026-09-07T02-26-45-963Z-004b1005.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "526f365dadfa84ba59e9507ea8b8237b428b28ff02b1f7b1ce6153119fdfd1ba",
+    "recall": {
+      "expected": [
+        "species-profile",
+        "organism-card",
+        "habitat-diorama"
+      ],
+      "hits": [],
+      "missing": [
+        "species-profile",
+        "organism-card",
+        "habitat-diorama"
+      ],
+      "recall": 0
+    },
+    "poolSize": 23,
+    "topical": [
+      "propulsion-timeline",
+      "vehicle-comparison-lab"
+    ],
+    "planningMs": 9721,
+    "queryMs": 0,
+    "onlineMs": 9721,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "custom-visual",
+      "fast-fact/recognize",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "otter-traits",
+        "question": "What special features help a sea otter live in chilly ocean water?",
+        "text": "Identify key physical features of sea otters (dense fur coat and webbed feet) that help them survive in water without blubber.",
+        "connection": "Establishes foundational physical adaptations of the sea otter before exploring how it behaves and uses objects.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects thick fur when asked what keeps the otter warm instead of blubber or scales",
+          "Identifies webbed feet/paws as the feature used for swimming"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "foundation-explorer",
+          "concept-card-grid"
+        ]
+      },
+      {
+        "id": "otter-tool-use",
+        "question": "How do sea otters crack open hard food while floating on their backs?",
+        "text": "Describe how sea otters use rocks as tools on their bellies to crack open shellfish.",
+        "connection": "Builds on physical traits by examining how sea otters interact with their marine environment to feed.",
+        "dependsOn": [
+          "otter-traits"
+        ],
+        "evidenceCriteria": [
+          "Identifies a rock/stone as the object otters place on their chest to break hard shells",
+          "Matches the feeding behavior of floating on the back to cracking food open"
+        ],
+        "candidateIds": [
+          "custom-visual",
+          "fast-fact",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "sea-otters",
+    "topic": "Sea otters",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/sea-otters/semantic/discovery-sea-otters-topic-descriptions-2026-09-07T02-26-56-975Z-c213000b.json",
+    "status": "invalid",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "526f365dadfa84ba59e9507ea8b8237b428b28ff02b1f7b1ce6153119fdfd1ba",
+    "recall": {
+      "expected": [
+        "species-profile",
+        "organism-card",
+        "habitat-diorama"
+      ],
+      "hits": [
+        "species-profile",
+        "organism-card",
+        "habitat-diorama"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 28,
+        "expected": [
+          "species-profile",
+          "organism-card",
+          "habitat-diorama"
+        ],
+        "hits": [
+          "species-profile",
+          "organism-card",
+          "habitat-diorama"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 10,
+        "poolSize": 29,
+        "expected": [
+          "species-profile",
+          "organism-card",
+          "habitat-diorama"
+        ],
+        "hits": [
+          "species-profile",
+          "organism-card",
+          "habitat-diorama"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 15,
+        "poolSize": 31,
+        "expected": [
+          "species-profile",
+          "organism-card",
+          "habitat-diorama"
+        ],
+        "hits": [
+          "species-profile",
+          "organism-card",
+          "habitat-diorama"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 20,
+        "poolSize": 35,
+        "expected": [
+          "species-profile",
+          "organism-card",
+          "habitat-diorama"
+        ],
+        "hits": [
+          "species-profile",
+          "organism-card",
+          "habitat-diorama"
+        ],
+        "missing": [],
+        "recall": 1
+      }
+    ],
+    "poolSize": 29,
+    "topical": [
+      "species-profile",
+      "food-web-builder",
+      "classification-sorter",
+      "organism-card",
+      "curator-brief",
+      "habitat-diorama",
+      "feature-exhibit",
+      "take-home-activity",
+      "life-cycle-sequencer",
+      "image-comparison",
+      "adaptation-investigator",
+      "fast-fact",
+      "knowledge-check"
+    ],
+    "planningMs": 13588,
+    "queryMs": 249,
+    "onlineMs": 13845,
+    "indexMs": 11,
+    "cacheHit": true,
+    "selected": [
+      "curator-brief",
+      "species-profile",
+      "habitat-diorama/observe",
+      "fast-fact/recognize",
+      "habitat-diorama/connect",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-otter-features",
+        "question": "What special body parts help a sea otter live in chilly ocean water?",
+        "text": "Identify key physical features of sea otters (extra-thick fur, webbed feet, and whiskers) that allow them to swim and stay warm without blubber.",
+        "connection": "Establishes foundational physical characteristics of sea otters before exploring how they use tools and interact with their habitat.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects thick fur as the feature keeping the otter warm in cold water",
+          "Recognizes webbed feet or flippers as tools for swimming"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "organism-card",
+          "species-profile"
+        ]
+      },
+      {
+        "id": "explain-tool-use-and-diet",
+        "question": "How do sea otters use rocks to eat hard-shelled ocean snacks?",
+        "text": "Explain how sea otters float on their backs and use rocks as tools to crack open shellfish like clams and sea urchins.",
+        "connection": "Connects physical traits to an observable foraging behavior uniquely suited to their diet.",
+        "dependsOn": [
+          "identify-otter-features"
+        ],
+        "evidenceCriteria": [
+          "Identifies a rock as the tool an otter places on its chest to crack shells",
+          "Matches hard-shelled prey (e.g., clams, sea urchins) to the otter's tool-using behavior"
+        ],
+        "candidateIds": [
+          "habitat-diorama",
+          "fast-fact",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": false,
+      "errors": [
+        "Invalid unmet requirement"
+      ],
+      "warnings": [
+        "Estimated student time 17 exceeds 15 minutes"
+      ],
+      "studentMinutes": 17,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": [
+      {
+        "requirementId": "time_budget_headroom",
+        "reason": "Total planned lesson duration is 17 minutes, slightly exceeding the 15-minute nominal budget by 2 minutes to ensure developmentally appropriate spoken pacing and thorough coverage of both traits and tool use for a non-reader."
+      }
+    ]
+  },
+  {
+    "id": "volcanoes",
+    "topic": "Volcanoes",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/volcanoes/lexical/discovery-volcanoes-topic-descriptions-2026-09-07T02-27-11-383Z-20fd19ec.json",
+    "status": "invalid",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "886252bd57543f81dfd866dd12364153d18f12909b9dac1be4c1fbd3909a8aa0",
+    "recall": {
+      "expected": [
+        "how-it-works"
+      ],
+      "hits": [
+        "how-it-works"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "poolSize": 21,
+    "topical": [
+      "fact-file"
+    ],
+    "planningMs": 10935,
+    "queryMs": 0,
+    "onlineMs": 10935,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "comparison-panel",
+      "fast-fact/recognize",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "volcano-identity",
+        "question": "What does a volcano look like?",
+        "text": "Recognize a volcano as a special mountain opening that can let out melted rock and ash.",
+        "connection": "Establishes the visual identity of a volcano before exploring what happens inside and around it.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Select the volcano from a visual set containing regular mountains, hills, and a volcano with an opening",
+          "Point to or tap the opening at the top of the volcano diagram"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "foundation-explorer",
+          "concept-card-grid"
+        ]
+      },
+      {
+        "id": "lava-ash-eruption",
+        "question": "What comes out of a volcano when it erupts?",
+        "text": "Identify hot red lava and gray smoke or ash coming out of the volcano opening.",
+        "connection": "Builds directly on knowing the volcano opening by examining what emerges from it during an eruption.",
+        "dependsOn": [
+          "volcano-identity"
+        ],
+        "evidenceCriteria": [
+          "Match pictures of hot glowing lava and rising ash clouds to an erupting volcano",
+          "Indicate whether lava is hot or cold when prompted with spoken audio and visual cues"
+        ],
+        "candidateIds": [
+          "comparison-panel",
+          "custom-visual",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": false,
+      "errors": [
+        "Invalid unmet requirement"
+      ],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": [
+      {
+        "requirementId": "physical_manipulation_or_drawing",
+        "reason": "Digital tap and spoken interfaces do not gather physical tactile manipulation or freeform drawing evidence for pre-readers."
+      }
+    ]
+  },
+  {
+    "id": "volcanoes",
+    "topic": "Volcanoes",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/volcanoes/semantic/discovery-volcanoes-topic-descriptions-2026-09-07T02-27-23-656Z-e8d4a478.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "886252bd57543f81dfd866dd12364153d18f12909b9dac1be4c1fbd3909a8aa0",
+    "recall": {
+      "expected": [
+        "how-it-works"
+      ],
+      "hits": [
+        "how-it-works"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 26,
+        "expected": [
+          "how-it-works"
+        ],
+        "hits": [
+          "how-it-works"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 10,
+        "poolSize": 30,
+        "expected": [
+          "how-it-works"
+        ],
+        "hits": [
+          "how-it-works"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 15,
+        "poolSize": 34,
+        "expected": [
+          "how-it-works"
+        ],
+        "hits": [
+          "how-it-works"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 20,
+        "poolSize": 38,
+        "expected": [
+          "how-it-works"
+        ],
+        "hits": [
+          "how-it-works"
+        ],
+        "missing": [],
+        "recall": 1
+      }
+    ],
+    "poolSize": 30,
+    "topical": [
+      "engine-explorer",
+      "matter-explorer",
+      "energy-of-reactions",
+      "3d-shape-explorer",
+      "flight-forces-explorer",
+      "take-home-activity",
+      "gas-laws-simulator",
+      "hydraulics-lab",
+      "habitat-diorama",
+      "gravity-drop-tower",
+      "foundation-explorer",
+      "how-it-works",
+      "timeline-explorer",
+      "fast-fact",
+      "knowledge-check"
+    ],
+    "planningMs": 11401,
+    "queryMs": 284,
+    "onlineMs": 11696,
+    "indexMs": 16,
+    "cacheHit": true,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "custom-visual",
+      "fast-fact/recognize",
+      "comparison-panel",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-volcano-parts",
+        "question": "What does a volcano look like, and what are its main parts?",
+        "text": "Identify the basic observable features of a volcano, including the mountain shape, vent/opening at the top, and molten rock.",
+        "connection": "Establishes a shared visual and conceptual model of a volcano before observing what happens during an eruption.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects or points out the mountain-like shape and the crater/opening at the top from pictorial options",
+          "Distinguishes a volcano from an ordinary mountain by its opening that releases melted rock"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "foundation-explorer",
+          "concept-card-grid"
+        ]
+      },
+      {
+        "id": "describe-eruption-materials",
+        "question": "What happens and what comes out when a volcano erupts?",
+        "text": "Recognize that melted rock (lava), hot ash, and gas erupt out of a volcano onto the surface.",
+        "connection": "Builds on identifying the vent to explore the dynamic behavior and physical materials released during an eruption.",
+        "dependsOn": [
+          "identify-volcano-parts"
+        ],
+        "evidenceCriteria": [
+          "Identifies lava as hot, flowing liquid rock that comes out of the vent",
+          "Recognizes ash clouds or smoke rising into the air from the eruption"
+        ],
+        "candidateIds": [
+          "custom-visual",
+          "comparison-panel",
+          "fast-fact",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "solar-system",
+    "topic": "The solar system",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/solar-system/lexical/discovery-solar-system-topic-descriptions-2026-09-07T02-27-35-901Z-634f411f.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "d38aedc61582650a8f3dd3ff60f9a61a65c007a342a467bdead54027c11234f4",
+    "recall": {
+      "expected": [
+        "solar-system-explorer",
+        "planetary-explorer"
+      ],
+      "hits": [
+        "solar-system-explorer",
+        "planetary-explorer"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "poolSize": 30,
+    "topical": [
+      "mission-planner",
+      "planetary-explorer",
+      "solar-system-explorer",
+      "bio-process-animator",
+      "body-system-explorer",
+      "custom-visual",
+      "energy-cycle-engine",
+      "engine-explorer",
+      "formula-lab",
+      "foundation-explorer",
+      "species-profile"
+    ],
+    "planningMs": 10047,
+    "queryMs": 0,
+    "onlineMs": 10047,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "solar-system-explorer/identify",
+      "fast-fact/apply",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "obj-sun-center",
+        "question": "What is at the center of our solar system, and what does it provide?",
+        "text": "Recognize the Sun as the bright, warming star at the center of the solar system.",
+        "connection": "Establishes the foundational anchor of the solar system before observing what travels around it.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Identifies the Sun as the center of the solar system in visual representations",
+          "States or selects that the Sun provides light and warmth"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "concept-card-grid",
+          "foundation-explorer"
+        ]
+      },
+      {
+        "id": "obj-planets-orbit",
+        "question": "What are planets, and how do they travel around the Sun?",
+        "text": "Identify planets as worlds that travel around the Sun along circular orbital paths, recognizing Earth as our home planet.",
+        "connection": "Builds directly on understanding the Sun by observing planetary motion and locating Earth among its neighbors.",
+        "dependsOn": [
+          "obj-sun-center"
+        ],
+        "evidenceCriteria": [
+          "Points out or names Earth on an interactive model of the solar system",
+          "Demonstrates that planets travel in curved paths (orbits) around the Sun rather than standing still"
+        ],
+        "candidateIds": [
+          "solar-system-explorer",
+          "fast-fact",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "solar-system",
+    "topic": "The solar system",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/solar-system/semantic/discovery-solar-system-topic-descriptions-2026-09-07T02-27-47-406Z-b7410e47.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "d38aedc61582650a8f3dd3ff60f9a61a65c007a342a467bdead54027c11234f4",
+    "recall": {
+      "expected": [
+        "solar-system-explorer",
+        "planetary-explorer"
+      ],
+      "hits": [
+        "solar-system-explorer",
+        "planetary-explorer"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 28,
+        "expected": [
+          "solar-system-explorer",
+          "planetary-explorer"
+        ],
+        "hits": [
+          "solar-system-explorer",
+          "planetary-explorer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 10,
+        "poolSize": 32,
+        "expected": [
+          "solar-system-explorer",
+          "planetary-explorer"
+        ],
+        "hits": [
+          "solar-system-explorer",
+          "planetary-explorer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 15,
+        "poolSize": 36,
+        "expected": [
+          "solar-system-explorer",
+          "planetary-explorer"
+        ],
+        "hits": [
+          "solar-system-explorer",
+          "planetary-explorer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 20,
+        "poolSize": 41,
+        "expected": [
+          "solar-system-explorer",
+          "planetary-explorer"
+        ],
+        "hits": [
+          "solar-system-explorer",
+          "planetary-explorer"
+        ],
+        "missing": [],
+        "recall": 1
+      }
+    ],
+    "poolSize": 32,
+    "topical": [
+      "solar-system-explorer",
+      "planetary-explorer",
+      "scale-comparator",
+      "day-night-seasons",
+      "mission-planner",
+      "moon-phases-lab",
+      "constellation-builder",
+      "orbit-mechanics-lab",
+      "telescope-simulator",
+      "light-shadow-lab",
+      "periodic-table",
+      "feature-exhibit",
+      "curator-brief",
+      "fast-fact",
+      "knowledge-check"
+    ],
+    "planningMs": 12176,
+    "queryMs": 276,
+    "onlineMs": 12460,
+    "indexMs": 13,
+    "cacheHit": true,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "solar-system-explorer/identify",
+      "orbit-mechanics-lab",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-sun-and-planets",
+        "question": "What is at the center of our solar system, and who travels with it?",
+        "text": "Identify the Sun as the bright center and recognize that planets travel together in our solar neighborhood.",
+        "connection": "Establishes the primary landmark (the Sun) and introduces our home planet Earth within this family of worlds.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects or names the Sun as the center of the solar system when shown visual representations",
+          "Identifies planet Earth and distinguishes it from the bright Sun"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "foundation-explorer",
+          "concept-card-grid"
+        ]
+      },
+      {
+        "id": "observe-planetary-orbits",
+        "question": "How do planets move around the Sun?",
+        "text": "Describe that planets move in circular paths (orbits) around the Sun rather than standing still or drifting away.",
+        "connection": "Builds on identifying the Sun as the center to explore the dynamic relationship of planets circling around it.",
+        "dependsOn": [
+          "identify-sun-and-planets"
+        ],
+        "evidenceCriteria": [
+          "Observes and tracks a planet following a curved orbital path around the central Sun",
+          "Verbally affirms or indicates that planets travel continuously around the Sun"
+        ],
+        "candidateIds": [
+          "solar-system-explorer",
+          "orbit-mechanics-lab",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "phonics-sitpin",
+    "topic": "Phonics with s, i, t, p, n: common letter sounds and short-i words made only from those letters",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/phonics-sitpin/lexical/discovery-phonics-sitpin-topic-descriptions-2026-09-07T02-28-00-420Z-bb94c7e2.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "f702fe5f5ea923a03df518f8b238140e36c4c863457f2e42cacec7a7eab191c5",
+    "recall": {
+      "expected": [
+        "letter-sound-link",
+        "phoneme-explorer"
+      ],
+      "hits": [
+        "letter-sound-link",
+        "phoneme-explorer"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "poolSize": 37,
+    "topical": [
+      "letter-sound-link",
+      "word-flip",
+      "cvc-speller",
+      "letter-spotter",
+      "phoneme-explorer",
+      "word-workout",
+      "story-talk",
+      "di-letter-sounds",
+      "di-sentence-reading",
+      "rhyme-studio",
+      "periodic-table",
+      "organism-card",
+      "species-profile",
+      "dna-explorer",
+      "gas-laws-simulator",
+      "day-night-seasons",
+      "fast-fact",
+      "knowledge-check"
+    ],
+    "planningMs": 12392,
+    "queryMs": 0,
+    "onlineMs": 12392,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "letter-sound-link/hear_see",
+      "phoneme-explorer/blend",
+      "cvc-speller/spell_word",
+      "letter-sound-link/see_hear"
+    ],
+    "objectives": [
+      {
+        "id": "letter-sound-correspondence",
+        "question": "What sound does each letter—s, i, t, p, n—make?",
+        "text": "Identify and produce the primary sound for each letter in the set (s, i, t, p, n), distinguishing the short vowel /ɪ/ from the consonant sounds.",
+        "connection": "Learners must know the individual phoneme associated with each grapheme before blending them into words.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Identifies the correct grapheme when given its sound /s/, /t/, /p/, /n/, or /ɪ/",
+          "Produces the target continuant sound (/s/, /n/, /ɪ/) when presented with the letterform"
+        ],
+        "candidateIds": [
+          "letter-sound-link",
+          "di-letter-sounds",
+          "letter-spotter"
+        ]
+      },
+      {
+        "id": "phoneme-blending-short-i",
+        "question": "How do individual sounds blend together into short-i words like sit, pin, and tip?",
+        "text": "Blend sequential phonemes made from {s, i, t, p, n} to decode short-i VC and CVC words orally.",
+        "connection": "Combines mastery of isolated letter sounds into continuous auditory and visual word decoding.",
+        "dependsOn": [
+          "letter-sound-correspondence"
+        ],
+        "evidenceCriteria": [
+          "Blends spoken phonemes /s/ /ɪ/ /t/ to say 'sit'",
+          "Reads aloud CVC target words (e.g., 'pin', 'tip', 'tin') composed exclusively of the taught letters"
+        ],
+        "candidateIds": [
+          "phoneme-explorer",
+          "word-workout"
+        ]
+      },
+      {
+        "id": "cvc-encoding-short-i",
+        "question": "How do we segment a spoken word and choose the matching letters to spell it?",
+        "text": "Segment spoken short-i words (e.g., sip, pit, nip) into constituent phonemes and map each sound to its corresponding letter in order.",
+        "connection": "Deepens decoding into bidirectional sound-symbol correspondence through encoding (spelling).",
+        "dependsOn": [
+          "letter-sound-correspondence",
+          "phoneme-blending-short-i"
+        ],
+        "evidenceCriteria": [
+          "Identifies the medial short vowel /ɪ/ in a spoken CVC word from the target set",
+          "Places the correct letters into Elkonin boxes to encode spoken words using s, i, t, p, n"
+        ],
+        "candidateIds": [
+          "cvc-speller",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": [
+      {
+        "requirementId": "letter-sound-correspondence",
+        "reason": "The see_hear eval mode of letter-sound-link only supports continuants (/s/, /n/) and short vowels (/ɪ/); stop consonants (/t/, /p/) cannot be assessed via unaided isolated oral production by five-year-olds due to acoustic coarticulation limitations."
+      },
+      {
+        "requirementId": "phoneme-blending-short-i",
+        "reason": "Cold reading of printed CVC words without auditory support is deferred because kindergarten non-readers require auditory blending support before cold visual decoding."
+      }
+    ]
+  },
+  {
+    "id": "phonics-sitpin",
+    "topic": "Phonics with s, i, t, p, n: common letter sounds and short-i words made only from those letters",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/phonics-sitpin/semantic/discovery-phonics-sitpin-topic-descriptions-2026-09-07T02-28-14-180Z-fc38afce.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "f702fe5f5ea923a03df518f8b238140e36c4c863457f2e42cacec7a7eab191c5",
+    "recall": {
+      "expected": [
+        "letter-sound-link",
+        "phoneme-explorer"
+      ],
+      "hits": [
+        "letter-sound-link",
+        "phoneme-explorer"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 29,
+        "expected": [
+          "letter-sound-link",
+          "phoneme-explorer"
+        ],
+        "hits": [
+          "letter-sound-link",
+          "phoneme-explorer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 10,
+        "poolSize": 33,
+        "expected": [
+          "letter-sound-link",
+          "phoneme-explorer"
+        ],
+        "hits": [
+          "letter-sound-link",
+          "phoneme-explorer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 15,
+        "poolSize": 38,
+        "expected": [
+          "letter-sound-link",
+          "phoneme-explorer"
+        ],
+        "hits": [
+          "letter-sound-link",
+          "phoneme-explorer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 20,
+        "poolSize": 43,
+        "expected": [
+          "letter-sound-link",
+          "phoneme-explorer"
+        ],
+        "hits": [
+          "letter-sound-link",
+          "phoneme-explorer"
+        ],
+        "missing": [],
+        "recall": 1
+      }
+    ],
+    "poolSize": 33,
+    "topical": [
+      "letter-spotter",
+      "di-letter-sounds",
+      "phoneme-explorer",
+      "letter-sound-link",
+      "word-workout",
+      "spelling-pattern-explorer",
+      "phonics-blender",
+      "cvc-speller",
+      "sound-swap",
+      "syllable-clapper",
+      "vocabulary-explorer",
+      "digital-skills-sim",
+      "periodic-table",
+      "states-of-matter",
+      "how-it-works",
+      "fast-fact",
+      "knowledge-check"
+    ],
+    "planningMs": 11469,
+    "queryMs": 269,
+    "onlineMs": 11746,
+    "indexMs": 12,
+    "cacheHit": true,
+    "selected": [
+      "curator-brief",
+      "di-letter-sounds/letter_sound",
+      "phonics-blender/cvc",
+      "cvc-speller/spell_word",
+      "word-workout/picture_match"
+    ],
+    "objectives": [
+      {
+        "id": "letter-sounds-sitpn",
+        "question": "What sound does each letter in the group s, i, t, p, n make?",
+        "text": "Identify and produce the primary sounds for consonants s, t, p, n and the short vowel i when shown the printed letters.",
+        "connection": "Establishes the foundational grapheme-phoneme correspondences required before any decoding or word synthesis can take place.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Produces the target sound or identifies the correct letter when prompted with the sound for s, i, t, p, n",
+          "Distinguishes short /ɪ/ from surrounding consonant sounds"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "letter-sound-link",
+          "di-letter-sounds"
+        ]
+      },
+      {
+        "id": "blend-short-i-words",
+        "question": "How do we slide these sounds together to read real words?",
+        "text": "Blend individual sounds of s, i, t, p, n sequentially from left to right to decode simple short-i words (e.g., sit, tip, pin, pit).",
+        "connection": "Applies isolated letter sounds to the continuous mechanical process of blending phonemes into spoken words.",
+        "dependsOn": [
+          "letter-sounds-sitpn"
+        ],
+        "evidenceCriteria": [
+          "Blends phoneme sequences like /s/ /ɪ/ /t/ smoothly into 'sit'",
+          "Selects or states the correct spoken word matching the sounded-out printed form"
+        ],
+        "candidateIds": [
+          "phonics-blender",
+          "phoneme-explorer"
+        ]
+      },
+      {
+        "id": "encode-and-decode-short-i",
+        "question": "Can we build and verify short-i words from their individual sounds?",
+        "text": "Segment spoken short-i words into individual phonemes and build or identify the matching word using s, i, t, p, n.",
+        "connection": "Consolidates reading and spelling reciprocity by checking that the learner can independently map spoken short-i words to the correct letter tiles.",
+        "dependsOn": [
+          "blend-short-i-words"
+        ],
+        "evidenceCriteria": [
+          "Places the correct medial vowel 'i' and framing consonants into Elkonin boxes for spoken target words like 'pin' or 'tip'",
+          "Confirms word meaning by matching the decoded word to a representative picture"
+        ],
+        "candidateIds": [
+          "cvc-speller",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": [
+      {
+        "requirementId": "letter-sounds-sitpn",
+        "reason": "di-letter-sounds only models and judges continuous sounds (/s/, /n/, /ɪ/); stop consonants /t/ and /p/ cannot be voiced in isolation without an added vowel sound (/tə/, /pə/) and are evaluated via subsequent encoding/decoding rather than isolated oral stop production."
+      }
+    ]
+  },
+  {
+    "id": "counting",
+    "topic": "Counting objects from 1 to 10",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/counting/lexical/discovery-counting-topic-descriptions-2026-09-07T02-28-26-453Z-3a306060.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "b89711c864e13da6d67cd59971c97d2918c6f92ddb845b5c48d7af4076c30a17",
+    "recall": {
+      "expected": [
+        "counting-board"
+      ],
+      "hits": [
+        "counting-board"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "poolSize": 33,
+    "topical": [
+      "counting-board",
+      "di-math-facts",
+      "di-spoken-practice",
+      "coin-counter",
+      "di-shapes",
+      "dot-plot",
+      "matter-explorer",
+      "number-tracer",
+      "orbit-mechanics-lab",
+      "scale-comparator",
+      "digital-skills-sim",
+      "organism-card",
+      "passage-studio",
+      "spatial-scene",
+      "fast-fact",
+      "knowledge-check"
+    ],
+    "planningMs": 12508,
+    "queryMs": 0,
+    "onlineMs": 12508,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "counting-board/count",
+      "counting-board/count",
+      "di-spoken-practice/count_and_say",
+      "di-math-facts/name_numeral",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "obj-one-to-one",
+        "question": "How do we count objects without skipping any or counting the same one twice?",
+        "text": "Apply one-to-one correspondence by tagging or touching each object in a collection of up to 10 items exactly once while reciting the number sequence in order.",
+        "connection": "Establishes the fundamental physical and verbal coordination needed before the learner can determine total set size.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Learner touches or taps each visual object in sequence without skipping or double-counting.",
+          "Learner matches each physical touch to a consecutive number word from 1 up to 10."
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "counting-board"
+        ]
+      },
+      {
+        "id": "obj-cardinality",
+        "question": "What does the last number we say tell us about the group?",
+        "text": "Identify that the final number spoken when counting represents the total quantity (cardinality) of the group of up to 10 objects.",
+        "connection": "Builds directly on one-to-one correspondence by shifting focus from the act of counting to understanding the total quantity.",
+        "dependsOn": [
+          "obj-one-to-one"
+        ],
+        "evidenceCriteria": [
+          "When asked 'How many are there?', learner states the final counted number without recounting from one.",
+          "Learner correctly identifies the total quantity of scattered or lined groups up to 10."
+        ],
+        "candidateIds": [
+          "counting-board",
+          "di-spoken-practice",
+          "knowledge-check"
+        ]
+      },
+      {
+        "id": "obj-numeral-match",
+        "question": "Which written number shows how many things we counted?",
+        "text": "Match a counted quantity of 1 to 10 objects to its corresponding written numeral.",
+        "connection": "Connects concrete quantities and spoken cardinal counts to standard symbolic numeral representations.",
+        "dependsOn": [
+          "obj-cardinality"
+        ],
+        "evidenceCriteria": [
+          "Given a counted set of objects (1-10), learner selects or names the matching written numeral.",
+          "Learner discriminates between different numerals (1-10) to label a verified set."
+        ],
+        "candidateIds": [
+          "di-math-facts",
+          "knowledge-check",
+          "concept-card-grid"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": [
+      {
+        "requirementId": "obj-one-to-one",
+        "reason": "Closing independent assessment evaluates cardinality and numeral matching via tap selection; unassisted physical one-to-one touch tagging without interface scaffolding is not captured in the closing evaluation."
+      }
+    ]
+  },
+  {
+    "id": "counting",
+    "topic": "Counting objects from 1 to 10",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/counting/semantic/discovery-counting-topic-descriptions-2026-09-07T02-28-40-370Z-0e7356f3.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "b89711c864e13da6d67cd59971c97d2918c6f92ddb845b5c48d7af4076c30a17",
+    "recall": {
+      "expected": [
+        "counting-board"
+      ],
+      "hits": [
+        "counting-board"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 28,
+        "expected": [
+          "counting-board"
+        ],
+        "hits": [
+          "counting-board"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 10,
+        "poolSize": 31,
+        "expected": [
+          "counting-board"
+        ],
+        "hits": [
+          "counting-board"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 15,
+        "poolSize": 36,
+        "expected": [
+          "counting-board"
+        ],
+        "hits": [
+          "counting-board"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 20,
+        "poolSize": 41,
+        "expected": [
+          "counting-board"
+        ],
+        "hits": [
+          "counting-board"
+        ],
+        "missing": [],
+        "recall": 1
+      }
+    ],
+    "poolSize": 31,
+    "topical": [
+      "counting-board",
+      "number-sequencer",
+      "compare-objects",
+      "di-math-facts",
+      "skip-counting-runner",
+      "hundreds-chart",
+      "ten-frame",
+      "comparison-builder",
+      "number-tracer",
+      "strategy-picker",
+      "digital-skills-sim",
+      "curator-brief",
+      "how-it-works",
+      "knowledge-check",
+      "fast-fact"
+    ],
+    "planningMs": 13258,
+    "queryMs": 261,
+    "onlineMs": 13526,
+    "indexMs": 12,
+    "cacheHit": true,
+    "selected": [
+      "curator-brief",
+      "counting-board/count",
+      "counting-board/count",
+      "ten-frame/build",
+      "ten-frame/build",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "obj-one-to-one",
+        "question": "How do we make sure every object gets counted once and only once?",
+        "text": "Apply one-to-one correspondence by pairing each tapped object with exactly one counting number word from 1 to 10.",
+        "connection": "Establishes the procedural mechanism of counting so items are neither skipped nor counted twice.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Touches or tags each discrete item in sequence without double-tapping or skipping items",
+          "Says or pairs each successive number word synchronously with a touched item up to 10"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "counting-board"
+        ]
+      },
+      {
+        "id": "obj-cardinality",
+        "question": "What tells us the total amount in the group when we finish counting?",
+        "text": "Demonstrate understanding of the cardinality principle by stating that the last number counted represents the total quantity of the set.",
+        "connection": "Transitions procedural tagging into quantitative meaning: the final count is the total set size.",
+        "dependsOn": [
+          "obj-one-to-one"
+        ],
+        "evidenceCriteria": [
+          "States the final number word counted as the total quantity when asked 'how many?' without recounting from one",
+          "Selects or states the matching numeral representing the counted set of objects (1 to 10)"
+        ],
+        "candidateIds": [
+          "counting-board",
+          "ten-frame",
+          "knowledge-check"
+        ]
+      },
+      {
+        "id": "obj-structured-representation",
+        "question": "How does organizing objects into a ten-frame help us see and build quantities up to 10?",
+        "text": "Represent and verify quantities from 1 to 10 by placing counters onto a single ten-frame to confirm set totals.",
+        "connection": "Grounds cardinality in a structured visual anchor that reinforces quantities relative to 5 and 10.",
+        "dependsOn": [
+          "obj-cardinality"
+        ],
+        "evidenceCriteria": [
+          "Places the exact requested number of counters (1–10) onto the ten-frame cells",
+          "Verifies that the filled spaces match the target quantity spoken or displayed"
+        ],
+        "candidateIds": [
+          "ten-frame",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": [
+      {
+        "requirementId": "obj-one-to-one",
+        "reason": "Physical touch-tagging synchronization (saying the word synchronously while tapping during independent closing assessment) cannot be fully verified independently on static assessment screens, though it is formatively captured in earlier interactive components."
+      }
+    ]
+  },
+  {
+    "id": "butterflies",
+    "topic": "Butterflies and how they grow",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/butterflies/lexical/discovery-butterflies-topic-descriptions-2026-09-07T02-28-54-446Z-d85cb03e.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "7cac67437c49548aa6cbffef5f95f87ae2bff34451b0f13045618c7330625df4",
+    "recall": {
+      "expected": [
+        "species-profile",
+        "life-cycle-sequencer"
+      ],
+      "hits": [],
+      "missing": [
+        "species-profile",
+        "life-cycle-sequencer"
+      ],
+      "recall": 0
+    },
+    "poolSize": 32,
+    "topical": [
+      "addition-subtraction-scene",
+      "bio-compare-contrast",
+      "compare-objects",
+      "counting-board",
+      "di-shapes",
+      "evolution-timeline",
+      "phoneme-explorer",
+      "story-talk",
+      "syllable-clapper",
+      "ten-frame",
+      "how-it-works",
+      "machine-profile"
+    ],
+    "planningMs": 11556,
+    "queryMs": 0,
+    "onlineMs": 11556,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "custom-visual",
+      "how-it-works/guided",
+      "fast-fact/apply",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-four-stages",
+        "question": "What are the four shapes a butterfly takes as it grows?",
+        "text": "Identify the four key stages of a butterfly's life cycle (egg, caterpillar, chrysalis, adult butterfly).",
+        "connection": "Establishes the visual identity of each stage before exploring the transformation process.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Identifies pictures of egg, caterpillar/larva, chrysalis/pupa, and adult butterfly",
+          "Names or points to the correct stage when prompted aloud"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "concept-card-grid",
+          "foundation-explorer"
+        ]
+      },
+      {
+        "id": "sequence-growth-cycle",
+        "question": "In what order do the butterfly's changes happen?",
+        "text": "Sequence the stages of a butterfly's growth cycle from egg to adult.",
+        "connection": "Builds directly on recognizing individual stages to understand chronological development.",
+        "dependsOn": [
+          "identify-four-stages"
+        ],
+        "evidenceCriteria": [
+          "Arranges the four stages in the correct order: egg -> caterpillar -> chrysalis -> butterfly",
+          "Explains or shows what hatches from the egg and what emerges from the chrysalis"
+        ],
+        "candidateIds": [
+          "how-it-works",
+          "custom-visual",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "butterflies",
+    "topic": "Butterflies and how they grow",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/butterflies/semantic/discovery-butterflies-topic-descriptions-2026-09-07T02-29-07-329Z-28cecd62.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "7cac67437c49548aa6cbffef5f95f87ae2bff34451b0f13045618c7330625df4",
+    "recall": {
+      "expected": [
+        "species-profile",
+        "life-cycle-sequencer"
+      ],
+      "hits": [
+        "species-profile",
+        "life-cycle-sequencer"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 26,
+        "expected": [
+          "species-profile",
+          "life-cycle-sequencer"
+        ],
+        "hits": [
+          "species-profile",
+          "life-cycle-sequencer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 10,
+        "poolSize": 29,
+        "expected": [
+          "species-profile",
+          "life-cycle-sequencer"
+        ],
+        "hits": [
+          "species-profile",
+          "life-cycle-sequencer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 15,
+        "poolSize": 33,
+        "expected": [
+          "species-profile",
+          "life-cycle-sequencer"
+        ],
+        "hits": [
+          "species-profile",
+          "life-cycle-sequencer"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 20,
+        "poolSize": 38,
+        "expected": [
+          "species-profile",
+          "life-cycle-sequencer"
+        ],
+        "hits": [
+          "species-profile",
+          "life-cycle-sequencer"
+        ],
+        "missing": [],
+        "recall": 1
+      }
+    ],
+    "poolSize": 29,
+    "topical": [
+      "life-cycle-sequencer",
+      "image-comparison",
+      "how-it-works",
+      "bio-process-animator",
+      "habitat-diorama",
+      "species-profile",
+      "flight-forces-explorer",
+      "formula-lab",
+      "adaptation-investigator",
+      "feature-exhibit",
+      "knowledge-check",
+      "fast-fact"
+    ],
+    "planningMs": 9551,
+    "queryMs": 268,
+    "onlineMs": 9826,
+    "indexMs": 12,
+    "cacheHit": true,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "image-comparison",
+      "life-cycle-sequencer",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-life-stages",
+        "question": "What do the different forms of a butterfly look like as it grows?",
+        "text": "Identify and name the four main stages of a butterfly's growth: egg, caterpillar, chrysalis, and adult butterfly.",
+        "connection": "Learners must recognize the distinct visual forms before understanding the order in which transformation occurs.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects or points to the correct picture when prompted with 'egg', 'caterpillar', 'chrysalis', or 'butterfly'",
+          "Distinguishes the crawling caterpillar form from the winged adult form"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "foundation-explorer",
+          "concept-card-grid",
+          "species-profile"
+        ]
+      },
+      {
+        "id": "sequence-growth-order",
+        "question": "In what order does a butterfly grow from beginning to end?",
+        "text": "Order the stages of a butterfly's life cycle sequentially from egg to caterpillar, chrysalis, and butterfly.",
+        "connection": "Connects visual identification of individual forms into a coherent temporal progression of life stages.",
+        "dependsOn": [
+          "identify-life-stages"
+        ],
+        "evidenceCriteria": [
+          "Places or taps the growth stages in linear chronological order (egg -> caterpillar -> chrysalis -> butterfly)",
+          "Identifies which stage comes immediately next after a given stage"
+        ],
+        "candidateIds": [
+          "life-cycle-sequencer",
+          "image-comparison",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "bicycles",
+    "topic": "How bicycles work",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/bicycles/lexical/discovery-bicycles-topic-descriptions-2026-09-07T02-29-17-729Z-ad8b8886.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "486e5b178710e764ba0f836b1177136d7886978c12c4c38305a3cfad986a02ad",
+    "recall": {
+      "expected": [
+        "machine-profile"
+      ],
+      "hits": [
+        "machine-profile"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "poolSize": 30,
+    "topical": [
+      "machine-profile",
+      "bio-compare-contrast",
+      "bio-process-animator",
+      "body-system-explorer",
+      "dump-truck-loader",
+      "excavator-arm-simulator",
+      "how-it-works",
+      "propulsion-lab",
+      "pulley-system-builder",
+      "shape-strength-tester",
+      "fact-file"
+    ],
+    "planningMs": 10564,
+    "queryMs": 0,
+    "onlineMs": 10564,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "how-it-works/guided",
+      "fast-fact/apply",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-main-parts",
+        "question": "What are the main parts of a bicycle?",
+        "text": "Identify the key working parts of a bicycle (pedals, chain, wheels, and frame) from spoken prompts and clear visual images.",
+        "connection": "Before understanding how motion transfers through the bike, a kindergarten learner must recognize and name the primary parts.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects or taps the pedals, chain, and wheels when prompted by voice or picture",
+          "Distinguishes the parts of a bicycle from non-bicycle parts"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "machine-profile",
+          "foundation-explorer"
+        ]
+      },
+      {
+        "id": "trace-pedal-to-wheel-motion",
+        "question": "What happens when you push the pedals with your feet?",
+        "text": "Trace the step-by-step chain of motion: pushing the pedals moves the chain, which turns the wheels to roll forward.",
+        "connection": "Builds directly on naming the parts by demonstrating the physical cause-and-effect relationship that makes the bicycle travel forward.",
+        "dependsOn": [
+          "identify-main-parts"
+        ],
+        "evidenceCriteria": [
+          "Points to or sequences the action of pushing pedals leading to chain movement and wheel turning",
+          "Identifies that stopping the pedals stops the driving force"
+        ],
+        "candidateIds": [
+          "how-it-works",
+          "custom-visual",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  },
+  {
+    "id": "bicycles",
+    "topic": "How bicycles work",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/bicycles/semantic/discovery-bicycles-topic-descriptions-2026-09-07T02-29-29-588Z-31d59ce1.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "486e5b178710e764ba0f836b1177136d7886978c12c4c38305a3cfad986a02ad",
+    "recall": {
+      "expected": [
+        "machine-profile"
+      ],
+      "hits": [
+        "machine-profile"
+      ],
+      "missing": [],
+      "recall": 1
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 25,
+        "expected": [
+          "machine-profile"
+        ],
+        "hits": [
+          "machine-profile"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 10,
+        "poolSize": 29,
+        "expected": [
+          "machine-profile"
+        ],
+        "hits": [
+          "machine-profile"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 15,
+        "poolSize": 34,
+        "expected": [
+          "machine-profile"
+        ],
+        "hits": [
+          "machine-profile"
+        ],
+        "missing": [],
+        "recall": 1
+      },
+      {
+        "limit": 20,
+        "poolSize": 38,
+        "expected": [
+          "machine-profile"
+        ],
+        "hits": [
+          "machine-profile"
+        ],
+        "missing": [],
+        "recall": 1
+      }
+    ],
+    "poolSize": 29,
+    "topical": [
+      "how-it-works",
+      "machine-profile",
+      "propulsion-lab",
+      "gear-train-builder",
+      "wheel-axle-explorer",
+      "hydraulics-lab",
+      "flight-forces-explorer",
+      "bio-process-animator",
+      "ramp-lab",
+      "take-home-activity",
+      "feature-exhibit",
+      "knowledge-check",
+      "fast-fact"
+    ],
+    "planningMs": 9749,
+    "queryMs": 271,
+    "onlineMs": 10028,
+    "indexMs": 12,
+    "cacheHit": true,
+    "selected": [
+      "curator-brief",
+      "machine-profile",
+      "foundation-explorer",
+      "how-it-works/sequence",
+      "gear-train-builder",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-bike-parts",
+        "question": "What are the key moving parts of a bicycle that help it go?",
+        "text": "Identify the pedals, chain, and wheels on a bicycle.",
+        "connection": "Provides the essential physical landmarks needed to trace motion through the machine.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Taps or points to the pedals, chain, and rear wheel on a labeled pictorial display."
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "machine-profile",
+          "foundation-explorer"
+        ]
+      },
+      {
+        "id": "trace-pedal-to-wheel",
+        "question": "What happens when your feet push the pedals?",
+        "text": "Explain how pushing pedals turns the chain and makes the wheels spin.",
+        "connection": "Connects rider effort directly to bicycle movement through a simple cause-and-effect chain.",
+        "dependsOn": [
+          "identify-bike-parts"
+        ],
+        "evidenceCriteria": [
+          "Selects the correct cause-and-effect sequence: feet push pedals -> chain moves -> wheels roll forward.",
+          "Identifies that stopping the pedals or using brakes slows and stops the wheels."
+        ],
+        "candidateIds": [
+          "how-it-works",
+          "gear-train-builder",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [
+        "Estimated student time 18 exceeds 15 minutes"
+      ],
+      "studentMinutes": 18,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": [
+      {
+        "requirementId": "trace-pedal-to-wheel",
+        "reason": "Braking mechanism assessment is only partially addressed in the closing check due to strict 15-minute budget and primary focus on pedal-to-wheel propulsion."
+      }
+    ]
+  },
+  {
+    "id": "penguins",
+    "topic": "Emperor penguins",
+    "discovery": "lexical",
+    "artifact": "qa/lesson-planner/discovery-ab/penguins/lexical/discovery-penguins-topic-descriptions-2026-09-07T02-29-40-139Z-4be0e2f7.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "e89ac9420db757cb683c89d89f4f5846cd9f9ce5e4325623ac7fab4330be9f92",
+    "recall": {
+      "expected": [
+        "species-profile",
+        "habitat-diorama"
+      ],
+      "hits": [],
+      "missing": [
+        "species-profile",
+        "habitat-diorama"
+      ],
+      "recall": 0
+    },
+    "poolSize": 22,
+    "topical": [
+      "classification-sorter"
+    ],
+    "planningMs": 11594,
+    "queryMs": 0,
+    "onlineMs": 11594,
+    "indexMs": 0,
+    "selected": [
+      "curator-brief",
+      "foundation-explorer",
+      "custom-visual",
+      "classification-sorter",
+      "comparison-panel",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-physical-traits",
+        "question": "What special body parts does an emperor penguin have to survive freezing cold water and ice?",
+        "text": "Identify key physical features of emperor penguins (thick blubber, dense waterproof feathers, flippers for swimming) using picture-supported exploration.",
+        "connection": "Establishes the anatomical foundation of an emperor penguin before examining how they use social behaviors to stay warm.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects the picture of dense waterproof feathers when prompted for what keeps the penguin dry in cold water.",
+          "Points to flippers when asked what body part helps emperor penguins swim like torpedoes."
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "foundation-explorer",
+          "custom-visual"
+        ]
+      },
+      {
+        "id": "explain-huddling-behavior",
+        "question": "How do emperor penguins work together to stay warm during winter storms?",
+        "text": "Explain that emperor penguins huddle tightly together in big groups to share body heat and block freezing winds.",
+        "connection": "Builds directly on physical insulation traits by introducing social behavioral adaptations essential for freezing winters.",
+        "dependsOn": [
+          "identify-physical-traits"
+        ],
+        "evidenceCriteria": [
+          "Identifies a huddle as the group behavior used to survive freezing Antarctic blizzards.",
+          "Explains verbally or by tapping that penguins take turns moving to the warm center of the huddle."
+        ],
+        "candidateIds": [
+          "comparison-panel",
+          "classification-sorter",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": [
+      {
+        "requirementId": "explain-huddling-behavior",
+        "reason": "Full generative spoken explanation of taking turns moving to the center is only partially assessed via pictorial multiple-choice tap selection due to kindergarten platform constraints."
+      }
+    ]
+  },
+  {
+    "id": "penguins",
+    "topic": "Emperor penguins",
+    "discovery": "semantic",
+    "artifact": "qa/lesson-planner/discovery-ab/penguins/semantic/discovery-penguins-topic-descriptions-2026-09-07T02-29-53-052Z-0ebca96f.json",
+    "status": "generated",
+    "model": "gemini-3.8-flash",
+    "candidateHash": "43ffa6ad14f11beaf6688a5ac0dacd2be95e6536ff77aa70172f99b3e93b6e00",
+    "fixtureHash": "e89ac9420db757cb683c89d89f4f5846cd9f9ce5e4325623ac7fab4330be9f92",
+    "recall": {
+      "expected": [
+        "species-profile",
+        "habitat-diorama"
+      ],
+      "hits": [
+        "species-profile"
+      ],
+      "missing": [
+        "habitat-diorama"
+      ],
+      "recall": 0.5
+    },
+    "shortlistSensitivity": [
+      {
+        "limit": 5,
+        "poolSize": 26,
+        "expected": [
+          "species-profile",
+          "habitat-diorama"
+        ],
+        "hits": [
+          "species-profile"
+        ],
+        "missing": [
+          "habitat-diorama"
+        ],
+        "recall": 0.5
+      },
+      {
+        "limit": 10,
+        "poolSize": 27,
+        "expected": [
+          "species-profile",
+          "habitat-diorama"
+        ],
+        "hits": [
+          "species-profile"
+        ],
+        "missing": [
+          "habitat-diorama"
+        ],
+        "recall": 0.5
+      },
+      {
+        "limit": 15,
+        "poolSize": 30,
+        "expected": [
+          "species-profile",
+          "habitat-diorama"
+        ],
+        "hits": [
+          "species-profile"
+        ],
+        "missing": [
+          "habitat-diorama"
+        ],
+        "recall": 0.5
+      },
+      {
+        "limit": 20,
+        "poolSize": 32,
+        "expected": [
+          "species-profile",
+          "habitat-diorama"
+        ],
+        "hits": [
+          "species-profile"
+        ],
+        "missing": [
+          "habitat-diorama"
+        ],
+        "recall": 0.5
+      }
+    ],
+    "poolSize": 27,
+    "topical": [
+      "species-profile",
+      "feature-exhibit",
+      "curator-brief",
+      "organism-card",
+      "adaptation-investigator",
+      "take-home-activity",
+      "life-cycle-sequencer",
+      "deep-dive",
+      "planetary-explorer",
+      "machine-profile",
+      "fast-fact",
+      "knowledge-check"
+    ],
+    "planningMs": 10335,
+    "queryMs": 255,
+    "onlineMs": 10597,
+    "indexMs": 14,
+    "cacheHit": true,
+    "selected": [
+      "curator-brief",
+      "species-profile",
+      "foundation-explorer",
+      "life-cycle-sequencer",
+      "knowledge-check/recall"
+    ],
+    "objectives": [
+      {
+        "id": "identify-physical-traits",
+        "question": "What special body parts help an Emperor penguin stay warm on the ice?",
+        "text": "Identify key physical features of an Emperor penguin (thick layers of feathers, blubber, brood pouch) that protect it from freezing Antarctic temperatures.",
+        "connection": "Provides foundational recognition of the penguin's body structure before exploring how these traits are used in parental care.",
+        "dependsOn": [],
+        "evidenceCriteria": [
+          "Selects the Emperor penguin's insulating features (warm feathers, blubber, brood pouch) when shown pictorial choices",
+          "Matches the brood pouch to keeping an egg or chick off the icy ground"
+        ],
+        "candidateIds": [
+          "curator-brief",
+          "species-profile",
+          "organism-card",
+          "concept-card-grid"
+        ]
+      },
+      {
+        "id": "sequence-chick-care",
+        "question": "How do parent penguins keep their egg and chick safe from the cold?",
+        "text": "Sequence the essential stages of how Emperor penguin parents care for their egg and chick through the freezing winter.",
+        "connection": "Connects structural traits like the warm feet and brood pouch to observable nesting behaviors and lifecycle transitions.",
+        "dependsOn": [
+          "identify-physical-traits"
+        ],
+        "evidenceCriteria": [
+          "Orders the stages of nesting care correctly: egg on father's feet under the pouch, chick hatching, feeding, and growing down feathers",
+          "Distinguishes safe brooding behavior on the parents' warm feet from exposure to bare ice"
+        ],
+        "candidateIds": [
+          "life-cycle-sequencer",
+          "knowledge-check"
+        ]
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "studentMinutes": 15,
+      "note": "Checks references and declarations only; human review and hydrated lesson QA must establish quality and actual coverage."
+    },
+    "gaps": []
+  }
+]

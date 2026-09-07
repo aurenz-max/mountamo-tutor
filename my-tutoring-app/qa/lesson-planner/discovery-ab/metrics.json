@@ -1,0 +1,20 @@
+{
+  "lexical": {
+    "runs": 9,
+    "structurallyValid": 8,
+    "recalled": 11,
+    "expected": 18,
+    "medianPlanningMs": 10935,
+    "medianOnlineMs": 10935,
+    "medianQueryMs": 0
+  },
+  "semantic": {
+    "runs": 9,
+    "structurallyValid": 8,
+    "recalled": 16,
+    "expected": 18,
+    "medianPlanningMs": 11469,
+    "medianOnlineMs": 11746,
+    "medianQueryMs": 268
+  }
+}

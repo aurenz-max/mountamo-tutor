@@ -1,0 +1,62 @@
+{
+  "version": 3,
+  "caseId": "direct-attribute-comparison",
+  "objective": {
+    "id": "compare-attributes",
+    "text": "Compare and describe objects' attributes (longer/shorter, heavier/lighter) using direct observation and manipulation."
+  },
+  "learner": { "grade": "K", "independentReading": false },
+  "lessonBudgetMinutes": 15,
+  "requiredContributions": ["meaningful_context", "explanation_and_modeling", "supported_investigation", "comparison_and_description_practice", "application_to_fresh_examples", "closing_independent_assessment"],
+  "contributionDefinitions": {
+    "meaningful_context": "Give the child a concrete reason to compare objects, such as choosing materials for a task; an opening title alone does not do this.",
+    "explanation_and_modeling": "Show what longer/shorter and heavier/lighter mean and demonstrate a valid way to compare. Model the method before dependent practice.",
+    "supported_investigation": "Child changes an arrangement or sets up a comparison and observes the result with help. Observing already aligned bars or a preloaded scale supplies only part of this experience.",
+    "comparison_and_description_practice": "Give varied supported opportunities to compare and express relationships in both directions. Distinguish naming an object from producing comparative vocabulary.",
+    "application_to_fresh_examples": "Use a comparison to make a decision in a fresh concrete situation, such as choosing a strip that reaches across a gap. Simply changing the picture in the same question does not fully supply this contribution.",
+    "closing_independent_assessment": "Finish with fresh length AND weight checks before hints/model answers, with a brief sense of completion. Explain what the response format establishes and what still needs manipulation or spoken description. May share an activity only if independent closing work is actually supported."
+  },
+  "targetEvidence": ["compares_lengths_using_a_valid_method", "compares_weights_using_observable_evidence", "sets_up_comparisons_by_manipulation", "describes_both_comparative_relationships", "distinguishes_independent_from_supported_success"],
+  "evidenceDefinitions": {
+    "compares_lengths_using_a_valid_method": "Correctly compares lengths using a common baseline; distinguish interpreting supplied alignment from establishing it.",
+    "compares_weights_using_observable_evidence": "Correctly interprets an observable balance result; this does not require setting up the balance, which is a separate criterion.",
+    "sets_up_comparisons_by_manipulation": "Child aligns objects for length or places objects to investigate relative weight. Static displays do not establish this.",
+    "describes_both_comparative_relationships": "Child expresses longer/shorter and heavier/lighter relationships; naming the selected object alone establishes only identification.",
+    "distinguishes_independent_from_supported_success": "Assessment opportunities distinguish an initial response from corrected or prompted success. Do not assert telemetry exists or is absent without supplied evidence."
+  },
+  "planningRules": {
+    "allowOneExperienceToServeMultipleContributions": true,
+    "requireDistinctContributionPerExperience": true,
+    "reportUnsupportedRequirements": true
+  },
+  "candidateSource": "All live core and assessment catalog entries plus explicit measurement/engineering specialists. General tools are included by catalog membership, not manually selected for an expected lesson. Specialist retrieval remains a pilot shortlist; included and excluded IDs are saved.",
+  "candidateGroups": ["core", "assessment"],
+  "candidateIds": ["length-lab", "compare-objects", "measurement-tools", "balance-scale", "lever-lab"],
+  "capabilityNotes": [
+    {
+      "componentId": "lever-lab", "basis": "source-inspected",
+      "source": "src/components/lumina/primitives/visual-primitives/engineering/LeverLab.tsx",
+      "observation": "This is a torque simulation: tipping depends on weight times distance from the fulcrum AND applied effort, not weight alone. Data can fix the fulcrum and mark loads non-draggable, but moving loads changes lever arms; there is no verified equal-arm pan-placement mode. Do not claim that arbitrary placement lets the child infer which object is heavier. A constrained demonstration is a possible generator request needing verification, not proven independent weight-comparison evidence."
+    },
+    {
+      "componentId": "length-lab", "mode": "compare", "basis": "source-inspected",
+      "source": "src/components/lumina/primitives/visual-primitives/math/LengthLab.tsx",
+      "observation": "Compare renders two bars already sharing a baseline and relationship answer buttons. It does not observe the child aligning objects. It has no bridge gap, target-space visual, or object-fitting interaction: a story mentioning a bridge does not create these capabilities. Tiling units is a different mode and skill."
+    },
+    {
+      "componentId": "compare-objects", "mode": "compare_two", "basis": "source-inspected",
+      "source": "src/components/lumina/primitives/visual-primitives/math/CompareObjects.tsx",
+      "observation": "Length drawings are already positioned. Weight comparisons show an already loaded balance whose tilt follows actualValue. The child says an object name; this does not separately establish independent comparative vocabulary production or comparison setup."
+    },
+    {
+      "componentId": "balance-scale", "basis": "catalog-declared",
+      "source": "src/components/lumina/service/manifest/catalog/math.ts",
+      "observation": "The current session teaches equation solving and equality, not physical object weight comparison."
+    },
+    {
+      "componentId": "take-home-activity", "basis": "catalog-declared",
+      "source": "src/components/lumina/service/manifest/catalog/core.ts",
+      "observation": "An adult-led home extension cannot establish observed in-app independent mastery or substitute for the child's on-screen instruction."
+    }
+  ]
+}
