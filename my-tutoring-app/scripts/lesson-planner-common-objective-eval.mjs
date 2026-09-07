@@ -11,9 +11,9 @@ const server = await vite.createServer({configFile:false,root,logLevel:'error',a
 try {
   const runner = vite.createServerModuleRunner(server.environments.ssr,{hmr:false});
   const [pkgMod,evaluator] = await Promise.all([runner.import('/src/components/lumina/service/qa/lessonBench/lessonPackage.ts'),runner.import('/src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts')]);
-  const files = readdirSync(join(out,'records')).filter(f=>f.endsWith('.json')).sort();
+  const files = readdirSync(join(out,'.raw/records')).filter(f=>f.endsWith('.json')).sort();
   async function evaluate(file) {
-    const path = join(out,'records',file);
+    const path = join(out,'.raw/records',file);
     const r = JSON.parse(readFileSync(path,'utf8'));
     if (r.status !== 'complete' || r.normalizedCoverage || !r.packagePath) return;
     const pkg = JSON.parse(readFileSync(resolve(root,r.packagePath),'utf8'));

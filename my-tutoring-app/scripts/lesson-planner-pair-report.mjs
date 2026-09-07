@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 const out = resolve(process.argv[2]);
-const records = readdirSync(join(out, 'records')).filter(f => f.endsWith('.json')).map(f => JSON.parse(readFileSync(join(out, 'records', f), 'utf8')));
+const records = readdirSync(join(out, '.raw/records')).filter(f => f.endsWith('.json')).map(f => JSON.parse(readFileSync(join(out, '.raw/records', f), 'utf8')));
 const median = values => { const a = values.sort((a,b) => a-b); return a.length ? (a[Math.floor((a.length-1)/2)] + a[Math.ceil((a.length-1)/2)])/2 : null; };
 const rows = records.map(r => {
   const calls = r.calls.filter(c => c.phase === 'planning' && c.method !== 'embedContent');

@@ -3,8 +3,8 @@ import { join, resolve } from 'node:path';
 const out = resolve(process.argv[2] ?? 'qa/lesson-planner/production-ab/first-controlled-run');
 const protocol = JSON.parse(readFileSync(join(out, 'protocol.json'), 'utf8'));
 const designNote = protocol.sourceHashes['scripts/lib/lesson-planner-pairs.mjs'] ? 'Both arms use production lesson instructions and model settings. Experimental retrieves primitive-mode pairs and skips the separate lesson mode resolver.' : 'Experimental targets 15 minutes; production has no equivalent duration parameter.';
-const rows = readdirSync(join(out, 'records')).filter(f => f.endsWith('.json')).map(f => {
-  const r = JSON.parse(readFileSync(join(out, 'records', f), 'utf8'));
+const rows = readdirSync(join(out, '.raw/records')).filter(f => f.endsWith('.json')).map(f => {
+  const r = JSON.parse(readFileSync(join(out, '.raw/records', f), 'utf8'));
   const score = r.scores;
   return { caseId: r.caseId, rep: r.rep, arm: r.arm, blindId: r.blindId, status: r.status, phase: r.phase, error: r.error,
     fixtureHash: r.fixtureHash, planningMs: r.planningMs, hydrationMs: r.hydrationMs, generationMs: r.generationMs,
@@ -44,12 +44,12 @@ const metrics = Object.fromEntries(['production','experimental'].map(arm => {
 writeFileSync(join(out,'summary.json'), JSON.stringify(rows,null,2)+'\n');
 writeFileSync(join(out,'metrics.json'), JSON.stringify(metrics,null,2)+'\n');
 writeFileSync(join(out,'RESULTS.md'), `# Production vs experimental planner\n\nTwo fresh builds per arm/objective; same fixed curriculum objective, K grade, frozen brief and hydration functions. ${designNote} Coverage is provisional automated judgment, not human validation.\n\n| Objective | Repeat | Arm | Planning ms | Full generation ms | Student blocks | Catalog minutes | Raw coverage | Common-objective coverage |\n|---|---|---|---|---|---|---|---|---|\n${rows.map(r=>`| ${r.caseId} | ${r.rep} | ${r.arm} | ${r.planningMs} | ${r.generationMs} | ${r.studentBlocks} | ${r.catalogMinutes} | ${r.rawCoverage?.objectives.map(o=>o.category).join(', ')??r.status} | ${r.normalizedCoverage?.objectives.map(o=>o.category).join(', ')??'pending'} |`).join('\n')}\n`);
-mkdirSync(join(out,'blind-review'),{recursive:true});
+mkdirSync(join(out,'.raw/blind-review'),{recursive:true});
 const blinded = rows.filter(r=>r.packagePath).sort((a,b)=>a.blindId.localeCompare(b.blindId));
 for (const r of blinded) {
   const pkg = JSON.parse(readFileSync(resolve(r.packagePath),'utf8'));
   delete pkg.coverage; pkg.scores=null; pkg.human=null;
-  writeFileSync(join(out,'blind-review',`${r.blindId}.json`),JSON.stringify(pkg,null,2)+'\n');
+  writeFileSync(join(out,'.raw/blind-review',`${r.blindId}.json`),JSON.stringify(pkg,null,2)+'\n');
 }
 writeFileSync(join(out,'BLIND-REVIEW.md'),`# Masked playback set\n\nArm labels and stored machine ratings are withheld. Activity structure and original instance IDs remain intact for reliable replay. Open Dev > Lesson Bench, drop each package, play and rate, then export the labeled JSON. These packages have not received human playback ratings. Avoid opening schedule.json or the comparison report until rating.\n\n${blinded.map((r,i)=>`${i+1}. [${r.blindId}](blind-review/${r.blindId}.json) — ${r.caseId}`).join('\n')}\n`);
 console.log(JSON.stringify(metrics,null,2));

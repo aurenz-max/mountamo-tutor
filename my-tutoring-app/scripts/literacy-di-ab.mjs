@@ -17,7 +17,7 @@ const rel = relative(root, out);
 if (isAbsolute(rel) || rel.startsWith('..')) throw new Error('Output must stay in the app');
 const cases = ['phonics-sitpin'];
 const topic = 'learn about phonics sitpin';
-if (!argv.includes('--run')) { console.log(JSON.stringify({ cases, repetitions: 2, arms: ['production', 'experimental'], out })); process.exit(0); }
+if (!argv.includes('--run')) { console.log(JSON.stringify({ cases, repetitions: 2, arms: ['production', 'rich', 'lean'], out })); process.exit(0); }
 if (!process.env.GEMINI_API_KEY) {
   const match = readFileSync('.env.local', 'utf8').match(/^GEMINI_API_KEY=(.*)$/m);
   if (match) process.env.GEMINI_API_KEY = match[1].trim().replace(/^["']|["']$/g, '');
@@ -72,15 +72,17 @@ try {
     runner.import('/src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts'),
     runner.import('/src/components/lumina/service/manifest/flattenManifest.ts'),
   ]);
-  const sourcePaths = ['scripts/literacy-topic-ab.mjs', 'scripts/lib/lesson-planner-pairs.mjs', 'scripts/lib/lesson-planner-pilot.mjs', 'scripts/lib/lesson-planner-discovery.mjs', 'scripts/lib/lesson-planner-topic.mjs',
+  const sourcePaths = ['scripts/literacy-di-ab.mjs', 'scripts/lib/lesson-planner-pairs.mjs', 'scripts/lib/lesson-planner-pilot.mjs', 'scripts/lib/lesson-planner-discovery.mjs', 'scripts/lib/lesson-planner-topic.mjs',
     'src/components/lumina/service/manifest/gemini-manifest.ts', 'src/components/lumina/service/manifest/flattenManifest.ts', 'src/components/lumina/service/geminiService.ts', 'src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts'];
   save(join(out, 'protocol.json'), { cases, repetitions: 2, grade: 'kindergarten', fixtureSource: 'Unmodified live topic-generated curator brief', catalogHash: hash(catalog.UNIVERSAL_CATALOG),
     sourceHashes: Object.fromEntries(sourcePaths.map(path => [path, hash(readFileSync(path, 'utf8'))])),
-    caveats: ['One live topic-generated objective set is shared unchanged across arms and two repetitions. No tester-authored objectives or letter restrictions. Topic authoring variability is not measured.', 'Both arms use the live production prompt, model settings and lesson structure; experimental replaces catalog with exact task bindings and skips the lesson mode resolver. Retrieval and joint selection change together; this does not isolate either effect.', 'Two concurrent lessons, per-lesson parallel hydration.', 'API transport timeout 120 seconds in both arms.', 'Coverage judge is blinded to arm, not a substitute for human review.'] });
+    caveats: ['One live topic-generated objective set is shared unchanged across arms and two repetitions. No tester-authored objectives or letter restrictions. Topic authoring variability is not measured.', 'Production unchanged. Rich and lean share identical full-catalog description plus exemplar shortlist; lean removes only sourceReviewedBehavior. Both bind modes jointly using the production prompt/model settings. DI uses native catalog metadata, not synthetic exemplars. This isolates extra reviewed chooser metadata in rich versus lean, not the value of exemplar retrieval.', 'Two concurrent lessons, per-lesson parallel hydration.', 'API transport timeout 120 seconds in both arms.', 'Coverage judge is blinded to arm, not a substitute for human review.'] });
   const fixtures = new Map();
   for (const id of cases) {
     const path = join(out, 'fixtures', `${id}.json`);
     if (existsSync(path)) { fixtures.set(id, JSON.parse(readFileSync(path, 'utf8'))); continue; }
+    const priorBrief=JSON.parse(readFileSync('qa/lesson-planner/literacy-topic-ab/first-topic-run/fixtures/phonics-sitpin.json','utf8'));
+    save(path,priorBrief);fixtures.set(id,priorBrief);continue;
     const briefRecord = { phase: 'shared-brief', calls: [] };
     const t0 = performance.now();
     const brief = await context.run(briefRecord, () => service.generateIntroBriefing(topic, 'kindergarten'));
@@ -90,7 +92,7 @@ try {
   }
   const schedulePath = join(out, 'schedule.json');
   const schedule = existsSync(schedulePath) ? JSON.parse(readFileSync(schedulePath, 'utf8')) : cases.flatMap((caseId, index) => [1,2].flatMap(rep => {
-    const arms = (index + rep) % 2 ? ['production', 'experimental'] : ['experimental', 'production'];
+    const arms = (index + rep) % 2 ? ['production', 'rich', 'lean'] : ['lean', 'rich', 'production'];
     return arms.map(arm => ({ caseId, rep, arm, blindId: `lesson-${randomUUID().slice(0, 12)}` }));
   }));
   save(schedulePath, schedule);
@@ -116,7 +118,7 @@ try {
           const literacy=JSON.parse(readFileSync(join(corpus,'catalog.json'),'utf8'));
           const allCards=taskCards(buildInput({candidateIds:catalog.UNIVERSAL_CATALOG.map(c=>c.id)},catalog.UNIVERSAL_CATALOG).candidates);
           const literacyIds=new Set(literacy.map(c=>c.id));
-          const specialistCards=allCards.filter(c=>literacyIds.has(c.componentId));
+          const specialistCards=allCards;
           const selectedIds=new Set();
           const objectiveRetrieval=[];
           for(const objective of frozen.brief.objectives){
@@ -125,16 +127,18 @@ try {
             docs.forEach((d,i)=>{if(!grouped.has(d.taskId))grouped.set(d.taskId,[]);grouped.get(d.taskId).push(cosine(vectors[i],descriptions.queryVector));});
             const exemplars=[...grouped].map(([componentId,scores])=>{scores.sort((a,b)=>b-a);return {componentId,score:scores.slice(0,2).reduce((a,b)=>a+b,0)/Math.min(2,scores.length)};}).sort((a,b)=>b.score-a.score);
             const hybrid=fuseRanks([descriptions.ranked,exemplars]);
-            hybrid.slice(0,8).forEach(r=>selectedIds.add(r.componentId));
+            [...hybrid.slice(0,8),...descriptions.ranked.slice(0,8)].forEach(r=>selectedIds.add(r.componentId));
             objectiveRetrieval.push({objective,descriptions:descriptions.ranked,exemplars,hybrid});
           }
           const general=new Set([...catalog.CORE_CATALOG,...catalog.ASSESSMENT_CATALOG].map(c=>c.id));
           const selected=allCards.filter(c=>selectedIds.has(c.taskId)||general.has(c.componentId)).map(c=>{
-            if(!literacyIds.has(c.componentId))return c;
+            if(task.arm==='lean'||!literacyIds.has(c.componentId))return c;
             const m=JSON.parse(readFileSync(join(corpus,'reviewed',c.componentId+'.json'),'utf8')).modes.find(m=>m.evalMode===c.mode);
             return {...c,sourceReviewedBehavior:{learnerAction:m.learnerAction,responseForm:m.responseForm,audienceConditions:m.audienceConditions,limitations:m.limitations}};
           });
-          rec.discovery={selected,objectiveRetrieval,indexHash:provenance.indexHash,policy:'top8 hybrid tasks per generated objective plus common core/assessment pool'};
+          rec.discovery={selected,objectiveRetrieval,indexHash:provenance.indexHash,policy:'top8 hybrid plus top8 full-catalog description tasks per objective, union common core/assessment pool; lean omits sourceReviewedBehavior only'};
+          rec.diCandidates=selected.filter(c=>c.componentId.startsWith('di-')).map(c=>c.taskId);
+          say({phase:'candidates',arm:task.arm,rep:task.rep,total:selected.length,di:rec.diCandidates});
           const capture = { captureRequest: true, calls: [] };
           try { await context.run(capture, () => generateExhibitManifestStreaming(rec.topic, 'kindergarten', frozen.brief.objectives)); }
           catch (error) { if (error.message !== 'HARNESS_CAPTURE_ONLY') throw error; }

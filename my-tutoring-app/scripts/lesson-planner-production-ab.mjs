@@ -22,7 +22,7 @@ if (!process.env.GEMINI_API_KEY) {
 }
 if (!process.env.GEMINI_API_KEY) throw new Error('Missing Gemini key');
 mkdirSync(out, { recursive: true });
-for (const folder of ['records', 'packages', 'fixtures']) mkdirSync(join(out, folder), { recursive: true });
+for (const folder of ['.raw/records', '.raw/packages', 'fixtures']) mkdirSync(join(out, folder), { recursive: true });
 const clean = text => String(text).replaceAll(process.env.GEMINI_API_KEY, '[REDACTED]');
 const save = (path, value) => writeFileSync(path, clean(JSON.stringify(value, null, 2)) + '\n');
 const say = value => process.stdout.write(JSON.stringify(value) + '\n');
@@ -95,7 +95,7 @@ try {
   }));
   save(schedulePath, schedule);
   async function runOne(task) {
-    const path = join(out, 'records', `${task.blindId}.json`);
+    const path = join(out, '.raw/records', `${task.blindId}.json`);
     if (existsSync(path) && ['complete', 'error'].includes(JSON.parse(readFileSync(path, 'utf8')).status)) return;
     const frozen = fixtures.get(task.caseId);
     const rec = { ...task, status: 'running', phase: 'planning', calls: [], createdAt: new Date().toISOString(), fixtureHash: hash(frozen),
@@ -142,7 +142,7 @@ try {
           source: 'blinded-planner-comparison', id: task.blindId });
         if (pkg.error) throw new Error(pkg.error);
         pkgMod.parseLessonPackage(pkg);
-        rec.packagePath = relative(root, join(out, 'packages', `${task.blindId}.json`));
+        rec.packagePath = relative(root, join(out, '.raw/packages', `${task.blindId}.json`));
         save(join(root, rec.packagePath), pkg);
         rec.phase = 'coverage'; persist();
         say({ phase: 'judge', ...task, generationMs: rec.generationMs, failures: rec.components.filter(c => c.status !== 'ok').length });

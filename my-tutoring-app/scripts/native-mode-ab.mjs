@@ -8,16 +8,20 @@ import { cosine, prepareSemanticDiscovery } from './lib/lesson-planner-discovery
 import { objectiveNeighborhood } from './lib/lesson-planner-topic.mjs';
 import { taskCards, pairRequest, compileTaskManifest } from './lib/lesson-planner-pairs.mjs';
 
-import { fuseRanks } from './lib/lesson-planner-family-search.mjs';
+
 const root = process.cwd();
 const argv = process.argv.slice(2);
 const outArg = argv.indexOf('--out');
-const out = resolve(root, outArg >= 0 ? argv[outArg+1] : `qa/lesson-planner/literacy-topic-ab/${new Date().toISOString().replace(/[:.]/g, '-')}`);
+const out = resolve(root, outArg >= 0 ? argv[outArg+1] : `qa/lesson-planner/native-mode-ab/${new Date().toISOString().replace(/[:.]/g, '-')}`);
 const rel = relative(root, out);
 if (isAbsolute(rel) || rel.startsWith('..')) throw new Error('Output must stay in the app');
-const cases = ['phonics-sitpin'];
-const topic = 'learn about phonics sitpin';
-if (!argv.includes('--run')) { console.log(JSON.stringify({ cases, repetitions: 2, arms: ['production', 'experimental'], out })); process.exit(0); }
+const caseSpecs=[
+ {id:'k-attributes',topic:'Learn to compare objects by length and weight',grade:'K',gradeLevel:'kindergarten'},
+ {id:'g2-money',topic:'Grade 2: solve money problems using different coin combinations',grade:'2',gradeLevel:'Grade 2'},
+ {id:'g3-elapsed',topic:'Grade 3: solve elapsed-time problems across the hour',grade:'3',gradeLevel:'Grade 3'}
+];
+const cases=caseSpecs.map(c=>c.id);
+if (!argv.includes('--run')) { console.log(JSON.stringify({ cases, repetitions: 2, arms: ['production', 'native-modes'], out })); process.exit(0); }
 if (!process.env.GEMINI_API_KEY) {
   const match = readFileSync('.env.local', 'utf8').match(/^GEMINI_API_KEY=(.*)$/m);
   if (match) process.env.GEMINI_API_KEY = match[1].trim().replace(/^["']|["']$/g, '');
@@ -72,25 +76,23 @@ try {
     runner.import('/src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts'),
     runner.import('/src/components/lumina/service/manifest/flattenManifest.ts'),
   ]);
-  const sourcePaths = ['scripts/literacy-topic-ab.mjs', 'scripts/lib/lesson-planner-pairs.mjs', 'scripts/lib/lesson-planner-pilot.mjs', 'scripts/lib/lesson-planner-discovery.mjs', 'scripts/lib/lesson-planner-topic.mjs',
+  const sourcePaths = ['scripts/native-mode-ab.mjs', 'scripts/lib/lesson-planner-pairs.mjs', 'scripts/lib/lesson-planner-pilot.mjs', 'scripts/lib/lesson-planner-discovery.mjs', 'scripts/lib/lesson-planner-topic.mjs',
     'src/components/lumina/service/manifest/gemini-manifest.ts', 'src/components/lumina/service/manifest/flattenManifest.ts', 'src/components/lumina/service/geminiService.ts', 'src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts'];
-  save(join(out, 'protocol.json'), { cases, repetitions: 2, grade: 'kindergarten', fixtureSource: 'Unmodified live topic-generated curator brief', catalogHash: hash(catalog.UNIVERSAL_CATALOG),
+  save(join(out, 'protocol.json'), { cases, repetitions: 2, caseSpecs, fixtureSource: 'Unmodified live topic-generated curator brief', catalogHash: hash(catalog.UNIVERSAL_CATALOG),
     sourceHashes: Object.fromEntries(sourcePaths.map(path => [path, hash(readFileSync(path, 'utf8'))])),
-    caveats: ['One live topic-generated objective set is shared unchanged across arms and two repetitions. No tester-authored objectives or letter restrictions. Topic authoring variability is not measured.', 'Both arms use the live production prompt, model settings and lesson structure; experimental replaces catalog with exact task bindings and skips the lesson mode resolver. Retrieval and joint selection change together; this does not isolate either effect.', 'Two concurrent lessons, per-lesson parallel hydration.', 'API transport timeout 120 seconds in both arms.', 'Coverage judge is blinded to arm, not a substitute for human review.'] });
+    caveats: ['Same prior live-generated math briefs/objectives shared by both arms and two repetitions.', 'Full live catalog in both arms; experimental appends native mode descriptions and binds modes during manifest selection. No retrieval or synthetic metadata. Shared catalog prose, affordance legend, objective allocation rules, model/settings, and generators retained.', 'Experimental binds one mode per activity; production resolver may blend modes. Mode visibility and joint binding are tested together, not visibility alone.', 'Two concurrent lessons; per-lesson parallel hydration. Existing coverage judge and code scorer unchanged, human ratings absent.'] });
   const fixtures = new Map();
   for (const id of cases) {
     const path = join(out, 'fixtures', `${id}.json`);
     if (existsSync(path)) { fixtures.set(id, JSON.parse(readFileSync(path, 'utf8'))); continue; }
-    const briefRecord = { phase: 'shared-brief', calls: [] };
-    const t0 = performance.now();
-    const brief = await context.run(briefRecord, () => service.generateIntroBriefing(topic, 'kindergarten'));
-    const frozen = { brief, briefLatencyMs: Math.round(performance.now()-t0), briefCalls: briefRecord.calls };
-    say({phase:'objectives',objectives:brief.objectives});
-    save(path, frozen); fixtures.set(id, frozen);
+    const frozen=JSON.parse(readFileSync(join('qa/lesson-planner/math-topic-ab/k-2-3-first-run/fixtures',id+'.json'),'utf8'));
+    save(path,frozen);fixtures.set(id,frozen);
   }
+  const fullCards=taskCards(buildInput({candidateIds:catalog.UNIVERSAL_CATALOG.map(c=>c.id)},catalog.UNIVERSAL_CATALOG).candidates);
+  save(join(out,'catalog-tasks.json'),fullCards);
   const schedulePath = join(out, 'schedule.json');
   const schedule = existsSync(schedulePath) ? JSON.parse(readFileSync(schedulePath, 'utf8')) : cases.flatMap((caseId, index) => [1,2].flatMap(rep => {
-    const arms = (index + rep) % 2 ? ['production', 'experimental'] : ['experimental', 'production'];
+    const arms = (index + rep) % 2 ? ['production', 'native-modes'] : ['native-modes', 'production'];
     return arms.map(arm => ({ caseId, rep, arm, blindId: `lesson-${randomUUID().slice(0, 12)}` }));
   }));
   save(schedulePath, schedule);
@@ -99,7 +101,7 @@ try {
     if (existsSync(path) && ['complete', 'error'].includes(JSON.parse(readFileSync(path, 'utf8')).status)) return;
     const frozen = fixtures.get(task.caseId);
     const rec = { ...task, status: 'running', phase: 'planning', calls: [], createdAt: new Date().toISOString(), fixtureHash: hash(frozen),
-      objectives: frozen.brief.objectives, topic };
+      objectives: frozen.brief.objectives, topic:frozen.spec.topic, grade:frozen.spec.grade, gradeLevel:frozen.spec.gradeLevel };
     const persist = () => save(path, rec);
     persist(); say({ phase: 'start', ...task });
     await context.run(rec, async () => {
@@ -107,40 +109,32 @@ try {
         const start = performance.now();
         let manifest;
         if (task.arm === 'production') {
-          manifest = await generateExhibitManifestStreaming(rec.topic, 'kindergarten', frozen.brief.objectives);
+          manifest = await generateExhibitManifestStreaming(rec.topic, frozen.spec.gradeLevel, frozen.brief.objectives);
         } else {
-          const corpus = resolve('qa/lesson-planner/literacy-exemplars/v1');
-          const docs = JSON.parse(readFileSync(join(corpus,'reviewed-index-documents.json'),'utf8'));
-          const provenance=JSON.parse(readFileSync(join(corpus,'teacher-text-bench/index-provenance.json'),'utf8'));
-          const {vectors}=JSON.parse(readFileSync(resolve('qa/lesson-planner/discovery-cache',provenance.indexHash+'.json'),'utf8'));
-          const literacy=JSON.parse(readFileSync(join(corpus,'catalog.json'),'utf8'));
-          const allCards=taskCards(buildInput({candidateIds:catalog.UNIVERSAL_CATALOG.map(c=>c.id)},catalog.UNIVERSAL_CATALOG).candidates);
-          const literacyIds=new Set(literacy.map(c=>c.id));
-          const specialistCards=allCards.filter(c=>literacyIds.has(c.componentId));
-          const selectedIds=new Set();
-          const objectiveRetrieval=[];
-          for(const objective of frozen.brief.objectives){
-            const descriptions=await prepareSemanticDiscovery({topic:objective.text,candidates:specialistCards.map(c=>({componentId:c.taskId,description:`${c.description}\nTask: ${c.modeDescription}`,modes:[],affordances:c.affordances}))},ai,resolve('qa/lesson-planner/discovery-cache'));
-            const grouped=new Map();
-            docs.forEach((d,i)=>{if(!grouped.has(d.taskId))grouped.set(d.taskId,[]);grouped.get(d.taskId).push(cosine(vectors[i],descriptions.queryVector));});
-            const exemplars=[...grouped].map(([componentId,scores])=>{scores.sort((a,b)=>b-a);return {componentId,score:scores.slice(0,2).reduce((a,b)=>a+b,0)/Math.min(2,scores.length)};}).sort((a,b)=>b.score-a.score);
-            const hybrid=fuseRanks([descriptions.ranked,exemplars]);
-            hybrid.slice(0,8).forEach(r=>selectedIds.add(r.componentId));
-            objectiveRetrieval.push({objective,descriptions:descriptions.ranked,exemplars,hybrid});
-          }
-          const general=new Set([...catalog.CORE_CATALOG,...catalog.ASSESSMENT_CATALOG].map(c=>c.id));
-          const selected=allCards.filter(c=>selectedIds.has(c.taskId)||general.has(c.componentId)).map(c=>{
-            if(!literacyIds.has(c.componentId))return c;
-            const m=JSON.parse(readFileSync(join(corpus,'reviewed',c.componentId+'.json'),'utf8')).modes.find(m=>m.evalMode===c.mode);
-            return {...c,sourceReviewedBehavior:{learnerAction:m.learnerAction,responseForm:m.responseForm,audienceConditions:m.audienceConditions,limitations:m.limitations}};
-          });
-          rec.discovery={selected,objectiveRetrieval,indexHash:provenance.indexHash,policy:'top8 hybrid tasks per generated objective plus common core/assessment pool'};
+          rec.discovery={selected:fullCards,policy:'Full catalog; native mode descriptions only; one mode binding per activity'};
           const capture = { captureRequest: true, calls: [] };
-          try { await context.run(capture, () => generateExhibitManifestStreaming(rec.topic, 'kindergarten', frozen.brief.objectives)); }
+          try { await context.run(capture, () => generateExhibitManifestStreaming(rec.topic, frozen.spec.gradeLevel, frozen.brief.objectives)); }
           catch (error) { if (error.message !== 'HARNESS_CAPTURE_ONLY') throw error; }
           if (!capture.capturedRequest) throw new Error('Production request capture failed');
           rec.productionRequest = capture.capturedRequest;
           const request = pairRequest(capture.capturedRequest, rec.discovery.selected);
+          // Keep production catalog lines AND their existing affordance legend intact.
+          // Append each primitive's native modes once, without repeating family descriptions.
+          const original=capture.capturedRequest.contents;
+          const begin=original.indexOf('AVAILABLE COMPONENT TOOLS:');
+          const end=original.indexOf('## CRITICAL: OBJECTIVE-CENTRIC DESIGN');
+          const middle=original.slice(begin,end).split('\n').map(line=>{
+            const id=line.match(/^- ([a-z0-9-]+):/)?.[1];
+            if(!id)return line;
+            const modes=fullCards.filter(c=>c.componentId===id);
+            return line+'\n  Available tasks: '+modes.map(c=>`${c.taskId}: ${c.modeDescription}`).join(' | ');
+          }).join('\n');
+          request.contents=original.slice(0,begin)+middle+request.contents.slice(request.contents.indexOf('## CRITICAL: OBJECTIVE-CENTRIC DESIGN'));
+          // Large whole-catalog enum lists exceed the API schema allowance.
+          // Task membership remains enforced by compileTaskManifest before hydration.
+          delete request.config.responseSchema.properties.objectiveBlocks.items.properties.components.items.properties.taskId.enum;
+          delete request.config.responseSchema.properties.finalAssessment.properties.taskId.enum;
+          rec.promptAudit={catalogFamilies:catalog.UNIVERSAL_CATALOG.length,tasks:fullCards.length,originalChars:original.length,experimentalChars:request.contents.length,retainsNativeCatalogLines:true};
           const stream = await ai.models.generateContentStream(request);
           let answer = '';
           for await (const chunk of stream) for (const part of chunk.candidates?.[0]?.content?.parts ?? []) if (!part.thought && part.text) answer += part.text;

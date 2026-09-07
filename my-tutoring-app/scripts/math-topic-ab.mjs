@@ -8,16 +8,20 @@ import { cosine, prepareSemanticDiscovery } from './lib/lesson-planner-discovery
 import { objectiveNeighborhood } from './lib/lesson-planner-topic.mjs';
 import { taskCards, pairRequest, compileTaskManifest } from './lib/lesson-planner-pairs.mjs';
 
-import { fuseRanks } from './lib/lesson-planner-family-search.mjs';
+import { mathPool, annotateMathPool } from './lib/math-bench-capabilities.mjs';
 const root = process.cwd();
 const argv = process.argv.slice(2);
 const outArg = argv.indexOf('--out');
-const out = resolve(root, outArg >= 0 ? argv[outArg+1] : `qa/lesson-planner/literacy-topic-ab/${new Date().toISOString().replace(/[:.]/g, '-')}`);
+const out = resolve(root, outArg >= 0 ? argv[outArg+1] : `qa/lesson-planner/math-topic-ab/${new Date().toISOString().replace(/[:.]/g, '-')}`);
 const rel = relative(root, out);
 if (isAbsolute(rel) || rel.startsWith('..')) throw new Error('Output must stay in the app');
-const cases = ['phonics-sitpin'];
-const topic = 'learn about phonics sitpin';
-if (!argv.includes('--run')) { console.log(JSON.stringify({ cases, repetitions: 2, arms: ['production', 'experimental'], out })); process.exit(0); }
+const caseSpecs=[
+ {id:'k-attributes',topic:'Learn to compare objects by length and weight',grade:'K',gradeLevel:'kindergarten'},
+ {id:'g2-money',topic:'Grade 2: solve money problems using different coin combinations',grade:'2',gradeLevel:'Grade 2'},
+ {id:'g3-elapsed',topic:'Grade 3: solve elapsed-time problems across the hour',grade:'3',gradeLevel:'Grade 3'}
+];
+const cases=caseSpecs.map(c=>c.id);
+if (!argv.includes('--run')) { console.log(JSON.stringify({ cases, repetitions: 2, arms: ['production', 'rich', 'lean'], out })); process.exit(0); }
 if (!process.env.GEMINI_API_KEY) {
   const match = readFileSync('.env.local', 'utf8').match(/^GEMINI_API_KEY=(.*)$/m);
   if (match) process.env.GEMINI_API_KEY = match[1].trim().replace(/^["']|["']$/g, '');
@@ -72,25 +76,37 @@ try {
     runner.import('/src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts'),
     runner.import('/src/components/lumina/service/manifest/flattenManifest.ts'),
   ]);
-  const sourcePaths = ['scripts/literacy-topic-ab.mjs', 'scripts/lib/lesson-planner-pairs.mjs', 'scripts/lib/lesson-planner-pilot.mjs', 'scripts/lib/lesson-planner-discovery.mjs', 'scripts/lib/lesson-planner-topic.mjs',
+  const sourcePaths = ['scripts/math-topic-ab.mjs', 'scripts/lib/math-bench-capabilities.mjs', 'scripts/lib/lesson-planner-pairs.mjs', 'scripts/lib/lesson-planner-pilot.mjs', 'scripts/lib/lesson-planner-discovery.mjs', 'scripts/lib/lesson-planner-topic.mjs',
     'src/components/lumina/service/manifest/gemini-manifest.ts', 'src/components/lumina/service/manifest/flattenManifest.ts', 'src/components/lumina/service/geminiService.ts', 'src/components/lumina/service/qa/lessonCoverage/evaluateLessonCoverage.ts'];
-  save(join(out, 'protocol.json'), { cases, repetitions: 2, grade: 'kindergarten', fixtureSource: 'Unmodified live topic-generated curator brief', catalogHash: hash(catalog.UNIVERSAL_CATALOG),
+  save(join(out, 'protocol.json'), { cases, repetitions: 2, caseSpecs, fixtureSource: 'Unmodified live topic-generated curator brief', catalogHash: hash(catalog.UNIVERSAL_CATALOG),
     sourceHashes: Object.fromEntries(sourcePaths.map(path => [path, hash(readFileSync(path, 'utf8'))])),
-    caveats: ['One live topic-generated objective set is shared unchanged across arms and two repetitions. No tester-authored objectives or letter restrictions. Topic authoring variability is not measured.', 'Both arms use the live production prompt, model settings and lesson structure; experimental replaces catalog with exact task bindings and skips the lesson mode resolver. Retrieval and joint selection change together; this does not isolate either effect.', 'Two concurrent lessons, per-lesson parallel hydration.', 'API transport timeout 120 seconds in both arms.', 'Coverage judge is blinded to arm, not a substitute for human review.'] });
+    caveats: ['Live topic-authored objectives shared by three arms and two repetitions per topic. Only canonical grade metadata is stamped; objective text/verbs are unchanged.', 'Math has no exemplar corpus. Rich/lean share full-catalog description retrieval and native mode cards; rich alone gets model/source-assisted capability notes. No literacy exemplars are used.', 'Two concurrent lessons. Native generators, package parser, coverage judge, and code scorer unchanged.', 'Preflight retrieval cached per topic and reported separately; capability annotation is offline preparation. Quality ratings are provisional and not human-certified.'] });
   const fixtures = new Map();
   for (const id of cases) {
     const path = join(out, 'fixtures', `${id}.json`);
     if (existsSync(path)) { fixtures.set(id, JSON.parse(readFileSync(path, 'utf8'))); continue; }
-    const briefRecord = { phase: 'shared-brief', calls: [] };
-    const t0 = performance.now();
-    const brief = await context.run(briefRecord, () => service.generateIntroBriefing(topic, 'kindergarten'));
-    const frozen = { brief, briefLatencyMs: Math.round(performance.now()-t0), briefCalls: briefRecord.calls };
-    say({phase:'objectives',objectives:brief.objectives});
-    save(path, frozen); fixtures.set(id, frozen);
+    const spec=caseSpecs.find(c=>c.id===id);
+    const briefRecord={phase:'shared-brief',calls:[]};
+    const t0=performance.now();
+    const originalBrief=await context.run(briefRecord,()=>service.generateIntroBriefing(spec.topic,spec.gradeLevel));
+    const brief={...originalBrief,objectives:originalBrief.objectives.map(o=>({...o,grade:spec.grade}))};
+    const frozen={spec,originalBrief,brief,briefLatencyMs:Math.round(performance.now()-t0),briefCalls:briefRecord.calls};
+    save(path,frozen);fixtures.set(id,frozen);
+    say({phase:'objectives',caseId:id,objectives:brief.objectives});
+  }
+  for(const id of cases){
+    const frozen=fixtures.get(id),poolPath=join(out,'fixtures',id+'-pool.json');
+    if(existsSync(poolPath)){frozen.pool=JSON.parse(readFileSync(poolPath,'utf8'));continue;}
+    say({phase:'prepare-candidates',caseId:id});
+    const pool=await mathPool(frozen.brief,catalog,ai,out);
+    say({phase:'source-notes',caseId:id,candidates:pool.selected.length});
+    frozen.pool=await annotateMathPool(pool,ai,out);
+    save(poolPath,frozen.pool);
+    say({phase:'pool-ready',caseId:id,candidates:pool.selected.length,annotatedTasks:Object.keys(frozen.pool.notes).length});
   }
   const schedulePath = join(out, 'schedule.json');
   const schedule = existsSync(schedulePath) ? JSON.parse(readFileSync(schedulePath, 'utf8')) : cases.flatMap((caseId, index) => [1,2].flatMap(rep => {
-    const arms = (index + rep) % 2 ? ['production', 'experimental'] : ['experimental', 'production'];
+    const arms = (index + rep) % 2 ? ['production', 'rich', 'lean'] : ['lean', 'rich', 'production'];
     return arms.map(arm => ({ caseId, rep, arm, blindId: `lesson-${randomUUID().slice(0, 12)}` }));
   }));
   save(schedulePath, schedule);
@@ -99,7 +115,7 @@ try {
     if (existsSync(path) && ['complete', 'error'].includes(JSON.parse(readFileSync(path, 'utf8')).status)) return;
     const frozen = fixtures.get(task.caseId);
     const rec = { ...task, status: 'running', phase: 'planning', calls: [], createdAt: new Date().toISOString(), fixtureHash: hash(frozen),
-      objectives: frozen.brief.objectives, topic };
+      objectives: frozen.brief.objectives, topic:frozen.spec.topic, grade:frozen.spec.grade, gradeLevel:frozen.spec.gradeLevel };
     const persist = () => save(path, rec);
     persist(); say({ phase: 'start', ...task });
     await context.run(rec, async () => {
@@ -107,36 +123,13 @@ try {
         const start = performance.now();
         let manifest;
         if (task.arm === 'production') {
-          manifest = await generateExhibitManifestStreaming(rec.topic, 'kindergarten', frozen.brief.objectives);
+          manifest = await generateExhibitManifestStreaming(rec.topic, frozen.spec.gradeLevel, frozen.brief.objectives);
         } else {
-          const corpus = resolve('qa/lesson-planner/literacy-exemplars/v1');
-          const docs = JSON.parse(readFileSync(join(corpus,'reviewed-index-documents.json'),'utf8'));
-          const provenance=JSON.parse(readFileSync(join(corpus,'teacher-text-bench/index-provenance.json'),'utf8'));
-          const {vectors}=JSON.parse(readFileSync(resolve('qa/lesson-planner/discovery-cache',provenance.indexHash+'.json'),'utf8'));
-          const literacy=JSON.parse(readFileSync(join(corpus,'catalog.json'),'utf8'));
-          const allCards=taskCards(buildInput({candidateIds:catalog.UNIVERSAL_CATALOG.map(c=>c.id)},catalog.UNIVERSAL_CATALOG).candidates);
-          const literacyIds=new Set(literacy.map(c=>c.id));
-          const specialistCards=allCards.filter(c=>literacyIds.has(c.componentId));
-          const selectedIds=new Set();
-          const objectiveRetrieval=[];
-          for(const objective of frozen.brief.objectives){
-            const descriptions=await prepareSemanticDiscovery({topic:objective.text,candidates:specialistCards.map(c=>({componentId:c.taskId,description:`${c.description}\nTask: ${c.modeDescription}`,modes:[],affordances:c.affordances}))},ai,resolve('qa/lesson-planner/discovery-cache'));
-            const grouped=new Map();
-            docs.forEach((d,i)=>{if(!grouped.has(d.taskId))grouped.set(d.taskId,[]);grouped.get(d.taskId).push(cosine(vectors[i],descriptions.queryVector));});
-            const exemplars=[...grouped].map(([componentId,scores])=>{scores.sort((a,b)=>b-a);return {componentId,score:scores.slice(0,2).reduce((a,b)=>a+b,0)/Math.min(2,scores.length)};}).sort((a,b)=>b.score-a.score);
-            const hybrid=fuseRanks([descriptions.ranked,exemplars]);
-            hybrid.slice(0,8).forEach(r=>selectedIds.add(r.componentId));
-            objectiveRetrieval.push({objective,descriptions:descriptions.ranked,exemplars,hybrid});
-          }
-          const general=new Set([...catalog.CORE_CATALOG,...catalog.ASSESSMENT_CATALOG].map(c=>c.id));
-          const selected=allCards.filter(c=>selectedIds.has(c.taskId)||general.has(c.componentId)).map(c=>{
-            if(!literacyIds.has(c.componentId))return c;
-            const m=JSON.parse(readFileSync(join(corpus,'reviewed',c.componentId+'.json'),'utf8')).modes.find(m=>m.evalMode===c.mode);
-            return {...c,sourceReviewedBehavior:{learnerAction:m.learnerAction,responseForm:m.responseForm,audienceConditions:m.audienceConditions,limitations:m.limitations}};
-          });
-          rec.discovery={selected,objectiveRetrieval,indexHash:provenance.indexHash,policy:'top8 hybrid tasks per generated objective plus common core/assessment pool'};
+          const selected=frozen.pool.selected.map(c=>task.arm==='rich'&&frozen.pool.notes[c.taskId]?{...c,sourceReviewedBehavior:frozen.pool.notes[c.taskId]}:c);
+          rec.discovery={selected,policy:frozen.pool.policy,metadataStatus:frozen.pool.metadataStatus};
+          rec.retrievalMs=frozen.pool.retrievalMs;
           const capture = { captureRequest: true, calls: [] };
-          try { await context.run(capture, () => generateExhibitManifestStreaming(rec.topic, 'kindergarten', frozen.brief.objectives)); }
+          try { await context.run(capture, () => generateExhibitManifestStreaming(rec.topic, frozen.spec.gradeLevel, frozen.brief.objectives)); }
           catch (error) { if (error.message !== 'HARNESS_CAPTURE_ONLY') throw error; }
           if (!capture.capturedRequest) throw new Error('Production request capture failed');
           rec.productionRequest = capture.capturedRequest;

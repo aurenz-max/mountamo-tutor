@@ -36,9 +36,13 @@ my-tutoring-app/qa/lesson-bench/journeys/runs/
 # new packages accumulate too fast to review/commit individually going forward.
 my-tutoring-app/qa/lesson-bench/packages/
 
-# lesson-planner A/B harnesses (scripts/lesson-planner-*.mjs) each write raw per-lesson
-# output to their own scratch directory. Shape-based, not name-based, so a new experiment
-# never needs a new line here: only named fixtures/ inputs and written *.md reports survive.
+# lesson-planner A/B harnesses (scripts/lesson-planner-*.mjs, *-topic-ab.mjs, native-mode-ab.mjs)
+# each write raw per-lesson output to their own scratch directory. The scripts themselves
+# now nest every raw stage (records/packages/blind-review/capabilities/...) under one
+# .raw/ segment inside their --out dir, so this single rule is the durable fix — a future
+# script reusing that convention needs no new line here, unlike the name-specific rules
+# below (kept as defense-in-depth for scripts predating the .raw/ convention).
+my-tutoring-app/qa/lesson-planner/**/.raw/
 my-tutoring-app/qa/lesson-planner/**/records/
 my-tutoring-app/qa/lesson-planner/**/packages/
 my-tutoring-app/qa/lesson-planner/**/blind-review/

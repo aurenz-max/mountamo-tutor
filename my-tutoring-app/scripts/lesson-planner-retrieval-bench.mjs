@@ -6,7 +6,7 @@ import { familyHopper } from './lib/lesson-planner-family-search.mjs';
 
 const root = process.cwd();
 const out = resolve('qa/lesson-planner/retrieval-bench/family-v1');
-mkdirSync(join(out, 'records'), { recursive: true });
+mkdirSync(join(out, '.raw/records'), { recursive: true });
 const cases = [];
 for (const group of ['discovery-ab', 'curriculum-ab']) {
   const rows = JSON.parse(readFileSync(`qa/lesson-planner/${group}/summary.json`, 'utf8'));
@@ -30,7 +30,7 @@ try {
   const catalog = await runner.import('/src/components/lumina/service/manifest/catalog/index.ts');
   const general = [...catalog.CORE_CATALOG,...catalog.ASSESSMENT_CATALOG].map(c => c.id);
   for (const c of cases) for (const arm of ['flat','family']) {
-    const filename = `records/${c.id}-${arm}.json`;
+    const filename = `.raw/records/${c.id}-${arm}.json`;
     if (existsSync(join(out,filename))) continue;
     const fixture = JSON.parse(readFileSync(c.fixture,'utf8'));
     const input = buildInput({ ...fixture,candidateGroups:[],candidateIds:catalog.UNIVERSAL_CATALOG.map(c => c.id) }, catalog.UNIVERSAL_CATALOG);
@@ -45,7 +45,7 @@ try {
     save(filename,row);
     console.log(JSON.stringify({ id:c.id,arm,hits:row.hits.length,expected:c.expected.length,taskHits:row.taskHits,tasks:row.taskCount,latencyMs:row.latencyMs }));
   }
-  const rows = cases.flatMap(c => ['flat','family'].map(arm => JSON.parse(readFileSync(join(out,`records/${c.id}-${arm}.json`),'utf8'))));
+  const rows = cases.flatMap(c => ['flat','family'].map(arm => JSON.parse(readFileSync(join(out,`.raw/records/${c.id}-${arm}.json`),'utf8'))));
   const metrics = Object.fromEntries(['flat','family'].map(arm => {
     const rs=rows.filter(r => r.arm===arm);
     return [arm,{ recalled:rs.reduce((n,r)=>n+r.hits.length,0),expected:rs.reduce((n,r)=>n+r.expected.length,0),taskHits:rs.reduce((n,r)=>n+r.taskHits.length,0),taskProbes:rs.reduce((n,r)=>n+r.taskProbes.length,0) }];
