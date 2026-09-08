@@ -61,6 +61,7 @@ import { generateInteractiveBook } from '../../literacy/gemini-interactive-book'
 import { generateStoryTalk } from '../../literacy/gemini-story-talk';
 import { generateWordFlip } from '../../literacy/gemini-word-flip';
 import { generateYouAndMe } from '../../literacy/gemini-you-and-me';
+import { generateStoryBridge } from '../../literacy/gemini-story-bridge';
 
 // ============================================================================
 // Wave 1: Writing — Paragraph Architect
@@ -661,4 +662,21 @@ registerContextGenerator('you-and-me', async (ctx) => ({
   data: await generateYouAndMe(ctx),
 }));
 
-console.log('📚 Literacy generators registered: 32 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip + You & Me)');
+// ============================================================================
+// Comparing Texts — Story Bridge
+// ============================================================================
+
+/**
+ * Story Bridge - K judged-loop comparing-texts birth (2026-09-07). Two short
+ * stories are read aloud by the Live tutor; the child TAPS the character on the
+ * other shore who is alike by what they did or felt (`match_character`).
+ * Fork B: one flat-field Gemini call per story pair; code assembles the story
+ * body from the per-character evidence sentences and alternates the anchor side.
+ */
+registerContextGenerator('story-bridge', async (ctx) => ({
+  type: 'story-bridge',
+  instanceId: ctx.instanceId,
+  data: await generateStoryBridge(ctx),
+}));
+
+console.log('📚 Literacy generators registered: 33 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip + You & Me + Story Bridge)');

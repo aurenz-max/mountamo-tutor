@@ -149,6 +149,17 @@ import {
   type InteractiveBookItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/interactiveBookScript';
 import {
+  itemsFromChallenges as storyBridgeItems,
+  storyBridgeHarnessAnswers,
+  storyBridgePack,
+  tapVerdictCue as storyBridgeTapVerdictCue,
+  type StoryBridgeItem,
+} from '@/components/lumina/primitives/visual-primitives/literacy/storyBridgeScript';
+import type {
+  StoryBridgeChallenge,
+  StoryBridgeStory,
+} from '@/components/lumina/primitives/visual-primitives/literacy/StoryBridge';
+import {
   itemFromChallenge as rhymeItemFromChallenge,
   rhymeStudioHarnessAnswers,
   rhymeStudioPackBase,
@@ -600,6 +611,27 @@ const interactiveBookAdapter: DiPortAdapter<InteractiveBookItem> = {
   answersFor: (item) =>
     interactiveBookHarnessAnswers(item, interactiveBookWrongTaps.get(item.id)),
   gestureVerdictCue: (item, gesture) => interactiveBookTapVerdictCue(item, String(gesture)),
+};
+
+/**
+ * story-bridge (K comparing texts, judged-loop BIRTH 2026-09-07 — not a port).
+ * Gesture-only: the commit carries the tapped far-shore character's ID and the
+ * pack's own `tapVerdictCue` resolves it. The stories are read inside the
+ * opening ask by design, so every name is exempt there; the leak tokens are
+ * the PAIRING phrases (`like <target>`, `<anchor> and <target>`, `both <shared>`).
+ */
+const storyBridgeAdapter: DiPortAdapter<StoryBridgeItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as StoryBridgeChallenge[];
+    const stories = (data.stories ?? []) as StoryBridgeStory[];
+    const items = storyBridgeItems(challenges, stories);
+    return { items, dropped: challenges.length - items.length, surface: storyBridgePack(items) };
+  },
+  answersFor: storyBridgeHarnessAnswers,
+  gestureVerdictCue: (item, gesture) => {
+    const tapped = item.options.find((c) => c.id === String(gesture)) ?? item.options[0];
+    return storyBridgeTapVerdictCue(item, tapped);
+  },
 };
 
 /**
@@ -2069,6 +2101,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'word-builder': wordBuilderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'decodable-reader': decodableReaderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'story-bridge': storyBridgeAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'compare-objects': compareObjectsAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'ordinal-line': ordinalLineAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
@@ -2095,6 +2128,24 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;
+
+/**
+ * The template bag a judged-loop port pushes at connect — the pack's own
+ * `contextFor` over the first live item — so the tutor-test audit resolves
+ * `{{keys}}` against what the RUNNER sends, not a flattened generator payload
+ * (a judged primitive has no static `primitiveData` bag). Null when the port
+ * is unknown or the generated payload builds no items.
+ */
+export const diPortContextBag = (
+  componentId: string,
+  data: Record<string, unknown>,
+): Record<string, string> | null => {
+  const adapter = DI_PORTS[componentId];
+  if (!adapter) return null;
+  const { items, surface } = adapter.build(data);
+  const first = items[0];
+  return first ? surface.contextFor(first) : null;
+};
 
 // ---------------------------------------------------------------------------
 // Plan assembly

@@ -8,7 +8,7 @@ import {
   auditAllScaffolds,
   buildScaffoldPromptPreview,
 } from '@/components/lumina/service/qa/tutoring/scaffoldAudit';
-import { buildDiDrivePlan, isDiPort } from '@/components/lumina/service/qa/di/diDrivePlan';
+import { buildDiDrivePlan, diPortContextBag, isDiPort } from '@/components/lumina/service/qa/di/diDrivePlan';
 import { buildYouAndMeItems, youAndMePack } from '@/components/lumina/primitives/visual-primitives/literacy/youAndMeScript';
 import type { YouAndMeData } from '@/components/lumina/primitives/visual-primitives/literacy/YouAndMe';
 
@@ -111,9 +111,11 @@ export async function GET(request: NextRequest) {
       // Role names and mode help are derived by the production pack, not raw indices.
       const youAndMeItems = componentId === 'you-and-me'
         ? buildYouAndMeItems((generated as unknown as YouAndMeData).challenges) : null;
+      // A judged-loop port's bag is what its runner pushes: the pack's contextFor.
+      const diPortBag = diPortContextBag(componentId, generated);
       const generatedBag = youAndMeItems?.length
         ? youAndMePack(youAndMeItems).contextFor(youAndMeItems[0])
-        : flattenGeneratedData(generated);
+        : diPortBag ?? flattenGeneratedData(generated);
 
       const staticKeys = new Set(audit.dataBagKeys ?? []);
       const varResolution = [

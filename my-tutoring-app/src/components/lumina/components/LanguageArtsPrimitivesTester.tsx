@@ -42,6 +42,7 @@ import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureV
 import StoryTalk from '../primitives/visual-primitives/literacy/StoryTalk';
 import WordFlip from '../primitives/visual-primitives/literacy/WordFlip';
 import YouAndMe from '../primitives/visual-primitives/literacy/YouAndMe';
+import StoryBridge from '../primitives/visual-primitives/literacy/StoryBridge';
 
 import {
   EvaluationProvider,
@@ -77,7 +78,8 @@ type PrimitiveType =
   | 'picture-vocabulary'
   | 'story-talk'
   | 'word-flip'
-  | 'you-and-me';
+  | 'you-and-me'
+  | 'story-bridge';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -107,6 +109,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'character-web', label: 'Character Web', icon: '🕸️', topic: 'Character analysis and relationships', strand: 'RL', wave: 3 },
   { value: 'poetry-lab', label: 'Poetry Lab', icon: '📝', topic: 'Analyzing a poem with figurative language', strand: 'RL', wave: 4 },
   { value: 'genre-explorer', label: 'Genre Explorer', icon: '📚', topic: 'Comparing fiction vs nonfiction', strand: 'RL', wave: 4 },
+  { value: 'story-bridge', label: 'Story Bridge', icon: '\uD83C\uDF09', topic: 'Match characters who are alike across two stories', strand: 'RL', wave: 6 },
   // ===== RI: Reading Informational Text =====
   { value: 'text-structure-analyzer', label: 'Text Structure', icon: '🏗️', topic: 'Cause and effect in science text', strand: 'RI', wave: 3 },
   { value: 'evidence-finder', label: 'Evidence Finder', icon: '🔍', topic: 'Finding text evidence for claims', strand: 'RI', wave: 2 },
@@ -164,6 +167,14 @@ const PrimitiveRenderer: React.FC<{
         <YouAndMe data={{
           ...(data as Parameters<typeof YouAndMe>[0]['data']),
           instanceId: 'you-and-me-tester',
+          onEvaluationSubmit,
+        }} />
+      );
+    case 'story-bridge':
+      return (
+        <StoryBridge data={{
+          ...(data as Parameters<typeof StoryBridge>[0]['data']),
+          instanceId: 'story-bridge-tester',
           onEvaluationSubmit,
         }} />
       );
@@ -405,6 +416,17 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Hints viewed: {result.metrics.hintsViewed}</span>
                     <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
                     <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                  </div>
+                )}
+                {result.metrics.type === 'story-bridge' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Hear again: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
                   </div>
                 )}
                 {result.metrics.type === 'interactive-book' && (

@@ -1,0 +1,154 @@
+{
+  "primitive": "story-bridge",
+  "domain": "literacy",
+  "subject": "LANGUAGE_ARTS",
+  "query_text": "Kindergarten Language Arts comparing texts: match similar characters across TWO different stories. The live tutor reads two short stories aloud, names one character, and the child taps the character in the other story who is alike by what they did or felt (lost and scared, helped a friend). Matching is by behavior evidence from both stories, never by looks. ESSENTIAL for K RL comparing characters, settings and experiences across stories (LA006-04 Comparing Texts).",
+  "grades_probed": [
+    "K",
+    "1"
+  ],
+  "results": [
+    {
+      "subject": "LANGUAGE_ARTS",
+      "grade": [
+        "Kindergarten"
+      ],
+      "grade_requested": "K",
+      "n_candidates": 191,
+      "best_cosine": 0.8154,
+      "coherent": 5,
+      "top_k": [
+        {
+          "rank": 1,
+          "cosine": 0.8154,
+          "skill_id": "LA006-04",
+          "skill_description": "Comparing Texts",
+          "subskill_id": "LA006-04-A",
+          "subskill_description": "Identify basic story elements (main character, setting) in a single story using picture prompts",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 2,
+          "cosine": 0.8104,
+          "skill_id": "LA006-04",
+          "skill_description": "Comparing Texts",
+          "subskill_id": "LA006-04-D",
+          "subskill_description": "Use simple words to describe how two characters are alike",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 3,
+          "cosine": 0.7992,
+          "skill_id": "LA006-04",
+          "skill_description": "Comparing Texts",
+          "subskill_id": "LA006-04-E",
+          "subskill_description": "Use simple words to describe how two characters are different",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 4,
+          "cosine": 0.7931,
+          "skill_id": "LA006-03",
+          "skill_description": "Main Idea and Details",
+          "subskill_id": "LA006-03-J",
+          "subskill_description": "Compare main ideas between two simple stories using guided discussion and visual aids",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 5,
+          "cosine": 0.7922,
+          "skill_id": "LA006-04",
+          "skill_description": "Comparing Texts",
+          "subskill_id": "LA006-04-B",
+          "subskill_description": "Match similar characters from different stories using visual aids",
+          "grade": "Kindergarten"
+        }
+      ],
+      "verdict": "match",
+      "abstain_reason": null,
+      "tau": 0.6,
+      "min_coherent": 3,
+      "per_grade": [
+        {
+          "grade": "Kindergarten",
+          "best_cosine": 0.8154,
+          "coherent": 5,
+          "coherent_skill": 4,
+          "reason": null
+        }
+      ],
+      "coherent_skill": 4
+    },
+    {
+      "subject": "LANGUAGE_ARTS",
+      "grade": [
+        "1"
+      ],
+      "grade_requested": "1",
+      "n_candidates": 65,
+      "best_cosine": 0.7507,
+      "coherent": 2,
+      "top_k": [
+        {
+          "rank": 1,
+          "cosine": 0.7507,
+          "skill_id": "LA007-06",
+          "skill_description": "Listening for Details",
+          "subskill_id": "LA007-06-a",
+          "subskill_description": "Listen to an audio passage and identify specific details by answering who, what, where, and when questions. Focus: Attending to specific informational details within a text. Examples: Who was in the kitchen?, What did the character eat?, Where did they go?, When did the sun set?, What color was the car?, Which animal was the fastest?, How many items were there?, Why was the character happy?. Constraints: Limit passages to 3-4 sentences; require specific evidence from the audio as the basis for the multiple-choice response.",
+          "grade": "1"
+        },
+        {
+          "rank": 2,
+          "cosine": 0.7385,
+          "skill_id": "LA007-04",
+          "skill_description": "Following Directions",
+          "subskill_id": "LA007-04-a",
+          "subskill_description": "Listen to 2-3 step instructions given by the AI and demonstrate comprehension by selecting or dragging items in the correct order to complete the task. Focus: Processing multi-step oral directions. Examples: First tap the circle then the square, Put the blue block on the red block, Drag the star to the box then the heart to the circle, Click the cat then the dog then the bird, Start with the smallest item, Move the cloud up then move the sun down, Pick the green apple then the yellow pear, Do it in order. Constraints: Begin with 2-step sequences; progress to 3-step sequences; use clear sequencing markers (first, next, then).",
+          "grade": "1"
+        },
+        {
+          "rank": 3,
+          "cosine": 0.7343,
+          "skill_id": "LA004-01",
+          "skill_description": "Nouns",
+          "subskill_id": "LA004-01-b",
+          "subskill_description": "Learners drag and drop words into two buckets to distinguish between common and proper nouns. Focus: Sorting words into common versus proper nouns. Examples: boy, Sam, city, London, dog, Rover, school, Lincoln School. Constraints: Start with names of people, then progress to specific places and days of the week.",
+          "grade": "1"
+        },
+        {
+          "rank": 4,
+          "cosine": 0.7313,
+          "skill_id": "LA003-05",
+          "skill_description": "Sequencing Story Events",
+          "subskill_id": "LA003-05-a",
+          "subskill_description": "Arrange 3-4 key story events in the correct chronological order. Focus: Understanding narrative order. Examples: A bear wakes up, finds honey, eats honey, goes to sleep; A girl plants a seed, waters it, flower grows, she picks it. Constraints: Limit to 4 images/text blocks; visual cues included.",
+          "grade": "1"
+        },
+        {
+          "rank": 5,
+          "cosine": 0.7263,
+          "skill_id": "LA005-02",
+          "skill_description": "Synonyms",
+          "subskill_id": "LA005-02-a",
+          "subskill_description": "Students match words that share similar meanings to build a stronger vocabulary. Focus: Recognizing pairs of synonyms. Examples: happy/glad, small/tiny, big/large, fast/quick, cold/chilly, smart/bright, hard/difficult, neat/tidy. Constraints: Limit to 4-6 pairs per set, include only high-utility grade-level adjectives.",
+          "grade": "1"
+        }
+      ],
+      "verdict": "abstain",
+      "abstain_reason": "diffuse",
+      "tau": 0.6,
+      "min_coherent": 3,
+      "per_grade": [
+        {
+          "grade": "1",
+          "best_cosine": 0.7507,
+          "coherent": 2,
+          "coherent_skill": 1,
+          "reason": "diffuse"
+        }
+      ],
+      "coherent_skill": 1
+    }
+  ]
+}

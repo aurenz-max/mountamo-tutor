@@ -2517,6 +2517,19 @@ export interface YouAndMeMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+/** story-bridge — K comparing texts, judged-loop gesture birth (2026-09-07). */
+export interface StoryBridgeMetrics extends BasePrimitiveMetrics {
+  type: 'story-bridge';
+  challengeType: 'match_character'; // union widens when /add-eval-modes builds the ladder
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total tries across all challenges
+  firstTryCount: number;          // challenges solved with no correction
+  hintsViewed: number;            // hear-again taps
+  overallAccuracy: number;        // 0-100
+  averageAttemptsPerChallenge: number;
+}
+
 export interface WordWorkoutMetrics extends BasePrimitiveMetrics {
   type: 'word-workout';
   mode: 'real-vs-nonsense' | 'picture-match' | 'word-chains' | 'sentence-reading';
@@ -3826,6 +3839,7 @@ export type PrimitiveMetrics =
   | StoryTalkMetrics
   | WordFlipMetrics
   | YouAndMeMetrics
+  | StoryBridgeMetrics
   // Literacy (Wave 5)
   | WordWorkoutMetrics
   | WordSorterMetrics
