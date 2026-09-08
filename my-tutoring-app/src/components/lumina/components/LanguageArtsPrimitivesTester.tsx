@@ -755,6 +755,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('phonics-blender');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('K');
   const [selectedEvalMode, setSelectedEvalMode] = useState<string | null>(null);
+  const [letterDifficulty, setLetterDifficulty] = useState('');
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
@@ -789,6 +790,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
             gradeLevel: selectedGrade,
             config: {
               ...(selectedEvalMode ? { targetEvalMode: selectedEvalMode } : {}),
+              ...(selectedPrimitive === 'letter-workshop' && letterDifficulty ? { difficulty: letterDifficulty } : {}),
             },
           },
         }),
@@ -936,6 +938,12 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
               />
             </div>
 
+            {selectedPrimitive === 'letter-workshop' && <label className="block text-xs text-slate-400 mb-3">
+              Support and form difficulty
+              <select aria-label="Letter difficulty" value={letterDifficulty} onChange={event => setLetterDifficulty(event.target.value)} className="block w-full mt-2 bg-slate-800 border border-slate-700 rounded-lg p-2">
+                <option value="">Default</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option>
+              </select>
+            </label>}
             {/* Eval Mode Selector — shown when the primitive has IRT eval modes */}
             {evalModes.length > 0 && (
               <div>

@@ -19,6 +19,7 @@ import {
 } from './letterWorkshopGeometry';
 
 import { LETTER_WORKSHOP_MODES, LETTER_WORKSHOP_MODE_INFO, isLetterWorkshopMode, type LetterWorkshopMode } from './letterWorkshopModes';
+import { resolveSupportStructure, normalizeSupportTier, type SupportTier, type letterStructure } from './letterWorkshopDifficulty';
 import { useLetterWorkshopCue } from './useLetterWorkshopCue';
 
 export interface LetterWorkshopChallenge {
@@ -26,6 +27,9 @@ export interface LetterWorkshopChallenge {
   type: LetterWorkshopMode;
   /** References code-owned geometry; the model never invents letter strokes. */
   templateId: string;
+  supportTier?: SupportTier;
+  support?: ReturnType<typeof resolveSupportStructure>;
+  structure?: ReturnType<typeof letterStructure>;
 }
 
 export interface LetterWorkshopData {
@@ -53,6 +57,7 @@ interface TraceAttempt {
   cuePlays: number;
   scorerVersion: string;
   hintLevel: number;
+  supportTier: SupportTier | null;
   templateVersion: 'school-manuscript-v1';
   disposition: 'submitted' | 'cleared';
   strokes: TraceStroke[];
@@ -87,6 +92,8 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
   const template = getLetterTemplate(current.templateId);
   const mode = current.type;
   const modeInfo = LETTER_WORKSHOP_MODE_INFO[mode];
+  const supportTier = normalizeSupportTier(current.supportTier);
+  const support = resolveSupportStructure(mode, supportTier);
   const localOnly = data.challenges.some(ch => ch.type !== 'trace');
   const cue = useLetterWorkshopCue(current.id, template.letter, template.letterCase);
   const exposedTemplates = useRef(new Set<string>());
@@ -113,13 +120,15 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
   });
   const phases = usePhaseResults({ challenges: data.challenges, results: progress.results,
     isComplete: progress.isComplete, getChallengeType: challengeType, phaseConfig: PHASES });
-  const prompt = mode === 'trace' ? `Trace ${template.letterCase} ${template.letter}. Start at each numbered dot and follow the arrows.`
+  const prompt = mode === 'trace' ? `Trace ${template.letterCase} ${template.letter}. ${support.showArrows ? 'Start at each numbered dot and follow the arrows.' : support.showStarts ? 'Start at each numbered dot and trace the path.' : 'Follow the letter path.'}`
     : mode === 'copy' ? `Copy ${template.letterCase} ${template.letter} beside the model. Use the writing lines.`
     : 'Listen, then write the letter on the lines.';
   const aiData = useMemo(() => ({
     // Explicit sentinels overwrite prior targets in the tutor's merged context.
     letter: mode === 'write' ? 'withheld' : template.letter,
     letterCase: mode === 'write' ? 'withheld' : template.letterCase,
+    supportTier: supportTier ?? 'default', showStarts: support.showStarts, showArrows: support.showArrows,
+    showLineLabels: support.showLineLabels, showChecklist: support.showChecklist,
     challengeType: mode, assistance: modelRevealed ? 'beside-model' : modeInfo.assistance,
     challengeNumber: progress.currentIndex + 1, totalChallenges: data.challenges.length,
     instruction: prompt, feedback: assessment?.feedback ?? 'No submitted feedback yet',
@@ -132,7 +141,7 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
     attemptCount: progress.currentAttempts, hintLevel,
     assessmentScope: localOnly ? 'provisional-geometric-formation' : 'provisional-geometric-tracing',
   }), [template, mode, modeInfo.assistance, modelRevealed, progress.currentIndex, data.challenges.length,
-    prompt, assessment, progress.isComplete, drawing, cue.state, progress.currentAttempts, hintLevel, localOnly]);
+    prompt, assessment, progress.isComplete, drawing, cue.state, progress.currentAttempts, hintLevel, localOnly, supportTier, support.showStarts, support.showArrows, support.showLineLabels, support.showChecklist]);
   const { sendText, requestHint, isConnected, isAudioPlaying, sessionMode, activePrimitiveId } = useLuminaAI({ primitiveType: 'letter-workshop',
     instanceId: instanceRef.current, primitiveData: aiData, gradeLevel: data.gradeLevel });
   const tutorActive = isConnected && (sessionMode !== 'lesson' || activePrimitiveId === instanceRef.current);
@@ -156,8 +165,8 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
     introducedRef.current = current.id;
     if (drawing || strokesRef.current.length || mode === 'write') return;
     const tag = progress.currentIndex === 0 ? '[ACTIVITY_START]' : '[NEXT_ITEM]';
-    sendText(`${tag} Item ${progress.currentIndex + 1} of ${data.challenges.length}; ${modeInfo.label}. Say briefly: ${prompt} Then wait quietly for the child to draw.`, { silent: true });
-  }, [tutorActive, progress.isComplete, current.id, drawing, mode, progress.currentIndex, data.challenges.length, modeInfo.label, prompt, sendText]);
+    sendText(`${tag} Item ${progress.currentIndex + 1} of ${data.challenges.length}; ${modeInfo.label}; support tier ${supportTier ?? 'default'}. Do not restore hidden starts/arrows or dictate strokes. Say briefly: ${prompt} Then wait quietly for the child to draw.`, { silent: true });
+  }, [tutorActive, progress.isComplete, current.id, drawing, mode, progress.currentIndex, data.challenges.length, modeInfo.label, supportTier, prompt, sendText]);
 
   useEffect(() => {
     if (!progress.isComplete || submittedRef.current) return;
@@ -233,7 +242,7 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
     evidenceRef.current.push({ challengeId: current.id, templateId: current.templateId,
       type: mode, assistance: modelRevealed ? 'beside-model' : modeInfo.assistance, disposition,
       modelPreviouslySeen: exposedTemplates.current.has(current.templateId), cuePlays: cue.plays,
-      scorerVersion: mode === 'trace' ? TRACE_TOLERANCES.version : FORMATION_TOLERANCES.version, templateVersion: 'school-manuscript-v1', hintLevel,
+      scorerVersion: mode === 'trace' ? TRACE_TOLERANCES.version : FORMATION_TOLERANCES.version, templateVersion: 'school-manuscript-v1', hintLevel, supportTier,
       strokes: strokesRef.current.map(stroke => ({ ...stroke, points: stroke.points.map(point => ({ ...point })) })),
       assessment: result });
     progress.incrementAttempts();
@@ -251,7 +260,11 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
   function check() {
     if (pointerRef.current !== null || assessmentRef.current || !strokesRef.current.length || advancingRef.current) return;
     if (mode === 'write' && cue.state !== 'ready') return;
-    const result = mode === 'trace' ? evaluateLetterTrace(template, strokesRef.current) : evaluateLetterFormation(template, strokesRef.current);
+    const rawResult = mode === 'trace' ? evaluateLetterTrace(template, strokesRef.current) : evaluateLetterFormation(template, strokesRef.current);
+    const result = mode === 'trace' && !support.showArrows && !rawResult.passed
+      ? { ...rawResult, correctionPoint: support.showStarts ? rawResult.correctionPoint : undefined,
+          feedback: support.showStarts ? 'Compare your trace with the whole path. Start at each numbered dot and try again.' : 'Compare your marks with the whole letter path. Try tracing it again.' }
+      : rawResult;
     assessmentRef.current = result;
     setAssessment(result);
     saveAttempt('submitted', result);
@@ -278,7 +291,7 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
         <LuminaCardTitle>{mode === 'write' ? 'Letter Workshop' : data.title}</LuminaCardTitle>
         <LuminaBadge accent="cyan">{modeInfo.label}</LuminaBadge>
       </div>
-      <LuminaCardDescription>{mode === 'write' ? 'Hear the name and make your own letter.' : mode === 'copy' ? 'Look at the model and make your own letter beside it.' : data.description}</LuminaCardDescription>
+      <LuminaCardDescription>{mode === 'write' ? 'Hear the name and make your own letter.' : mode === 'copy' ? 'Look at the model and make your own letter beside it.' : supportTier ? 'Make your own marks along the letter path.' : data.description}</LuminaCardDescription>
       <LuminaChallengeCounter current={progress.currentIndex + 1} total={data.challenges.length} />
     </LuminaCardHeader>
     <LuminaCardContent className="space-y-5">
@@ -291,6 +304,9 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
         {cue.state === 'error' ? 'The letter name could not play. Tap Hear the letter name to try again.' : cue.state === 'speaking' ? 'Listen to the letter name.' : 'Tap Hear the letter name before you start.'}
       </LuminaFeedbackCard>}
       {mode !== 'trace' && <LuminaCardDescription>Practice shape feedback</LuminaCardDescription>}
+      {support.showChecklist && <LuminaCardDescription data-testid="letter-self-check">{mode === 'trace'
+        ? 'Check: start, follow the path, then lift between strokes.'
+        : 'Check: use the writing lines, make your marks, then compare after checking.'}</LuminaCardDescription>}
       <div className="flex items-start gap-4 flex-wrap">
       {(mode === 'copy' || modelRevealed) && <div className="w-40 shrink-0" data-testid="letter-copy-model">
         <LuminaCardDescription>{mode === 'copy' ? 'Model' : 'Compare with the model'}</LuminaCardDescription>
@@ -308,15 +324,18 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
         onLostPointerCapture={event => { if (pointerRef.current === event.pointerId) releasePointer(); }}>
         <path d="M20 60 H380 M20 240 H380" fill="none" stroke="#bacfda" strokeWidth="1" />
         <path d="M20 150 H380" fill="none" stroke="#bacfda" strokeDasharray="5 5" />
+        {support.showLineLabels && <g data-testid="letter-line-labels" fill="#526b78" fontSize="10" aria-hidden="true">
+          <text x="24" y="54">Top</text><text x="24" y="144">Middle</text><text x="24" y="234">Base</text>
+        </g>}
         {mode === 'trace' && template.strokes.map((path, index) => {
           const start = path[0];
           const toward = path.find(point => Math.hypot(point.x - start.x, point.y - start.y) >= 12) ?? path[path.length - 1];
           const angle = Math.atan2(toward.y - start.y, toward.x - start.x) * 180 / Math.PI;
           return <g key={index} aria-hidden="true">
             <path d={pointsToPath(path)} fill="none" stroke="#386f72" strokeWidth="6" strokeDasharray="2 9" strokeLinecap="round" opacity="0.45" />
-            <circle cx={start.x} cy={start.y} r="5" fill="#b77824" />
-            <text x={start.x - 15} y={start.y - 9} fontSize="13" fill="#80551c">{index + 1}</text>
-            <path d="M-5 -4 L0 0 L-5 4" transform={`translate(${start.x + 17 * Math.cos(angle * Math.PI / 180)} ${start.y + 17 * Math.sin(angle * Math.PI / 180)}) rotate(${angle})`} fill="none" stroke="#80551c" strokeWidth="2" />
+            {support.showStarts && <circle data-testid="letter-start" cx={start.x} cy={start.y} r="5" fill="#b77824" />}
+            {support.showStarts && <text x={start.x - 15} y={start.y - 9} fontSize="13" fill="#80551c">{index + 1}</text>}
+            {support.showArrows && <path data-testid="letter-arrow" d="M-5 -4 L0 0 L-5 4" transform={`translate(${start.x + 17 * Math.cos(angle * Math.PI / 180)} ${start.y + 17 * Math.sin(angle * Math.PI / 180)}) rotate(${angle})`} fill="none" stroke="#80551c" strokeWidth="2" />}
           </g>;
         })}
         {strokes.map((stroke, index) => stroke.points.length === 1

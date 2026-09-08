@@ -1,3 +1,4 @@
+import { normalizeSupportTier, resolveSupportStructure, resolveProblemShape, buildTierPromptSection, letterStructure } from '../../primitives/visual-primitives/literacy/letterWorkshopDifficulty';
 import { Type, type Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import { resolveEvalModes, constrainChallengeTypeEnum, buildModeConstraintSection, type ChallengeTypeDoc } from '../evalMode';
@@ -154,13 +155,24 @@ export async function generateLetterWorkshop(ctx: GenerationContext): Promise<Le
     intent: ctx.intent ?? ctx.title ?? ctx.topic, objectiveText: ctx.objective.text,
   }, CHALLENGE_TYPE_DOCS);
   const modes = (resolution?.allowedTypes ?? LETTER_WORKSHOP_MODES) as readonly LetterWorkshopMode[];
-  const challenges = selectLetterWorkshopChallenges(scope, Math.random, modes);
+  const supportTier = normalizeSupportTier(ctx.raw.difficulty);
+  const shape = supportTier ? resolveProblemShape(modes[0], supportTier, scope.templateIds, scope.count) : null;
+  const challenges = selectLetterWorkshopChallenges(shape ? { ...scope, templateIds: shape.templateIds } : scope, Math.random, modes);
+  const tierSection = supportTier ? modes.map(mode => buildTierPromptSection(mode, supportTier, scope.templateIds, scope.count)).join('\n') : '';
+  if (supportTier) {
+    for (const challenge of challenges) {
+      challenge.supportTier = supportTier;
+      challenge.support = resolveSupportStructure(challenge.type, supportTier);
+      challenge.structure = letterStructure(challenge.templateId);
+    }
+    console.info(`[LetterWorkshop] tier ${supportTier}; structural targets ${JSON.stringify(shape?.targets)} applied per challenge`);
+  }
   const activeSchema = resolution ? constrainChallengeTypeEnum(wrapperSchema, resolution.allowedTypes, CHALLENGE_TYPE_DOCS,
     { fieldName: 'challengeType', rootLevel: true }) : wrapperSchema;
   console.info(`[LetterWorkshop] modes: ${resolution?.modes.map(mode => mode.evalMode).join('+') ?? 'mixed'} (${resolution?.source ?? 'mixed'})`);
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
-    contents: `Write generic framing for letter practice. Code owns all targets, stroke models, instructions, and assessment. Never claim handwriting mastery.\nTopic: ${ctx.topic}\nIntent: ${ctx.intent ?? ctx.title ?? ''}\nObjective: ${ctx.objective.text ?? ''}\nGrade: ${ctx.grade ?? ctx.gradeLevel}; ${ctx.gradeContext}\n${buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS)}\nWrite a brief neutral title and encouragement without any target letters or mode-specific instructions.`,
+    contents: `Write generic framing for letter practice. Code owns all targets, stroke models, instructions, and assessment. Never claim handwriting mastery.\nTopic: ${ctx.topic}\nIntent: ${ctx.intent ?? ctx.title ?? ''}\nObjective: ${ctx.objective.text ?? ''}\nGrade: ${ctx.grade ?? ctx.gradeLevel}; ${ctx.gradeContext}\n${buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS)}\n${tierSection}\nWrite a brief neutral title and encouragement without any target letters or mode-specific instructions.`,
     config: { responseMimeType: 'application/json', responseSchema: activeSchema },
   });
   if (!response.text) fail('Gemini returned no session wrapper.');

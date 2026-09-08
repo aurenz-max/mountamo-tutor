@@ -2,6 +2,8 @@
 const { chromium } = require(process.argv[2] || 'playwright');
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
+const tier = process.argv[3];
+const suffix = tier ? `-${tier}` : '';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -26,6 +28,7 @@ const assert = require('node:assert/strict');
     await page.getByRole('button', { name: 'Letter Workshop' }).click();
     await page.locator('input[placeholder="Assisted uppercase and lowercase letter formation tracing"]').fill('Letter formation lowercase l');
 
+    if (tier) await page.getByLabel('Letter difficulty', { exact: true }).selectOption(tier);
     for (const [mode, label] of [['trace', 'Assisted tracing'], ['copy', 'Copy beside a model'], ['write', 'Write from listening']]) {
       await page.getByRole('button', { name: new RegExp(label) }).click();
       const pending = page.waitForResponse(r => r.url().endsWith('/api/lumina') && r.request().method() === 'POST');
@@ -36,12 +39,19 @@ const assert = require('node:assert/strict');
       const data = payload.data || payload;
       generated.push(data);
       assert(data.challenges.every(ch => ch.type === mode && ch.templateId === 'lowercase-l'));
+      if (tier) assert(data.challenges.every(ch => ch.supportTier === tier));
       const paper = page.getByTestId('letter-writing-paper');
       await paper.waitFor();
       for (let i = 0; i < data.challenges.length; i++) {
         await paper.scrollIntoViewIfNeeded();
         if (mode === 'trace') assert(await paper.locator('path[stroke="#386f72"]').count());
         else assert.equal(await paper.locator('path[stroke="#386f72"]').count(), 0);
+        if (tier) {
+          assert.equal(await page.getByTestId('letter-start').count(), mode === 'trace' && tier !== 'hard' ? 1 : 0);
+          assert.equal(await page.getByTestId('letter-arrow').count(), mode === 'trace' && tier === 'easy' ? 1 : 0);
+          assert.equal(await page.getByTestId('letter-line-labels').count(), tier !== 'hard' ? 1 : 0);
+          assert.equal(await page.getByTestId('letter-self-check').count(), tier === 'easy' ? 1 : 0);
+        }
         if (mode === 'copy') assert.equal(await page.getByTestId('letter-copy-model').count(), 1);
         if (mode === 'write') {
           assert.equal(await page.getByTestId('letter-copy-model').count(), 0);
@@ -49,7 +59,7 @@ const assert = require('node:assert/strict');
           await page.getByRole('button', { name: 'Hear the letter name', exact: true }).click();
           await page.getByText('Listen to the letter name.', { exact: true }).waitFor({ state: 'hidden' });
         }
-        if (i === 0) { await page.waitForTimeout(4000); await page.screenshot({ path: `qa/eval-reports/letter-workshop-${mode}-mode.png` }); }
+        if (i === 0) { await page.waitForTimeout(4000); await page.screenshot({ path: `qa/eval-reports/letter-workshop-${mode}-mode${suffix}.png` }); }
         // Reference lowercase l; copy/write may be placed horizontally elsewhere.
         const points = await paper.evaluate((svg, x) => {
           return [60, 100, 150, 200, 240].map(y => {
@@ -72,7 +82,7 @@ const assert = require('node:assert/strict');
     assert.equal(evaluations[2].studentWork.attempts[1].modelPreviouslySeen, true);
     assert.equal(errors.length, 0, errors.join('\n'));
     const cues = await page.evaluate(() => window.__letterCues);
-    fs.writeFileSync('qa/eval-reports/letter-workshop-modes-browser.json', JSON.stringify({ generated, evaluations, errors, cues, audio: 'Synthetic playback completion; actual device audio requires listening check' }, null, 2));
+    fs.writeFileSync(`qa/eval-reports/letter-workshop-modes-browser${suffix}.json`, JSON.stringify({ generated, evaluations, errors, cues, audio: 'Synthetic playback completion; actual device audio requires listening check' }, null, 2));
     console.log('PASS: live generation and pointer lifecycle for trace/copy/write; blank paper, cue gate, evidence, and no stale models. Audio events simulated.');
   } catch (error) {
     await page.screenshot({ path: 'qa/eval-reports/letter-workshop-modes-browser-failure.png' });

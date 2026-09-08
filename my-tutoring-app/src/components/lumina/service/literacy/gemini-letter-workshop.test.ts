@@ -136,3 +136,18 @@ describe('Letter Workshop eval modes', () => {
     expect(new Set(result.challenges.map(ch => ch.type))).toEqual(new Set(modes));
   });
 });
+
+
+describe('Letter Workshop tier generation', () => {
+  it.each(['easy', 'medium', 'hard'])('applies %s per challenge in mixed and preserves a fixed-letter scope', async difficulty => {
+    generateContent.mockReset().mockResolvedValue({ text: JSON.stringify({ title: 'Letter practice', description: 'Make your marks.', challengeType: 'trace' }) });
+    const result = await generateLetterWorkshop(context({ targetEvalMode: 'mixed', raw: { difficulty, letters: ['l'], count: 3 } }));
+    expect(result.challenges.map(ch => ch.type)).toEqual(['trace', 'copy', 'write']);
+    for (const ch of result.challenges) {
+      expect(ch.templateId).toBe('lowercase-l'); expect(ch.supportTier).toBe(difficulty);
+      expect(ch.structure?.complexity).toBe(2);
+      if (ch.type !== 'trace') expect(ch.support).toMatchObject({ showStarts: false, showArrows: false });
+    }
+    expect(generateContent.mock.calls[0][0].contents).toContain('narrow scope');
+  });
+});

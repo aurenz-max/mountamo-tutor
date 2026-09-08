@@ -233,3 +233,26 @@ describe('Letter Workshop tutor moments', () => {
     expect(sendText).not.toHaveBeenCalled();
   });
 });
+
+
+describe('Letter Workshop tier surfaces', () => {
+  for (const mode of ['trace', 'copy', 'write'] as const) for (const tier of ['easy', 'medium', 'hard'] as const) {
+    it(`${mode}/${tier} preserves its task while withdrawing aids`, () => {
+      const value = data(['l']); value.challengeType = mode;
+      value.challenges[0].type = mode; value.challenges[0].supportTier = tier;
+      render(<LetterWorkshop data={value} />);
+      const paper = screen.getByTestId('letter-writing-paper');
+      expect(Boolean(paper.querySelector('path[stroke="#386f72"]'))).toBe(mode === 'trace');
+      expect(Boolean(screen.queryByTestId('letter-start'))).toBe(mode === 'trace' && tier !== 'hard');
+      expect(Boolean(screen.queryByTestId('letter-arrow'))).toBe(mode === 'trace' && tier === 'easy');
+      expect(Boolean(screen.queryByTestId('letter-line-labels'))).toBe(tier !== 'hard');
+      expect(Boolean(screen.queryByTestId('letter-self-check'))).toBe(tier === 'easy');
+      expect(Boolean(screen.queryByTestId('letter-copy-model'))).toBe(mode === 'copy');
+      if (mode === 'trace' && tier === 'hard') {
+        trace('l', true); check();
+        expect(screen.getByRole('status').textContent).not.toMatch(/numbered|arrow|starting dot/i);
+        expect(paper.querySelector('circle[stroke="#b77824"]')).toBeNull();
+      }
+    });
+  }
+});

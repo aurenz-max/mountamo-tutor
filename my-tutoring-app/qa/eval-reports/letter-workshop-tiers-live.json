@@ -1,0 +1,1184 @@
+{
+  "rows": [
+    {
+      "mode": "trace",
+      "tier": "easy",
+      "data": {
+        "title": "Letter Practice",
+        "description": "Follow the paths to practice writing shapes and lines.",
+        "challengeType": "trace",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "trace",
+            "templateId": "uppercase-V",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": true,
+              "showArrows": true,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 1,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "trace",
+            "templateId": "lowercase-x",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": true,
+              "showArrows": true,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "trace",
+            "templateId": "uppercase-S",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": true,
+              "showArrows": true,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "trace",
+            "templateId": "uppercase-L",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": true,
+              "showArrows": true,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 1,
+              "extensions": 0,
+              "complexity": 2
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "trace",
+      "tier": "medium",
+      "data": {
+        "title": "Alphabet Letter Practice",
+        "description": "Practice forming each letter carefully by following along the guides.",
+        "challengeType": "trace",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "trace",
+            "templateId": "uppercase-N",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": true,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 2,
+              "extensions": 0,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "trace",
+            "templateId": "lowercase-z",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": true,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 2,
+              "extensions": 0,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "trace",
+            "templateId": "uppercase-D",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": true,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "trace",
+            "templateId": "lowercase-y",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": true,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 3
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "trace",
+      "tier": "hard",
+      "data": {
+        "title": "Alphabet Letter Practice",
+        "description": "Practice writing your letters by following along carefully.",
+        "challengeType": "trace",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "trace",
+            "templateId": "uppercase-B",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "trace",
+            "templateId": "lowercase-j",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 2,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "trace",
+            "templateId": "lowercase-m",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "trace",
+            "templateId": "lowercase-g",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 5
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "copy",
+      "tier": "easy",
+      "data": {
+        "title": "Letter Writing Practice",
+        "description": "Look at the model and practice forming your letters on the lines.",
+        "challengeType": "copy",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "copy",
+            "templateId": "uppercase-O",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-o",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "copy",
+            "templateId": "uppercase-U",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "copy",
+            "templateId": "lowercase-v",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 1,
+              "extensions": 0,
+              "complexity": 2
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "copy",
+      "tier": "medium",
+      "data": {
+        "title": "Alphabet Practice",
+        "description": "Look at the model and practice writing on the lines below.",
+        "challengeType": "copy",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "copy",
+            "templateId": "uppercase-F",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-n",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "copy",
+            "templateId": "uppercase-H",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "copy",
+            "templateId": "uppercase-D",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 3
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "copy",
+      "tier": "hard",
+      "data": {
+        "title": "Letter Practice",
+        "description": "Trace and write each letter carefully on the lines provided.",
+        "challengeType": "copy",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "copy",
+            "templateId": "uppercase-B",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-m",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "copy",
+            "templateId": "lowercase-g",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "copy",
+            "templateId": "lowercase-j",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 2,
+              "complexity": 5
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "write",
+      "tier": "easy",
+      "data": {
+        "title": "Letter Writing Practice",
+        "description": "Listen to the letter name and write it on the lines.",
+        "challengeType": "write",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "write",
+            "templateId": "uppercase-S",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "write",
+            "templateId": "lowercase-c",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "uppercase-O",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "write",
+            "templateId": "uppercase-X",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 2
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "write",
+      "tier": "medium",
+      "data": {
+        "title": "Letter Writing Practice",
+        "description": "Listen to the letter name and write it carefully on the lines.",
+        "challengeType": "write",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "write",
+            "templateId": "uppercase-H",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "write",
+            "templateId": "lowercase-y",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "uppercase-J",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 3
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "write",
+            "templateId": "uppercase-F",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 3
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "write",
+      "tier": "hard",
+      "data": {
+        "title": "Alphabet Letter Practice",
+        "description": "Listen to the letter name and write what you hear.",
+        "challengeType": "write",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "write",
+            "templateId": "uppercase-B",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "write",
+            "templateId": "lowercase-m",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 3,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 0,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "lowercase-g",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 2,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 5
+            }
+          },
+          {
+            "id": "letter-workshop-4",
+            "type": "write",
+            "templateId": "lowercase-j",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 2,
+              "curves": 1,
+              "corners": 0,
+              "extensions": 2,
+              "complexity": 5
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "mixed-narrow",
+      "tier": "easy",
+      "data": {
+        "title": "Letter Practice",
+        "description": "Practice your handwriting skills by following the steps on your screen.",
+        "challengeType": "trace",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "trace",
+            "templateId": "lowercase-l",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": true,
+              "showArrows": true,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-l",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "lowercase-l",
+            "supportTier": "easy",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": true,
+              "promptLines": [
+                "easy support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "mixed-narrow",
+      "tier": "medium",
+      "data": {
+        "title": "Letter Formation Practice",
+        "description": "Practice your handwriting skills by following along with each step.",
+        "challengeType": "trace",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "trace",
+            "templateId": "lowercase-l",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": true,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-l",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "lowercase-l",
+            "supportTier": "medium",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": true,
+              "showChecklist": false,
+              "promptLines": [
+                "medium support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    },
+    {
+      "mode": "mixed-narrow",
+      "tier": "hard",
+      "data": {
+        "title": "Letter Practice",
+        "description": "Let us practice making shapes carefully and steadily.",
+        "challengeType": "trace",
+        "challenges": [
+          {
+            "id": "letter-workshop-1",
+            "type": "trace",
+            "templateId": "lowercase-l",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-2",
+            "type": "copy",
+            "templateId": "lowercase-l",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          },
+          {
+            "id": "letter-workshop-3",
+            "type": "write",
+            "templateId": "lowercase-l",
+            "supportTier": "hard",
+            "support": {
+              "showStarts": false,
+              "showArrows": false,
+              "showLineLabels": false,
+              "showChecklist": false,
+              "promptLines": [
+                "hard support: Keep the copy model separate; write never receives a visible target.",
+                "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+              ]
+            },
+            "structure": {
+              "strokes": 1,
+              "curves": 0,
+              "corners": 0,
+              "extensions": 1,
+              "complexity": 2
+            }
+          }
+        ],
+        "gradeLevel": "kindergarten"
+      }
+    }
+  ],
+  "scopeConflictRejected": true
+}

@@ -1,0 +1,1157 @@
+{
+  "generated": [
+    {
+      "title": "Letter Shape Practice",
+      "description": "Practice forming shapes by following the guided paths carefully.",
+      "challengeType": "trace",
+      "challenges": [
+        {
+          "id": "letter-workshop-1",
+          "type": "trace",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-2",
+          "type": "trace",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-3",
+          "type": "trace",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-4",
+          "type": "trace",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the trace path at every tier; starts on easy/medium, arrows on easy only.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        }
+      ],
+      "gradeLevel": "kindergarten"
+    },
+    {
+      "title": "Letter Practice",
+      "description": "Trace the model and practice writing carefully on the lines.",
+      "challengeType": "copy",
+      "challenges": [
+        {
+          "id": "letter-workshop-1",
+          "type": "copy",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the copy model separate; write never receives a visible target.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-2",
+          "type": "copy",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the copy model separate; write never receives a visible target.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-3",
+          "type": "copy",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the copy model separate; write never receives a visible target.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-4",
+          "type": "copy",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the copy model separate; write never receives a visible target.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        }
+      ],
+      "gradeLevel": "kindergarten"
+    },
+    {
+      "title": "Letter Practice",
+      "description": "Listen carefully to the spoken letter and write what you hear on the lines.",
+      "challengeType": "write",
+      "challenges": [
+        {
+          "id": "letter-workshop-1",
+          "type": "write",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the copy model separate; write never receives a visible target.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-2",
+          "type": "write",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the copy model separate; write never receives a visible target.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-3",
+          "type": "write",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the copy model separate; write never receives a visible target.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        },
+        {
+          "id": "letter-workshop-4",
+          "type": "write",
+          "templateId": "lowercase-l",
+          "supportTier": "hard",
+          "support": {
+            "showStarts": false,
+            "showArrows": false,
+            "showLineLabels": false,
+            "showChecklist": false,
+            "promptLines": [
+              "hard support: Keep the copy model separate; write never receives a visible target.",
+              "Easy has writing-line labels and a self-check reminder; medium keeps labels only; hard keeps plain writing lines."
+            ]
+          },
+          "structure": {
+            "strokes": 1,
+            "curves": 0,
+            "corners": 0,
+            "extensions": 1,
+            "complexity": 2
+          }
+        }
+      ],
+      "gradeLevel": "kindergarten"
+    }
+  ],
+  "evaluations": [
+    {
+      "primitiveType": "letter-workshop",
+      "instanceId": "letter-workshop-tester",
+      "attemptId": "e2026454-70ae-47e6-a4d1-1269add0cee4",
+      "startedAt": "2026-09-07T23:38:13.702Z",
+      "completedAt": "2026-09-07T23:38:20.409Z",
+      "durationMs": 6707,
+      "success": true,
+      "score": 100,
+      "metrics": {
+        "type": "letter-workshop",
+        "challengeType": "trace",
+        "totalChallenges": 4,
+        "assessmentScope": "provisional-geometric-tracing",
+        "modeResults": [
+          {
+            "mode": "trace",
+            "total": 4,
+            "correct": 4
+          }
+        ],
+        "correctCount": 4,
+        "attemptsCount": 4,
+        "firstTryCount": 4,
+        "hintsViewed": 0,
+        "overallAccuracy": 100,
+        "averageAttemptsPerChallenge": 1
+      },
+      "lessonContext": {
+        "primitiveType": "letter-workshop",
+        "idSource": "free-form"
+      },
+      "studentWork": {
+        "assistance": "trace-guide",
+        "assessmentScope": "provisional-geometric-tracing",
+        "localOnly": false,
+        "tolerances": {
+          "trace": {
+            "version": "assisted-trace-v1",
+            "sampleSpacing": 4,
+            "pathRadius": 18,
+            "startRadius": 22,
+            "progressionRadius": 30,
+            "minimumCoverage": 0.9,
+            "minimumPrecision": 0.92,
+            "minimumDirection": 0.85,
+            "minimumLengthRatio": 0.8,
+            "maximumLengthRatio": 1.3,
+            "dotMaximumLength": 8
+          },
+          "formation": {
+            "version": "provisional-formation-v1",
+            "pathRadius": 24,
+            "minimumCoverage": 0.8,
+            "minimumPrecision": 0.85,
+            "minimumDirection": 0.75,
+            "startRadius": 30,
+            "minimumLengthRatio": 0.7,
+            "maximumLengthRatio": 1.4
+          }
+        },
+        "attempts": [
+          {
+            "challengeId": "letter-workshop-1",
+            "templateId": "lowercase-l",
+            "type": "trace",
+            "assistance": "trace-guide",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 0,
+            "scorerVersion": "assisted-trace-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 200,
+                    "y": 59.99999237060547,
+                    "t": 11941.30000000447
+                  },
+                  {
+                    "x": 200,
+                    "y": 100,
+                    "t": 11969.60000000149
+                  },
+                  {
+                    "x": 200,
+                    "y": 150,
+                    "t": 12030.40000000596
+                  },
+                  {
+                    "x": 200,
+                    "y": 200,
+                    "t": 12046.40000000596
+                  },
+                  {
+                    "x": 200,
+                    "y": 240,
+                    "t": 12109.80000000447
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "You followed the letter’s guided strokes!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-2",
+            "templateId": "lowercase-l",
+            "type": "trace",
+            "assistance": "trace-guide",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 0,
+            "scorerVersion": "assisted-trace-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 200,
+                    "y": 59.99999237060547,
+                    "t": 12621.60000000149
+                  },
+                  {
+                    "x": 200,
+                    "y": 100,
+                    "t": 12646.10000000149
+                  },
+                  {
+                    "x": 200,
+                    "y": 150,
+                    "t": 12663.40000000596
+                  },
+                  {
+                    "x": 200,
+                    "y": 200,
+                    "t": 12724.70000000298
+                  },
+                  {
+                    "x": 200,
+                    "y": 240,
+                    "t": 12742.70000000298
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "You followed the letter’s guided strokes!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-3",
+            "templateId": "lowercase-l",
+            "type": "trace",
+            "assistance": "trace-guide",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 0,
+            "scorerVersion": "assisted-trace-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 200,
+                    "y": 59.99999237060547,
+                    "t": 13197.20000000298
+                  },
+                  {
+                    "x": 200,
+                    "y": 100,
+                    "t": 13227.40000000596
+                  },
+                  {
+                    "x": 200,
+                    "y": 150,
+                    "t": 13282.40000000596
+                  },
+                  {
+                    "x": 200,
+                    "y": 200,
+                    "t": 13319
+                  },
+                  {
+                    "x": 200,
+                    "y": 240,
+                    "t": 13353.5
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "You followed the letter’s guided strokes!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-4",
+            "templateId": "lowercase-l",
+            "type": "trace",
+            "assistance": "trace-guide",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 0,
+            "scorerVersion": "assisted-trace-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 200,
+                    "y": 59.99999237060547,
+                    "t": 13743.5
+                  },
+                  {
+                    "x": 200,
+                    "y": 100,
+                    "t": 13770.40000000596
+                  },
+                  {
+                    "x": 200,
+                    "y": 150,
+                    "t": 13827.40000000596
+                  },
+                  {
+                    "x": 200,
+                    "y": 200,
+                    "t": 13846.90000000596
+                  },
+                  {
+                    "x": 200,
+                    "y": 240,
+                    "t": 13908.30000000447
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "You followed the letter’s guided strokes!"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "primitiveType": "letter-workshop",
+      "instanceId": "letter-workshop-tester",
+      "attemptId": "b9d7a8bb-373e-49b9-9d31-a8b903429a09",
+      "startedAt": "2026-09-07T23:38:21.541Z",
+      "completedAt": "2026-09-07T23:38:28.216Z",
+      "durationMs": 6675,
+      "success": true,
+      "score": 100,
+      "metrics": {
+        "type": "letter-workshop",
+        "challengeType": "copy",
+        "totalChallenges": 4,
+        "assessmentScope": "provisional-geometric-formation",
+        "modeResults": [
+          {
+            "mode": "copy",
+            "total": 4,
+            "correct": 4
+          }
+        ],
+        "correctCount": 4,
+        "attemptsCount": 4,
+        "firstTryCount": 4,
+        "hintsViewed": 0,
+        "overallAccuracy": 100,
+        "averageAttemptsPerChallenge": 1
+      },
+      "lessonContext": {
+        "primitiveType": "letter-workshop",
+        "idSource": "free-form"
+      },
+      "studentWork": {
+        "assistance": "per-attempt",
+        "assessmentScope": "provisional-geometric-formation",
+        "localOnly": true,
+        "tolerances": {
+          "trace": {
+            "version": "assisted-trace-v1",
+            "sampleSpacing": 4,
+            "pathRadius": 18,
+            "startRadius": 22,
+            "progressionRadius": 30,
+            "minimumCoverage": 0.9,
+            "minimumPrecision": 0.92,
+            "minimumDirection": 0.85,
+            "minimumLengthRatio": 0.8,
+            "maximumLengthRatio": 1.3,
+            "dotMaximumLength": 8
+          },
+          "formation": {
+            "version": "provisional-formation-v1",
+            "pathRadius": 24,
+            "minimumCoverage": 0.8,
+            "minimumPrecision": 0.85,
+            "minimumDirection": 0.75,
+            "startRadius": 30,
+            "minimumLengthRatio": 0.7,
+            "maximumLengthRatio": 1.4
+          }
+        },
+        "attempts": [
+          {
+            "challengeId": "letter-workshop-1",
+            "templateId": "lowercase-l",
+            "type": "copy",
+            "assistance": "beside-model",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 0,
+            "scorerVersion": "provisional-formation-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 239.99998474121094,
+                    "y": 60.00000762939453,
+                    "t": 19770.70000000298
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 100,
+                    "t": 19798.5
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 150,
+                    "t": 19836.10000000149
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 200,
+                    "t": 19858.5
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 239.99998474121094,
+                    "t": 19924.70000000298
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "Your letter follows the model’s shape and writing lines. Keep practicing!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-2",
+            "templateId": "lowercase-l",
+            "type": "copy",
+            "assistance": "beside-model",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 0,
+            "scorerVersion": "provisional-formation-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 239.99998474121094,
+                    "y": 60.00000762939453,
+                    "t": 20276
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 100,
+                    "t": 20303.70000000298
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 150,
+                    "t": 20342.60000000149
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 200,
+                    "t": 20357.40000000596
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 239.99998474121094,
+                    "t": 20420.30000000447
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "Your letter follows the model’s shape and writing lines. Keep practicing!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-3",
+            "templateId": "lowercase-l",
+            "type": "copy",
+            "assistance": "beside-model",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 0,
+            "scorerVersion": "provisional-formation-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 239.99998474121094,
+                    "y": 60.00000762939453,
+                    "t": 20856
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 100,
+                    "t": 20862
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 150,
+                    "t": 20923
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 200,
+                    "t": 20943.20000000298
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 239.99998474121094,
+                    "t": 21009.90000000596
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "Your letter follows the model’s shape and writing lines. Keep practicing!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-4",
+            "templateId": "lowercase-l",
+            "type": "copy",
+            "assistance": "beside-model",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 0,
+            "scorerVersion": "provisional-formation-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 239.99998474121094,
+                    "y": 60.00000762939453,
+                    "t": 21514.70000000298
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 100,
+                    "t": 21544.5
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 150,
+                    "t": 21562.20000000298
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 200,
+                    "t": 21621.20000000298
+                  },
+                  {
+                    "x": 239.99998474121094,
+                    "y": 239.99998474121094,
+                    "t": 21643.20000000298
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "Your letter follows the model’s shape and writing lines. Keep practicing!"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "primitiveType": "letter-workshop",
+      "instanceId": "letter-workshop-tester",
+      "attemptId": "7964968c-a536-4cff-a287-d7541e0894e2",
+      "startedAt": "2026-09-07T23:38:29.189Z",
+      "completedAt": "2026-09-07T23:38:37.142Z",
+      "durationMs": 7953,
+      "success": true,
+      "score": 100,
+      "metrics": {
+        "type": "letter-workshop",
+        "challengeType": "write",
+        "totalChallenges": 4,
+        "assessmentScope": "provisional-geometric-formation",
+        "modeResults": [
+          {
+            "mode": "write",
+            "total": 4,
+            "correct": 4
+          }
+        ],
+        "correctCount": 4,
+        "attemptsCount": 4,
+        "firstTryCount": 4,
+        "hintsViewed": 0,
+        "overallAccuracy": 100,
+        "averageAttemptsPerChallenge": 1
+      },
+      "lessonContext": {
+        "primitiveType": "letter-workshop",
+        "idSource": "free-form"
+      },
+      "studentWork": {
+        "assistance": "per-attempt",
+        "assessmentScope": "provisional-geometric-formation",
+        "localOnly": true,
+        "tolerances": {
+          "trace": {
+            "version": "assisted-trace-v1",
+            "sampleSpacing": 4,
+            "pathRadius": 18,
+            "startRadius": 22,
+            "progressionRadius": 30,
+            "minimumCoverage": 0.9,
+            "minimumPrecision": 0.92,
+            "minimumDirection": 0.85,
+            "minimumLengthRatio": 0.8,
+            "maximumLengthRatio": 1.3,
+            "dotMaximumLength": 8
+          },
+          "formation": {
+            "version": "provisional-formation-v1",
+            "pathRadius": 24,
+            "minimumCoverage": 0.8,
+            "minimumPrecision": 0.85,
+            "minimumDirection": 0.75,
+            "startRadius": 30,
+            "minimumLengthRatio": 0.7,
+            "maximumLengthRatio": 1.4
+          }
+        },
+        "attempts": [
+          {
+            "challengeId": "letter-workshop-1",
+            "templateId": "lowercase-l",
+            "type": "write",
+            "assistance": "auditory-cue",
+            "disposition": "submitted",
+            "modelPreviouslySeen": false,
+            "cuePlays": 1,
+            "scorerVersion": "provisional-formation-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 240,
+                    "y": 59.99999237060547,
+                    "t": 27821.20000000298
+                  },
+                  {
+                    "x": 240,
+                    "y": 100,
+                    "t": 27851.70000000298
+                  },
+                  {
+                    "x": 240,
+                    "y": 150,
+                    "t": 27891.30000000447
+                  },
+                  {
+                    "x": 240,
+                    "y": 200,
+                    "t": 27939.60000000149
+                  },
+                  {
+                    "x": 240,
+                    "y": 240,
+                    "t": 27985.5
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "Your letter follows the model’s shape and writing lines. Keep practicing!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-2",
+            "templateId": "lowercase-l",
+            "type": "write",
+            "assistance": "auditory-cue",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 1,
+            "scorerVersion": "provisional-formation-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 240,
+                    "y": 59.99999237060547,
+                    "t": 28805.40000000596
+                  },
+                  {
+                    "x": 240,
+                    "y": 100,
+                    "t": 28834.20000000298
+                  },
+                  {
+                    "x": 240,
+                    "y": 150,
+                    "t": 28874.60000000149
+                  },
+                  {
+                    "x": 240,
+                    "y": 200,
+                    "t": 28921.5
+                  },
+                  {
+                    "x": 240,
+                    "y": 240,
+                    "t": 28939.60000000149
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "Your letter follows the model’s shape and writing lines. Keep practicing!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-3",
+            "templateId": "lowercase-l",
+            "type": "write",
+            "assistance": "auditory-cue",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 1,
+            "scorerVersion": "provisional-formation-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 240,
+                    "y": 59.99999237060547,
+                    "t": 29711.10000000149
+                  },
+                  {
+                    "x": 240,
+                    "y": 100,
+                    "t": 29738.30000000447
+                  },
+                  {
+                    "x": 240,
+                    "y": 150,
+                    "t": 29763.40000000596
+                  },
+                  {
+                    "x": 240,
+                    "y": 200,
+                    "t": 29830.5
+                  },
+                  {
+                    "x": 240,
+                    "y": 240,
+                    "t": 29872.20000000298
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "Your letter follows the model’s shape and writing lines. Keep practicing!"
+            }
+          },
+          {
+            "challengeId": "letter-workshop-4",
+            "templateId": "lowercase-l",
+            "type": "write",
+            "assistance": "auditory-cue",
+            "disposition": "submitted",
+            "modelPreviouslySeen": true,
+            "cuePlays": 1,
+            "scorerVersion": "provisional-formation-v1",
+            "templateVersion": "school-manuscript-v1",
+            "hintLevel": 0,
+            "supportTier": "hard",
+            "strokes": [
+              {
+                "points": [
+                  {
+                    "x": 240,
+                    "y": 59.99999237060547,
+                    "t": 30536.20000000298
+                  },
+                  {
+                    "x": 240,
+                    "y": 100,
+                    "t": 30563.40000000596
+                  },
+                  {
+                    "x": 240,
+                    "y": 150,
+                    "t": 30609.20000000298
+                  },
+                  {
+                    "x": 240,
+                    "y": 200,
+                    "t": 30655.60000000149
+                  },
+                  {
+                    "x": 240,
+                    "y": 240,
+                    "t": 30675.20000000298
+                  }
+                ],
+                "pointerType": "mouse"
+              }
+            ],
+            "assessment": {
+              "passed": true,
+              "coverage": 1,
+              "precision": 1,
+              "startAccuracy": 1,
+              "directionAccuracy": 1,
+              "strokeCountMatch": true,
+              "feedback": "Your letter follows the model’s shape and writing lines. Keep practicing!"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "cues": [
+    "Write the lowercase letter ell.",
+    "Write the lowercase letter ell.",
+    "Write the lowercase letter ell.",
+    "Write the lowercase letter ell."
+  ],
+  "audio": "Synthetic playback completion; actual device audio requires listening check"
+}
