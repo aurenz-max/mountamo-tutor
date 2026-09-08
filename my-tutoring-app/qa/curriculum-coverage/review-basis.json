@@ -1,5 +1,8 @@
 {
-  "reviewedAt": "2026-09-07",
+  "reviewedAt": "2026-09-08",
+  "scope": "la-k",
+  "subject": "LANGUAGE_ARTS",
+  "grade": "K",
   "requirements": {
     "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759890862269-wi7duwcds-1759891079384-1c0fmvdz0": "f49f9b93c4ded3bb2d001c1632e0f5ac6055b3d0ba09e2899ff88a5471fa3646",
     "LANGUAGE_ARTS-U1759890612122-ura6j995z-1759890862269-wi7duwcds-1759891391758-d81wh1iyj": "86c033ebc858706ee493b5efcb20f8d9595ee231db3a393f6eea09da499d5ee3",
@@ -201,17 +204,19 @@
     "src/components/lumina/service/manifest/catalog/calendar.ts": "bf29d9e9d941a0325dcbb376dce56502d71e3cb9b138ee1ad8328e8dfa37635f",
     "src/components/lumina/service/manifest/catalog/chemistry.ts": "9c6a12ce4736cb340dac9a46814e1f841cc5502ca7c12467318b0b7e48e3b6e2",
     "src/components/lumina/service/manifest/catalog/core.ts": "9d0cfa14a39299c61e4c65c777aa440f7385aee427a4936cba7a619c8b5bf6c5",
-    "src/components/lumina/service/manifest/catalog/di.ts": "b22f023a0c68455f70b5db3de103ab4c3497bc9238ace060a71b8f44e1ccff71",
+    "src/components/lumina/service/manifest/catalog/di.ts": "224eb8f18b5a4fe8c96b64baae2d37201078d01174e307f00f42a5ef52cb3bab",
     "src/components/lumina/service/manifest/catalog/engineering.ts": "f91a60a4bcc1d617052176f05ef61aa77f7831c4628d9eb1d459f23bad3bc73b",
     "src/components/lumina/service/manifest/catalog/history.ts": "7422097bda1a6fe2268b175e14671e34c7dafcfb7f8169519007a56c7bc94bff",
     "src/components/lumina/service/manifest/catalog/index.ts": "dd11792cf47bd09fe65f361907b03f317db0e055ec165e424af215e81f825685",
-    "src/components/lumina/service/manifest/catalog/literacy.ts": "d3141c47bf6c0904034d07d0e96061193b84c1ff9b63ca92df5d4b3ad741e634",
+    "src/components/lumina/service/manifest/catalog/literacy.ts": "b7c03ba4fec6be4f9a53a3156d5de77b03032ef07e8b07b3fca3e1377f8dddb1",
     "src/components/lumina/service/manifest/catalog/math.ts": "965fe64089b463748e87e41d3b7b797b2e396d92478af52905c8b4fb71b1df89",
     "src/components/lumina/service/manifest/catalog/media.ts": "21ca5cf866e99a88bd4bec732753ad75a8d65a145952890ea21959934999e8a8",
     "src/components/lumina/service/manifest/catalog/physics.ts": "4630334d6c820c5e9a7a1aad4b939ceb7ddc22221e81a71f9e405dde90f0bec4",
     "src/components/lumina/service/manifest/catalog/science.ts": "eef5541a444a7b065a937ec412b65cc1f990335f3a91ebd0fddbd3837e547531"
   },
   "catalogReviewNotes": [
-    "2026-09-07: Compared all exported catalog entries with the frozen review. The only addition is di-worked-procedure, restricted to G1-G4 multi-digit subtraction. No K Language Arts home; existing 201 capabilities and all reviewed edges are unchanged."
+    "2026-09-07: Compared all exported catalog entries with the frozen review. The only addition is di-worked-procedure, restricted to G1-G4 multi-digit subtraction. No K Language Arts home; existing 201 capabilities and all reviewed edges are unchanged.",
+    "2026-09-07 (build update): Compared all exported catalog entries with the frozen review. Additions since the baseline: letter-workshop (trace/copy/write), you-and-me (describe_action/describe_independent_action), di-deduction (conclude/deny/cannot_tell; no K Language Arts home) and story-bridge (registered in the working tree without eval modes; birth in progress, uncommitted). No previously reviewed entry changed in description, constraints, domain or modes, so all 191 decisions and every reviewed edge stand. The literacy additions appear as build status for their design themes, not as reviewed fits; their requirements remain development gaps until the owed checks pass and the review is re-run. Source hashes re-recorded for: di.ts, literacy.ts.",
+    "2026-09-08: literacy.ts gained story-bridge (match_character, judged-loop gesture birth e1ba04bd) with a tutoring block and no evalModes. Reviewed: no existing decision references the changed entries; the seven Story Bridge design requirements keep their development verdicts until the browser/mic sitting passes and the review is re-run. Built state rides the build-status layer."
   ]
 }
