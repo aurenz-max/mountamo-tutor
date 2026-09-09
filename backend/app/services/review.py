@@ -26,7 +26,7 @@ class ReviewService:
                 api_key=settings.GEMINI_GENERATE_KEY,
                 http_options={"api_version": "v1alpha"},
             )
-            self.model_id = 'gemini-2.5-flash-preview-05-20'
+            self.model_id = 'gemini-flash-lite-latest'
             logger.info("Review service initialized with Gemini Flash")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini client for review service: {str(e)}")

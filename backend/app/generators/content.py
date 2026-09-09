@@ -158,7 +158,7 @@ class ContentComponent(BaseModel):
 
 class GenerationMetadata(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    generated_by: str = Field(default="gemini-2.5-flash-preview-05-20")
+    generated_by: str = Field(default="gemini-flash-lite-latest")
     generation_time_ms: int = Field(..., description="Generation time in milliseconds")
     coherence_score: float = Field(default=0.0, description="Overall coherence score 0-1")
     validation_passed: bool = Field(default=True)
