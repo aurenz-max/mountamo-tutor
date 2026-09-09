@@ -613,13 +613,7 @@ const interactiveBookAdapter: DiPortAdapter<InteractiveBookItem> = {
   gestureVerdictCue: (item, gesture) => interactiveBookTapVerdictCue(item, String(gesture)),
 };
 
-/**
- * story-bridge (K comparing texts, judged-loop BIRTH 2026-09-07 — not a port).
- * Gesture-only: the commit carries the tapped far-shore character's ID and the
- * pack's own `tapVerdictCue` resolves it. The stories are read inside the
- * opening ask by design, so every name is exempt there; the leak tokens are
- * the PAIRING phrases (`like <target>`, `<anchor> and <target>`, `both <shared>`).
- */
+/** Story Bridge: mixed gesture and spoken comparison over two read-alouds. */
 const storyBridgeAdapter: DiPortAdapter<StoryBridgeItem> = {
   build: (data) => {
     const challenges = (data.challenges ?? []) as StoryBridgeChallenge[];
@@ -628,10 +622,7 @@ const storyBridgeAdapter: DiPortAdapter<StoryBridgeItem> = {
     return { items, dropped: challenges.length - items.length, surface: storyBridgePack(items) };
   },
   answersFor: storyBridgeHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => {
-    const tapped = item.options.find((c) => c.id === String(gesture)) ?? item.options[0];
-    return storyBridgeTapVerdictCue(item, tapped);
-  },
+  gestureVerdictCue: (item, gesture) => storyBridgeTapVerdictCue(item, String(gesture)),
 };
 
 /**

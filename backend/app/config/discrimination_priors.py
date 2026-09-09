@@ -50,6 +50,15 @@ DEFAULT_DISCRIMINATION_PRIOR = DiscriminationPrior(a=1.4, c=0.0)
 # =========================================================================
 
 DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
+    "story-bridge": {
+        "match_character":   PATTERN_PATTERN_RECOGNITION,
+        "match_setting":     PATTERN_TRUE_FALSE,
+        "venn_place":        PATTERN_DIRECT_MANIPULATION,
+        "say_alike":         PATTERN_CONSTRUCTED_RESPONSE,
+        "sequence_two":      PATTERN_PROCEDURAL_SEQUENCING,
+        "say_different":     PATTERN_CONSTRUCTED_RESPONSE,
+        "main_idea_compare": PATTERN_CONSTRUCTED_RESPONSE,
+    },
     "story-ribbon": {
         "tell_connected_account": PATTERN_CREATIVE_OPEN_ENDED,
         "tell_present_account":   PATTERN_CONSTRUCTED_RESPONSE,

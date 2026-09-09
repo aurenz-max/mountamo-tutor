@@ -35,6 +35,16 @@ class PriorConfig:
 # =========================================================================
 
 PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
+    # Story Bridge L1 design priors; not empirically calibrated.
+    "story-bridge": {
+        "match_character":   PriorConfig(2.0, "Pictorial: match characters by evidence across two stories"),
+        "match_setting":     PriorConfig(2.0, "Pictorial: compare two illustrated settings"),
+        "venn_place":        PriorConfig(2.5, "Direct manipulation: place a detail in a guided three-region Venn"),
+        "say_alike":         PriorConfig(3.0, "Spoken production: state a defensible character similarity"),
+        "sequence_two":      PriorConfig(3.0, "Procedural sequencing: pair main events across two stories"),
+        "say_different":     PriorConfig(3.5, "Spoken production: state a defensible character contrast"),
+        "main_idea_compare": PriorConfig(4.0, "Cross-text inference: compare two simple story main ideas"),
+    },
     # Story Ribbon L1 design priors; not empirically calibrated.
     "story-ribbon": {
         "tell_connected_account": PriorConfig(2.5, "Pictorial: connected chronological account, tense open"),

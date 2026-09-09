@@ -4,6 +4,7 @@ import {
   affirmFor,
   askFor,
   correctionFor,
+  evidenceFor,
   isSayableName,
   isSharedBehavior,
   itemCue,
@@ -13,8 +14,15 @@ import {
   storyText,
   tapVerdictCue,
 } from './storyBridgeScript';
-import { FALLBACK_PAIR, challengesFromPair, validateStoryPair } from '../../../service/literacy/gemini-story-bridge';
+import {
+  FALLBACK_PAIR,
+  STORY_BRIDGE_CHALLENGE_TYPES,
+  challengesFromPair,
+  scheduleStoryBridgeTypes,
+  validateStoryPair,
+} from '../../../service/literacy/gemini-story-bridge';
 import type { StoryBridgeChallenge, StoryBridgeStory } from './StoryBridge';
+import { getComponentById } from '../../../service/manifest/catalog';
 
 const stories: StoryBridgeStory[] = [FALLBACK_PAIR.a, FALLBACK_PAIR.b];
 const challenges: StoryBridgeChallenge[] = challengesFromPair(FALLBACK_PAIR, 0, 0);
@@ -73,6 +81,54 @@ describe('story-bridge build gates', () => {
       + 'Kitten purred all the way home.',
     );
   });
+
+  it('builds every comparison mode over the same two retained stories', () => {
+    const allChallenges = challengesFromPair(FALLBACK_PAIR, 0, 0, STORY_BRIDGE_CHALLENGE_TYPES);
+    const allItems = itemsFromChallenges(allChallenges, stories);
+    expect(allItems.map((item) => item.mode)).toEqual(STORY_BRIDGE_CHALLENGE_TYPES);
+    expect(new Set(allItems.flatMap((item) => [item.storyA.id, item.storyB.id]))).toEqual(
+      new Set(['story-bridge-pair-1-a', 'story-bridge-pair-1-b']),
+    );
+    expect(allItems.filter((item) => item.answerKind === 'voice').map((item) => item.mode)).toEqual([
+      'say_alike', 'say_different', 'main_idea_compare',
+    ]);
+    expect(validateJudgedScriptPack(storyBridgePack(allItems))).toEqual([]);
+  });
+
+  it('gives the Venn mode one item for each region and sequence mode three ordered matches', () => {
+    const venn = itemsFromChallenges(
+      challengesFromPair(FALLBACK_PAIR, 0, 0, ['venn_place', 'venn_place', 'venn_place']),
+      stories,
+    );
+    expect(venn.map((item) => item.correctChoiceId)).toEqual(['story_a', 'both', 'story_b']);
+    const sequence = itemsFromChallenges(
+      challengesFromPair(FALLBACK_PAIR, 0, 0, ['sequence_two', 'sequence_two', 'sequence_two']),
+      stories,
+    );
+    expect(sequence.map((item) => item.eventIndex)).toEqual([0, 1, 2]);
+    expect(sequence.every((item) => item.correctChoiceId === item.target.id)).toBe(true);
+  });
+
+  it('schedules a genuine seven-skill mixed session and natural single-mode counts', () => {
+    expect(scheduleStoryBridgeTypes(null)).toEqual(STORY_BRIDGE_CHALLENGE_TYPES);
+    const pinnedVenn = {
+      allowedTypes: ['venn_place'],
+      modes: [],
+      promptDocs: '',
+      source: 'explicit' as const,
+    };
+    expect(scheduleStoryBridgeTypes(pinnedVenn)).toEqual(['venn_place', 'venn_place', 'venn_place']);
+  });
+
+  it('publishes every challenge type as an ordered catalog eval mode', () => {
+    const modes = getComponentById('story-bridge')?.evalModes ?? [];
+    expect(modes.map((mode) => mode.evalMode)).toEqual([
+      'match_character', 'match_setting', 'venn_place', 'say_alike',
+      'sequence_two', 'say_different', 'main_idea_compare',
+    ]);
+    expect(modes.map((mode) => mode.beta)).toEqual([2, 2, 2.5, 3, 3, 3.5, 4]);
+    expect(new Set(modes.flatMap((mode) => mode.challengeTypes))).toEqual(new Set(STORY_BRIDGE_CHALLENGE_TYPES));
+  });
 });
 
 describe('story-bridge cues', () => {
@@ -128,22 +184,38 @@ describe('story-bridge cues', () => {
       observed: `Tapped ${first.options[1].name}.`,
     });
   });
+
+  it('keeps side-by-side evidence under the story it came from when the anchor shore alternates', () => {
+    const evidence = evidenceFor(second);
+    expect(second.anchorStory.id).toBe(stories[1].id);
+    expect(evidence.storyA).toBe(second.target.sentence);
+    expect(evidence.storyB).toBe(second.anchor.sentence);
+  });
 });
 
 describe('story-bridge generator validation', () => {
   const flat = (pair = FALLBACK_PAIR): Record<string, string> => {
     const out: Record<string, string> = {
-      aTitle: pair.a.title, aSceneEmoji: pair.a.sceneEmoji, aOpening: pair.a.opening, aClosing: pair.a.closing,
-      bTitle: pair.b.title, bSceneEmoji: pair.b.sceneEmoji, bOpening: pair.b.opening, bClosing: pair.b.closing,
+      challengeType: 'match_character',
+      aTitle: pair.a.title, aSceneEmoji: pair.a.sceneEmoji, aSetting: pair.a.setting,
+      aOpening: pair.a.opening, aClosing: pair.a.closing, aMainIdea: pair.a.mainIdea,
+      bTitle: pair.b.title, bSceneEmoji: pair.b.sceneEmoji, bSetting: pair.b.setting,
+      bOpening: pair.b.opening, bClosing: pair.b.closing, bMainIdea: pair.b.mainIdea,
+      settingRelation: pair.settingRelation, settingComparison: pair.settingComparison,
+      mainIdeaRelation: pair.mainIdeaRelation, mainIdeaComparison: pair.mainIdeaComparison,
     };
     pair.shared.forEach((shared, i) => {
       out[`role${i}Shared`] = shared;
       out[`role${i}AName`] = pair.a.characters[i].name;
       out[`role${i}AEmoji`] = pair.a.characters[i].emoji;
+      out[`role${i}AEventEmoji`] = pair.a.characters[i].eventEmoji;
       out[`role${i}ASentence`] = pair.a.characters[i].sentence;
+      out[`role${i}AUnique`] = pair.a.characters[i].uniqueDetail;
       out[`role${i}BName`] = pair.b.characters[i].name;
       out[`role${i}BEmoji`] = pair.b.characters[i].emoji;
+      out[`role${i}BEventEmoji`] = pair.b.characters[i].eventEmoji;
       out[`role${i}BSentence`] = pair.b.characters[i].sentence;
+      out[`role${i}BUnique`] = pair.b.characters[i].uniqueDetail;
     });
     return out;
   };

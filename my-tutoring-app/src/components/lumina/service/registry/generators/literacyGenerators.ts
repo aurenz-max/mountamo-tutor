@@ -669,11 +669,10 @@ registerContextGenerator('you-and-me', async (ctx) => ({
 // ============================================================================
 
 /**
- * Story Bridge - K judged-loop comparing-texts birth (2026-09-07). Two short
- * stories are read aloud by the Live tutor; the child TAPS the character on the
- * other shore who is alike by what they did or felt (`match_character`).
- * Fork B: one flat-field Gemini call per story pair; code assembles the story
- * body from the per-character evidence sentences and alternates the anchor side.
+ * Story Bridge - K judged-loop comparison across two retained illustrated
+ * read-alouds. Seven eval modes cover characters, settings, alike/different
+ * speech, a guided Venn, paired event sequences, and main ideas. Fork B authors
+ * one flat story pair; code assembles and schedules every challenge.
  */
 registerContextGenerator('story-bridge', async (ctx) => ({
   type: 'story-bridge',

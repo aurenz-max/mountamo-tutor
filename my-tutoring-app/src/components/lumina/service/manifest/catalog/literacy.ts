@@ -90,32 +90,65 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'story-bridge',
     description:
-      'Kindergarten Language Arts comparing texts: match similar characters across TWO different stories. '
-      + 'The live tutor reads two short stories aloud, names one character, and the child taps the character '
-      + 'in the other story who is alike by what they did or felt (lost and scared, helped a friend). '
-      + 'Matching is by behavior evidence from both stories, never by looks. ESSENTIAL for K RL comparing '
-      + 'characters, settings and experiences across stories (LA006-04 Comparing Texts).',
+      'Kindergarten Language Arts comparing texts across TWO illustrated read-aloud stories. Children match '
+      + 'similar characters and settings, describe how characters are alike or different, place details in a '
+      + 'guided picture Venn diagram, pair beginning/middle/ending events, and compare simple main ideas. '
+      + 'Every task retains both story references and requires evidence from both texts.',
     constraints:
-      'Requires a microphone and live tutor. Each session holds one story pair (two 5-sentence read-aloud '
-      + 'stories with three characters each) and three match_character challenges; the anchor side alternates. '
-      + 'Story text is audio-only before a verdict; evidence sentences print on the affirm. The scripted runner '
-      + 'owns the opening, the asks and the verdict lines. The manifest must NOT supply stories, names or pairs — '
-      + 'the generator builds the pair and code assembles the stories. Do not assign setting matching, spoken '
-      + 'alike/different statements, Venn diagrams or event sequencing — those are later eval modes.',
+      'Requires a microphone and live tutor. One generated pair of two five-sentence stories stays in context '
+      + 'for the whole session. Story text is audio-only before a verdict; relevant excerpts appear side by side '
+      + 'after affirmation. Gesture modes use pictured choices and never judge microphone speech. Spoken modes '
+      + 'accept age-appropriate defensible comparisons but reject a response that references only one story. '
+      + 'The manifest must not supply story text, names, comparison answers, or event pairings.',
+    evalModes: [
+      {
+        evalMode: 'match_character', label: 'Match characters', beta: 2.0, discrimination: 1.2,
+        scaffoldingMode: 2, challengeTypes: ['match_character'],
+        description: 'Tap the character in the other illustrated story who acted or felt alike.',
+      },
+      {
+        evalMode: 'match_setting', label: 'Match settings', beta: 2.0, discrimination: 1.0,
+        scaffoldingMode: 2, challengeTypes: ['match_setting'],
+        description: 'Use both setting pictures to choose whether the stories happen in the same kind or different kinds of places.',
+      },
+      {
+        evalMode: 'venn_place', label: 'Picture Venn diagram', beta: 2.5, discrimination: 1.8,
+        scaffoldingMode: 2, challengeTypes: ['venn_place'],
+        description: 'Place a character detail in the first character only, both characters, or the second character only.',
+      },
+      {
+        evalMode: 'say_alike', label: 'Say how alike', beta: 3.0, discrimination: 1.6,
+        scaffoldingMode: 3, challengeTypes: ['say_alike'],
+        description: 'Say one defensible way two characters are alike using evidence from both stories.',
+      },
+      {
+        evalMode: 'sequence_two', label: 'Compare event sequences', beta: 3.0, discrimination: 1.4,
+        scaffoldingMode: 3, challengeTypes: ['sequence_two'],
+        description: 'Match beginning, middle, and ending event pictures across the two stories.',
+      },
+      {
+        evalMode: 'say_different', label: 'Say how different', beta: 3.5, discrimination: 1.6,
+        scaffoldingMode: 3, challengeTypes: ['say_different'],
+        description: 'Say one defensible difference between two characters using evidence from both stories.',
+      },
+      {
+        evalMode: 'main_idea_compare', label: 'Compare big ideas', beta: 4.0, discrimination: 1.6,
+        scaffoldingMode: 4, challengeTypes: ['main_idea_compare'],
+        description: 'State a defensible similarity or difference between the two simple story main ideas.',
+      },
+    ],
     supportsEvaluation: true,
     audioInput: JUDGED_AUDIO_INPUT,
     tutoring: {
       taskDescription:
-        'Story Bridge is a live-judged Direct Instruction activity, and you are its tutor. Two short stories '
-        + 'were read aloud; the child is now on turn {{currentTurn}} of {{totalTurns}}, mode "{{challengeType}}". '
-        + 'The friend to think about is {{anchorName}} from {{anchorStory}}; the child answers by TAPPING one '
-        + 'of the friends from {{targetStory}} ({{farShore}}) on a screen you cannot see. {{taskFocus}} '
-        + 'You speak the exact scripted lines from each bracketed application message and nothing else. '
-        + 'Holding two stories in mind and finding who acted alike is the entire skill, so nothing you say '
-        + 'before a verdict may name the partner, say what the two have in common, or point at a card.',
-      contextKeys: ['challengeType', 'anchorName', 'anchorStory', 'targetStory', 'farShore', 'taskFocus', 'currentTurn', 'totalTurns'],
+        'Story Bridge is a live-judged Kindergarten comparison activity. The same two illustrated stories remain '
+        + 'available on turn {{currentTurn}} of {{totalTurns}}, mode "{{challengeType}}". {{taskFocus}} The two '
+        + 'post-attempt evidence references are {{evidenceA}} and {{evidenceB}}. Gesture turns are taps selected '
+        + 'from {{farShore}} and must not be judged from speech. Spoken turns require a defensible relationship '
+        + 'across both stories; a one-story fact is incomplete. Speak only exact scripted lines.',
+      contextKeys: ['challengeType', 'anchorName', 'anchorStory', 'targetStory', 'farShore', 'taskFocus', 'evidenceA', 'evidenceB', 'currentTurn', 'totalTurns'],
       scaffoldingLevels: {
-        level1: 'There is no line for you to speak after a tap: the application sends the verdict to you in an [SB_TAP] message with the exact line. When it is a correction it already re-models the anchor\'s evidence and the shared behavior in "both" form and asks again — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
+        level1: 'Use the exact correction line supplied by the application. It places one evidence reference from each story together, states the relationship, and re-asks without requiring reading.',
         level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for your own hint, a re-told story, or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
         level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
       },
@@ -133,8 +166,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           response: 'Wait longer in silence first. If the child taps the hear-again control, an [SB_HEAR] message gives you both stories and the ask to say again, exactly as written.',
         },
         {
-          pattern: 'Talks about the pictures or tells a story of their own',
-          response: 'Stay warm and silent; when the talk ends, say the ask once more exactly as written and wait. Do not judge anything you hear — the answer is a tap.',
+          pattern: 'Gives a detail from only one story during a spoken comparison',
+          response: 'Treat it as incomplete. Use the scripted correction, which brings evidence from both stories together, then wait for a relationship across both.',
         },
       ],
       aiDirectives: [
@@ -157,32 +190,30 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'warm-up question — the quoted line is the whole opening.',
         },
         {
-          title: 'THE ANSWER IS A TAP, NOT A WORD',
+          title: 'GESTURE AND SPOKEN TURNS',
           instruction:
-            'The child answers by tapping a character card on a screen you cannot see, so after you ask there '
-            + 'is nothing for you to judge. Do not treat anything you hear through the microphone as an answer '
-            + '— not a name, not a guess, not the story told back. A separate [SB_TAP] message tells you which '
-            + 'friend was tapped and gives you the exact line to say, and only then do you speak.',
+            'Read the current bracketed contract. On gesture turns, stay silent until [SB_TAP] supplies the '
+            + 'code-computed verdict; never judge microphone speech. On spoken turns, judge meaning: accept any '
+            + 'age-appropriate defensible comparison grounded in both texts, and refuse a fact about only one.',
         },
         {
-          title: 'THE PAIRING IS THE ANSWER — A REFERENCE IS A LEAK',
+          title: 'COMPARISON EVIDENCE IS HIDDEN UNTIL THE VERDICT',
           instruction:
-            'Every character\'s name was read aloud inside the stories, so names are not secret; the PAIRING is. '
-            + 'Before a verdict, never say which friend is like the anchor, never say what the two have in '
-            + 'common, never single out one far-shore friend by name, picture, or trait ("think about the '
-            + 'one who…", "the little one", "the bird"), and never hint at a position. Speak of the far-shore '
-            + 'friends only as a group, and only inside the scripted line. After a verdict, the scripted line '
-            + 'names the pair and reads both evidence sentences; speak it exactly and nothing more.',
+            'Before a verdict, never reveal the matching character, same/different choice, Venn region, paired '
+            + 'event, reference comparison, or a screen position. After a verdict, the scripted line names the '
+            + 'relationship and reads the relevant evidence from each story side by side.',
         },
         {
           title: 'WAIT (the silence is theirs)',
           instruction:
             'After you ask, STOP. Do not re-ask, do not fill the pause, do not retell a story, and do not '
             + 'narrate what the child might be thinking. A long pause is a five-year-old holding two stories '
-            + 'in mind. The application will tell you what was tapped, or hand you the hear-again line.',
+            + 'in mind. The application will tell you what was tapped, hear and judge a spoken comparison, or '
+            + 'hand you the hear-again line according to the current item contract.',
         },
       ],
     },
+    affordances: { representation: 'pictorial', answers: ['tap', 'spoken'], role: 'apply', minutes: 6 },
   },
   {
     id: 'story-ribbon',

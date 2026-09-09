@@ -1,394 +1,430 @@
-/**
- * storyBridgeScript — HAND-AUTHORED judged-loop script for story-bridge
- * (K Comparing Texts; born 2026-09-07 from the curriculum-coverage design
- * studio theme "Story Bridge"). The exact wording IS the pedagogy; item CONTENT
- * (the two stories, their characters, the shared behaviors) is generator-scoped,
- * and this module owns the cue shapes, the build gates and the tap contract.
- *
- * ── THE TABLE PICTURE ───────────────────────────────────────────────────────
- * A teacher reads two short stories to one child, lays each story's character
- * pictures out on its own side of the table, and says "Find the friend in the
- * OTHER story who is like Kitten." The child POINTS. That is a GESTURE
- * (`manipulation`): the answer is WHICH card, a position on the page, and a
- * five-year-old who cannot yet say "they were both lost" can still show it.
- * Saying HOW the two are alike is a different, harder skill (LA006-04-D/E) and
- * arrives as spoken items on the eval-mode ladder, not here.
- *
- * ── ANSWER-LEAK RULES ───────────────────────────────────────────────────────
- *  - The stories are AUDIO before a verdict: both are read in the opening cue
- *    and on tap-to-hear, and the story text never prints while the child is
- *    choosing. Printing it would let a reader match by scanning for the
- *    repeated phrase instead of holding two stories in mind.
- *  - The ask names the ANCHOR only. The tutor must never name the partner,
- *    never speak the shared behavior before a verdict, and never hint at
- *    position. The correction re-models the anchor's EVIDENCE plus the shared
- *    behavior in "both" form — the child still has to map that onto the far
- *    shore from memory of the second story — and only the affirm names the
- *    pair and prints the two evidence sentences side by side.
- *  - `sharedBehavior` is gated NAME-FREE: a behavior line that says "Kitten and
- *    Bird were lost" would hand the answer to the correction.
- *  - Paired characters must not share an emoji: the match is by what they DID,
- *    never by the picture. A far shore with two identical pictures is one
- *    question with two answers by looks.
- *
- * Sentinels are the engine defaults ("Yes" / "My turn"). Generated text (names,
- * titles, sentences) is interpolated into spoken cues, so the gates DROP
- * anything that opens a spoken sentence with a sentinel or carries a double
- * quote (which closes the `Say exactly: "…"` span early). The GENERATOR imports
- * these gates from this module so both sides of the wire read one address.
- */
+/** Hand-authored judged-loop contract for Story Bridge. */
 
 import type { JudgedScriptItem, JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import { opensWithSentinel } from '../../../hooks/judgedScriptContract';
 import type {
-  StoryBridgeChallenge,
-  StoryBridgeCharacter,
-  StoryBridgeStory,
+  StoryBridgeChallenge, StoryBridgeChallengeType, StoryBridgeCharacter,
+  StoryBridgeStory, StoryBridgeVennRegion,
 } from './StoryBridge';
 
 export { opensWithSentinel };
 
-// ── Bounds (one breath each; the whole story is one listening turn) ─────────
-
 export const MAX_TITLE_CHARS = 40;
 export const MAX_SENTENCE_CHARS = 140;
-/** Opening + three character sentences + closing, read in one go. */
-export const MAX_STORY_CHARS = 520;
-export const MAX_BEHAVIOR_WORDS = 12;
+export const MAX_STORY_CHARS = 560;
+export const MAX_BEHAVIOR_WORDS = 14;
 export const MIN_BEHAVIOR_WORDS = 2;
 export const MIN_FAR_SHORE = 2;
 export const MAX_FAR_SHORE = 4;
 
 const VERDICT_WORDS: ReadonlySet<string> = new Set(['yes', 'yeah', 'no', 'nope']);
-
-const wordsIn = (text: string): number =>
-  text.trim() ? text.trim().split(/\s+/).length : 0;
-
-/** No double quotes (they close the spoken span), no underscores (blank markers
- *  read aloud), no bracket tags (the runner's own channel). */
-const speakable = (text: string): boolean =>
-  text.trim().length > 0 && !/["“”_[\]]/.test(text);
-
+const wordsIn = (text: string): number => text.trim() ? text.trim().split(/\s+/).length : 0;
+const speakable = (text: string): boolean => text.trim().length > 0 && !/["“”_[\]]/.test(text);
 const escapeRe = (word: string): string => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 const wholeWordIn = (text: string, word: string): boolean =>
   new RegExp(`(^|[^A-Za-z])${escapeRe(word)}([^A-Za-z]|$)`, 'i').test(text);
 
-/** One or two capitalized words — "Kitten", "Little Bird". A two-word name whose
- *  first word is a describing word ("Sleepy Cat", "Bouncing Bunny") is refused:
- *  the behavior would live in the NAME the ask speaks, and "Sleepy" ↔ "Yawning"
- *  matches without listening to either story (eval-test run 1, 2026-09-07). */
 export const isSayableName = (name: string): boolean => {
-  const n = name.trim();
-  if (!/^[A-Z][a-zA-Z]{1,14}(?: [A-Z][a-zA-Z]{1,14})?$/.test(n)) return false;
-  if (VERDICT_WORDS.has(n.toLowerCase())) return false;
-  const [first, second] = n.split(' ');
-  if (second && /(?:y|ing|ful|ish)$/i.test(first)) return false;
-  return true;
+  const value = name.trim();
+  if (!/^[A-Z][a-zA-Z]{1,14}(?: [A-Z][a-zA-Z]{1,14})?$/.test(value)) return false;
+  if (VERDICT_WORDS.has(value.toLowerCase())) return false;
+  const [first, second] = value.split(' ');
+  return !(second && /(?:y|ing|ful|ish)$/i.test(first));
 };
 
 export const isSayableTitle = (title: string): boolean =>
-  speakable(title)
-  && title.trim().length <= MAX_TITLE_CHARS
-  && !/[.!?]$/.test(title.trim())
-  && !opensWithSentinel(title);
+  speakable(title) && title.trim().length <= MAX_TITLE_CHARS
+  && !/[.!?]$/.test(title.trim()) && !opensWithSentinel(title);
 
-/** A full read-aloud sentence: speakable, bounded, ends with a stop. */
 export const isSayableSentence = (sentence: string): boolean =>
-  speakable(sentence)
-  && sentence.trim().length <= MAX_SENTENCE_CHARS
-  && wordsIn(sentence) >= 3
-  && /[.!?]$/.test(sentence.trim())
-  && !opensWithSentinel(sentence);
+  speakable(sentence) && sentence.trim().length <= MAX_SENTENCE_CHARS
+  && wordsIn(sentence) >= 3 && /[.!?]$/.test(sentence.trim()) && !opensWithSentinel(sentence);
 
-/** The character's evidence sentence must be ABOUT that character. */
 export const isEvidenceFor = (sentence: string, name: string): boolean =>
   isSayableSentence(sentence) && wholeWordIn(sentence, name);
 
-/**
- * "were lost and felt scared" / "shared something to help a friend" — a
- * lowercase past-tense clause that follows "both", holds no sentence-ending
- * mark (it is spoken mid-sentence) and names NO character from either story.
- */
 export const isSharedBehavior = (behavior: string, names: readonly string[]): boolean => {
-  const b = behavior.trim();
-  if (!speakable(b)) return false;
-  if (/[.!?,;:]$/.test(b)) return false;
-  if (!/^[a-z]/.test(b)) return false;
-  if (/^both\b/i.test(b)) return false;
-  const n = wordsIn(b);
-  if (n < MIN_BEHAVIOR_WORDS || n > MAX_BEHAVIOR_WORDS) return false;
-  if (opensWithSentinel(b)) return false;
-  return !names.some((name) => name.split(' ').some((part) => wholeWordIn(b, part)));
+  const value = behavior.trim();
+  if (!speakable(value) || /[.!?,;:]$/.test(value) || !/^[a-z]/.test(value) || /^both\b/i.test(value)) return false;
+  const count = wordsIn(value);
+  if (count < MIN_BEHAVIOR_WORDS || count > MAX_BEHAVIOR_WORDS || opensWithSentinel(value)) return false;
+  return !names.some((name) => name.split(' ').some((part) => wholeWordIn(value, part)));
 };
 
-export const storyText = (story: Pick<StoryBridgeStory, 'opening' | 'closing' | 'characters'>): string =>
-  [story.opening, ...story.characters.map((c) => c.sentence), story.closing]
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .join(' ');
+export const isComparisonSummary = (summary: string): boolean =>
+  isSayableSentence(summary) && wordsIn(summary) <= 24;
 
-/** The ask says the far shore's TITLE — a title that carries a character's name
- *  ("The Little Bird" / Bird) would name the partner inside the ask. */
+export const storyText = (story: Pick<StoryBridgeStory, 'opening' | 'closing' | 'characters'>): string =>
+  [story.opening, ...story.characters.map((character) => character.sentence), story.closing]
+    .map((sentence) => sentence.trim()).filter(Boolean).join(' ');
+
 export const titleNamesNoCharacter = (story: Pick<StoryBridgeStory, 'title' | 'characters'>): boolean =>
-  !story.characters.some((c) => c.name.split(' ').some((part) => wholeWordIn(story.title, part)));
+  !story.characters.some((character) => character.name.split(' ').some((part) => wholeWordIn(story.title, part)));
 
 export const isSayableStory = (story: StoryBridgeStory): boolean =>
-  isSayableTitle(story.title)
-  && titleNamesNoCharacter(story)
-  && isSayableSentence(story.opening)
-  && isSayableSentence(story.closing)
-  && story.characters.length >= MIN_FAR_SHORE
-  && story.characters.length <= MAX_FAR_SHORE
-  && story.characters.every((c) => isSayableName(c.name) && c.emoji.trim().length > 0 && isEvidenceFor(c.sentence, c.name))
-  && new Set(story.characters.map((c) => c.name.toLowerCase())).size === story.characters.length
-  && new Set(story.characters.map((c) => c.emoji)).size === story.characters.length
-  && new Set(story.characters.map((c) => c.id)).size === story.characters.length
+  isSayableTitle(story.title) && titleNamesNoCharacter(story)
+  && speakable(story.setting) && wordsIn(story.setting) <= 8
+  && isSayableSentence(story.opening) && isSayableSentence(story.closing)
+  && isComparisonSummary(story.mainIdea)
+  && story.characters.length >= MIN_FAR_SHORE && story.characters.length <= MAX_FAR_SHORE
+  && story.characters.every((character) =>
+    isSayableName(character.name) && character.emoji.trim().length > 0
+    && character.eventEmoji.trim().length > 0 && isEvidenceFor(character.sentence, character.name)
+    && isSharedBehavior(character.uniqueDetail, story.characters.map((candidate) => candidate.name)))
+  && new Set(story.characters.map((character) => character.name.toLowerCase())).size === story.characters.length
+  && new Set(story.characters.map((character) => character.emoji)).size === story.characters.length
+  && new Set(story.characters.map((character) => character.id)).size === story.characters.length
   && storyText(story).length <= MAX_STORY_CHARS;
 
-// ── The item ────────────────────────────────────────────────────────────────
+export interface StoryBridgeEvidence {
+  summary: string;
+  storyA: string;
+  storyB: string;
+}
 
 export interface StoryBridgeItem extends JudgedScriptItem {
-  mode: 'match_character';
+  mode: StoryBridgeChallengeType;
   pairId: string;
+  storyA: StoryBridgeStory;
+  storyB: StoryBridgeStory;
   anchorStory: StoryBridgeStory;
-  anchor: StoryBridgeCharacter;
   targetStory: StoryBridgeStory;
+  anchor: StoryBridgeCharacter;
   target: StoryBridgeCharacter;
-  /** The far shore — every character of the target story, the tappable set. */
   options: StoryBridgeCharacter[];
   sharedBehavior: string;
-  /** First item of its story pair: the tutor reads both stories before the ask. */
+  comparisonSummary: string;
+  choiceIds: string[];
+  correctChoiceId: string;
+  vennDetail: string;
+  vennRegion: StoryBridgeVennRegion;
+  eventIndex: number;
   introducesStories: boolean;
 }
 
-/**
- * One judged item, or null when the challenge cannot be ASKED. Nothing here
- * backfills: a placeholder in a judged loop becomes a spoken ask the tutor must
- * stand behind, so a broken item is dropped and the session runs shorter.
- */
+const characterPair = (
+  challenge: StoryBridgeChallenge,
+  storiesById: ReadonlyMap<string, StoryBridgeStory>,
+): { anchorStory: StoryBridgeStory; targetStory: StoryBridgeStory; anchor: StoryBridgeCharacter; target: StoryBridgeCharacter } | null => {
+  const anchorStory = challenge.anchorStoryId ? storiesById.get(challenge.anchorStoryId) : null;
+  const targetStory = challenge.targetStoryId ? storiesById.get(challenge.targetStoryId) : null;
+  if (!anchorStory || !targetStory || anchorStory.id === targetStory.id) return null;
+  const anchor = anchorStory.characters.find((character) => character.id === challenge.anchorCharacterId);
+  const target = targetStory.characters.find((character) => character.id === challenge.targetCharacterId);
+  if (!anchor || !target || anchor.name.toLowerCase() === target.name.toLowerCase()) return null;
+  return { anchorStory, targetStory, anchor, target };
+};
+
 export const itemFromChallenge = (
-  ch: StoryBridgeChallenge,
+  challenge: StoryBridgeChallenge,
   storiesById: ReadonlyMap<string, StoryBridgeStory>,
   introducesStories: boolean,
 ): StoryBridgeItem | null => {
-  if (ch.type !== 'match_character') return null;
-  const anchorStory = storiesById.get(ch.anchorStoryId);
-  const targetStory = storiesById.get(ch.targetStoryId);
-  if (!anchorStory || !targetStory || anchorStory.id === targetStory.id) return null;
-  if (!isSayableStory(anchorStory) || !isSayableStory(targetStory)) return null;
-  if (anchorStory.title.trim().toLowerCase() === targetStory.title.trim().toLowerCase()) return null;
-  const anchor = anchorStory.characters.find((c) => c.id === ch.anchorCharacterId);
-  const target = targetStory.characters.find((c) => c.id === ch.targetCharacterId);
-  if (!anchor || !target) return null;
-  if (anchor.emoji === target.emoji) return null;
-  if (anchor.name.toLowerCase() === target.name.toLowerCase()) return null;
-  const names = [...anchorStory.characters, ...targetStory.characters].map((c) => c.name);
-  if (!isSharedBehavior(ch.sharedBehavior, names)) return null;
-  return {
-    id: ch.id,
-    mode: 'match_character',
-    answerKind: 'gesture',
-    responseClass: 'manipulation',
-    action: 'match_character',
-    pairId: ch.pairId,
-    anchorStory,
-    anchor,
-    targetStory,
-    target,
-    options: targetStory.characters,
-    sharedBehavior: ch.sharedBehavior.trim(),
+  const storyA = storiesById.get(challenge.storyAId);
+  const storyB = storiesById.get(challenge.storyBId);
+  if (!storyA || !storyB || storyA.id === storyB.id || !isSayableStory(storyA) || !isSayableStory(storyB)) return null;
+  if (storyA.title.trim().toLowerCase() === storyB.title.trim().toLowerCase()) return null;
+  const names = [...storyA.characters, ...storyB.characters].map((character) => character.name);
+  const fallbackPair = { anchorStory: storyA, targetStory: storyB, anchor: storyA.characters[0], target: storyB.characters[0] };
+  const pair = characterPair(challenge, storiesById) ?? fallbackPair;
+  const base = {
+    id: challenge.id,
+    mode: challenge.type,
+    action: challenge.type,
+    pairId: challenge.pairId,
+    storyA,
+    storyB,
+    anchorStory: pair.anchorStory,
+    targetStory: pair.targetStory,
+    anchor: pair.anchor,
+    target: pair.target,
+    options: pair.targetStory.characters,
+    sharedBehavior: (challenge.sharedBehavior ?? '').trim(),
+    comparisonSummary: (challenge.comparisonSummary ?? '').trim(),
+    choiceIds: [] as string[],
+    correctChoiceId: '',
+    vennDetail: (challenge.vennDetail ?? '').trim(),
+    vennRegion: challenge.vennRegion ?? 'both' as StoryBridgeVennRegion,
+    eventIndex: challenge.anchorEventIndex ?? 0,
     introducesStories,
   };
+
+  switch (challenge.type) {
+    case 'match_character': {
+      if (!characterPair(challenge, storiesById) || pair.anchor.emoji === pair.target.emoji) return null;
+      if (!isSharedBehavior(base.sharedBehavior, names)) return null;
+      return { ...base, answerKind: 'gesture', responseClass: 'manipulation', choiceIds: pair.targetStory.characters.map((character) => character.id), correctChoiceId: pair.target.id };
+    }
+    case 'match_setting': {
+      if ((challenge.relation !== 'same' && challenge.relation !== 'different') || !isComparisonSummary(base.comparisonSummary)) return null;
+      return { ...base, answerKind: 'gesture', responseClass: 'manipulation', choiceIds: ['same', 'different'], correctChoiceId: challenge.relation };
+    }
+    case 'say_alike':
+    case 'say_different': {
+      if (!characterPair(challenge, storiesById) || !isComparisonSummary(base.comparisonSummary)) return null;
+      if (challenge.type === 'say_alike' && !isSharedBehavior(base.sharedBehavior, names)) return null;
+      return { ...base, answerKind: 'voice', responseClass: 'concept_statement' };
+    }
+    case 'venn_place': {
+      if (!characterPair(challenge, storiesById) || !['story_a', 'both', 'story_b'].includes(base.vennRegion)) return null;
+      if (!isSharedBehavior(base.vennDetail, names) || !isComparisonSummary(base.comparisonSummary)) return null;
+      return { ...base, answerKind: 'gesture', responseClass: 'manipulation', choiceIds: ['story_a', 'both', 'story_b'], correctChoiceId: base.vennRegion };
+    }
+    case 'sequence_two': {
+      const aIndex = challenge.anchorEventIndex;
+      const bIndex = challenge.targetEventIndex;
+      if (!Number.isInteger(aIndex) || !Number.isInteger(bIndex) || aIndex !== bIndex || aIndex! < 0 || aIndex! >= 3) return null;
+      const anchor = storyA.characters[aIndex!];
+      const target = storyB.characters[bIndex!];
+      if (!anchor || !target) return null;
+      return {
+        ...base, anchorStory: storyA, targetStory: storyB, anchor, target,
+        options: storyB.characters, eventIndex: aIndex!, answerKind: 'gesture', responseClass: 'manipulation',
+        choiceIds: storyB.characters.map((character) => character.id), correctChoiceId: target.id,
+      };
+    }
+    case 'main_idea_compare': {
+      if ((challenge.relation !== 'same' && challenge.relation !== 'different') || !isComparisonSummary(base.comparisonSummary)) return null;
+      return { ...base, answerKind: 'voice', responseClass: 'concept_statement' };
+    }
+  }
 };
 
 export const itemsFromChallenges = (
-  challenges: readonly StoryBridgeChallenge[],
-  stories: readonly StoryBridgeStory[],
+  challenges: readonly StoryBridgeChallenge[], stories: readonly StoryBridgeStory[],
 ): StoryBridgeItem[] => {
-  const byId = new Map(stories.map((s) => [s.id, s]));
+  const byId = new Map(stories.map((story) => [story.id, story]));
   const seenPairs = new Set<string>();
   const items: StoryBridgeItem[] = [];
-  for (const ch of challenges) {
-    const introduces = !seenPairs.has(ch.pairId);
-    const item = itemFromChallenge(ch, byId, introduces);
+  for (const challenge of challenges) {
+    const item = itemFromChallenge(challenge, byId, !seenPairs.has(challenge.pairId));
     if (!item) continue;
-    seenPairs.add(ch.pairId);
+    seenPairs.add(challenge.pairId);
     items.push(item);
   }
   return items;
 };
 
-export const challengeAskable = (
-  ch: StoryBridgeChallenge,
-  stories: readonly StoryBridgeStory[],
-): boolean => itemFromChallenge(ch, new Map(stories.map((s) => [s.id, s])), true) !== null;
+export const challengeAskable = (challenge: StoryBridgeChallenge, stories: readonly StoryBridgeStory[]): boolean =>
+  itemFromChallenge(challenge, new Map(stories.map((story) => [story.id, story])), true) !== null;
 
-// ── Spoken lines ────────────────────────────────────────────────────────────
+const ordinal = (index: number): string => ['beginning', 'middle', 'ending'][index] ?? 'same part';
 
-export const howToPlay =
-  'Here are two stories. I read both. Then I name a friend from one story, '
-  + 'and you find the friend in the other story who is like them — and tap that friend! ';
+export const evidenceFor = (item: StoryBridgeItem): StoryBridgeEvidence => {
+  switch (item.mode) {
+    case 'match_character':
+    case 'say_alike':
+    case 'say_different':
+    case 'venn_place': {
+      const anchorIsA = item.anchorStory.id === item.storyA.id;
+      return {
+        summary: item.comparisonSummary || `${item.anchor.name} and ${item.target.name} both ${item.sharedBehavior}.`,
+        storyA: anchorIsA ? item.anchor.sentence : item.target.sentence,
+        storyB: anchorIsA ? item.target.sentence : item.anchor.sentence,
+      };
+    }
+    case 'match_setting':
+      return { summary: item.comparisonSummary, storyA: item.storyA.opening, storyB: item.storyB.opening };
+    case 'sequence_two':
+      return { summary: `These are both ${ordinal(item.eventIndex)} events.`, storyA: item.anchor.sentence, storyB: item.target.sentence };
+    case 'main_idea_compare':
+      return { summary: item.comparisonSummary, storyA: storyText(item.storyA), storyB: storyText(item.storyB) };
+  }
+};
 
-/** Both stories, read in order, first shore then second. */
 export const storiesLine = (item: StoryBridgeItem): string => {
-  const [first, second] = item.anchorStory.id < item.targetStory.id
-    ? [item.anchorStory, item.targetStory]
-    : [item.targetStory, item.anchorStory];
+  const [first, second] = item.storyA.id < item.storyB.id ? [item.storyA, item.storyB] : [item.storyB, item.storyA];
   return `Story one, ${first.title}: ${storyText(first)} Story two, ${second.title}: ${storyText(second)} `;
 };
 
-/** The ask names the anchor only — never the partner, never the behavior. */
-export const askFor = (item: StoryBridgeItem): string =>
-  `Think about ${item.anchor.name} in ${item.anchorStory.title}. `
-  + `Find the friend in ${item.targetStory.title} who is like ${item.anchor.name}. `
-  + `Your turn. Tap that friend.`;
+export const howToPlayFor = (item: StoryBridgeItem): string => {
+  switch (item.mode) {
+    case 'match_character': return 'I name a friend from one story, and you tap the friend in the other story who acted alike! ';
+    case 'match_setting': return 'Look at both story pictures and decide if the places are the same kind or different! ';
+    case 'say_alike': return 'I name one friend from each story, and you tell one way they are alike! ';
+    case 'say_different': return 'I name one friend from each story, and you tell one way they are different! ';
+    case 'venn_place': return 'Put each detail in our picture Venn diagram: story one, both stories, or story two! ';
+    case 'sequence_two': return 'Match what happened at the same part of each story! ';
+    case 'main_idea_compare': return 'Tell how the big ideas in both stories are alike or different! ';
+  }
+};
 
-export const affirmFor = (item: StoryBridgeItem): string =>
-  `Yes! ${item.anchor.name} and ${item.target.name} are alike — both ${item.sharedBehavior}. `
-  + `${item.anchor.sentence} ${item.target.sentence}`;
+export const askFor = (item: StoryBridgeItem): string => {
+  switch (item.mode) {
+    case 'match_character':
+      return `Think about ${item.anchor.name} in ${item.anchorStory.title}. Find the friend in ${item.targetStory.title} who is like ${item.anchor.name}. Your turn. Tap that friend.`;
+    case 'match_setting':
+      return `Think about the places in ${item.storyA.title} and ${item.storyB.title}. Are they the same kind of place or different kinds? Your turn. Tap same or different.`;
+    case 'say_alike':
+      return `Think about ${item.anchor.name} in ${item.anchorStory.title} and ${item.target.name} in ${item.targetStory.title}. Your turn. Tell one way they are alike.`;
+    case 'say_different':
+      return `Think about ${item.anchor.name} in ${item.anchorStory.title} and ${item.target.name} in ${item.targetStory.title}. Your turn. Tell one way they are different.`;
+    case 'venn_place':
+      return `Compare ${item.anchor.name} and ${item.target.name}. The detail is: ${item.vennDetail}. Does it belong to ${item.anchor.name} only, both friends, or ${item.target.name} only? Your turn. Tap its circle.`;
+    case 'sequence_two':
+      return `In ${item.storyA.title}, ${item.anchor.sentence} That is a ${ordinal(item.eventIndex)} event. Find the ${ordinal(item.eventIndex)} event from ${item.storyB.title}. Your turn. Tap its picture.`;
+    case 'main_idea_compare':
+      return `Think about the big ideas in ${item.storyA.title} and ${item.storyB.title}. Your turn. Tell one way the big ideas are alike or different.`;
+  }
+};
 
-/** Model the anchor's evidence and the shared behavior, then test again. The
- *  partner stays unnamed: the child maps "both …" onto the far shore. */
-export const correctionFor = (item: StoryBridgeItem): string =>
-  `My turn: in ${item.anchorStory.title}, ${item.anchor.sentence} `
-  + `One friend in ${item.targetStory.title} did the same — both ${item.sharedBehavior}. `
-  + `Your turn. Tap that friend.`;
+export const affirmFor = (item: StoryBridgeItem): string => {
+  const evidence = evidenceFor(item);
+  return `Yes! ${evidence.summary} ${evidence.storyA} ${evidence.storyB}`;
+};
+
+export const correctionFor = (item: StoryBridgeItem): string => {
+  if (item.mode === 'match_character') {
+    return `My turn: in ${item.anchorStory.title}, ${item.anchor.sentence} `
+      + `One friend in ${item.targetStory.title} did the same — both ${item.sharedBehavior}. `
+      + `Your turn. Tap that friend.`;
+  }
+  const evidence = evidenceFor(item);
+  return `My turn: listen to evidence from both stories. ${evidence.storyA} ${evidence.storyB} ${evidence.summary} Your turn. ${askFor(item)}`;
+};
+
+const voiceContract = (item: StoryBridgeItem): string => {
+  const evidence = evidenceFor(item);
+  const taskRule = item.mode === 'say_alike'
+    ? `Accept ANY short comparison that is true of both characters, not only the reference wording. The reference comparison is: "${item.comparisonSummary}". `
+    : item.mode === 'say_different'
+      ? `Accept ANY short contrast that truthfully distinguishes the two characters, not only the reference wording. The reference contrast is: "${item.comparisonSummary}". `
+      : `Accept ANY defensible comparison of the two main ideas, whether it names an accurate similarity or an accurate difference. The reference comparison is: "${item.comparisonSummary}". `;
+  return `The quoted line is the ONLY thing you say on this turn; then stay silent while the learner answers. `
+    + `This is a concept comparison, so judge meaning and age-appropriate paraphrases, not exact words. ${taskRule}`
+    + `The two evidence references are: Story one — "${evidence.storyA}" Story two — "${evidence.storyB}" `
+    + `A response must make a relationship across BOTH stories. A detail about only one story is INCOMPLETE and wrong. `
+    + `Do not require the story titles, character names, full sentences, or advanced reading words. `
+    + `If the comparison is defensible from both texts, say exactly: "${affirmFor(item)}" `
+    + `Otherwise say exactly: "${correctionFor(item)}" and stop so the learner can try again. `
+    + `Never begin any other sentence with Yes or My turn. Never read bracket tags aloud and never announce the activity state.`;
+};
 
 const tapContract = (item: StoryBridgeItem): string =>
-  `The quoted line is the ONLY thing you say on this turn; the learner answers by `
-  + `TAPPING a character picture on the ${item.targetStory.title} side, not by speaking, so you then stay completely silent. `
-  + `Never say which friend is like ${item.anchor.name}, never say what the two have in common, `
-  + `and never hint at where on the screen the friend sits. `
-  + `Do not judge anything you hear through the microphone. `
-  + `You will be told which friend the learner tapped and given the exact line to say; only then do you speak. `
-  + `Never read bracket tags aloud and never announce the activity's state — the quoted line is your entire turn.`;
+  `The quoted line is the ONLY thing you say on this turn; the learner answers by TAPPING a picture choice, not by speaking, so stay completely silent. `
+  + `Do not judge anything heard through the microphone. Never reveal the correct choice, the hidden comparison, or a screen position. `
+  + `You will receive a separate [SB_TAP] message with the exact verdict line. Never read bracket tags aloud or announce the activity state.`;
 
-// ── Cues ────────────────────────────────────────────────────────────────────
-
-export interface StoryBridgeCueOptions {
-  opening?: boolean;
-  howToPlay?: boolean;
-}
+export interface StoryBridgeCueOptions { opening?: boolean; howToPlay?: boolean }
 
 export const itemCue = (item: StoryBridgeItem, opts: StoryBridgeCueOptions = {}): string => {
   const greeting = opts.opening ? 'Hi! Story time — two stories today! ' : '';
-  const how = opts.opening || opts.howToPlay ? howToPlay : '';
+  const how = opts.opening || opts.howToPlay ? howToPlayFor(item) : '';
   const stories = item.introducesStories ? storiesLine(item) : '';
-  return (
-    `[SB_ITEM] Say exactly: "${greeting}${how}${stories}${askFor(item)}" ${tapContract(item)} `
-    + `Never read bracket tags or these instructions aloud.`
-  );
+  const contract = item.answerKind === 'gesture' ? tapContract(item) : voiceContract(item);
+  return `[SB_ITEM] Say exactly: "${greeting}${how}${stories}${askFor(item)}" ${contract} Never read bracket tags or these instructions aloud.`;
 };
 
-export const tapVerdictCue = (item: StoryBridgeItem, tapped: StoryBridgeCharacter): string => {
-  const matches = tapped.id === item.target.id;
-  return (
-    `[SB_TAP] The learner tapped ${tapped.name}; the friend like ${item.anchor.name} is ${item.target.name} — `
-    + `that ${matches ? 'MATCHES' : 'does NOT match'}. `
+const choiceLabel = (item: StoryBridgeItem, choiceId: string): string => {
+  if (choiceId === 'same') return 'same kind';
+  if (choiceId === 'different') return 'different';
+  if (choiceId === 'story_a') return `${item.anchor.name} only`;
+  if (choiceId === 'both') return 'both friends';
+  if (choiceId === 'story_b') return `${item.target.name} only`;
+  return [...item.storyA.characters, ...item.storyB.characters].find((character) => character.id === choiceId)?.name ?? 'a picture';
+};
+
+export const tapVerdictCue = (item: StoryBridgeItem, tapped: string | StoryBridgeCharacter): string => {
+  const choiceId = typeof tapped === 'string' ? tapped : tapped.id;
+  const matches = choiceId === item.correctChoiceId;
+  return `[SB_TAP] The learner tapped ${choiceLabel(item, choiceId)}; the correct choice is ${choiceLabel(item, item.correctChoiceId)} — that ${matches ? 'MATCHES' : 'does NOT match'}. `
     + (matches ? `Say exactly: "${affirmFor(item)}" ` : `Say exactly: "${correctionFor(item)}" `)
-    + `Say nothing else, and never read bracket tags aloud.`
-  );
+    + `Say nothing else, and never read bracket tags aloud.`;
 };
 
-export const moveOnCue = (
-  item: StoryBridgeItem,
-  next: StoryBridgeItem | null,
-  opts: StoryBridgeCueOptions = {},
-): string => {
-  const closeLine = `${item.anchor.name} and ${item.target.name} are alike — both ${item.sharedBehavior}. `;
-  if (!next) {
-    return (
-      `[SB_MOVE] Say exactly: "Good try! ${closeLine}Stories are more fun side by side — we will read together again soon." `
-      + `Then stop — the activity is over.`
-    );
-  }
-  const how = opts.howToPlay ? howToPlay : '';
+export const moveOnCue = (item: StoryBridgeItem, next: StoryBridgeItem | null, opts: StoryBridgeCueOptions = {}): string => {
+  const closeLine = item.mode === 'match_character'
+    ? `${item.anchor.name} and ${item.target.name} are alike — both ${item.sharedBehavior}. `
+    : `${evidenceFor(item).summary} `;
+  if (!next) return `[SB_MOVE] Say exactly: "Good try! ${closeLine}We will compare stories together again soon." Then stop — the activity is over.`;
+  const how = opts.howToPlay ? howToPlayFor(next) : '';
   const stories = next.introducesStories ? storiesLine(next) : '';
-  return (
-    `[SB_MOVE] Stop correcting "${item.id}". Say exactly: `
-    + `"Good try! ${closeLine}${how}${stories}${askFor(next)}" `
-    + `${tapContract(next)} Never read bracket tags aloud.`
-  );
+  const contract = next.answerKind === 'gesture' ? tapContract(next) : voiceContract(next);
+  return `[SB_MOVE] Stop correcting "${item.id}". Say exactly: "Good try! ${closeLine}${how}${stories}${askFor(next)}" ${contract} Never read bracket tags aloud.`;
 };
 
 export const completeCue = (): string =>
-  `[SB_COMPLETE] Say exactly: "What great story work! You found the friends who are alike in both stories. See you next time!" Then stop — the activity is over.`;
+  `[SB_COMPLETE] Say exactly: "What great story work! You compared ideas from both stories. See you next time!" Then stop — the activity is over.`;
 
-/** Tap-to-hear re-reads BOTH stories and the ask — the sources stay available. */
 export const pronounceCue = (item: StoryBridgeItem): string =>
   `[SB_HEAR] The learner tapped to hear the stories again. Say ONLY this, warmly, then wait: "${storiesLine(item)}${askFor(item)}" `
-  + `Do not treat anything you just heard as an answer, add nothing, never say which friend is alike, `
-  + `and never say what they have in common. Never read bracket tags aloud.`;
-
-// ── Harness material (`/tutor-test --di`) ───────────────────────────────────
+  + `Do not treat anything just heard as an answer, add nothing, and never reveal the comparison. Never read bracket tags aloud.`;
 
 export interface StoryBridgeHarnessAnswers {
   correct: string;
   plainWrong: string;
-  /** Id-committed gestures: which far-shore card a right and a wrong tap commit. */
-  tapped: { correct: string; wrong: string };
-  /** The PAIRING is the answer. Every name is legitimately read inside the
-   *  stories, so the tokens are the pairing phrases the tutor must not say
-   *  before a verdict — and the story read-aloud is the exempt span. */
+  signatureWrong?: { text: string; why: string };
+  tapped?: { correct: string; wrong: string };
   leakTokens: string[];
   leakExemptSpan?: string | string[];
 }
 
 export const storyBridgeHarnessAnswers = (item: StoryBridgeItem): StoryBridgeHarnessAnswers => {
-  const wrong = item.options.find((c) => c.id !== item.target.id) ?? item.target;
+  if (item.answerKind === 'gesture') {
+    const wrong = item.choiceIds.find((choice) => choice !== item.correctChoiceId) ?? item.correctChoiceId;
+    return {
+      correct: `tapped ${choiceLabel(item, item.correctChoiceId)}`,
+      plainWrong: `tapped ${choiceLabel(item, wrong)}`,
+      tapped: { correct: item.correctChoiceId, wrong },
+      leakTokens: [item.comparisonSummary.toLowerCase()].filter(Boolean),
+      leakExemptSpan: item.introducesStories ? storiesLine(item).trim() : undefined,
+    };
+  }
   return {
-    correct: `tapped ${item.target.name}`,
-    plainWrong: `tapped ${wrong.name}`,
-    tapped: { correct: item.target.id, wrong: wrong.id },
-    leakTokens: [
-      `like ${item.target.name}`.toLowerCase(),
-      `${item.anchor.name} and ${item.target.name}`.toLowerCase(),
-      `both ${item.sharedBehavior}`.toLowerCase(),
-    ],
+    correct: item.comparisonSummary,
+    plainWrong: `${item.anchor.name} was in one story.`,
+    signatureWrong: { text: `${item.anchor.name} ${item.anchor.uniqueDetail}.`, why: 'references only one text, so the comparison is incomplete' },
+    leakTokens: [item.comparisonSummary.toLowerCase()],
     leakExemptSpan: item.introducesStories ? storiesLine(item).trim() : undefined,
   };
 };
 
-// ── The pack ────────────────────────────────────────────────────────────────
-
 export const storyBridgePack = (
-  items: StoryBridgeItem[],
-  getLastTap: () => StoryBridgeCharacter | null = () => null,
+  items: StoryBridgeItem[], getLastTap: () => string | StoryBridgeCharacter | null = () => null,
 ): JudgedScriptPack<StoryBridgeItem> => ({
   primitiveType: 'story-bridge',
-  activityLine:
-    'Two short stories are read aloud. The tutor names one character; the child taps the character '
-    + 'in the OTHER story who is alike by what they did or felt. Matching is by behavior, never by looks.',
+  activityLine: 'Two illustrated read-aloud stories stay in one context while the child compares characters, settings, main ideas, and event sequences using taps or speech.',
   items,
   maxCorrections: 2,
-  itemCue: (item, opts) => itemCue(item, opts),
-  moveOnCue: (item, next, opts) => moveOnCue(item, next, opts),
+  itemCue,
+  moveOnCue,
   completeCue,
   pronounceCue,
   contextFor: (item) => ({
     challengeType: item.mode,
     anchorName: item.anchor.name,
-    anchorStory: item.anchorStory.title,
-    targetStory: item.targetStory.title,
-    farShore: item.options.map((c) => c.name).join(', '),
-    taskFocus: `Find the friend in ${item.targetStory.title} who is like ${item.anchor.name} by what they did, not how they look.`,
+    anchorStory: item.storyA.title,
+    targetStory: item.storyB.title,
+    farShore: item.choiceIds.map((choice) => choiceLabel(item, choice)).join(', '),
+    taskFocus: askFor(item),
+    evidenceA: evidenceFor(item).storyA,
+    evidenceB: evidenceFor(item).storyB,
     currentTurn: String(items.findIndex((candidate) => candidate.id === item.id) + 1),
     totalTurns: String(items.length),
   }),
   statusLines: {
     idle: 'Tap the microphone to hear two stories.',
-    ready: () => 'Listen to both stories — then tap the friend who is alike.',
-    retry: () => 'Listen again — then tap the friend who is alike.',
-    noVerdict: () => 'Tap the friend who is alike.',
+    ready: (item) => item.answerKind === 'voice' ? 'Use both stories, then say your comparison.' : 'Use both stories, then tap your comparison.',
+    retry: (item) => item.answerKind === 'voice' ? 'Try again — say something true across both stories.' : 'Listen again — then tap your comparison.',
+    noVerdict: (item) => item.answerKind === 'voice' ? 'Say one comparison using both stories.' : 'Tap one picture choice.',
     done: 'Great story work today!',
   },
-  diagnosisObservation: (item) => {
-    const tapped = getLastTap();
+  diagnosisObservation: (item, { lastHeard }) => {
+    const rawTap = getLastTap();
+    const tapId = typeof rawTap === 'string' ? rawTap : rawTap?.id ?? '';
+    if (item.mode === 'match_character') {
+      return {
+        challenge: `Hear two stories, then: ${askFor(item)}`,
+        expected: `${item.target.name} tapped — both ${item.sharedBehavior}.`,
+        observed: `Tapped ${choiceLabel(item, tapId)}.`,
+      };
+    }
     return {
-      challenge: `Hear two stories, then: ${askFor(item)}`,
-      expected: `${item.target.name} tapped — both ${item.sharedBehavior}.`,
-      observed: tapped ? `Tapped ${tapped.name}.` : 'Tapped a friend who is not alike.',
+      challenge: askFor(item),
+      expected: evidenceFor(item).summary,
+      observed: item.answerKind === 'gesture'
+        ? `Tapped ${choiceLabel(item, tapId)}.`
+        : lastHeard?.trim() ? `Said "${lastHeard.trim()}".` : 'Gave no complete comparison across both texts.',
     };
   },
 });

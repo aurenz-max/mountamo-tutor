@@ -2533,10 +2533,24 @@ export interface YouAndMeMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
-/** story-bridge — K comparing texts, judged-loop gesture birth (2026-09-07). */
+/** story-bridge — K comparison across two illustrated read-alouds. */
 export interface StoryBridgeMetrics extends BasePrimitiveMetrics {
   type: 'story-bridge';
-  challengeType: 'match_character'; // union widens when /add-eval-modes builds the ladder
+  challengeType:
+    | 'match_character'
+    | 'match_setting'
+    | 'say_alike'
+    | 'say_different'
+    | 'venn_place'
+    | 'sequence_two'
+    | 'main_idea_compare'
+    | 'mixed';
+  modeResults?: Array<{
+    mode: Exclude<StoryBridgeMetrics['challengeType'], 'mixed'>;
+    total: number;
+    correct: number;
+    accuracy: number;
+  }>;
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total tries across all challenges
