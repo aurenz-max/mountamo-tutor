@@ -61,6 +61,7 @@ import PracticeProblem from '../primitives/visual-primitives/math/PracticeProble
 import SkipCountingRunner from '../primitives/visual-primitives/math/SkipCountingRunner';
 import RegroupingWorkbench from '../primitives/visual-primitives/math/RegroupingWorkbench';
 import MultiplicationExplorer from '../primitives/visual-primitives/math/MultiplicationExplorer';
+import MeasureLab from '../primitives/visual-primitives/math/MeasureLab';
 import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTools';
 import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import ShapeComposer from '../primitives/visual-primitives/math/ShapeComposer';
@@ -990,6 +991,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'measure-lab': {
+    component: MeasureLab,
+    sectionTitle: 'Measure Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-5xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 

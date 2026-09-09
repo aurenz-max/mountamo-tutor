@@ -29,6 +29,7 @@ import { fractionCirclesOracle } from './fraction-circles';
 import { hundredsChartOracle } from './hundreds-chart';
 import { knowledgeCheckOracle } from './knowledge-check';
 import { mathFactFluencyOracle } from './math-fact-fluency';
+import { measureLabOracle } from './measure-lab';
 import { matrixDisplayOracle } from './matrix-display';
 import { multiplicationExplorerOracle } from './multiplication-explorer';
 import { numberBondOracle } from './number-bond';
@@ -85,6 +86,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   hundredsChartOracle,
   knowledgeCheckOracle,
   mathFactFluencyOracle,
+  measureLabOracle,
   matrixDisplayOracle,
   multiplicationExplorerOracle,
   numberBondOracle,

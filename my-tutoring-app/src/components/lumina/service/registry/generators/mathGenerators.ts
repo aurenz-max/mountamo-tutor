@@ -70,6 +70,7 @@ import { generatePracticeProblem } from '../../math/gemini-practice-problem';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
+import { generateMeasureLab } from '../../math/gemini-measure-lab';
 import { generateNumberLine } from '../../math/gemini-number-line';
 import { generateBaseTenBlocks } from '../../math/gemini-base-ten-blocks';
 import { generateFractionCircles } from '../../math/gemini-fraction-circles';
@@ -509,6 +510,13 @@ registerContextGenerator('practice-problem', async (ctx) => {
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
+
+// Measure Lab (K weight + capacity bench — a balance that tips, containers that fill)
+registerContextGenerator('measure-lab', async (ctx) => ({
+  type: 'measure-lab',
+  instanceId: ctx.instanceId,
+  data: await generateMeasureLab(ctx),
+}));
 
 // Bar Model (K-5 comparison bars, scaled bar graphs, picture graphs)
 registerContextGenerator('bar-model', async (ctx) => ({

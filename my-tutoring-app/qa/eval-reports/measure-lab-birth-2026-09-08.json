@@ -1,0 +1,504 @@
+{
+  "startedAt": "2026-09-09T02:48:47.184Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "balance_predict draw 1",
+      "mode": "balance_predict",
+      "failures": [],
+      "title": "The Balance Scale",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "ml-1",
+          "prompt": "Which is heavier — the rubber ball or the feather?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "⚽rubber ball=7",
+            "🪶feather=3"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-0-l"
+        },
+        {
+          "id": "ml-2",
+          "prompt": "Which is heavier — the feather or the toy block?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "🪶feather=7",
+            "🧱toy block=9"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-1-r"
+        },
+        {
+          "id": "ml-3",
+          "prompt": "Which is heavier — the story book or the toy block?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "📖story book=10",
+            "🧱toy block=3"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-2-l"
+        },
+        {
+          "id": "ml-4",
+          "prompt": "Which is heavier — the feather or the sock?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "🪶feather=1",
+            "🧦sock=6"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-3-r"
+        },
+        {
+          "id": "ml-5",
+          "prompt": "Which is heavier — the feather or the toy block?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "🪶feather=8",
+            "🧱toy block=4"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-4-l"
+        }
+      ]
+    },
+    {
+      "label": "balance_predict draw 2",
+      "mode": "balance_predict",
+      "failures": [],
+      "title": "The Balance Scale",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "ml-1",
+          "prompt": "Which is heavier — the feather or the apple?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "🪶feather=7",
+            "🍎apple=1"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-0-l"
+        },
+        {
+          "id": "ml-2",
+          "prompt": "Which is heavier — the apple or the toy block?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "🍎apple=1",
+            "🧱toy block=7"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-1-r"
+        },
+        {
+          "id": "ml-3",
+          "prompt": "Which is heavier — the sock or the rubber duck?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "🧦sock=9",
+            "🦆rubber duck=7"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-2-l"
+        },
+        {
+          "id": "ml-4",
+          "prompt": "Which is heavier — the toy block or the rubber duck?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "🧱toy block=2",
+            "🦆rubber duck=9"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-3-r"
+        },
+        {
+          "id": "ml-5",
+          "prompt": "Which is heavier — the apple or the rubber duck?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "objects": [
+            "🍎apple=6",
+            "🦆rubber duck=3"
+          ],
+          "containers": [],
+          "expectedChoice": "obj-4-l"
+        }
+      ]
+    },
+    {
+      "label": "capacity_predict draw 1",
+      "mode": "capacity_predict",
+      "failures": [],
+      "title": "The Pouring Table",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "ml-1",
+          "prompt": "Which holds more — the glass jar or the tall bottle?",
+          "hint": "Fill them both and watch. The one that takes more holds more.",
+          "containers": [
+            "glass jar(tall) cap=8",
+            "tall bottle(round) cap=5"
+          ],
+          "expectedChoice": "cnt-0-a"
+        },
+        {
+          "id": "ml-2",
+          "prompt": "Which holds more — the juice jug or the soup mug?",
+          "hint": "Fill them both and watch. The one that takes more holds more.",
+          "containers": [
+            "juice jug(wide) cap=3",
+            "soup mug(tall) cap=7"
+          ],
+          "expectedChoice": "cnt-1-b"
+        },
+        {
+          "id": "ml-3",
+          "prompt": "Which holds more — the wide bowl or the soup mug?",
+          "hint": "Fill them both and watch. The one that takes more holds more.",
+          "containers": [
+            "wide bowl(wide) cap=6",
+            "soup mug(tall) cap=2"
+          ],
+          "expectedChoice": "cnt-2-a"
+        },
+        {
+          "id": "ml-4",
+          "prompt": "Which holds more — the wide bowl or the glass jar?",
+          "hint": "Fill them both and watch. The one that takes more holds more.",
+          "containers": [
+            "wide bowl(tall) cap=5",
+            "glass jar(round) cap=7"
+          ],
+          "expectedChoice": "cnt-3-b"
+        }
+      ]
+    },
+    {
+      "label": "capacity_predict draw 2",
+      "mode": "capacity_predict",
+      "failures": [],
+      "title": "The Pouring Table",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "ml-1",
+          "prompt": "Which holds more — the soup bowl or the mixing bowl?",
+          "hint": "Fill them both and watch. The one that takes more holds more.",
+          "containers": [
+            "soup bowl(wide) cap=5",
+            "mixing bowl(round) cap=3"
+          ],
+          "expectedChoice": "cnt-0-a"
+        },
+        {
+          "id": "ml-2",
+          "prompt": "Which holds more — the coffee mug or the tall glass?",
+          "hint": "Fill them both and watch. The one that takes more holds more.",
+          "containers": [
+            "coffee mug(round) cap=2",
+            "tall glass(tall) cap=8"
+          ],
+          "expectedChoice": "cnt-1-b"
+        },
+        {
+          "id": "ml-3",
+          "prompt": "Which holds more — the soup bowl or the water jug?",
+          "hint": "Fill them both and watch. The one that takes more holds more.",
+          "containers": [
+            "soup bowl(wide) cap=5",
+            "water jug(round) cap=2"
+          ],
+          "expectedChoice": "cnt-2-a"
+        },
+        {
+          "id": "ml-4",
+          "prompt": "Which holds more — the tall glass or the plastic cup?",
+          "hint": "Fill them both and watch. The one that takes more holds more.",
+          "containers": [
+            "tall glass(tall) cap=2",
+            "plastic cup(round) cap=5"
+          ],
+          "expectedChoice": "cnt-3-b"
+        }
+      ]
+    },
+    {
+      "label": "pour_count draw 1",
+      "mode": "pour_count",
+      "failures": [],
+      "title": "The Pouring Table",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "ml-1",
+          "prompt": "Fill the Sandbox Bucket with scoops. How many does it take?",
+          "hint": "Count each scoop out loud as you pour it in.",
+          "containers": [],
+          "container": "Sandbox Bucket(tall) cap=5",
+          "expectedCount": 5,
+          "options": [
+            4,
+            5,
+            6,
+            7
+          ]
+        },
+        {
+          "id": "ml-2",
+          "prompt": "Fill the Mixing Jug with scoops. How many does it take?",
+          "hint": "Count each scoop out loud as you pour it in.",
+          "containers": [],
+          "container": "Mixing Jug(wide) cap=3",
+          "expectedCount": 3,
+          "options": [
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "id": "ml-3",
+          "prompt": "Fill the Mixing Jug with scoops. How many does it take?",
+          "hint": "Count each scoop out loud as you pour it in.",
+          "containers": [],
+          "container": "Mixing Jug(round) cap=4",
+          "expectedCount": 4,
+          "options": [
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "id": "ml-4",
+          "prompt": "Fill the Plastic Pot with scoops. How many does it take?",
+          "hint": "Count each scoop out loud as you pour it in.",
+          "containers": [],
+          "container": "Plastic Pot(tall) cap=6",
+          "expectedCount": 6,
+          "options": [
+            5,
+            6,
+            7,
+            8
+          ]
+        }
+      ]
+    },
+    {
+      "label": "pour_count draw 2",
+      "mode": "pour_count",
+      "failures": [],
+      "title": "The Measuring Table",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "ml-1",
+          "prompt": "Fill the soup bowl with cups. How many does it take?",
+          "hint": "Count each cup out loud as you pour it in.",
+          "containers": [],
+          "container": "soup bowl(tall) cap=5",
+          "expectedCount": 5,
+          "options": [
+            4,
+            5,
+            6,
+            7
+          ]
+        },
+        {
+          "id": "ml-2",
+          "prompt": "Fill the bucket with cups. How many does it take?",
+          "hint": "Count each cup out loud as you pour it in.",
+          "containers": [],
+          "container": "bucket(wide) cap=6",
+          "expectedCount": 6,
+          "options": [
+            5,
+            6,
+            7,
+            8
+          ]
+        },
+        {
+          "id": "ml-3",
+          "prompt": "Fill the small cup with cups. How many does it take?",
+          "hint": "Count each cup out loud as you pour it in.",
+          "containers": [],
+          "container": "small cup(round) cap=6",
+          "expectedCount": 6,
+          "options": [
+            5,
+            6,
+            7,
+            8
+          ]
+        },
+        {
+          "id": "ml-4",
+          "prompt": "Fill the soup bowl with cups. How many does it take?",
+          "hint": "Count each cup out loud as you pour it in.",
+          "containers": [],
+          "container": "soup bowl(tall) cap=7",
+          "expectedCount": 7,
+          "options": [
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      ]
+    },
+    {
+      "label": "order_capacity draw 1",
+      "mode": "order_capacity",
+      "failures": [],
+      "title": "The Pouring Table",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "ml-1",
+          "prompt": "Put the soup bowls in order. Start with the one that has the least.",
+          "hint": "Look at how high the water comes up in each one.",
+          "containers": [
+            "soup bowl 1(tall) cap=8 filled=1",
+            "soup bowl 2(tall) cap=8 filled=4",
+            "soup bowl 3(tall) cap=8 filled=7"
+          ],
+          "expectedOrder": [
+            "jar-0-0",
+            "jar-0-1",
+            "jar-0-2"
+          ]
+        },
+        {
+          "id": "ml-2",
+          "prompt": "Put the tall glasss in order. Start with the one that has the least.",
+          "hint": "Look at how high the water comes up in each one.",
+          "containers": [
+            "tall glass 1(wide) cap=8 filled=7",
+            "tall glass 2(wide) cap=8 filled=4",
+            "tall glass 3(wide) cap=8 filled=2"
+          ],
+          "expectedOrder": [
+            "jar-1-2",
+            "jar-1-1",
+            "jar-1-0"
+          ]
+        },
+        {
+          "id": "ml-3",
+          "prompt": "Put the small cups in order. Start with the one that has the least.",
+          "hint": "Look at how high the water comes up in each one.",
+          "containers": [
+            "small cup 1(round) cap=8 filled=5",
+            "small cup 2(round) cap=8 filled=7",
+            "small cup 3(round) cap=8 filled=1"
+          ],
+          "expectedOrder": [
+            "jar-2-2",
+            "jar-2-0",
+            "jar-2-1"
+          ]
+        },
+        {
+          "id": "ml-4",
+          "prompt": "Put the small cups in order. Start with the one that has the least.",
+          "hint": "Look at how high the water comes up in each one.",
+          "containers": [
+            "small cup 1(tall) cap=8 filled=2",
+            "small cup 2(tall) cap=8 filled=7",
+            "small cup 3(tall) cap=8 filled=5"
+          ],
+          "expectedOrder": [
+            "jar-3-0",
+            "jar-3-2",
+            "jar-3-1"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "order_capacity draw 2",
+      "mode": "order_capacity",
+      "failures": [],
+      "title": "The Pouring Table",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "ml-1",
+          "prompt": "Put the small cups in order. Start with the one that has the least.",
+          "hint": "Look at how high the water comes up in each one.",
+          "containers": [
+            "small cup 1(tall) cap=8 filled=7",
+            "small cup 2(tall) cap=8 filled=1",
+            "small cup 3(tall) cap=8 filled=4"
+          ],
+          "expectedOrder": [
+            "jar-0-1",
+            "jar-0-2",
+            "jar-0-0"
+          ]
+        },
+        {
+          "id": "ml-2",
+          "prompt": "Put the bowls in order. Start with the one that has the least.",
+          "hint": "Look at how high the water comes up in each one.",
+          "containers": [
+            "bowl 1(wide) cap=8 filled=7",
+            "bowl 2(wide) cap=8 filled=2",
+            "bowl 3(wide) cap=8 filled=4"
+          ],
+          "expectedOrder": [
+            "jar-1-1",
+            "jar-1-2",
+            "jar-1-0"
+          ]
+        },
+        {
+          "id": "ml-3",
+          "prompt": "Put the mugs in order. Start with the one that has the least.",
+          "hint": "Look at how high the water comes up in each one.",
+          "containers": [
+            "mug 1(round) cap=8 filled=5",
+            "mug 2(round) cap=8 filled=7",
+            "mug 3(round) cap=8 filled=1"
+          ],
+          "expectedOrder": [
+            "jar-2-2",
+            "jar-2-0",
+            "jar-2-1"
+          ]
+        },
+        {
+          "id": "ml-4",
+          "prompt": "Put the jugs in order. Start with the one that has the least.",
+          "hint": "Look at how high the water comes up in each one.",
+          "containers": [
+            "jug 1(tall) cap=8 filled=2",
+            "jug 2(tall) cap=8 filled=5",
+            "jug 3(tall) cap=8 filled=7"
+          ],
+          "expectedOrder": [
+            "jar-3-0",
+            "jar-3-1",
+            "jar-3-2"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 8,
+    "failedDraws": 0
+  }
+}

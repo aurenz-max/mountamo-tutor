@@ -7,6 +7,7 @@ import AreaModel from '../primitives/visual-primitives/math/AreaModel';
 import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
 import FactorTree from '../primitives/visual-primitives/math/FactorTree';
 import BarModel from '../primitives/visual-primitives/math/BarModel';
+import MeasureLab from '../primitives/visual-primitives/math/MeasureLab';
 import RatioTable from '../primitives/visual-primitives/math/RatioTable';
 import DoubleNumberLine from '../primitives/visual-primitives/math/DoubleNumberLine';
 import PercentBar from '../primitives/visual-primitives/math/PercentBar';
@@ -80,7 +81,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'measure-lab' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 type PrimitiveOption = { value: PrimitiveType; label: string; icon: string; topic: string };
@@ -213,6 +214,7 @@ const PRIMITIVE_GROUPS: Array<{ label: string; grade: string; items: PrimitiveOp
     grade: 'K–5',
     items: [
       { value: 'length-lab', label: 'Length Lab', icon: '📏', topic: 'Measuring and comparing lengths' },
+      { value: 'measure-lab', label: 'Measure Lab', icon: '⚖️', topic: 'Comparing weight and capacity by testing: heavier, lighter, holds more, holds less' },
       { value: 'measurement-tools', label: 'Measurement Tools', icon: '📏', topic: 'Length, weight, capacity, and temperature measurement' },
       { value: 'analog-clock', label: 'Analog Clock', icon: '🕐', topic: 'Reading and setting time on analog clocks' },
       { value: 'time-sequencer', label: 'Time Sequencer', icon: '🕐', topic: 'daily routines and time' },
@@ -308,6 +310,19 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'math-number-theory',
             subskillId: 'prime-factorization',
             objectiveId: 'understand-prime-factors',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'measure-lab':
+      return (
+        <MeasureLab
+          data={{
+            ...(data as Parameters<typeof MeasureLab>[0]['data']),
+            instanceId: `measure-lab-${Date.now()}`,
+            skillId: 'math-measurement',
+            subskillId: 'weight-and-capacity',
+            objectiveId: 'compare-weight-and-capacity',
             onEvaluationSubmit,
           }}
         />
@@ -1095,6 +1110,17 @@ const EvaluationResultsPanel: React.FC = () => {
                   </div>
                 )}
                 {/* Show BarModel-specific metrics */}
+                {result.metrics.type === 'measure-lab' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
                 {result.metrics.type === 'bar-model' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.evalMode}</span>

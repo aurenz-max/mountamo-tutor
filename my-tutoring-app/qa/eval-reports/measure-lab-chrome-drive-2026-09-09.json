@@ -1,0 +1,19 @@
+{
+  "log": [
+    "PASS balance: challenges generated",
+    "PASS balance: the prediction comes first",
+    "PASS balance: no weight is printed on the bench (found [])",
+    "PASS balance: the test phase opens after the prediction",
+    "PASS balance: both objects can be put on (found 2)",
+    "PASS balance: a wrong prediction is judged wrong once it tips",
+    "PASS pour: a container generated",
+    "PASS pour: 10 cups offered for a capacity of 8",
+    "PASS pour: the question waits until it is full",
+    "PASS pour: the container fills and asks for the count",
+    "PASS pour: a wrong count is judged wrong",
+    "PASS pour: the true count is judged correct",
+    "PASS capacity: the bigger container is judged correct after the pour",
+    "PASS order: most-to-least is judged wrong",
+    "PASS order: least-to-most is judged correct"
+  ]
+}

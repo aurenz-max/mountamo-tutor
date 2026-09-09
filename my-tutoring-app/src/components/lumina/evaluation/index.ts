@@ -105,6 +105,7 @@ export type {
   CountingBoardMetrics,
   PatternBuilderMetrics,
   MultiplicationExplorerMetrics,
+  MeasureLabMetrics,
   MeasurementToolsMetrics,
   HistogramMetrics,
   MatrixDisplayMetrics,

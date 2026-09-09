@@ -1504,6 +1504,7 @@ export type ComponentId =
   | 'regrouping-workbench' // Addition/subtraction with carrying/borrowing using base-ten blocks and written algorithm (1-4)
   | 'multiplication-explorer' // Multi-representation multiplication workspace: equal groups, arrays, repeated addition, number line, area model (2-4)
   | 'net-folder'              // Interactive net folding for 3D shape understanding
+  | 'measure-lab'             // K weight + capacity bench: a pan balance that tips and containers that fill; predict, then test (K.MD.A.1/A.2)
   | 'measurement-tools'       // Virtual measurement instruments: ruler, scale, measuring cup, thermometer for length, weight, capacity, temperature (1-5)
   | 'shape-builder'           // Interactive shape construction and property exploration
   | 'shape-composer'          // Interactive shape composition
@@ -2211,6 +2212,7 @@ export type { PatternBuilderData } from './primitives/visual-primitives/math/Pat
 export type { SkipCountingRunnerData } from './primitives/visual-primitives/math/SkipCountingRunner';
 export type { RegroupingWorkbenchData } from './primitives/visual-primitives/math/RegroupingWorkbench';
 export type { MultiplicationExplorerData } from './primitives/visual-primitives/math/MultiplicationExplorer';
+export type { MeasureLabData } from './primitives/visual-primitives/math/MeasureLab';
 export type { MeasurementToolsData } from './primitives/visual-primitives/math/MeasurementTools';
 export type { ShapeBuilderData } from './primitives/visual-primitives/math/ShapeBuilder';
 export type { ShapeComposerData } from './primitives/visual-primitives/math/ShapeComposer';

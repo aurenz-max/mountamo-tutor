@@ -2766,6 +2766,19 @@ export interface CountingBoardMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface MeasureLabMetrics extends BasePrimitiveMetrics {
+  type: 'measure-lab';
+  /** The measuring task this session practiced. */
+  challengeType: 'balance_predict' | 'capacity_predict' | 'pour_count' | 'order_capacity';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface MeasurementToolsMetrics extends BasePrimitiveMetrics {
   type: 'measurement-tools';
   challengeType: 'measure' | 'compare' | 'estimate' | 'convert';
@@ -3739,6 +3752,7 @@ export type PrimitiveMetrics =
   | SkipCountingRunnerMetrics
   | RegroupingWorkbenchMetrics
   | MultiplicationExplorerMetrics
+  | MeasureLabMetrics
   | MeasurementToolsMetrics
   | HistogramMetrics
   | MatrixDisplayMetrics
