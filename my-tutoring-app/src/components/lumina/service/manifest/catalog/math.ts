@@ -2136,8 +2136,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   // Math Phase 2 Primitives (K-5 Foundations)
   {
     id: 'ten-frame',
-    description: 'Live tutor-judged 2×5 grid manipulative for K-2 number sense (DI modality). The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the answer out loud for subitizing (counters flash, then hide — say how many you saw), for make-ten at grades 1-2 (how many more fill the frame), and for addition and subtraction on the frame; they answer WITH THEIR HANDS for building a number (place exactly N counters), for DECOMPOSING a group (a group of counters arrives all red; turn some yellow to break it into two groups, and a different way each time), and for make-ten at Kindergarten (tap the empty cells until the frame is full), where working the counters IS the skill. Supports single frame (1-10) and double frame (1-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, subitizing, decomposing numbers into pairs (K.OA.3), make-ten strategy, addition, and subtraction.',
-    constraints: 'Best for grades K-2. A microphone is required for the SPOKEN modes (subitize, make-ten at grades 1-2, operate); the hands-only modes (build, decompose) are judged from what the child does on the frame and need no spoken answer. There is no Check button and no typed or stepper answer anywhere. Single frame for K, double frame for grades 1-2. Every spoken answer is a number word from 1 to 20 — challenges whose answer would be 0 (an empty frame, a subtraction down to nothing) or above 20 are discarded before the child sees them.',
+    description: 'Live tutor-judged 2×5 grid manipulative for K-2 number sense (DI modality). The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the answer out loud for subitizing (counters flash, then hide — say how many you saw), for make-ten at grades 1-2 (how many more fill the frame), and for addition and subtraction on the frame; they answer WITH THEIR HANDS for building a number (place exactly N counters), for DECOMPOSING a group (a group of counters arrives all red; turn some yellow to break it into two groups, and a different way each time), and for make-ten at Kindergarten (tap the empty cells until the frame is full), and for TEEN NUMBERS at Kindergarten (place the ones beside a full frame of ten, or find the ten inside a scattered group of 11-19), where working the counters IS the skill. Supports single frame (1-10) and double frame (1-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, subitizing, decomposing numbers into pairs (K.OA.3), TEEN NUMBERS as ten ones and some further ones (K.NBT.1), make-ten strategy, addition, and subtraction.',
+    constraints: 'Best for grades K-2. A microphone is required for the SPOKEN modes (subitize, make-ten at grades 1-2, operate); the hands-only modes (build, decompose) are judged from what the child does on the frame and need no spoken answer. There is no Check button and no typed or stepper answer anywhere. Single frame for K, double frame for grades 1-2 — except the two teen-number modes, which use the double frame at every grade because a ten and some ones will not fit on one frame. Every spoken answer is a number word from 1 to 20 — challenges whose answer would be 0 (an empty frame, a subtraction down to nothing) or above 20 are discarded before the child sees them.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'build'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
@@ -2159,6 +2159,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Split a group of counters into two colour groups and, across the session, into a DIFFERENT pair each time. The answer is the partition the child enacts on the frame — CCSS K.OA.3, "decompose numbers less than or equal to 10 into pairs in more than one way". Concrete manipulative; no microphone needed.',
       },
       {
+        evalMode: 'build_teen',
+        affordances: { answers: ['build'] },
+        label: 'Ten and Some More (Teen Numbers)',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['build_teen'],
+        description: 'A DOUBLE frame whose top half arrives full — that is one ten — and the child places the remaining ones to make a teen number 11-19. CCSS K.NBT.1 composition: 14 is ten and four more. Concrete manipulative; no microphone needed.',
+      },
+      {
         evalMode: 'subitize',
         affordances: { representation: 'pictorial', answers: ['spoken'] },
         label: 'Subitize (Pictorial)',
@@ -2166,6 +2175,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['subitize'],
         description: 'Counters flash and hide; the child says how many they saw. Pictorial recognition — one layer of abstraction above concrete.',
+      },
+      {
+        evalMode: 'decompose_teen',
+        affordances: { answers: ['build'] },
+        label: 'Find the Ten (Teen Numbers)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['decompose_teen'],
+        description: 'A teen group of 11-19 counters arrives SCATTERED across a double frame and the child turns exactly ten of them yellow, so the ten is FOUND rather than given. CCSS K.NBT.1 decomposition: 14 is ten and four more. Concrete manipulative; no microphone needed.',
       },
       {
         evalMode: 'make_ten',

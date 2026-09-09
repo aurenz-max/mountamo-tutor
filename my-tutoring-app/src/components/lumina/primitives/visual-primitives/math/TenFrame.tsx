@@ -14,6 +14,13 @@
  *  - build: the child PLACES counters. The placement is the answer.
  *  - make_ten @ K: the child TAPS EMPTY CELLS to fill the frame; the counters
  *    they placed are the enacted complement (contract R6, untouched).
+ *  - build_teen: the TOP frame opens full — that is a ten — and the child TAPS
+ *    the empty boxes below it until the two frames hold the teen number the
+ *    tutor asked for. The ones they place are the answer (K.NBT.1).
+ *  - decompose_teen: a teen group arrives SCATTERED over both frames, all red,
+ *    and the child TURNS TEN OF THEM YELLOW. The scatter is load-bearing: a
+ *    group seeded top-frame-first would make "flip the full row" a layout cue
+ *    a child who cannot count to ten could follow.
  *  - split: the frame opens with the whole group already on it, all red, and
  *    the child TURNS SOME YELLOW. Where they put the line between the colours
  *    is the decomposition (contract R9). Taps flip; nothing is added or taken
@@ -91,12 +98,15 @@ import {
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   frameVerdictCue,
+  isTeenKind,
   itemsFromChallenges,
   splitKey,
   stimulusFor,
+  teenTotalFor,
   tenFramePackBase,
   SPLIT_COLOR_A,
   SPLIT_COLOR_B,
+  TEEN_TEN,
   type TenFrameBand,
   type TenFrameItem,
 } from './tenFrameScript';
@@ -112,7 +122,15 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 export interface TenFrameChallenge {
   id: string;
-  type: 'build' | 'subitize' | 'make_ten' | 'split' | 'add' | 'subtract';
+  type:
+    | 'build'
+    | 'subitize'
+    | 'make_ten'
+    | 'split'
+    | 'build_teen'
+    | 'decompose_teen'
+    | 'add'
+    | 'subtract';
   /** Student-facing prompt. Synthesized deterministically by the generator from
    *  the numeric fields below — never authored by the LLM (see SP-17). Shown to
    *  readers only; the tutor SPEAKS the problem for everyone. */
@@ -172,6 +190,8 @@ const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   subitize: { label: 'Subitize', icon: '👁️' },
   make_ten: { label: 'Make Ten', icon: '🎯' },
   split: { label: 'Split', icon: '🔴🟡' },
+  build_teen: { label: 'Ten and Some More', icon: '🔟' },
+  decompose_teen: { label: 'Find the Ten', icon: '🔍' },
   add: { label: 'Add', icon: '➕' },
   subtract: { label: 'Subtract', icon: '➖' },
 };
@@ -324,6 +344,18 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               expected: 'Both groups non-empty, and a pair not already shown for this total.',
               observed: `Left ${item.answer - pendingPlacementRef.current} red, turned ${pendingPlacementRef.current} yellow.`,
             }
+          : item.kind === 'decompose_teen'
+            ? {
+                challenge: `Turn exactly ten of the ${item.answer} counters yellow.`,
+                expected: 'Ten yellow, the rest left red.',
+                observed: `Turned ${pendingPlacementRef.current} yellow.`,
+              }
+          : item.kind === 'build_teen'
+            ? {
+                challenge: `Make ${teenTotalFor(item)} with a full ten already on the top frame.`,
+                expected: `${item.answer} more counters placed beside the ten.`,
+                observed: `Placed ${pendingPlacementRef.current - item.shown} more.`,
+              }
           : {
             challenge: item.kind === 'build'
               ? `Put ${item.answer} counters on the ten frame.`
@@ -351,13 +383,20 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
     // A completed frame never carries into the next challenge: build and add
     // start empty, make-ten seeds its shown group, subtract seeds its start,
-    // and split seeds the WHOLE group the child is about to partition.
+    // split seeds the WHOLE group the child is about to partition, build_teen
+    // seeds the full top frame, and decompose_teen seeds its group at the
+    // SCATTERED positions the script computed for this item.
     const seeded = item.kind === 'subitize' ? 0 : item.shown;
-    setFilledCells(new Set(Array.from({ length: seeded }, (_, i) => i)));
+    setFilledCells(new Set(
+      item.seedCells ?? Array.from({ length: seeded }, (_, i) => i),
+    ));
     // Every split item starts all-red. Nothing about the previous partition
     // survives into the next ask — a carried-over flip would be a free part.
     setFlippedCells(new Set());
-    pendingPlacementRef.current = item.kind === 'split' ? 0 : seeded;
+    // Flip modes count YELLOWS from zero; placement modes count what is on the
+    // frame, so their pending value starts at whatever was seeded.
+    pendingPlacementRef.current =
+      item.kind === 'split' || item.kind === 'decompose_teen' ? 0 : seeded;
     // Subitize hides its counters until the flash runs; every other mode shows
     // whatever is on the frame.
     setCountersVisible(item.kind !== 'subitize');
@@ -457,6 +496,11 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
             // record of their own work (`pendingPlacementRef` is the yellow
             // count they committed).
             ? `${item.answer - pendingPlacementRef.current} + ${pendingPlacementRef.current} = ${item.answer}`
+          : isTeenKind(item.kind)
+            // The decomposition the child just built. On both teen modes it
+            // reads the same way — ten and the ones — which is the sentence
+            // K.NBT.1 asks them to be able to see.
+            ? `${TEEN_TEN} + ${teenTotalFor(item) - TEEN_TEN} = ${teenTotalFor(item)}`
           : item.kind === 'make_ten'
             ? `${item.shown} + ${item.answer} = ${item.capacity}`
             : item.kind === 'add'
@@ -484,11 +528,16 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       // indistinguishable, so there is no "wrong slot" to clear the way
       // cvc-speller does. Voice items keep whatever the child built.
       if (item.answerKind === 'gesture') {
-        setFilledCells(new Set(Array.from({ length: item.shown }, (_, i) => i)));
-        // split goes back to all-red for the retry, and its pending gesture is
-        // a FLIP count, so it resets to zero rather than to the group size.
+        setFilledCells(new Set(
+          item.seedCells ?? Array.from({ length: item.shown }, (_, i) => i),
+        ));
+        // The flip modes go back to all-red for the retry, and their pending
+        // gesture is a FLIP count, so it resets to zero rather than to the
+        // group size. A decompose_teen retry keeps the SAME scatter — moving
+        // the counters between tries would make the correction unfollowable.
         setFlippedCells(new Set());
-        pendingPlacementRef.current = item.kind === 'split' ? 0 : item.shown;
+        pendingPlacementRef.current =
+          item.kind === 'split' || item.kind === 'decompose_teen' ? 0 : item.shown;
       }
     },
   });
@@ -522,7 +571,12 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       runner.submitGestureAttempt(frameVerdictCue(item, onFrame, { alreadyShown }));
       return;
     }
-    const enacted = item.kind === 'make_ten' ? Math.max(0, onFrame - item.shown) : onFrame;
+    // `make_ten` and `build_teen` both commit what the child ADDED to a seeded
+    // frame; `decompose_teen` commits its flip count, which `armSettle` already
+    // wrote. Everything else commits what is on the frame.
+    const enacted = item.kind === 'make_ten' || item.kind === 'build_teen'
+      ? Math.max(0, onFrame - item.shown)
+      : onFrame;
     runner.submitGestureAttempt(frameVerdictCue(item, enacted));
   }, [runner]);
 
@@ -555,7 +609,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     // the only variable the item measures is where the line between the two
     // groups falls. (This is the two-colour counter, in software: one disc, red
     // on one face, yellow on the other. `allowFlip` finally has a mode.)
-    if (item.kind === 'split') {
+    if (item.kind === 'split' || item.kind === 'decompose_teen') {
       if (!filledCells.has(cellIndex)) return;
       SoundManager.tap();
       const flipped = new Set(flippedCells);
@@ -567,10 +621,15 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       return;
     }
 
-    // K make-ten: only the EMPTY cells are the answer surface. The seeded
-    // counters are fixed and placed ones stay placed (R6); filling the frame
-    // commits immediately, which is R6's own rule.
-    if (item.kind === 'make_ten' && item.answerKind === 'gesture') {
+    // K make-ten and build_teen: only the EMPTY cells are the answer surface.
+    // The seeded counters are fixed and placed ones stay placed (R6).
+    //
+    // ONLY make-ten auto-commits on a full frame. It has a terminal state and
+    // R6 makes reaching it the answer; `build_teen` has none — the frame holds
+    // twenty and the teen number is short of it — so it closes on stillness
+    // like `build`. Reading `commitAt` directly rather than falling back to
+    // `capacity` is what keeps those two apart.
+    if ((item.kind === 'make_ten' || item.kind === 'build_teen') && item.answerKind === 'gesture') {
       if (filledCells.has(cellIndex)) return;
       SoundManager.tap();
       const placed = new Set(filledCells);
@@ -578,7 +637,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       setFilledCells(placed);
       placementChangesRef.current += 1;
       if (placed.size >= totalCells) fullFrameEverRef.current = true;
-      if (placed.size >= (item.commitAt ?? item.capacity)) {
+      if (item.commitAt != null && placed.size >= item.commitAt) {
         runner.clearStillness();
         pendingPlacementRef.current = placed.size;
         commitPlacement();
@@ -623,7 +682,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     // `split` owns its palette outright: the tutor's lines NAME red and yellow,
     // so a generator-chosen colour here would make her mouth disagree with the
     // child's screen (tenFrameScript's SPLIT_COLOR_* docblock).
-    if (currentItem?.kind === 'split') {
+    if (currentItem?.kind === 'split' || currentItem?.kind === 'decompose_teen') {
       return flippedCells.has(index) ? SPLIT_COLOR_B : SPLIT_COLOR_A;
     }
     if (twoColorMode?.enabled) {
@@ -753,8 +812,13 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // `split` is deliberately absent: the honest readout there would be the two
   // PARTS, which is the answer, and the total is already both on screen and in
   // the ask. There is nothing left for a count readout to add.
+  // `build_teen` joins them: its readout is the total on the frames, which the
+  // ask already states aloud — the child's own trace toward a public target.
+  // `decompose_teen` is deliberately absent for `split`'s reason — the honest
+  // readout there would be the yellow count, which IS what is being asked for.
   const showTrace = showCount && countersVisible
-    && (kind === 'build' || kind === 'make_ten') && filledCells.size > 0;
+    && (kind === 'build' || kind === 'make_ten' || kind === 'build_teen')
+    && filledCells.size > 0;
 
   const stageWord = runner.stage === 'judging'
     ? 'let’s see…'
@@ -783,7 +847,11 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
             )}
           </div>
           <LuminaBadge accent="cyan" className="text-xs">
-            {kind === 'split' ? 'Make two groups' : isGestureItem ? 'Use the frame' : 'Say it out loud'}
+            {kind === 'split'
+              ? 'Make two groups'
+              : kind === 'decompose_teen'
+                ? 'Find the ten'
+                : isGestureItem ? 'Use the frame' : 'Say it out loud'}
           </LuminaBadge>
         </div>
         {!isPreReader && description && (
@@ -891,7 +959,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">
-                {kind === 'split'
+                {kind === 'split' || kind === 'decompose_teen'
                   ? 'Tap a counter to turn it yellow — the tutor checks when you stop.'
                   : isGestureItem
                     ? 'Tap the frame to place your counters — the tutor checks when you stop.'

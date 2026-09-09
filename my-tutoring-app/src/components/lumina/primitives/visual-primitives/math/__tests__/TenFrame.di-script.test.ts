@@ -31,12 +31,15 @@ import {
   itemFromChallenge,
   itemsFromChallenges,
   judgeSplit,
+  judgeTeen,
   moveOnCue,
   pronounceCue,
   responseClassFor,
   splitKey,
   splitVerdictCue,
+  scatterCells,
   stimulusFor,
+  teenVerdictCue,
   tenFrameHarnessAnswers,
   tenFramePackBase,
   waysToSplit,
@@ -57,6 +60,9 @@ import { MATH_CATALOG } from '../../../../service/manifest/catalog/math';
 
 const K = { capacity: 10, band: 'K' } as const;
 const READER = { capacity: 10, band: '1-2' } as const;
+/** The teen modes are the one K context with a DOUBLE frame (contract R2 fork,
+ *  2026-09-08): a ten and some ones will not fit on one frame. */
+const K_DOUBLE = { capacity: 20, band: 'K' } as const;
 
 const build = (id = 'tf-1') =>
   itemFromChallenge({ id, type: 'build', targetCount: 5 }, K)!;
@@ -80,6 +86,14 @@ const SPLITS = itemsFromChallenges(
   K,
 );
 
+const TEENS = itemsFromChallenges(
+  [
+    { id: 'tf-9', type: 'build_teen', targetCount: 14 },
+    { id: 'tf-10', type: 'decompose_teen', targetCount: 14 },
+  ],
+  K_DOUBLE,
+);
+
 const BUILD = build();
 const SUBITIZE = subitize();
 const MAKE_TEN_K = makeTenK();
@@ -88,9 +102,11 @@ const ADD = add();
 const SUBTRACT = subtract();
 
 const [SPLIT_FIRST, SPLIT_AGAIN] = SPLITS;
+const [BUILD_TEEN, DECOMPOSE_TEEN] = TEENS;
 
 const ITEMS: TenFrameItem[] = [
   BUILD, SUBITIZE, MAKE_TEN_K, MAKE_TEN_READER, ADD, SUBTRACT, SPLIT_FIRST, SPLIT_AGAIN,
+  BUILD_TEEN, DECOMPOSE_TEEN,
 ];
 
 /**
@@ -409,9 +425,12 @@ describe('ten-frame catalog · DI frame', () => {
     expect(entry.constraints).toMatch(/microphone/i);
     expect(entry.constraints).toMatch(/no Check button/i);
     // Ordered lowest β → highest, and `decompose` (2.0) sits between the
-    // concrete build and the pictorial subitize.
+    // concrete build and the pictorial subitize. The two K.NBT.1 teen modes
+    // slot in by difficulty rather than by arrival: `build_teen` (2.0) is a
+    // concrete placement beside a GIVEN ten, `decompose_teen` (3.0) makes the
+    // child find the ten inside a scattered group.
     expect(entry.evalModes?.map((m) => m.evalMode))
-      .toEqual(['build', 'decompose', 'subitize', 'make_ten', 'operate']);
+      .toEqual(['build', 'decompose', 'build_teen', 'subitize', 'decompose_teen', 'make_ten', 'operate']);
     expect(entry.evalModes?.map((m) => m.beta)).toEqual([...entry.evalModes!].map((m) => m.beta).sort((a, b) => a - b));
     // The mic sentence must no longer read as covering the whole primitive:
     // build and decompose are judged from hands and need no spoken answer.
@@ -653,5 +672,206 @@ describe('ten-frame pack · split / decompose', () => {
     expect(crossing).toContain('Tap a counter to turn it yellow');
     expect(actionFor('split', 'K')).toBe('split');
     expect(actionFor('split', 'K')).not.toBe(actionFor('build', 'K'));
+  });
+});
+
+// ── 10. The teen modes — K.NBT.1 on a double frame (contract R2 fork) ───────
+
+/** Number words that would be the ONES of fourteen if they appeared. */
+const ONES_WORD = /\bfour\b/i;
+
+describe('ten-frame pack · teen numbers', () => {
+  it('pins both teen modes to a DOUBLE frame and drops them on a single one', () => {
+    // This is the fork, as a test. R2 keeps K on a single frame for every other
+    // mode; a teen number has no ten-and-some-ones picture there at all, so the
+    // item DROPS rather than shipping as a truncated build — which is exactly
+    // the defect the K Math atlas found (`ten-frame / build` emitting a single
+    // frame with a target of 5 for an objective naming 11-19).
+    expect(itemFromChallenge({ id: 't1', type: 'build_teen', targetCount: 14 }, K)).toBeNull();
+    expect(itemFromChallenge({ id: 't2', type: 'decompose_teen', targetCount: 14 }, K)).toBeNull();
+    expect(BUILD_TEEN.capacity).toBe(20);
+    expect(DECOMPOSE_TEEN.capacity).toBe(20);
+  });
+
+  it("DROPS anything outside 11-19 — the objective's own window", () => {
+    for (const target of [9, 10, 20, 21]) {
+      expect(itemFromChallenge({ id: `x${target}`, type: 'build_teen', targetCount: target }, K_DOUBLE)).toBeNull();
+      expect(itemFromChallenge({ id: `y${target}`, type: 'decompose_teen', targetCount: target }, K_DOUBLE)).toBeNull();
+    }
+    for (const target of [11, 19]) {
+      expect(itemFromChallenge({ id: `a${target}`, type: 'build_teen', targetCount: target }, K_DOUBLE)).not.toBeNull();
+      expect(itemFromChallenge({ id: `b${target}`, type: 'decompose_teen', targetCount: target }, K_DOUBLE)).not.toBeNull();
+    }
+  });
+
+  it('gives each mode the right board: a GIVEN ten, or a scattered group', () => {
+    // build_teen hands the child the ten and asks for the ones.
+    expect(BUILD_TEEN.shown).toBe(10);
+    expect(BUILD_TEEN.answer).toBe(4);
+    expect(BUILD_TEEN.teenTotal).toBe(14);
+    expect(BUILD_TEEN.answerKind).toBe('gesture');
+    // No terminal state — the frames hold twenty and the teen number is short
+    // of it — so it closes on stillness, unlike K make-ten's frame-full commit.
+    expect(BUILD_TEEN.commitAt).toBeUndefined();
+
+    // decompose_teen hands the child the whole group and asks for the ten.
+    expect(DECOMPOSE_TEEN.shown).toBe(14);
+    expect(DECOMPOSE_TEEN.answer).toBe(14);
+    expect(DECOMPOSE_TEEN.seedCells).toHaveLength(14);
+    expect(BUILD_TEEN.seedCells).toBeUndefined();
+  });
+
+  it('SCATTERS the decompose group so no full frame hands over the ten', () => {
+    // The load-bearing property: seeded top-frame-first, "flip the full row"
+    // would be a layout cue a child who cannot count to ten could follow, which
+    // is the trivial-from-layout failure pedagogy rule #1 forbids.
+    for (const total of [11, 12, 13, 14, 15, 16, 17, 18]) {
+      const cells = scatterCells(total, 20, `seed-${total}`);
+      expect(cells).toHaveLength(total);
+      expect(new Set(cells).size).toBe(total);
+      const top = cells.filter((c) => c < 10).length;
+      expect(top).toBeLessThan(10);
+      expect(total - top).toBeLessThan(10);
+    }
+    // NINETEEN is the exception and it is GEOMETRY: nineteen counters over two
+    // frames of ten must fill one of them, so the guard cannot hold there. The
+    // mode keeps nineteen anyway — the published objective names 16-19, and a
+    // cap below what the objective names is the defect this mode closes. The
+    // cost is recorded in `scatterCells`: at nineteen the item asks the child
+    // to SPOT the full frame rather than count ten out of a scatter.
+    const nineteen = scatterCells(19, 20, 'seed-19');
+    expect(nineteen).toHaveLength(19);
+    expect(new Set(nineteen).size).toBe(19);
+    // Deterministic in the item id: a scatter that moved under a re-render
+    // would slide counters out from under the child's finger mid-count.
+    expect(scatterCells(14, 20, 'tf-10')).toEqual(scatterCells(14, 20, 'tf-10'));
+    expect(scatterCells(14, 20, 'tf-10')).not.toEqual(scatterCells(14, 20, 'tf-11'));
+  });
+
+  it('states the ten and the total aloud, and never the ones', () => {
+    // BOTH the ten and the teen number are the QUESTION here — "a full frame is
+    // ten" IS the model K.NBT.1 teaches, so saying it is the lesson, not a
+    // leak. What must never precede the child's answer is the LEFTOVER.
+    const surfaces = [
+      spokenLine(itemCue(BUILD_TEEN, { opening: true, howToPlay: true })),
+      spokenLine(itemCue(DECOMPOSE_TEEN, { opening: true, howToPlay: true })),
+      spokenLine(pronounceCue(BUILD_TEEN)),
+      spokenLine(pronounceCue(DECOMPOSE_TEEN)),
+      stimulusFor(BUILD_TEEN),
+      stimulusFor(DECOMPOSE_TEEN),
+    ];
+    for (const surface of surfaces) {
+      expect(surface).not.toMatch(ONES_WORD);
+    }
+    expect(spokenLine(itemCue(BUILD_TEEN))).toContain('That is ten');
+    expect(spokenLine(itemCue(BUILD_TEEN))).toContain('make fourteen');
+    expect(spokenLine(itemCue(DECOMPOSE_TEEN))).toContain('turn ten of them yellow');
+  });
+
+  it("bans the leftover from the tutor's mouth for the whole hand turn", () => {
+    expect(itemCue(BUILD_TEEN)).toContain('Never say how many more than ten are needed');
+    expect(itemCue(DECOMPOSE_TEEN)).toContain('Never say how many counters will be left red');
+    for (const item of [BUILD_TEEN, DECOMPOSE_TEEN]) {
+      expect(itemCue(item)).toContain('the learner answers with their HANDS');
+      expect(itemCue(item)).toContain('You will be told what they placed');
+    }
+  });
+
+  it('judges the count in CODE and forks the correction on which miss it was', () => {
+    // build_teen measures the ONES placed beside the given ten.
+    expect(judgeTeen(BUILD_TEEN, 4)).toBe('correct');
+    expect(judgeTeen(BUILD_TEEN, 2)).toBe('too_few');
+    expect(judgeTeen(BUILD_TEEN, 14)).toBe('too_many');
+    // decompose_teen measures the counters turned yellow, and the target is
+    // TEN whatever the total is.
+    expect(judgeTeen(DECOMPOSE_TEEN, 10)).toBe('correct');
+    expect(judgeTeen(DECOMPOSE_TEEN, 8)).toBe('too_few');
+    expect(judgeTeen(DECOMPOSE_TEEN, 14)).toBe('too_many');
+
+    const short = teenVerdictCue(BUILD_TEEN, 2);
+    const over = teenVerdictCue(BUILD_TEEN, 14);
+    expect(short).toContain('does NOT match');
+    expect(spokenLine(short)).toContain('that is not fourteen yet');
+    expect(spokenLine(over)).toContain('that is past fourteen');
+    // The correction is where the answer is EARNED: build_teen models counting
+    // ON from the ten and names the ones there and only there.
+    expect(spokenLine(short)).toContain('eleven, twelve, thirteen, fourteen');
+    expect(spokenLine(short)).toContain('four more than ten');
+  });
+
+  it('never names the leftover on a decompose_teen correction — its model is the ten', () => {
+    // The correction MODELS counting one-to-ten, so every number word from one
+    // to ten passes the tutor's lips — including, for a total of fourteen, the
+    // word "four". A word scan would call that a leak and be wrong: the walk
+    // runs to ten on EVERY item regardless of the total, so it carries no
+    // information about the leftover at all. The property that actually proves
+    // it is INVARIANCE — the correction is byte-identical across totals, so
+    // nothing in it can be about the answer.
+    const other = itemsFromChallenges(
+      [{ id: 'tf-17', type: 'decompose_teen', targetCount: 17 }],
+      K_DOUBLE,
+    )[0];
+    for (const produced of [0, 8, 14]) {
+      const cue = spokenLine(teenVerdictCue(DECOMPOSE_TEEN, produced));
+      expect(cue).toContain('Stop at ten');
+      expect(cue).toBe(spokenLine(teenVerdictCue(other, produced)));
+    }
+    // The one place the leftover may be spoken is the affirmation, and there it
+    // DOES vary with the total, because it names what the child produced.
+    expect(spokenLine(teenVerdictCue(other, 10))).toContain('seven left red');
+    expect(spokenLine(teenVerdictCue(DECOMPOSE_TEEN, 10))).toMatch(ONES_WORD);
+  });
+
+  it('names the whole decomposition ONLY in the affirmation the child earned', () => {
+    expect(spokenLine(teenVerdictCue(BUILD_TEEN, 4)))
+      .toBe('Yes! Ten and four make fourteen.');
+    expect(spokenLine(teenVerdictCue(DECOMPOSE_TEEN, 10)))
+      .toBe('Yes! Ten yellow, and four left red. Fourteen is ten and four.');
+  });
+
+  it('routes both modes through the shared gesture entry point', () => {
+    // The component and the headless harness both call `frameVerdictCue` with
+    // one number; neither needs to know what the target is.
+    expect(frameVerdictCue(BUILD_TEEN, 4)).toBe(teenVerdictCue(BUILD_TEEN, 4));
+    expect(frameVerdictCue(DECOMPOSE_TEEN, 10)).toBe(teenVerdictCue(DECOMPOSE_TEEN, 10));
+  });
+
+  it('drives the harness at the signature miss, not at an arithmetic slip', () => {
+    // build_teen: rebuilding the whole teen number instead of counting on from
+    // the ten already there — the child who has not yet seen a full frame as
+    // ONE ten. decompose_teen: flipping everything, which separates no ten out
+    // of anything (`split`'s empty-part miss, one mode over).
+    const built = tenFrameHarnessAnswers(BUILD_TEEN);
+    expect(built.placed).toEqual({ correct: 4, wrong: 14 });
+    expect(built.signatureWrong?.why).toMatch(/counting on from the ten/);
+    expect(built.leakTokens).toEqual(['four']);
+    expect(judgeTeen(BUILD_TEEN, built.placed!.wrong)).toBe('too_many');
+
+    const found = tenFrameHarnessAnswers(DECOMPOSE_TEEN);
+    expect(found.placed).toEqual({ correct: 10, wrong: 14 });
+    expect(found.leakTokens).toEqual([]);   // both public numbers are in the ask
+    expect(judgeTeen(DECOMPOSE_TEEN, found.placed!.wrong)).toBe('too_many');
+  });
+
+  it('re-speaks the how-to-play when the action changes into a teen mode', () => {
+    expect(actionFor('build_teen', 'K')).toBe('place-ones');
+    expect(actionFor('decompose_teen', 'K')).toBe('find-ten');
+    expect(actionFor('build_teen', 'K')).not.toBe(actionFor('build', 'K'));
+    // decompose_teen's gesture is split's, but its RULE is not — the line is
+    // fixed at ten — so a child arriving from `split` is told again.
+    expect(actionFor('decompose_teen', 'K')).not.toBe(actionFor('split', 'K'));
+    expect(moveOnCue(BUILD, BUILD_TEEN, { howToPlay: true }))
+      .toContain('The top frame is already full');
+    expect(moveOnCue(SPLIT_FIRST, DECOMPOSE_TEEN, { howToPlay: true }))
+      .toContain('count them out as you go');
+  });
+
+  it('answers with hands at EVERY band — a teen number is a picture, not a word', () => {
+    for (const band of ['K', '1-2'] as const) {
+      for (const kind of ['build_teen', 'decompose_teen'] as const) {
+        expect(answerKindFor(kind, band)).toBe('gesture');
+        expect(responseClassFor(kind, band)).toBe('manipulation');
+      }
+    }
   });
 });

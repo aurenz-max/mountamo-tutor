@@ -106,8 +106,43 @@ import type {
 } from '../../../hooks/judgedScriptContract';
 import { countWalk, numberWordFor } from './countingBoardScript';
 
-export type TenFrameItemKind = 'build' | 'subitize' | 'make_ten' | 'split' | 'add' | 'subtract';
+export type TenFrameItemKind =
+  | 'build'
+  | 'subitize'
+  | 'make_ten'
+  | 'split'
+  | 'build_teen'
+  | 'decompose_teen'
+  | 'add'
+  | 'subtract';
 export type TenFrameBand = 'K' | '1-2';
+
+/**
+ * THE TEEN MODES ARE THE ONE PLACE K GETS A DOUBLE FRAME (contract R2 fork,
+ * 2026-09-08). K.NBT.1 asks a five-year-old to see 14 as "a ten and four more",
+ * and a ten cannot be a UNIT on a frame that holds exactly ten — the child
+ * needs the full frame beside the loose ones. R2 pins K to a single frame for
+ * every OTHER mode and that pin is untouched; these two are pinned to a DOUBLE
+ * frame at every band instead, which is why they are new modes rather than a
+ * band gate on `build`.
+ *
+ *   build_teen     — the ten is GIVEN (top frame full) and the child places
+ *                    the ones. Composition: 10 + ? = 14.
+ *   decompose_teen — a teen group arrives SCATTERED over both frames and the
+ *                    child turns exactly ten of them yellow. Decomposition:
+ *                    14 = 10 + ?, with the ten found rather than handed over.
+ *
+ * The scatter is the pedagogy, not decoration. Seeded top-frame-first, a full
+ * row of ten would be a LAYOUT cue — "flip the top frame" is solvable by a
+ * child who cannot count to ten, which is the trivial-from-layout failure
+ * pedagogy rule #1 forbids. Scattered, the only route to ten is counting ten.
+ */
+export const TEEN_TEN = 10;
+export const TEEN_MIN = 11;
+export const TEEN_MAX = 19;
+const TEEN_KINDS: readonly TenFrameItemKind[] = ['build_teen', 'decompose_teen'];
+export const isTeenKind = (kind: string): boolean =>
+  (TEEN_KINDS as readonly string[]).includes(kind);
 
 /** The benched spoken-number window. Zero is excluded by the class record
  *  itself; 20 is the ceiling `number_word_to_20` was benched at. */
@@ -131,6 +166,16 @@ export interface TenFrameItem extends JudgedScriptItem {
   addend2?: number;
   /** subtract: how many the child takes off the frame. */
   removed?: number;
+  /** Teen modes only: the teen number itself, 11-19. `answer` carries what the
+   *  child must PRODUCE (the ones on `build_teen`, the whole group on
+   *  `decompose_teen`, mirroring `split`), so the total needs its own field. */
+  teenTotal?: number;
+  /** `decompose_teen` only: which of the 20 cells the scattered group occupies.
+   *  Produced once, in `itemsFromChallenges`, so the stage and any harness see
+   *  the same board — and deterministic per item id, because a scatter that
+   *  changed under a re-render would move counters out from under the child's
+   *  finger mid-count. */
+  seedCells?: number[];
   /**
    * `split` only: this item's 1-based position among the split items that share
    * its TOTAL. Ordinal 1 asks for "a way"; every later one asks for "a
@@ -217,7 +262,7 @@ export const answerKindFor = (
   kind: TenFrameItemKind,
   band: TenFrameBand,
 ): 'voice' | 'gesture' =>
-  kind === 'build' || kind === 'split' || (kind === 'make_ten' && band === 'K')
+  kind === 'build' || kind === 'split' || isTeenKind(kind) || (kind === 'make_ten' && band === 'K')
     ? 'gesture'
     : 'voice';
 
@@ -235,6 +280,12 @@ export const actionFor = (kind: TenFrameItemKind, band: TenFrameBand): string =>
   if (kind === 'make_ten') return band === 'K' ? 'fill' : 'complement';
   if (kind === 'add' || kind === 'subtract') return 'operate';
   if (kind === 'split') return 'split';
+  // The two teen actions are genuinely different hands — placing the loose ones
+  // beside a given ten, versus finding the ten inside a scattered group — so
+  // they get their own action words and the runner re-speaks the how-to-play
+  // when a session moves between them.
+  if (kind === 'build_teen') return 'place-ones';
+  if (kind === 'decompose_teen') return 'find-ten';
   return kind === 'build' ? 'place' : 'look';
 };
 
@@ -299,6 +350,27 @@ export const itemFromChallenge = (
       // "split a group of up to 5 objects into two smaller groups").
       return { ...base, shown: total, answer: total };
     }
+    case 'build_teen': {
+      // The ten is GIVEN — a full top frame — and the child places the ones.
+      // The teen number itself is the QUESTION (spoken in the ask), so the
+      // spoken bench does not bind; the double frame does. A single frame
+      // cannot hold a teen number at all, so those items DROP rather than being
+      // repaired down to a number that is no longer a teen number.
+      const total = ch.targetCount;
+      if (!int(total) || total < TEEN_MIN || total > TEEN_MAX) return null;
+      if (total > capacity) return null;
+      return { ...base, shown: TEEN_TEN, answer: total - TEEN_TEN, teenTotal: total };
+    }
+    case 'decompose_teen': {
+      // The group ARRIVES and the child finds the ten inside it. Gestural, and
+      // both the total and the ten are PUBLIC (the ask states both), so the
+      // spoken bench does not bind here either. `answer` carries the whole
+      // group, as it does on `split`; the ones fall out as total − ten.
+      const total = ch.targetCount;
+      if (!int(total) || total < TEEN_MIN || total > TEEN_MAX) return null;
+      if (total > capacity) return null;
+      return { ...base, shown: total, answer: total, teenTotal: total };
+    }
     case 'make_ten': {
       const shown = ch.targetCount;
       if (!int(shown) || shown < 1 || shown >= capacity) return null;
@@ -348,12 +420,66 @@ export const itemsFromChallenges = (
 
   const seenPerTotal = new Map<number, number>();
   for (const item of items) {
+    if (item.kind === 'decompose_teen') {
+      item.seedCells = scatterCells(item.answer, ctx.capacity, item.id);
+      continue;
+    }
     if (item.kind !== 'split') continue;
     const nth = (seenPerTotal.get(item.answer) ?? 0) + 1;
     seenPerTotal.set(item.answer, nth);
     item.splitOrdinal = nth;
   }
   return items;
+};
+
+/**
+ * Where a `decompose_teen` group sits on the double frame — SCATTERED, and
+ * that is the whole point (see the TEEN_TEN docblock): seeded top-frame-first,
+ * "flip the full row" would solve the item without counting.
+ *
+ * Deterministic in the item id so the board is stable across re-renders and
+ * reproducible in a test. The generator supplies no positions for these items;
+ * this is the one producer, the same rule `splitOrdinal` follows.
+ */
+export const scatterCells = (count: number, capacity: number, seedKey: string): number[] => {
+  let seed = 0;
+  for (let i = 0; i < seedKey.length; i++) seed = (seed * 31 + seedKey.charCodeAt(i)) % 2147483647;
+  let state = (seed || 1) % 2147483647;
+  const rand = () => { state = (state * 16807) % 2147483647; return state / 2147483647; };
+  const cells = Array.from({ length: capacity }, (_, i) => i);
+  for (let i = cells.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [cells[i], cells[j]] = [cells[j], cells[i]];
+  }
+  // A REJECTED ARRANGEMENT IS STILL A LEAK: a draw that happens to fill one
+  // whole frame hands the child the ten as a shape. Re-roll off the same
+  // stream until neither frame is full, so determinism survives.
+  //
+  // ⚠ NINETEEN IS THE ONE TOTAL WHERE THIS IS UNSATISFIABLE, and it is
+  // geometry, not a bug: nineteen counters over two frames of ten must fill
+  // one of them. So at nineteen the board does show the ten as a shape, and
+  // the item degrades from "count out ten" to "spot the full frame" — which is
+  // still the other half of K.NBT.1 ("identify a group of ten ones"), just an
+  // easier half. The re-roll loop below simply runs out of arrangements and
+  // returns one; it is recorded here rather than fixed by capping the mode at
+  // eighteen, because the published objective names 16-19 and a cap below what
+  // the objective names is the defect this whole mode was written to close.
+  const fillsAFrame = (picked: number[]) => {
+    for (let frame = 0; frame * 10 < capacity; frame++) {
+      const inFrame = picked.filter((c) => c >= frame * 10 && c < frame * 10 + 10).length;
+      if (inFrame === 10) return true;
+    }
+    return false;
+  };
+  let picked = cells.slice(0, count).sort((a, b) => a - b);
+  for (let attempt = 0; attempt < 8 && fillsAFrame(picked); attempt++) {
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [cells[i], cells[j]] = [cells[j], cells[i]];
+    }
+    picked = cells.slice(0, count).sort((a, b) => a - b);
+  }
+  return picked;
 };
 
 // ── How-to-play — spoken on the opener AND whenever the ACTION changes ──────
@@ -373,6 +499,12 @@ export const howToPlayFor = (item: TenFrameItem): string => {
       // when you touch it is not a thing a five-year-old can guess at. Named
       // colours, not "the other colour": the child is looking at the frame.
       return 'The counters are all red. Tap a counter to turn it yellow — that makes two groups! ';
+    case 'build_teen':
+      return 'The top frame is already full. Tap the empty boxes to put more counters on. ';
+    case 'decompose_teen':
+      // Same taught gesture as `split`, different target: there the child
+      // chooses where the line falls, here the line is fixed at ten.
+      return 'The counters are all red. Tap a counter to turn it yellow — count them out as you go! ';
     case 'add':
       return 'Put the counters on the frame, then say how many there are altogether. ';
     case 'subtract':
@@ -416,6 +548,18 @@ const askFor = (item: TenFrameItem): string => {
       return (item.splitOrdinal ?? 1) > 1
         ? `${cap(shownWord)} ${countersWord(item.shown)} again. Your turn — show me a DIFFERENT way to make two groups.`
         : `Here are ${shownWord} ${countersWord(item.shown)}. Your turn — turn some yellow to make two groups.`;
+    case 'build_teen': {
+      // The TEN is public and it is the model being taught — a full frame IS
+      // ten, and saying so is the whole of K.NBT.1's "ten ones". The ONES are
+      // the answer and never appear before the verdict.
+      const totalWord = numberWordFor(item.teenTotal ?? item.answer + TEEN_TEN);
+      return `The top frame is full. That is ten. Your turn — make ${totalWord}.`;
+    }
+    case 'decompose_teen':
+      // Both numbers here are the QUESTION: the total is on screen and stated,
+      // and ten is what the child is asked to count out. What is never said is
+      // how many are LEFT — the ones — which is what the affirmation names.
+      return `Here are ${answerWord} counters, all mixed up. Your turn — turn ten of them yellow.`;
     case 'add':
       return `${cap(numberWordFor(item.addend1 ?? 0))} plus ${numberWordFor(item.addend2 ?? 0)}. Your turn. How many altogether?`;
     case 'subtract':
@@ -425,6 +569,67 @@ const askFor = (item: TenFrameItem): string => {
 
 // ── The corrections — DISTAR re-model then re-elicit (standing gate 3) ──────
 // This is the FIRST place the answer is ever spoken, and it is earned.
+
+/**
+ * THE TEEN JUDGE, IN CODE — the tutor is handed a ruling, never a board.
+ *
+ * Both teen modes measure ONE number against ONE target and the target is
+ * fixed by the mode, not chosen by the child: `build_teen` wants the ONES
+ * (total − ten) placed beside the given ten, `decompose_teen` wants exactly
+ * TEN turned yellow out of the scattered group. That is what makes them
+ * cheaper than `split` to judge and, pedagogically, a step BELOW it — there is
+ * one right partition here, and it is the one K.NBT.1 names.
+ */
+export type TeenVerdict = 'correct' | 'too_few' | 'too_many';
+
+/** What the child must produce on a teen item: the ones on `build_teen`, the
+ *  ten on `decompose_teen`. */
+export const teenTargetFor = (item: TenFrameItem): number =>
+  item.kind === 'build_teen' ? item.answer : TEEN_TEN;
+
+export const teenTotalFor = (item: TenFrameItem): number =>
+  item.teenTotal ?? (item.kind === 'build_teen' ? item.answer + TEEN_TEN : item.answer);
+
+export const judgeTeen = (item: TenFrameItem, produced: number): TeenVerdict => {
+  const target = teenTargetFor(item);
+  if (produced === target) return 'correct';
+  return produced < target ? 'too_few' : 'too_many';
+};
+
+/** "eleven, twelve, thirteen, fourteen" — counting ON from the ten already
+ *  there, which is the strategy `build_teen` exists to teach. Never more than
+ *  nine words (the ones top out at nine). */
+const countOnWalk = (from: number, to: number): string =>
+  Array.from({ length: to - from }, (_, i) => numberWordFor(from + 1 + i)).join(', ');
+
+/**
+ * The teen correction forks on WHICH miss happened, and both branches re-model
+ * the SAME strategy: a ten holds still and the ones are counted against it.
+ * `build_teen` earns the ones in its model (DISTAR pays for the answer in the
+ * correction); `decompose_teen` never names the ones at all, because the ones
+ * are what its affirmation is for — its model is of counting out ten.
+ */
+const teenCorrectionFor = (item: TenFrameItem, verdict: TeenVerdict): string => {
+  const total = teenTotalFor(item);
+  const totalWord = numberWordFor(total);
+  if (item.kind === 'build_teen') {
+    const onesWord = numberWordFor(item.answer);
+    const opener = verdict === 'too_many'
+      ? `My turn: that is past ${totalWord}.`
+      : `My turn: that is not ${totalWord} yet.`;
+    return (
+      `${opener} The top frame is ten. Watch me count on: ${countOnWalk(TEEN_TEN, total)}. `
+      + `That is ${onesWord} more than ten. Your turn — make ${totalWord}.`
+    );
+  }
+  const opener = verdict === 'too_many'
+    ? `My turn: that is more than ten yellow.`
+    : `My turn: that is not ten yellow yet.`;
+  return (
+    `${opener} Watch me count out ten. ${cap(countWalk(TEEN_TEN))}. Stop at ten. `
+    + `Your turn — turn ten of them yellow.`
+  );
+};
 
 /**
  * `split`'s correction forks on WHICH miss happened, because "you left a group
@@ -476,6 +681,11 @@ const correctionFor = (item: TenFrameItem): string => {
       return item.answerKind === 'gesture'
         ? `My turn: the frame is not full yet. Every box needs a counter. Your turn — keep tapping the empty boxes.`
         : `My turn: ${shownWord} and ${answerWord} make ${capWord}. ${cap(answerWord)} more. Your turn. How many more counters make ${capWord}?`;
+    case 'build_teen':
+    case 'decompose_teen':
+      // The DEFAULT is the too-few branch — the miss a child makes by stopping
+      // early. `teenVerdictCue` overrides it once the count is known.
+      return teenCorrectionFor(item, 'too_few');
     case 'split':
       // The DEFAULT correction is the empty-part one, because that is the miss
       // this mode is built to catch. `splitCorrectionFor` overrides it once the
@@ -578,12 +788,21 @@ const silenceContract = (item: TenFrameItem): string =>
   `The quoted line is the ONLY thing you say on this turn; the learner answers with their HANDS on the frame, not with their voice, so you then stay completely silent. `
   + (item.kind === 'build'
     ? `Do not count the counters aloud and never say how many are on the frame. `
-    : item.kind === 'split'
+    : item.kind === 'build_teen'
+      // The banned material is the ONES. The ten is on screen and in the ask;
+      // how many MORE than ten is what the child is producing.
+      ? `Never say how many more than ten are needed and never count the counters aloud. `
+      : item.kind === 'decompose_teen'
+        // Here the banned material is what is LEFT OVER. Ten is the ask, so it
+        // may be said; the red remainder is the decomposition the affirmation
+        // exists to name.
+        ? `Never say how many counters will be left red and never count the counters aloud for them. `
+        : item.kind === 'split'
       // The banned material here is a PAIR, not a count — and it stays banned
       // for the whole session, because naming one way answers every later item
       // on this total too.
-      ? `Never suggest a pair of numbers that makes ${numberWordFor(item.answer)}, never say how many to turn yellow, and never count the counters aloud. `
-      : `Never say how many more are needed and never count the empty boxes aloud. `)
+          ? `Never suggest a pair of numbers that makes ${numberWordFor(item.answer)}, never say how many to turn yellow, and never count the counters aloud. `
+          : `Never say how many more are needed and never count the empty boxes aloud. `)
   + `Do not narrate what they are doing or fill the pause. `
   + `You will be told what they placed and whether it matches; only then do you speak.`;
 
@@ -630,6 +849,11 @@ export const frameVerdictCue = (
     const b = Math.max(0, Math.min(item.answer, placed));
     return splitVerdictCue(item, { a: item.answer - b, b }, opts.alreadyShown);
   }
+  // Teen items commit ONE number too, and which number it is depends on the
+  // mode: the ones the child placed, or the counters they turned yellow. The
+  // component and the harness both hand this function that number and nothing
+  // else, so neither needs to know the target.
+  if (isTeenKind(item.kind)) return teenVerdictCue(item, placed);
   const answerWord = numberWordFor(item.answer);
   const matches = placed === item.answer;
   const head = item.kind === 'build'
@@ -641,6 +865,34 @@ export const frameVerdictCue = (
       ? `Say exactly: "Yes! ${cap(answerWord)} ${countersWord(item.answer)} on the frame. You built it!" `
       : `Say exactly: "Yes! The frame is full. ${cap(numberWordFor(item.shown))} and ${answerWord} make ${numberWordFor(item.capacity)}." `)
     : `Say exactly: "${correctionFor(item)}" `;
+
+  return `${head}${line}Never read bracket tags aloud.`;
+};
+
+/**
+ * The teen verdict — the count the child produced, judged in CODE.
+ *
+ * The AFFIRMATION is the one place the whole decomposition may be spoken, and
+ * it is spoken because the child built it: "Ten and four make fourteen". On
+ * every wrong branch she gets the correction verbatim and the ones never
+ * appear on a `decompose_teen` item at all.
+ */
+export const teenVerdictCue = (item: TenFrameItem, produced: number): string => {
+  const verdict = judgeTeen(item, produced);
+  const total = teenTotalFor(item);
+  const totalWord = numberWordFor(total);
+  const onesWord = numberWordFor(total - TEEN_TEN);
+  const head = item.kind === 'build_teen'
+    ? `[TF_TEEN] The learner put ${produced} more counters beside the ten already on the frame, `
+      + `making ${TEEN_TEN + produced}; the ask was for ${total} — that ${verdict === 'correct' ? 'MATCHES' : 'does NOT match'}. `
+    : `[TF_TEEN] The learner turned ${produced} of the ${total} counters yellow; the ask was for ten `
+      + `— that ${verdict === 'correct' ? 'MATCHES' : 'does NOT match'}. `;
+
+  const line = verdict === 'correct'
+    ? (item.kind === 'build_teen'
+      ? `Say exactly: "Yes! Ten and ${onesWord} make ${totalWord}." `
+      : `Say exactly: "Yes! Ten yellow, and ${onesWord} left red. ${cap(totalWord)} is ten and ${onesWord}." `)
+    : `Say exactly: "${teenCorrectionFor(item, verdict)}" `;
 
   return `${head}${line}Never read bracket tags aloud.`;
 };
@@ -718,6 +970,12 @@ export const stimulusFor = (item: TenFrameItem): string => {
       // Stimulus-side only: the total is on screen and in the ask. The PAIR the
       // child is working toward is never pushed through this channel.
       return `${numberWordFor(item.answer)} red ${countersWord(item.answer)} to split into two colour groups`;
+    case 'build_teen':
+      // Stimulus-side only: the full top frame and the teen number are both
+      // public. The ones the child must place are not pushed.
+      return `a full top frame of ten, and empty boxes below it, making ${numberWordFor(teenTotalFor(item))}`;
+    case 'decompose_teen':
+      return `${numberWordFor(item.answer)} red counters scattered over two frames, with a group of ten to find inside`;
     case 'add':
       return `${numberWordFor(item.addend1 ?? 0)} plus ${numberWordFor(item.addend2 ?? 0)}`;
     case 'subtract':
@@ -768,6 +1026,12 @@ const publicValuesFor = (item: TenFrameItem): number[] => {
       return [];
     case 'make_ten':
       return [item.shown, item.capacity];
+    case 'build_teen':
+      // The ask states the ten and the teen number; the ONES are the answer.
+      return [teenTotalFor(item), TEEN_TEN];
+    case 'decompose_teen':
+      // Both the total and the ten are stated; what is left red is not.
+      return [item.answer, TEEN_TEN];
     case 'split':
       // The TOTAL is stated in the ask. The parts are the answer and are not
       // public — but they are also not spoken material, so no leak token is
@@ -834,6 +1098,39 @@ export const tenFrameHarnessAnswers = (item: TenFrameItem): TenFrameHarnessAnswe
         leakTokens: [],
       };
     }
+    case 'build_teen': {
+      // The fluent miss is BUILDING THE TEEN NUMBER AGAIN from nothing —
+      // placing all fourteen beside the ten that is already there. It looks
+      // like diligent counting and it is exactly the child who has not yet
+      // seen the full frame as ONE ten, which is the skill.
+      const total = teenTotalFor(item);
+      return {
+        ...base,
+        correct: `${item.answer} more counters placed beside the ten`,
+        plainWrong: `${total} more counters placed beside the ten`,
+        placed: { correct: item.answer, wrong: total },
+        signatureWrong: {
+          text: `${total} more counters placed`,
+          why: 'built the whole teen number again instead of counting on from the ten already there',
+        },
+        leakTokens: base.leakTokens,
+      };
+    }
+    case 'decompose_teen':
+      // The fluent miss is turning EVERY counter yellow — a finished-looking
+      // action that separates no ten out of anything (`split`'s empty-part
+      // miss, one mode over).
+      return {
+        ...base,
+        correct: `ten turned yellow`,
+        plainWrong: `all ${item.answer} turned yellow`,
+        placed: { correct: TEEN_TEN, wrong: item.answer },
+        signatureWrong: {
+          text: `all ${item.answer} turned yellow`,
+          why: 'every counter flipped — no group of ten was ever counted out of the group',
+        },
+        leakTokens: [],
+      };
     case 'build':
     case 'make_ten':
       if (item.answerKind === 'gesture') {

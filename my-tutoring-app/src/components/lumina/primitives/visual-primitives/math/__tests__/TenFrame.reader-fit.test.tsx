@@ -706,3 +706,167 @@ describe('TenFrame stage · split is a partition, not a construction (contract R
     expect(screen.getByText('3 + 2 = 5')).not.toBeNull();
   });
 });
+
+describe('TenFrame stage · teen numbers are a K double frame (contract R2 fork)', () => {
+  const fills = () =>
+    Array.from(document.querySelectorAll<SVGCircleElement>('svg circle'))
+      .map((c) => c.getAttribute('fill'));
+  const RED = '#ef4444';
+  const YELLOW = '#eab308';
+
+  const teenData = (challenges: TenFrameChallenge[]): TenFrameData => ({
+    ...data('K', challenges),
+    mode: 'double',
+  });
+
+  it('renders TWENTY cells at K, which no other mode does', () => {
+    render(<TenFrame data={teenData([challenge('t1', 'build_teen', 14)])} />);
+    openItem();
+    expect(cells()).toHaveLength(20);
+  });
+
+  it('build_teen: seeds the full top frame, fixes it, and asks only for the ones', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={teenData([challenge('t1', 'build_teen', 14)])} />);
+    openItem();
+
+    // The ten ARRIVES as one full frame — that is the model K.NBT.1 teaches.
+    expect(counters()).toHaveLength(10);
+
+    // The seeded ten is not removable: it is the given, not the answer.
+    fireEvent.click(cells()[3]);
+    expect(counters()).toHaveLength(10);
+    expect(runnerState.gestureCues).toHaveLength(0);
+
+    // The ones go in the bottom frame.
+    fireEvent.click(cells()[10]);
+    fireEvent.click(cells()[11]);
+    fireEvent.click(cells()[12]);
+    fireEvent.click(cells()[13]);
+    expect(counters()).toHaveLength(14);
+
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues).toHaveLength(1);
+    // The committed number is the ONES, not what is on the frame.
+    expect(runnerState.gestureCues[0]).toContain('put 4 more counters beside the ten');
+    expect(runnerState.gestureCues[0]).toContain('MATCHES');
+  });
+
+  it('build_teen does NOT auto-commit on a full frame — it has no terminal state', () => {
+    // K make-ten judges the moment the frame fills (contract R6). build_teen
+    // must not inherit that: filling all twenty is a WRONG answer to "make
+    // fourteen", and a commit fired by the frame rather than by stillness would
+    // make the frame the judge.
+    vi.useFakeTimers();
+    render(<TenFrame data={teenData([challenge('t1', 'build_teen', 14)])} />);
+    openItem();
+
+    for (let i = 10; i < 20; i++) fireEvent.click(cells()[i]);
+    expect(counters()).toHaveLength(20);
+    expect(runnerState.gestureCues).toHaveLength(0);   // nothing on screen judged it
+
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues).toHaveLength(1);
+    expect(runnerState.gestureCues[0]).toContain('does NOT match');
+  });
+
+  it('build_teen commits a SHORT placement exactly as readily as a right one', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={teenData([challenge('t1', 'build_teen', 14)])} />);
+    openItem();
+
+    fireEvent.click(cells()[10]);
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues).toHaveLength(1);
+    expect(runnerState.gestureCues[0]).toContain('does NOT match');
+    expect(runnerState.gestureCues[0]).toContain('that is not fourteen yet');
+  });
+
+  it('decompose_teen: seeds the group SCATTERED, so no full frame gives the ten away', () => {
+    render(<TenFrame data={teenData([challenge('t2', 'decompose_teen', 14)])} />);
+    const item = openItem();
+
+    expect(counters()).toHaveLength(14);
+    expect(fills().every((f) => f === RED)).toBe(true);
+    // The seeding is the script's, not "the first fourteen cells".
+    expect(item.seedCells).toHaveLength(14);
+    const top = item.seedCells!.filter((c) => c < 10).length;
+    expect(top).toBeLessThan(10);
+    expect(14 - top).toBeLessThan(10);
+  });
+
+  it('decompose_teen: taps FLIP, and the empty cells are inert', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={teenData([challenge('t2', 'decompose_teen', 14)])} />);
+    const item = openItem();
+    const seeded = item.seedCells!;
+    const empty = Array.from({ length: 20 }, (_, i) => i).filter((i) => !seeded.includes(i));
+
+    fireEvent.click(cells()[empty[0]]);
+    expect(counters()).toHaveLength(14);            // nothing added
+    expect(fills().every((f) => f === RED)).toBe(true);
+
+    fireEvent.click(cells()[seeded[0]]);
+    expect(fills().filter((f) => f === YELLOW)).toHaveLength(1);
+    fireEvent.click(cells()[seeded[0]]);            // flips back
+    expect(fills().filter((f) => f === YELLOW)).toHaveLength(0);
+    expect(counters()).toHaveLength(14);            // the total cannot drift
+  });
+
+  it('decompose_teen: commits the YELLOW count on stillness, judged against ten', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={teenData([challenge('t2', 'decompose_teen', 14)])} />);
+    const item = openItem();
+    const seeded = item.seedCells!;
+
+    for (let i = 0; i < 10; i++) fireEvent.click(cells()[seeded[i]]);
+    expect(runnerState.gestureCues).toHaveLength(0);   // still moving
+
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues).toHaveLength(1);
+    expect(runnerState.gestureCues[0]).toContain('turned 10 of the 14 counters yellow');
+    expect(runnerState.gestureCues[0]).toContain('MATCHES');
+  });
+
+  it('decompose_teen commits a wrong count exactly as readily as a right one', () => {
+    vi.useFakeTimers();
+    render(<TenFrame data={teenData([challenge('t2', 'decompose_teen', 14)])} />);
+    const item = openItem();
+
+    for (let i = 0; i < 8; i++) fireEvent.click(cells()[item.seedCells![i]]);
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(runnerState.gestureCues[0]).toContain('does NOT match');
+    expect(runnerState.gestureCues[0]).toContain('that is not ten yellow yet');
+  });
+
+  it('never prints a count readout on decompose_teen — the honest one is the answer', () => {
+    // build_teen keeps its trace: that number is the TOTAL on the frames, which
+    // the ask states aloud. decompose_teen's would be the yellow count, which
+    // is exactly what the child is being asked to produce.
+    vi.useFakeTimers();
+    render(<TenFrame data={teenData([challenge('t2', 'decompose_teen', 14)])} />);
+    const item = openItem();
+    fireEvent.click(cells()[item.seedCells![0]]);
+    expect(screen.queryByText(/Counters:/)).toBeNull();
+
+    cleanup();
+    render(<TenFrame data={teenData([challenge('t1', 'build_teen', 14)])} />);
+    openItem();
+    fireEvent.click(cells()[10]);
+    expect(screen.getByText(/Counters:/)).toBeTruthy();
+  });
+
+  it('keeps the SAME scatter across a correction retry', () => {
+    // Moving the counters between tries would make the correction
+    // unfollowable: the child is being asked to count the same group again.
+    render(<TenFrame data={teenData([challenge('t2', 'decompose_teen', 14)])} />);
+    const item = openItem();
+    const before = fills().length;
+
+    fireEvent.click(cells()[item.seedCells![0]]);
+    act(() => runnerState.options!.onCorrectionRetry?.(item, 1));
+
+    expect(counters()).toHaveLength(before);
+    expect(fills().every((f) => f === RED)).toBe(true);   // back to all-red
+  });
+});

@@ -9,12 +9,28 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContext";
+import { resolveTeenWindow, teenSweep, TEEN_MIN, TEEN_MAX } from "./teenWindow";
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
 // ---------------------------------------------------------------------------
 
-type ChallengeType = 'build' | 'subitize' | 'make_ten' | 'split' | 'add' | 'subtract';
+type ChallengeType =
+  | 'build'
+  | 'subitize'
+  | 'make_ten'
+  | 'split'
+  | 'build_teen'
+  | 'decompose_teen'
+  | 'add'
+  | 'subtract';
+
+/** The two K.NBT.1 modes, and the ONLY ones allowed a double frame at
+ *  Kindergarten (contract R2 fork, 2026-09-08). A teen number cannot be shown
+ *  as "a ten and some ones" on a frame that holds exactly ten, so these two
+ *  are pinned to a DOUBLE frame at every band — the mirror image of the
+ *  single-frame pins `make_ten` and `split` carry. */
+const TEEN_TYPES: readonly ChallengeType[] = ['build_teen', 'decompose_teen'];
 
 const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1 — fast-tap K-1 number sense)
 const MAX_INSTANCE_COUNT = 8;
@@ -26,6 +42,10 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
   split: 6,        // T1 — fast flip, but "a DIFFERENT way" needs room to run out
                    // of ways honestly: totals 2-5 offer 1-4 ordered pairs each,
                    // so six items across varied totals stays answerable.
+  build_teen: 7,   // T1 — fast-tap, and 11-19 is nine distinct teen numbers, so
+                   // a seven-item session is still all-distinct content.
+  decompose_teen: 6, // T1 flip, but counting out ten from a scattered group is
+                   // slower work than placing a few ones.
   add: 5,          // hold at current (operate mode)
   subtract: 5,     // hold at current (operate mode)
 };
@@ -89,6 +109,24 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `(five has four: 1+4, 2+3, 3+2, 4+1), so never ask the same total more times than it has ways. `
       + `Good shape for a 6-item set: 3, 3, 4, 4, 5, 5. There is no addend/startCount field to set.`,
     schemaDescription: "'split' (partition a group into two colour groups)",
+  },
+  build_teen: {
+    promptDoc:
+      `"build_teen": A DOUBLE frame. The top frame arrives FULL — ten counters, a ten as one unit — `
+      + `and the student places the remaining ones in the bottom frame. `
+      + `targetCount = the TEEN NUMBER itself, 11-19 (never 10, never 20). `
+      + `VARY targetCount across the set; nine teen numbers exist, so a set should not repeat one. `
+      + `This is CCSS K.NBT.1 composition: 14 is ten and four more.`,
+    schemaDescription: "'build_teen' (make a teen number beside a given ten)",
+  },
+  decompose_teen: {
+    promptDoc:
+      `"decompose_teen": A DOUBLE frame. A group of targetCount RED counters arrives SCATTERED across `
+      + `both frames, and the student turns exactly TEN of them yellow to find the ten inside. `
+      + `targetCount = the TEEN NUMBER itself, 11-19 (never 10, never 20). `
+      + `VARY targetCount across the set. There is no addend or startCount field to set. `
+      + `This is CCSS K.NBT.1 decomposition: 14 is ten and four more, with the ten FOUND rather than given.`,
+    schemaDescription: "'decompose_teen' (find the ten inside a teen number)",
   },
   add: {
     promptDoc:
@@ -189,6 +227,30 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
             : 'Mix totals across the middle of the scope; repeat each total twice so a second way is always asked for.',
       );
       break;
+    case 'build_teen':
+      // The tier lever is the ONES, not the teen number: eleven and twelve ask
+      // the child to count on one or two, nineteen asks for nine. The teen
+      // range itself never narrows — the objective names 11-19 and the scope
+      // owns it.
+      promptLines.push(
+        tier === 'easy'
+          ? 'Favour teen numbers with FEW ones (11, 12, 13) so counting on from ten is short, and keep the running count visible so the student can self-check.'
+          : tier === 'hard'
+            ? 'Favour teen numbers with MANY ones (16, 17, 18, 19); hide the running count so the student must count on from ten unaided.'
+            : 'Mix teen numbers across the range; hide the running count so the student tracks the ones themselves.',
+      );
+      break;
+    case 'decompose_teen':
+      // Counting ten out of a scattered group is the same work at every teen
+      // number, so the lever is how much is left over to distract from it.
+      promptLines.push(
+        tier === 'easy'
+          ? 'Favour the smallest teen numbers (11, 12) so few counters remain outside the ten and the group is easy to hold in view.'
+          : tier === 'hard'
+            ? 'Favour the largest teen numbers (17, 18, 19) so the ten must be counted out of a much bigger scattered group.'
+            : 'Mix teen numbers across the middle of the range (13-16).',
+      );
+      break;
     case 'add':
     case 'subtract':
       promptLines.push(
@@ -223,6 +285,10 @@ function buildInstruction(ch: TenFrameChallenge, mode: 'single' | 'double'): str
       return `There are ${ch.targetCount} counters on the frame. How many more do you need to make ${frameTarget}?`;
     case 'split':
       return `Turn some of the ${ch.targetCount} counters yellow to make two groups!`;
+    case 'build_teen':
+      return `The top frame is full — that is 10. Make ${ch.targetCount}!`;
+    case 'decompose_teen':
+      return `Here are ${ch.targetCount} counters. Turn 10 of them yellow!`;
     case 'add':
       return `Show ${ch.addend1} + ${ch.addend2} on the frame!`;
     case 'subtract': {
@@ -310,11 +376,11 @@ function buildTenFrameSchema(count: number): Schema {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'build' (place counters), 'subitize' (flash and identify count), 'make_ten' (find complement to 10), 'split' (partition a group into two colour groups), 'add' (addition), 'subtract' (subtraction)"
+            description: "Challenge type: 'build' (place counters), 'subitize' (flash and identify count), 'make_ten' (find complement to 10), 'split' (partition a group into two colour groups), 'build_teen' (make a teen number beside a given ten), 'decompose_teen' (find the ten inside a teen number), 'add' (addition), 'subtract' (subtraction)"
           },
           targetCount: {
             type: Type.NUMBER,
-            description: "Target number for this challenge (0-10 for single, 0-20 for double). For 'split' this is the SIZE OF THE WHOLE GROUP to be partitioned (at least 2)."
+            description: "Target number for this challenge (0-10 for single, 0-20 for double). For 'split' this is the SIZE OF THE WHOLE GROUP to be partitioned (at least 2). For 'build_teen' and 'decompose_teen' this is the TEEN NUMBER itself, 11-19."
           },
           startCount: {
             type: Type.NUMBER,
@@ -479,7 +545,8 @@ GUIDELINES FOR GRADE LEVELS:
   * Subitize flash with numbers 1-5 (short flash durations, 1500-2000ms)
   * Two-color decomposition (e.g., 3 red + 4 yellow = 7)
   * Focus on "how many?" and "how many more to make 5/10?"
-  * Use single frame mode ONLY
+  * Use single frame mode ONLY — unless generating build_teen or decompose_teen,
+    which are Kindergarten place-value modes and require the double frame (11-19)
   * Simple, encouraging language ("Put 4 counters on the frame!")
 
 - Grades 1-2 (gradeBand "1-2"):
@@ -501,8 +568,9 @@ SPOKEN-ANSWER WINDOW (this activity is answered OUT LOUD to a live tutor):
 - Every answer the student says must be a whole number from 1 to 20. NEVER 0.
 - subitize → the answer is targetCount. make_ten → the answer is (frame capacity − targetCount).
   add → the answer is addend1 + addend2. subtract → the answer is targetCount.
-- 'build' and 'split' are answered WITH HANDS, not spoken, so this window does not
-  bind them — but 'split' still needs targetCount >= 2 (a group of one has no two parts).
+- 'build', 'split', 'build_teen' and 'decompose_teen' are answered WITH HANDS, not spoken,
+  so this window does not bind them — but 'split' still needs targetCount >= 2 (a group of
+  one has no two parts), and the teen types need targetCount in 11-19 on a DOUBLE frame.
 - Any challenge whose answer would be 0 or above 20 is discarded before the student sees it,
   so choosing such numbers wastes the slot.
 
@@ -534,7 +602,12 @@ REQUIREMENTS:
     and never ask a total more times than it has ways (a total of N has N-1 ways)
 7. Include meaningful hints that guide without giving the answer
 8. Include narration text the AI tutor can use to introduce each challenge
-9. For Kindergarten: stick to single frame, numbers 1-10, build and subitize only
+6c. For 'build_teen' and 'decompose_teen', targetCount is the TEEN NUMBER (11-19) and the
+    frame mode is 'double'. Vary the teen number across the set — nine exist, so a set of
+    six or seven should not repeat one.
+9. For Kindergarten: stick to single frame, numbers 1-10, build and subitize only —
+   EXCEPT 'build_teen' and 'decompose_teen', which are Kindergarten place-value modes
+   (CCSS K.NBT.1) and always use the double frame with numbers 11-19
 10. For Grades 1-2: can include make_ten, add, subtract, and double frame
 11. Set showOptions appropriately:
     - showCount: true for build challenges; false for subitize and for add/subtract
@@ -574,7 +647,15 @@ Return the complete ten frame configuration.
     data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1-2';
   }
 
-  if (data.gradeBand === 'K' && data.mode === 'double') {
+  // The two K.NBT.1 modes are the ONE exemption to R2's K single-frame pin, and
+  // it is a fork rather than a widening: they are pinned to a DOUBLE frame at
+  // every band, and every other mode still collapses to a single frame at K.
+  const hasTeenTypes = !!resolution?.allowedTypes.some(
+    (t) => (TEEN_TYPES as readonly string[]).includes(t),
+  );
+  if (hasTeenTypes) {
+    data.mode = 'double';
+  } else if (data.gradeBand === 'K' && data.mode === 'double') {
     data.mode = 'single';
   }
 
@@ -596,7 +677,7 @@ Return the complete ten frame configuration.
   }
 
   // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
-  const validTypes = ['build', 'subitize', 'make_ten', 'split', 'add', 'subtract'];
+  const validTypes = ['build', 'subitize', 'make_ten', 'split', 'build_teen', 'decompose_teen', 'add', 'subtract'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type)
   );
@@ -644,6 +725,44 @@ Return the complete ten frame configuration.
     }
   }
 
+  // ── The teen numbers are CODE-OWNED ──────────────────────────────────────
+  // Not repaired, not clamped: assigned. The first live draw against "Break
+  // apart numbers 16-19" came back 13, 14, 14, 15, 15, 16 — one item of six
+  // inside the window the objective names — which is the same defect the
+  // atlas filed against `build`. The window comes from the lesson's own words
+  // and the sweep covers it; the model keeps the hints, the narration and the
+  // title. See `teenWindow.ts` for the reasoning and the standing ruling.
+  {
+    const teenChallenges = (data.challenges as TenFrameChallenge[])
+      .filter((ch) => ch.type === 'build_teen' || ch.type === 'decompose_teen');
+    if (teenChallenges.length > 0) {
+      const window = resolveTeenWindow(scope.objectiveText, scope.intent, topic);
+      const sweep = teenSweep(window, teenChallenges.length);
+      teenChallenges.forEach((ch, i) => {
+        ch.targetCount = sweep[i];
+        // THE HINT AND THE NARRATION ARE CODE-OWNED HERE TOO. A content check on
+        // the second live draw caught both stating the ONES outright ("Add 1
+        // more counter to the bottom row to make 11", "ten and two more makes
+        // 12") — the answer, in model prose, on a mode whose whole point is
+        // that the child works it out. The judged loop does not render or speak
+        // either field today, which is precisely how a leak like this survives
+        // until something starts rendering it. Same rule as `instruction`
+        // (SP-17): the app owns every student-facing string on this mode.
+        if (ch.type === 'build_teen') {
+          ch.hint = 'The top frame is a whole ten. Count on from ten.';
+          ch.narration = 'The top frame is full — that is one ten. Now make the number.';
+        } else {
+          ch.hint = 'Count them out one at a time and stop at ten.';
+          ch.narration = 'Here is a mixed-up group. Find the ten hiding inside it.';
+        }
+      });
+      console.log(
+        `[TenFrame] Teen window ${window.start}-${window.end} from the lesson text `
+        + `→ ${teenChallenges.length} item(s): [${sweep.join(', ')}]`,
+      );
+    }
+  }
+
   // add: addends are the source of truth; derive targetCount from them. If Gemini
   // omitted or gave inconsistent addends, derive a make-ten-friendly split.
   for (const ch of data.challenges as TenFrameChallenge[]) {
@@ -679,8 +798,11 @@ Return the complete ten frame configuration.
   }
 
   // make_ten and split stay single-frame even if the manifest passed a
-  // double-frame override.
+  // double-frame override; the teen modes stay DOUBLE for the mirror reason —
+  // a single frame cannot hold a teen number at all, so a single-frame override
+  // would silently drop every item in the session.
   if (isMakeTenEvalMode || isSplitEvalMode) data.mode = 'single';
+  if (hasTeenTypes) data.mode = 'double';
 
   // ── The spoken-answer gate: KEEP OR DROP, never backfill ──────────────────
   // This activity is answered OUT LOUD to a live tutor, so an item whose answer
@@ -717,6 +839,17 @@ Return the complete ten frame configuration.
           return Number.isInteger(ch.targetCount)
             && ch.targetCount >= 2
             && ch.targetCount <= capacity;
+        case 'build_teen':
+        case 'decompose_teen':
+          // Gestural; both the teen number and the ten are PUBLIC. The binding
+          // constraint is the FRAME: a teen number on a single frame has no
+          // ten-and-some-ones picture to make, so those items drop here rather
+          // than shipping as a truncated build. The same predicate runs
+          // build-side in `tenFrameScript.itemFromChallenge`.
+          return Number.isInteger(ch.targetCount)
+            && ch.targetCount >= TEEN_MIN
+            && ch.targetCount <= TEEN_MAX
+            && ch.targetCount <= capacity;
         case 'add':
           return sayable(ch.addend1) && sayable(ch.addend2)
             && sayable((ch.addend1 ?? 0) + (ch.addend2 ?? 0))
@@ -747,6 +880,8 @@ Return the complete ten frame configuration.
       subitize: { type: 'subitize', targetCount: 4, hint: 'Think about how many fit in one row.', narration: "Watch carefully — how many counters flash on the frame?", flashDuration: 1500 },
       make_ten: { type: 'make_ten', targetCount: 6, hint: 'Count the empty spaces!', narration: "Some counters are already here. How many more do we need?" },
       split: { type: 'split', targetCount: 5, hint: 'Turn some yellow — but leave some red!', narration: "Here is a group of five. Let's break it into two groups." },
+      build_teen: { type: 'build_teen', targetCount: 14, hint: 'The top frame is a ten. Count on from ten!', narration: "The top frame is full — that is ten. Let's make a teen number." },
+      decompose_teen: { type: 'decompose_teen', targetCount: 14, hint: 'Count them out one at a time and stop at ten!', narration: "Here is a mixed-up group. Let's find the ten hiding inside it." },
       add: { type: 'add', targetCount: 7, addend1: 3, addend2: 4, hint: 'Place 3, then add 4 more.', narration: "Let's add these numbers using the ten frame." },
       subtract: { type: 'subtract', targetCount: 5, startCount: 8, hint: 'Tap counters to take them off!', narration: "Let's practice taking away." },
     };
@@ -779,7 +914,11 @@ Return the complete ten frame configuration.
     // count display stays off regardless of tier — and on add/subtract the
     // readout EQUALS the sum or difference the child is about to say aloud,
     // which makes it an answer leak in the judged loop rather than a scaffold.
-    if (pinnedType === 'build' || pinnedType === 'make_ten') {
+    if (pinnedType === 'build' || pinnedType === 'make_ten' || pinnedType === 'build_teen') {
+      // build_teen's readout is the TOTAL on the frames, which the ask states
+      // aloud — the child's own trace toward a public target, exactly as on
+      // build. decompose_teen is excluded for split's reason: its honest
+      // readout would be the yellow count, which is what is being asked for.
       data.showOptions.showCount = tierScaffold.showCount;
     } else {
       data.showOptions.showCount = false;
