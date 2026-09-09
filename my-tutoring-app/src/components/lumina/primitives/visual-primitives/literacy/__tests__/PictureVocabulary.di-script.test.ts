@@ -592,8 +592,19 @@ describe('picture-vocabulary · DI harness surface', () => {
       // construction now: the spoken frame is derived from frameDisplay.)
       { id: 'frame-leak', type: 'sentence_frame', word: 'bed', emoji: '🛏️',
         frameDisplay: 'A bed is soft, so we sleep in a ____.', frameSpoken: 'ignored' },
+      // PV-3: plain text in the picture slot must never reach the rendered
+      // association stimulus, including through an older cached payload.
+      { id: 'text-picture', type: 'association', word: 'bed', emoji: '\u{1F6CF}\uFE0F',
+        baseWord: 'pillow', baseEmoji: 'pillows' },
+      { id: 'text-target-picture', type: 'naming', word: 'apple', emoji: 'apple' },
+      { id: 'text-option-picture', type: 'receptive_match', word: 'dog', emoji: '\u{1F436}',
+        options: [{ word: 'dog', emoji: '\u{1F436}' }, { word: 'sun', emoji: 'sun' }] },
+      // The guard is picture-shaped, not a UTF-16 length heuristic: a single
+      // joined profession emoji is a valid nearby stimulus.
+      { id: 'zwj-picture', type: 'association', word: 'moon', emoji: '\u{1F315}',
+        baseWord: 'astronaut', baseEmoji: '\u{1F469}\u200D\u{1F680}' },
     ]);
-    expect(kept.map((i) => i.id)).toEqual(['ok']);
+    expect(kept.map((i) => i.id)).toEqual(['ok', 'zwj-picture']);
   });
 
   it('never runs two blanks on ONE scale — each ask would speak the other answer', () => {

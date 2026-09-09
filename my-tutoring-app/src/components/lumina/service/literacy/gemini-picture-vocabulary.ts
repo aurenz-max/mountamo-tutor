@@ -13,6 +13,7 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
+import { isSingleEmojiPicture } from '../../utils/emojiPicture';
 
 export type PictureVocabularyRemediationMove =
   | 'semantic_contrast'
@@ -316,7 +317,7 @@ const validateNounPool = (raw: RawNounPool): PoolWord[] => {
   for (const entry of raw.words ?? []) {
     const word = entry.word?.trim().toLowerCase();
     const emoji = entry.emoji?.trim();
-    if (!word || !emoji || !isValidWordToken(word)) { rejected += 1; continue; }
+    if (!word || !isValidWordToken(word) || !isSingleEmojiPicture(emoji)) { rejected += 1; continue; }
     // Dedup by word AND emoji so receptive_match's emoji-only cards stay distinct.
     if (seenWords.has(word) || seenEmojis.has(emoji)) { rejected += 1; continue; }
     seenWords.add(word);
@@ -342,7 +343,7 @@ const validateOppositePairs = (raw: RawPairPool): PoolWord[] => {
     const oppositeEmoji = entry.oppositeEmoji?.trim();
 
     // All four required — a pair missing any half is unusable.
-    if (!word || !emoji || !oppositeWord || !oppositeEmoji) { rejected += 1; continue; }
+    if (!word || !oppositeWord || !isSingleEmojiPicture(emoji) || !isSingleEmojiPicture(oppositeEmoji)) { rejected += 1; continue; }
     if (!isValidWordToken(word) || !isValidWordToken(oppositeWord)) { rejected += 1; continue; }
     if (word === oppositeWord) { rejected += 1; continue; }
     // Keep pairs disjoint so a word can't be both a base and an opposite elsewhere.
@@ -358,7 +359,7 @@ const validateOppositePairs = (raw: RawPairPool): PoolWord[] => {
   return survivors;
 };
 
-const validateAssociationPairs = (raw: RawAssocPool): PoolWord[] => {
+export const validateAssociationPairs = (raw: RawAssocPool): PoolWord[] => {
   const survivors: PoolWord[] = [];
   const seenWords = new Set<string>();
   let rejected = 0;
@@ -370,7 +371,7 @@ const validateAssociationPairs = (raw: RawAssocPool): PoolWord[] => {
     const relatedEmoji = entry.relatedEmoji?.trim();
 
     // All four required — a pair missing any half is unusable.
-    if (!word || !emoji || !relatedWord || !relatedEmoji) { rejected += 1; continue; }
+    if (!word || !relatedWord || !isSingleEmojiPicture(emoji) || !isSingleEmojiPicture(relatedEmoji)) { rejected += 1; continue; }
     if (!isValidWordToken(word) || !isValidWordToken(relatedWord)) { rejected += 1; continue; }
     if (word === relatedWord) { rejected += 1; continue; }
     // Keep pairs disjoint so a word can't be both a prompt and a partner elsewhere.
@@ -399,7 +400,7 @@ const validateGradableScales = (raw: RawScalePool): GradableScale[] => {
       .filter((w): w is string => Boolean(w) && isValidWordToken(w));
     // A real gradient needs 3-5 rungs, all distinct (order preserved — it IS the scale).
     const distinct = Array.from(new Set(words));
-    if (!concept || !emoji || distinct.length < 3 || distinct.length !== words.length) {
+    if (!concept || !isSingleEmojiPicture(emoji) || distinct.length < 3 || distinct.length !== words.length) {
       rejected += 1;
       continue;
     }
@@ -421,7 +422,7 @@ const validateFramePool = (raw: RawFramePool): PoolWord[] => {
   for (const entry of raw.words ?? []) {
     const word = entry.word?.trim().toLowerCase();
     const emoji = entry.emoji?.trim();
-    if (!word || !emoji || !isValidWordToken(word)) { rejected += 1; continue; }
+    if (!word || !isValidWordToken(word) || !isSingleEmojiPicture(emoji)) { rejected += 1; continue; }
     if (seenWords.has(word) || seenEmojis.has(emoji)) { rejected += 1; continue; }
     const frames = normalizeFrames(word, entry.frameDisplay, entry.frameSpoken);
     if (!frames) { rejected += 1; continue; } // frame is the whole point of this mode

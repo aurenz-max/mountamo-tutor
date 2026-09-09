@@ -62,6 +62,7 @@ import type {
   JudgedScriptItem,
   ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
+import { isSingleEmojiPicture } from '../../../utils/emojiPicture';
 
 export type PictureVocabItemKind =
   | 'receptive_match'
@@ -160,6 +161,9 @@ const saysWord = (haystack: string | undefined, word: string): boolean =>
  * Every drop is an ask with NO DEFENSIBLE ANSWER, which is a broken item rather
  * than a hard one, and each shape below has a specific way of failing the child:
  *
+ *  - a picture field that is prose, empty, or more than one pictograph — these
+ *    values render verbatim, so the learner would receive text or an ambiguous
+ *    card where the task contract promises one picture;
  *  - a tap mode whose cards do not contain the target — the tap can never match,
  *    so the child is corrected to the cap for answering correctly. ⚠️ THIS GATE
  *    IS KEYED TO `TAP_KINDS`, so it stopped applying to `association` the
@@ -183,17 +187,18 @@ const saysWord = (haystack: string | undefined, word: string): boolean =>
  */
 export const itemFromChallenge = (ch: PictureVocabChallengeLike): PictureVocabItem | null => {
   const word = ch.word?.trim();
-  if (!word || !ch.emoji?.trim() || !ch.id) return null;
+  if (!word || !isSingleEmojiPicture(ch.emoji) || !ch.id) return null;
 
   if (TAP_KINDS.has(ch.type)) {
     const options = ch.options ?? [];
     if (options.length < 2) return null;
+    if (options.some((option) => !isSingleEmojiPicture(option.emoji))) return null;
     if (!options.some((o) => o.word.trim().toLowerCase() === word.toLowerCase())) return null;
   }
 
   if (ch.type === 'opposite' || ch.type === 'association') {
     const base = ch.baseWord?.trim();
-    if (!base) return null;
+    if (!base || !isSingleEmojiPicture(ch.baseEmoji)) return null;
     // A pair whose two sides are the same word asks for what it just said.
     if (base.toLowerCase() === word.toLowerCase()) return null;
   }
