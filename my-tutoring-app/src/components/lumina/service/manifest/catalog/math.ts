@@ -3630,14 +3630,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'sorting-station',
     misconceptionScope: 'primitive',
     description: 'Live tutor-judged sorting and classifying (DI modality) on picture cards and labelled trays. The Live tutor asks with scripted lines ONE OBJECT AT A TIME, judges the child in-band, and its own affirmation advances the lesson — a challenge is no longer a screenful of objects committed at once, it is a sequence of single judged questions. Every answer is SPOKEN: the child says which group a thing belongs with (sort-by-one, sort-variety), says HOW the set should be sorted (sort-by-attribute), says which card does not belong (odd-one-out), says HOW MANY are in a group (count-and-compare, tally-record), says which group has more, and says YES or NO to whether one thing matches two criteria at once (two-attributes). Covers objective-relevant semantic categories (needs/wants, roles, living/nonliving, kinds) and visible attributes when those attributes are the taught concept. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
-    constraints: 'Best for K-1. Requires a microphone: EVERY answer is spoken and judged by the Live tutor, and there is no Check button, no drag-to-bin, no attribute buttons, no number steppers and no odd-one-out tap anywhere. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar and their names sayable in one or two words. Objects per challenge: 4-6 at Kindergarten, 5-8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. Group counts run 1-20 so every spoken count is a single word, and a group that would be EMPTY is not asked (zero has no benched spoken form). A challenge whose tray labels cannot be told apart by ear, whose object IS one of the tray labels, or whose yes/no set has only one reachable verdict is discarded before the child ever sees it. BAND FLOOR (unchanged by the spoken port — moving it needs a reader-fit re-audit, not a catalog edit): at Kindergarten route only sort_one and odd_one_out. sort_attribute, sort_variety, count_compare, two_attributes and tally_record remain Grade 1+.',
+    constraints: 'Best for K-1. Requires a microphone: EVERY answer is spoken and judged by the Live tutor, and there is no Check button, no drag-to-bin, no attribute buttons, no number steppers and no odd-one-out tap anywhere. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar and their names sayable in one or two words. Objects per challenge: 4-6 at Kindergarten, 5-8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. Group counts run 1-20 so every spoken count is a single word, and a group that would be EMPTY is not asked (zero has no benched spoken form). A challenge whose tray labels cannot be told apart by ear, whose object IS one of the tray labels, or whose yes/no set has only one reachable verdict is discarded before the child ever sees it. BAND: all seven modes are Kindergarten-routable. The five Grade-1 floors came down on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the port left no printed text on the child\'s path, and the script already forces the groups to be NAMED ALOUD at every tier when the band is Kindergarten, so the five modes were floored against a surface that no longer exists. The K caps that DO bind are the object and bin counts stated above.',
     // reader: 'none' — READY @ PRE for sort_one and odd_one_out after the --fix loop
-    // (qa/reader-fit/sorting-station-PRE-2026-07-15.md); the other five modes carry a
-    // Grade 1+ band floor stated in their own eval-mode descriptions. The verdict predates
-    // the DI port, which only REMOVED demand from the child's path (every answer is now
-    // spoken; no Check button, drag-to-bin, attribute buttons or steppers survive), and the
-    // mode descriptions record that the port left the band floors unchanged. The re-audit
-    // WORKSTREAMS still owes this primitive is about the ported surface, not the reading axis.
+    // (qa/reader-fit/sorting-station-PRE-2026-07-15.md), and READY @ PRE for the other five
+    // on the post-port re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the port only
+    // REMOVED demand from the child's path (every answer is spoken; no Check button,
+    // drag-to-bin, attribute buttons or steppers survive), `isPreReader` in
+    // sortingStationScript.ts forces the options to be named aloud at every tier, and K draws
+    // of all five modes came back picture-primary with speakable one-or-two-word groups.
+    // The re-audit the ported surface owed is DONE; the band floors it was gating are gone.
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'LIVE-JUDGED sorting practice (DI modality): you ask with scripted lines sent as cues, ONE object or ONE group at a time, the child answers OUT LOUD, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
@@ -3745,7 +3746,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['sort-by-attribute'],
         // β HELD — the metacognitive choice survives intact; only its CHANNEL
         // moved off text buttons and into the child's mouth.
-        description: 'Grade 1+ ONLY (the band floor is unchanged by the spoken port; moving it needs a reader-fit re-audit). Objects have several attributes: the child SAYS how the set should be sorted, then sorts it by that rule one thing at a time.',
+        description: 'Objects have several attributes: the child SAYS how the set should be sorted, then sorts it by that rule one thing at a time. Kindergarten-routable since the 2026-09-08 reader-fit re-audit — the metacognitive choice is spoken, not read.',
       },
       {
         evalMode: 'sort_variety',
@@ -3754,7 +3755,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['sort-variety'],
         // β HELD — same rule-rotation task, spoken instead of dragged.
-        description: 'Grade 1+ ONLY for now (the K voiced-rule variant is the contract\'s G3 follow-up and needs a reader-fit re-audit, not a floor edit). FLEXIBLE CLASSIFICATION: re-sort the SAME set by a DIFFERENT rule each round, saying where each thing goes. Rule rotation IS the declared task — the sanctioned exemption to taught-rule stability, which still holds for every other mode.',
+        description: 'Kindergarten-routable since the 2026-09-08 reader-fit re-audit (the contract\'s G3 follow-up: the voiced rule is said, never read). FLEXIBLE CLASSIFICATION: re-sort the SAME set by a DIFFERENT rule each round, saying where each thing goes. Rule rotation IS the declared task — the sanctioned exemption to taught-rule stability, which still holds for every other mode.',
       },
       {
         evalMode: 'count_compare',
@@ -3766,7 +3767,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // mouth replaces the keypad without changing the task. The per-tray
         // count badge is now hidden until the tutor affirms, which is an
         // answer-leak fix rather than a difficulty lever.
-        description: 'Grade 1+ ONLY (the band floor is unchanged by the spoken port; K comparison routes to comparison-builder). SAY how many are in each group, then SAY which has more, fewer, or the same. Counts 1-20; an empty group is never asked.',
+        description: 'SAY how many are in each group, then SAY which has more, fewer, or the same. Kindergarten-routable since the 2026-09-08 reader-fit re-audit; K.MD.3 asks for counts per category, so route here for count-and-compare and to comparison-builder for number comparison. Counts 1-20; an empty group is never asked.',
       },
       {
         evalMode: 'odd_one_out',
@@ -3789,7 +3790,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // longer READ at once; it is asked one object at a time as a spoken
         // yes/no, which is the contract's G2 path ("what exceeds a pre-reader is
         // the medium, not the cognition"). The floor stays until that audit runs.
-        description: 'Grade 1+ ONLY (the band floor is unchanged by the spoken port; unflooring is the contract\'s G2 re-audit, not a catalog edit). For each thing in turn, SAY YES or NO to whether it matches BOTH criteria at once; the primary criterion expresses the lesson objective.',
+        description: 'Kindergarten-routable since the 2026-09-08 reader-fit re-audit — the contract\'s G2 finding, that what exceeded a pre-reader was the MEDIUM and not the cognition, is what the spoken port fixed. For each thing in turn, SAY YES or NO to whether it matches BOTH criteria at once; the primary criterion expresses the lesson objective.',
       },
       {
         evalMode: 'tally_record',
@@ -3798,7 +3799,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 4,
         challengeTypes: ['tally-record'],
         // β HELD — recording a count by voice instead of a stepper.
-        description: 'Grade 1+ ONLY (the band floor is unchanged by the spoken port). Sort, then SAY the count of each group aloud. Counts 1-20; an empty group is never asked.',
+        description: 'Sort, then SAY the count of each group aloud. Kindergarten-routable since the 2026-09-08 reader-fit re-audit. Counts 1-20; an empty group is never asked.',
       },
     ],
     supportsEvaluation: true,
@@ -5004,7 +5005,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'compare-objects',
     misconceptionScope: 'primitive',
     description: 'Live tutor-judged measurement comparison (DI modality) on drawings of real-world objects. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY OUT LOUD what the picture lets us measure — how long, how tall, how heavy, or how much it holds (identify-attribute, both grades); they SAY THE NAME of the object that is longer, taller, heavier or holds more (compare-two, both grades); they SAY THE COUNT of non-standard units laid along an object (non-standard, Grade 1); and they answer WITH THEIR HANDS by touching three objects in order (order-three, Grade 1) — there the arrangement IS the answer. Builds the measurement vocabulary K.MD.1 asks children to SPEAK. ESSENTIAL for Kindergarten and Grade 1 measurement and data (K.MD.1-2).',
-    constraints: 'Best for grades K-1. Requires a microphone: three of the four answers are spoken and judged by the Live tutor, and there is no Check button, no attribute chips, no object buttons and no typed number anywhere. Kindergarten uses identify-attribute and compare-two only; order-three and non-standard are Grade 1. Unit counts run 1-20, so every spoken number is a single word. A comparison whose drawing disagrees with its answer, whose two object names cannot be told apart by ear, or whose attribute menu offers both length and height is discarded before the child ever sees it.',
+    constraints: 'Best for grades K-1. Requires a microphone: three of the four answers are spoken and judged by the Live tutor, and there is no Check button, no attribute chips, no object buttons and no typed number anywhere. Kindergarten uses identify-attribute, compare-two and order-three; non-standard is Grade 1. order-three came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the objects are drawings scaled by visualSize and the answer is the order the child touches them in, so nothing on that path is read. Unit counts run 1-20, so every spoken number is a single word. A comparison whose drawing disagrees with its answer, whose two object names cannot be told apart by ear, or whose attribute menu offers both length and height is discarded before the child ever sees it.',
     // reader: 'none' — "no Check button, no attribute chips, no object buttons and no typed
     // number anywhere" (constraints above); three of four modes are spoken, order_three is hands.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'manipulate'], role: 'apply', minutes: 5 },
@@ -5122,7 +5123,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // β HELD — the same touch-in-order surface; only the Check button
         // became a stillness close, and an incomplete order now commits (and is
         // corrected) where it used to be refused with a nudge.
-        description: 'Put 3 objects in order by a measurable attribute, touching them one at a time; the tutor judges the committed order. The arrangement IS the answer, so this one is answered with hands. Grade 1.',
+        description: 'Put 3 objects in order by a measurable attribute, touching them one at a time; the tutor judges the committed order. The arrangement IS the answer, so this one is answered with hands. Kindergarten and Grade 1 (K.MD.2 orders 3 objects by one attribute).',
       },
       {
         evalMode: 'non_standard',

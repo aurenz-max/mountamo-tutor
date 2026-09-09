@@ -631,14 +631,17 @@ describe('the catalog keeps its side', () => {
     expect(prose.toLowerCase()).toContain('no drag-to-bin');
   });
 
-  /** R3 — the band floor is NOT moved by this port. The contract is explicit
-   *  that unflooring needs a reader-fit re-audit, "NOT a simple unflooring". */
-  it('keeps the K band floor exactly where the contract left it', () => {
-    expect(entry.constraints).toContain('BAND FLOOR');
-    expect(entry.constraints).toContain('only sort_one and odd_one_out');
+  /** R3 extension — the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md)
+   *  is the audit R3 said the floor needed, and it moved: all seven modes are now
+   *  Kindergarten-routable. The floor was never a "simple unflooring" — it took the
+   *  dedicated audit R3 required, run against the surface the DI port actually shipped. */
+  it('moved the K band floor exactly where the reader-fit re-audit put it', () => {
+    expect(entry.constraints).toContain('BAND: all seven modes are Kindergarten-routable');
+    expect(entry.constraints).not.toContain('BAND FLOOR');
     for (const mode of ['sort_attribute', 'sort_variety', 'count_compare', 'two_attributes', 'tally_record']) {
       const m = entry.evalModes!.find((e) => e.evalMode === mode)!;
-      expect(m.description, mode).toContain('Grade 1+ ONLY');
+      expect(m.description, mode).not.toContain('Grade 1+ ONLY');
+      expect(m.description, mode).toContain('Kindergarten-routable');
     }
   });
 
