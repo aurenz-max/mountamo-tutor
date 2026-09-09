@@ -50,6 +50,13 @@ DEFAULT_DISCRIMINATION_PRIOR = DiscriminationPrior(a=1.4, c=0.0)
 # =========================================================================
 
 DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
+    "story-ribbon": {
+        "tell_connected_account": PATTERN_CREATIVE_OPEN_ENDED,
+        "tell_present_account":   PATTERN_CONSTRUCTED_RESPONSE,
+        "tell_future_account":    PATTERN_CONSTRUCTED_RESPONSE,
+        "tell_past_account":      PATTERN_CONSTRUCTED_RESPONSE,
+        "story_to_experience":    PATTERN_CREATIVE_OPEN_ENDED,
+    },
     "you-and-me": {
         "describe_action": PATTERN_CONSTRUCTED_RESPONSE,
         "describe_independent_action": PATTERN_CONSTRUCTED_RESPONSE,

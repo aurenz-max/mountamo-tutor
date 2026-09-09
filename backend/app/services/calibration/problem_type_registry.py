@@ -35,6 +35,14 @@ class PriorConfig:
 # =========================================================================
 
 PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
+    # Story Ribbon L1 design priors; not empirically calibrated.
+    "story-ribbon": {
+        "tell_connected_account": PriorConfig(2.5, "Pictorial: connected chronological account, tense open"),
+        "tell_present_account":   PriorConfig(3.0, "Spoken production: consistent present-time story"),
+        "tell_future_account":    PriorConfig(3.5, "Spoken production: consistent future-time story"),
+        "tell_past_account":      PriorConfig(3.5, "Spoken production: consistent past-time story"),
+        "story_to_experience":    PriorConfig(4.0, "Cross-context: explain a story-to-world connection"),
+    },
     "you-and-me": {
         "describe_action": PriorConfig(2.5, "Spoken I/you from a named speaker's perspective"),
         "describe_independent_action": PriorConfig(3.5, "Bind myself/yourself to the actor of an independent action"),
@@ -51,7 +59,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "ten-frame": {
         "build":     PriorConfig(1.5, "Concrete: place counters on frame"),
         "decompose": PriorConfig(2.0, "Concrete: partition a group into two colour groups, a different pair each time (K.OA.3)"),
+        "build_teen": PriorConfig(2.0, "Concrete: place the ones beside a given ten to make 11-19 (K.NBT.1)"),
         "subitize":  PriorConfig(2.5, "Perceptual: flash count identification"),
+        "decompose_teen": PriorConfig(3.0, "Concrete: find the ten inside a scattered teen group of 11-19 (K.NBT.1)"),
         "make_ten":  PriorConfig(3.5, "Strategy: decompose to make 10"),
         "operate":   PriorConfig(4.5, "Symbolic: addition/subtraction with frame"),
     },
@@ -70,9 +80,19 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "compute_stats":     PriorConfig(4.5, "Transitional: compute median/mode/range from a dot plot (CCSS 6.SP.B)"),
         "compare_datasets":  PriorConfig(5.5, "Transitional: compare two parallel dot plots (CCSS 7.SP.B)"),
     },
+    "measure-lab": {
+        "balance_predict":  PriorConfig(1.2, "K: predict heavier, then weigh it on a pan balance (K.MD.A.2)"),
+        "capacity_predict": PriorConfig(1.6, "K: predict which container holds more, then fill both (K.MD.A.2)"),
+        "pour_count":       PriorConfig(2.0, "K: fill a container with non-standard cups and count them (K.MD.A.1)"),
+        "order_capacity":   PriorConfig(2.2, "K: order three identical containers least to most (K.MD.A.2)"),
+    },
     "counting-board": {
         "subitize_perceptual": PriorConfig(0.5, "Pre-K: flash 1-3 objects, identify via hand image"),
         "count":     PriorConfig(1.0, "Count objects on board"),
+        "give_me_n": PriorConfig(1.5, "Count out a named number from a pile (K.CC.B.5)"),
+        "recount_moved": PriorConfig(1.8, "Same number after the set rearranges — conservation (K.CC.B.4b)"),
+        "add_more":  PriorConfig(2.2, "Put more on the board and say how many altogether"),
+        "take_away": PriorConfig(2.4, "Take some off the board and say how many are left"),
         "group":     PriorConfig(2.0, "Group objects by attribute"),
         "compare":   PriorConfig(2.5, "Compare groups"),
         "subitize":  PriorConfig(2.0, "Quick-count small groups"),
@@ -145,6 +165,8 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "convert":   PriorConfig(4.5, "Transitional: measure and convert between units"),
     },
     "length-lab": {
+        "estimate_then_tile": PriorConfig(2.0, "K: estimate the unit count, then tile and count (K.MD.1)"),
+        "two_unit_compare":   PriorConfig(3.0, "K: measure one object with two units, say which was needed more"),
         "compare":        PriorConfig(1.5, "Direct visual comparison — which is longer/shorter"),
         "tile_and_count": PriorConfig(2.5, "Tile non-standard units and count"),
         "order":          PriorConfig(3.5, "Arrange 3 objects shortest to longest"),
@@ -227,6 +249,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "number-bond": {
         "decompose":       PriorConfig(1.5, "Concrete: break whole into parts"),
+        "ten_and_ones":    PriorConfig(2.0, "Concrete: split a teen number into a full ten and the ones (K.NBT.1)"),
         "missing_part":    PriorConfig(2.5, "Pictorial: find unknown part"),
         "fact_family":     PriorConfig(3.5, "Pictorial: generate related facts"),
         "build_equation":  PriorConfig(4.5, "Transitional: write symbolic equation"),
@@ -339,7 +362,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "assessment":        PriorConfig(6.5, "Symbolic: large composites (40-100), no hints, no reset"),
     },
     "bar-model": {
+        "read_one_to_one":    PriorConfig(1.2, "Concrete: count a one-icon-per-object row (K.MD.B.3)"),
+        "most_least":         PriorConfig(1.4, "Concrete: which one-to-one row has the most / fewest (K.MD.B.3)"),
         "compare_bars":       PriorConfig(1.5, "Concrete: which bar is taller (K-1, K.MD.A.2)"),
+        "match_to_bar":       PriorConfig(1.6, "Concrete: match a group of objects to the row showing that many (K.MD.B.3)"),
+        "build_one_to_one":   PriorConfig(1.8, "Concrete: record a mixed pile onto a sticker chart, one per object (K.MD.B.3)"),
         "read_scale":         PriorConfig(2.5, "Pictorial: read value of named bar from scaled axis (2.MD.D.10)"),
         "picture_graph":      PriorConfig(3.0, "Pictorial: icon-based graph, 1 icon = N items (2.MD.D.10, 3.MD.B.3)"),
         "scaled_bar_graph":   PriorConfig(3.5, "Strategy: read step-2/5/10 bar graph including mid-bar values (3.MD.B.3)"),
@@ -377,6 +404,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "read-schedule":     PriorConfig(4.0, "Read a simple daily schedule with clock times"),
     },
     "analog-clock": {
+        "hand_name":  PriorConfig(0.8, "K: point at the hour hand or the minute hand"),
+        "count_face": PriorConfig(1.0, "K: tap 1-12 in order around the clock face"),
+        "hear_time":  PriorConfig(1.3, "K: hear a whole-hour time and pick the face that shows it"),
         "read":      PriorConfig(1.5, "Read analog clock face and pick correct time"),
         "set_time":  PriorConfig(2.5, "Drag clock hands to show a given time"),
         "match":     PriorConfig(3.5, "Match analog face to digital display"),
