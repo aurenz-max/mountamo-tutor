@@ -1,0 +1,620 @@
+{
+  "startedAt": "2026-09-09T10:48:56.705Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "give_me_n/none draw 1",
+      "mode": "give_me_n",
+      "tier": "",
+      "failures": [],
+      "title": "Star Collector",
+      "objectType": "stars",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "give_me_n",
+          "instruction": "Give me four stars.",
+          "count": 6,
+          "targetAnswer": 4,
+          "arrangement": "circle"
+        },
+        {
+          "id": "c2",
+          "type": "give_me_n",
+          "instruction": "Give me six stars.",
+          "count": 8,
+          "targetAnswer": 6,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c3",
+          "type": "give_me_n",
+          "instruction": "Give me five stars.",
+          "count": 8,
+          "targetAnswer": 5,
+          "arrangement": "line"
+        },
+        {
+          "id": "c4",
+          "type": "give_me_n",
+          "instruction": "Give me three stars.",
+          "count": 9,
+          "targetAnswer": 3,
+          "arrangement": "groups"
+        },
+        {
+          "id": "c5",
+          "type": "give_me_n",
+          "instruction": "Give me two stars.",
+          "count": 10,
+          "targetAnswer": 2,
+          "arrangement": "scattered"
+        }
+      ],
+      "asks": [
+        "Here are lots of stars. Your turn. Give me four stars.",
+        "Here are lots of stars. Your turn. Give me six stars.",
+        "Here are lots of stars. Your turn. Give me five stars.",
+        "Here are lots of stars. Your turn. Give me three stars.",
+        "Here are lots of stars. Your turn. Give me two stars."
+      ]
+    },
+    {
+      "label": "give_me_n/none draw 2",
+      "mode": "give_me_n",
+      "tier": "",
+      "failures": [],
+      "title": "Butterfly Counting Adventure!",
+      "objectType": "butterflies",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "give_me_n",
+          "instruction": "Give me three butterflies.",
+          "count": 6,
+          "targetAnswer": 3,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c2",
+          "type": "give_me_n",
+          "instruction": "Give me two butterflies.",
+          "count": 7,
+          "targetAnswer": 2,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c3",
+          "type": "give_me_n",
+          "instruction": "Give me four butterflies.",
+          "count": 8,
+          "targetAnswer": 4,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c4",
+          "type": "give_me_n",
+          "instruction": "Give me five butterflies.",
+          "count": 9,
+          "targetAnswer": 5,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c5",
+          "type": "give_me_n",
+          "instruction": "Give me six butterflies.",
+          "count": 10,
+          "targetAnswer": 6,
+          "arrangement": "scattered"
+        }
+      ],
+      "asks": [
+        "Here are lots of butterflies. Your turn. Give me three butterflies.",
+        "Here are lots of butterflies. Your turn. Give me two butterflies.",
+        "Here are lots of butterflies. Your turn. Give me four butterflies.",
+        "Here are lots of butterflies. Your turn. Give me five butterflies.",
+        "Here are lots of butterflies. Your turn. Give me six butterflies."
+      ]
+    },
+    {
+      "label": "recount_moved/none draw 1",
+      "mode": "recount_moved",
+      "tier": "",
+      "failures": [],
+      "title": "Magic Apple Shuffle!",
+      "objectType": "apples",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "recount_moved",
+          "instruction": "Count the apples. Then watch them move!",
+          "count": 8,
+          "targetAnswer": 8,
+          "arrangement": "line"
+        },
+        {
+          "id": "c2",
+          "type": "recount_moved",
+          "instruction": "Count the apples. Then watch them move!",
+          "count": 3,
+          "targetAnswer": 3,
+          "arrangement": "line"
+        },
+        {
+          "id": "c3",
+          "type": "recount_moved",
+          "instruction": "Count the apples. Then watch them move!",
+          "count": 10,
+          "targetAnswer": 10,
+          "arrangement": "line"
+        },
+        {
+          "id": "c4",
+          "type": "recount_moved",
+          "instruction": "Count the apples. Then watch them move!",
+          "count": 9,
+          "targetAnswer": 9,
+          "arrangement": "line"
+        },
+        {
+          "id": "c5",
+          "type": "recount_moved",
+          "instruction": "Count the apples. Then watch them move!",
+          "count": 7,
+          "targetAnswer": 7,
+          "arrangement": "line"
+        }
+      ],
+      "asks": [
+        "Count the apples. They will move. Your turn. How many then?",
+        "Count the apples. They will move. Your turn. How many then?",
+        "Count the apples. They will move. Your turn. How many then?",
+        "Count the apples. They will move. Your turn. How many then?",
+        "Count the apples. They will move. Your turn. How many then?"
+      ]
+    },
+    {
+      "label": "recount_moved/none draw 2",
+      "mode": "recount_moved",
+      "tier": "",
+      "failures": [],
+      "title": "Magic Moving Bears!",
+      "objectType": "bears",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "recount_moved",
+          "instruction": "Count the bears. Then watch them move!",
+          "count": 9,
+          "targetAnswer": 9,
+          "arrangement": "line"
+        },
+        {
+          "id": "c2",
+          "type": "recount_moved",
+          "instruction": "Count the bears. Then watch them move!",
+          "count": 6,
+          "targetAnswer": 6,
+          "arrangement": "line"
+        },
+        {
+          "id": "c3",
+          "type": "recount_moved",
+          "instruction": "Count the bears. Then watch them move!",
+          "count": 8,
+          "targetAnswer": 8,
+          "arrangement": "line"
+        },
+        {
+          "id": "c4",
+          "type": "recount_moved",
+          "instruction": "Count the bears. Then watch them move!",
+          "count": 7,
+          "targetAnswer": 7,
+          "arrangement": "line"
+        },
+        {
+          "id": "c5",
+          "type": "recount_moved",
+          "instruction": "Count the bears. Then watch them move!",
+          "count": 4,
+          "targetAnswer": 4,
+          "arrangement": "line"
+        }
+      ],
+      "asks": [
+        "Count the bears. They will move. Your turn. How many then?",
+        "Count the bears. They will move. Your turn. How many then?",
+        "Count the bears. They will move. Your turn. How many then?",
+        "Count the bears. They will move. Your turn. How many then?",
+        "Count the bears. They will move. Your turn. How many then?"
+      ]
+    },
+    {
+      "label": "take_away/none draw 1",
+      "mode": "take_away",
+      "tier": "",
+      "failures": [],
+      "title": "Flutter Away, Butterflies!",
+      "objectType": "butterflies",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "take_away",
+          "instruction": "Take away one butterflies. How many are left?",
+          "count": 6,
+          "changeBy": 1,
+          "targetAnswer": 5,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c2",
+          "type": "take_away",
+          "instruction": "Take away three butterflies. How many are left?",
+          "count": 7,
+          "changeBy": 3,
+          "targetAnswer": 4,
+          "arrangement": "line"
+        },
+        {
+          "id": "c3",
+          "type": "take_away",
+          "instruction": "Take away three butterflies. How many are left?",
+          "count": 8,
+          "changeBy": 3,
+          "targetAnswer": 5,
+          "arrangement": "groups"
+        },
+        {
+          "id": "c4",
+          "type": "take_away",
+          "instruction": "Take away one butterflies. How many are left?",
+          "count": 9,
+          "changeBy": 1,
+          "targetAnswer": 8,
+          "arrangement": "circle"
+        },
+        {
+          "id": "c5",
+          "type": "take_away",
+          "instruction": "Take away three butterflies. How many are left?",
+          "count": 10,
+          "changeBy": 3,
+          "targetAnswer": 7,
+          "arrangement": "scattered"
+        }
+      ],
+      "asks": [
+        "Take away one butterfly. Your turn. How many butterflies are left?",
+        "Take away three butterflies. Your turn. How many butterflies are left?",
+        "Take away three butterflies. Your turn. How many butterflies are left?",
+        "Take away one butterfly. Your turn. How many butterflies are left?",
+        "Take away three butterflies. Your turn. How many butterflies are left?"
+      ]
+    },
+    {
+      "label": "take_away/none draw 2",
+      "mode": "take_away",
+      "tier": "",
+      "failures": [],
+      "title": "Taking Away Bears!",
+      "objectType": "bears",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "take_away",
+          "instruction": "Take away four bears. How many are left?",
+          "count": 6,
+          "changeBy": 4,
+          "targetAnswer": 2,
+          "arrangement": "line"
+        },
+        {
+          "id": "c2",
+          "type": "take_away",
+          "instruction": "Take away three bears. How many are left?",
+          "count": 8,
+          "changeBy": 3,
+          "targetAnswer": 5,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c3",
+          "type": "take_away",
+          "instruction": "Take away two bears. How many are left?",
+          "count": 5,
+          "changeBy": 2,
+          "targetAnswer": 3,
+          "arrangement": "groups"
+        },
+        {
+          "id": "c4",
+          "type": "take_away",
+          "instruction": "Take away two bears. How many are left?",
+          "count": 7,
+          "changeBy": 2,
+          "targetAnswer": 5,
+          "arrangement": "circle"
+        },
+        {
+          "id": "c5",
+          "type": "take_away",
+          "instruction": "Take away three bears. How many are left?",
+          "count": 10,
+          "changeBy": 3,
+          "targetAnswer": 7,
+          "arrangement": "scattered"
+        }
+      ],
+      "asks": [
+        "Take away four bears. Your turn. How many bears are left?",
+        "Take away three bears. Your turn. How many bears are left?",
+        "Take away two bears. Your turn. How many bears are left?",
+        "Take away two bears. Your turn. How many bears are left?",
+        "Take away three bears. Your turn. How many bears are left?"
+      ]
+    },
+    {
+      "label": "add_more/none draw 1",
+      "mode": "add_more",
+      "tier": "",
+      "failures": [],
+      "title": "Adding More Fish!",
+      "objectType": "fish",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "add_more",
+          "instruction": "Put three more fish on the board. How many altogether?",
+          "count": 1,
+          "changeBy": 3,
+          "targetAnswer": 4,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c2",
+          "type": "add_more",
+          "instruction": "Put two more fish on the board. How many altogether?",
+          "count": 4,
+          "changeBy": 2,
+          "targetAnswer": 6,
+          "arrangement": "line"
+        },
+        {
+          "id": "c3",
+          "type": "add_more",
+          "instruction": "Put three more fish on the board. How many altogether?",
+          "count": 5,
+          "changeBy": 3,
+          "targetAnswer": 8,
+          "arrangement": "groups"
+        },
+        {
+          "id": "c4",
+          "type": "add_more",
+          "instruction": "Put one more fish on the board. How many altogether?",
+          "count": 6,
+          "changeBy": 1,
+          "targetAnswer": 7,
+          "arrangement": "circle"
+        },
+        {
+          "id": "c5",
+          "type": "add_more",
+          "instruction": "Put two more fish on the board. How many altogether?",
+          "count": 8,
+          "changeBy": 2,
+          "targetAnswer": 10,
+          "arrangement": "scattered"
+        }
+      ],
+      "asks": [
+        "Put three fish more on the board. Your turn. How many fish altogether?",
+        "Put two fish more on the board. Your turn. How many fish altogether?",
+        "Put three fish more on the board. Your turn. How many fish altogether?",
+        "Put one fish more on the board. Your turn. How many fish altogether?",
+        "Put two fish more on the board. Your turn. How many fish altogether?"
+      ]
+    },
+    {
+      "label": "add_more/none draw 2",
+      "mode": "add_more",
+      "tier": "",
+      "failures": [],
+      "title": "Adding More Apples!",
+      "objectType": "apples",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "add_more",
+          "instruction": "Put three more apples on the board. How many altogether?",
+          "count": 3,
+          "changeBy": 3,
+          "targetAnswer": 6,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c2",
+          "type": "add_more",
+          "instruction": "Put two more apples on the board. How many altogether?",
+          "count": 5,
+          "changeBy": 2,
+          "targetAnswer": 7,
+          "arrangement": "line"
+        },
+        {
+          "id": "c3",
+          "type": "add_more",
+          "instruction": "Put three more apples on the board. How many altogether?",
+          "count": 5,
+          "changeBy": 3,
+          "targetAnswer": 8,
+          "arrangement": "groups"
+        },
+        {
+          "id": "c4",
+          "type": "add_more",
+          "instruction": "Put one more apples on the board. How many altogether?",
+          "count": 8,
+          "changeBy": 1,
+          "targetAnswer": 9,
+          "arrangement": "circle"
+        },
+        {
+          "id": "c5",
+          "type": "add_more",
+          "instruction": "Put three more apples on the board. How many altogether?",
+          "count": 7,
+          "changeBy": 3,
+          "targetAnswer": 10,
+          "arrangement": "scattered"
+        }
+      ],
+      "asks": [
+        "Put three apples more on the board. Your turn. How many apples altogether?",
+        "Put two apples more on the board. Your turn. How many apples altogether?",
+        "Put three apples more on the board. Your turn. How many apples altogether?",
+        "Put one apple more on the board. Your turn. How many apples altogether?",
+        "Put three apples more on the board. Your turn. How many apples altogether?"
+      ]
+    },
+    {
+      "label": "count_on/none draw 1",
+      "mode": "count_on",
+      "tier": "",
+      "failures": [],
+      "title": "Counting On with Apples!",
+      "objectType": "apples",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_on",
+          "instruction": "There are 7 apples under the box. Count on the visible apples to find the total!",
+          "count": 10,
+          "startFrom": 7,
+          "targetAnswer": 10,
+          "arrangement": "line"
+        },
+        {
+          "id": "c2",
+          "type": "count_on",
+          "instruction": "There are 3 apples under the box. Count on the visible apples to find the total!",
+          "count": 5,
+          "startFrom": 3,
+          "targetAnswer": 5,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c3",
+          "type": "count_on",
+          "instruction": "There are 6 apples under the box. Count on the visible apples to find the total!",
+          "count": 8,
+          "startFrom": 6,
+          "targetAnswer": 8,
+          "arrangement": "circle"
+        },
+        {
+          "id": "c4",
+          "type": "count_on",
+          "instruction": "There are 5 apples under the box. Count on the visible apples to find the total!",
+          "count": 9,
+          "startFrom": 5,
+          "targetAnswer": 9,
+          "arrangement": "groups"
+        },
+        {
+          "id": "c5",
+          "type": "count_on",
+          "instruction": "There are 4 apples under the box. Count on the visible apples to find the total!",
+          "count": 6,
+          "startFrom": 4,
+          "targetAnswer": 6,
+          "arrangement": "line"
+        }
+      ],
+      "asks": [
+        "This group already has seven. Count on. Your turn. How many apples altogether?",
+        "This group already has three. Count on. Your turn. How many apples altogether?",
+        "This group already has six. Count on. Your turn. How many apples altogether?",
+        "This group already has five. Count on. Your turn. How many apples altogether?",
+        "This group already has four. Count on. Your turn. How many apples altogether?"
+      ]
+    },
+    {
+      "label": "count_on/none draw 2",
+      "mode": "count_on",
+      "tier": "",
+      "failures": [],
+      "title": "Count On the Hidden Bears!",
+      "objectType": "bears",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_on",
+          "instruction": "There are 6 hidden bears under the box. Count on the visible bears to find how many there are altogether!",
+          "count": 10,
+          "startFrom": 6,
+          "targetAnswer": 10,
+          "arrangement": "circle"
+        },
+        {
+          "id": "c2",
+          "type": "count_on",
+          "instruction": "We have 3 hidden bears. Count on the rest to see the total number of bears!",
+          "count": 5,
+          "startFrom": 3,
+          "targetAnswer": 5,
+          "arrangement": "line"
+        },
+        {
+          "id": "c3",
+          "type": "count_on",
+          "instruction": "Can you count on from 4 hidden bears to find the total?",
+          "count": 8,
+          "startFrom": 4,
+          "targetAnswer": 8,
+          "arrangement": "scattered"
+        },
+        {
+          "id": "c4",
+          "type": "count_on",
+          "instruction": "Start with 7 hidden bears and count on the visible bears to find the total.",
+          "count": 10,
+          "startFrom": 7,
+          "targetAnswer": 10,
+          "arrangement": "line"
+        },
+        {
+          "id": "c5",
+          "type": "count_on",
+          "instruction": "There are 5 hidden bears. Count on the final visible bears to get the grand total!",
+          "count": 7,
+          "startFrom": 5,
+          "targetAnswer": 7,
+          "arrangement": "scattered"
+        }
+      ],
+      "asks": [
+        "This group already has six. Count on. Your turn. How many bears altogether?",
+        "This group already has three. Count on. Your turn. How many bears altogether?",
+        "This group already has four. Count on. Your turn. How many bears altogether?",
+        "This group already has seven. Count on. Your turn. How many bears altogether?",
+        "This group already has five. Count on. Your turn. How many bears altogether?"
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 10,
+    "failedDraws": 0
+  }
+}

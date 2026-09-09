@@ -76,6 +76,12 @@ const KNOWN_TYPES = new Set([
   'count_on',
   'group_count',
   'compare',
+  // The K counting-out family. Each one breaks the "answer == count" identity
+  // deliberately and in its own way, so each gets its own re-derivation below.
+  'give_me_n',
+  'recount_moved',
+  'take_away',
+  'add_more',
 ]);
 
 // Fixed finger-count hand options in subitize_perceptual (CountingBoard.tsx:391, :1112).
@@ -143,7 +149,51 @@ export const countingBoardOracle: ContentOracle = {
       // Magnitudes the student engages: the board shows `count` objects, the answer is `tgt`.
       const magnitudes: number[] = [cnt, tgt];
 
-      if (type === 'compare') {
+      // ── give_me_n: the pile must be BIGGER than the ask ──
+      // Handing over the whole board is not counting a set out of many, and the
+      // script's build gate drops that item — so a generator that produces one
+      // silently shortens the run.
+      if (type === 'give_me_n') {
+        if (tgt < 1) {
+          violations.push({ check: 'schema', where: id, detail: 'give_me_n needs a positive targetAnswer — the number asked for' });
+        } else if (cnt <= tgt) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `give_me_n asks for ${tgt} from a pile of ${cnt} — the pile must hold more than the ask, or the child hands over the whole board`,
+          });
+        }
+      } else if (type === 'take_away' || type === 'add_more') {
+        // ── the change and the answer must close, and must not be the same
+        // number: the ask SPEAKS the change ("take away three"), so a draw where
+        // three are left recites the answer in the question. ──
+        const delta = c.changeBy;
+        if (!isInt(delta) || (delta as number) < 1) {
+          violations.push({ check: 'schema', where: id, detail: `${type} needs a positive integer changeBy; got ${JSON.stringify(delta)}` });
+        } else {
+          const d = delta as number;
+          const expected = type === 'take_away' ? cnt - d : cnt + d;
+          if (tgt !== expected) {
+            violations.push({
+              check: 'answer-key-desync',
+              where: id,
+              detail: `${type}: ${cnt} on the board ${type === 'take_away' ? 'minus' : 'plus'} ${d} is ${expected}, but targetAnswer says ${tgt} — a correct count would be marked wrong`,
+            });
+          }
+          if (tgt === d) {
+            violations.push({
+              check: 'answer-leak',
+              where: id,
+              detail: `${type}: the ask says "${d}" out loud and the answer is also ${d} — the question recites its own answer`,
+            });
+          }
+          if (tgt < 1) {
+            violations.push({ check: 'schema', where: id, detail: `${type}: nothing is left to say — targetAnswer ${tgt} is below one` });
+          }
+          // add_more ends on the total, so THAT is the magnitude the scope caps.
+          magnitudes.push(expected);
+        }
+      } else if (type === 'compare') {
         // ── Independence: the answer is the LARGER group's size (groupSize), NOT count ──
         const gs = c.groupSize;
         if (!isInt(gs) || (gs as number) < 1) {
@@ -212,9 +262,12 @@ export const countingBoardOracle: ContentOracle = {
         });
       }
 
-      // Duplicate-card identity: same type + count + arrangement + groupSize + startFrom
-      // renders a byte-identical board.
-      const cardKey = `${type}:${cnt}:${String(c.arrangement ?? '')}:${c.groupSize ?? ''}:${c.startFrom ?? ''}`;
+      // Duplicate-card identity: same type + count + arrangement + groupSize +
+      // startFrom renders a byte-identical board. `changeBy` joins the key for
+      // the counting-out family, where two boards of the same size are two
+      // different problems when different numbers come off or go on — without
+      // it the check flagged add_more 7+1 and 7+3 as the same card.
+      const cardKey = `${type}:${cnt}:${String(c.arrangement ?? '')}:${c.groupSize ?? ''}:${c.startFrom ?? ''}:${c.changeBy ?? ''}`;
       cardSeen.set(cardKey, (cardSeen.get(cardKey) ?? 0) + 1);
     }
 

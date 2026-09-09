@@ -47,6 +47,7 @@ import {
   countingBoardPackBase,
   countedNoun,
   countWalk,
+  giveVerdictCue,
   handVerdictCue,
   howToPlayFor,
   itemCue,
@@ -71,7 +72,7 @@ const item = (
 ): CountingItem => ({
   id: extra.id ?? `${kind}-${target}`,
   kind,
-  answerKind: kind === 'subitize_perceptual' ? 'gesture' : 'voice',
+  answerKind: kind === 'subitize_perceptual' || kind === 'give_me_n' ? 'gesture' : 'voice',
   responseClass: responseClassFor({ kind, target }),
   action: kind,
   objectWord: 'bears',
@@ -88,6 +89,11 @@ const FIXTURES: CountingItem[] = [
   item('group_count', 12, { groupSize: 4 }),
   item('compare', 7, { count: 11, groupSize: 7 }),
   item('count_all', 21, { id: 'big-21' }),
+  // The K counting-out family.
+  item('give_me_n', 3, { count: 8 }),
+  item('recount_moved', 6, { count: 6 }),
+  item('take_away', 4, { count: 6, changeBy: 2 }),
+  item('add_more', 7, { count: 5, changeBy: 2 }),
 ];
 
 /**
@@ -230,7 +236,10 @@ describe('the judging contracts', () => {
   });
 
   it('every contract orders the tutor to wait and never count along', () => {
-    for (const it_ of FIXTURES.filter((f) => f.kind !== 'subitize_perceptual')) {
+    // The predicate is the ANSWER CHANNEL, not the mode name: a gesture item
+    // (the hand match, the give-me-N handover) carries a silence contract of
+    // its own shape, asserted in its own describe block below.
+    for (const it_ of FIXTURES.filter((f) => f.answerKind !== 'gesture')) {
       const cue = itemCue(it_);
       // Stated as a FACT about the turn, never ordered: a model handed the
       // imperative form voiced it as "[WAIT silently]" on a ten-frame drive.
@@ -338,8 +347,29 @@ describe('the build gate — items that cannot be ASKED are dropped, never backf
     expect(chOf({ id: 'g', type: 'subitize_perceptual', targetAnswer: 2, count: 2 })!.answerKind)
       .toBe('gesture');
     expect(chOf({ id: 'v', type: 'count_all', targetAnswer: 5, count: 5 })!.answerKind).toBe('voice');
+    expect(chOf({ id: 'n', type: 'give_me_n', targetAnswer: 3, count: 8 })!.answerKind)
+      .toBe('gesture');
     expect(ACTION_FOR_KIND.count_all).toBe(ACTION_FOR_KIND.group_count); // one thing to DO
-    expect(new Set(Object.values(ACTION_FOR_KIND)).size).toBe(5);
+    // count / compare / count-on / look / hands + the four counting-out actions.
+    expect(new Set(Object.values(ACTION_FOR_KIND)).size).toBe(9);
+  });
+
+  it('drops a give_me_n whose pile is no bigger than the ask — that is handing over the board', () => {
+    expect(chOf({ id: 'p', type: 'give_me_n', targetAnswer: 5, count: 5 })).toBeNull();
+    expect(chOf({ id: 'q', type: 'give_me_n', targetAnswer: 3, count: 8 })).not.toBeNull();
+  });
+
+  it('drops a take_away whose change equals the answer — the ask would RECITE it', () => {
+    // "Take away three… three left." The change is spoken aloud, so this draw
+    // hands the child the answer in the question.
+    expect(chOf({ id: 'r', type: 'take_away', targetAnswer: 3, count: 6, changeBy: 3 })).toBeNull();
+    expect(chOf({ id: 's', type: 'take_away', targetAnswer: 4, count: 6, changeBy: 2 })).not.toBeNull();
+  });
+
+  it('drops a take_away / add_more whose arithmetic does not close', () => {
+    expect(chOf({ id: 't', type: 'take_away', targetAnswer: 4, count: 9, changeBy: 2 })).toBeNull();
+    expect(chOf({ id: 'u', type: 'add_more', targetAnswer: 9, count: 5, changeBy: 2 })).toBeNull();
+    expect(chOf({ id: 'v2', type: 'add_more', targetAnswer: 7, count: 5, changeBy: 2 })).not.toBeNull();
   });
 
   it('the object word is one decision, shared by both sides of the wire', () => {
@@ -368,6 +398,50 @@ describe('the state block is ANSWER-FREE (the targetCount regression guard)', ()
   it('no catalog prose names a targetCount key any more', () => {
     const entry = MATH_CATALOG.find((p) => p.id === 'counting-board')!;
     expect(JSON.stringify(entry.tutoring)).not.toContain('targetCount');
+  });
+});
+
+describe('the K counting-out family', () => {
+  it('give_me_n SAYS the number it asks for — the ask is the number, not the answer', () => {
+    const give = item('give_me_n', 3, { count: 8 });
+    expect(spokenLines(itemCue(give, {})).join(' ')).toContain('three bears');
+    // …so there is nothing to leak, and the harness says so.
+    expect(countingBoardHarnessAnswers(give).leakTokens).toEqual([]);
+  });
+
+  it('give_me_n is a silence contract — the child hands over a set, it is not spoken', () => {
+    const cue = itemCue(item('give_me_n', 3, { count: 8 }), {});
+    expect(cue).toContain('stay completely silent');
+    expect(cue).toContain('do not say how many they have touched');
+  });
+
+  it('the give verdict rules both ways and never names the size of the mistake', () => {
+    const give = item('give_me_n', 3, { count: 8 });
+    const wrong = spokenLines(giveVerdictCue(give, 5)).join(' ');
+    expect(giveVerdictCue(give, 3)).toContain('RIGHT');
+    expect(giveVerdictCue(give, 5)).toContain('WRONG');
+    expect(wrong).not.toContain('five');
+    expect(wrong).toContain('three bears');
+  });
+
+  it('recount_moved names the invariance before it re-models the count', () => {
+    const cue = itemCue(item('recount_moved', 6, { count: 6 }), {});
+    expect(cue).toContain('Moving the bears did not change how many');
+    expect(cue).toContain('moving them does not change how many');
+  });
+
+  it('take_away and add_more refuse the number from BEFORE the change', () => {
+    for (const it0 of [item('take_away', 4, { count: 6, changeBy: 2 }), item('add_more', 7, { count: 5, changeBy: 2 })]) {
+      expect(itemCue(it0, {})).toContain('The number the board showed BEFORE the change is NOT the answer');
+      expect(countingBoardHarnessAnswers(it0).signatureWrong!.text).toBe(numberWordFor(it0.count));
+    }
+  });
+
+  it('the change is public and the total is not', () => {
+    const away = item('take_away', 4, { count: 6, changeBy: 2 });
+    expect(spokenLines(itemCue(away, {})).join(' ')).toContain('two bears');
+    expect(countingBoardHarnessAnswers(away).leakTokens).toEqual(['four']);
+    expect(stimulusFor(away)).not.toContain('four');
   });
 });
 

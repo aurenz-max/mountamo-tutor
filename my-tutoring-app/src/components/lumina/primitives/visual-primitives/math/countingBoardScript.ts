@@ -59,7 +59,15 @@ export type CountingItemKind =
   | 'subitize_perceptual'
   | 'count_on'
   | 'group_count'
-  | 'compare';
+  | 'compare'
+  // ── The K counting-out family (K.CC.B.4b/4c, K.CC.B.5) ──────────────────
+  // Four things a five-year-old does with a set that counting it does not
+  // cover: make one of a named size, hold the number while the set moves,
+  // and say the new number after taking some away or putting more on.
+  | 'give_me_n'
+  | 'recount_moved'
+  | 'take_away'
+  | 'add_more';
 
 export interface CountingItem extends JudgedScriptItem {
   kind: CountingItemKind;
@@ -71,6 +79,10 @@ export interface CountingItem extends JudgedScriptItem {
   target: number;
   startFrom?: number;
   groupSize?: number;
+  /** take_away / add_more: how many the child removes or puts on. SPOKEN by the
+   *  ask, so it is public — and never equal to the answer (the generator
+   *  refuses that draw, because "take away three, three left" recites it). */
+  changeBy?: number;
 }
 
 // ── Number words — code-owned, never asked of the model ─────────────────────
@@ -94,7 +106,11 @@ export const numberWordFor = (n: number): string => {
 /** Standing gate 1, per item: ≤20 is benched; 21+ is the build-ahead
  *  multi-word-numeral class (#63 acceptance owed). */
 export const responseClassFor = (item: { kind: CountingItemKind; target: number }): ResponseClassId => {
-  if (item.kind === 'subitize_perceptual') return 'manipulation';
+  // give_me_n is answered by HANDING OVER a set, not by saying a number — the
+  // child already heard the number in the ask. Same gesture class as the
+  // pre-numeric hand match (the spell_word ruling: porting it to speech would
+  // delete the mode's identity, which is producing a quantity).
+  if (item.kind === 'subitize_perceptual' || item.kind === 'give_me_n') return 'manipulation';
   return item.target <= 20 ? 'number_word_to_20' : 'number_word_to_120';
 };
 
@@ -177,6 +193,14 @@ export const howToPlayFor = (item: CountingItem): string => {
       return 'Some are already counted for you. Keep counting from there, then say how many altogether. ';
     case 'compare':
       return 'Look at both groups and find the one with more. ';
+    case 'give_me_n':
+      return `Touch the ${item.objectWord} you want to give me. Touch one again to put it back. `;
+    case 'recount_moved':
+      return `Touch each ${objectSingularFor(item.objectWord)} as you count. Then they will move — but do not count again. `;
+    case 'take_away':
+      return `Touch the ${item.objectWord} to take away. Then say how many are left. `;
+    case 'add_more':
+      return `Touch the faded ${item.objectWord} to put them on the board. Then say how many altogether. `;
     default:
       return `Touch each ${objectSingularFor(item.objectWord)} one time as you count. Then say how many! `;
   }
@@ -196,6 +220,18 @@ const askFor = (item: CountingItem): string => {
       return `Look at both groups. Your turn. How many in the group with more?`;
     case 'group_count':
       return `Count the groups of ${item.objectWord}. Your turn. How many altogether?`;
+    case 'give_me_n':
+      // The number is the ASK here, not the answer — the child hands back a set.
+      return `Here are lots of ${item.objectWord}. Your turn. Give me ${countedNoun(item.target, item.objectWord)}.`;
+    case 'recount_moved':
+      // Spoken BEFORE the move, and deliberately short: every item in a
+      // conservation session asks the same thing, and the repeated-ask gate
+      // caps what a child listens through to reach an identical question.
+      return `Count the ${item.objectWord}. They will move. Your turn. How many then?`;
+    case 'take_away':
+      return `Take away ${countedNoun(item.changeBy ?? 1, item.objectWord)}. Your turn. How many ${item.objectWord} are left?`;
+    case 'add_more':
+      return `Put ${countedNoun(item.changeBy ?? 1, item.objectWord)} more on the board. Your turn. How many ${item.objectWord} altogether?`;
     default:
       return `Count the ${item.objectWord}. Your turn. How many ${item.objectWord}?`;
   }
@@ -215,6 +251,20 @@ const correctionFor = (item: CountingItem): string => {
       return `My turn: start at ${numberWordFor(item.startFrom ?? 0)} and count on — ${cap(countedNoun(item.target, item.objectWord))} altogether. Your turn. How many ${item.objectWord} altogether?`;
     case 'compare':
       return `My turn: the bigger group has ${word}. Your turn. How many in the group with more?`;
+    case 'recount_moved':
+      // The conservation miss is a NEW number after the move, so the correction
+      // names the invariance before it re-models the count.
+      return item.target <= 10
+        ? `My turn: moving them does not change how many. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))}, before and after. Your turn. How many ${item.objectWord} now?`
+        : `My turn: moving them does not change how many — there are still ${countedNoun(item.target, item.objectWord)}. Your turn. How many ${item.objectWord} now?`;
+    case 'take_away':
+      return item.target <= 10
+        ? `My turn: count what is left. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))} left. Your turn. How many ${item.objectWord} are left?`
+        : `My turn: there are ${countedNoun(item.target, item.objectWord)} left — count only the ones still on the board. Your turn. How many ${item.objectWord} are left?`;
+    case 'add_more':
+      return item.target <= 10
+        ? `My turn: count them all now. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))} altogether. Your turn. How many ${item.objectWord} altogether?`
+        : `My turn: there are ${countedNoun(item.target, item.objectWord)} altogether — count the new ones on from the ones already there. Your turn. How many ${item.objectWord} altogether?`;
     default:
       return item.target <= 10
         ? `My turn: watch me count. ${countWalk(item.target)}. ${cap(countedNoun(item.target, item.objectWord))}. Your turn. How many ${item.objectWord}?`
@@ -253,7 +303,13 @@ const judgingContract = (item: CountingItem): string => {
     ? `The starting number "${numberWordFor(item.startFrom ?? 0)}" said back is NOT the answer. `
     : item.kind === 'compare'
       ? `The smaller group's count is NOT the answer, however confident it sounds. `
-      : '';
+      : item.kind === 'take_away' || item.kind === 'add_more'
+        // The set changed while the child watched; the number they had in their
+        // head a moment ago is the fluent miss on both.
+        ? `The number the board showed BEFORE the change is NOT the answer, however confident it sounds. `
+        : item.kind === 'recount_moved'
+          ? `Moving the ${item.objectWord} did not change how many; a number other than "${word}" because they look different now is the miss this item is for. `
+          : '';
   return (
     `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. `
     + `The correct answer is "${word}". Counting aloud that ENDS on "${word}" counts as that answer — the last number said tells the total. `
@@ -263,6 +319,14 @@ const judgingContract = (item: CountingItem): string => {
     + `If it is wrong, say exactly: "${correctionFor(item)}" — the same line on every wrong answer for this item, never swapped for a different wording.`
   );
 };
+
+/** give_me_n is a SILENCE contract too: the child answers by handing over a set,
+ *  so there is nothing to judge until the app reports what they gave. The one
+ *  number the tutor may say is the one she just asked for. */
+const giveContract = (item: CountingItem): string =>
+  `The quoted line is the ONLY thing you say on this turn; the learner answers by TOUCHING ${item.objectWord}, not by speaking, so you then stay completely silent. `
+  + `Do not count aloud with them, do not say how many they have touched so far, and do not name any number other than the one you asked for. `
+  + `You will be told how many they handed over and whether it is right; only then do you speak.`;
 
 /** The pre-numeric contract is a SILENCE contract (spell_word's pattern):
  *  nothing to judge until the tap is described, and every number word is
@@ -307,7 +371,9 @@ export const itemCue = (item: CountingItem, opts: CountingCueOptions = {}): stri
   const spoken = `${greeting}${how}${askFor(item)}`;
   const contract = item.kind === 'subitize_perceptual'
     ? perceptualContract(item)
-    : judgingContract(item);
+    : item.kind === 'give_me_n'
+      ? giveContract(item)
+      : judgingContract(item);
   return `[COUNT_ITEM] Say exactly: "${spoken}" ${contract} ${NEVER_PERFORM}`;
 };
 
@@ -329,6 +395,25 @@ export const handVerdictCue = (
   );
 };
 
+/**
+ * The give-me-N verdict. The child hands over a set, so the cue reports the SIZE
+ * they gave (the judge's eyes only — the spoken lines say the asked-for number,
+ * which the ask already said aloud, and never the size of their mistake, which
+ * would be a second number in a five-year-old's ear).
+ */
+export const giveVerdictCue = (item: CountingItem, given: number): string => {
+  const matches = given === item.target;
+  const asked = countedNoun(item.target, item.objectWord);
+  return (
+    `[COUNT_GIVE] The learner handed over ${given} ${item.objectWord}; you asked for ${item.target} — `
+    + `that is ${matches ? 'RIGHT' : 'WRONG'}. `
+    + (matches
+      ? `Say exactly: "Yes! You gave me ${asked}." `
+      : `Say exactly: "My turn: count as you give them to me. Your turn. Give me ${asked}." `)
+    + `Say nothing else — no praise, no hint, no count of what they gave. ${NEVER_PERFORM}`
+  );
+};
+
 /** Correction cap reached: acknowledge warmly and carry the lesson forward. */
 export const moveOnCue = (
   item: CountingItem,
@@ -341,7 +426,9 @@ export const moveOnCue = (
   const how = opts.howToPlay ? howToPlayFor(next) : '';
   const contract = next.kind === 'subitize_perceptual'
     ? perceptualContract(next)
-    : judgingContract(next);
+    : next.kind === 'give_me_n'
+      ? giveContract(next)
+      : judgingContract(next);
   return `[COUNT_MOVE] Say exactly: "Good try! Here comes the next one. ${how}${askFor(next)}" ${contract} ${NEVER_PERFORM}`;
 };
 
@@ -359,6 +446,7 @@ export interface CountingChallengeLike {
   count: number;
   startFrom?: number | null;
   groupSize?: number | null;
+  changeBy?: number | null;
 }
 
 /** Task identity for the how-to-play re-speak policy. Counting, quick-look,
@@ -371,6 +459,10 @@ export const ACTION_FOR_KIND: Record<CountingItemKind, string> = {
   count_on: 'count-on',
   subitize: 'look',
   subitize_perceptual: 'hands',
+  give_me_n: 'give',
+  recount_moved: 'watch-and-hold',
+  take_away: 'take-away',
+  add_more: 'add-more',
 };
 
 /** The plural object word as SPOKEN. `custom` has no sayable name, so it
@@ -412,10 +504,25 @@ export const itemFromChallenge = (
     return null;
   }
 
+  // The K counting-out family adds three more ways an item arrives unaskable,
+  // all of them reachable from a live draw:
+  const changeBy = ch.changeBy ?? undefined;
+  //  - give_me_n with a pile no bigger than the request: "give me five" out of
+  //    five is handing over the whole board, which is not producing a set.
+  if (ch.type === 'give_me_n' && (!Number.isFinite(ch.count) || ch.count <= target)) return null;
+  //  - take_away / add_more with no change to make, or one that is spoken as
+  //    the answer ("take away three" leaving three RECITES it).
+  if (ch.type === 'take_away' || ch.type === 'add_more') {
+    if (changeBy === undefined || changeBy < 1) return null;
+    if (changeBy === target) return null;
+    if (ch.type === 'take_away' && ch.count - changeBy !== target) return null;
+    if (ch.type === 'add_more' && ch.count + changeBy !== target) return null;
+  }
+
   return {
     id: ch.id,
     kind: ch.type,
-    answerKind: ch.type === 'subitize_perceptual' ? 'gesture' : 'voice',
+    answerKind: ch.type === 'subitize_perceptual' || ch.type === 'give_me_n' ? 'gesture' : 'voice',
     responseClass: responseClassFor({ kind: ch.type, target }),
     action: ACTION_FOR_KIND[ch.type],
     objectWord: opts.objectWord,
@@ -423,6 +530,7 @@ export const itemFromChallenge = (
     target,
     startFrom,
     groupSize: ch.groupSize ?? undefined,
+    changeBy,
   };
 };
 
@@ -467,6 +575,14 @@ export const stimulusFor = (item: CountingItem): string => {
         : `equal groups of ${item.objectWord}`;
     case 'compare':
       return `two groups of ${item.objectWord} side by side, one bigger than the other`;
+    case 'give_me_n':
+      return `a big pile of ${item.objectWord} to take some from`;
+    case 'recount_moved':
+      return `a group of ${item.objectWord} that will move once it has been counted`;
+    case 'take_away':
+      return `a group of ${item.objectWord}, ${numberWordFor(item.changeBy ?? 0)} of them to take away`;
+    case 'add_more':
+      return `a group of ${item.objectWord}, with ${numberWordFor(item.changeBy ?? 0)} more to put on`;
     default:
       return `a group of ${item.objectWord} to touch and count`;
   }
@@ -506,8 +622,23 @@ export const countingBoardPackBase = (
  *  `count_on` speaks one ("This group already has five"), and its answer is
  *  strictly greater by construction — so the exemption can never empty the
  *  leak scan on this pack. */
-const publicValuesFor = (item: CountingItem): number[] =>
-  item.kind === 'count_on' ? [item.startFrom ?? 0] : [];
+const publicValuesFor = (item: CountingItem): number[] => {
+  switch (item.kind) {
+    case 'count_on':
+      return [item.startFrom ?? 0];
+    // The ask IS the number here ("Give me five bears"), so hearing it back is
+    // the task, not a leak.
+    case 'give_me_n':
+      return [item.target];
+    // "Take away two" / "put two more on" — the change is spoken, the total is
+    // not, and the build gate refuses a draw where they are the same number.
+    case 'take_away':
+    case 'add_more':
+      return [item.changeBy ?? 0];
+    default:
+      return [];
+  }
+};
 
 export interface CountingHarnessAnswers {
   /** What a correct child says (or taps). */
@@ -574,6 +705,35 @@ export const countingBoardHarnessAnswers = (item: CountingItem): CountingHarness
         signatureWrong: {
           text: numberWordFor(item.startFrom ?? 0),
           why: 'the starting number said back — the contract names it as NOT the answer',
+        },
+      };
+    case 'give_me_n': {
+      // One too many is the miss: the child keeps counting past the ask.
+      const wrongGive = item.target + 1 <= item.count ? item.target + 1 : Math.max(1, item.target - 1);
+      return {
+        ...base,
+        correct: `handed over ${item.target} ${item.objectWord}`,
+        plainWrong: `handed over ${wrongGive} ${item.objectWord}`,
+        placed: { correct: item.target, wrong: wrongGive },
+        // The asked-for number is spoken by the ask, so there is nothing to leak.
+        leakTokens: [],
+      };
+    }
+    case 'recount_moved':
+      return {
+        ...base,
+        signatureWrong: {
+          text: numberWordFor(item.target + 1),
+          why: 'a bigger number after the set spread out — the conservation miss this item exists to catch',
+        },
+      };
+    case 'take_away':
+    case 'add_more':
+      return {
+        ...base,
+        signatureWrong: {
+          text: numberWordFor(item.count),
+          why: 'the count from BEFORE the change — fluent, confident, and the contract names it',
         },
       };
     case 'compare': {

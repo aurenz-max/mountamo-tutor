@@ -25,8 +25,8 @@
 - **Evidence:** catalog `evalModes`; generator `validChallengeTypes` `:501`; oracle `KNOWN_TYPES` + `<3` check.
 - **Probe:** all six modes PASS in `qa/eval-reports/counting-board-2026-03-15.md`; oracle `schema` fires on a missing/foreign type.
 
-### R2 — the board renders exactly `count` objects and the answer is `count` (compare excepted) · OBSERVED
-- **Property:** `positions = generatePositions(challenge.count, …)` renders exactly `count` tappable objects; for every non-compare mode `targetAnswer === count`; for `compare`, `count` is both groups' total and `targetAnswer`/`groupSize` is the strictly-larger group. The manipulative **is** the answer made visible (answer-leak is deliberately NOT checked).
+### R2 — the board renders exactly `count` objects and the answer is `count` (compare and the counting-out family excepted) · OBSERVED
+- **Property:** `positions = generatePositions(challenge.count, …)` renders exactly `count` tappable objects; for every mode outside the exception list `targetAnswer === count`; for `compare`, `count` is both groups' total and `targetAnswer`/`groupSize` is the strictly-larger group. The 2026-09-08 counting-out family (R9) adds four more exceptions, each with its own answer identity — the exception list is how a new task identity enters this primitive, never an in-place change to what `count` means for the modes above. The manipulative **is** the answer made visible (answer-leak is deliberately NOT checked).
 - **Demanded by:** answer-key consistency, oracle `answer-key-desync`, cardinality pedagogy.
 - **Evidence:** component `positions` memo `:382`, `checkCountChallenge` `:515`; generator `targetAnswer = count` `:456`; oracle `answer-key-desync`.
 - **Probe:** oracle re-derives displayed count and asserts it equals `targetAnswer` (compare → `groupSize`); a `count 8 / target 7` board must fire.
@@ -67,6 +67,22 @@
 - **Evidence:** component `recordResult`, `advanceToNextChallenge` `:741`, auto-submit guard `:864`, `CountingBoardMetrics` build `:775`.
 - **Probe:** behavioral completion reaches Next then a single evaluation submission with no duplicate.
 
+### R9 — the K counting-out family has four answer identities of its own · OBSERVED
+- **Property:** four modes break `targetAnswer === count` deliberately, and each closes its own way:
+  `give_me_n` (`count` = the pile, `targetAnswer` = the number ASKED FOR, and the pile must be strictly larger);
+  `recount_moved` (`targetAnswer === count`, but the board rearranges after the last tap, clears the count trace and stops accepting taps);
+  `take_away` (`targetAnswer === count − changeBy`); `add_more` (`targetAnswer === count + changeBy`, where `count` is what STARTS on the board and the objective's bound caps the total).
+  In `take_away`/`add_more` the ask SPEAKS `changeBy`, so a draw where `changeBy === targetAnswer` is refused — the question would recite its answer. `give_me_n` is a gesture item: the ask states the number and the child hands a set back, so its ask is exempt from the answer-leak rule and its `leakTokens` are empty by contract.
+- **Demanded by:** K.CC.B.4b (conservation), K.CC.B.5 (count out a named number), K.OA.A.1 foundations; the five K rows in `qa/curriculum-coverage/math-k` item `counting-extensions`.
+- **Evidence:** `countingBoardScript.ts` (kinds, asks, corrections, `publicValuesFor`, build gate); `gemini-counting-board.ts` (code-owned `changeBy`/pile/`movedCounts`, scope ceiling read in code); `CountingBoard.tsx` (handover commit, removal, faint extras, the move); `counting-board.ts` oracle (per-mode re-derivation + the `answer-leak` check on `changeBy === targetAnswer`).
+- **Probe:** `scripts/probe-counting-board-k-family.mjs` — 15/15 live draws clean across three tiers; `CountingBoard.counting-out.test.tsx` drives the board on the real runner; `countingBoardScript.di-script.test.ts` 64/64.
+
+### R10 — count_on at K covers the started group · OBSERVED
+- **Property:** at `gradeBand === 'K'` the first `startFrom` objects are not drawn; a basket covers them, from FIRST PAINT (read from `challenge.startFrom`, never from the runner-populated pre-count). At Grade 1 they stay visible and pre-counted. The covered number is spoken by the tutor's ask and printed nowhere.
+- **Demanded by:** the K "combine a hidden group with visible objects" row; count_on's own task identity — a visible started group can simply be counted from one.
+- **Evidence:** `CountingBoard.tsx` `isKCountOnHidden` / `coveredCount`; catalog `count_on` description.
+- **Probe:** `CountingBoard.counting-out.test.tsx` — K draws 3 of 8 objects plus the basket; Grade 1 draws all 8 and no basket.
+
 ## Conflicts
 
 _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only the K `subitize` display lifecycle. R2/R3 keep `count_all` tap-to-count and the `count`↔`targetAnswer` identity; R5 keeps Pre-K perceptual untouched; the reader-grade branch of R4 preserves Grade-1 subitize. No generator schema or catalog change is justified — `count`/`targetAnswer` already carry everything the flash needs, and display timing is a component concern.
@@ -77,6 +93,7 @@ _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only
 - **Near-consumer:** Grade-1 `count_on` (`CountingBoard.tsx:1146–1173`, judged `:609`) — objects stay visible and tap-countable while the answer is entered on a stepper.
 - **Shortfall:** the count-on total is entered via a numeric proxy over a fully visible, tappable board, one band above K. Whether this is a defect depends on the EMERGING-band pedagogy (count-on legitimately keeps the pre-counted head visible), so it is noted, not pre-ruled.
 - **Path:** band gate → `/reader-fit --lesson` at EMERGING, then `/reader-fit --fix` if confirmed.
+- **2026-09-08:** the K half of this question is now answered by R10 (covered at K, visible at Grade 1). The Grade-1 question this gap actually names is untouched and still open.
 - **Relation to R-series:** adjacent to R4 but a different band + task identity; do not fold into the K fix (reader-fit census 2026-07-16 explicitly deferred it to the EMERGING re-audit).
 
 ### G2 — `subitize_perceptual` (Pre-K) does not actually flash/hide · OPEN
@@ -93,4 +110,5 @@ _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only
 
 ## Changelog
 
+- 2026-09-08 — R9 (K counting-out family: `give_me_n`, `recount_moved`, `take_away`, `add_more`) and R10 (count_on covered at K) added; R2's exception list amended to name them. A fork by eval mode, not an edit in place: every existing mode keeps `targetAnswer === count` and its own board behavior. Occasion: math-k atlas slice 7, `counting-extensions` (five K rows).
 - 2026-07-20 — derived (initial). 8 requirements, 0 open conflicts, 2 gaps (G1 count_on@EMERGING, G2 perceptual flash@Pre-K). Occasion: reader-fit item 13, K `subitize` flash-then-hide display fork.

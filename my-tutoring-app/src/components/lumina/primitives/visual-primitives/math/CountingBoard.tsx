@@ -71,6 +71,7 @@ import {
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   countingBoardPackBase,
+  giveVerdictCue,
   handVerdictCue,
   itemsFromChallenges,
   numberWordFor,
@@ -89,13 +90,17 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 export interface CountingBoardChallenge {
   id: string;
-  type: 'count_all' | 'subitize' | 'subitize_perceptual' | 'count_on' | 'group_count' | 'compare';
+  type:
+    | 'count_all' | 'subitize' | 'subitize_perceptual' | 'count_on' | 'group_count' | 'compare'
+    | 'give_me_n' | 'recount_moved' | 'take_away' | 'add_more';
   instruction: string;
   targetAnswer: number;
   count: number;
   arrangement: 'scattered' | 'line' | 'groups' | 'circle';
   groupSize?: number | null;
   startFrom?: number | null;    // for count_on mode
+  /** take_away / add_more: how many the child removes or puts on. Code-owned. */
+  changeBy?: number | null;
   flashDuration?: number | null; // ms the objects stay visible in K subitize flash-then-hide
   hint: string;
   narration: string;
@@ -131,6 +136,10 @@ export interface CountingBoardData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  give_me_n: { label: 'Give Me', icon: '🤲' },
+  recount_moved: { label: 'They Moved', icon: '🔀' },
+  take_away: { label: 'Take Away', icon: '➖' },
+  add_more: { label: 'Add More', icon: '➕' },
   count_all: { label: 'Count All', icon: '🔢' },
   subitize: { label: 'Subitize', icon: '⚡' },
   subitize_perceptual: { label: 'See & Show', icon: '✋' },
@@ -358,6 +367,13 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const [alreadyCountedNote, setAlreadyCountedNote] = useState(false);
   const [handChoice, setHandChoice] = useState<number | null>(null);
   const [preCountedCount, setPreCountedCount] = useState(0);
+  /** recount_moved: the set has been counted and has since moved. The board
+   *  stops accepting taps here — being unable to recount is the whole task. */
+  const [hasMoved, setHasMoved] = useState(false);
+  /** take_away: objects the child has taken off the board. */
+  const [removedObjects, setRemovedObjects] = useState<Set<number>>(new Set());
+  /** add_more: extra objects the child has put on (indices past the start set). */
+  const [addedExtras, setAddedExtras] = useState<Set<number>>(new Set());
   /** The count JUST affirmed — post-answer only (answer-leak rule), cleared
    *  the moment the next item opens. 'match' = pre-numeric affirm (no digits). */
   const [reward, setReward] = useState<string | null>(null);
@@ -372,6 +388,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   const handChoiceRef = useRef<number | null>(null);
+  /** How many the child handed over on the last give_me_n commit. A ref because
+   *  the pack is memoized and would otherwise read a stale count. */
+  const givenCountRef = useRef(0);
   /** Any double-tap on an already-counted object this run (one-to-one signal). */
   const doubleCountEverRef = useRef(false);
 
@@ -408,16 +427,26 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     statusLines: {
       ready: (item) => item.kind === 'subitize_perceptual'
         ? 'Look, then tap the hand that matches.'
-        : 'Listen, then say how many out loud.',
+        : item.kind === 'give_me_n'
+          ? 'Touch the ones you want to give, then hand them over.'
+          : 'Listen, then say how many out loud.',
       retry: (item) => item.kind === 'subitize_perceptual'
         ? 'Look again — then tap the hand that matches.'
-        : 'Have another go — say how many.',
+        : item.kind === 'give_me_n'
+          ? 'Have another go — touch the ones you want to give.'
+          : 'Have another go — say how many.',
       noVerdict: () => 'One more time — say how many.',
       affirmedNext: 'Yes! You counted it.',
       done: 'Great counting today!',
     },
     diagnosisObservation: (item, { lastHeard }) =>
-      item.kind === 'subitize_perceptual'
+      item.kind === 'give_me_n'
+        ? {
+            challenge: `Give ${item.target} ${item.objectWord} from a pile of ${item.count}.`,
+            expected: `${item.target} ${item.objectWord} handed over.`,
+            observed: `Handed over ${givenCountRef.current} ${item.objectWord}.`,
+          }
+        : item.kind === 'subitize_perceptual'
         ? {
             challenge: `See ${item.count} ${item.objectWord} and tap the matching hand.`,
             expected: `The hand with ${item.target} fingers.`,
@@ -432,13 +461,16 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               ? `Heard "${lastHeard}".`
               : 'The tutor judged the answer wrong from the audio.',
           },
-  }), [items]);
+  }), [items, objectWord]);
 
   // ── Per-item board reset ──────────────────────────────────────────────────
   const resetBoardFor = useCallback((item: CountingItem) => {
     setAlreadyCountedNote(false);
     setHandChoice(null);
     handChoiceRef.current = null;
+    setHasMoved(false);
+    setRemovedObjects(new Set());
+    setAddedExtras(new Set());
     if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
     setIsSubitizeFlashing(false);
     setSubitizeAnswerReady(false);
@@ -559,20 +591,44 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const currentChallenge = (currentItem ? challengeById.get(currentItem.id) : null) ?? null;
 
   // ── Per-challenge layout ──────────────────────────────────────────────────
-  const challengeCount = currentChallenge?.count ?? 5;
-  const challengeArrangement = currentChallenge?.arrangement ?? 'scattered';
+  const startCount = currentChallenge?.count ?? 5;
+  const changeBy = currentChallenge?.changeBy ?? 0;
+  // add_more lays out the extras from the start (faint, waiting to be put on),
+  // so putting one on never re-flows the objects the child already counted.
+  const challengeCount = currentItem?.kind === 'add_more' ? startCount + changeBy : startCount;
+  const challengeArrangement = currentItem?.kind === 'recount_moved' && hasMoved
+    ? 'scattered'
+    : (currentChallenge?.arrangement ?? 'scattered');
   const challengeGroupSize = currentChallenge?.groupSize;
 
   const isKSubitize = gradeBand === 'K' && currentItem?.kind === 'subitize';
+  /**
+   * The K route for count_on: the pre-counted group sits under a basket. At
+   * Grade 1 the started objects stay visible (the band's own pedagogy, and the
+   * contract's G1 gap defers that question to the EMERGING re-audit); at K a
+   * visible started group can simply be counted from one, which is the skill
+   * count_on exists to replace. Covered, "five already in the basket" is the
+   * only way in — and the tutor speaks that number, so nothing is printed.
+   */
+  const isKCountOnHidden = gradeBand === 'K' && currentItem?.kind === 'count_on';
+  /**
+   * How many sit under the basket. Read from the CHALLENGE, not from the
+   * runner-populated pre-count: `resetBoardFor` only fires when the tutor opens
+   * an item, so a preCountedCount-driven cover left the whole board countable
+   * from first paint — a child can count all eight before she has said a word,
+   * which is the very thing count-on replaces.
+   */
+  const coveredCount = isKCountOnHidden ? (currentChallenge?.startFrom ?? 0) : 0;
 
   const scatterSeed = useMemo(() => {
-    const src = currentChallenge?.id ?? `${runner.currentIndex}`;
+    // The move IS a new seed: same objects, new places (conservation).
+    const src = `${currentChallenge?.id ?? runner.currentIndex}${hasMoved ? '-moved' : ''}`;
     let h = 0;
     for (let i = 0; i < src.length; i++) {
       h = (h * 31 + src.charCodeAt(i)) >>> 0;
     }
     return (h % 2147483646) + 1; // Lehmer RNG needs a seed in 1..2147483646 (never 0)
-  }, [currentChallenge?.id, runner.currentIndex]);
+  }, [currentChallenge?.id, runner.currentIndex, hasMoved]);
 
   const positions = useMemo(() =>
     generatePositions(challengeCount, challengeArrangement, challengeGroupSize, scatterSeed),
@@ -613,6 +669,50 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     const kind = currentItem?.kind;
     // Subitizing is perceptual recognition, never tap-counting.
     if (kind === 'subitize' || kind === 'subitize_perceptual') return;
+    // Once the set has moved, the number has to be HELD, not re-counted.
+    if (kind === 'recount_moved' && hasMoved) return;
+
+    // give_me_n: a tap hands one over, a second tap puts it back. Correcting an
+    // over-count is the child doing the skill, so it is never scolded — the
+    // numbers just re-flow to the order they were taken in.
+    if (kind === 'give_me_n' && countedObjects.has(objectIndex)) {
+      SoundManager.tap();
+      setCountedObjects((prev) => {
+        const next = new Set(prev);
+        next.delete(objectIndex);
+        return next;
+      });
+      setCountOrder((prev) => {
+        const remaining = Array.from(prev.entries())
+          .filter(([idx]) => idx !== objectIndex)
+          .sort((a, b) => a[1] - b[1]);
+        const next = new Map<number, number>();
+        remaining.forEach(([idx], n) => next.set(idx, n + 1));
+        return next;
+      });
+      return;
+    }
+
+    // take_away: the first `changeBy` taps take objects OFF the board; after
+    // that the same tap counts what is left.
+    if (kind === 'take_away' && !removedObjects.has(objectIndex) && removedObjects.size < (currentItem?.changeBy ?? 0)) {
+      SoundManager.tap();
+      setRemovedObjects((prev) => new Set(prev).add(objectIndex));
+      setCountedObjects((prev) => {
+        const next = new Set(prev);
+        next.delete(objectIndex);
+        return next;
+      });
+      return;
+    }
+
+    // add_more: a faint extra is put ON the board by its first tap; counting it
+    // is a separate, later tap.
+    if (kind === 'add_more' && objectIndex >= (currentChallenge?.count ?? 0) && !addedExtras.has(objectIndex)) {
+      SoundManager.tap();
+      setAddedExtras((prev) => new Set(prev).add(objectIndex));
+      return;
+    }
 
     if (countedObjects.has(objectIndex)) {
       SoundManager.invalid();
@@ -636,7 +736,31 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       next.set(objectIndex, newCount);
       return next;
     });
-  }, [runner, evaluation.hasSubmitted, currentItem?.kind, countedObjects]);
+
+    // The last object counted is the moment the set moves — the child has held
+    // the number, and now the board rearranges under it.
+    if (kind === 'recount_moved' && newCount >= (currentChallenge?.count ?? 0)) {
+      setHasMoved(true);
+      // The count trace goes with the move: number tags left on the objects
+      // would BE the answer, sitting on screen while the child is asked for it.
+      setCountedObjects(new Set());
+      setCountOrder(new Map());
+    }
+  }, [
+    runner, evaluation.hasSubmitted, currentItem?.kind, currentItem?.changeBy,
+    countedObjects, removedObjects, addedExtras, hasMoved, currentChallenge?.count,
+  ]);
+
+  // ── The give-me-N commit — the handover IS the answer ─────────────────────
+  const handleGiveCommit = useCallback(() => {
+    const item = runner.currentItem;
+    if (!runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!item || item.kind !== 'give_me_n') return;
+    if (runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    givenCountRef.current = countedObjects.size;
+    runner.submitGestureAttempt(giveVerdictCue(item, countedObjects.size));
+  }, [runner, evaluation.hasSubmitted, countedObjects]);
 
   // ── The hand pick (subitize_perceptual) — the tap IS the commit ───────────
   const handleHandPick = useCallback((fingers: number) => {
@@ -691,7 +815,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   }
 
   const kind = currentItem?.kind;
-  const boardTappable = kind !== 'subitize' && kind !== 'subitize_perceptual';
+  const boardTappable = kind !== 'subitize' && kind !== 'subitize_perceptual'
+    && !(kind === 'recount_moved' && hasMoved);
   const stageWord = runner.stage === 'affirmed'
     ? 'yes!'
     : runner.stage === 'judging'
@@ -824,11 +949,47 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                   })()
                 )}
 
+                {/* The K count-on basket — the started group, covered */}
+                {isKCountOnHidden && coveredCount > 0 && (() => {
+                  const pre = positions.slice(0, Math.min(coveredCount, positions.length));
+                  if (pre.length === 0) return null;
+                  const x0 = Math.min(...pre.map((p) => p.x)) - OBJECT_SIZE;
+                  const x1 = Math.max(...pre.map((p) => p.x)) + OBJECT_SIZE;
+                  const y0 = Math.min(...pre.map((p) => p.y)) - OBJECT_SIZE * 0.8;
+                  const y1 = Math.max(...pre.map((p) => p.y)) + OBJECT_SIZE * 0.8;
+                  return (
+                    <g>
+                      <rect
+                        x={x0} y={y0} width={x1 - x0} height={y1 - y0}
+                        rx={16}
+                        fill="rgba(59,130,246,0.18)"
+                        stroke="rgba(59,130,246,0.45)"
+                        strokeWidth={2}
+                        strokeDasharray="8 4"
+                      />
+                      <text
+                        x={(x0 + x1) / 2} y={(y0 + y1) / 2}
+                        textAnchor="middle" dominantBaseline="central"
+                        fontSize={OBJECT_SIZE}
+                        className="select-none pointer-events-none"
+                      >
+                        🧺
+                      </text>
+                    </g>
+                  );
+                })()}
+
                 {/* Objects — hidden during the K subitize answer phase (flash-then-hide) */}
                 {!(isKSubitize && !isSubitizeFlashing) && positions.map((pos, index) => {
                   const isCounted = countedObjects.has(index);
                   const countNum = countOrder.get(index);
                   const isPreCounted = kind === 'count_on' && index < preCountedCount;
+                  // Taken off the board, or still under the K basket: not drawn.
+                  if ((kind === 'take_away' && removedObjects.has(index)) || index < coveredCount) {
+                    return null;
+                  }
+                  // An extra waiting to be put on: faint until the child taps it.
+                  const isPendingExtra = kind === 'add_more' && index >= startCount && !addedExtras.has(index);
 
                   return (
                     <g
@@ -856,6 +1017,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                           ? (isPreCounted ? 'rgba(59,130,246,0.15)' : 'rgba(234,179,8,0.12)')
                           : 'rgba(255,255,255,0.04)'
                         }
+                        stroke={isPendingExtra ? 'rgba(255,255,255,0.35)' : undefined}
+                        strokeWidth={isPendingExtra ? 2 : undefined}
+                        strokeDasharray={isPendingExtra ? '5 4' : undefined}
                         className="transition-colors duration-150"
                       />
 
@@ -866,7 +1030,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                         dominantBaseline="central"
                         fontSize={OBJECT_SIZE * 0.6}
                         className="select-none pointer-events-none"
-                        style={{ opacity: isCounted ? 1 : 0.7 }}
+                        style={{ opacity: isPendingExtra ? 0.25 : isCounted ? 1 : 0.7 }}
                       >
                         {emoji}
                       </text>
@@ -910,6 +1074,40 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                   Counted: <span className="text-orange-300 font-bold text-lg">{countedObjects.size}</span>
                 </span>
               </div>
+            )}
+
+            {/* The handover — the give_me_n commit. The pile stays on the board;
+                what the child took is what they hand over. */}
+            {kind === 'give_me_n' && (
+              <div className="flex justify-center">
+                <LuminaButton
+                  tone="primary"
+                  disabled={!runner.canAttempt || countedObjects.size === 0}
+                  onClick={handleGiveCommit}
+                >
+                  Give them to me
+                </LuminaButton>
+              </div>
+            )}
+
+            {/* The move happened — the number has to be held, not re-counted. */}
+            {kind === 'recount_moved' && hasMoved && (
+              <p className="text-center text-sm text-cyan-300">
+                They moved! How many now?
+              </p>
+            )}
+
+            {/* What is still to take off / put on. A count of the child's own
+                actions, never of the answer. */}
+            {kind === 'take_away' && removedObjects.size < (currentItem?.changeBy ?? 0) && (
+              <p className="text-center text-sm text-slate-300">
+                Take away {numberWordFor((currentItem?.changeBy ?? 0) - removedObjects.size)} more.
+              </p>
+            )}
+            {kind === 'add_more' && addedExtras.size < (currentItem?.changeBy ?? 0) && (
+              <p className="text-center text-sm text-slate-300">
+                Touch the faded ones to put them on.
+              </p>
             )}
 
             {alreadyCountedNote && (
@@ -997,7 +1195,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               <p className="text-center text-xs text-slate-500">
                 {kind === 'subitize_perceptual'
                   ? 'Look at the objects, then tap the matching hand.'
-                  : 'Tap each object as you count, then say how many out loud.'}
+                  : kind === 'give_me_n'
+                    ? 'Touch the ones you want to give, then hand them over.'
+                    : 'Tap each object as you count, then say how many out loud.'}
               </p>
             )}
 

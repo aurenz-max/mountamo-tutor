@@ -2322,8 +2322,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'counting-board',
-    description: 'Live tutor-judged Pre-K to Grade 1 counting workspace (DI modality) with tappable objects (bears, apples, stars, fish, butterflies, blocks) in varied arrangements (scattered, line, groups, circle). The child counts by tapping and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken number word from the audio in-band, corrects DISTAR-style, and its own affirmation advances the lesson. Modes: pre-numeric perceptual subitizing (Pre-K, tap the matching hand — fully number-free), count-all (tap each object, say how many), flash subitizing (K: objects flash then hide; say how many you saw), count-on (start from a known group), group counting (count by 2s/5s/10s), and compare (say how many in the group with more). Builds one-to-one correspondence, cardinality principle, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
-    constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand answers (no numerals anywhere in the item). K: count 1-20 objects, count_all and subitize. Grade 1: count to 30, count-on and group counting. Answers are spoken number words (or a hand tap at Pre-K) judged by the microphone-enabled Lumina tutor; there is no Check button and no typed answer.',
+    description: 'Live tutor-judged Pre-K to Grade 1 counting workspace (DI modality) with tappable objects (bears, apples, stars, fish, butterflies, blocks) in varied arrangements (scattered, line, groups, circle). The child counts by tapping and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken number word from the audio in-band, corrects DISTAR-style, and its own affirmation advances the lesson. Modes: pre-numeric perceptual subitizing (Pre-K, tap the matching hand — fully number-free), count-all (tap each object, say how many), flash subitizing (K: objects flash then hide; say how many you saw), count-on (start from a known group — at K that group sits under a basket, so it must be counted on from rather than counted), group counting (count by 2s/5s/10s), and compare (say how many in the group with more). It also covers the K counting-OUT family: give-me-N (hand back a named number of objects from a pile), same-number-after-they-move (count a set, watch it rearrange, say how many now — conservation), take-away (take some off and say how many are left), and add-more (put more on and say how many altogether). Builds one-to-one correspondence, cardinality principle, conservation, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
+    constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand answers (no numerals anywhere in the item). K: count 1-20 objects; count_all, subitize, and the counting-out family (give_me_n, recount_moved, take_away, add_more), plus count_on with the started group hidden under a basket. Grade 1: count to 30, count-on and group counting. In take_away and add_more the bound the objective names is the number the child ENDS on; the app splits the board and chooses how many change. Answers are spoken number words (or a hand tap at Pre-K) judged by the microphone-enabled Lumina tutor; there is no Check button and no typed answer.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     evalModes: [
       {
@@ -2345,6 +2345,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Tap each object one by one. Concrete 1:1 correspondence — lowest cognitive load.',
       },
       {
+        evalMode: 'give_me_n',
+        affordances: { representation: 'concrete', reader: 'none', answers: ['tap'] },
+        label: 'Give Me N (Concrete)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['give_me_n'],
+        description: 'Count out a named number of objects from a bigger pile and hand them over. K.CC.B.5.',
+      },
+      {
+        evalMode: 'recount_moved',
+        affordances: { answers: ['spoken'] },
+        label: 'Same After They Move (Concrete)',
+        beta: 1.8,
+        scaffoldingMode: 1,
+        challengeTypes: ['recount_moved'],
+        description: 'Count a set, watch it rearrange, and say how many now — conservation. K.CC.B.4b.',
+      },
+      {
         evalMode: 'subitize',
         affordances: { representation: 'pictorial', answers: ['spoken'] },
         label: 'Subitize (Perceptual)',
@@ -2363,13 +2381,31 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Count objects in groups of 2s, 5s, or 10s. Pictorial grouping strategy.',
       },
       {
+        evalMode: 'add_more',
+        affordances: { answers: ['spoken'] },
+        label: 'Add More (Pictorial)',
+        beta: 2.2,
+        scaffoldingMode: 2,
+        challengeTypes: ['add_more'],
+        description: 'Put more objects on the board and say how many altogether. K.OA.A.1 foundation.',
+      },
+      {
+        evalMode: 'take_away',
+        affordances: { answers: ['spoken'] },
+        label: 'Take Away (Pictorial)',
+        beta: 2.4,
+        scaffoldingMode: 2,
+        challengeTypes: ['take_away'],
+        description: 'Take objects off the board and say how many are left. K.OA.A.1 foundation.',
+      },
+      {
         evalMode: 'count_on',
         affordances: { answers: ['spoken'] },
         label: 'Count On (Reduced Prompts)',
         beta: 2.5,
         scaffoldingMode: 3,
         challengeTypes: ['count_on'],
-        description: 'Start from a known count and continue. Reduced scaffolding — student self-organizes.',
+        description: 'Start from a known count and continue. At K the started group is covered, so counting from one is not available; at Grade 1 it stays visible. Reduced scaffolding — student self-organizes.',
       },
       {
         evalMode: 'compare',
