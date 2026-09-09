@@ -1,3 +1,13 @@
+---
+name: add-sound
+description: >-
+  Wire procedural, runtime-synthesized UI sound — taps, selections, drags,
+  steppers, per-challenge answer feedback — into an existing primitive via the
+  shared SoundManager. Use when a primitive feels silent during interaction. Not
+  for new primitives (fold into /primitive), or AI voice/phonics audio, which is
+  Gemini Live (/add-tutoring-scaffold).
+---
+
 # Add Sound to a Primitive
 
 This skill wires procedural UI sound into an existing Lumina primitive so student interactions feel responsive — taps, selections, drag-drops, steppers, and per-challenge answer feedback. All sound is synthesized at runtime via the Web Audio API (no files, no MIDI) by the shared `SoundManager`.

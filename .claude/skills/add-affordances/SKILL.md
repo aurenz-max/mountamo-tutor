@@ -1,3 +1,13 @@
+---
+name: add-affordances
+description: >-
+  Tag one primitive's catalog entry (and per-mode overrides) with the facts a
+  curator needs to place it well — audience, concrete-to-symbolic rung, reading
+  load, answer modality, typical minutes, and frequency. Use when a primitive's
+  affordance tags are missing or stale. Affordances are facts, never grade floors;
+  for eval modes use /add-eval-modes.
+---
+
 # Add Affordances — What Does This Block Demand of the Child?
 
 Tag ONE primitive's catalog entry with the facts the curator needs to place it well

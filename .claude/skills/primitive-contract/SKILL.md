@@ -1,3 +1,13 @@
+---
+name: primitive-contract
+description: >-
+  Derive or refresh what one primitive must keep true for every skill that
+  consumes it, recording each requirement with its consumer and verifying
+  probe. Use before editing an existing primitive's component or generator, so
+  an edit for one skill doesn't ablate what another depends on; --check guards
+  the edit. Not for planning an improvement queue — it records, it never plans.
+---
+
 # Primitive Contract — What Must This Primitive Keep True, and For Whom?
 
 One primitive serves many curriculum skills (the manifest routes emergently — that's

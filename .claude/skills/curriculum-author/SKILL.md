@@ -1,3 +1,13 @@
+---
+name: curriculum-author
+description: >-
+  Create, review, and manage curriculum content — subjects, units, skills,
+  subskills — through the authoring service, then build and validate the
+  prerequisite graph. This is the operational workhorse for hands-on authoring,
+  review, and publish. Not for exploring existing published content
+  (/curriculum) or diagnosing an established graph's health (/curriculum-graph).
+---
+
 # Curriculum Author — Operational Authoring & Graph Building Skill
 
 Create, review, and manage curriculum content (subjects, units, skills, subskills) via the authoring service, then build and validate the prerequisite graph. This is the operational workhorse for hands-on authoring — `/curriculum` is the reference skill, this is the doing skill.

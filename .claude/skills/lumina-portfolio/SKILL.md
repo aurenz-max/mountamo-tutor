@@ -1,3 +1,12 @@
+---
+name: lumina-portfolio
+description: >-
+  Decide what to build next across the primitive portfolio — audit a domain's
+  coverage, find pedagogical gaps, produce a prioritized roadmap, or draft a
+  scope for handoff — then route the work to a building skill. Use for
+  portfolio-level planning questions. Not for building anything itself.
+---
+
 # Lumina Portfolio — Primitive Product Portfolio Manager
 
 Product portfolio manager for Lumina primitives. Strategic layer for deciding *what* to build next, then handing off to `/primitive`, `/add-eval-modes`, or other skills to do the building.

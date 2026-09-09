@@ -1,3 +1,13 @@
+---
+name: migrate-primitive
+description: >-
+  Move an existing primitive from hand-written glass classes or raw shadcn onto
+  the Lumina UI kit's Lumina* components, preserving functionality while
+  eliminating copy-pasted chrome. Use when a primitive still hand-types glass
+  strings or carries excess structural complexity. Not for new primitives,
+  which should use the kit from birth (/primitive).
+---
+
 # Migrate Lumina Primitive to the Lumina UI Kit
 
 This skill migrates existing Lumina primitives onto the **Lumina UI kit** (`lumina/ui/`) — the codified design system that is the single source of truth for the glass aesthetic. It replaces hand-written chrome (custom div styling **and** raw shadcn + copy-pasted Tailwind class strings) with the kit's `Lumina*` components, while preserving all functionality.

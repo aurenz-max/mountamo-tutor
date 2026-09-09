@@ -1,3 +1,13 @@
+---
+name: add-eval-modes
+description: >-
+  Add eval mode support — distinct task identities, not difficulty levels — to an
+  existing primitive's generator, resolving which skill(s) to run from intent and
+  constraining schema output accordingly. Use when a primitive needs multiple task
+  types or IRT beta priors registered. Not for difficulty progression within a mode
+  (/add-support-tiers, /add-structural-difficulty).
+---
+
 # Add Eval Modes to a Primitive
 
 This skill adds eval mode support to an existing primitive's generator. **Eval modes are distinct SKILLS (task identities), not difficulty levels** — e.g. ten-frame's `make_ten` (complements to 10) is a different skill from `build` (counting). The generator resolves *which* mode(s) to run from the component's **intent** and constrains its output via the schema enum so it produces **only** those challenge types — no post-filtering.

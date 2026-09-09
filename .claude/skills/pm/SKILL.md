@@ -1,3 +1,12 @@
+---
+name: pm
+description: >-
+  Portfolio reconciliation and planning over WORKSTREAMS.md and the owning queues:
+  pull the top item of an active stream, file a new finding with its executor skill,
+  or close work in the queue. Use for "what's next", queue updates, and reconciling
+  stale reports against queues.
+---
+
 # PM — Portfolio Reconciliation & Planning
 
 Run the project-management function for the Lumina portfolio: reconcile every

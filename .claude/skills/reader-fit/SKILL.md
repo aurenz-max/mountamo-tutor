@@ -1,3 +1,13 @@
+---
+name: reader-fit
+description: >-
+  Verify a student at a given reading band — pre-reader, emerging, developing —
+  can actually complete a primitive or lesson: no undecodable load-bearing text,
+  a sufficient voice-carried tutoring scaffold, cognitive load within the band.
+  Fix-capable: loops fix, visual check, and re-audit until READY, or routes the
+  finding on. Not for topic/intent/grade scope, which is /topic-fidelity.
+---
+
 # Reader Fit — Can a Student at THIS Reading Band Complete This?
 
 Take a primitive (or a whole generated lesson) and verify a student at a given

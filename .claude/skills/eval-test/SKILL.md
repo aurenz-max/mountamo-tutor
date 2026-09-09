@@ -1,3 +1,13 @@
+---
+name: eval-test
+description: >-
+  Test that a primitive's generated data works with its component across every
+  eval mode and difficulty tier, reporting only what's actually broken
+  (agent-judged). Use to close a layer of the primitive lifecycle — birth, eval
+  modes, or tiers. Not for code-judged content contracts (/oracle-test) or
+  fixing what it finds (/eval-fix).
+---
+
 # Eval Test — Quick QA for Lumina Primitives
 
 Test that a primitive's generated data works with its component. Report only what's actually broken.

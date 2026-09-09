@@ -1,3 +1,13 @@
+---
+name: curriculum
+description: >-
+  Explore the published curriculum hierarchy — list subjects, drill into a unit,
+  look up a subskill's position, or view coverage stats — and author new units
+  via the AI authoring service. Use for read-only lookups and light authoring.
+  Not for operational authoring or graph building at scale (/curriculum-author),
+  or diagnosing an existing graph (/curriculum-graph).
+---
+
 # Curriculum — Hierarchical Content Explorer & Authoring Tool
 
 Explore the curriculum hierarchy and author new content via the AI-powered authoring service. Use this when you need to understand what content exists, drill into a subject, look up a specific subskill, or **author new curriculum units**.

@@ -1,3 +1,13 @@
+---
+name: add-di-loop
+description: >-
+  Convert a click- or timer-advanced primitive to the Direct Instruction modality,
+  where the Live tutor owns the clock — it asks, waits, judges the spoken answer,
+  corrects, and its own affirmation advances the lesson. Use when a primitive
+  should become spoken-first DI. Not for an L0 primitive with no tutoring block yet
+  (/add-tutoring-scaffold first) or voice answer capture alone (/add-voice-control).
+---
+
 # Add the DI Judged Loop to a Primitive
 
 This skill converts a click-to-advance or timer-advanced primitive to the **Direct Instruction modality**: the Live tutor owns the clock — it asks, waits, judges the child's answer from the audio in-band, corrects contrastively, and **its own affirmation is the advance**. When you are done there is no advance timer, no Next button, no push-to-talk mic, and no printed answer anywhere in the path.

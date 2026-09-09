@@ -1,3 +1,13 @@
+---
+name: add-number-pool-service
+description: >-
+  Wire a generator to the number pool service so numeric values it controls
+  differ every run, within and across sessions, fixing Gemini's convergent
+  numeric output. Use when repeated generations cluster on the same values,
+  especially answers. Not for categorical variety, or for values the LLM is
+  meant to author by design.
+---
+
 # Add Number Pool Service to a Generator
 
 ## What you're building toward (the outcome)

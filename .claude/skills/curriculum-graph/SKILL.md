@@ -1,3 +1,13 @@
+---
+name: curriculum-graph
+description: >-
+  Analyze the curriculum knowledge graph for structural issues that hurt Pulse
+  engine diversity and adaptive routing — diagnose, simulate, suggest, and add
+  typed edges. Use when Pulse repetition, weak discovery, or graph health looks
+  off for a subject. Not for authoring new curriculum content or building the
+  initial graph (/curriculum-author).
+---
+
 # Curriculum Graph — Diagnostic & Improvement Skill
 
 Analyze the curriculum knowledge graph for structural issues that affect Pulse engine diversity and adaptive learning quality. Uses the agentic graph analysis layer (GraphAnalysisEngine, SuggestionEngine, ScopedSuggestionService, CurriculumGraphAgentService) to diagnose, suggest, and improve the graph.

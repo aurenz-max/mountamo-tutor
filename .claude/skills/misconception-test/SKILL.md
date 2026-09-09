@@ -1,3 +1,13 @@
+---
+name: misconception-test
+description: >-
+  Verify one primitive's misconception loop end-to-end with real engines —
+  honest diagnosis, leak-free remediation content, and a scripted student
+  journey from diagnosed to resolved. Use after /add-misconception-loop builds
+  the loop, as its verification half. Not for general content QA with no
+  student state (/eval-test).
+---
+
 # Misconception Test — Does the Diagnosis Loop Close for One Primitive?
 
 Take a SINGLE primitive and verify its misconception loop end-to-end with REAL

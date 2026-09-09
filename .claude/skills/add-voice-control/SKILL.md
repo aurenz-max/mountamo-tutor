@@ -1,3 +1,14 @@
+---
+name: add-voice-control
+description: >-
+  Wire an existing primitive to the spoken-interaction platform so students
+  answer or select by voice, consuming one controller hook (useVoiceAnswer or
+  useVoiceChoice) rather than rebuilding capture. Use when a primitive should
+  support spoken answers or choices with tap as fallback. Not for the
+  tutor-judged DI loop (/add-di-loop) or building new capture layers, which
+  already exist.
+---
+
 # Add Voice Control to a Primitive
 
 This skill wires an existing primitive so students answer or select **by voice** — the mechanical rollout skill for the spoken-interaction platform. The platform layers are already built and benched; a primitive consumes one controller hook and paints its existing UI from the controller's state:

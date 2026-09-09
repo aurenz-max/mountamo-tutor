@@ -1,3 +1,13 @@
+---
+name: add-structural-difficulty
+description: >-
+  Make a primitive's config.difficulty produce structurally harder problems at
+  higher tiers — more steps, gaps, or coupled variables — never bigger numbers
+  or a different eval mode. Use after /add-support-tiers is in place, when a
+  strong student tops out at "no scaffolding." Not for scaffolding withdrawal
+  (/add-support-tiers) or a genuinely new task identity (/add-eval-modes).
+---
+
 # Add Structural Difficulty to a Primitive
 
 This skill makes a primitive's `config.difficulty` produce a **genuinely harder problem by SHAPE** at higher tiers — not just less help. It is the *second axis* of within-mode difficulty: the "ceiling" half that lets a student who has mastered a mode keep climbing, instead of topping out at "no scaffolding."

@@ -1,3 +1,13 @@
+---
+name: topic-trace
+description: >-
+  Run a topic through the real lesson pipeline — curator brief, manifest,
+  generators — and report where its scope is lost as it flows into each
+  selected primitive. Use to evaluate generator prompts across a whole lesson,
+  not one generator in isolation. Not for fixing one generator's fidelity,
+  which is /topic-fidelity.
+---
+
 # Topic Trace — How a Topic Shapes Scope in Downstream Primitives
 
 Insert a topic, run the real lesson pipeline (curator brief → manifest → generators), and assess how the topic's scope flows into the content each primitive actually generates. Use this to evaluate generator prompts. Report only where scope is actually lost — not style.
@@ -43,7 +53,7 @@ The manifest prompt accepts a per-student STUDENT PROFILE block (IRT/mastery sta
 **1. Build the student's generation context** (no HTTP auth needed — call the endpoint handler directly through backend services):
 
 ```bash
-cd backend && /c/Users/xbox3/miniforge-pypy3/envs/py311env/python -c "
+cd backend && venv/Scripts/python -c "
 import asyncio, json
 async def main():
     from app.dependencies import get_competency_service, get_curriculum_mapping_service

@@ -1,3 +1,13 @@
+---
+name: lumina-densify-primitives
+description: >-
+  Audit and revise eval-mode difficulty ladders so adjacent modes within a
+  primitive differ by no more than 1.0 beta, reordering, re-pricing, or adding
+  an intermediate mode as needed. Use when a difficulty cliff shows up in
+  /pulse-agent findings or a primitive's modes feel unevenly spaced. Not for
+  adding a primitive's first eval modes (/add-eval-modes).
+---
+
 # Lumina Densify Primitives
 
 Audit, revise, and densify eval mode difficulty ladders across Lumina primitives. The goal: **every adjacent pair of eval modes within a primitive must differ by ≤1.0 beta**, and every beta must accurately reflect the mode's actual difficulty.

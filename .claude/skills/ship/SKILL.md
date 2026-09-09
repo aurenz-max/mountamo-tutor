@@ -1,3 +1,11 @@
+---
+name: ship
+description: >-
+  Turn the working tree into verified, sliced, pushed commits and keep main fresh.
+  Use when the user says ship, commit, or push, or asks what is uncommitted. Runs the
+  typecheck gates before slicing and never commits over a red typecheck:lumina.
+---
+
 # Ship — Verify, Slice, Commit, Push
 
 Turn the working tree into pushed, coherent, verified commits — and keep `main` fresh. The outcome: every slice of work lands as a commit that one sentence can describe, that `git revert` can undo alone, that passed the real gates before it was written, and that `main` receives within days, not weeks.

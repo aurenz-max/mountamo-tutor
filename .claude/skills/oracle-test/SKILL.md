@@ -1,3 +1,13 @@
+---
+name: oracle-test
+description: >-
+  Give a primitive a machine-checkable, code-judged content contract and run it
+  N times against real generations for a free, repeatable, CI-able pass/fail
+  signal — catching answer-key desync, scope overruns, answer leaks, and value
+  clustering. Use for quantitative, repeatable checks. Not for qualitative,
+  agent-judged pedagogy or one-off structure reads (/eval-test).
+---
+
 # Oracle Test — Deterministic Content-Contract QA
 
 Give a primitive a machine-checkable guarantee that its generated content honors its own answer contract — then run that check N times against real Gemini generations for a pass/fail signal that is free, repeatable, and CI-able. This is the harness that lets QA scale past a human clicking through lessons: the four recurring bug classes it catches all shipped to students during June 2026 and were caught by hand.

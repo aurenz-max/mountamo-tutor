@@ -1,3 +1,13 @@
+---
+name: pulse-agent
+description: >-
+  Run synthetic student profiles through the adaptive engine — scripted
+  archetypes, a latent-ability truth model, or the full day-by-day student-data
+  loop — without a real student or browser, to validate mastery, item
+  selection, and the estimator. Use to stress-test the adaptive machinery and
+  produce findings. Not for fixing what it finds (/pulse-fix).
+---
+
 # Pulse Agent — Synthetic Student Journey Simulator
 
 Run synthetic student profiles through Lumina's adaptive machinery without a

@@ -1,3 +1,13 @@
+---
+name: add-tutoring-scaffold
+description: >-
+  Add the AI tutoring block — context keys, hints, struggle responses — that lets
+  the Gemini Live tutor speak about a specific primitive instead of falling back
+  to generic responses. Use on an L0 primitive after birth, or when tutor
+  responses feel generic. Not for building the primitive itself (/primitive) or
+  the judged DI loop (/add-di-loop).
+---
+
 # Add AI Tutoring Scaffold to a Primitive
 
 This skill guides adding AI tutoring support to Lumina primitives so the AI tutor can provide context-aware scaffolding, hints, and struggle responses during student interactions.

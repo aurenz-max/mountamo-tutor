@@ -1,3 +1,12 @@
+---
+name: pulse-fix
+description: >-
+  Fix bugs identified by a /pulse-agent report, tracing the engine's diagnostic
+  trail to root cause before changing code, and re-running the agent to verify.
+  Use with a report file or finding number from /pulse-agent. Not for primitive
+  content findings, which route to /eval-fix.
+---
+
 # Pulse Fix — Structured Fix Workflow for Pulse Agent Findings
 
 Fix bugs identified by `/pulse-agent` reports, with deep root-cause analysis before code changes. Follows the Pulse Agent's diagnostic trail through the engine to understand *what happened*, *why it's a problem*, and *how to fix it* without breaking other archetypes.

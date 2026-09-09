@@ -1,3 +1,13 @@
+---
+name: student-data-loop
+description: >-
+  Reference map of the backend core loop — submission to attempts/reviews, IRT
+  ability and mastery, daily rollups and profile, then the next problem's
+  planning context. Use before touching any student attempts, competencies,
+  ability, mastery lifecycle, rollups, or profile data, or before wiring a new
+  analytics surface. Not a builder — it says where to build, not what.
+---
+
 # Student Data Loop — How a Submission Becomes the Profile That Picks the Next Problem
 
 The canonical map of Lumina's backend core loop: problem submission → L0 events
@@ -322,17 +332,17 @@ Before building ANY next-activity/recommendation feature, read this list.
 
 ## Verifying Changes to the Loop
 
-- Python: `C:\Users\xbox3\miniforge-pypy3\envs\py311env\python.exe` for
-  py_compile / `import app.main` / pytest (67 pass baseline; 10
-  test_planning_service failures + test_dag_analysis import are pre-existing).
+- Python: `backend/venv/Scripts/python` (the interpreter in CLAUDE.md **Commands**) for
+  py_compile / `import app.main` / pytest. Compare failures against the run before
+  your change, not a remembered count.
 - Live probe without HTTP auth:
   `FirestoreAnalyticsService(FirestoreService(), None).get_student_profile(1004)`
   (student 1004 has rich real data: ~2.7k attempts, 7 subjects).
 - Rollup integrity: backfill dry-run and compare to `profile/summary`.
 - Scripts touching Firestore MUST get their client via
   `FirestoreService().client` — hand-rolled clients hit 403s.
-- Frontend: tsc baseline 1101 as of 2026-07-03 (`./node_modules/.bin/tsc
-  --noEmit`); dropped from 1417 when the dead `archive/` folders were deleted.
+- Frontend: run the tsc line from CLAUDE.md **Commands** and compare against the
+  count before your change; `typecheck:lumina` must stay at 0 (`/ship` owns the gate).
 
 ## Known Rough Edges (checked 2026-07-02)
 

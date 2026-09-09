@@ -1,3 +1,12 @@
+---
+name: primitive
+description: >-
+  Birth a new Lumina primitive at L0 — component, types, catalog entry, Gemini
+  generator, and tester — in phases. Use when a curriculum demand has no primitive
+  or the user asks to build, scaffold, or add a visual primitive. Not for raising an
+  existing primitive's layer (the /add-* skills) or kit migration (/migrate-primitive).
+---
+
 # Add New Lumina Primitive
 
 All primitive code lives under `my-tutoring-app/src/components/lumina/`. Do NOT search in `src/components/primitives/`, `src/services/`, `src/types/`, `src/registry/`, or `src/catalog/` — those paths do not exist.

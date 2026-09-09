@@ -1,3 +1,13 @@
+---
+name: add-support-tiers
+description: >-
+  Make a primitive's config.difficulty change what the student sees — withdrawing
+  on-screen scaffolds like counts, named strategies, or pre-built equations for
+  stronger tiers — without changing the numbers or the eval mode. Use when
+  easy/medium/hard currently produce byte-identical content. Not for making the
+  problem itself harder by shape (/add-structural-difficulty).
+---
+
 # Add Support Tiers to a Primitive
 
 This skill makes a primitive's `config.difficulty` actually change what the student sees, so that **a struggling student and a strong student working the *same* skill get genuinely different content** — the struggling one keeps on-screen scaffolds (a count readout, a named strategy, a pre-built equation), the strong one works unaided and justifies their thinking.

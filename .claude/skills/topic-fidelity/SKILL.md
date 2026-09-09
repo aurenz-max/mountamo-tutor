@@ -1,3 +1,13 @@
+---
+name: topic-fidelity
+description: >-
+  Verify that one generator's output actually honors the lesson's topic,
+  intent, and optionally grade — then fix it via an escalating ladder, or
+  return a clear wrong-fit verdict. Use for a single generator, one topic at a
+  time. Not for watching a topic propagate across many primitives
+  (/topic-trace) or checking a mode for outright brokenness (/eval-test).
+---
+
 # Topic Fidelity — Does One Generator Honor Its topic + intent (+ grade)?
 
 Take a SINGLE generator and verify that the lesson's `topic` and `intent` actually
