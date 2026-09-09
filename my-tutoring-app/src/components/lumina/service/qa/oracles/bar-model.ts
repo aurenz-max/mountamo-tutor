@@ -84,6 +84,7 @@ const READ_MODES = new Set(['read_one_to_one', 'read_scale', 'picture_graph', 's
 /** Modes whose answer key is targetBarIndex and whose prompt carries a superlative. */
 const EXTREME_MODES = new Set(['compare_bars', 'most_least']);
 const KNOWN_MODES = new Set([
+  'say_what_it_shows', 'compare_two_graphs',
   'build_one_to_one',
   'read_one_to_one',
   'match_to_bar',
@@ -218,6 +219,33 @@ export const barModelOracle: ContentOracle = {
       const bars = readBars(c.values);
       if (!bars) {
         violations.push({ check: 'schema', where: id, detail: `values must be a non-empty array of {label, numeric value}; got ${JSON.stringify(c.values)}` });
+        continue;
+      }
+      if (mode === 'say_what_it_shows' || mode === 'compare_two_graphs') {
+        const scale = c.scale as Record<string, unknown> | undefined;
+        const second = mode === 'compare_two_graphs' ? readBars(c.secondValues) : null;
+        if (c.graphStyle !== 'picture' || scale?.iconValue !== 1 || scale?.step !== 1 || c.showBarValues !== false) {
+          violations.push({ check: 'schema', where: id, detail: 'Spoken K graphs need one-to-one pictures and hidden numeric totals.' });
+        }
+        const all = [...bars, ...(second ?? [])];
+        if (all.some((v) => !isInt(v.value) || v.value < 1 || v.value > Math.min(10, ceiling ?? 10))) {
+          violations.push({ check: 'scope', where: id, detail: 'Both spoken K graphs must contain integer counts in scope and within 1-10.' });
+        }
+        if (mode === 'compare_two_graphs' && (!second || second.length !== bars.length
+          || second.some((v, j) => v.label !== bars[j].label)
+          || !c.graphLabel || !c.secondGraphLabel || c.graphLabel === c.secondGraphLabel)) {
+          violations.push({ check: 'schema', where: id, detail: 'Related graphs need distinct survey labels and matching category rows.' });
+        }
+        if (mode === 'compare_two_graphs' && second && second.length === bars.length
+          && (!second.some((v, j) => v.value === bars[j].value) || !second.some((v, j) => v.value !== bars[j].value))) {
+          violations.push({ check: 'schema', where: id, detail: 'The pair must offer both a similarity and a difference.' });
+        }
+        const rows = [...asRecordArray(c.values), ...asRecordArray(c.secondValues)];
+        if (rows.some((v) => !v.emoji) || all.some((v) => !isNum(scale?.max) || v.value > scale.max)) {
+          violations.push({ check: 'schema', where: id, detail: 'Every row needs a countable picture and enough shared scale capacity.' });
+        }
+        checked++;
+        uncheckedTypes.add(`${mode}(live-spoken-meaning)`);
         continue;
       }
       // Scope on the displayed bar magnitudes (only bites with an explicit ceiling).

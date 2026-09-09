@@ -10,9 +10,9 @@ import { ComponentDefinition } from '../../../types';
 export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'bar-model',
-    description: 'K-5 categorical-data graph. K one-to-one data (K.MD.B.3): record a pile of objects onto a sticker chart one sticker per object, read a graph where one picture stands for one thing, match a group of objects to the row that shows that many, and say which row has the most or the fewest. K-1 also has a two-bar which-is-taller comparison. Grades 2-5: scaled bar graphs with step-2/5/10 axes (3.MD.B.3) and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction, from tally-and-sticker recording to scaled construction; not for histograms or numeric distributions.',
-    constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. K one-to-one modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) show one picture per object with no axis to read, print no numbers on the graph, and keep every count within 1-10; each row carries its own emoji so a pre-reader can tell the rows apart. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
-    affordances: { representation: 'pictorial', answers: ['tap'], role: 'apply', minutes: 5 },
+    description: 'K-5 categorical-data graph. K one-to-one data (K.MD.B.3): record a pile of objects onto a sticker chart one sticker per object, read a graph where one picture stands for one thing, match a group of objects to the row that shows that many, say which row has the most or the fewest, explain what a graph shows aloud, and compare two related surveys. K-1 also has a two-bar which-is-taller comparison. Grades 2-5: scaled bar graphs with step-2/5/10 axes (3.MD.B.3) and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction, from tally-and-sticker recording to scaled construction; not for histograms or numeric distributions.',
+    constraints: 'Multi-instance: a session walks the student through 3-6 challenges in a pinned mode or an intent-resolved blend, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. K one-to-one modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) show one picture per object with no axis to read, print no numbers on the graph, and keep every count within 1-10; each row carries its own emoji so a pre-reader can tell the rows apart. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
+    affordances: { representation: 'pictorial', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Work through {{totalChallenges}} {{graphStyle}} graph challenges. Mode: {{evalMode}}. Currently on challenge {{currentChallengeIndex}}. Values: {{values}}.',
       contextKeys: ['values', 'value1', 'value2', 'barCount', 'title', 'graphStyle', 'evalMode', 'scaleStep', 'iconEmoji', 'iconValue', 'currentPrompt', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges'],
@@ -38,6 +38,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'always say "{{iconValue}} per icon" before reading. For grades 3-5 (scaled_bar_graph, '
             + 'graph_word_problem, build_graph): guide toward arithmetic — "How many more? Subtract." '
             + 'Never just say "bigger" — always tie bar size to the actual quantity it represents.',
+        },
+        {
+          title: 'SPOKEN GRAPH EXPLANATIONS',
+          instruction: 'For say_what_it_shows and compare_two_graphs, follow the active spoken judging contract. Judge comparative meaning against its private code-derived graph facts. Accept natural paraphrases, refuse reversed claims and bare numbers. Read category and survey labels aloud, but do not reveal counts or winning categories before an attempt. Count together only in the post-attempt feedback.',
         },
         {
           title: 'K ONE-TO-ONE COACHING',
@@ -105,6 +109,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['build_one_to_one'],
         description: 'Record a mixed pile of objects onto a chart, one sticker per object. K.MD.B.3.',
+      },
+      {
+        evalMode: 'say_what_it_shows', label: 'Tell What the Graph Shows (K)',
+        beta: 2.0, scaffoldingMode: 2, challengeTypes: ['say_what_it_shows'],
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'] },
+        description: 'Explain a true more, fewer, most, least, or equal comparison from a one-to-one graph in your own words. MEAS001-03-G.',
+      },
+      {
+        evalMode: 'compare_two_graphs', label: 'Compare Related Graphs (K)',
+        beta: 2.2, scaffoldingMode: 2, challengeTypes: ['compare_two_graphs'],
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'] },
+        description: 'Compare morning and afternoon surveys with matching categories. Say a similarity or difference across the two data sets. MEAS001-09-E.',
       },
       {
         evalMode: 'read_scale',

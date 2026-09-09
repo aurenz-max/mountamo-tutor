@@ -1,0 +1,1244 @@
+{
+  "startedAt": "2026-09-09T14:23:21.349Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "say_what_it_shows/easy draw 1",
+      "mode": "say_what_it_shows",
+      "tier": "easy",
+      "failures": [],
+      "uncheckedTypes": [
+        "say_what_it_shows(live-spoken-meaning)"
+      ],
+      "data": {
+        "title": "Tell Me About Our Graph",
+        "description": "Each picture stands for one choice.",
+        "challenges": [
+          {
+            "id": "bm-1",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Blocks",
+                "value": 8,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Cars",
+                "value": 3,
+                "color": "green",
+                "emoji": "🚗"
+              },
+              {
+                "label": "Dolls",
+                "value": 4,
+                "color": "purple",
+                "emoji": "🧸"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🧱",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "easy"
+          },
+          {
+            "id": "bm-2",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Apples",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Crackers",
+                "value": 7,
+                "color": "green",
+                "emoji": "🍘"
+              },
+              {
+                "label": "Bananas",
+                "value": 5,
+                "color": "purple",
+                "emoji": "🍌"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🍎",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "easy"
+          },
+          {
+            "id": "bm-3",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Swings",
+                "value": 8,
+                "color": "blue",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Slides",
+                "value": 7,
+                "color": "green",
+                "emoji": "🎢"
+              },
+              {
+                "label": "Balls",
+                "value": 3,
+                "color": "purple",
+                "emoji": "⚽"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🛝",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "easy"
+          },
+          {
+            "id": "bm-4",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Carrots",
+                "value": 2,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 6,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peppers",
+                "value": 5,
+                "color": "purple",
+                "emoji": "🫑"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🥕",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "easy"
+          }
+        ]
+      }
+    },
+    {
+      "label": "say_what_it_shows/medium draw 1",
+      "mode": "say_what_it_shows",
+      "tier": "medium",
+      "failures": [],
+      "uncheckedTypes": [
+        "say_what_it_shows(live-spoken-meaning)"
+      ],
+      "data": {
+        "title": "Tell Me About Our Graph",
+        "description": "Each picture stands for one choice.",
+        "challenges": [
+          {
+            "id": "bm-1",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Blocks",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Dolls",
+                "value": 3,
+                "color": "green",
+                "emoji": "🧸"
+              },
+              {
+                "label": "Cars",
+                "value": 6,
+                "color": "purple",
+                "emoji": "🚗"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🧱",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "medium"
+          },
+          {
+            "id": "bm-2",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Apples",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Crackers",
+                "value": 4,
+                "color": "green",
+                "emoji": "🍘"
+              },
+              {
+                "label": "Juice",
+                "value": 3,
+                "color": "purple",
+                "emoji": "🧃"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🍎",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "medium"
+          },
+          {
+            "id": "bm-3",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Slides",
+                "value": 3,
+                "color": "blue",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Swिंग्स",
+                "value": 8,
+                "color": "green",
+                "emoji": "🔵"
+              },
+              {
+                "label": "Balls",
+                "value": 7,
+                "color": "purple",
+                "emoji": "⚽"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🛝",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "medium"
+          },
+          {
+            "id": "bm-4",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Carrots",
+                "value": 3,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 6,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peppers",
+                "value": 2,
+                "color": "purple",
+                "emoji": "🫑"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🥕",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "medium"
+          }
+        ]
+      }
+    },
+    {
+      "label": "say_what_it_shows/hard draw 1",
+      "mode": "say_what_it_shows",
+      "tier": "hard",
+      "failures": [],
+      "uncheckedTypes": [
+        "say_what_it_shows(live-spoken-meaning)"
+      ],
+      "data": {
+        "title": "Tell Me About Our Graph",
+        "description": "Each picture stands for one choice.",
+        "challenges": [
+          {
+            "id": "bm-1",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Blocks",
+                "value": 3,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Dolls",
+                "value": 5,
+                "color": "green",
+                "emoji": "🧸"
+              },
+              {
+                "label": "Cars",
+                "value": 2,
+                "color": "purple",
+                "emoji": "🚗"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🧱",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "hard"
+          },
+          {
+            "id": "bm-2",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Apples",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Crackers",
+                "value": 3,
+                "color": "green",
+                "emoji": "🍘"
+              },
+              {
+                "label": "Bananas",
+                "value": 2,
+                "color": "purple",
+                "emoji": "🍌"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🍎",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "hard"
+          },
+          {
+            "id": "bm-3",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Slides",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Swings",
+                "value": 5,
+                "color": "green",
+                "emoji": "🛟"
+              },
+              {
+                "label": "Benches",
+                "value": 2,
+                "color": "purple",
+                "emoji": "🪑"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🛝",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "hard"
+          },
+          {
+            "id": "bm-4",
+            "evalMode": "say_what_it_shows",
+            "values": [
+              {
+                "label": "Carrots",
+                "value": 3,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 8,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peppers",
+                "value": 6,
+                "color": "purple",
+                "emoji": "🫑"
+              }
+            ],
+            "graphLabel": "Our survey",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🥕",
+              "iconValue": 1
+            },
+            "prompt": "Tell me what this graph shows. Compare the groups in your own words.",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "hard"
+          }
+        ]
+      }
+    },
+    {
+      "label": "compare_two_graphs/easy draw 1",
+      "mode": "compare_two_graphs",
+      "tier": "easy",
+      "failures": [],
+      "uncheckedTypes": [
+        "compare_two_graphs(live-spoken-meaning)"
+      ],
+      "data": {
+        "title": "Our Morning and Afternoon Surveys",
+        "description": "Each picture stands for one choice.",
+        "challenges": [
+          {
+            "id": "bm-1",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Blocks",
+                "value": 3,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Cars",
+                "value": 5,
+                "color": "green",
+                "emoji": "🚗"
+              },
+              {
+                "label": "Bears",
+                "value": 7,
+                "color": "purple",
+                "emoji": "🧸"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Blocks",
+                "value": 3,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Cars",
+                "value": 6,
+                "color": "green",
+                "emoji": "🚗"
+              },
+              {
+                "label": "Bears",
+                "value": 6,
+                "color": "purple",
+                "emoji": "🧸"
+              }
+            ],
+            "comparisonFocus": "same",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🧱",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is same.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "easy"
+          },
+          {
+            "id": "bm-2",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Apples",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Crackers",
+                "value": 5,
+                "color": "green",
+                "emoji": "🍘"
+              },
+              {
+                "label": "Juice",
+                "value": 2,
+                "color": "purple",
+                "emoji": "🧃"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Apples",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Crackers",
+                "value": 5,
+                "color": "green",
+                "emoji": "🍘"
+              },
+              {
+                "label": "Juice",
+                "value": 3,
+                "color": "purple",
+                "emoji": "🧃"
+              }
+            ],
+            "comparisonFocus": "different",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🍎",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is different.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "easy"
+          },
+          {
+            "id": "bm-3",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Slides",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Swings",
+                "value": 4,
+                "color": "green",
+                "emoji": "🛟"
+              },
+              {
+                "label": "Balls",
+                "value": 7,
+                "color": "purple",
+                "emoji": "⚽"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Slides",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Swings",
+                "value": 3,
+                "color": "green",
+                "emoji": "🛟"
+              },
+              {
+                "label": "Balls",
+                "value": 7,
+                "color": "purple",
+                "emoji": "⚽"
+              }
+            ],
+            "comparisonFocus": "same",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🛝",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is same.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "easy"
+          },
+          {
+            "id": "bm-4",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Carrots",
+                "value": 8,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 7,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peppers",
+                "value": 4,
+                "color": "purple",
+                "emoji": "🫑"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Carrots",
+                "value": 8,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 8,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peppers",
+                "value": 3,
+                "color": "purple",
+                "emoji": "🫑"
+              }
+            ],
+            "comparisonFocus": "different",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🥕",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is different.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "easy"
+          }
+        ]
+      }
+    },
+    {
+      "label": "compare_two_graphs/medium draw 1",
+      "mode": "compare_two_graphs",
+      "tier": "medium",
+      "failures": [],
+      "uncheckedTypes": [
+        "compare_two_graphs(live-spoken-meaning)"
+      ],
+      "data": {
+        "title": "Our Morning and Afternoon Surveys",
+        "description": "Each picture stands for one choice.",
+        "challenges": [
+          {
+            "id": "bm-1",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Blocks",
+                "value": 8,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Crayons",
+                "value": 3,
+                "color": "green",
+                "emoji": "🖍️"
+              },
+              {
+                "label": "Puzzles",
+                "value": 7,
+                "color": "purple",
+                "emoji": "🧩"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Blocks",
+                "value": 8,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Crayons",
+                "value": 4,
+                "color": "green",
+                "emoji": "🖍️"
+              },
+              {
+                "label": "Puzzles",
+                "value": 6,
+                "color": "purple",
+                "emoji": "🧩"
+              }
+            ],
+            "comparisonFocus": "same",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🧱",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is same.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "medium"
+          },
+          {
+            "id": "bm-2",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Fruits",
+                "value": 8,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Drinks",
+                "value": 6,
+                "color": "green",
+                "emoji": "🧃"
+              },
+              {
+                "label": "Cookies",
+                "value": 5,
+                "color": "purple",
+                "emoji": "🍪"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Fruits",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Drinks",
+                "value": 6,
+                "color": "green",
+                "emoji": "🧃"
+              },
+              {
+                "label": "Cookies",
+                "value": 6,
+                "color": "purple",
+                "emoji": "🍪"
+              }
+            ],
+            "comparisonFocus": "different",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🍎",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is different.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "medium"
+          },
+          {
+            "id": "bm-3",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Swings",
+                "value": 5,
+                "color": "blue",
+                "emoji": "🎠"
+              },
+              {
+                "label": "Slides",
+                "value": 3,
+                "color": "green",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Balls",
+                "value": 6,
+                "color": "purple",
+                "emoji": "⚽"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Swings",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🎠"
+              },
+              {
+                "label": "Slides",
+                "value": 2,
+                "color": "green",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Balls",
+                "value": 6,
+                "color": "purple",
+                "emoji": "⚽"
+              }
+            ],
+            "comparisonFocus": "same",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🎠",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is same.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "medium"
+          },
+          {
+            "id": "bm-4",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Carrots",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 5,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peppers",
+                "value": 4,
+                "color": "purple",
+                "emoji": "🫑"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Carrots",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 6,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peppers",
+                "value": 3,
+                "color": "purple",
+                "emoji": "🫑"
+              }
+            ],
+            "comparisonFocus": "different",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🥕",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is different.",
+            "hint": "Look along the rows. Which groups have more, fewer, or the same?",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "medium"
+          }
+        ]
+      }
+    },
+    {
+      "label": "compare_two_graphs/hard draw 1",
+      "mode": "compare_two_graphs",
+      "tier": "hard",
+      "failures": [],
+      "uncheckedTypes": [
+        "compare_two_graphs(live-spoken-meaning)"
+      ],
+      "data": {
+        "title": "Our Morning and Afternoon Surveys",
+        "description": "Each picture stands for one choice.",
+        "challenges": [
+          {
+            "id": "bm-1",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Blocks",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Crayons",
+                "value": 3,
+                "color": "green",
+                "emoji": "🖍️"
+              },
+              {
+                "label": "Books",
+                "value": 4,
+                "color": "purple",
+                "emoji": "📚"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Blocks",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🧱"
+              },
+              {
+                "label": "Crayons",
+                "value": 4,
+                "color": "green",
+                "emoji": "🖍️"
+              },
+              {
+                "label": "Books",
+                "value": 3,
+                "color": "purple",
+                "emoji": "📚"
+              }
+            ],
+            "comparisonFocus": "same",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🧱",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is same.",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "hard"
+          },
+          {
+            "id": "bm-2",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Apples",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Crackers",
+                "value": 8,
+                "color": "green",
+                "emoji": "🍘"
+              },
+              {
+                "label": "Juice",
+                "value": 6,
+                "color": "purple",
+                "emoji": "🧃"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Apples",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🍎"
+              },
+              {
+                "label": "Crackers",
+                "value": 8,
+                "color": "green",
+                "emoji": "🍘"
+              },
+              {
+                "label": "Juice",
+                "value": 7,
+                "color": "purple",
+                "emoji": "🧃"
+              }
+            ],
+            "comparisonFocus": "different",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🍎",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is different.",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "hard"
+          },
+          {
+            "id": "bm-3",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Swings",
+                "value": 6,
+                "color": "blue",
+                "emoji": "🎠"
+              },
+              {
+                "label": "Slides",
+                "value": 5,
+                "color": "green",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Balls",
+                "value": 2,
+                "color": "purple",
+                "emoji": "⚽"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Swings",
+                "value": 7,
+                "color": "blue",
+                "emoji": "🎠"
+              },
+              {
+                "label": "Slides",
+                "value": 4,
+                "color": "green",
+                "emoji": "🛝"
+              },
+              {
+                "label": "Balls",
+                "value": 2,
+                "color": "purple",
+                "emoji": "⚽"
+              }
+            ],
+            "comparisonFocus": "same",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🎠",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is same.",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "hard"
+          },
+          {
+            "id": "bm-4",
+            "evalMode": "compare_two_graphs",
+            "values": [
+              {
+                "label": "Carrots",
+                "value": 2,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 4,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peas",
+                "value": 6,
+                "color": "purple",
+                "emoji": "🟢"
+              }
+            ],
+            "secondValues": [
+              {
+                "label": "Carrots",
+                "value": 2,
+                "color": "blue",
+                "emoji": "🥕"
+              },
+              {
+                "label": "Tomatoes",
+                "value": 5,
+                "color": "green",
+                "emoji": "🍅"
+              },
+              {
+                "label": "Peas",
+                "value": 5,
+                "color": "purple",
+                "emoji": "🟢"
+              }
+            ],
+            "comparisonFocus": "different",
+            "graphLabel": "Morning",
+            "secondGraphLabel": "Afternoon",
+            "graphStyle": "picture",
+            "scale": {
+              "step": 1,
+              "max": 10,
+              "iconEmoji": "🥕",
+              "iconValue": 1
+            },
+            "prompt": "Look at the morning and afternoon graphs. Tell me something that is different.",
+            "showBarValues": false,
+            "showTargetHighlight": false,
+            "supportTier": "hard"
+          }
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "draws": 6,
+    "failedDraws": 0
+  }
+}

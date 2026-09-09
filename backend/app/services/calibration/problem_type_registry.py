@@ -372,6 +372,8 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "assessment":        PriorConfig(6.5, "Symbolic: large composites (40-100), no hints, no reset"),
     },
     "bar-model": {
+        "say_what_it_shows": PriorConfig(2.0, "Pictorial: explain a true graph comparison aloud (K)"),
+        "compare_two_graphs": PriorConfig(2.2, "Pictorial: compare related one-to-one surveys aloud (K)"),
         "read_one_to_one":    PriorConfig(1.2, "Concrete: count a one-icon-per-object row (K.MD.B.3)"),
         "most_least":         PriorConfig(1.4, "Concrete: which one-to-one row has the most / fewest (K.MD.B.3)"),
         "compare_bars":       PriorConfig(1.5, "Concrete: which bar is taller (K-1, K.MD.A.2)"),

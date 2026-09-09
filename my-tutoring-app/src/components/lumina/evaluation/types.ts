@@ -878,11 +878,14 @@ export interface FactorTreeMetrics extends BasePrimitiveMetrics {
 export interface BarModelMetrics extends BasePrimitiveMetrics {
   type: 'bar-model';
 
-  // Which mode the session practiced (all challenges share a mode)
+  // The practiced mode, or mixed for sessions containing distinct tasks.
   evalMode:
     | 'build_one_to_one'
     | 'read_one_to_one'
     | 'match_to_bar'
+    | 'say_what_it_shows'
+    | 'compare_two_graphs'
+    | 'mixed'
     | 'most_least'
     | 'compare_bars'
     | 'read_scale'

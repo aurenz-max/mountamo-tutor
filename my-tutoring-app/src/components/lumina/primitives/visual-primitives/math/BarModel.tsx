@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import BarModelExplanation from './BarModelExplanation';
+import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -35,6 +37,8 @@ export type BarModelEvalMode =
   | 'build_one_to_one'
   | 'read_one_to_one'
   | 'match_to_bar'
+  | 'say_what_it_shows'
+  | 'compare_two_graphs'
   | 'most_least'
   | 'compare_bars'
   | 'read_scale'
@@ -81,6 +85,11 @@ export interface BarModelChallenge {
   expectedCounts?: number[];
   /** match_to_bar: how many objects are in the stimulus cluster. */
   stimulusCount?: number;
+  /** Related surveys use the same categories and icon scale. */
+  graphLabel?: string;
+  secondGraphLabel?: string;
+  secondValues?: BarValue[];
+  comparisonFocus?: 'same' | 'different';
   /**
    * Support-tier scaffolds (set by the generator from config.difficulty).
    * showBarValues = numeric readout next to NON-answer bars; showTargetHighlight
@@ -508,6 +517,9 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   graph: { label: 'Graph', icon: '📊', accentColor: 'emerald' },
 };
 
+const scoreGraphResult = (result: { correct: boolean; attempts: number; score?: number }) =>
+  result.score ?? (result.correct ? Math.max(20, 100 - (result.attempts - 1) * 20) : 0);
+
 /** Modes answered by tapping a row: the answer key is targetBarIndex. */
 const ROW_TAP_MODES = new Set<BarModelEvalMode>(['compare_bars', 'most_least', 'match_to_bar']);
 
@@ -579,6 +591,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     isComplete,
     getChallengeType: () => 'graph',
     phaseConfig: PHASE_TYPE_CONFIG,
+    getScore: (rs) => Math.round(rs.reduce((sum, r) => sum + scoreGraphResult(r), 0) / Math.max(1, rs.length)),
   });
 
   // ── Evaluation hook ───────────────────────────────────────────────────────
@@ -598,6 +611,8 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   });
 
   const currentChallenge = challenges[currentIndex] ?? null;
+  const isSpokenGraph = currentChallenge?.evalMode === 'say_what_it_shows' || currentChallenge?.evalMode === 'compare_two_graphs';
+  const [spokenFinished, setSpokenFinished] = useState(false);
   const graphStyle: BarModelGraphStyle = currentChallenge?.graphStyle ?? 'bar';
 
   // ── Per-challenge interaction state ────────────────────────────────────────
@@ -620,6 +635,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     setSelectedBarIndex(null);
     setFeedback(null);
     setShowHint(false);
+    setSpokenFinished(false);
     recordedRef.current = false;
   }, [currentChallenge?.id]);
 
@@ -647,12 +663,13 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'K-5',
+    enabled: !isSpokenGraph,
   });
 
   // Session intro — once, on the first challenge
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
+    if (isSpokenGraph || !isConnected || hasIntroducedRef.current) return;
     if (challenges.length === 0 || !currentChallenge) return;
     hasIntroducedRef.current = true;
     const labels = currentChallenge.values
@@ -670,7 +687,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   // Per-challenge handoff (skips the first because intro covers it)
   const lastAnnouncedIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!isConnected || !currentChallenge) return;
+    if (isSpokenGraph || !isConnected || !currentChallenge) return;
     if (!hasIntroducedRef.current) return;
     if (lastAnnouncedIdRef.current === null) {
       lastAnnouncedIdRef.current = currentChallenge.id;
@@ -700,16 +717,13 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     const correctCount = results.filter((r) => r.correct).length;
     const firstTryCount = results.filter((r) => r.attempts === 1 && r.correct).length;
     const hintsViewed = results.filter((r) => r.attempts > 1).length;
-    // Per-challenge score: 100 if first try, then decays per extra attempt.
-    const perChallengeScore = (r: typeof results[number]) =>
-      r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
     const overallAccuracy = Math.round(
-      results.reduce((s, r) => s + perChallengeScore(r), 0) / Math.max(1, results.length),
+      results.reduce((s, r) => s + scoreGraphResult(r), 0) / Math.max(1, results.length),
     );
     const averageAttemptsPerChallenge =
       Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
 
-    const sessionMode = challenges[0].evalMode;
+    const sessionMode = challenges.every((c) => c.evalMode === challenges[0].evalMode) ? challenges[0].evalMode : 'mixed';
     const sessionGraphStyle = challenges[0].graphStyle;
 
     const metrics: BarModelMetrics = {
@@ -728,7 +742,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     const phaseStr = phaseResults
       .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
       .join(', ');
-    sendText(
+    if (!isSpokenGraph) sendText(
       `[ALL_COMPLETE] Phase scores: ${phaseStr}. Overall: ${overallAccuracy}%. ` +
       `Celebrate completion of the ${challenges.length}-challenge graph session.`,
       { silent: true },
@@ -741,6 +755,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
           challengeCount: challenges.length,
           evalMode: sessionMode,
           prompts: challenges.map((c) => c.prompt),
+          challengeResults: results,
           attemptsPerChallenge: challenges.map((c) => {
             const r = results.find((rr) => rr.challengeId === c.id);
             return r?.attempts ?? 0;
@@ -775,6 +790,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
         SoundManager.playCorrect();
         recordResult({
           challengeId: currentChallenge.id,
+          evalMode: currentChallenge.evalMode,
           correct: true,
           attempts: currentAttempts + 1,
           ...extras,
@@ -797,6 +813,16 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   );
 
   // ── Interaction handlers ───────────────────────────────────────────────────
+  const handleSpokenFinished = (summary: JudgedRunSummary) => {
+    if (!currentChallenge || recordedRef.current) return;
+    recordedRef.current = true;
+    recordResult({ challengeId: currentChallenge.id, evalMode: currentChallenge.evalMode,
+      correct: summary.solvedCount === 1, attempts: summary.attemptsCount, score: summary.accuracy,
+      spokenOutcomes: summary.outcomes, observations: summary.observations,
+    });
+    setSpokenFinished(true);
+  };
+
   const handleBarClick = (i: number) => {
     if (!currentChallenge || feedback === 'correct' || isComplete) return;
     // K sticker chart: tapping a row places one sticker in it. The row's own
@@ -969,7 +995,8 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                 />
               ) : null}
 
-              <div className="px-2">
+              <div className="px-2 space-y-5">
+                {currentChallenge.graphLabel && <h3 className="text-lg font-semibold text-cyan-200">{currentChallenge.graphLabel}</h3>}
                 <BarsArea
                   values={valuesToRender}
                   graphStyle={graphStyle}
@@ -989,9 +1016,16 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                   showBarValues={currentChallenge.showBarValues ?? true}
                   answerBarIndex={answerBarIndex}
                   showEmptySlots={isStickerBuild}
-                  showPlacedCount={isStickerBuild && (currentChallenge.showPlacedCount ?? true)}
+                  showPlacedCount={false}
                 />
               </div>
+
+              {currentChallenge.secondValues && <div className="px-2 space-y-3">
+                <h3 className="text-lg font-semibold text-amber-200">{currentChallenge.secondGraphLabel}</h3>
+                <BarsArea values={currentChallenge.secondValues} graphStyle="picture" scale={scaleToRender} showBarValues={false} />
+              </div>}
+              {isSpokenGraph && <BarModelExplanation key={currentChallenge.id} challenge={currentChallenge}
+                instanceId={resolvedInstanceId} exhibitId={exhibitId} onFinished={handleSpokenFinished} />}
 
               {isStickerBuild ? (
                 <div className="space-y-4">
@@ -1077,7 +1111,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                 </LuminaFeedbackCard>
               ) : null}
 
-              {feedback === 'correct' ? (
+              {feedback === 'correct' || spokenFinished ? (
                 <div className="text-center">
                   <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                     {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}

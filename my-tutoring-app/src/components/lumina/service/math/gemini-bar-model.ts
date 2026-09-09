@@ -2,7 +2,7 @@
  * Bar Model Generator — IRT-aware K-5 categorical-data graph generator.
  *
  * Multi-instance schema: a single session walks the student through 3-6 graph
- * challenges of the same eval mode, surfaced sequentially. Each challenge
+ * challenges in a pinned mode or an intent-resolved blend, surfaced sequentially. Each challenge
  * carries its own graph (bars + graphStyle + scale) + question content.
  *
  * Generation strategy (orchestrator, per PRD §6a #1 — content-bearing per-
@@ -19,8 +19,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
-  resolveEvalModeConstraint,
-  logEvalModeResolution,
+  resolveEvalModes,
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { createNumberPool } from "./numberPoolService";
@@ -36,6 +35,8 @@ export type BarModelEvalMode =
   | 'build_one_to_one'
   | 'read_one_to_one'
   | 'match_to_bar'
+  | 'say_what_it_shows'
+  | 'compare_two_graphs'
   | 'most_least'
   | 'compare_bars'
   | 'read_scale'
@@ -86,6 +87,11 @@ export interface BarModelChallenge {
   expectedCounts?: number[];
   /** match_to_bar: how many objects are in the stimulus cluster. */
   stimulusCount?: number;
+  /** Related surveys use the same categories and icon scale. */
+  graphLabel?: string;
+  secondGraphLabel?: string;
+  secondValues?: BarValue[];
+  comparisonFocus?: 'same' | 'different';
   /** Support-tier scaffolds (set in post-process when config.difficulty present). */
   showBarValues?: boolean;
   showTargetHighlight?: boolean;
@@ -120,6 +126,8 @@ const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any mode not in COUNT_BY_MO
 const MAX_INSTANCE_COUNT = 6;
 
 const COUNT_BY_MODE: Record<BarModelEvalMode, number> = {
+  say_what_it_shows: 4,
+  compare_two_graphs: 4,
   build_one_to_one: 4,     // K — each build is a whole chart, so 4 is a full session
   read_one_to_one: 5,      // K — short reads, so more of them
   match_to_bar: 4,         // K
@@ -231,10 +239,12 @@ function deriveOptions(expected: number, step: number, count = 4): number[] {
 }
 
 // ---------------------------------------------------------------------------
-// Challenge type docs (retained for resolveEvalModeConstraint compatibility)
+// Challenge type docs for intent resolution; each routed sub-generator owns its schema.
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  say_what_it_shows: { promptDoc: 'Explain what a one-to-one graph shows using a true comparison in your own words.', schemaDescription: "'say_what_it_shows' (K spoken explanation)" },
+  compare_two_graphs: { promptDoc: 'Compare two related one-to-one data sets, explaining a similarity or difference aloud.', schemaDescription: "'compare_two_graphs' (K related surveys)" },
   build_one_to_one: { promptDoc: 'K record data — one sticker per object.', schemaDescription: "'build_one_to_one' (K)" },
   read_one_to_one: { promptDoc: 'K read a one-to-one picture graph.', schemaDescription: "'read_one_to_one' (K)" },
   match_to_bar: { promptDoc: 'K match a group of objects to the row that shows that many.', schemaDescription: "'match_to_bar' (K)" },
@@ -295,12 +305,12 @@ function resolveSupportStructure(mode: BarModelEvalMode, tier: SupportTier): Sup
       return {
         showBarValues: false,
         showTargetHighlight: false,
-        showPlacedCount: tier !== 'hard',  // hard = the child tracks their own stickers
+        showPlacedCount: false,  // totals stay hidden at every build tier
         promptLines: [
           TIER_GUARDRAIL,
           tier === 'hard'
             ? 'HARD: the chart does not say how many stickers are in a row — the child keeps track by looking.'
-            : 'EASY/MEDIUM: each row shows how many stickers the child has placed so far.',
+            : 'The child counts their placed stickers; no numeric totals are printed during construction.',
         ],
       };
     case 'read_one_to_one':
@@ -314,6 +324,8 @@ function resolveSupportStructure(mode: BarModelEvalMode, tier: SupportTier): Sup
             : 'EASY/MEDIUM: the row the question names is marked, so the child only has to count.',
         ],
       };
+    case 'say_what_it_shows':
+    case 'compare_two_graphs':
     case 'most_least':
     case 'match_to_bar':
       return {
@@ -1626,11 +1638,54 @@ RULES:
 }
 
 // ===========================================================================
-// Orchestrator: fan out N parallel sub-generator calls for one eval mode
+// Orchestrator: route each challenge to its mode-specific schema
 // ===========================================================================
+
+/** Gemini supplies only category vocabulary; code owns both data sets. */
+async function generateGraphExplanation(topic: string, gradeContext: string, intent: string,
+  tier: SupportTier | null = null, variant = 0, paired = false): Promise<SubGenResult> {
+  const slots = kCategorySlots(3);
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: `Choose three familiar categories for a Kindergarten class survey about ${topic}.
+Audience: ${gradeContext}. Intent: ${intent}.
+Use short plural category names and distinct matching emojis. These same categories will appear
+in surveys taken in the morning and afternoon. Return category vocabulary only, no counts.
+${kSettingLine(variant)}`,
+    config: { responseMimeType: 'application/json', responseSchema: {
+      type: Type.OBJECT, properties: slots.props, required: slots.required,
+    } },
+  });
+  if (!response.text) throw new Error('No content generated (graph explanation)');
+  const cats = extractCategories(JSON.parse(response.text), 3);
+  const counts = distinctCounts(3, 2, 8);
+  const values = kRows(cats, counts);
+  // Rotate the unchanged category. Other rows move in opposite directions, so
+  // every pair offers a genuine similarity AND differences, all within 1-10.
+  const sameIndex = variant % 3;
+  const secondValues = paired ? values.map((v, i) => ({ ...v,
+    value: i === sameIndex ? v.value : i === (sameIndex + 1) % 3 ? v.value + 1 : Math.max(1, v.value - 1),
+  })) : undefined;
+  const comparisonFocus = variant % 2 === 0 ? 'same' : 'different';
+  const prompt = paired
+    ? `Look at the morning and afternoon graphs. Tell me something that is ${comparisonFocus}.`
+    : 'Tell me what this graph shows. Compare the groups in your own words.';
+  return { title: paired ? 'Our Morning and Afternoon Surveys' : 'Tell Me About Our Graph',
+    description: 'Each picture stands for one choice.',
+    challenge: { id: '', evalMode: paired ? 'compare_two_graphs' : 'say_what_it_shows',
+      values, secondValues, comparisonFocus: paired ? comparisonFocus : undefined, graphLabel: paired ? 'Morning' : 'Our survey',
+      secondGraphLabel: paired ? 'Afternoon' : undefined,
+      graphStyle: 'picture', scale: kScale(10, cats[0].emoji), prompt,
+      hint: tier === 'hard' ? undefined : 'Look along the rows. Which groups have more, fewer, or the same?',
+      showBarValues: false, showTargetHighlight: false,
+    },
+  };
+}
 
 function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string, tier?: SupportTier | null, variant?: number) => Promise<SubGenResult> {
   switch (mode) {
+    case 'say_what_it_shows': return generateGraphExplanation;
+    case 'compare_two_graphs': return (topic, grade, intent, tier, variant) => generateGraphExplanation(topic, grade, intent, tier, variant, true);
     case 'build_one_to_one':   return generateBuildOneToOne;
     case 'read_one_to_one':    return generateReadOneToOne;
     case 'most_least':         return generateMostLeast;
@@ -1646,6 +1701,7 @@ function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: 
 }
 
 type BarModelConfig = {
+  objectiveText?: string;
   intent?: string;
   /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for T2 compare_bars, 4 for T3/unclassified). */
   instanceCount?: number;
@@ -1663,14 +1719,15 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   const { topic } = ctx;
   const gradeContext = ctx.gradeContext;
   const config: BarModelConfig = { ...(ctx.raw as BarModelConfig), intent: ctx.intent };
-  const evalConstraint = resolveEvalModeConstraint(
-    'bar-model',
-    config?.targetEvalMode,
-    CHALLENGE_TYPE_DOCS,
-  );
-  logEvalModeResolution('BarModel', config?.targetEvalMode, evalConstraint);
-
-  const mode = (evalConstraint?.allowedTypes[0] ?? 'compare_bars') as BarModelEvalMode;
+  const resolution = await resolveEvalModes('bar-model', {
+    targetEvalMode: config.targetEvalMode, intent: config.intent, objectiveText: config.objectiveText,
+  }, CHALLENGE_TYPE_DOCS);
+  const isK = /kindergarten|\bK\b/i.test(gradeContext);
+  const modes = (resolution?.allowedTypes ?? (isK
+    ? ['read_one_to_one', 'most_least', 'build_one_to_one', 'say_what_it_shows', 'compare_two_graphs']
+    : ['compare_bars', 'read_scale', 'picture_graph', 'scaled_bar_graph'])) as BarModelEvalMode[];
+  const mode = modes[0];
+  console.log(`[BarModel] modes: ${modes.join('+')} (${resolution?.source ?? 'mixed'})`);
   const intent = config?.intent || topic;
   const modeCount = COUNT_BY_MODE[mode];
   const instanceCount = Math.max(
@@ -1683,16 +1740,15 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
 
   // Support tier (config.difficulty) drives BOTH axes: scaffolding withdrawal
   // (applied to the rendered challenge below) AND structural problem difficulty
-  // (threaded into each sub-generator's prompt + post-process). bar-model is
-  // single-mode per session, so the tier resolves once for `mode`.
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  // (threaded into each sub-generator's prompt + post-process). A blend has
+  // no single support tier; apply one only to a single resolved mode.
+  const supportTier = resolution?.modes.length === 1 ? normalizeSupportTier(config?.difficulty) : null;
 
-  // Fan out N parallel calls of the same per-mode sub-generator. Variance
+  // Fan out N calls, cycling through the selected per-mode sub-generators. Variance
   // comes from independent generations (per PRD §6a #2 — structured output
   // converges per-call, not across independent calls).
-  const runOne = subGeneratorFor(mode);
   const subResults = await Promise.all(
-    Array.from({ length: instanceCount }, (_, idx) => runOne(topic, gradeContext, intent, supportTier, idx)),
+    Array.from({ length: instanceCount }, (_, idx) => subGeneratorFor(modes[idx % modes.length])(topic, gradeContext, intent, supportTier, idx)),
   );
 
   // First sub-result provides session-level title/description; both are
@@ -1706,10 +1762,10 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   // N challenges must be N problems. The parallel calls converge often enough
   // that two K charts can arrive identical; code owns those counts, so a repeat
   // is rotated into a different problem rather than re-drawn from the model.
-  if (K_MODES.has(mode)) {
+  {
     spreadKAnswerPositions(challenges);
     const seen = new Set<string>();
-    for (const ch of challenges) {
+    for (const ch of challenges.filter((c) => K_MODES.has(c.evalMode))) {
       let key = kCardKey(ch);
       for (let attempt = 0; seen.has(key) && attempt < ch.values.length; attempt++) {
         rotateKCounts(ch);
@@ -1720,8 +1776,7 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   }
 
   // Apply the support tier deterministically AFTER structural assembly. Resolve
-  // each challenge's scaffold from its OWN mode (so a future blended session
-  // still gets difficulty); single-mode just gives every challenge the same one.
+  // each challenge's scaffold from its own mode. Blended sessions skip this block.
   // Code owns the support STRUCTURE; the LLM only chose the numbers (unchanged).
   if (supportTier) {
     for (const ch of challenges) {

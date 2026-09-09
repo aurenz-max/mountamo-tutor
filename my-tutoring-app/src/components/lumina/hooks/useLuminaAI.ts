@@ -183,6 +183,7 @@ export function useLuminaAI({
   // Auto-update context when primitive state changes (but don't reconnect)
   // In lesson mode, only send updates if this primitive is the active one
   useEffect(() => {
+    if (!enabled) return;
     const ctx = contextRef.current;
     if (!ctx.isConnected || !hasConnectedRef.current) return;
 
@@ -222,7 +223,7 @@ export function useLuminaAI({
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [primitiveData]);
+  }, [primitiveData, enabled]);
 
   // Implicit activation: ensure this primitive is active before interacting
   const ensureActive = useCallback(() => {
