@@ -11,6 +11,7 @@
 | K PRE band — `act_out` ("add/subtract within 5", "count to tell number of objects up to 5") | reader-fit + live `--lesson` | `qa/reader-fit/addition-subtraction-scene-PRE-2026-07-13.md` + `-1b-2026-07-14.md`; Pulse 2026-07-16 | 2026-07-16 |
 | K PRE band — `solve_story`, `create_story` (same K math census) | reader-fit 1b | `-PRE-1b-2026-07-14.md` | 2026-07-14 |
 | Grade-1 (EMERGING+) — all four modes; count-the-scene + keyboard + equation tiles | catalog `constraints` + code (`gradeBand==='1'`) | component non-K branches | ongoing |
+| Scope axis (`config.maxNumber` → objective number window → band default) — R8 | generator `effectiveMaxNumber` | `scripts/probe-objective-window-caps.mjs`; oracle `parseScopeCeiling` | 2026-09-08 |
 | Support-tier axis (config.difficulty easy/medium/hard) — AXIS 1 scaffolding + AXIS 2 problem shape | support-tier + structural-difficulty campaigns | generator `resolveSupportStructure` / `resolveProblemShape` / `constrainStructuralEnums` | 2026-07 |
 | Oracle (content-contract QA — arithmetic + scope + clustering) | oracle registry | `service/qa/oracles/addition-subtraction-scene.ts` | 2026-07 |
 | Evaluation / IRT (per-type accuracy metrics) | `usePrimitiveEvaluation` | `AdditionSubtractionSceneMetrics` | ongoing |
@@ -69,11 +70,11 @@
 - **Evidence:** oracle schema check; `advanceToNextChallenge` submit path.
 - **Probe:** `/oracle-test` schema 0; jsdom completion reaches Next/submit.
 
-### R8 — grade band is a CEILING; instruction/story name no answer beyond the story's own operands · OBSERVED
-- **Property:** Counts stay within the band ceiling; spoken/displayed instruction never states `resultCount`. Story operands (start/change) ARE public by design ("2 frogs hop away") — cueing them is not a leak; stating the result to-be-discovered is. **The ten-frame aid mirrors the count ON SCREEN (`totalVisible`), never the stored `resultCount`** — on an enacted scene (K act_out, K create_story, G1 act_out subtraction) `resultCount` is the target the child is meant to reach, so filling the frame with it handed the answer over (item 12).
-- **Demanded by:** oracle (scope), grade-fidelity, pedagogy rule #1.
-- **Evidence:** generator `maxNumber` clamps; oracle scope + deliberately-not-answer-leak note.
-- **Probe:** `/oracle-test` scope 0; K act_out spoken cue names `changeCount` (story-public), never `resultCount`.
+### R8 — `maxNumber` is the scope CEILING (grade band sets it by default, the objective may raise it); instruction/story name no answer beyond the story's own operands · OBSERVED — SCOPE AXIS AMENDED 2026-09-08
+- **Property:** Counts stay within `maxNumber`, and `maxNumber` resolves on ONE config axis: explicit `config.maxNumber` → the objective's own number scope (micro-LLM over topic + intent) → the grade band default (K 5, G1 10). **The band is the DEFAULT, not the authority:** a K objective that says "making 10" gets `maxNumber` 10, because a cap below what the objective asks for silently teaches a different lesson. The ceiling that remains is `SPOKEN_ANSWER_MAX` (20) — the benched `number_word_to_20` response class — floored at 3 so a scope has real arithmetic under it. Above a ceiling of 10 the ten frame is withdrawn (`showTenFrame` false): it has ten cells, so it cannot mirror the on-screen count, and a wrong mirror is worse than none. Spoken/displayed instruction never states `resultCount`. Story operands (start/change) ARE public by design ("2 frogs hop away") — cueing them is not a leak; stating the result to-be-discovered is. **The ten-frame aid mirrors the count ON SCREEN (`totalVisible`), never the stored `resultCount`** — on an enacted scene (K act_out, K create_story, G1 act_out subtraction) `resultCount` is the target the child is meant to reach, so filling the frame with it handed the answer over (item 12).
+- **Demanded by:** oracle (scope), grade-fidelity, pedagogy rule #1, [[trust-intent-over-hardcoded-caps]].
+- **Evidence:** the SHARED `service/objectiveNumberWindow.ts` resolver (extracted 2026-09-09 when strategy-picker was found carrying the identical K=5 policy) + this generator's `effectiveMaxNumber` axis and the per-challenge clamps that run off it; oracle scope + deliberately-not-answer-leak note. The oracle already derived its ceiling from the TOPIC (`parseScopeCeiling(ctx.topic)`), so it was already asserting the amended property — the generator was the side that disagreed.
+- **Probe:** `/oracle-test` scope 0; K act_out spoken cue names `changeCount` (story-public), never `resultCount`; `scripts/probe-objective-window-caps.mjs` — K "making 10" reaches 10, K "within 5" still stops at 5.
 
 ## Conflicts
 
@@ -127,6 +128,20 @@ _None open._ The item-11 `act_out` K rebuild is a **fork by band + mode**, asses
   - Verified: `typecheck:lumina` 0 · full `tsc` 803 = exact baseline, 0 in touched files ·
     census greps 0 · own suites 79 (55 di-script + 24 stage) · full vitest 3120 · 6-run live
     pipeline probe, both bands, **40/40 items kept, zero drops**.
+- 2026-09-08 — **P1 cap below the objective** (`/eval-fix`). `maxNumber` came from the grade band
+  alone and the prompt said so in three places, so a K "making 10" lesson got a scene that
+  could not reach 10 — the cap rewrote the objective into a different one. Assessed
+  **COMPATIBLE / fork-by-config-axis**: the resolved scope feeds the SAME `maxNumber` axis
+  `config.maxNumber` already drove, and the resolver returns null for general practice or a
+  scope equal to the band default, so every lesson that names no scope of its own is
+  byte-identical to before. **R8 AMENDED** (band = default, not ceiling; `SPOKEN_ANSWER_MAX`
+  is the ceiling that remains). **R5/R6/R7 HELD** — the arithmetic, both difficulty axes and
+  the ≥3-challenge floor all read `maxNumber` rather than a band constant, so they follow the
+  axis without change; R6's "magnitude stays inside `maxNumber`" is unchanged, since magnitude
+  still never moves with `difficulty`. One render consequence: above a ceiling of 10 the ten
+  frame is withdrawn, which is R8's own "mirror what is visible" rule applied to a frame that
+  has no cells left to mirror with. Verified: own suites 182 · live probe, both generators,
+  window + no-window control.
 - 2026-07-16 — derived (initial). 8 requirements, 0 open conflicts.
 - 2026-07-16 — item 11 (K `act_out` → direct manipulation). Assessed **COMPATIBLE / fork-by-band+mode**: replaces 1b's K act_out `NumberTileRow` (a proxy number) with seed-startCount + tap-add/remove + auto-judge-on-count. Preserves R3 solve_story tiles + create_story build (band+mode scoped), R1/R2 read-aloud (instruction rewritten tap-accurate, still voiced), R5 code-owned arithmetic (no schema change — `startCount`/`changeCount`/`resultCount` already model the scene), R6 Grade-1 act_out aids. No new data fields required.
 - 2026-07-16 — runtime fix (browser-reported): scene objects were unclickable — SVG `<g onClick>` with a `pointer-events:none` `<text>` and no hit area. Added a transparent hit-target `<circle pointerEvents:all>` per object. Real-browser proof (playwright-core + Chrome): old variant 0 hits, fixed 2 hits. jsdom is blind to this class (see memory [[svg-g-unclickable-jsdom-blind]]).

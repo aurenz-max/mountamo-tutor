@@ -1,0 +1,153 @@
+{
+  "startedAt": "2026-09-09T00:25:16.166Z",
+  "cases": [
+    {
+      "id": "ordinal-K-window-6-to-10",
+      "what": "K objective naming 6th-10th raises the 5-long line",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxPosition": 10,
+        "cast": 10,
+        "asked": [
+          9,
+          6,
+          8,
+          7,
+          10
+        ]
+      }
+    },
+    {
+      "id": "ordinal-K-window-6-to-10",
+      "what": "K objective naming 6th-10th raises the 5-long line",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxPosition": 10,
+        "cast": 10,
+        "asked": [
+          8,
+          7,
+          9,
+          10,
+          6
+        ]
+      }
+    },
+    {
+      "id": "ordinal-K-no-window-control",
+      "what": "K general ordinal practice keeps the 5-long line (no regression)",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxPosition": 5,
+        "asked": [
+          4,
+          5,
+          2,
+          3,
+          1
+        ]
+      }
+    },
+    {
+      "id": "ordinal-K-no-window-control",
+      "what": "K general ordinal practice keeps the 5-long line (no regression)",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxPosition": 5,
+        "asked": [
+          3,
+          4,
+          5,
+          2,
+          1
+        ]
+      }
+    },
+    {
+      "id": "scene-K-window-make-10",
+      "what": "K \"making 10\" objective raises maxNumber past the band default of 5",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 10,
+        "showTenFrame": true,
+        "results": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          7,
+          6
+        ]
+      }
+    },
+    {
+      "id": "scene-K-window-make-10",
+      "what": "K \"making 10\" objective raises maxNumber past the band default of 5",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 10,
+        "showTenFrame": true,
+        "results": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ]
+      }
+    },
+    {
+      "id": "scene-K-no-window-control",
+      "what": "K within-5 practice keeps maxNumber 5 (no regression)",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 5,
+        "showTenFrame": true,
+        "results": [
+          4,
+          3,
+          4,
+          3,
+          4,
+          2
+        ]
+      }
+    },
+    {
+      "id": "scene-K-no-window-control",
+      "what": "K within-5 practice keeps maxNumber 5 (no regression)",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 5,
+        "showTenFrame": true,
+        "results": [
+          3,
+          2,
+          5,
+          4,
+          4,
+          0,
+          4
+        ]
+      }
+    }
+  ]
+}

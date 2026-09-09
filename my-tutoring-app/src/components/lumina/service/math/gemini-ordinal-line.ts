@@ -359,16 +359,19 @@ const buildSequenceSchema: Schema = {
 // still rendered questions across the whole line from 1st (the parade bug). This
 // reads the lesson's OWN words and returns the ordinal window it is actually about
 // ("first to fifth" → 1-5; "Meeting the Tenth Place: 6th through 10th" → 6-10).
-// The grade is a CEILING (K → 5, G1 → 10). On any failure — or when the lesson is
-// general ordinal practice with no explicit window — we return null and callers
-// keep their grade-band defaults (no regression). Schema, not regex — see memory
-// [[schema-over-regex-and-prompt]].
+// The grade band is the DEFAULT line length (K → 5, G1 → 10), not a ceiling on
+// what a lesson may ask about: a K objective that names the 10th gets a 10-long
+// line, bounded only by MAX_POSITION (the benched spoken window). On any failure
+// — or when the lesson is general ordinal practice with no explicit window — we
+// return null and callers keep their grade-band defaults (no regression). Schema,
+// not regex — see memory [[schema-over-regex-and-prompt]].
 
 /** The ordinal positions the lesson QUESTIONS about (1-indexed, inclusive). The
  *  visible line is still 1..maxPosition; the window narrows only what is asked. */
 type PositionWindow = { start: number; end: number };
 
-/** Grade ceiling on ordinal magnitude — a 10th position needs a 10-long lineup. */
+/** The line length a grade gets by DEFAULT, when the lesson names no window of its
+ *  own. Not a ceiling — an explicit objective window raises it (up to MAX_POSITION). */
 function gradeMaxPosition(gradeLevel: string): number {
   return gradeLevel.toLowerCase().includes('kinder') ? 5 : 10;
 }
@@ -409,7 +412,7 @@ ${intent ? `INTENT: "${intent}"\n` : ''}GRADE: ${gradeLevel}
 Return the 1-indexed ordinal positions the student is actually QUESTIONED about in THIS lesson.
 - Read the topic/intent for an explicit range: "first to fifth" → 1-5; "positions 6th through 10th" → 6-10; "Meeting the Tenth Place" → the lesson reaches the 10th, so include it.
 - If the lesson is general ordinal practice with NO stated range, set hasExplicitWindow=false.
-- The grade is a CEILING: never return an endPosition above ${gradeMaxPosition(gradeLevel)} for this grade.`;
+- Positions run from 1 to ${MAX_POSITION}. Report what THIS lesson's words ask about, even when that sits above the usual ${gradeLevel} range — the objective is the authority on its own scope.`;
     const result = await ai.models.generateContent({
       model: 'gemini-flash-lite-latest',
       contents: prompt,
@@ -427,12 +430,33 @@ Return the 1-indexed ordinal positions the student is actually QUESTIONED about 
     let start = Math.round(Number(parsed?.startPosition));
     let end = Math.round(Number(parsed?.endPosition));
     if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-    // Grade stays the ceiling; clamp the window into [1..gradeMax].
-    start = Math.max(1, Math.min(start, gradeMax));
-    end = Math.max(1, Math.min(end, gradeMax));
+
+    // ⭐ THE OBJECTIVE'S WINDOW OUTRANKS THE GRADE DEFAULT.
+    // The grade band used to clamp here, which turned a K "6th through 10th"
+    // lesson into the window 5..5 — one position, asked over and over, and none
+    // of the five the lesson named. A cap below what the objective asks for is a
+    // bug, not a safety rail ([[trust-intent-over-hardcoded-caps]]): the grade
+    // sets the DEFAULT line length, the objective sets what this lesson is about.
+    // MAX_POSITION is the ceiling that remains, and it is a real one — it is the
+    // judged pack's benched spoken window, so past `tenth` there is no benched
+    // response class to ask in.
+    start = Math.max(1, Math.min(start, MAX_POSITION));
+    end = Math.max(1, Math.min(end, MAX_POSITION));
     if (end < start) return null;
-    // A whole-line window (1..gradeMax) is not a narrowing — let grade defaults stand.
-    if (start <= 1 && end >= gradeMax) return null;
+
+    // A window narrower than MIN_LINE_LENGTH has too little ordinal work in it to
+    // fill a session — every challenge lands on the same one or two positions
+    // ([[mastery-over-demo]]). Widen upward first, then pull the start back down
+    // if the ceiling is in the way.
+    if (end - start + 1 < MIN_LINE_LENGTH) {
+      end = Math.min(MAX_POSITION, start + MIN_LINE_LENGTH - 1);
+      start = Math.max(1, end - MIN_LINE_LENGTH + 1);
+    }
+
+    // A window covering the grade's default line exactly is neither a narrowing
+    // nor a raise — let the grade defaults stand. `end > gradeMax` is reachable
+    // now and IS a raise, so it must not fall into this branch.
+    if (start <= 1 && end === gradeMax) return null;
     return { start, end };
   } catch (e) {
     console.warn('[OrdinalLine] position window resolution failed:', e);
@@ -464,6 +488,7 @@ Pick a context (race, parade, lunch-line, train, or bookshelf) and create a line
 ${config?.context ? `Preferred context: ${config.context}` : ''}
 ${config?.gradeBand ? `Grade band: ${config.gradeBand}` : ''}
 ${config?.maxPosition ? `Max position: ${config.maxPosition}` : ''}
+${window ? `THIS lesson asks about ordinal positions ${window.start} through ${window.end}, so the lineup must be at least ${window.end} characters long — a ${window.end}th position needs a ${window.end}th character to point at. This overrides the grade-band character count above.` : ''}
 
 Use unique animal characters with fun emojis. Title should be engaging for young children.
 showOrdinalLabels should be true.
@@ -492,7 +517,11 @@ CHARACTER NAMES ARE READ ALOUD BY A TUTOR AND SAID BACK BY A CHILD, so:
   if (!data.maxPosition || data.maxPosition < 3) {
     data.maxPosition = data.gradeBand === 'K' ? 5 : 10;
   }
-  if (data.gradeBand === 'K' && data.maxPosition > 5) data.maxPosition = 5;
+  // 5 is the K DEFAULT, not the K ceiling: a lesson reaching the 10th needs a 10th
+  // character to point at. With no window the K cap is exactly what it was.
+  if (data.gradeBand === 'K' && data.maxPosition > 5 && !(window && window.end > 5)) {
+    data.maxPosition = 5;
+  }
   // MAX_POSITION is the BENCHED spoken window (first..tenth) and MIN_LINE_LENGTH
   // is the shortest line with ordinal work in it. Both are the judged pack's
   // constants, imported so a capacity change here cannot launder an unbenched
@@ -503,10 +532,10 @@ CHARACTER NAMES ARE READ ALOUD BY A TUTOR AND SAID BACK BY A CHILD, so:
   // Position window (topic/intent): the line must be long enough to contain the
   // window's last position — a "6th through 10th" lesson needs a 10-long lineup so
   // a 10th character exists. Only ever RAISES maxPosition toward the window end
-  // (never shrinks the grade default); the resolver already clamped end to the
-  // grade ceiling, so this can't push past what the grade allows.
+  // (never shrinks the grade default), bounded by MAX_POSITION rather than the
+  // grade — the grade already had its say as the default.
   if (window) {
-    data.maxPosition = Math.min(gradeMaxPosition(gradeLevel), Math.max(data.maxPosition, window.end));
+    data.maxPosition = Math.min(MAX_POSITION, Math.max(data.maxPosition, window.end));
   }
 
   const validContexts = ['race', 'parade', 'lunch-line', 'train', 'bookshelf'];
@@ -1617,7 +1646,8 @@ export const generateOrdinalLine = async (
   // override), so infer it from the lesson's OWN topic + intent. Gated on the
   // explicit override being absent; null on failure / general practice → the
   // grade-band default stands (no regression). Narrows WHICH positions are
-  // questioned; the grade remains the ceiling on magnitude.
+  // questioned, and — when the objective reaches past the grade's default line —
+  // lengthens the line so the positions it names exist to point at.
   let positionWindow: PositionWindow | null = null;
   if (config?.maxPosition === undefined) {
     positionWindow = await resolveOrdinalPositionWindow(topic, intent, gradeLevel);

@@ -15,8 +15,10 @@ import {
 // 100 chars) that disagreed live. This is the same function the component runs.
 import {
   itemFromChallenge,
+  SPOKEN_ANSWER_MAX,
   type AddSubBand,
 } from "../../primitives/visual-primitives/math/additionSubtractionSceneScript";
+import { resolveObjectiveNumberWindow } from "../objectiveNumberWindow";
 
 // ---------------------------------------------------------------------------
 // Valid object types — must match OBJECT_EMOJI in AdditionSubtractionScene.tsx
@@ -447,6 +449,30 @@ const additionSubtractionSceneSchema: Schema = {
 };
 
 // ---------------------------------------------------------------------------
+// Number-window resolver — the objective's own arithmetic scope
+// ---------------------------------------------------------------------------
+//
+// `maxNumber` used to come from the grade band alone (K 5, G1 10), so a K
+// objective that says "make 10" or "add within 10" got a scene that could not
+// reach 10 — the cap silently rewrote the lesson into a different one. A cap
+// below what the objective asks for is a bug ([[trust-intent-over-hardcoded-caps]]).
+//
+// The resolver itself is SHARED (`service/objectiveNumberWindow.ts`), which is
+// where the design notes live. strategy-picker carried the identical K=5 policy;
+// a hand-copied second micro-LLM call would have been a second definition of the
+// same rule, free to drift from this one.
+//
+// SPOKEN_ANSWER_MAX is the ceiling THIS scene passes, and it is a real one: the
+// judged pack benched `number_word_to_20`, so a scene that could produce 24 has
+// no benched response class for the child to answer in.
+
+/** The number ceiling a grade gets by DEFAULT, when the lesson names no scope of
+ *  its own. Not a ceiling on the lesson — an explicit objective scope raises it. */
+function gradeMaxNumber(gradeLevel: string): number {
+  return gradeLevel.toLowerCase().includes('kinder') ? 5 : 10;
+}
+
+// ---------------------------------------------------------------------------
 // Generator
 // ---------------------------------------------------------------------------
 
@@ -584,6 +610,7 @@ export const generateAdditionSubtractionScene = async (ctx: GenerationContext): 
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config: AdditionSubtractionSceneConfig = { ...(ctx.raw as AdditionSubtractionSceneConfig), intent: ctx.intent };
+  const intent0 = config?.intent?.trim();
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'addition-subtraction-scene',
@@ -610,6 +637,31 @@ export const generateAdditionSubtractionScene = async (ctx: GenerationContext): 
     ? buildTierPromptSection(pinnedType, supportTier)
     : '';
 
+  // ── Resolve the topic/intent number window onto the maxNumber config axis ──
+  // The manifest never pins an arithmetic scope (config.maxNumber is the explicit
+  // override), so infer it from the lesson's OWN topic + intent. Gated on that
+  // override being absent; null on failure / general practice / a scope equal to
+  // the band default → the band default stands, byte-identical to before.
+  const resolvedMaxNumber = config?.maxNumber === undefined
+    ? await resolveObjectiveNumberWindow({
+        topic,
+        intent: intent0,
+        gradeLevel,
+        bandDefault: gradeMaxNumber(gradeLevel),
+        ceiling: SPOKEN_ANSWER_MAX,
+        logPrefix: 'AdditionSubtractionScene',
+      })
+    : null;
+  if (resolvedMaxNumber !== null) {
+    console.log(
+      `[AdditionSubtractionScene] topic-resolved number window: maxNumber=${resolvedMaxNumber} `
+      + `(band default ${gradeMaxNumber(gradeLevel)}; topic="${topic}", intent="${intent0 ?? ''}")`,
+    );
+  }
+  /** What this lesson's numbers may reach: the explicit override, else the
+   *  objective's own scope, else the grade band's default. */
+  const effectiveMaxNumber = config?.maxNumber ?? resolvedMaxNumber ?? gradeMaxNumber(gradeLevel);
+
   // ── Build mode-constrained schema (eval mode → then AXIS-2 structural enum) ──
   let activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(additionSubtractionSceneSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
@@ -621,12 +673,12 @@ export const generateAdditionSubtractionScene = async (ctx: GenerationContext): 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
-  const intent = config?.intent?.trim();
+  const intent = intent0;
 
   const prompt = `
 Create an educational addition and subtraction story activity for teaching "${topic}" to ${gradeLevel} students.
 ${intent ? `
-FOCUS FOR THIS ACTIVITY: the broad lesson is "${topic}", but THIS scene was specifically assigned to target: "${intent}". Make every challenge serve that focus (its operation, story situation, and what is asked). Stay within the number range the topic and this focus imply — the grade is the ceiling, never exceed it. Do NOT restate or reveal any answer in the story; the focus describes the OBJECTIVE, not the solution.
+FOCUS FOR THIS ACTIVITY: the broad lesson is "${topic}", but THIS scene was specifically assigned to target: "${intent}". Make every challenge serve that focus (its operation, story situation, and what is asked). Every count stays within maxNumber = ${effectiveMaxNumber}, which is the scope THIS topic and focus imply. Do NOT restate or reveal any answer in the story; the focus describes the OBJECTIVE, not the solution.
 ` : ''}
 CONTEXT:
 - This is an animated story scene where objects join, leave, or are compared
@@ -637,9 +689,13 @@ CONTEXT:
 ${challengeTypeSection}
 ${tierSection}
 ${!evalConstraint ? `
-GUIDELINES FOR GRADE LEVELS:
+THIS ACTIVITY'S NUMBER SCOPE: maxNumber = ${effectiveMaxNumber}. Every startCount,
+changeCount and resultCount stays within it. This is the lesson's OWN scope — where
+it sits above the usual range for ${gradeLevel}, the objective asked for it, so use
+the full range rather than shrinking back to the grade's usual numbers.
+
+GUIDELINES FOR GRADE LEVELS (everything EXCEPT the number range, which is fixed above):
 - Kindergarten (gradeBand "K"):
-  * Numbers within 5 (maxNumber = 5)
   * Focus on act-out and solve-story challenge types
   * Primarily join and separate story types
   * Simple, warm language with familiar objects (ducks, apples, bunnies)
@@ -647,7 +703,6 @@ GUIDELINES FOR GRADE LEVELS:
   * unknownPosition should usually be 'result'
 
 - Grade 1 (gradeBand "1"):
-  * Numbers within 10 (maxNumber = 10)
   * All four challenge types: act-out, build-equation, solve-story, create-story
   * All story types: join, separate, compare, part-whole
   * Vary unknownPosition: result, change, and occasionally start
@@ -663,7 +718,7 @@ STORY TYPES:
 
 ${(() => {
   const hints: string[] = [];
-  if (config?.maxNumber) hints.push(`- Max number: ${config.maxNumber}`);
+  hints.push(`- Max number: ${effectiveMaxNumber}`);
   if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
   if (effectiveChallengeTypes) hints.push(`- Challenge types to include: ${effectiveChallengeTypes.join(', ')}`);
   if (config?.operations) hints.push(`- Operations to include: ${config.operations.join(', ')}`);
@@ -692,7 +747,7 @@ REQUIREMENTS:
    that break the rules above are dropped rather than fixed, and a lesson must
    not be starved by the gate)
 2. Use appropriate story contexts (join, separate, compare, part-whole)
-3. Keep all numbers within maxNumber (5 for K, 10 for Grade 1)
+3. Keep all numbers within maxNumber (${effectiveMaxNumber} for this activity) and return that value as maxNumber
 4. Create engaging, relatable story texts that match the scene theme
 5. CRITICAL: Equation strings MUST be mathematically accurate (e.g., "3 + 2 = 5", "7 - 3 = 4")
 6. CRITICAL: resultCount must equal startCount + changeCount for addition, startCount - changeCount for subtraction
@@ -701,7 +756,7 @@ REQUIREMENTS:
 9. Progress from easier to harder
 10. Use warm, child-friendly instruction text
 11. Mix addition and subtraction operations across challenges
-12. Set showTenFrame to true for K, false for Grade 1 unless numbers > 5
+12. Set showTenFrame to true for K, false for Grade 1 unless numbers > 5 (the frame is code-corrected above 10, where it has no cells to mirror the count)
 13. Set showEquationBar to true when build-equation challenges are included
 
 Return the complete addition/subtraction scene configuration.
@@ -730,12 +785,22 @@ Return the complete addition/subtraction scene configuration.
     data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
   }
 
-  if (!data.maxNumber || data.maxNumber < 1) {
-    data.maxNumber = data.gradeBand === 'K' ? 5 : 10;
+  // maxNumber is the CONFIG AXIS, not a band constant: explicit override → the
+  // objective's own resolved scope → the band default. The LLM's own value is only
+  // honoured when it sits inside that ceiling; a stray above it is clamped, and the
+  // per-challenge count clamps below run off this same number.
+  if (!data.maxNumber || data.maxNumber < 1 || data.maxNumber > effectiveMaxNumber) {
+    data.maxNumber = effectiveMaxNumber;
   }
 
   if (typeof data.showTenFrame !== 'boolean') {
     data.showTenFrame = data.gradeBand === 'K';
+  }
+  // The ten frame MIRRORS THE ON-SCREEN COUNT (R8) and it has ten cells. Above a
+  // ceiling of 10 it cannot do that — a scene of 14 in a ten-cell frame is a wrong
+  // picture, not a partial one — so the aid is withdrawn rather than shown lying.
+  if (data.maxNumber > 10) {
+    data.showTenFrame = false;
   }
   if (typeof data.showEquationBar !== 'boolean') {
     data.showEquationBar = true;
@@ -845,6 +910,7 @@ Return the complete addition/subtraction scene configuration.
     }
     if (config.maxNumber !== undefined) {
       data.maxNumber = config.maxNumber;
+      if (data.maxNumber > 10) data.showTenFrame = false;
     }
   }
 
