@@ -1567,8 +1567,8 @@
   },
   {
     "id": "number-bond",
-    "description": "Live tutor-judged number bond practice (DI modality) on the classic circle-and-branch part-part-whole diagram. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the missing part OUT LOUD (missing-part, both grades); they answer WITH THEIR HANDS by splitting counters into the two part circles to find every pair (decompose — one judged turn per pair), by breaking a TEEN number 11-19 into a full ten and the ones left over (ten-and-ones), by writing all four fact-family equations (fact-family), and by building a number sentence from tiles (build-equation) — in those four, constructing it IS the skill. Perfect for K-1 addition/subtraction fluency. ESSENTIAL for Kindergarten and Grade 1 number decomposition, and for teen numbers as ten ones and some further ones (K.NBT.1).",
-    "constraints": "Max number 5 for Kindergarten, 10 for Grade 1, so every spoken answer is a number word from 1 to 9. Requires a microphone: the missing-part answer is spoken and judged by the Live tutor, and there is no Check button, no stepper and no typed number answer anywhere. Kindergarten uses decompose, missing-part and ten-and-ones only; fact-family and build-equation are Grade 1. The ten-and-ones mode is the one exception to the max-number caps: its wholes are the teen numbers 11-19 at Kindergarten, because its answer is a placement rather than a spoken number. Known parts are never 0 and never the whole.",
+    "description": "Live tutor-judged number bond practice (DI modality) on the classic circle-and-branch part-part-whole diagram. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the missing part OUT LOUD (missing-part, both grades); they SAY a related pair of facts out loud over one bond — the addition fact, then the subtraction that matches it (related-fact, both grades); they answer WITH THEIR HANDS by splitting counters into the two part circles to find every pair (decompose — one judged turn per pair), by breaking a TEEN number 11-19 into a full ten and the ones left over (ten-and-ones), by writing all four fact-family equations (fact-family), and by building a number sentence from tiles (build-equation) — in those four, constructing it IS the skill. Perfect for K-1 addition/subtraction fluency. ESSENTIAL for Kindergarten and Grade 1 number decomposition, and for teen numbers as ten ones and some further ones (K.NBT.1).",
+    "constraints": "Max number 5 for Kindergarten, 10 for Grade 1, so every spoken answer is a number word from 1 to 9. Requires a microphone: the missing-part answer is spoken and judged by the Live tutor, and there is no Check button, no stepper and no typed number answer anywhere. Kindergarten uses decompose, missing-part, related-fact and ten-and-ones only; fact-family and build-equation are Grade 1 — related-fact and fact-family teach the SAME inverse relationship, and which one a band gets turns on whether the answer is said or typed. In related-fact the two parts must differ (a symmetric bond like three and three would give both spoken turns the same answer, and the activity drops it). The ten-and-ones mode is the one exception to the max-number caps: its wholes are the teen numbers 11-19 at Kindergarten, because its answer is a placement rather than a spoken number. Known parts are never 0 and never the whole.",
     "domain": "math",
     "supportsEvaluation": true,
     "modes": [
@@ -1588,8 +1588,13 @@
         "label": "Missing Part (Tier 2)"
       },
       {
+        "id": "related_fact",
+        "description": "Say TWO related facts over one bond: first the addition fact (\"two and how many more make five?\"), then the subtraction that matches it (\"five take away three — what is left?\"). The second turn is answered with the number the child produced on the first, so the inverse relationship is something they DO rather than something they are told. Unaided spoken production, one number word per turn; no typing and no menu. Kindergarten and Grade 1 — this is the K-reachable form of the fact family (K OPS001-02-G, OPS001-03-F).",
+        "label": "Related Facts (Spoken)"
+      },
+      {
         "id": "fact_family",
-        "description": "Write all 4 related equations in the boxes; the tutor judges the written family. Symbolic FORM is the skill, so the answer is written, not spoken. Grade 1 — and the floor HELD on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): writing four equations is typing, which the pre-reader band excludes by rule. Route K inverse-operation objectives (K OPS001-02-G, OPS001-03-F) to the spoken missing_part instead.",
+        "description": "Write all 4 related equations in the boxes; the tutor judges the written family. Symbolic FORM is the skill, so the answer is written, not spoken. Grade 1 — and the floor HELD on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): writing four equations is typing, which the pre-reader band excludes by rule. Route K inverse-operation objectives (K OPS001-02-G, OPS001-03-F) to the spoken related_fact instead — a 2026-09-09 K probe of missing_part against both objectives came back ten unknown-addend turns with no subtraction anywhere, so missing_part is the part-part-whole half only, not the relationship (qa/eval-reports/k-held-floors-2026-09-09.json).",
         "label": "Fact Family (Tier 3)"
       },
       {
@@ -1830,7 +1835,7 @@
   {
     "id": "strategy-picker",
     "description": "An interactive strategy-comparison activity where students solve the SAME addition/subtraction equation using 2-3 different strategies (counting on, make-ten, doubles, tally marks, or drawing a circle per addend), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10. NOT a decomposition primitive: the \"draw objects\" strategy draws the addends of a FIXED equation to find one sum — it does not find all the ways to split a number into pairs. For \"show different ways to break a number into pairs,\" use number-bond[decompose] instead.",
-    "constraints": "Numbers within 5 (K) or 10 (Grade 1). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.",
+    "constraints": "Numbers within 5 (K) or 10 (Grade 1) BY DEFAULT — the band sets the default, the objective sets the scope: a K objective that says \"within 10\" or \"making 10\" gets 10. Ceiling 10 either way (the ten frame has ten cells). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.",
     "domain": "math",
     "supportsEvaluation": true,
     "modes": [
@@ -2019,8 +2024,8 @@
   },
   {
     "id": "time-sequencer",
-    "description": "Event sequencer and time concepts for grades K-2. Students order daily events, match activities to time of day (morning/afternoon/night), reason about before/after relationships, compare durations, and read simple schedules. Progressive difficulty from 3-event sequencing through clock-time schedule reading. Bridges to AnalogClock for formal time-telling. ESSENTIAL for K-2 time and daily routine concepts.",
-    "constraints": "Best for grades K-2. K: 3- and 5-event sequences, time-of-day matching, before/after reasoning and duration comparison. Grades 1-2 add schedule reading. At Kindergarten NOTHING on screen prints a clock time: the easy tier's perception anchor is a sun-position picture the generator derives from each event's typicalTime, and instructions, hints and the tutor are all barred from naming a time or a clock. sequence-5, before-after and duration-compare came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md); read-schedule stays Grade 1-2 because reading printed clock times off a schedule IS its task.",
+    "description": "Event sequencer and time concepts for grades K-2. Students order daily events, match activities to time of day (morning/afternoon/night), reason about before/after relationships, compare durations, order activity cards that each carry an analog CLOCK FACE at a whole hour, and read simple schedules. Progressive difficulty from 3-event sequencing through clock-time schedule reading. Bridges to AnalogClock for formal time-telling. ESSENTIAL for K-2 time and daily routine concepts.",
+    "constraints": "Best for grades K-2. K: 3- and 5-event sequences, time-of-day matching, before/after reasoning, duration comparison and clock-sequence. Grades 1-2 add schedule reading. At Kindergarten NOTHING on screen prints a clock time: the easy tier's perception anchor is a sun-position picture the generator derives from each event's typicalTime, and instructions, hints and the tutor are all barred from naming a time or a clock. sequence-5, before-after and duration-compare came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md); read-schedule stays Grade 1-2 because reading printed clock times off a schedule IS its task. clock-sequence is the ONE exception to the no-clock-at-K rule, and the exception is the objective: K TIME001-03-G asks the child to connect whole-hour times to daily activities in sequence, under the skill \"Telling Time to the Hour\". Its cards carry an analog FACE, which is a picture, never printed digits — and the generator DROPS any challenge whose times are not all whole hours inside one half of the day, because a 12-hour face cannot separate 8 in the morning from 8 at night.",
     "domain": "math",
     "supportsEvaluation": true,
     "modes": [
@@ -2048,6 +2053,11 @@
         "id": "duration-compare",
         "description": "Which takes longer? Kindergarten and up (K MEAS001-07-C compares activity durations); no clock time appears at any band.",
         "label": "Duration Compare (Scaffold 2)"
+      },
+      {
+        "id": "clock-sequence",
+        "description": "Order daily activity cards where each card shows an analog CLOCK FACE at the hour that activity happens — connect the whole-hour time to the activity and put the day in order. Kindergarten and up (K TIME001-03-G, skill \"Telling Time to the Hour\"). The face is a picture, not printed digits, so it carries no reading demand; the times are always whole hours inside one half of the day, and a challenge that breaks either rule is dropped rather than shown.",
+        "label": "Clock Order (Scaffold 3)"
       },
       {
         "id": "read-schedule",

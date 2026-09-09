@@ -1,0 +1,155 @@
+{
+  "id": "MEAS001-04-D",
+  "primitive": "measure-lab",
+  "mode": "balance_predict",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Compare weights of various objects using a balance scale and predict outcomes",
+  "requestedAt": "2026-09-09T10:43:00.097Z",
+  "inputHash": "f03c0c08cc28be87edd1e8fd630b8c1795f44b3d1e8a83b8a4f031f18f3d3724",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-measure-lab.ts": "f10059f0bf1f28e956090b8ae62574367599bc07ecc0612ca962b24d851bcd91",
+    "src/components/lumina/primitives/visual-primitives/math/MeasureLab.tsx": "ef5725eed555b1f93fad4b1635736a3932adc6b82e457b107dedcede6af33c1a",
+    "catalog-entry:measure-lab": "891c81129d20d824118f2b34ef8c2e3e81c22c17ecd4ed50c38eec7c4e100746"
+  },
+  "params": {
+    "componentId": "measure-lab",
+    "evalMode": "balance_predict",
+    "topic": "Compare weights of various objects using a balance scale and predict outcomes",
+    "intent": "Compare weights of various objects using a balance scale and predict outcomes",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "measure-lab",
+    "evalMode": "balance_predict",
+    "duration": 1328,
+    "catalogMeta": {
+      "label": "Heavier or Lighter (K)",
+      "beta": 1.2,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "balance_predict"
+      ],
+      "description": "Predict which object is heavier, then put both on a pan balance and watch it tip. K.MD.A.2."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "balance_predict"
+      ],
+      "payloadBytes": 1758,
+      "longestStringLength": 53,
+      "longestStringPath": "challenges[0].hint",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "The Balance Scale",
+      "description": "Let us see which toy is heavier on the scale",
+      "challengeType": "balance_predict",
+      "challenges": [
+        {
+          "id": "ml-1",
+          "type": "balance_predict",
+          "prompt": "Which is heavier — the pinecone or the toy block?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "left": {
+            "id": "obj-0-l",
+            "name": "pinecone",
+            "emoji": "🌲",
+            "weight": 10
+          },
+          "right": {
+            "id": "obj-0-r",
+            "name": "toy block",
+            "emoji": "🧱",
+            "weight": 3
+          },
+          "expectedChoice": "obj-0-l"
+        },
+        {
+          "id": "ml-2",
+          "type": "balance_predict",
+          "prompt": "Which is heavier — the soft teddy or the soccer ball?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "left": {
+            "id": "obj-1-l",
+            "name": "soft teddy",
+            "emoji": "🧸",
+            "weight": 7
+          },
+          "right": {
+            "id": "obj-1-r",
+            "name": "soccer ball",
+            "emoji": "⚽",
+            "weight": 10
+          },
+          "expectedChoice": "obj-1-r"
+        },
+        {
+          "id": "ml-3",
+          "type": "balance_predict",
+          "prompt": "Which is heavier — the toy block or the feather?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "left": {
+            "id": "obj-2-l",
+            "name": "toy block",
+            "emoji": "🧱",
+            "weight": 9
+          },
+          "right": {
+            "id": "obj-2-r",
+            "name": "feather",
+            "emoji": "🪶",
+            "weight": 2
+          },
+          "expectedChoice": "obj-2-l"
+        },
+        {
+          "id": "ml-4",
+          "type": "balance_predict",
+          "prompt": "Which is heavier — the crayon or the pinecone?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "left": {
+            "id": "obj-3-l",
+            "name": "crayon",
+            "emoji": "🖍️",
+            "weight": 7
+          },
+          "right": {
+            "id": "obj-3-r",
+            "name": "pinecone",
+            "emoji": "🌲",
+            "weight": 9
+          },
+          "expectedChoice": "obj-3-r"
+        },
+        {
+          "id": "ml-5",
+          "type": "balance_predict",
+          "prompt": "Which is heavier — the feather or the big book?",
+          "hint": "Put them both on. The side that goes DOWN is heavier.",
+          "left": {
+            "id": "obj-4-l",
+            "name": "feather",
+            "emoji": "🪶",
+            "weight": 10
+          },
+          "right": {
+            "id": "obj-4-r",
+            "name": "big book",
+            "emoji": "📚",
+            "weight": 2
+          },
+          "expectedChoice": "obj-4-l"
+        }
+      ]
+    }
+  },
+  "durationMs": 1341
+}

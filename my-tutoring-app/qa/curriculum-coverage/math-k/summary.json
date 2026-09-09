@@ -1,0 +1,16 @@
+{
+  "scope": "math-k",
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "title": "K Mathematics",
+  "dir": "qa/curriculum-coverage/math-k",
+  "requirements": 166,
+  "counts": {
+    "candidate": 140,
+    "partial": 21,
+    "development": 5
+  },
+  "probedPairs": 26,
+  "draws": 51,
+  "generated": "2026-09-09T11:56:58.245Z"
+}

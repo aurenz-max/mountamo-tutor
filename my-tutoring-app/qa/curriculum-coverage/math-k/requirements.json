@@ -1,0 +1,2093 @@
+[
+  {
+    "id": "COUNT001-01-A",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Count and recognize numbers 0-10, including matching spoken words to written numerals ",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "subitize"
+    ]
+  },
+  {
+    "id": "COUNT001-01-B",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Write numbers 0-10 and their number words, demonstrating one-to-one correspondence with objects",
+    "legacyPrimitive": "number-tracer",
+    "legacyModes": [
+      "trace",
+      "write"
+    ]
+  },
+  {
+    "id": "COUNT001-01-C",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Count, recognize, and write numbers 11-20, with proper sequence and order",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "group"
+    ]
+  },
+  {
+    "id": "COUNT001-01-D",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Demonstrate sequential understanding through 20 (before/after, missing numbers, backward counting)",
+    "legacyPrimitive": "number-sequencer",
+    "legacyModes": [
+      "before_after",
+      "fill_missing"
+    ]
+  },
+  {
+    "id": "COUNT001-01-E",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Count by 2s and 5s up to 50 using visual aids and concrete objects",
+    "legacyPrimitive": "skip-counting-runner",
+    "legacyModes": [
+      "count_along",
+      "predict"
+    ]
+  },
+  {
+    "id": "COUNT001-01-F",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Count and recognize numbers from 21-100, with emphasis on decade numbers",
+    "legacyPrimitive": "hundreds-chart",
+    "legacyModes": [
+      "highlight_sequence",
+      "identify_pattern"
+    ]
+  },
+  {
+    "id": "COUNT001-01-G",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Count forward from any given number up to 100 and identify sequence errors",
+    "legacyPrimitive": "hundreds-chart",
+    "legacyModes": [
+      "complete_sequence",
+      "identify_pattern"
+    ]
+  },
+  {
+    "id": "COUNT001-01-H",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Students count forward starting from one in a linear sequence by identifying the next number in a given set. Focus: Students practice the forward counting sequence up to 10 by filling in missing numbers in a line. Examples: 1, 2, _, 4; 3, 4, 5, _; _, 2, 3, 4; 5, 6, _, 8; 1, _, 3, 4; 7, 8, 9, _; 2, 3, _, 5; 4, 5, 6, _. Constraints: Use the number-sequencer primitive to guide students; keep sequences under 10; include only one missing number per sequence initially.",
+    "legacyPrimitive": "number-sequencer",
+    "legacyModes": [
+      "fill_missing"
+    ]
+  },
+  {
+    "id": "COUNT001-01-I",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Know number names and the count sequence",
+    "skillId": "COUNT001-01",
+    "text": "Students recite and order number names starting from any number between 1 and 20. Focus: Students demonstrate mastery of the count sequence by extending a provided sequence up to 20. Examples: 8, 9, 10, 11, 12; 14, 15, 16, 17, 18; 5, 6, 7, 8, 9; 11, 12, 13, 14, 15; 16, 17, 18, 19, 20; 3, 4, 5, 6, 7; 10, 11, 12, 13, 14; 9, 10, 11, 12, 13. Constraints: Use the counting-board primitive; start sequences at various points within the 1-20 range; ensure the student completes the sequence by identifying the next three numbers in the chain.",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "count_on"
+    ]
+  },
+  {
+    "id": "COUNT001-02-A",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Count to tell the number of objects",
+    "skillId": "COUNT001-02",
+    "text": "Count up to 5 objects using one-to-one correspondence with correct touching and tracking",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "subitize"
+    ]
+  },
+  {
+    "id": "COUNT001-02-B",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Count to tell the number of objects",
+    "skillId": "COUNT001-02",
+    "text": "Count up to 10 objects in various arrangements (linear, scattered, circular) with consistent accuracy",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "group"
+    ]
+  },
+  {
+    "id": "COUNT001-02-C",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Count to tell the number of objects",
+    "skillId": "COUNT001-02",
+    "text": "Demonstrate counting conservation by counting objects of different sizes and in different arrangements while recognizing total remains unchanged",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "compare"
+    ]
+  },
+  {
+    "id": "COUNT001-02-D",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Count to tell the number of objects",
+    "skillId": "COUNT001-02",
+    "text": "Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "group"
+    ]
+  },
+  {
+    "id": "COUNT001-02-E",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Count to tell the number of objects",
+    "skillId": "COUNT001-02",
+    "text": "Compare quantities between groups and count backwards from 10 using concrete objects",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_groups",
+      "one_more_less"
+    ]
+  },
+  {
+    "id": "COUNT001-02-F",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Count to tell the number of objects",
+    "skillId": "COUNT001-02",
+    "text": "Count objects in groups of 2 up to 20 (skip counting) and track running totals as objects change",
+    "legacyPrimitive": "skip-counting-runner",
+    "legacyModes": [
+      "count_along",
+      "predict"
+    ]
+  },
+  {
+    "id": "COUNT001-02-G",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Count to tell the number of objects",
+    "skillId": "COUNT001-02",
+    "text": "Count combined visible and hidden objects up to 10, including briefly shown then hidden sets",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "decompose",
+      "missing_part"
+    ]
+  },
+  {
+    "id": "COUNT001-02-H",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Count to tell the number of objects",
+    "skillId": "COUNT001-02",
+    "text": "Count backwards from 10 to 0 using concrete objects and number lines, practicing correct descending sequence",
+    "legacyPrimitive": "number-line",
+    "legacyModes": [
+      "plot",
+      "order"
+    ]
+  },
+  {
+    "id": "COUNT001-03-A",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compare numbers",
+    "skillId": "COUNT001-03",
+    "text": "Compare two groups of up to 5 objects using one-to-one correspondence and the terms \"more than,\" \"less than,\" and \"equal to\"",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_groups"
+    ]
+  },
+  {
+    "id": "COUNT001-03-B",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compare numbers",
+    "skillId": "COUNT001-03",
+    "text": "Compare two groups of 6-10 objects using visual patterns and one-to-one correspondence",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_groups",
+      "compare_numbers"
+    ]
+  },
+  {
+    "id": "COUNT001-03-C",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compare numbers",
+    "skillId": "COUNT001-03",
+    "text": "Compare two written numerals between 1-10 using number lines and visual representations",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_numbers"
+    ]
+  },
+  {
+    "id": "COUNT001-03-D",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compare numbers",
+    "skillId": "COUNT001-03",
+    "text": "Order three or more numbers/groups (up to 10) from least to greatest or greatest to least",
+    "legacyPrimitive": "number-line",
+    "legacyModes": [
+      "order"
+    ]
+  },
+  {
+    "id": "COUNT001-03-E",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compare numbers",
+    "skillId": "COUNT001-03",
+    "text": "Use inequality symbols (<, >) correctly when comparing numbers up to 10 with justification",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_numbers"
+    ]
+  },
+  {
+    "id": "COUNT001-03-F",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compare numbers",
+    "skillId": "COUNT001-03",
+    "text": "Identify numbers that are \"one more\" or \"one less\" than a given number up to 20",
+    "legacyPrimitive": "number-line",
+    "legacyModes": [
+      "plot",
+      "jump"
+    ]
+  },
+  {
+    "id": "COUNT001-03-G",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compare numbers",
+    "skillId": "COUNT001-03",
+    "text": "Compare two numbers between 11-20 using place value understanding and visual models",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_numbers",
+      "order"
+    ]
+  },
+  {
+    "id": "COUNT001-04-A",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Understand ordinal numbers",
+    "skillId": "COUNT001-04",
+    "text": "Recognize and name ordinal positions (first through fifth) in a simple line or sequence",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "identify"
+    ]
+  },
+  {
+    "id": "COUNT001-04-B",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Understand ordinal numbers",
+    "skillId": "COUNT001-04",
+    "text": "Match ordinal number words (first through fifth) with their corresponding symbols (1st-5th)",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "match"
+    ]
+  },
+  {
+    "id": "COUNT001-04-C",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Understand ordinal numbers",
+    "skillId": "COUNT001-04",
+    "text": "Apply ordinal numbers (first through fifth) to daily routines and story sequences",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "sequence_story"
+    ]
+  },
+  {
+    "id": "COUNT001-04-D",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Understand ordinal numbers",
+    "skillId": "COUNT001-04",
+    "text": "Extend ordinal number understanding to tenth position (sixth through tenth)",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "identify",
+      "match"
+    ]
+  },
+  {
+    "id": "COUNT001-04-E",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Understand ordinal numbers",
+    "skillId": "COUNT001-04",
+    "text": "Compare and analyze relative positions using ordinal numbers (e.g., \"What comes before fourth?\")",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "relative_position"
+    ]
+  },
+  {
+    "id": "COUNT001-04-F",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Understand ordinal numbers",
+    "skillId": "COUNT001-04",
+    "text": "Create and complete sequences using ordinal numbers (first through tenth)",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "build_sequence"
+    ]
+  },
+  {
+    "id": "COUNT001-04-G",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Understand ordinal numbers",
+    "skillId": "COUNT001-04",
+    "text": "Solve simple word problems involving ordinal numbers in real-world contexts",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "sequence_story",
+      "relative_position"
+    ]
+  },
+  {
+    "id": "COUNT001-05-A",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compose and Decompose Numbers 11–19",
+    "skillId": "COUNT001-05",
+    "text": "Identify a group of ten ones within numbers 11-19 using objects or drawings",
+    "legacyPrimitive": "ten-frame",
+    "legacyModes": [
+      "subitize",
+      "build"
+    ]
+  },
+  {
+    "id": "COUNT001-05-B",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compose and Decompose Numbers 11–19",
+    "skillId": "COUNT001-05",
+    "text": "Represent numbers 11-15 as ten ones plus additional ones using manipulatives",
+    "legacyPrimitive": "ten-frame",
+    "legacyModes": [
+      "build",
+      "make_ten"
+    ]
+  },
+  {
+    "id": "COUNT001-05-C",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compose and Decompose Numbers 11–19",
+    "skillId": "COUNT001-05",
+    "text": "Represent numbers 16-19 as ten ones plus additional ones using manipulatives",
+    "legacyPrimitive": "ten-frame",
+    "legacyModes": [
+      "build",
+      "make_ten"
+    ]
+  },
+  {
+    "id": "COUNT001-05-D",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compose and Decompose Numbers 11–19",
+    "skillId": "COUNT001-05",
+    "text": "Break apart numbers 11-15 into ten ones and some further ones using visual models",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "decompose"
+    ]
+  },
+  {
+    "id": "COUNT001-05-E",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compose and Decompose Numbers 11–19",
+    "skillId": "COUNT001-05",
+    "text": "Break apart numbers 16-19 into ten ones and some further ones using visual models",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "decompose"
+    ]
+  },
+  {
+    "id": "COUNT001-05-F",
+    "unit": "Counting and Cardinality",
+    "unitId": "COUNT001",
+    "skill": "Compose and Decompose Numbers 11–19",
+    "skillId": "COUNT001-05",
+    "text": "Compose and decompose numbers 11-19 using equations (e.g., 14 = 10 + 4)",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "decompose",
+      "build_equation"
+    ]
+  },
+  {
+    "id": "OPS001-01-A",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand addition as putting together and adding to",
+    "skillId": "OPS001-01",
+    "text": "Represent addition within 5 using concrete objects, fingers, and acting out situations",
+    "legacyPrimitive": "addition-subtraction-scene",
+    "legacyModes": [
+      "act_out"
+    ]
+  },
+  {
+    "id": "OPS001-01-B",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand addition as putting together and adding to",
+    "skillId": "OPS001-01",
+    "text": "Model addition within 5 using drawings, pictures, and number lines, connecting to concrete representations",
+    "legacyPrimitive": "number-line",
+    "legacyModes": [
+      "jump"
+    ]
+  },
+  {
+    "id": "OPS001-01-C",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand addition as putting together and adding to",
+    "skillId": "OPS001-01",
+    "text": "Express addition situations within 5 using verbal explanations and written equations",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "build_equation"
+    ]
+  },
+  {
+    "id": "OPS001-01-D",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand addition as putting together and adding to",
+    "skillId": "OPS001-01",
+    "text": "Decompose numbers up to 5 into pairs in multiple ways, using objects and drawings",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "decompose",
+      "missing_part"
+    ]
+  },
+  {
+    "id": "OPS001-01-E",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand addition as putting together and adding to",
+    "skillId": "OPS001-01",
+    "text": "Solve addition word problems within 10 using objects, drawings, or equations",
+    "legacyPrimitive": "addition-subtraction-scene",
+    "legacyModes": [
+      "solve_story",
+      "build_equation"
+    ]
+  },
+  {
+    "id": "OPS001-01-F",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand addition as putting together and adding to",
+    "skillId": "OPS001-01",
+    "text": "Use multiple strategies (ten frames, tally marks, doubles) to solve addition problems within 10",
+    "legacyPrimitive": "strategy-picker",
+    "legacyModes": [
+      "guided",
+      "compare"
+    ]
+  },
+  {
+    "id": "OPS001-01-G",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand addition as putting together and adding to",
+    "skillId": "OPS001-01",
+    "text": "Create and solve addition stories and problems involving real-world contexts (including money)",
+    "legacyPrimitive": "addition-subtraction-scene",
+    "legacyModes": [
+      "create_story",
+      "solve_story"
+    ]
+  },
+  {
+    "id": "OPS001-02-A",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand subtraction as taking apart and taking from",
+    "skillId": "OPS001-02",
+    "text": "Represent subtraction within 5 using concrete objects, fingers, and physical actions",
+    "legacyPrimitive": "addition-subtraction-scene",
+    "legacyModes": [
+      "act_out"
+    ]
+  },
+  {
+    "id": "OPS001-02-B",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand subtraction as taking apart and taking from",
+    "skillId": "OPS001-02",
+    "text": "Decompose numbers up to 5 into pairs using objects and drawings, recording each decomposition",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "decompose",
+      "build_equation"
+    ]
+  },
+  {
+    "id": "OPS001-02-C",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand subtraction as taking apart and taking from",
+    "skillId": "OPS001-02",
+    "text": "Solve subtraction word problems within 5 using objects, drawings, and equations",
+    "legacyPrimitive": "addition-subtraction-scene",
+    "legacyModes": [
+      "solve_story",
+      "build_equation"
+    ]
+  },
+  {
+    "id": "OPS001-02-D",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand subtraction as taking apart and taking from",
+    "skillId": "OPS001-02",
+    "text": "Model and solve subtraction problems within 10 using ten frames and number lines",
+    "legacyPrimitive": "ten-frame",
+    "legacyModes": [
+      "operate",
+      "build"
+    ]
+  },
+  {
+    "id": "OPS001-02-E",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand subtraction as taking apart and taking from",
+    "skillId": "OPS001-02",
+    "text": "Create and solve real-world subtraction situations within 10 using various representations",
+    "legacyPrimitive": "addition-subtraction-scene",
+    "legacyModes": [
+      "create_story",
+      "solve_story"
+    ]
+  },
+  {
+    "id": "OPS001-02-F",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand subtraction as taking apart and taking from",
+    "skillId": "OPS001-02",
+    "text": "Find missing numbers in subtraction equations within 10 (missing difference or minuend)",
+    "legacyPrimitive": "balance-scale",
+    "legacyModes": [
+      "equality"
+    ]
+  },
+  {
+    "id": "OPS001-02-G",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Understand subtraction as taking apart and taking from",
+    "skillId": "OPS001-02",
+    "text": "Connect addition and subtraction as inverse operations within 10 using related facts",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "fact_family",
+      "build_equation"
+    ]
+  },
+  {
+    "id": "OPS001-03-A",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Fluently add and subtract within 5",
+    "skillId": "OPS001-03",
+    "text": "Count forward and backward within 5 fluently (within 3 seconds)",
+    "legacyPrimitive": "math-fact-fluency",
+    "legacyModes": [
+      "visual_fact",
+      "speed_round"
+    ]
+  },
+  {
+    "id": "OPS001-03-B",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Fluently add and subtract within 5",
+    "skillId": "OPS001-03",
+    "text": "Add and subtract fluently within 3 using objects and mental strategies",
+    "legacyPrimitive": "math-fact-fluency",
+    "legacyModes": [
+      "visual_fact",
+      "equation_solve"
+    ]
+  },
+  {
+    "id": "OPS001-03-C",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Fluently add and subtract within 5",
+    "skillId": "OPS001-03",
+    "text": "Match visual representations to addition and subtraction equations within 5",
+    "legacyPrimitive": "addition-subtraction-scene",
+    "legacyModes": [
+      "act_out",
+      "build_equation"
+    ]
+  },
+  {
+    "id": "OPS001-03-D",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Fluently add and subtract within 5",
+    "skillId": "OPS001-03",
+    "text": "Add and subtract fluently within 5 using mental strategies",
+    "legacyPrimitive": "math-fact-fluency",
+    "legacyModes": [
+      "equation_solve",
+      "speed_round"
+    ]
+  },
+  {
+    "id": "OPS001-03-E",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Fluently add and subtract within 5",
+    "skillId": "OPS001-03",
+    "text": "Solve missing number problems within 5 (e.g., 3 + __ = 5, 5 - __ = 2)",
+    "legacyPrimitive": "balance-scale",
+    "legacyModes": [
+      "equality"
+    ]
+  },
+  {
+    "id": "OPS001-03-F",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Fluently add and subtract within 5",
+    "skillId": "OPS001-03",
+    "text": "Complete fact families for numbers within 5, demonstrating addition-subtraction relationship",
+    "legacyPrimitive": "number-bond",
+    "legacyModes": [
+      "fact_family",
+      "missing_part"
+    ]
+  },
+  {
+    "id": "OPS001-03-G",
+    "unit": "Operations and Algebraic Thinking",
+    "unitId": "OPS001",
+    "skill": "Fluently add and subtract within 5",
+    "skillId": "OPS001-03",
+    "text": "Solve and create word problems involving addition and subtraction within 5",
+    "legacyPrimitive": "addition-subtraction-scene",
+    "legacyModes": [
+      "solve_story",
+      "create_story"
+    ]
+  },
+  {
+    "id": "GEOM001-01-A",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Identify and describe shapes",
+    "skillId": "GEOM001-01",
+    "text": "Match and name basic 2D shapes (circles, squares, triangles, rectangles) regardless of size, color, or orientation",
+    "legacyPrimitive": "shape-sorter",
+    "legacyModes": [
+      "identify"
+    ]
+  },
+  {
+    "id": "GEOM001-01-B",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Identify and describe shapes",
+    "skillId": "GEOM001-01",
+    "text": "Identify and describe shapes in real-world environments using geometric vocabulary (sides, corners) and basic attributes (curved vs. straight sides)",
+    "legacyPrimitive": "shape-sorter",
+    "legacyModes": [
+      "identify",
+      "sort"
+    ]
+  },
+  {
+    "id": "GEOM001-01-C",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Identify and describe shapes",
+    "skillId": "GEOM001-01",
+    "text": "Count and compare shape properties (number of sides, vertices) and sort shapes into groups based on these characteristics",
+    "legacyPrimitive": "shape-sorter",
+    "legacyModes": [
+      "count",
+      "sort"
+    ]
+  },
+  {
+    "id": "GEOM001-01-D",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Identify and describe shapes",
+    "skillId": "GEOM001-01",
+    "text": "Recognize and name 3D shapes (cubes, cones, cylinders) and distinguish between 2D and 3D objects",
+    "legacyPrimitive": "3d-shape-explorer",
+    "legacyModes": [
+      "identify_3d",
+      "match_real_world"
+    ]
+  },
+  {
+    "id": "GEOM001-01-E",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Identify and describe shapes",
+    "skillId": "GEOM001-01",
+    "text": "Draw and trace basic shapes using templates and verbal descriptions of their properties",
+    "legacyPrimitive": "shape-tracer",
+    "legacyModes": [
+      "trace",
+      "complete"
+    ]
+  },
+  {
+    "id": "GEOM001-01-F",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Identify and describe shapes",
+    "skillId": "GEOM001-01",
+    "text": "Compose larger shapes by combining basic shapes and decompose larger shapes into smaller basic shapes",
+    "legacyPrimitive": "shape-builder",
+    "legacyModes": [
+      "compose",
+      "build"
+    ]
+  },
+  {
+    "id": "GEOM001-02-A",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Analyze, compare, create, and compose shapes",
+    "skillId": "GEOM001-02",
+    "text": "Identify and name basic 2D shapes based on their attributes (sides and vertices)",
+    "legacyPrimitive": "shape-sorter",
+    "legacyModes": [
+      "identify",
+      "count"
+    ]
+  },
+  {
+    "id": "GEOM001-02-B",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Analyze, compare, create, and compose shapes",
+    "skillId": "GEOM001-02",
+    "text": "Sort and classify shapes by single attributes (sides, corners, size) and identify shapes that don't belong",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "GEOM001-02-C",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Analyze, compare, create, and compose shapes",
+    "skillId": "GEOM001-02",
+    "text": "Recognize and match shapes in different orientations and sizes, including shapes in real-world objects",
+    "legacyPrimitive": "shape-sorter",
+    "legacyModes": [
+      "identify",
+      "sort"
+    ]
+  },
+  {
+    "id": "GEOM001-02-D",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Analyze, compare, create, and compose shapes",
+    "skillId": "GEOM001-02",
+    "text": "Create and complete basic shapes through drawing, building, and completing half-drawn figures",
+    "legacyPrimitive": "shape-tracer",
+    "legacyModes": [
+      "trace",
+      "complete"
+    ]
+  },
+  {
+    "id": "GEOM001-02-E",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Analyze, compare, create, and compose shapes",
+    "skillId": "GEOM001-02",
+    "text": "Analyze and compare 3D shapes by building and manipulating physical models",
+    "legacyPrimitive": "3d-shape-explorer",
+    "legacyModes": [
+      "identify_3d",
+      "faces_properties"
+    ]
+  },
+  {
+    "id": "GEOM001-02-F",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Analyze, compare, create, and compose shapes",
+    "skillId": "GEOM001-02",
+    "text": "Compose and decompose shapes to form larger shapes and create pictures of familiar objects",
+    "legacyPrimitive": "shape-builder",
+    "legacyModes": [
+      "compose"
+    ]
+  },
+  {
+    "id": "GEOM001-02-G",
+    "unit": "Geometry",
+    "unitId": "GEOM001",
+    "skill": "Analyze, compare, create, and compose shapes",
+    "skillId": "GEOM001-02",
+    "text": "Create, extend, and describe repeating patterns using multiple shapes and attributes",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "extend",
+      "create"
+    ]
+  },
+  {
+    "id": "MEAS001-01-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Describe and compare measurable attributes",
+    "skillId": "MEAS001-01",
+    "text": "Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "sort_one",
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "MEAS001-01-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Describe and compare measurable attributes",
+    "skillId": "MEAS001-01",
+    "text": "Compare and contrast two objects based on a single measurable attribute using direct comparison and comparative language",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "compare"
+    ]
+  },
+  {
+    "id": "MEAS001-01-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Describe and compare measurable attributes",
+    "skillId": "MEAS001-01",
+    "text": "Sort and classify objects into groups based on one measurable attribute (size, weight, or length)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "MEAS001-01-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Describe and compare measurable attributes",
+    "skillId": "MEAS001-01",
+    "text": "Measure objects using non-standard units (cubes, paper clips) and compare results",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "tile_and_count"
+    ]
+  },
+  {
+    "id": "MEAS001-01-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Describe and compare measurable attributes",
+    "skillId": "MEAS001-01",
+    "text": "Order 3-5 objects by a single measurable attribute (length, weight, or capacity)",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_groups",
+      "order"
+    ]
+  },
+  {
+    "id": "MEAS001-01-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Describe and compare measurable attributes",
+    "skillId": "MEAS001-01",
+    "text": "Compare and measure capacity using water or sand with various containers",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "recall",
+      "apply"
+    ]
+  },
+  {
+    "id": "MEAS001-01-G",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Describe and compare measurable attributes",
+    "skillId": "MEAS001-01",
+    "text": "Classify objects using multiple measurable attributes simultaneously (height and width, weight and size)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "two_attributes"
+    ]
+  },
+  {
+    "id": "MEAS001-02-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Classify objects and count the number of objects in each category",
+    "skillId": "MEAS001-02",
+    "text": "Create and sort objects into basic categories based on one observable attribute (color, size, or shape)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one"
+    ]
+  },
+  {
+    "id": "MEAS001-02-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Classify objects and count the number of objects in each category",
+    "skillId": "MEAS001-02",
+    "text": "Count and compare objects within categories (up to 5 objects), using terms \"more,\" \"fewer,\" and \"equal\"",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "count_compare"
+    ]
+  },
+  {
+    "id": "MEAS001-02-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Classify objects and count the number of objects in each category",
+    "skillId": "MEAS001-02",
+    "text": "Sort objects into given categories (up to 3 categories) and count up to 10 objects per category",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "count_compare"
+    ]
+  },
+  {
+    "id": "MEAS001-02-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Classify objects and count the number of objects in each category",
+    "skillId": "MEAS001-02",
+    "text": "Classify objects using two attributes simultaneously (e.g., blue and round) and explain sorting criteria",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "two_attributes"
+    ]
+  },
+  {
+    "id": "MEAS001-02-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Classify objects and count the number of objects in each category",
+    "skillId": "MEAS001-02",
+    "text": "Record and represent category data using tally marks and simple pictographs",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "tally_record"
+    ]
+  },
+  {
+    "id": "MEAS001-02-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Classify objects and count the number of objects in each category",
+    "skillId": "MEAS001-02",
+    "text": "Sort objects by function and create self-designed category systems with clear labels",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "odd_one_out"
+    ]
+  },
+  {
+    "id": "MEAS001-02-G",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Classify objects and count the number of objects in each category",
+    "skillId": "MEAS001-02",
+    "text": "Reclassify objects into new categories and identify items that don't belong with explanations",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "odd_one_out"
+    ]
+  },
+  {
+    "id": "MEAS001-03-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Collect and Represent Data",
+    "skillId": "MEAS001-03",
+    "text": "Sort and match data into given categories using picture cards or objects",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one"
+    ]
+  },
+  {
+    "id": "MEAS001-03-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Collect and Represent Data",
+    "skillId": "MEAS001-03",
+    "text": "Create physical representations of data through human graphs and object arrangements",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "group"
+    ]
+  },
+  {
+    "id": "MEAS001-03-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Collect and Represent Data",
+    "skillId": "MEAS001-03",
+    "text": "Record simple data using tally marks and stickers for class surveys",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "recall",
+      "apply"
+    ]
+  },
+  {
+    "id": "MEAS001-03-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Collect and Represent Data",
+    "skillId": "MEAS001-03",
+    "text": "Construct basic pictographs and bar charts with teacher guidance",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply"
+    ]
+  },
+  {
+    "id": "MEAS001-03-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Collect and Represent Data",
+    "skillId": "MEAS001-03",
+    "text": "Read and interpret simple graphs to answer \"how many\" and \"which has more/less\" questions",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply",
+      "analyze"
+    ]
+  },
+  {
+    "id": "MEAS001-03-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Collect and Represent Data",
+    "skillId": "MEAS001-03",
+    "text": "Make predictions about data outcomes and verify through collection",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply",
+      "analyze"
+    ]
+  },
+  {
+    "id": "MEAS001-03-G",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Collect and Represent Data",
+    "skillId": "MEAS001-03",
+    "text": "Explain data representations to others using simple comparative language",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "evaluate"
+    ]
+  },
+  {
+    "id": "MEAS001-04-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Estimate and Measure",
+    "skillId": "MEAS001-04",
+    "text": "Compare and describe objects' attributes (longer/shorter, heavier/lighter) using direct observation and manipulation",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "compare"
+    ]
+  },
+  {
+    "id": "MEAS001-04-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Estimate and Measure",
+    "skillId": "MEAS001-04",
+    "text": "Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "compare",
+      "tile_and_count"
+    ]
+  },
+  {
+    "id": "MEAS001-04-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Estimate and Measure",
+    "skillId": "MEAS001-04",
+    "text": "Measure lengths using non-standard units (blocks, LEGO bricks, paper strips) and record results",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "tile_and_count",
+      "compare"
+    ]
+  },
+  {
+    "id": "MEAS001-04-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Estimate and Measure",
+    "skillId": "MEAS001-04",
+    "text": "Compare weights of various objects using a balance scale and predict outcomes",
+    "legacyPrimitive": "balance-scale",
+    "legacyModes": [
+      "equality"
+    ]
+  },
+  {
+    "id": "MEAS001-04-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Estimate and Measure",
+    "skillId": "MEAS001-04",
+    "text": "Measure and compare volumes using standard measuring tools (cups, spoons) with sand, water, or rice",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "recall",
+      "apply"
+    ]
+  },
+  {
+    "id": "MEAS001-04-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Estimate and Measure",
+    "skillId": "MEAS001-04",
+    "text": "Track and record measurements over time (plant growth, daily temperature) using simple tools and graphs",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply",
+      "analyze"
+    ]
+  },
+  {
+    "id": "MEAS001-04-G",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Estimate and Measure",
+    "skillId": "MEAS001-04",
+    "text": "Measure time durations for simple activities using stopwatches and compare results with peers",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "read",
+      "elapsed"
+    ]
+  },
+  {
+    "id": "MEAS001-05-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Using Non-Standard Tools",
+    "skillId": "MEAS001-05",
+    "text": "Compare two objects directly side by side to determine longer/shorter",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "compare"
+    ]
+  },
+  {
+    "id": "MEAS001-05-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Using Non-Standard Tools",
+    "skillId": "MEAS001-05",
+    "text": "Use body parts (fingers, hands) to measure and describe object lengths",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "tile_and_count"
+    ]
+  },
+  {
+    "id": "MEAS001-05-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Using Non-Standard Tools",
+    "skillId": "MEAS001-05",
+    "text": "Measure single objects using uniform items (paper clips, cubes) and count units",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "tile_and_count",
+      "compare"
+    ]
+  },
+  {
+    "id": "MEAS001-05-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Using Non-Standard Tools",
+    "skillId": "MEAS001-05",
+    "text": "Compare measurements of the same object using different non-standard units",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "indirect",
+      "compare"
+    ]
+  },
+  {
+    "id": "MEAS001-05-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Using Non-Standard Tools",
+    "skillId": "MEAS001-05",
+    "text": "Record and represent measurement results using simple drawings or numbers",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "recall",
+      "apply"
+    ]
+  },
+  {
+    "id": "MEAS001-05-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Using Non-Standard Tools",
+    "skillId": "MEAS001-05",
+    "text": "Measure and compare multiple objects using the same non-standard unit",
+    "legacyPrimitive": "length-lab",
+    "legacyModes": [
+      "tile_and_count",
+      "order"
+    ]
+  },
+  {
+    "id": "MEAS001-06-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Exploring Temperature",
+    "skillId": "MEAS001-06",
+    "text": "Identify objects as 'hot' or 'cold' through direct sensory experience (with safety guidance)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one"
+    ]
+  },
+  {
+    "id": "MEAS001-06-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Exploring Temperature",
+    "skillId": "MEAS001-06",
+    "text": "Sort picture cards into temperature categories (hot, warm, cold) with real-world examples",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "MEAS001-06-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Exploring Temperature",
+    "skillId": "MEAS001-06",
+    "text": "Connect weather conditions to relative temperature using seasonal pictures and vocabulary",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "MEAS001-06-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Exploring Temperature",
+    "skillId": "MEAS001-06",
+    "text": "Read basic picture thermometers showing hot, warm, and cold zones",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "recall",
+      "apply"
+    ]
+  },
+  {
+    "id": "MEAS001-06-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Exploring Temperature",
+    "skillId": "MEAS001-06",
+    "text": "Predict temperature changes in simple scenarios (ice in sun vs. shade, hot chocolate cooling)",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply",
+      "analyze"
+    ]
+  },
+  {
+    "id": "MEAS001-06-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Exploring Temperature",
+    "skillId": "MEAS001-06",
+    "text": "Compare temperatures of different locations/objects using comparative language (hotter than, colder than)",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply"
+    ]
+  },
+  {
+    "id": "MEAS001-07-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Time Durations",
+    "skillId": "MEAS001-07",
+    "text": "Identify activities as 'quick' or 'long' using direct observation (e.g., clapping vs. drawing a picture)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one"
+    ]
+  },
+  {
+    "id": "MEAS001-07-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Time Durations",
+    "skillId": "MEAS001-07",
+    "text": "Use a sand timer to measure and compare simple activity durations (e.g., hopping vs. building with blocks)",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "read",
+      "elapsed"
+    ]
+  },
+  {
+    "id": "MEAS001-07-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Time Durations",
+    "skillId": "MEAS001-07",
+    "text": "Order 3 familiar activities from shortest to longest duration (e.g., washing hands, eating snack, playing outside)",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_groups",
+      "order"
+    ]
+  },
+  {
+    "id": "MEAS001-07-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Time Durations",
+    "skillId": "MEAS001-07",
+    "text": "Predict whether an activity will finish before or after a given time marker (e.g., before/after sand timer runs out)",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "read",
+      "elapsed"
+    ]
+  },
+  {
+    "id": "MEAS001-07-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Time Durations",
+    "skillId": "MEAS001-07",
+    "text": "Match common activities to appropriate time measurement tools (e.g., sand timer for teeth brushing, clock for naptime)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "MEAS001-07-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Time Durations",
+    "skillId": "MEAS001-07",
+    "text": "Create a simple timeline of daily classroom routines using picture cards and duration vocabulary",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "build_sequence",
+      "sequence_story"
+    ]
+  },
+  {
+    "id": "MEAS001-08-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Comparing Capacities",
+    "skillId": "MEAS001-08",
+    "text": "Identify containers as \"empty\" or \"full\" using visual observation",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one"
+    ]
+  },
+  {
+    "id": "MEAS001-08-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Comparing Capacities",
+    "skillId": "MEAS001-08",
+    "text": "Compare two identical containers with different amounts using terms \"more\" and \"less\"",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_groups"
+    ]
+  },
+  {
+    "id": "MEAS001-08-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Comparing Capacities",
+    "skillId": "MEAS001-08",
+    "text": "Sort three or more identical containers by amount (least to most)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "count_compare"
+    ]
+  },
+  {
+    "id": "MEAS001-08-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Comparing Capacities",
+    "skillId": "MEAS001-08",
+    "text": "Predict and test which of two different-shaped containers holds more liquid",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply",
+      "analyze"
+    ]
+  },
+  {
+    "id": "MEAS001-08-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Comparing Capacities",
+    "skillId": "MEAS001-08",
+    "text": "Group containers by capacity size (small, medium, large) using standard measuring tools",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "MEAS001-08-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Comparing Capacities",
+    "skillId": "MEAS001-08",
+    "text": "Compare capacities of different containers using non-standard units (cups of rice/sand)",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_groups"
+    ]
+  },
+  {
+    "id": "MEAS001-09-A",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Data Interpretation",
+    "skillId": "MEAS001-09",
+    "text": "Place stickers or markers on simple charts to represent personal choices and identify basic patterns",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one"
+    ]
+  },
+  {
+    "id": "MEAS001-09-B",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Data Interpretation",
+    "skillId": "MEAS001-09",
+    "text": "Match physical objects to their corresponding quantities shown in pictographs and simple bar graphs",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "count_compare"
+    ]
+  },
+  {
+    "id": "MEAS001-09-C",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Data Interpretation",
+    "skillId": "MEAS001-09",
+    "text": "Identify most and least popular items in class data displays and explain basic reasoning",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply",
+      "analyze"
+    ]
+  },
+  {
+    "id": "MEAS001-09-D",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Data Interpretation",
+    "skillId": "MEAS001-09",
+    "text": "Use manipulatives (blocks, counters) to represent and compare data from simple charts",
+    "legacyPrimitive": "counting-board",
+    "legacyModes": [
+      "count",
+      "group"
+    ]
+  },
+  {
+    "id": "MEAS001-09-E",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Data Interpretation",
+    "skillId": "MEAS001-09",
+    "text": "Compare two related data sets to identify similarities and differences (e.g., comparing favorite foods across seasons)",
+    "legacyPrimitive": "comparison-builder",
+    "legacyModes": [
+      "compare_groups",
+      "compare_numbers"
+    ]
+  },
+  {
+    "id": "MEAS001-09-F",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Data Interpretation",
+    "skillId": "MEAS001-09",
+    "text": "Draw basic conclusions from data and suggest actions based on findings (e.g., planning quantities for class activities)",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply",
+      "evaluate"
+    ]
+  },
+  {
+    "id": "MEAS001-09-G",
+    "unit": "Measurement and Data",
+    "unitId": "MEAS001",
+    "skill": "Data Interpretation",
+    "skillId": "MEAS001-09",
+    "text": "Make predictions about future data patterns based on current trends and seasonal changes",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "analyze",
+      "evaluate"
+    ]
+  },
+  {
+    "id": "PTRN001-01-A",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Recognizing and Creating Patterns",
+    "skillId": "PTRN001-01",
+    "text": "Identify simple patterns in everyday objects and sounds",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "identify_core"
+    ]
+  },
+  {
+    "id": "PTRN001-01-B",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Recognizing and Creating Patterns",
+    "skillId": "PTRN001-01",
+    "text": "Copy existing AB patterns using concrete objects or actions",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "extend"
+    ]
+  },
+  {
+    "id": "PTRN001-01-C",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Recognizing and Creating Patterns",
+    "skillId": "PTRN001-01",
+    "text": "Extend simple AB patterns with colors, shapes, or sounds",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "extend"
+    ]
+  },
+  {
+    "id": "PTRN001-01-D",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Recognizing and Creating Patterns",
+    "skillId": "PTRN001-01",
+    "text": "Create original AB patterns using two elements",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "create"
+    ]
+  },
+  {
+    "id": "PTRN001-01-E",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Recognizing and Creating Patterns",
+    "skillId": "PTRN001-01",
+    "text": "Identify missing elements within AB patterns",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "find_rule"
+    ]
+  },
+  {
+    "id": "PTRN001-01-F",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Recognizing and Creating Patterns",
+    "skillId": "PTRN001-01",
+    "text": "Extend ABC patterns using multiple elements",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "extend",
+      "translate"
+    ]
+  },
+  {
+    "id": "PTRN001-01-G",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Recognizing and Creating Patterns",
+    "skillId": "PTRN001-01",
+    "text": "Create and explain original patterns using multiple elements",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "create",
+      "find_rule"
+    ]
+  },
+  {
+    "id": "PTRN001-02-A",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Sorting by Attributes",
+    "skillId": "PTRN001-02",
+    "text": "Sort objects by a single obvious attribute (e.g., all red items together)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one"
+    ]
+  },
+  {
+    "id": "PTRN001-02-B",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Sorting by Attributes",
+    "skillId": "PTRN001-02",
+    "text": "Verbally describe the sorting rule used for a single-attribute group",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "PTRN001-02-C",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Sorting by Attributes",
+    "skillId": "PTRN001-02",
+    "text": "Sort the same set of objects using a different single attribute",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one",
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "PTRN001-02-D",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Sorting by Attributes",
+    "skillId": "PTRN001-02",
+    "text": "Sort objects by two attributes simultaneously (e.g., color AND shape)",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "two_attributes"
+    ]
+  },
+  {
+    "id": "PTRN001-02-E",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Sorting by Attributes",
+    "skillId": "PTRN001-02",
+    "text": "Create and label sorting categories before grouping objects",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_attribute"
+    ]
+  },
+  {
+    "id": "PTRN001-02-F",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Sorting by Attributes",
+    "skillId": "PTRN001-02",
+    "text": "Explain complex sorting rules using \"because\" statements",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_attribute",
+      "odd_one_out"
+    ]
+  },
+  {
+    "id": "PTRN001-02-G",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Sorting by Attributes",
+    "skillId": "PTRN001-02",
+    "text": "Find objects that don't belong in a sorted group and explain why",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "odd_one_out"
+    ]
+  },
+  {
+    "id": "PTRN001-03-A",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Exploring Sequences",
+    "skillId": "PTRN001-03",
+    "text": "Identify \"first\" and \"last\" positions in a simple 3-step sequence using concrete objects",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "identify"
+    ]
+  },
+  {
+    "id": "PTRN001-03-B",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Exploring Sequences",
+    "skillId": "PTRN001-03",
+    "text": "Copy and repeat a simple 2-step movement sequence (e.g., clap-jump)",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "extend"
+    ]
+  },
+  {
+    "id": "PTRN001-03-C",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Exploring Sequences",
+    "skillId": "PTRN001-03",
+    "text": "Arrange 3 picture cards to show a logical sequence (morning, noon, night)",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "sequence_story",
+      "build_sequence"
+    ]
+  },
+  {
+    "id": "PTRN001-03-D",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Exploring Sequences",
+    "skillId": "PTRN001-03",
+    "text": "Create and demonstrate an original 3-step movement sequence",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "create"
+    ]
+  },
+  {
+    "id": "PTRN001-03-E",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Exploring Sequences",
+    "skillId": "PTRN001-03",
+    "text": "Identify the missing middle step in a familiar 3-step sequence",
+    "legacyPrimitive": "pattern-builder",
+    "legacyModes": [
+      "find_rule"
+    ]
+  },
+  {
+    "id": "PTRN001-03-F",
+    "unit": "Patterns and Sorting",
+    "unitId": "PTRN001",
+    "skill": "Exploring Sequences",
+    "skillId": "PTRN001-03",
+    "text": "Arrange 4-5 picture cards to tell a simple story with clear sequential order",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "build_sequence",
+      "sequence_story"
+    ]
+  },
+  {
+    "id": "TIME001-01-A",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Understanding Daily and Seasonal Time",
+    "skillId": "TIME001-01",
+    "text": "Identify parts of the day (morning, afternoon, evening) using visual cues from the sun and daily activities",
+    "legacyPrimitive": "sorting-station",
+    "legacyModes": [
+      "sort_one"
+    ]
+  },
+  {
+    "id": "TIME001-01-B",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Understanding Daily and Seasonal Time",
+    "skillId": "TIME001-01",
+    "text": "Sequence 3 basic daily routines in chronological order (wake up, lunch, bedtime)",
+    "legacyPrimitive": "ordinal-line",
+    "legacyModes": [
+      "build_sequence"
+    ]
+  },
+  {
+    "id": "TIME001-01-C",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Understanding Daily and Seasonal Time",
+    "skillId": "TIME001-01",
+    "text": "Sequence 5 detailed daily activities with specific times (breakfast at 8:00, school at 9:00, etc.)",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "read",
+      "match"
+    ]
+  },
+  {
+    "id": "TIME001-02-A",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Using Calendars",
+    "skillId": "TIME001-02",
+    "text": "Recite days of the week in order using songs or rhymes",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "recall"
+    ]
+  },
+  {
+    "id": "TIME001-02-B",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Using Calendars",
+    "skillId": "TIME001-02",
+    "text": "Identify today's day of the week on a calendar",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "recall",
+      "apply"
+    ]
+  },
+  {
+    "id": "TIME001-02-C",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Using Calendars",
+    "skillId": "TIME001-02",
+    "text": "Point to yesterday and tomorrow on a calendar",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply"
+    ]
+  },
+  {
+    "id": "TIME001-02-D",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Using Calendars",
+    "skillId": "TIME001-02",
+    "text": "Count forward up to 7 days from any given day",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply"
+    ]
+  },
+  {
+    "id": "TIME001-02-E",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Using Calendars",
+    "skillId": "TIME001-02",
+    "text": "Identify and mark special events on a monthly calendar",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply"
+    ]
+  },
+  {
+    "id": "TIME001-02-F",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Using Calendars",
+    "skillId": "TIME001-02",
+    "text": "Count the number of days between two marked events",
+    "legacyPrimitive": "knowledge-check",
+    "legacyModes": [
+      "apply",
+      "analyze"
+    ]
+  },
+  {
+    "id": "TIME001-03-A",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Telling Time to the Hour",
+    "skillId": "TIME001-03",
+    "text": "Identify the hour hand and minute hand on an analog clock",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "read"
+    ]
+  },
+  {
+    "id": "TIME001-03-B",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Telling Time to the Hour",
+    "skillId": "TIME001-03",
+    "text": "Count numbers 1-12 in order around an analog clock face",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "read"
+    ]
+  },
+  {
+    "id": "TIME001-03-C",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Telling Time to the Hour",
+    "skillId": "TIME001-03",
+    "text": "Recognize and state \"o'clock\" times when hour hand points exactly to a number",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "read"
+    ]
+  },
+  {
+    "id": "TIME001-03-D",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Telling Time to the Hour",
+    "skillId": "TIME001-03",
+    "text": "Match spoken whole-hour times to analog clock displays",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "match"
+    ]
+  },
+  {
+    "id": "TIME001-03-E",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Telling Time to the Hour",
+    "skillId": "TIME001-03",
+    "text": "Draw hour hand to show specific whole-hour times on a blank clock face",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "set_time"
+    ]
+  },
+  {
+    "id": "TIME001-03-F",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Telling Time to the Hour",
+    "skillId": "TIME001-03",
+    "text": "Match analog clock times to digital displays for whole hours",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "match"
+    ]
+  },
+  {
+    "id": "TIME001-03-G",
+    "unit": "Time and Calendar",
+    "unitId": "TIME001",
+    "skill": "Telling Time to the Hour",
+    "skillId": "TIME001-03",
+    "text": "Connect whole-hour times to daily activities in sequence",
+    "legacyPrimitive": "analog-clock",
+    "legacyModes": [
+      "read",
+      "match"
+    ]
+  }
+]

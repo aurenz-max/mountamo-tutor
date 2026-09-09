@@ -1,0 +1,136 @@
+{
+  "id": "COUNT001-05-B",
+  "primitive": "ten-frame",
+  "mode": "build_teen",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Represent numbers 11-15 as ten ones plus additional ones using manipulatives",
+  "requestedAt": "2026-09-09T10:21:44.986Z",
+  "inputHash": "0a353deab85d81fcadaf824d5f41213b6debf14a9ff16976ede071e4c66f7275",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-ten-frame.ts": "fc1b5f4ef5aa1f4e875b3b504452c6fbf8393a4b082234a95d1f090d82f9011e",
+    "src/components/lumina/primitives/visual-primitives/math/TenFrame.tsx": "1ec1dadd3664a6731ddc768b8a29cc4ad379d39bbd7394eda846f7259f92376d",
+    "src/components/lumina/service/math/teenWindow.ts": "ad298d42aaf5acf87c005841c655ab0d94c08df89416385f6cde84a8362892bf",
+    "catalog-entry:ten-frame": "3d65669a70acabadc6b4ce19212c20d11a5c7da31bc27fb218ba01fc566ab882"
+  },
+  "params": {
+    "componentId": "ten-frame",
+    "evalMode": "build_teen",
+    "topic": "Represent numbers 11-15 as ten ones plus additional ones using manipulatives",
+    "intent": "Represent numbers 11-15 as ten ones plus additional ones using manipulatives",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "ten-frame",
+    "evalMode": "build_teen",
+    "duration": 2789,
+    "catalogMeta": {
+      "label": "Ten and Some More (Teen Numbers)",
+      "beta": 2,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "build_teen"
+      ],
+      "description": "A DOUBLE frame whose top half arrives full — that is one ten — and the child places the remaining ones to make a teen number 11-19. CCSS K.NBT.1 composition: 14 is ten and four more. Concrete manipulative; no microphone needed."
+    },
+    "validation": {
+      "challengeCount": 7,
+      "typesFound": [
+        "build_teen"
+      ],
+      "payloadBytes": 2152,
+      "longestStringLength": 92,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Teen Numbers: Ten and Some More",
+      "description": "Learn to represent numbers 11-15 as a full ten and additional ones using a double ten frame.",
+      "mode": "double",
+      "counters": {
+        "count": 0,
+        "color": "red",
+        "positions": []
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "build_teen",
+          "targetCount": 11,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 11!"
+        },
+        {
+          "id": "c2",
+          "type": "build_teen",
+          "targetCount": 12,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 12!"
+        },
+        {
+          "id": "c3",
+          "type": "build_teen",
+          "targetCount": 13,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 13!"
+        },
+        {
+          "id": "c4",
+          "type": "build_teen",
+          "targetCount": 14,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 14!"
+        },
+        {
+          "id": "c5",
+          "type": "build_teen",
+          "targetCount": 15,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 15!"
+        },
+        {
+          "id": "c6",
+          "type": "build_teen",
+          "targetCount": 11,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 11!"
+        },
+        {
+          "id": "c7",
+          "type": "build_teen",
+          "targetCount": 12,
+          "hint": "The top frame is a whole ten. Count on from ten.",
+          "narration": "The top frame is full — that is one ten. Now make the number.",
+          "instruction": "The top frame is full — that is 10. Make 12!"
+        }
+      ],
+      "showOptions": {
+        "showCount": true,
+        "showEquation": false,
+        "showEmptyCount": false,
+        "allowFlip": false
+      },
+      "gradeBand": "K",
+      "twoColorMode": {
+        "enabled": false,
+        "color1Count": 0,
+        "color2Count": 0,
+        "color1": "red",
+        "color2": "yellow"
+      }
+    }
+  },
+  "durationMs": 2802
+}

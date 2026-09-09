@@ -1,0 +1,155 @@
+{
+  "id": "OPS001-01-E",
+  "primitive": "addition-subtraction-scene",
+  "mode": "solve_story",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Solve addition word problems within 10 using objects, drawings, or equations",
+  "requestedAt": "2026-09-09T10:21:51.606Z",
+  "inputHash": "048b8d0d86d2f593404ab29e66d236ab53eb8712a0d131e8b8225c86f7666e0d",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-addition-subtraction-scene.ts": "5a7e4381c02a334292d23e7f4d612f8f460f7ae9b53e1f808eb801c7b10c9768",
+    "src/components/lumina/primitives/visual-primitives/math/AdditionSubtractionScene.tsx": "beddc17cd9ea76fb6d28460a989e8051e44e81c7b769da97856bfc5ca1d990db",
+    "catalog-entry:addition-subtraction-scene": "a182f6b3b1773a0134c336fec10589795357825f628eda1beeb2674fd877ac4a"
+  },
+  "params": {
+    "componentId": "addition-subtraction-scene",
+    "evalMode": "solve_story",
+    "topic": "Solve addition word problems within 10 using objects, drawings, or equations",
+    "intent": "Solve addition word problems within 10 using objects, drawings, or equations",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "addition-subtraction-scene",
+    "evalMode": "solve_story",
+    "duration": 3645,
+    "catalogMeta": {
+      "label": "Solve Story (Scaffold 3)",
+      "beta": 3.5,
+      "scaffoldingMode": 3,
+      "allowedChallengeTypes": [
+        "solve-story"
+      ],
+      "description": "Solve a word problem and SAY the answer out loud. The unknown may be the result, the change, or the start (AXIS 2). Unaided spoken production at both grades — no numeral menu and no keyboard."
+    },
+    "validation": {
+      "challengeCount": 6,
+      "typesFound": [
+        "solve-story"
+      ],
+      "payloadBytes": 2546,
+      "longestStringLength": 109,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Sunny Day Math Adventures",
+      "challenges": [
+        {
+          "id": "ch1",
+          "type": "solve-story",
+          "instruction": "Listen to the story and count along with the ducks in the pond!",
+          "storyText": "3 little ducks are swimming in the pond. 2 more ducks join them.",
+          "scene": "pond",
+          "objectType": "ducks",
+          "operation": "addition",
+          "storyType": "join",
+          "startCount": 3,
+          "changeCount": 2,
+          "resultCount": 5,
+          "equation": "3 + 2 = 5",
+          "unknownPosition": "result"
+        },
+        {
+          "id": "ch2",
+          "type": "solve-story",
+          "instruction": "Help out on the farm and find out how many apples we have!",
+          "storyText": "4 red apples are resting on the table. 3 more apples are placed beside them.",
+          "scene": "farm",
+          "objectType": "apples",
+          "operation": "addition",
+          "storyType": "join",
+          "startCount": 4,
+          "changeCount": 3,
+          "resultCount": 7,
+          "equation": "4 + 3 = 7",
+          "unknownPosition": "result"
+        },
+        {
+          "id": "ch3",
+          "type": "solve-story",
+          "instruction": "Let us count the hopping frogs in the garden!",
+          "storyText": "6 green frogs are sitting on a big log. 2 frogs hop away into the grass.",
+          "scene": "garden",
+          "objectType": "frogs",
+          "operation": "subtraction",
+          "storyType": "separate",
+          "startCount": 6,
+          "changeCount": 2,
+          "resultCount": 4,
+          "equation": "6 - 2 = 4",
+          "unknownPosition": "result"
+        },
+        {
+          "id": "ch4",
+          "type": "solve-story",
+          "instruction": "Time for a kitchen treat! Let us count the yummy cookies.",
+          "storyText": "5 warm cookies are cooling on a tray. 2 cookies are eaten by a hungry puppy.",
+          "scene": "kitchen",
+          "objectType": "cookies",
+          "operation": "subtraction",
+          "storyType": "separate",
+          "startCount": 5,
+          "changeCount": 2,
+          "resultCount": 3,
+          "equation": "5 - 2 = 3",
+          "unknownPosition": "result"
+        },
+        {
+          "id": "ch5",
+          "type": "solve-story",
+          "instruction": "Fly up to the sky and count the bright stars!",
+          "storyText": "4 bright stars are shining in the night sky. 4 more stars blink on.",
+          "scene": "space",
+          "objectType": "stars",
+          "operation": "addition",
+          "storyType": "join",
+          "startCount": 4,
+          "changeCount": 4,
+          "resultCount": 8,
+          "equation": "4 + 4 = 8",
+          "unknownPosition": "result"
+        },
+        {
+          "id": "ch6",
+          "type": "solve-story",
+          "instruction": "Play on the playground and count the bouncy bunnies!",
+          "storyText": "7 fluffy bunnies are hopping on the playground grass. 3 bunnies hop back into their burrow.",
+          "scene": "playground",
+          "objectType": "bunnies",
+          "operation": "subtraction",
+          "storyType": "separate",
+          "startCount": 7,
+          "changeCount": 3,
+          "resultCount": 4,
+          "equation": "7 - 3 = 4",
+          "unknownPosition": "result"
+        }
+      ],
+      "maxNumber": 10,
+      "showTenFrame": true,
+      "showEquationBar": true,
+      "gradeBand": "K",
+      "description": "Engaging addition and subtraction word problems for kindergarten students using relatable objects and themes.",
+      "showCountBadges": true,
+      "groupedReveal": true
+    }
+  },
+  "durationMs": 3659
+}

@@ -1,0 +1,228 @@
+{
+  "id": "MEAS001-01-A",
+  "primitive": "compare-objects",
+  "mode": "identify_attribute",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+  "requestedAt": "2026-09-09T10:22:02.975Z",
+  "inputHash": "1b6f9d6fdc8160b7909bca2b3ca76bba6a280228e7ca39e182735929161345a1",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-compare-objects.ts": "2c7a616330108389ffb5f62bfe8331cc8a28940b195b08675f0f1e3c8ea9bd54",
+    "src/components/lumina/primitives/visual-primitives/math/CompareObjects.tsx": "bec129a81e7a9a1b876926a401165ba33a64208ea62fe22e32b88d65c0669131",
+    "catalog-entry:compare-objects": "4f6637320bd4619e1f63ef47cfc3aee392473a37ab0ccdc5616b6d116c78c886"
+  },
+  "params": {
+    "componentId": "compare-objects",
+    "evalMode": "identify_attribute",
+    "topic": "Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+    "intent": "Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "compare-objects",
+    "evalMode": "identify_attribute",
+    "duration": 3742,
+    "catalogMeta": {
+      "label": "Identify Attribute (Tier 1)",
+      "beta": 1,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "identify_attribute"
+      ],
+      "description": "Say what the picture lets us measure — how long, how tall, how heavy, or how much it holds. The tutor names the choices and judges the spoken answer; the child's words and the grown-up word both count."
+    },
+    "validation": {
+      "challengeCount": 6,
+      "typesFound": [
+        "identify_attribute"
+      ],
+      "payloadBytes": 2911,
+      "longestStringLength": 136,
+      "longestStringPath": "title",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Compare Objects: Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+      "description": "Compare and measure real-world objects by their attributes",
+      "challenges": [
+        {
+          "id": "co-1",
+          "type": "identify_attribute",
+          "instruction": "What can we measure about these two objects?",
+          "attribute": "length",
+          "objects": [
+            {
+              "name": "red ribbon",
+              "visualSize": 30,
+              "actualValue": 10
+            },
+            {
+              "name": "yellow ribbon",
+              "visualSize": 80,
+              "actualValue": 25
+            }
+          ],
+          "correctAnswer": "length",
+          "comparisonWord": "longer",
+          "hint": "Think about which one is longer or shorter from end to end!",
+          "attributeOptions": [
+            "length",
+            "weight",
+            "capacity"
+          ],
+          "correctAttribute": "length",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-2",
+          "type": "identify_attribute",
+          "instruction": "How do we compare these objects?",
+          "attribute": "weight",
+          "objects": [
+            {
+              "name": "feather",
+              "visualSize": 20,
+              "actualValue": 1
+            },
+            {
+              "name": "rock",
+              "visualSize": 60,
+              "actualValue": 15
+            }
+          ],
+          "correctAnswer": "weight",
+          "comparisonWord": "longer",
+          "hint": "Think about which one feels heavier when you hold it!",
+          "attributeOptions": [
+            "weight",
+            "height",
+            "capacity"
+          ],
+          "correctAttribute": "weight",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-3",
+          "type": "identify_attribute",
+          "instruction": "Which attribute should we look at?",
+          "attribute": "capacity",
+          "objects": [
+            {
+              "name": "cup",
+              "visualSize": 40,
+              "actualValue": 8
+            },
+            {
+              "name": "bucket",
+              "visualSize": 75,
+              "actualValue": 30
+            }
+          ],
+          "correctAnswer": "capacity",
+          "comparisonWord": "longer",
+          "hint": "Think about how much liquid these can hold inside!",
+          "attributeOptions": [
+            "capacity",
+            "length",
+            "weight"
+          ],
+          "correctAttribute": "capacity",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-4",
+          "type": "identify_attribute",
+          "instruction": "What can we measure about these items?",
+          "attribute": "height",
+          "objects": [
+            {
+              "name": "flower",
+              "visualSize": 35,
+              "actualValue": 6
+            },
+            {
+              "name": "tree",
+              "visualSize": 90,
+              "actualValue": 50
+            }
+          ],
+          "correctAnswer": "height",
+          "comparisonWord": "longer",
+          "hint": "Think about how tall they reach from bottom to top!",
+          "attributeOptions": [
+            "height",
+            "weight",
+            "capacity"
+          ],
+          "correctAttribute": "height",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-5",
+          "type": "identify_attribute",
+          "instruction": "How can we compare this pair?",
+          "attribute": "weight",
+          "objects": [
+            {
+              "name": "apple",
+              "visualSize": 45,
+              "actualValue": 5
+            },
+            {
+              "name": "backpack",
+              "visualSize": 80,
+              "actualValue": 40
+            }
+          ],
+          "correctAnswer": "weight",
+          "comparisonWord": "longer",
+          "hint": "Think about which one pushes down harder on your hand!",
+          "attributeOptions": [
+            "weight",
+            "length",
+            "capacity"
+          ],
+          "correctAttribute": "weight",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-6",
+          "type": "identify_attribute",
+          "instruction": "What do we measure for these things?",
+          "attribute": "capacity",
+          "objects": [
+            {
+              "name": "spoon",
+              "visualSize": 30,
+              "actualValue": 1
+            },
+            {
+              "name": "bathtub",
+              "visualSize": 85,
+              "actualValue": 100
+            }
+          ],
+          "correctAnswer": "capacity",
+          "comparisonWord": "longer",
+          "hint": "Think about filling them up with water!",
+          "attributeOptions": [
+            "capacity",
+            "height",
+            "weight"
+          ],
+          "correctAttribute": "capacity",
+          "supportTier": "easy"
+        }
+      ],
+      "gradeBand": "K"
+    }
+  },
+  "durationMs": 3752
+}

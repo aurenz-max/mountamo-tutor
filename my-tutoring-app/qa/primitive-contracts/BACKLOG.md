@@ -27,6 +27,19 @@ non-K consumers.
 
 ## Done
 
+- **ten-frame — `--check` run 2026-09-08** → `ten-frame-check-2026-09-08.md`. Verdict
+  **CONFLICT**, forked at rung 1: R2 pins K to a single frame and CCSS K.NBT.1 needs a ten
+  with room beside it, so the K Math atlas's own next action ("allow the double frame at K
+  when the objective names 11-19") was an in-place widening over a live requirement and was
+  refused. Two new eval modes instead — `build_teen` (β 2.0), `decompose_teen` (β 3.0) —
+  double-framed at every band, with every existing single-frame pin untouched; number-bond
+  took the same fork as `ten_and_ones` (β 2.0). Nine OBSERVED requirements re-probed
+  COMPATIBLE. **The value of the guard was the refusal**: the widening would have left every
+  K counting lesson one manifest misroute from a twenty-cell board. Contract gains R10 and
+  C1 (resolved). Live draws caught two defects the machine gates missed — the model drifting
+  below the objective's number window, and its hint/narration stating the answer — both
+  fixed in the same slice rather than queued.
+
 - **flashcard-deck — derived and checked 2026-08-05** → `docs/contracts/flashcard-deck.md`.
   Pulled out of queue order as the contract-first step of reader-fit **14l**. **9 requirements**
   (all OBSERVED; R5 review scope, R6 requested count, and R9 unbounded schema array were all

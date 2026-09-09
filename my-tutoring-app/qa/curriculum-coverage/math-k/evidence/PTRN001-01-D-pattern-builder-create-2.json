@@ -1,0 +1,266 @@
+{
+  "id": "PTRN001-01-D",
+  "primitive": "pattern-builder",
+  "mode": "create",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Create original AB patterns using two elements",
+  "requestedAt": "2026-09-09T10:21:59.996Z",
+  "inputHash": "17efb21b20812b325a8f6a416f6a922fe07b9eeb08ad22aa2ef04b6b9da3147f",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-pattern-builder.ts": "89e52919f68ffb8fb652b50d053c70da931674ca2ac29d63ca1b35205aa3478b",
+    "src/components/lumina/primitives/visual-primitives/math/PatternBuilder.tsx": "4a1d34aa718ee1b4c460de6163a04b2d0969b3929f1f344aea6893b7d6852a0f",
+    "catalog-entry:pattern-builder": "0c0692aecc7ec76fbe0c56ebc37e592bea392fd2a5dfccce6fb4823e65ae2089"
+  },
+  "params": {
+    "componentId": "pattern-builder",
+    "evalMode": "create",
+    "topic": "Create original AB patterns using two elements",
+    "intent": "Create original AB patterns using two elements",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "pattern-builder",
+    "evalMode": "create",
+    "duration": 3528,
+    "catalogMeta": {
+      "label": "Create (Tier 4)",
+      "beta": 4.5,
+      "scaffoldingMode": 4,
+      "allowedChallengeTypes": [
+        "create"
+      ],
+      "description": "Generate a pattern from a rule."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "create"
+      ],
+      "payloadBytes": 2756,
+      "longestStringLength": 78,
+      "longestStringPath": "challenges[0].hint",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Create Original AB Patterns",
+      "description": "Learn to create your own AB repeating patterns using two different colors.",
+      "patternType": "repeating",
+      "sequence": {
+        "given": [
+          "red",
+          "blue",
+          "red",
+          "blue"
+        ],
+        "hidden": [
+          "red",
+          "blue"
+        ],
+        "core": [
+          "red",
+          "blue"
+        ],
+        "rule": "AB repeating"
+      },
+      "tokens": {
+        "available": [
+          "red",
+          "blue",
+          "green",
+          "yellow"
+        ],
+        "type": "colors"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "create",
+          "instruction": "Create an AB pattern using red and blue!",
+          "answer": [
+            "red",
+            "blue",
+            "red",
+            "blue"
+          ],
+          "hint": "Remember that an AB pattern alternates between two colors, like red then blue.",
+          "narration": "Let us make our very first AB pattern together using red and blue!",
+          "availableTokens": [
+            "red",
+            "blue",
+            "green",
+            "yellow"
+          ],
+          "sequence": {
+            "given": [
+              "red",
+              "blue"
+            ],
+            "hidden": [
+              "red",
+              "blue"
+            ],
+            "core": [
+              "red",
+              "blue"
+            ]
+          },
+          "supportTier": "easy"
+        },
+        {
+          "id": "c2",
+          "type": "create",
+          "instruction": "Create a new AB pattern using green and yellow!",
+          "answer": [
+            "green",
+            "yellow",
+            "green",
+            "yellow"
+          ],
+          "hint": "Try starting with green, then place yellow right next to it.",
+          "narration": "Great job! Now let us try making an AB pattern with green and yellow.",
+          "availableTokens": [
+            "green",
+            "yellow",
+            "red",
+            "blue"
+          ],
+          "sequence": {
+            "given": [
+              "green",
+              "yellow"
+            ],
+            "hidden": [
+              "green",
+              "yellow"
+            ],
+            "core": [
+              "green",
+              "yellow"
+            ]
+          },
+          "supportTier": "easy"
+        },
+        {
+          "id": "c3",
+          "type": "create",
+          "instruction": "Design your own AB pattern using red and yellow!",
+          "answer": [
+            "red",
+            "yellow",
+            "red",
+            "yellow"
+          ],
+          "hint": "Every time you place red, what color should come next?",
+          "narration": "You are doing wonderfully! Time to create an AB pattern with red and yellow.",
+          "availableTokens": [
+            "red",
+            "yellow",
+            "blue",
+            "green"
+          ],
+          "sequence": {
+            "given": [
+              "red",
+              "yellow"
+            ],
+            "hidden": [
+              "red",
+              "yellow"
+            ],
+            "core": [
+              "red",
+              "yellow"
+            ]
+          },
+          "supportTier": "easy"
+        },
+        {
+          "id": "c4",
+          "type": "create",
+          "instruction": "Make a fantastic AB pattern using blue and green!",
+          "answer": [
+            "blue",
+            "green",
+            "blue",
+            "green"
+          ],
+          "hint": "Keep the rhythm going: blue, green, blue, green!",
+          "narration": "Let us keep the pattern train moving with blue and green.",
+          "availableTokens": [
+            "blue",
+            "green",
+            "yellow",
+            "red"
+          ],
+          "sequence": {
+            "given": [
+              "blue",
+              "green"
+            ],
+            "hidden": [
+              "blue",
+              "green"
+            ],
+            "core": [
+              "blue",
+              "green"
+            ]
+          },
+          "supportTier": "easy"
+        },
+        {
+          "id": "c5",
+          "type": "create",
+          "instruction": "Show off your skills and create one final AB pattern using red and green!",
+          "answer": [
+            "red",
+            "green",
+            "red",
+            "green"
+          ],
+          "hint": "You are almost done! Just make sure your two colors take turns.",
+          "narration": "This is your final challenge! Create an amazing AB pattern with red and green.",
+          "availableTokens": [
+            "red",
+            "green",
+            "blue",
+            "yellow"
+          ],
+          "sequence": {
+            "given": [
+              "red",
+              "green"
+            ],
+            "hidden": [
+              "red",
+              "green"
+            ],
+            "core": [
+              "red",
+              "green"
+            ]
+          },
+          "supportTier": "easy"
+        }
+      ],
+      "showOptions": {
+        "showCore": true,
+        "showStepNumbers": false,
+        "showRule": true,
+        "audioMode": false
+      },
+      "gradeBand": "K-1",
+      "translationTarget": {
+        "enabled": false
+      }
+    }
+  },
+  "durationMs": 3538
+}

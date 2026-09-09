@@ -1,0 +1,3993 @@
+{
+  "version": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "decisions": {
+    "COUNT001-01-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-math-facts",
+          "mode": "name_numeral",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-tracer",
+          "mode": "write",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Naming a printed numeral aloud, tapping and counting 1-10 objects, and writing a numeral from its spoken name together cover recognition, counting and spoken-word-to-numeral matching at K without any printed answer.",
+      "nextAction": "Generate the published objective for name_numeral and confirm the pool stays in 0-10 and that zero is handled (spoken answers elsewhere are 1-20).",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d7f9362416b8159c8d77e43669884c736225abe5f43de169e57c1f3df09ff883",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-01-B": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "number-tracer",
+          "mode": "write",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-tracer",
+          "mode": "trace",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Numeral writing 0-10 is served; writing the number WORDS (seven) and pairing each written numeral with a counted object set are not judged by any mode.",
+      "nextAction": "Decide whether number-word spelling is a K demand here; if so add a word-writing prompt, and place a countable object set beside the numeral prompt.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d78271492a1bfab5590499d93784ff286c803095be5e3ae17996f63719c250e6",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-01-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "counting-board",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-tracer",
+          "mode": "write",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-math-facts",
+          "mode": "name_numeral",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "K counting-board counts 1-20 objects, number-tracer writes 0-20 at K, and numeral naming reaches 20. Sequence and order are the count sequence itself, served by tapping in order.",
+      "nextAction": "Probe counting-board with the exact 11-20 text and confirm counts land in 11-20 rather than defaulting to a 1-10 pool.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "ea6c61244640f8a2aec2217cbef937e3f69b6d54e701b3c326d4ca29981aeba2",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-01-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-sequencer",
+          "mode": "before_after",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-sequencer",
+          "mode": "fill_missing",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-sequencer",
+          "mode": "count_from",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "The three named actions (before/after, missing numbers, backward counting) are three number-sequencer challenge types inside its K 1-20 window.",
+      "nextAction": "Probe a blended session and confirm count_from includes backward counting when the objective names it.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "30106f2bd06ee3536fd438048f4d1578bf5cd01b8e6fff03802b82b1f2e9fb72",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-01-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "hundreds-chart",
+          "mode": "highlight_sequence",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "group",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "The catalog text floors skip counting at Grade 1, but the probe shows the hundreds-chart generator honors the objective: a 1-50 grid with 2s and 5s for a K request (it self-promotes the band). counting-board group remains a Grade 1 mode for the concrete-objects half.",
+      "nextAction": "Keep hundreds-chart as the K skip-count home; the recorded by-10s drift and the counting-board group floor are the residuals.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "19659fc3c644f23016a8bcc3b646c005317faac96ba3e4e4ea560d8947bde132",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-01-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-math-facts",
+          "mode": "counting_next",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "di-math-facts",
+          "mode": "name_numeral",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "hundreds-chart",
+          "mode": "highlight_sequence",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Say-the-next-number reaches 120 with decade transitions (39 -> forty), numeral naming covers recognition, and the chart sizes itself to a stated ceiling (to 100).",
+      "nextAction": "Probe counting_next with the decade emphasis and confirm the window stays in 21-100 rather than the K default of 1-20.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "f203409f1f21056f9a6981732a51b8c0b792a75102064dfbf3c2cdb09be07f1e",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-01-G": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "di-math-facts",
+          "mode": "counting_next",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "number-sequencer",
+          "mode": "count_from",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Counting forward from any number is served by the DI pack to 120; number-sequencer count_from is windowed 1-20 at K. Identifying a sequence ERROR (which number is wrong) is not a mode anywhere.",
+      "nextAction": "Add an error-spotting challenge to number-sequencer and widen its K window when the objective names 100.",
+      "work": "count-to-100-k",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "438b36c15ac46400061754f4cc9305ffe70ac4c25ae9b44208b0652a1af3e7be",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-01-H": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-sequencer",
+          "mode": "fill_missing",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Exact match: fill one missing number in a line of at most 10; the objective even names the primitive and its constraints (one blank, under 10).",
+      "nextAction": "Probe with the exact text; check every sequence has exactly one blank, stays under 10, and the blank moves position as in the examples.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "eeed93cdbf967814626ab03871085692d62aa9bfcfc8d280bc7d337a5d89cd94",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-01-I": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-sequencer",
+          "mode": "count_from",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-math-facts",
+          "mode": "counting_next",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "count_from continues from a start anywhere in 1-20 and asks for the next numbers; the objective wants the next three from starts as high as 17. counting_next gives one number per turn, so it is the fluency half only.",
+      "nextAction": "Probe count_from; confirm three continuations per item from varied starts up to 17 and no start above 17.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "8ebc444ed1a7c82bb286ac8c689754e624cbee739dbed5d3b8eb26bcb896173f",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-02-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "counting-board",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Tap each object once and say how many: one-to-one correspondence with touching is the mode itself, in the 1-5 range.",
+      "nextAction": "Probe with the exact text and confirm object counts stay at 1-5 and tap order is judged, not just the final word.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c59dd3179d6a747879d7d04ccf08edd421b6135a773ce2bf287345e7d5b05abf",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-02-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "counting-board",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Arrangements (scattered, line, circle, groups) are a declared axis of the counting board; 1-10 sits inside the K range.",
+      "nextAction": "Check arrangement variety across one session in the probe payload; a session of only lines does not meet the objective.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "9bdf3ed6c2ca7442b8757909010da057ee14d41935418d486882c4aed45ef254",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-02-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "counting-board",
+          "mode": "recount_moved",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Conservation is recount_moved (slice 7): the same set is rearranged and the child says how many again.",
+      "nextAction": "Probe recount_moved with the exact text and confirm sizes vary as well as layouts.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "03aa10c66d64736fcae30702122a0f3fd684169ab32a2b8260e1a3c7447017b0",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-02-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "counting-board",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "give_me_n",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Counting up to 20 in lines and arrays is count; counting OUT a requested quantity is give_me_n (slice 7): tap exactly N of many.",
+      "nextAction": "Probe give_me_n with the exact text and confirm requests reach into the teens.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "41aab823ceb25c422dfb1940ef5c53e08f74b37bea025c3e33ee33e5e056ebe9",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-02-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "compare_groups",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "take_away",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Group comparison has its home, and counting backwards on concrete objects is take_away (slice 7): objects leave and the child says the new count.",
+      "nextAction": "Probe take_away from 10 down.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "ed13396066d7518020c5d4e355f13f8263db135d0fca8de8f6c1d41b8730fa37",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-02-F": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "counting-board",
+          "mode": "add_more",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "group",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Tracking a running total as objects are added is add_more (slice 7); counting in groups of 2 is group, still a Grade 1 mode per its constraints.",
+      "nextAction": "Probe add_more with pairs; re-audit group at K.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "a1317a47e4f655b8ce687a0557e7b5cf4c33c3daddd797143bb7770b411e1884",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-02-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "counting-board",
+          "mode": "count_on",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "subitize",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Combining a hidden known group with visible objects is count_on, which gained a K route in slice 7 (the started group sits under a basket); flash-then-hide subitizing covers the briefly shown set.",
+      "nextAction": "Probe count_on at K with the exact text.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "dcea8b2f6a03b48eb284db76f0a6e1899bdef855156f6487d4fc72b63a9d31af",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-02-H": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-sequencer",
+          "mode": "count_from",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "count_from runs backward from a start value inside the K window, which is the descending sequence 10 to 0 the objective asks for; the number-line half is a display aid, not a second action.",
+      "nextAction": "Probe and confirm backward direction is emitted when the objective says backwards, and that 0 is a legal terminal value here.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "a5b4324e7a3fd6d50bcd8556f7fec1fb7474a8530c953a4da4a095e11432d057",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-03-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "compare_groups",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Visual group comparison with correspondence lines gives more/less/equal over groups of up to 10; the counting board asks the child to say how many are in the group with more.",
+      "nextAction": "Probe compare_groups: confirm equal groups occur and the three terms are all exercised, with groups at the stated sizes.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "489d5799c0f8438ef0612139b1714fd86ca2089c639cca660fc3d49e1e8574c7",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-03-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "compare_groups",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Visual group comparison with correspondence lines gives more/less/equal over groups of up to 10; the counting board asks the child to say how many are in the group with more.",
+      "nextAction": "Probe compare_groups: confirm equal groups occur and the three terms are all exercised, with groups at the stated sizes.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "50fe29d0d8ff869f0b1cca7234cce406f82b785cf81e4cb73e00c83ac6c6c0d3",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-03-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "compare_numbers",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-line",
+          "mode": "order",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Symbolic comparison of two numerals 1-10 is the mode; number-line ordering is the visual representation the objective names.",
+      "nextAction": "Probe compare_numbers and check both numerals are in 1-10 and the comparison is not answerable from layout.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c2ebb9163b26fe209bbba4c1bd33d970b324ad6925753f96001fcd37e7738696",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-03-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "order",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-sequencer",
+          "mode": "order_cards",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-line",
+          "mode": "order",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Three ordering surfaces cover 3-5 values in either direction within 10.",
+      "nextAction": "Confirm both directions (least-to-greatest and greatest-to-least) appear across a session.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d722fb5177c1e0e5c31769dbb0248509feb464e9553d13500a2ff6910367cbcd",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-03-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "compare_numbers",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "explain_concept",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "The alligator-mouth comparison mode is exactly < and > over numbers to 10; the spoken justification is explain_concept over the shown comparison.",
+      "nextAction": "Probe compare_numbers: both symbols and the equal case must appear; then probe explain_concept with a comparison stimulus.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "32953d5eb4c920c16785c34f1412e9416361da1f86dc3a10e6661d5796b9b771",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-03-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "one_more_less",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-sequencer",
+          "mode": "before_after",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Adjacent-number reasoning to 20 is the mode; before_after is the same fact on the number train.",
+      "nextAction": "Confirm values reach into 11-20 rather than staying under 10.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "ade11d42b415003da291d028184a4912215f025698995e44b69a58387b13f3f0",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-03-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "compare_numbers",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ten-frame",
+          "mode": "decompose_teen",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Comparing 11-20 is inside the compare_numbers range, and the place-value half now has a judged home: decompose_teen makes the child find the ten inside each teen number on a double frame, which is the one-ten-and-some-ones the objective asks them to compare with. base-ten-blocks is no longer routed here — it shows a ten as one rod, not as ten ones.",
+      "nextAction": "Probe compare_numbers with both numerals in 11-20, then pair it with a decompose_teen block on the same lesson.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "85528cb1448803fadc69a766ac2cc9025214cf86a3a5445e13e33a419aa5a4e7",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-04-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ordinal-line",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "At K the tutor names a place (first through fifth) and the child says who is there: the exact recognition action.",
+      "nextAction": "Probe with the exact text and confirm positions stay within first-fifth and the front end is announced.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "5bbb1dc352143c4949529f4f07486182941b9063105dff61651de471b1c0a741",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-04-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ordinal-line",
+          "mode": "match",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Reading 1st-5th aloud one card at a time is symbol-to-word matching by production; no word column is shown to match against.",
+      "nextAction": "Confirm the printed symbol and the accepted word agree on every card.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c7ad927068fe9542ac33f4aeff6c45a5c211902011b8c8b60fc4b0bb10899993",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-04-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ordinal-line",
+          "mode": "sequence_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "A spoken story about who is where, then say the place one character has: daily routines, story sequences and simple real-world word problems are all this contract.",
+      "nextAction": "Probe sequence_story; check stories are under 60 words, name at most 5 characters, and never state the answer.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d3554a629844a7aa22ac068503ae8ecfcbf76f8a4147f63ccfa297de29035305",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-04-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ordinal-line",
+          "mode": "sequence_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "A spoken story about who is where, then say the place one character has: daily routines, story sequences and simple real-world word problems are all this contract.",
+      "nextAction": "Probe sequence_story; check stories are under 60 words, name at most 5 characters, and never state the answer.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "2378258880c6cd44aa92914259b540e87bf9de0c92591e0e643887c8ebb3f719",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-04-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ordinal-line",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ordinal-line",
+          "mode": "match",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "The modes are right and, since slice 3 (2026-09-08), an objective naming positions past fifth raises the K line to ten; re-probed with a ten-character line and targets sixth through tenth.",
+      "nextAction": "Drive one K session with the mic to hear the tenth-place ask.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "ca9b7931840b72e00eb4f1b2c30069a899f7aaafb020d0b4b326939769d81e7e",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-04-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ordinal-line",
+          "mode": "relative_position",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Say who is right before or right after a marked place is exactly \"what comes before fourth\".",
+      "nextAction": "Confirm both before and after are asked and the marked place is announced, not printed as its answer.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d4942a58ebadd3ea18f3d796adb21fb98991779b133726d68ffc0b6ca0cacf3a",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-04-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ordinal-line",
+          "mode": "build_sequence",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Building the line from spoken clues; the K position cap lifts to tenth when the objective names it (slice 3), and the four-clue hold is kept by pre-filling part of the line.",
+      "nextAction": "Probe build_sequence with the exact text and confirm at most four spoken clues over a ten-long line.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "3c9dbae6fb66f0277fc0113260135b3d417be76c03c50f6321c74532d1e45d89",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-05-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ten-frame",
+          "mode": "decompose_teen",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ten-frame",
+          "mode": "build_teen",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "decompose_teen is this objective exactly: a teen group of 11-19 counters arrives SCATTERED over a double frame and the child turns ten of them yellow, so the group of ten is found rather than handed over. build_teen covers the same identification from the other side, with the ten given as a full frame.",
+      "nextAction": "Probe decompose_teen with the exact 11-19 text; confirm the scatter never fills a frame (nineteen is the known exception — the geometry forces it) and that the leftover is never printed.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "03ae45de17771648d7be6fc86ac9a4f0cc4edfaf8cf69e7f809e84f660effe84",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-05-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ten-frame",
+          "mode": "build_teen",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-bond",
+          "mode": "ten_and_ones",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "build_teen opens a DOUBLE frame with its top half full — one ten — and the child places the remaining ones to make the teen number: \"ten ones plus additional ones\" as a manipulative. ten_and_ones is the same composition on the bond. Both are pinned to the double frame at Kindergarten, which is the R2 fork the contract records; base-ten-blocks stays unrouted because it shows a ten as one rod.",
+      "nextAction": "Probe build_teen with the exact text for each half of the range and confirm the targets stay inside the window the objective names (11-15 / 16-19), not the full teen band.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e51c715172e37c9c9860c5b61e7a95569e7e34c72e102d67625c22692b96136e",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-05-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ten-frame",
+          "mode": "build_teen",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-bond",
+          "mode": "ten_and_ones",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "build_teen opens a DOUBLE frame with its top half full — one ten — and the child places the remaining ones to make the teen number: \"ten ones plus additional ones\" as a manipulative. ten_and_ones is the same composition on the bond. Both are pinned to the double frame at Kindergarten, which is the R2 fork the contract records; base-ten-blocks stays unrouted because it shows a ten as one rod.",
+      "nextAction": "Probe build_teen with the exact text for each half of the range and confirm the targets stay inside the window the objective names (11-15 / 16-19), not the full teen band.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "4224da20782b95890152dc7417a6ac9cdffd485b2823dbbadb81d32d960636ca",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-05-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-bond",
+          "mode": "ten_and_ones",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ten-frame",
+          "mode": "decompose_teen",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "ten_and_ones accepts exactly ONE pair — a full ten and the rest — so a sum-correct split like 6 and 8 for fourteen is corrected rather than affirmed, which is the difference between this and decompose. Its whole is the teen number itself: the K maxNumber cap of 5 does not bind it, because the answer is a placement, not a spoken number. decompose_teen is the same decomposition on the frame.",
+      "nextAction": "Probe ten_and_ones with the exact text; confirm the wholes stay inside the named half of the range and that both parts arrive null (the child places them).",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "ba8b1e9455dfc6098c5a1e85db4c3a050f04c36f68594b0077c1397b2ff7ae03",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-05-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-bond",
+          "mode": "ten_and_ones",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ten-frame",
+          "mode": "decompose_teen",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "ten_and_ones accepts exactly ONE pair — a full ten and the rest — so a sum-correct split like 6 and 8 for fourteen is corrected rather than affirmed, which is the difference between this and decompose. Its whole is the teen number itself: the K maxNumber cap of 5 does not bind it, because the answer is a placement, not a spoken number. decompose_teen is the same decomposition on the frame.",
+      "nextAction": "Probe ten_and_ones with the exact text; confirm the wholes stay inside the named half of the range and that both parts arrive null (the child places them).",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "2761299b2d341c38db6a233d1765fd605c48dd72afb146ee9d101f6dc07a3634",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "COUNT001-05-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "equation-builder",
+          "mode": "missing-operand",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-bond",
+          "mode": "ten_and_ones",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "equation-builder emits the form the objective itself names at K — a probe on this text returned 10 + ? = 11, ? + 5 = 15, 10 + ? = 17 and ? + 9 = 19, with the unknown on both sides — and ten_and_ones now supplies the ten-and-ones MODEL the equation refers to, which is what nothing paired before.",
+      "nextAction": "Keep the pair on one lesson: the equation without the model is symbol practice, and the model without the equation is not this objective.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "b9b066f52493117541dcf5d7eb63c49a49ef6bff21812c918d651896ec756c74",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-01-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "act_out",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "K act_out answers with the enacted scene itself (bring objects in, send objects away) within 5, which is representing the operation with concrete objects.",
+      "nextAction": "Probe act_out and confirm join and separate stories both appear within 5 and no story states its answer.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "4ffdbe8888f3dd30a33ebb052cdbff07cfcc4753d90a54023ed727c75826c29f",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-02-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "act_out",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "K act_out answers with the enacted scene itself (bring objects in, send objects away) within 5, which is representing the operation with concrete objects.",
+      "nextAction": "Probe act_out and confirm join and separate stories both appear within 5 and no story states its answer.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "a24424bc8eeb23a53c4ffc6162deddc8441d93e3eb97a82b0414dade0d0abd7f",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-01-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-line",
+          "mode": "jump",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ten-frame",
+          "mode": "operate",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "jump shows addition as movement on a fully labeled small line; operate works the same sums on the frame and has the child say the total.",
+      "nextAction": "Probe number-line jump at K with within-5 operations; confirm the range is 0-10 and fully labeled.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "67661416a9b8f367253f6a6dabb464f7d4e06104dd92245dc6a8e94501a7fe48",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-01-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "build_equation",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "solve_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "solve_story has the child SAY the answer (verbal), build_equation assembles the number sentence from tiles (written), both within 5 at K.",
+      "nextAction": "Confirm the tile palette does not reveal the answer and that the story is read aloud, not printed.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "ba88a978b482c0f877c57959feb3e7de5789cea0b2fddbefae66c8e5e5e9d0b2",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-01-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-bond",
+          "mode": "decompose",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ten-frame",
+          "mode": "decompose",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Decompose finds every pair for a whole of at most 5 at K, one judged turn per pair, on counters: the objective exactly.",
+      "nextAction": "Confirm the session ends when all pairs are found and wholes stay within 5.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c41ab5f61a9002f12af67ef113f1a5ce47b2bc775a579c1b08c4bc954712ecc6",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-01-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "solve_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Word problem, say the answer; since slice 3 (2026-09-08) an objective naming \"within 10\" raises the K maxNumber from its default of 5. Re-probed: results to 8, no story states its unknown.",
+      "nextAction": "Drive one K session with the mic for a within-10 story.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "729393e14f9ea4630742ac6e0278c75d9e1c7943a75bbb8282da48af9b8b5986",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-01-F": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "strategy-picker",
+          "mode": "guided",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "strategy-picker",
+          "mode": "compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Ten frames, tally marks and doubles are strategy-picker strategies and compare is its reflection phase; K numbers are capped at 5 against an objective within 10. Slice 3 lifted the scene cap but strategy-picker was not probed or edited.",
+      "nextAction": "Apply the objective number window to strategy-picker and probe guided at K.",
+      "work": "k-story-problems-within-10",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "a1b595701742405d0c3e6f22bca512a922a0483690da0489f9cc87539f6ac61c",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-01-G": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "create_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "solve_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Creating a story is served as building the scene that matches a number sentence, and solving is spoken, now within 10 at K (slice 3). Money contexts are still not a scene theme.",
+      "nextAction": "Probe create_story with a coins objective; add a coins theme or route money stories to coin-counter.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "2662b7cccddeef7352f1b938f5832542c2462d16b2e0e9e60d845a8c3526a363",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-02-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-bond",
+          "mode": "decompose",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Each found pair is recorded on the bond diagram as the child makes it, within 5.",
+      "nextAction": "Confirm every decomposition is retained on screen across the turn, not overwritten.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "3fcc0c1f394510bdec4b05a59eadac2e8688248435f7c080fbbbc8765e566990",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-02-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "solve_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "build_equation",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Subtraction stories within 5, answered aloud or as a built number sentence, are inside the K cap.",
+      "nextAction": "Confirm separate stories dominate and no result is 0.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "7921971c7f4527afceef9ef281cca13651a019d2759a7b03d987962e7f3a857a",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-02-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "ten-frame",
+          "mode": "operate",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-line",
+          "mode": "jump",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Subtraction on the frame with the difference said aloud, and jumps backward on the line, are the two representations named; results of 0 are discarded by the frame.",
+      "nextAction": "Probe operate for subtraction within 10 and confirm differences are never 0.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "cc6c8a6ba04f6406c1d15e04577b143b4633b38cc9d17d796882eb5ebc78b863",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-02-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "create_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "solve_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Real-world subtraction stories are built and solved on the scene; the K maxNumber follows the objective window since slice 3 (within 10 re-probed on OPS001-01-E).",
+      "nextAction": "Probe with the exact subtraction text and confirm differences reach 6-10.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "4290bfc1406ea4828e695cea8d4f11f54f8ae95c60bbdef60ed3ee5457506cd9",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-02-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "math-fact-fluency",
+          "mode": "missing_number",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "math-fact-fluency",
+          "mode": "equation_solve",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "equation-builder",
+          "mode": "missing-operand",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "balance-scale",
+          "mode": "equality",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "The objective names two forms. A missing MINUEND is missing_number (which by design hides operand1 or operand2, never the result); a missing DIFFERENCE is equation_solve (result unknown). equation-builder missing-operand and the balance mystery block cover the minuend form in two more surfaces.",
+      "nextAction": "Probe missing_number (done: minuend only, tier preference for operand2 not honored) and equation_solve for the difference form.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "b35564fc5d8b772700a60bb3c154fe2b813cd3b30ee971e1f199fd987f0d6202",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-02-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-bond",
+          "mode": "related_fact",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-bond",
+          "mode": "missing_part",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "math-fact-fluency",
+          "mode": "match",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Served by number-bond related_fact, the SPOKEN fact family built 2026-09-09 for this row. One bond, two judged turns: the addition fact (\"two and how many more make five?\"), then the subtraction that matches it (\"five take away three, what is left?\"), whose known part is the number the child just produced. That is the inverse relationship as something the child DOES. The redirect this replaces was missing_part, and a K probe of it against this objective returned ten unknown-addend turns with no subtraction anywhere (qa/eval-reports/k-held-floors-2026-09-09.json) -- part-part-whole, not the relationship. fact_family keeps its Grade-1 floor: it types four equations, and typing is what the pre-reader band excludes.",
+      "nextAction": "Content-test the mode at K (/eval-test number-bond related_fact) and drive one live judged session with a mic -- the two-turn loop has been probed and rendered but never heard.",
+      "work": "k-band-floor-reaudit",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [
+        "qa/eval-reports/number-bond-related-fact-2026-09-09.json (18/18 draws clean: 2 turns per bond, turn 2 answers a different number from turn 1, no answer word in either ask)",
+        "qa/eval-reports/k-held-floors-2026-09-09.json (the missing_part probe this replaces)",
+        "qa/eval-reports/k-held-floors-chrome-drive-2026-09-09.json (rendered in Chrome, unknown part shows as ?)"
+      ],
+      "requirementHash": "230656b715c18f7b76ada0fe2d93764e5464b7fcbe9eeaab0f56b24ca2254d88",
+      "reviewedAt": "2026-09-09T11:56:18.097Z",
+      "reviewer": "Claude; mode built for this row, probed live and driven in Chrome",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-03-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-math-facts",
+          "mode": "counting_next",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "number-sequencer",
+          "mode": "count_from",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Say the next number is the fluency step; response time is captured silently, which is how the 3-second criterion is measured without a visible timer.",
+      "nextAction": "Confirm the window is 1-5 and backward counting is included; never surface the timer.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "7ad0db0588cdd9164bed708e3a15fd111cd3f86ff462d3211cb25be3947655d1",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-03-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-math-facts",
+          "mode": "answer_fact",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "di-math-facts",
+          "mode": "subtraction_fact",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "math-fact-fluency",
+          "mode": "equation_solve",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Addition and take-away facts within 3 with spoken answers, or equation solving with visual aids, are the two named routes.",
+      "nextAction": "Confirm the pool is scoped to within 3 by the objective text.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "7daa03b9e173f977de9445f79ef2dc8a6f452f64f4c3948f2422536b562a0222",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-03-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "math-fact-fluency",
+          "mode": "match",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "build_equation",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "match connects visual representations to equations; build_equation is the same matching from the scene side.",
+      "nextAction": "Confirm visuals show both addition and subtraction situations within 5.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "14fb6242bd17c53646c9d0820ca859354d6b9f4bcbdef7509f7d218522af96d7",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-03-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-math-facts",
+          "mode": "fact_review",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "math-fact-fluency",
+          "mode": "speed_round",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Mixed review of taught facts and aid-free recall are fluency within 5; both measure response time silently.",
+      "nextAction": "Confirm no countdown or speed framing appears anywhere in the generated copy.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "8dc21ae6a8296386cbb806ed913eec58175bc0fc97bcacda3725842977132e60",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-03-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-bond",
+          "mode": "missing_part",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "balance-scale",
+          "mode": "equality",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "equation-builder",
+          "mode": "missing-operand",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Missing part within 5 said aloud, the mystery block on the balance, and the missing operand are all 3 + _ = 5.",
+      "nextAction": "Probe missing_part and confirm the 5 - _ = 2 form is representable, not only addition.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "f0597f862e8e6b7f2c5bc45c8004da88991918dc853e95f54c69593aa63ae900",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-03-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "number-bond",
+          "mode": "related_fact",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "number-bond",
+          "mode": "missing_part",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Completing a fact family within 5 is number-bond related_fact at K -- the child SAYS the addition fact and then its matching subtraction over one bond, which is the relationship this row asks them to demonstrate. The generator repairs any symmetric bond (part1 === part2) because both turns would otherwise answer the same number and a repeat would score the second one. fact_family stays Grade 1: the same relationship written, and writing it is typing.",
+      "nextAction": "Content-test at K within 5 (/eval-test number-bond related_fact) and drive one live judged session with a mic.",
+      "work": "k-band-floor-reaudit",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [
+        "qa/eval-reports/number-bond-related-fact-2026-09-09.json (6 K draws on this objective, all clean, maxNumber 5)",
+        "qa/eval-reports/k-held-floors-chrome-drive-2026-09-09.json"
+      ],
+      "requirementHash": "30ffb3062a270f1b5e7fbbe5b6f5b8fd1990854d7b78dc31d7ca8a20baad5c28",
+      "reviewedAt": "2026-09-09T11:56:18.097Z",
+      "reviewer": "Claude; mode built for this row, probed live and driven in Chrome",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "OPS001-03-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "solve_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "addition-subtraction-scene",
+          "mode": "create_story",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Solve (say the answer) and create (build the scene for a sentence) within 5 are both inside the K cap.",
+      "nextAction": "Confirm both operations appear across one session.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "9fbd0d2033d55f51e462a62f2ac10aa39b2341a1834a56697b94b5a8224269c7",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-01-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-shapes",
+          "mode": "name_shape",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "shape-sorter",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Both draw one code-owned shape at varied rotation and size and have the child say its name; nothing printed names it first.",
+      "nextAction": "Probe name_shape with the four named shapes and confirm rotations vary across the session.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e0492c8fdf053c7a62f30428cddd0c5584be0440ffa6d440e3cbb0b94eaeaa96",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-01-B": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "shape-sorter",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "shape-sorter",
+          "mode": "sort",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-shapes",
+          "mode": "count_sides",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Sides, corners and curved-versus-straight are asked aloud on drawn shapes; shapes found in real-world environments are not a stimulus in any 2D mode (only the 3D explorer shows familiar objects).",
+      "nextAction": "Add real-object stimuli (a clock face, a door) to the 2D naming/attribute modes.",
+      "work": "shapes-in-the-world",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c37abdc68d5d9921718ef3837146e12e97b7cabf36951958d1dbf3238ca2d375",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-01-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "shape-sorter",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "shape-sorter",
+          "mode": "sort",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Count sides or corners aloud, then say which group a shape belongs with by side count: the two named actions.",
+      "nextAction": "Confirm a sides sort holds polygons only and no circle is asked for a side count.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "53f3fa2448a4a83f61154d4a9d199167c9045d556768546bf69974845c35635f",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-01-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "3d-shape-explorer",
+          "mode": "identify_3d",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "3d-shape-explorer",
+          "mode": "2d_vs_3d",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Name a drawn solid aloud, and say flat or solid for a drawn shape, with cube/cone/cylinder inside the supported set.",
+      "nextAction": "Probe identify_3d with the exact text; confirm the three named solids appear and no name leaks in the title.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c0a4a9e1e9820f02017737f4f904ef4e13dbe3312ccf79264773c2f4b9193b91",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-01-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "shape-tracer",
+          "mode": "trace",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "shape-tracer",
+          "mode": "draw_from_description",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Tracing a dotted outline and constructing a shape from spoken property cues are the two named actions.",
+      "nextAction": "Confirm the description never names the shape when the child must build it from properties.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "6257067090f3747c0fa76a76d3f2a38b274a88cb7aea3b438cbef8e39366dfd8",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-01-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "shape-composer",
+          "mode": "compose-match",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "shape-composer",
+          "mode": "decompose",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "shape-builder",
+          "mode": "compose",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Filling a target silhouette from pieces and naming the basic components of a composite are composition and decomposition; pattern-block composition is the same act in shape-builder.",
+      "nextAction": "Probe compose-match at K and confirm snap targets do not solve the puzzle for the child.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e86613e274d0207e4cb037cfc4417d2b7367c7965cd0cfb710c959c6c070639b",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-02-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-shapes",
+          "mode": "count_sides",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "di-shapes",
+          "mode": "count_corners",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "shape-sorter",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Counting sides and corners aloud, then naming the shape, is identification by attribute.",
+      "nextAction": "Confirm corner counts and side counts are asked on the same shape so the attribute-to-name link is explicit.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "6c9ea61b6e70b14bdbcbfe3e268fb02a019d7d39abb779e1855da3721d3d0acd",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-02-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "shape-sorter",
+          "mode": "sort",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "sorting-station",
+          "mode": "odd_one_out",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sorting by sides, curve or color into 2-3 groups is the single-attribute sort; odd_one_out at K is the does-not-belong half, spoken.",
+      "nextAction": "Confirm size can be a sort axis when the objective names it, since the catalog lists sides, curve and color.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "602a4317a5a08f34ef448c45cb0b90ee1012977a9c4aad09d0761efa6133e9e4",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-02-C": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "shape-sorter",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-shapes",
+          "mode": "name_shape",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Orientation and size invariance are built in; recognizing shapes IN real-world objects is not a 2D stimulus.",
+      "nextAction": "Add real-object stimuli to the naming modes.",
+      "work": "shapes-in-the-world",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e79d996af153c86224c061ce6fb84ced27b49d48083df29cb2b75a6f2860c8eb",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-02-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "shape-tracer",
+          "mode": "complete",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "shape-tracer",
+          "mode": "connect_dots",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Finishing a half-drawn shape and connecting numbered dots are creating and completing figures.",
+      "nextAction": "Confirm the missing sides are not hinted by ghost lines before the child acts.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "8fade6f4cf5c1f551fd038a6abb4dbddfc2155382a80dd78b7b657a96e0dfbe5",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-02-E": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "3d-shape-explorer",
+          "mode": "faces_properties",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "3d-shape-explorer",
+          "mode": "identify_3d",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Property questions (how many faces, is it round) are asked aloud; building and manipulating PHYSICAL models is a classroom observation no primitive can score.",
+      "nextAction": "Keep the spoken property analysis as the screen half and record the physical build as an observation requirement.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "3b0e1417c7c2b3df90c9c36b006fb3a4d89e25c6a4d9c2678e3c80afb40da55b",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-02-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "shape-composer",
+          "mode": "compose-picture",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "shape-composer",
+          "mode": "decompose",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Arranging palette shapes to recreate a picture of a familiar object and naming the parts of a composite are the two named actions.",
+      "nextAction": "Confirm the target picture is a silhouette, not a pre-solved overlay.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d487912ccd5b28957c543c1c81902db4410a5421554ca607b212d2632dbcd20d",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "GEOM001-02-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "pattern-builder",
+          "mode": "extend",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "pattern-builder",
+          "mode": "create",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "pattern-builder",
+          "mode": "find_rule",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Extending, creating and describing a repeating shape pattern are three pattern-builder modes; K-1 supports shape and color tokens.",
+      "nextAction": "Probe create at K: the catalog places creation at grades 2-3, so confirm an AB creation challenge is emitted for a K objective that names it.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "9f306a8c76aaeaa3e0d4593ae1213b11d126f3bc04df5bf5b6ae880acb90a1d1",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-01-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "compare-objects",
+          "mode": "identify_attribute",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Say what a pictured object lets us measure (how long, how tall, how heavy, how much it holds) is the K.MD.1 vocabulary production this row asks for.",
+      "nextAction": "Probe with the exact text; confirm the attribute menu never offers both length and height on one item and that weight and size are represented.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "bfdb31dd6266c9ae54d7242ae917267f5d4696e473b93c8dbf2c7e5585dc0991",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-01-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "compare-objects",
+          "mode": "compare_two",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "length-lab",
+          "mode": "compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Say the name of the longer, taller, heavier or fuller object; length-lab compare is the same direct visual comparison for length.",
+      "nextAction": "Confirm the comparative word is in the tutor line, not printed as a button.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "96c1b81c7c8669d6a7c3895bd5cf3c79c8a7f1999c546cedacd0a889d42fa2fb",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-01-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sorting picture cards by one measurable attribute, one card at a time and spoken, is sort_one at K; size is the taught concept here, which the catalog allows as the primary axis.",
+      "nextAction": "Probe with the exact text and confirm bins are size/length/weight categories, not colors.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c53dc77d97485c74364fd7ad4a4140bcbb68305ca8d384de277e538b0610e7db",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-01-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "tile_and_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Tiling cubes or paper clips end to end and counting them is the mode; K supports compare and tile.",
+      "nextAction": "Confirm unit tiles must be placed by the child rather than pre-laid.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e660d818dcfe84de032d0020a39ce1bda965d38a6c83de4276b87a45937ae511",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-01-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "order",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "compare-objects",
+          "mode": "order_three",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Ordering three objects by an attribute is served twice, and both floors came down on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): compare-objects order_three is drawings touched in order, and length-lab order draws every object as a length bar with a colour-matched picker chip.",
+      "nextAction": "Probe order_three and order at K with the exact text; confirm 3-5 objects and that the ordered attribute is visible without reading a name.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "25a21f8fb1389c2890e03ff6ba585dfce7252c89e2844fa801b81df6180b8431",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-01-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "measure-lab",
+          "mode": "capacity_predict",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "measure-lab",
+          "mode": "pour_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "compare-objects",
+          "mode": "compare_two",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Comparing and measuring capacity is capacity_predict and pour_count on the measure-lab birth (slice 7); the spoken which-holds-more comparison remains a second home. Real pouring stays a classroom follow-up, not a requirement gap.",
+      "nextAction": "Probe capacity_predict with water-or-sand framing.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "033af3f04bd50a57717a90dac943e8940c1b07c3a5a0c92977dc17eaaf229764",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-01-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "two_attributes",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Yes/no per object against two criteria is two_attributes, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md) -- the port made the compound question a spoken yes/no asked one object at a time, which is the contract's own G2 finding that what exceeded a pre-reader was the medium, not the cognition.",
+      "nextAction": "Probe two_attributes at K with two measurable attributes (height and width) and confirm both verdicts are reachable.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "018026498a404da63744ff008adf486c925594d5c37088d2f4488b53f10824b3",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-02-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sort by one observable attribute, spoken one object at a time, is the K mode.",
+      "nextAction": "Confirm the objective-named attribute is the sort axis across all challenges.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "4c79e7689b53c2c94096ce7add4415e69d86ed9a7b4920c16804b6cd4ab2a0f8",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-02-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "comparison-builder",
+          "mode": "compare_groups",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Counting two category groups and saying more/fewer/equal is comparison-builder at K; the catalog itself routes K count-and-compare there rather than to sorting-station.",
+      "nextAction": "Probe compare_groups with the exact text; confirm groups stay at 5 or below and equal appears.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "62e7678a377bc70ca0463c0e4fea443e16a89e441373018f62cd948ae8fe3246",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-02-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "sorting-station",
+          "mode": "tally_record",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sorting into up to 3 categories is served at K, and saying the count of each group is tally_record, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md) -- counts are spoken number words. The K caps of 4-6 objects and 3 bins still bind.",
+      "nextAction": "Probe tally_record at K with counts to 10 and confirm no group would be empty.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e6e2054058d8764fe8d86aeaa6b33318e1bab59482761da8253036db8eda8d2d",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-02-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "two_attributes",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Two-attribute classification is the mode, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md).",
+      "nextAction": "Probe two_attributes at K on colour AND shape; confirm the emoji matches its label on every card.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "f4d634b6e3d4d137243de528a149e47b4813931adb65616732ad9df9fa6e1917",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-02-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "build_one_to_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Recording data one sticker per item is build_one_to_one, shipped 2026-09-08 (slice 7): the child taps one icon per object into a row and the chart is judged against the pile.",
+      "nextAction": "Probe with the exact text (tally marks may also be named; the icon row is the K equivalent).",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "54c9e01980973a4cc998eb68b1f33ec19b3ba7555aa44e6d6b1e7d7ec64a79d5",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-02-F": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_variety",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sorting by function (things for eating, things for playing) is a semantic category sort_one can run; self-designed, labeled categories are open production.",
+      "nextAction": "Probe sort_one with function categories; leave self-designed labels as a teacher observation.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "0c21f7ee24a5e8655ad23b6fe68070ff2ff396b15eca05cf555a58d73ce47327",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-02-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "odd_one_out",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_variety",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Which card does not belong is spoken at K, and reclassifying the same objects into NEW categories is sort_variety, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md).",
+      "nextAction": "Probe sort_variety at K and confirm the draw returns enough distinct rounds -- one draw returned only 2 of the 5 asked for.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "acc7a285617761858ec42368141ca983138dfac0001ab9ffbe05e53f3e241134",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-03-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sorting picture cards into given categories is sort_one.",
+      "nextAction": "Confirm categories are the data categories named by the objective.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "83cd7050d8b9c0752e99ef9c5ae034535aa5b54040e5b48ebb35019f604b99d1",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-03-B": {
+      "fit": "development",
+      "candidates": [],
+      "reason": "Human graphs and physical object arrangements are classroom activities; no primitive observes them, and building an on-screen graph from given data is a different action.",
+      "nextAction": "Record as an observation requirement; a screen equivalent is the K pictograph build.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "1021ec82e922e81aa0b0bb784eeaef83a06b019267c26f9d10a39225d896709a",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-03-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "build_one_to_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Recording survey answers one sticker per response is build_one_to_one (slice 7).",
+      "nextAction": "Probe with a class-survey framing and confirm the categories are the survey choices.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c72ecb375a8cc5fc80175b8731a7bfe2eefc7a8c05f462b3704493fb762aebd0",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-03-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "build_one_to_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "A one-icon-per-item pictograph or bar build is build_one_to_one (slice 7); build_graph stays the scaled Grade 3 mode.",
+      "nextAction": "Confirm the bar style variant appears alongside the icon style.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "9664e05a103fc3fc8519e0cbaf906ed6d867d089f8f1aff936b4b4d29011cc2a",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-03-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "compare_bars",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "bar-model",
+          "mode": "picture_graph",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Which bar is taller (K.MD.A.2) answers which has more/less; picture_graph reads how many when one icon is one item.",
+      "nextAction": "Probe compare_bars with the exact text; confirm the values are not printed on the bars and that a how-many question is asked.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "ea486ab7d0f624de0daf30f836ecc189d645f74bc98aa10daf77f81fb0ee9188",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-03-F": {
+      "fit": "development",
+      "candidates": [],
+      "reason": "Predicting an outcome and then collecting class data to verify it is a classroom cycle; no primitive holds both the prediction and a real collection.",
+      "nextAction": "Record as an observation requirement.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "080f5f91618bd56a6f8aeef696762c8a0e174f8f63adbe56705c9dbc78478fcc",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-03-G": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "most_least",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "explain_concept",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Most and least are read aloud with most_least (slice 7); explaining a display in one own-words idea still needs a graph stimulus in the spoken pack, which does not draw one.",
+      "nextAction": "Give explain_concept a bar/pictograph stimulus, or add a say-what-the-graph-shows turn to bar-model.",
+      "work": "k-data-recording",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c048fe958aa9de152f80bd91ef1f260ffb0592b5ecd49f5af463349eec3cde76",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-04-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "compare-objects",
+          "mode": "compare_two",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "compare_choice",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Say which is longer/shorter or heavier/lighter from two drawings is compare_two; compare_choice is the same closed-set spoken comparison.",
+      "nextAction": "Confirm heavier/lighter items exist, not only length.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "286419797c563933de257d9eab400ec16492cce553351802a723272cbe51e5c0",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-04-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "estimate_then_tile",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Estimate first, then tile and count, is estimate_then_tile (slice 7); body-part and everyday units are allowed and the unit the objective names overrides the random pick.",
+      "nextAction": "Probe with the exact text and confirm the estimate is captured before tiles appear.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "f0f663efe3a54213588f3b4cea9f3bbcc8476e2f83a1a08435e9491b684c5e32",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-04-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "tile_and_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Tile non-standard units and count them; the counted total is the recorded result.",
+      "nextAction": "Confirm the count is entered by the child, not shown.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c99f1bc49c1015787f9fdc118de7a43eec91a78060bf977bb4803f06bfd61281",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-04-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "measure-lab",
+          "mode": "balance_predict",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "compare-objects",
+          "mode": "compare_two",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Predict, then place two objects on a pan balance and watch it tip: balance_predict on the measure-lab birth (slice 7). The legacy balance-scale label was a name collision with the equation balancer.",
+      "nextAction": "Probe balance_predict with the exact text; confirm the prediction is captured before the test.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "a62f1880bba06dcb11667264f6f993769c746637b6b5201818d45fcf072993be",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-04-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "measure-lab",
+          "mode": "pour_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "measure-lab",
+          "mode": "capacity_predict",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Pouring cups into a container and counting them is pour_count; predicting which holds more is capacity_predict (measure-lab, slice 7).",
+      "nextAction": "Probe pour_count and confirm the cup count is asked only once the container is full.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "34ef9c36001f439cf0bd08099e7f985731a7193771baaa48005ff0ebdae8509e",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-04-F": {
+      "fit": "development",
+      "candidates": [],
+      "reason": "Tracking a measurement over days (plant growth, temperature) needs repeated real measurements; no primitive stores a longitudinal record.",
+      "nextAction": "Record as an observation requirement.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "df624f821bd4cfb77f15fa30af4f55cc7bc6b2160facd8150422b433f7bb888e",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-04-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "analog-clock",
+          "mode": "elapsed",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "time-sequencer",
+          "mode": "duration-compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "A real-time stopwatch exists in analog-clock elapsed, and duration comparison is time-sequencer duration-compare, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): it is picture-primary and prints no clock time at any band. Timing a live activity and comparing with peers is still not judged.",
+      "nextAction": "Probe duration-compare at K; keep peer comparison as observation.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "5bfe623a1bcdee07c8afb425ab32f159fc2c89080425f182b3dd1d4b6028720d",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-05-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "compare-objects",
+          "mode": "compare_two",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Side-by-side longer/shorter is the direct comparison mode in both primitives.",
+      "nextAction": "Confirm objects are aligned at one end so the comparison is visual, not a guess.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "41fb6cec3b0d2647d75b182ad565a898832a3d5cb549433e736807eb660da639",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-05-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "tile_and_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Tiling with hands, fingers or feet as the unit is tile_and_count with body-part units (slice 7); the unit the objective names is honored.",
+      "nextAction": "Probe with the exact text and confirm hand tiles are used.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "74efb60b4f16887c7fa62c405b2492dadd002165f4b0c8ec28a5610e5691d0c4",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-05-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "tile_and_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Uniform items laid along one object and counted is the mode.",
+      "nextAction": "Confirm units are uniform and the object length is a whole number of units (1-12).",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "64914a9338a35a23837511b8b13680680a880f08e18d70e6e5d3477cc6862f39",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-05-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "two_unit_compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Measuring one object with two units and saying which needed more is two_unit_compare (slice 7).",
+      "nextAction": "Probe and confirm both unit counts are entered by the child.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e11ef5f38964d7d0420c200edd078a1c5b0078c7cf65916e88ed5788d02af5bc",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-05-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "tile_and_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "The unit count the child enters is the recorded result in numbers.",
+      "nextAction": "Confirm the recorded count is judged.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "32eb1390a37aec4b82fbf1e57e377c03d8a0cd0455ba9fe9b1d71e980b1981bd",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-05-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "length-lab",
+          "mode": "tile_and_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "length-lab",
+          "mode": "order",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Measuring several objects with the same unit is tiling, and ordering them by the result is order, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md).",
+      "nextAction": "Probe order at K after tiling; confirm the bars stay comparable on a shared baseline.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d9d7c19e0204e90356ed64aeb1bb684af53f6a80449c6cb9de36e77e68b104da",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-06-A": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Direct sensory experience is physical; sorting hot/cold pictures is the screen approximation.",
+      "nextAction": "Keep the picture sort; the sensory half is an observation requirement.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "557860ab738284a196006dc870644e6830523f3ec1d64c074ca55a958cb7960c",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-06-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sorting picture cards into hot/warm/cold or seasonal-weather categories is a semantic category sort, spoken one card at a time at K.",
+      "nextAction": "Probe with the exact text; confirm the bins are temperature words and the cards are weather/object pictures with sayable names.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c8662ca16a94cfe38d274a3c72b73e6792d8cd1c40b43b688c1f983e948bda41",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-06-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sorting picture cards into hot/warm/cold or seasonal-weather categories is a semantic category sort, spoken one card at a time at K.",
+      "nextAction": "Probe with the exact text; confirm the bins are temperature words and the cards are weather/object pictures with sayable names.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "ab2ca2dd8dc84a8f75bcac34d439c873e8e4f3c5dde2c78c64fe1481a60c217a",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-06-D": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "fast-fact",
+          "mode": "recognize",
+          "source": "src/components/lumina/service/manifest/catalog/core.ts"
+        },
+        {
+          "primitive": "knowledge-check",
+          "mode": "recall",
+          "source": "src/components/lumina/service/manifest/catalog/assessment.ts"
+        }
+      ],
+      "reason": "No thermometer primitive exists; a picture thermometer could be a recognize cue in fast-fact or a picture-primary knowledge-check item, but neither draws one today.",
+      "nextAction": "Add a code-drawn zone thermometer stimulus.",
+      "work": "picture-thermometer",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "8d34effd63ec868476e1f8d5d689746357e0b540935b3cfc3643e70b4d9a0101",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-06-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "knowledge-check",
+          "mode": "apply",
+          "source": "src/components/lumina/service/manifest/catalog/assessment.ts"
+        }
+      ],
+      "reason": "Predicting which scenario warms or cools faster is a spoken-first application question with picture-primary K choices.",
+      "nextAction": "Probe and confirm choices are pictures with the tutor reading the scenario aloud.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "3547ef6eca9664804da77961a0becec25d939b22e274e4b4a2f7f4db3f8340be",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-06-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "compare_choice",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Two things side by side, say hotter or colder from the closed set the objective names, is compare_choice.",
+      "nextAction": "Confirm the two pictures are visibly different in temperature cue and the words are not printed as buttons.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "57e270d1cfa6741a60bd023fe89469410c52775b7cf421bc27417838f7de1bc0",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-07-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Activities as picture cards sorted into quick and long bins, spoken, is sort_one at K.",
+      "nextAction": "Confirm the activity pictures are recognizable without labels.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "3929fde9b58a60a3b505e067c9b0ad094bce6cf41fe49d46edae7cf733e8b488",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-07-B": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "analog-clock",
+          "mode": "elapsed",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "A sand timer measuring a live activity is physical; the stopwatch in elapsed is the nearest screen tool but does not time an off-screen action.",
+      "nextAction": "Keep as observation.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "6080e7174ce9436ca57d257319e3dc1578c263a213d44030582a45a4fe5632d5",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-07-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "duration-compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Ordering activities by duration is duration-compare, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md).",
+      "nextAction": "Probe duration-compare at K with three familiar activities and confirm the \"about the same\" option reads as a picture.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "7f9d61f469df1681cc8a9aefdbb10c9a572308e721f928308ff4e25a27a8b8ae",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-07-D": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "before-after",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Predicting before/after a sand-timer marker is a live prediction; before-after (K since 2026-09-08) reasons about events, not timers.",
+      "nextAction": "Keep as observation.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "7ffeed1acc7a0be2a2071d60c63bf865417612e41b300e193c0c69c7eae2d010",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-07-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Match each activity to its time tool: sort_one with tool bins (sand timer, clock).",
+      "nextAction": "Confirm bins are the tools and cards are the activities.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "0e7384f3469b15f90a6b24888a885c72716eb7213c73e2c33b889d3f90c83402",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-07-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "sequence-3",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "timeline-builder",
+          "mode": "sequence-daily",
+          "source": "src/components/lumina/service/manifest/catalog/calendar.ts"
+        }
+      ],
+      "reason": "Ordering daily routines on a timeline is sequence-3 at K or a daily timeline; duration vocabulary is spoken alongside, not judged.",
+      "nextAction": "Probe sequence-3; confirm three routines in one day and that the initial order is shuffled.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "f1ad48adaada7ec44756f11afd92c2e1928cfbf156598bf45713cd2008cce46a",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-08-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "say_answer",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Say empty or full for each pictured container is a closed-set spoken answer, as a sort or a say_answer item.",
+      "nextAction": "Confirm containers are drawn with visible fill levels and no printed labels.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "4e535fe17a61cc19e0cc789fdd8e9899762d53dd99e688ab104eb273f8f74d8f",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-08-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "compare_choice",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Two identical containers with different amounts, say more or less, is compare_choice.",
+      "nextAction": "Confirm the containers are identical and the fill difference is unambiguous.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "3ed4e27f5e99f49c657314aa05765077c510eef18f528d4f95b18ea45e3d9350",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-08-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "measure-lab",
+          "mode": "order_capacity",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Ordering three or more containers by amount is order_capacity (measure-lab, slice 7).",
+      "nextAction": "Probe order_capacity with identical containers at different fill levels.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e279d7014eafbedf2bacafa1a075c4742823ce551ad9bb264565e6b8fe1929a9",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-08-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "compare-objects",
+          "mode": "compare_two",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Say which container holds more is the prediction half; the pour test is a classroom follow-up the objective allows.",
+      "nextAction": "Confirm two different-shaped containers are drawn with a defensible answer.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "9ec1d3a9c1ab1df04b997e747aa6b570f8e1c2b2733ca17f31337d5a57171681",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-08-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Grouping containers as small, medium or large is a size sort at K.",
+      "nextAction": "Confirm the three size bins are visually distinct.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "4006158fa43d14a8541efe00c5603c832bb8eb1be962293fc50f8a80f790d46c",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-08-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "measure-lab",
+          "mode": "pour_count",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Counting cups of rice or sand to fill a container is pour_count (measure-lab, slice 7).",
+      "nextAction": "Probe with the exact text and confirm two containers are compared by cup count.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "59b05e68af4a86ceeebbeaf84a585b38d27b7b1d2eab1e16406affb4ba9905b7",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-09-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "build_one_to_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Placing a sticker per choice is build_one_to_one (slice 7).",
+      "nextAction": "Probe with a personal-choice framing.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "31acef859166b4c8a71ca175c482c355184312329d7ae982de3e3a736c6f95ca",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-09-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "match_to_bar",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "bar-model",
+          "mode": "read_one_to_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Matching an object set to the bar or icon row that shows it is match_to_bar; reading how many from a one-to-one graph is read_one_to_one (both slice 7).",
+      "nextAction": "Probe match_to_bar with the exact text.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "28b68b248c2f00a67a68b9a284cc03e614f3555fa74005e844c9dd041c2bc343",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-09-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "most_least",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Most and least across three or four bars is most_least (slice 7); the reason is said aloud in the tutor loop.",
+      "nextAction": "Probe most_least and confirm both most and least are asked in one session.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "8d6d11e5777d5541948e9bdb04249062224e8fb1cf0361fddaef639bc2f8284b",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-09-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "match_to_bar",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "counting-board",
+          "mode": "compare",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Matching counters or objects to the chart that represents them is match_to_bar (slice 7); comparing the matched groups is the counting-board comparison.",
+      "nextAction": "Probe match_to_bar with a manipulatives framing.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "f4046c8d89c0a4daa4920ba879a1170e163a3157c898a1d850db119a8c677905",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-09-E": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "bar-model",
+          "mode": "most_least",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "bar-model",
+          "mode": "compare_bars",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Within one data set, most/least and taller-bar reads are served (slice 7); comparing two RELATED sets still needs two graphs side by side.",
+      "nextAction": "Add a two-graph comparison.",
+      "work": "k-data-recording",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "a9271225c2353b22a3fc1a019965ff34a05e28f7a332b2f4ff22096bb63860cf",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-09-F": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "knowledge-check",
+          "mode": "apply",
+          "source": "src/components/lumina/service/manifest/catalog/assessment.ts"
+        }
+      ],
+      "reason": "Drawing one conclusion from a shown chart can be a spoken application question; suggesting actions is open reasoning.",
+      "nextAction": "Probe knowledge-check apply with a chart in the stem; keep the action suggestion as discussion.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "971ae99a31e0a107efb93d56d4a6cd2e6b6498350843114a1ba2b338bb6ffb7c",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "MEAS001-09-G": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "knowledge-check",
+          "mode": "analyze",
+          "source": "src/components/lumina/service/manifest/catalog/assessment.ts"
+        }
+      ],
+      "reason": "Predicting a future data pattern is an analysis question; at K the choices must be pictures and the reasoning stays spoken.",
+      "nextAction": "Probe analyze at K for picture-primary choices.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "f306282376e4615ce6e265275eb5b71ae93e44f707fcf8a20df4b5072a74d785",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-01-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "pattern-builder",
+          "mode": "identify_core",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Finding the repeating unit in an object pattern is identify_core; sound patterns are not on screen.",
+      "nextAction": "Confirm cores are AB/AAB/ABB at K.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "336492eb7906a539430c10f5e28baa49fb4ec3f9451f9313545da335a66a4991",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-01-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "pattern-builder",
+          "mode": "extend",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "The Copy phase precedes Extend inside pattern-builder; extend is the eval mode that judges the reproduced pattern.",
+      "nextAction": "Confirm the copy phase is judged, not only displayed.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "587dc9f64cccea34503a14f6ec719302b9cd40d7391f99825f99c1e1d8381b61",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-01-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "pattern-builder",
+          "mode": "extend",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Extending AB (and ABC) with color or shape tokens is the mode at K-1.",
+      "nextAction": "Probe extend and confirm ABC cores appear when the objective names them (the constraint lists AB, AAB, ABB).",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "4d7dc30266541e9801322abda298585aa7d8986c578864bafdf1f3395f6dac91",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-01-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "pattern-builder",
+          "mode": "extend",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Extending AB (and ABC) with color or shape tokens is the mode at K-1.",
+      "nextAction": "Probe extend and confirm ABC cores appear when the objective names them (the constraint lists AB, AAB, ABB).",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "8f2ab2edeecd63dcbcc6a2d82ada895bf001bd62a94a16653af778aaf293611e",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-01-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "pattern-builder",
+          "mode": "create",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Creating an AB pattern is the create mode. The catalog text places creation at grades 2-3, but the probe shows K creation challenges with a two-element core and distractor tokens, so the constraint text is stale rather than the generator.",
+      "nextAction": "Refresh the catalog constraint wording; the K draw is sound.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e3fa96b16ecc4ea08ce053654f9e17bbb21213b0d229d945f84a16ab72a7639c",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-01-E": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "pattern-builder",
+          "mode": "extend",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Filling a missing element inside a pattern is not a challenge type; extend only continues the end.",
+      "nextAction": "Add a missing-element challenge.",
+      "work": "pattern-k-gaps",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e50805c396612b80d10d7037d6d94fc4e668a8f18b0ba95b6cdfd4c980d766d5",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-01-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "pattern-builder",
+          "mode": "create",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "explain_concept",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Creation with several elements is the create mode (K creation confirmed by the PTRN001-01-D probe); explaining the rule in own words is explain_concept, which the catalog names for patterns.",
+      "nextAction": "Probe create with a multi-element core and explain_concept with a pattern stimulus.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "1a838ba9eac223bf82053ed64aab8d5cfabb0d496c28f4c1a3ecd3ad6894b31a",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-02-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_one",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Sort by one obvious attribute, spoken, is sort_one at K.",
+      "nextAction": "Confirm the attribute is the taught one.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "50f9955ea4a934a0bb35272441879226def87e67438f5bf28581ff29634a39a4",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-02-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "explain_concept",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        },
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_attribute",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Saying the rule a sorted group follows is explain_concept over a shown instance; sort_attribute is the same act inside sorting-station but floored at Grade 1.",
+      "nextAction": "Probe explain_concept with a sorted-group stimulus.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c1c466d3b486825873e5fcc447bd56aec3ca54476a5ccc522956c847c2aa2ca2",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-02-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_variety",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Re-sorting the same set by a different attribute is sort_variety, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md).",
+      "nextAction": "Probe sort_variety at K and confirm the rule actually rotates between rounds.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "80aa2742bf88409789c53fa91177d5b2f5727ab1e29f384fc4d730c470d36084",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-02-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "two_attributes",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Two attributes at once is two_attributes, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md).",
+      "nextAction": "Probe two_attributes at K on colour AND shape; confirm the emoji matches its label on every card.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "fda926ec7438003f18d68adf26de9976b1a52a29b10582d1f9f0f26cbc074cb9",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-02-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_attribute",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "sorting-station",
+          "mode": "sort_variety",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Choosing and labelling categories before sorting is open production. Both modes came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md), and sort_attribute is the closer fit: the child SAYS how the set should be sorted before sorting it, which is the labelling act this objective names.",
+      "nextAction": "Probe sort_attribute at K (not sort_variety); keep free category invention as discussion.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "302b8f6c5594f7b7848ffbd8097bee3ba73db189ed01e26ba4c637db47854cdc",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-02-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "explain_concept",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "A \"because\" statement about a shown sort is one short idea judged on meaning.",
+      "nextAction": "Probe explain_concept with a sort stimulus and confirm the rule is not printed.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "12482f1fcfd6a2996c257d089564bc781992c2e0fab39c2ce078397c88023aeb",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-02-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "sorting-station",
+          "mode": "odd_one_out",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Say which card does not belong, spoken at K.",
+      "nextAction": "Confirm the explanation turn exists after the pick.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e1c3465a1b7901c09a9b8e75c9a21a1144f98b9a429c83e0b12a644ca4cb4b11",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-03-A": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "ordinal-line",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "First is an ordinal word the line asks for; last is not in the first-through-tenth vocabulary the tutor uses.",
+      "nextAction": "Accept last (and end) as a place word at K in identify.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "40a004b4d09d3835fc44916916aa638308e815681663c58f0605c2499883d268",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-03-B": {
+      "fit": "development",
+      "candidates": [],
+      "reason": "Copying or inventing a movement sequence (clap-jump) is physical performance; no primitive observes movement.",
+      "nextAction": "Record as an observation requirement.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "dc2949f25dfdd6b3fb4ce71888da7f2b5241f511195ec13696d9553690bd3681",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-03-D": {
+      "fit": "development",
+      "candidates": [],
+      "reason": "Copying or inventing a movement sequence (clap-jump) is physical performance; no primitive observes movement.",
+      "nextAction": "Record as an observation requirement.",
+      "work": "physical-observation",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "fdb233caf6e1a7a4c4e9146f377e819fce5d0a4842918ea29d65793534910d3c",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-03-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "sequence-3",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ordinal-line",
+          "mode": "build_sequence",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "timeline-builder",
+          "mode": "sequence-daily",
+          "source": "src/components/lumina/service/manifest/catalog/calendar.ts"
+        }
+      ],
+      "reason": "Arranging three picture cards in logical order is sequence-3 at K, or a spoken-clue build on the ordinal line. The P1 that made this row unusable is FIXED (2026-09-08): the easy tier printed a clock time on every card and told the child to read it, because resolveSupportStructure took no grade. At K the anchor is now a sun-position picture derived from the same time (qa/reader-fit/time-sequencer-PRE-2026-09-08.md).",
+      "nextAction": "Re-probed clean 2026-09-08: 26/26 content checks green on both draws, including \"the child is not asked to READ clock times\" (was failing 10/10 items). Owed: a live drive of the spoken half.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "af03c7d471677e656da226a7e7830b2abc43cf98ead7805c571db56071386cf3",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-03-E": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "before-after",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Identifying the missing middle step is not a challenge type; before-after (K since 2026-09-08) asks for a neighbour, not for a gap.",
+      "nextAction": "Add a missing-step challenge to the sequencer.",
+      "work": "pattern-k-gaps",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "9ff50701997634547bae01acbfb188d793234e85feddf98217c54905136b45b4",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "PTRN001-03-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "sequence-5",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "ordinal-line",
+          "mode": "build_sequence",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Five-card story sequencing is sequence-5, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/time-sequencer-PRE-2026-09-08.md); the ordinal line holds four spoken clues. The same slice fixed the card count -- the mode returned three cards because the schema required only three slots -- so a K draw now returns 4-5.",
+      "nextAction": "Probe sequence-5 at K with story text; confirm 4-5 cards and that the sun-position cue agrees with the correct order.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d2575225ec829b9487dde0095fbe56d4c30a5f1b93b8d3e62bf29f61ae1c75a2",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-01-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "time-of-day",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Matching activities to morning/afternoon/night is time-of-day at K.",
+      "nextAction": "Confirm sun-position cues are part of the stimulus.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c93e0db9940af7d2113cf9dee80d29fe933dec95913b581bca3099b04b037253",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-01-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "sequence-3",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Three daily routines in order is sequence-3 at K.",
+      "nextAction": "Confirm the three are unambiguous in order.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "33d82859b9166876680adcc8cbfdf7cddd9347b4bf72898bbf4109ba0f25d819",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-01-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "sequence-5",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "analog-clock",
+          "mode": "match",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Five timed activities route to sequence-5, unfloored to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/time-sequencer-PRE-2026-09-08.md); matching each to a clock face is analog-clock match. read-schedule is NOT the K home -- its floor HELD (qa/reader-fit/k-band-floor-2026-09-08.md), because reading printed clock times off a schedule IS its task.",
+      "nextAction": "Probe sequence-5 at K; route the clock-time half to analog-clock match rather than read-schedule.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e2264843799ad3c1c6f9bd6ed14762c4a62775c843d0840796df16db284ef6e1",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-02-A": {
+      "fit": "partial",
+      "candidates": [
+        {
+          "primitive": "di-spoken-practice",
+          "mode": "say_answer",
+          "source": "src/components/lumina/service/manifest/catalog/di.ts"
+        }
+      ],
+      "reason": "Reciting seven days in order is a sequence production; the spoken pack can ask one next-day question from the closed set of seven.",
+      "nextAction": "Add a days-of-week sequence turn (say what comes after) to calendar-explorer or the spoken pack.",
+      "work": "calendar-days-k",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "492e351d9fb8e09b019d95f4a42fd208e936f0a7b3067093aea00a0b208b516e",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-02-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "calendar-explorer",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/calendar.ts"
+        }
+      ],
+      "reason": "Finding today, yesterday, tomorrow or a marked event on the calendar is identify.",
+      "nextAction": "Probe identify with the exact text; confirm today is marked and the target day is not pre-highlighted.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "0885d2fb1ab391c0cfc305edeea827426f2f6d8b0657ef1e1a263a46f171d0cb",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-02-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "calendar-explorer",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/calendar.ts"
+        }
+      ],
+      "reason": "Finding today, yesterday, tomorrow or a marked event on the calendar is identify.",
+      "nextAction": "Probe identify with the exact text; confirm today is marked and the target day is not pre-highlighted.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "5e46cd366e5302f58b7901b77f470dbf14c41ec1e866ca4e830a41d0ed32ab45",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-02-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "calendar-explorer",
+          "mode": "identify",
+          "source": "src/components/lumina/service/manifest/catalog/calendar.ts"
+        }
+      ],
+      "reason": "Finding today, yesterday, tomorrow or a marked event on the calendar is identify.",
+      "nextAction": "Probe identify with the exact text; confirm today is marked and the target day is not pre-highlighted.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "e2719776d5d2d22a867b96660ffcd84a7135495c15cb724bfbb78348ca0246e6",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-02-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "calendar-explorer",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/calendar.ts"
+        }
+      ],
+      "reason": "Counting forward up to 7 days, or the days between two marked events, is count.",
+      "nextAction": "Confirm counts stay within a week at K.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "c3d5b1ce93256aa6125e80c789492a90cfd8be60d6bbe3de33e6fc303fd8429d",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-02-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "calendar-explorer",
+          "mode": "count",
+          "source": "src/components/lumina/service/manifest/catalog/calendar.ts"
+        }
+      ],
+      "reason": "Counting forward up to 7 days, or the days between two marked events, is count.",
+      "nextAction": "Confirm counts stay within a week at K.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d6332b172060d020e0bd676298ea1e9d18c994b497827b3b2a499bbe39c62271",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-03-A": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "analog-clock",
+          "mode": "hand_name",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Naming the highlighted hand aloud is hand_name (slice 7).",
+      "nextAction": "Probe hand_name and confirm both hands are asked across a session.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "22160fea0afddeee523cfe88e097a4b802e178fd91a546dbfd95575aa2d82be6",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-03-B": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "analog-clock",
+          "mode": "count_face",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Tapping 1 through 12 around the face in order is count_face (slice 7).",
+      "nextAction": "Probe count_face and confirm the order is judged, not only the set.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "b5ee6e2592b70f45b06cbf475ba91c68e415c9ce9f36129a0fd5e30634b1e31f",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-03-C": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "analog-clock",
+          "mode": "read",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Read an o-clock face and pick the time; K is hour and half-hour only.",
+      "nextAction": "Probe read with the exact text; confirm every face is :00 at K and the four options differ by hour.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "4911f62b242107dafa653b192cb84578dd749bee3cfcd5a93cab074d90e198b1",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-03-D": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "analog-clock",
+          "mode": "hear_time",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "analog-clock",
+          "mode": "match",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Hearing a spoken whole-hour time and picking the face is hear_time (slice 7); match remains the face-to-digital direction.",
+      "nextAction": "Probe hear_time and confirm the spoken time is never printed.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "076f1477e1aae876249587494f2988a44088171282484e69a85e4eb2731c30b1",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-03-E": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "analog-clock",
+          "mode": "set_time",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Drag the hour hand to a whole hour on the face is set_time.",
+      "nextAction": "Confirm the minute hand is fixed at 12 for K.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "d42b2ca27391db69af0b52530171c2ba9d967974d1857592e587b41637409ec8",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-03-F": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "analog-clock",
+          "mode": "match",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Match the analog face to its digital display for whole hours is match.",
+      "nextAction": "Confirm distractor digital times differ by hour.",
+      "work": "",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [],
+      "requirementHash": "6761c592f94dbb47f1fc54ca7b733d7d549364db36f46b99f8aa988133f69d57",
+      "reviewedAt": "2026-09-09T10:45:28.147307+00:00",
+      "reviewer": "Claude; explicit curriculum/action-to-catalog review",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    },
+    "TIME001-03-G": {
+      "fit": "candidate",
+      "candidates": [
+        {
+          "primitive": "time-sequencer",
+          "mode": "clock-sequence",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        },
+        {
+          "primitive": "analog-clock",
+          "mode": "hear_time",
+          "source": "src/components/lumina/service/manifest/catalog/math.ts"
+        }
+      ],
+      "reason": "Served by time-sequencer clock-sequence, built 2026-09-09 for this row: the child orders daily activity cards that each carry an analog CLOCK FACE at the hour that activity happens, which is the whole-hour time and the daily activity and the sequence in one task. The two modes the review previously named carry one half each and cannot meet -- a 2026-09-09 probe found analog-clock read has no sequence and answers with printed digital times, and sequence-5 bans clock times at K by design (qa/eval-reports/k-held-floors-2026-09-09.json). The face is a picture, not printed digits, so it adds no reading demand; read-schedule keeps its Grade-1 floor because reading printed times IS its task.",
+      "nextAction": "Content-test at K (/eval-test time-sequencer clock-sequence). The generator DROPS any challenge whose times are not all whole hours in one half of the day or whose hours disagree with correctOrder, so watch yield across a run of draws.",
+      "work": "k-band-floor-reaudit",
+      "reviewLevel": "catalog",
+      "content": "not_tested",
+      "interaction": "not_tested",
+      "evidence": [
+        "qa/eval-reports/time-sequencer-clock-sequence-2026-09-09.json (8/8 draws clean across K auto/easy/hard and a G1 control; the drop gates fired on 3 challenges)",
+        "qa/eval-reports/k-held-floors-2026-09-09.json (the read + sequence-5 probes this replaces)",
+        "qa/eval-reports/k-held-floors-chrome-drive-2026-09-09.json + clock-sequence-k-2026-09-09.png (3 faces rendered, ordering works, no printed time on the K stage)"
+      ],
+      "requirementHash": "dbce38fc4bc0b21cb71d3cb1dd21f7413bcecaa940cfc65b8f4d3f8b82831d66",
+      "reviewedAt": "2026-09-09T11:56:18.097Z",
+      "reviewer": "Claude; mode built for this row, probed live and driven in Chrome",
+      "alternativesPolicy": "Full catalog inventory inspected; absence of a candidate is a development recommendation, not a runtime proof of impossibility."
+    }
+  },
+  "catalogSources": {
+    "src/components/lumina/service/manifest/catalog/math.ts": "e436b26bd1a065d36fc17df1fce41f0b566e55b40cd781f1c8b1c26f81e8d60b",
+    "src/components/lumina/service/manifest/catalog/di.ts": "224eb8f18b5a4fe8c96b64baae2d37201078d01174e307f00f42a5ef52cb3bab",
+    "src/components/lumina/service/manifest/catalog/calendar.ts": "bf29d9e9d941a0325dcbb376dce56502d71e3cb9b138ee1ad8328e8dfa37635f",
+    "src/components/lumina/service/manifest/catalog/assessment.ts": "88f8684b5666c0ada61bb1caf33d49abd9027ee7cce7a445fa09ae9e25400e4c",
+    "src/components/lumina/service/manifest/catalog/core.ts": "9d0cfa14a39299c61e4c65c777aa440f7385aee427a4936cba7a619c8b5bf6c5",
+    "src/components/lumina/service/manifest/catalog/index.ts": "dd11792cf47bd09fe65f361907b03f317db0e055ec165e424af215e81f825685"
+  },
+  "scope": "All 166 live published K Mathematics requirements; catalog review for every row. Content evidence is separately scoped."
+}

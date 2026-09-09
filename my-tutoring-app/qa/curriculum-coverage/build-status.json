@@ -1,0 +1,96 @@
+{
+  "updated": "2026-09-09",
+  "note": "Fit verdicts stay frozen until the owed checks pass and the review is re-run.",
+  "items": [
+    {
+      "design": "letter-workshop",
+      "work": "letter-writing",
+      "primitive": "letter-workshop",
+      "state": "built",
+      "date": "2026-09-07",
+      "commits": [
+        "6a52b07c",
+        "a7233f8e"
+      ],
+      "layers": "L0 trace birth, L1 trace/copy/write modes, L2 mode-aware tutor scaffold, L3 support tiers, L4 scoped structural difficulty. Next skill: /add-sound after the device review.",
+      "built": "Trace, copy beside a separate model, and write from an audible letter name over 52 code-owned uppercase/lowercase references. Stroke capture keeps every attempt and retry. Copy/write feedback is provisional and local-only. Mode-aware tutor scaffold (15 context keys, three hint levels, six struggle responses). Support tiers withdraw numbered starts, arrows, line labels and reminders per challenge. Structural difficulty selects low/middle/high form complexity within the allowed case, widening the band so every challenge gets a distinct letter.",
+      "verified": "All three modes and the easy/medium/hard trace sweep pass the /api/lumina/eval-test harness. Nine headless browser mode/tier flows over 36 challenges pass drawing, check, retry, next, finish and evidence submission. 13 post-fix live draws gave 4/4 distinct letters at every tier. typecheck:lumina 0; 252/252 focused tests. Browser speech completion was simulated, not heard.",
+      "owed": "Human review of all 52 manuscript forms and stroke conventions. Audible cues on real devices. Child finger and stylus tolerances. Calibrate copy/write feedback and verify backend evidence replay before adaptive updates. Full live tutor coaching. Mode priors (trace 1.5, copy 3.5, write 5.0) are design values, not empirical calibration.",
+      "open": "/lumina -> Developer Tools -> Language Arts -> Writing -> Letter Workshop -> Generate Content (topics: Trace lowercase l; Letter Formation Group 2). Pick a mode and a Letter difficulty.",
+      "reports": [
+        "qa/eval-reports/letter-workshop-birth.md",
+        "qa/eval-reports/letter-workshop-modes-2026-09-07.md",
+        "qa/eval-reports/letter-workshop-tiers-2026-09-07.md",
+        "qa/eval-reports/letter-workshop-2026-09-07-l1l3.md"
+      ]
+    },
+    {
+      "design": "you-and-me",
+      "work": "oral-interaction",
+      "primitive": "you-and-me",
+      "state": "built",
+      "date": "2026-09-07",
+      "commits": [
+        "6a52b07c"
+      ],
+      "layers": "L0 spoken birth, L1 describe_action / describe_independent_action, L2 tutor context, L3 support tiers; structural difficulty assessed and kept support-only under the two-mode contract; sound audited as runner-owned.",
+      "built": "Spoken I/you perspective sentences across three paired scenes (six turns). describe_action asks for I or you from the current speaking role; describe_independent_action binds myself/yourself to the same actor. Voice-judged through the shared useJudgedScriptRunner with a scripted opener, scene replay and capped corrections. Support tiers withdraw the speaker highlight, actor marker and role checklist while names, roles, replay and correction stay at every tier.",
+      "verified": "Nine eval-test generations (58 turns) across both modes at easy, medium and hard plus mixed and blended sessions. Three tier-aware tutor prompt probes with zero audit findings. 48 focused tests; typecheck:lumina 0. Sound: existing runner sounds traced, no edits needed.",
+      "owed": "Real browser and microphone acceptance: role switches, a fluent wrong-perspective sentence, a bare pronoun, an echoed named scene and a valid paraphrase. Listen for sound levels, overlap with tutor speech and spurious microphone turns. Rehearsal is not proof of conversational transfer.",
+      "open": "/lumina -> Developer Tools -> Language Arts -> You & Me. Pin a mode and toggle easy/medium/hard.",
+      "reports": [
+        "qa/eval-reports/you-and-me-birth.md",
+        "qa/eval-reports/you-and-me-l3-2026-09-07.md",
+        "qa/eval-reports/you-and-me-structural-assessment-2026-09-07.md",
+        "qa/eval-reports/you-and-me-sound-2026-09-07.md"
+      ]
+    },
+    {
+      "design": "story-bridge",
+      "work": "two-story-compare",
+      "state": "built",
+      "date": "2026-09-07",
+      "primitive": "story-bridge",
+      "layers": "L0 birth + L2 tutored (judged-loop strong form at birth). No eval-mode ladder yet: /add-eval-modes owns match_setting, say_alike and say_different; then support tiers, structural difficulty (similarity depth), sound and affordances tags.",
+      "built": "Core task match_character: the Live tutor reads two stories, names an anchor character, and the child taps the far-shore character who acted alike; a bridge draws between the shores on affirm. Gesture items run through the shared useJudgedScriptRunner, which owns the clock. Story text is audio-only before the verdict; the two evidence sentences print on affirm; the anchor shore is never tappable and the far shore is reshuffled per item. The explicit fallback pair discloses itself. Catalog tutoring block present at birth.",
+      "verified": "Five eval-test generations (three challenges each, no fallback) pass the G1/G2/G4/G5 checks; two answer-leak classes were caught and gated at birth (a title naming a character; describing-word names). Headless DI drive PASS; script tests 14/14; DI-script suites 1636/1636; typecheck:lumina 0.",
+      "owed": "Human browser and microphone sitting on a tablet with a real tap: stage shuffle, reveal and hear-again. The eval-mode ladder (match_setting, say_alike, say_different), support tiers, structural difficulty, sound and affordances tags. Six of the seven mapped requirements have no task yet; only LA006-04-B is addressed by the birth mode.",
+      "reports": [
+        "qa/eval-reports/story-bridge-birth.md",
+        "qa/eval-reports/story-bridge-2026-09-07.md"
+      ],
+      "commits": [
+        "e1ba04bd"
+      ],
+      "requirementIds": [
+        "LA006-04-B"
+      ],
+      "open": "/lumina -> Developer Tools -> Language Arts -> Reading Literature -> Story Bridge -> Generate (topics: friends who help; animals who help)."
+    },
+    {
+      "design": "story-ribbon",
+      "work": "oral-storytelling",
+      "primitive": "story-ribbon",
+      "state": "built",
+      "date": "2026-09-08",
+      "layers": "L0 spoken birth, L1 five eval modes, L2 mode-aware tutor scaffold, L3 support tiers, L4 narrative-shape difficulty, L5 procedural sound.",
+      "built": "Children rearrange three pictorial event cues and tell one connected account. Five modes separate tense-open retelling, present/future/past storytelling, and a privacy-safe story-to-experience connection. The judged runner owns prompting, feedback, retry and progression; picture labels stay time-neutral and model sentences remain hidden until a verdict.",
+      "verified": "Post-fix generation aligned 27/27 visible cues with judged event meanings. Ten pinned eval-mode runs plus blended and five-mode mixed sessions passed; 20/20 baseline/tier generations, 1,000 offline structural constructions, 30/30 focused tests, two backend calibration tests, tutor prompt probes, and Lumina typecheck all passed.",
+      "owed": "Human tablet/browser and microphone acceptance: card swapping, responsive layout, reveal and hear-again timing, fluent correct and wrong-tense responses, privacy-safe decline handling, real-child speech capture, and sound levels. Adaptive mastery credit remains gated on that sitting.",
+      "reports": [
+        "qa/eval-reports/story-ribbon-birth.md",
+        "qa/eval-reports/story-ribbon-2026-09-08.md",
+        "qa/eval-reports/story-ribbon-evalmodes-2026-09-08.md",
+        "qa/tutor-reports/story-ribbon-2026-09-08.md",
+        "qa/eval-reports/story-ribbon-support-tiers-2026-09-08.md",
+        "qa/eval-reports/story-ribbon-structural-difficulty-2026-09-08.md",
+        "qa/eval-reports/story-ribbon-sound-2026-09-08.md"
+      ],
+      "requirementIds": [
+        "LA004-06-J",
+        "LA006-02-E"
+      ],
+      "open": "/lumina -> Developer Tools -> Language Arts -> Speaking & Listening -> Story Ribbon (prompt: Tell a story from pictures)."
+    }
+  ]
+}

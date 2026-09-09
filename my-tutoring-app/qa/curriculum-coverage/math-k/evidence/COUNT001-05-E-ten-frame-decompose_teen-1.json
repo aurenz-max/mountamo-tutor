@@ -1,0 +1,128 @@
+{
+  "id": "COUNT001-05-E",
+  "primitive": "ten-frame",
+  "mode": "decompose_teen",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Break apart numbers 16-19 into ten ones and some further ones using visual models",
+  "requestedAt": "2026-09-09T10:21:49.111Z",
+  "inputHash": "dcfc11da9dbbc456c67f26a32a91e8c26d0cc291592e946452ef9b40114cee35",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-ten-frame.ts": "fc1b5f4ef5aa1f4e875b3b504452c6fbf8393a4b082234a95d1f090d82f9011e",
+    "src/components/lumina/primitives/visual-primitives/math/TenFrame.tsx": "1ec1dadd3664a6731ddc768b8a29cc4ad379d39bbd7394eda846f7259f92376d",
+    "src/components/lumina/service/math/teenWindow.ts": "ad298d42aaf5acf87c005841c655ab0d94c08df89416385f6cde84a8362892bf",
+    "catalog-entry:ten-frame": "3d65669a70acabadc6b4ce19212c20d11a5c7da31bc27fb218ba01fc566ab882"
+  },
+  "params": {
+    "componentId": "ten-frame",
+    "evalMode": "decompose_teen",
+    "topic": "Break apart numbers 16-19 into ten ones and some further ones using visual models",
+    "intent": "Break apart numbers 16-19 into ten ones and some further ones using visual models",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "ten-frame",
+    "evalMode": "decompose_teen",
+    "duration": 2485,
+    "catalogMeta": {
+      "label": "Find the Ten (Teen Numbers)",
+      "beta": 3,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "decompose_teen"
+      ],
+      "description": "A teen group of 11-19 counters arrives SCATTERED across a double frame and the child turns exactly ten of them yellow, so the ten is FOUND rather than given. CCSS K.NBT.1 decomposition: 14 is ten and four more. Concrete manipulative; no microphone needed."
+    },
+    "validation": {
+      "challengeCount": 6,
+      "typesFound": [
+        "decompose_teen"
+      ],
+      "payloadBytes": 1898,
+      "longestStringLength": 101,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding the Ten in Teen Numbers",
+      "description": "Break apart numbers 16 through 19 into a group of ten and some further ones using a double ten frame.",
+      "mode": "double",
+      "counters": {
+        "count": 0,
+        "color": "red",
+        "positions": []
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "decompose_teen",
+          "targetCount": 16,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 16 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c2",
+          "type": "decompose_teen",
+          "targetCount": 17,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 17 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c3",
+          "type": "decompose_teen",
+          "targetCount": 18,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 18 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c4",
+          "type": "decompose_teen",
+          "targetCount": 19,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 19 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c5",
+          "type": "decompose_teen",
+          "targetCount": 16,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 16 counters. Turn 10 of them yellow!"
+        },
+        {
+          "id": "c6",
+          "type": "decompose_teen",
+          "targetCount": 17,
+          "hint": "Count them out one at a time and stop at ten.",
+          "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+          "instruction": "Here are 17 counters. Turn 10 of them yellow!"
+        }
+      ],
+      "showOptions": {
+        "showCount": false,
+        "showEquation": false,
+        "showEmptyCount": false,
+        "allowFlip": true
+      },
+      "gradeBand": "K",
+      "twoColorMode": {
+        "enabled": true,
+        "color1Count": 0,
+        "color2Count": 0,
+        "color1": "yellow",
+        "color2": "red"
+      }
+    }
+  },
+  "durationMs": 2494
+}

@@ -1,0 +1,119 @@
+{
+  "id": "COUNT001-02-D",
+  "primitive": "counting-board",
+  "mode": "give_me_n",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",
+  "requestedAt": "2026-09-09T10:51:06.972Z",
+  "inputHash": "4739a39dc5cca502a1db9d6aeae8e14bf477241ab413eb7f06560e5e4f001789",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-counting-board.ts": "4fcca5e9198f2588d9dfda15f763fca7bb665cf9a01095954467c8567b5b887f",
+    "src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx": "9680a2474c9b62add9d6475ac7f9e4264f9573c197039a5e07729a00ab0588a8",
+    "catalog-entry:counting-board": "c5403e40e01903aa26956b69cb1f8202ce96e2a28f7389d92b4fb3c77aaca22e"
+  },
+  "params": {
+    "componentId": "counting-board",
+    "evalMode": "give_me_n",
+    "topic": "Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",
+    "intent": "Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "counting-board",
+    "evalMode": "give_me_n",
+    "duration": 2503,
+    "catalogMeta": {
+      "label": "Give Me N (Concrete)",
+      "beta": 1.5,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "give_me_n"
+      ],
+      "description": "Count out a named number of objects from a bigger pile and hand them over. K.CC.B.5."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "give_me_n"
+      ],
+      "payloadBytes": 1634,
+      "longestStringLength": 87,
+      "longestStringPath": "challenges[4].narration",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Time to Count Bears!",
+      "description": "Practice counting out exact groups of friendly bears in neat lines and arrays.",
+      "objects": {
+        "type": "bears"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "give_me_n",
+          "instruction": "Give me three bears.",
+          "targetAnswer": 3,
+          "count": 6,
+          "arrangement": "line",
+          "hint": "Try tapping each bear one by one as you count them.",
+          "narration": "Let's work together to count out some of our bear friends from the pile!"
+        },
+        {
+          "id": "c2",
+          "type": "give_me_n",
+          "instruction": "Give me two bears.",
+          "targetAnswer": 2,
+          "count": 8,
+          "arrangement": "scattered",
+          "hint": "Take your time and tap each bear slowly so you don't miss any.",
+          "narration": "Here is a new pile of bears. Let's see how many we can count out."
+        },
+        {
+          "id": "c3",
+          "type": "give_me_n",
+          "instruction": "Give me four bears.",
+          "targetAnswer": 4,
+          "count": 10,
+          "arrangement": "line",
+          "hint": "Count them in order from left to right to keep track easily.",
+          "narration": "You are doing wonderful! Let's count out a nice long line of bears."
+        },
+        {
+          "id": "c4",
+          "type": "give_me_n",
+          "instruction": "Give me five bears.",
+          "targetAnswer": 5,
+          "count": 12,
+          "arrangement": "scattered",
+          "hint": "Remember to touch each bear as you say its number.",
+          "narration": "Look at all these bears! Let's count them carefully."
+        },
+        {
+          "id": "c5",
+          "type": "give_me_n",
+          "instruction": "Give me six bears.",
+          "targetAnswer": 6,
+          "count": 12,
+          "arrangement": "line",
+          "hint": "Check your work by counting your selected bears one last time.",
+          "narration": "This is our last challenge. Let's count out this final group of bears with a big smile!"
+        }
+      ],
+      "showOptions": {
+        "showRunningCount": true,
+        "showGroupCircles": false,
+        "highlightOnTap": true,
+        "showLastNumber": true
+      },
+      "gradeBand": "K"
+    }
+  },
+  "durationMs": 4967
+}

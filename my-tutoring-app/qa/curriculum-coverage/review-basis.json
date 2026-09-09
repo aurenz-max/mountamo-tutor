@@ -1,5 +1,5 @@
 {
-  "reviewedAt": "2026-09-08",
+  "reviewedAt": "2026-09-09",
   "scope": "la-k",
   "subject": "LANGUAGE_ARTS",
   "grade": "K",
@@ -208,8 +208,8 @@
     "src/components/lumina/service/manifest/catalog/engineering.ts": "f91a60a4bcc1d617052176f05ef61aa77f7831c4628d9eb1d459f23bad3bc73b",
     "src/components/lumina/service/manifest/catalog/history.ts": "7422097bda1a6fe2268b175e14671e34c7dafcfb7f8169519007a56c7bc94bff",
     "src/components/lumina/service/manifest/catalog/index.ts": "dd11792cf47bd09fe65f361907b03f317db0e055ec165e424af215e81f825685",
-    "src/components/lumina/service/manifest/catalog/literacy.ts": "b7c03ba4fec6be4f9a53a3156d5de77b03032ef07e8b07b3fca3e1377f8dddb1",
-    "src/components/lumina/service/manifest/catalog/math.ts": "965fe64089b463748e87e41d3b7b797b2e396d92478af52905c8b4fb71b1df89",
+    "src/components/lumina/service/manifest/catalog/literacy.ts": "5e326ca5d612c9e44103d71e3e865b49f37b03523201d08c205f0756c4de7a53",
+    "src/components/lumina/service/manifest/catalog/math.ts": "ef8fc556e001949280d3142f760e74e830e09311aa1a8e472e80d6fe61d28662",
     "src/components/lumina/service/manifest/catalog/media.ts": "21ca5cf866e99a88bd4bec732753ad75a8d65a145952890ea21959934999e8a8",
     "src/components/lumina/service/manifest/catalog/physics.ts": "4630334d6c820c5e9a7a1aad4b939ceb7ddc22221e81a71f9e405dde90f0bec4",
     "src/components/lumina/service/manifest/catalog/science.ts": "eef5541a444a7b065a937ec412b65cc1f990335f3a91ebd0fddbd3837e547531"
@@ -217,6 +217,8 @@
   "catalogReviewNotes": [
     "2026-09-07: Compared all exported catalog entries with the frozen review. The only addition is di-worked-procedure, restricted to G1-G4 multi-digit subtraction. No K Language Arts home; existing 201 capabilities and all reviewed edges are unchanged.",
     "2026-09-07 (build update): Compared all exported catalog entries with the frozen review. Additions since the baseline: letter-workshop (trace/copy/write), you-and-me (describe_action/describe_independent_action), di-deduction (conclude/deny/cannot_tell; no K Language Arts home) and story-bridge (registered in the working tree without eval modes; birth in progress, uncommitted). No previously reviewed entry changed in description, constraints, domain or modes, so all 191 decisions and every reviewed edge stand. The literacy additions appear as build status for their design themes, not as reviewed fits; their requirements remain development gaps until the owed checks pass and the review is re-run. Source hashes re-recorded for: di.ts, literacy.ts.",
-    "2026-09-08: literacy.ts gained story-bridge (match_character, judged-loop gesture birth e1ba04bd) with a tutoring block and no evalModes. Reviewed: no existing decision references the changed entries; the seven Story Bridge design requirements keep their development verdicts until the browser/mic sitting passes and the review is re-run. Built state rides the build-status layer."
+    "2026-09-08: literacy.ts gained story-bridge (match_character, judged-loop gesture birth e1ba04bd) with a tutoring block and no evalModes. Reviewed: no existing decision references the changed entries; the seven Story Bridge design requirements keep their development verdicts until the browser/mic sitting passes and the review is re-run. Built state rides the build-status layer.",
+    "2026-09-09: Re-reviewed current catalog drift. literacy.ts adds story-ribbon: its tense and story-to-experience modes implement LA004-06-J and LA006-02-E within the oral-storytelling design, with automated lifecycle evidence recorded in build-status; human browser/microphone acceptance remains owed, so frozen fit verdicts stay unchanged. math.ts changes are K Mathematics capability extensions (bar-model, measure-lab, analog-clock, time-sequencer, compare-objects) and create no better K Language Arts match. No previously reviewed K Language Arts edge changed.",
+    "2026-09-09 (concurrent follow-up): Rechecked the later math.ts update after the first refresh. It widens K Mathematics support in sorting-station and shape/measurement/time modes; these remain spoken math or manipulation contracts and do not replace any reviewed K Language Arts action. No K Language Arts edge changes."
   ]
 }

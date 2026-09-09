@@ -1,0 +1,112 @@
+{
+  "id": "TIME001-03-A",
+  "primitive": "analog-clock",
+  "mode": "hand_name",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Identify the hour hand and minute hand on an analog clock",
+  "requestedAt": "2026-09-09T10:51:11.938Z",
+  "inputHash": "6563dab8c5225d6acc216b1d1f0bf90269fa20c4b78fc846f8deb381fd687844",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-analog-clock.ts": "7ce1b6e564ed6b7dd9c554a59f1b9f96ea98f053e1d4c08797d69b29b4b3b819",
+    "src/components/lumina/primitives/visual-primitives/math/AnalogClock.tsx": "8108ed39afe5a252e9c5b557bd02c300ebd6ef16e9b86f739ff8c5a072b79a42",
+    "catalog-entry:analog-clock": "6d5235dbc8bbf17e172f0ee73bbc7eb4be23b97e2fbfbf1835458d64270490f9"
+  },
+  "params": {
+    "componentId": "analog-clock",
+    "evalMode": "hand_name",
+    "topic": "Identify the hour hand and minute hand on an analog clock",
+    "intent": "Identify the hour hand and minute hand on an analog clock",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "analog-clock",
+    "evalMode": "hand_name",
+    "duration": 1960,
+    "catalogMeta": {
+      "label": "Which Hand (K)",
+      "beta": 0.8,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "hand_name"
+      ],
+      "description": "Point at the hand that tells the hour, or the one that tells the minutes. K.MD."
+    },
+    "validation": {
+      "challengeCount": 4,
+      "typesFound": [
+        "hand_name"
+      ],
+      "payloadBytes": 1505,
+      "longestStringLength": 121,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding the Hands on the Clock",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "targetHour": 3,
+          "targetMinute": 0,
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "targetHand": "hour",
+          "showMinuteNumbers": true,
+          "showHandLegend": false,
+          "showDigitalEcho": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c2",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "targetHour": 6,
+          "targetMinute": 0,
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "targetHand": "minute",
+          "showMinuteNumbers": true,
+          "showHandLegend": false,
+          "showDigitalEcho": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c3",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "targetHour": 9,
+          "targetMinute": 0,
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "targetHand": "hour",
+          "showMinuteNumbers": true,
+          "showHandLegend": false,
+          "showDigitalEcho": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c4",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "targetHour": 12,
+          "targetMinute": 30,
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "targetHand": "minute",
+          "showMinuteNumbers": true,
+          "showHandLegend": false,
+          "showDigitalEcho": false,
+          "supportTier": "easy"
+        }
+      ],
+      "gradeBand": "K",
+      "description": "Young students learn to identify and distinguish between the short hour hand and the long minute hand on an analog clock."
+    }
+  },
+  "durationMs": 1984
+}

@@ -1,0 +1,172 @@
+{
+  "id": "MEAS001-03-E",
+  "primitive": "bar-model",
+  "mode": "compare_bars",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Read and interpret simple graphs to answer \"how many\" and \"which has more/less\" questions",
+  "requestedAt": "2026-09-09T10:22:10.143Z",
+  "inputHash": "712168b0dd474aa5a6cbfb950aef6eee704c0880f46b38dbb10f6ea2e80480ac",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-bar-model.ts": "676e9f0cabb5245ae6af8c40ac040dc6ad4647ca7e76c6fab64a56e203c385b1",
+    "src/components/lumina/primitives/visual-primitives/math/BarModel.tsx": "fe21ade70863179324428ee576f8fe4c71923b31ae09d1eab7e610049af50c78",
+    "catalog-entry:bar-model": "3258efd3e0900d7608ca2053d0eb8dff27d137818af8376193faa82d166db5a5"
+  },
+  "params": {
+    "componentId": "bar-model",
+    "evalMode": "compare_bars",
+    "topic": "Read and interpret simple graphs to answer \"how many\" and \"which has more/less\" questions",
+    "intent": "Read and interpret simple graphs to answer \"how many\" and \"which has more/less\" questions",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "bar-model",
+    "evalMode": "compare_bars",
+    "duration": 1270,
+    "catalogMeta": {
+      "label": "Compare Bars (K-1)",
+      "beta": 1.5,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "compare_bars"
+      ],
+      "description": "Identify which of two bars is taller. K.MD.A.2."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [],
+      "payloadBytes": 1920,
+      "longestStringLength": 67,
+      "longestStringPath": "challenges[3].hint",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Puppy Party",
+      "description": "Compare the number of happy puppies to find which group has more.",
+      "challenges": [
+        {
+          "id": "bm-1",
+          "evalMode": "compare_bars",
+          "values": [
+            {
+              "label": "Spots",
+              "value": 8,
+              "color": "blue"
+            },
+            {
+              "label": "Max",
+              "value": 4,
+              "color": "green"
+            }
+          ],
+          "graphStyle": "bar",
+          "prompt": "Which group has MORE puppies?",
+          "hint": "Look at the height of each bar. Which column reaches higher up?",
+          "targetBarIndex": 0,
+          "showBarValues": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-2",
+          "evalMode": "compare_bars",
+          "values": [
+            {
+              "label": "Red Cars",
+              "value": 3,
+              "color": "blue"
+            },
+            {
+              "label": "Blue Cars",
+              "value": 7,
+              "color": "green"
+            }
+          ],
+          "graphStyle": "bar",
+          "prompt": "Which group has MORE toy cars?",
+          "hint": "Look at the top of each bar to see which one reaches higher up.",
+          "targetBarIndex": 1,
+          "showBarValues": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-3",
+          "evalMode": "compare_bars",
+          "values": [
+            {
+              "label": "Bones",
+              "value": 4,
+              "color": "blue"
+            },
+            {
+              "label": "Balls",
+              "value": 8,
+              "color": "green"
+            }
+          ],
+          "graphStyle": "bar",
+          "prompt": "Which toy group has MORE?",
+          "hint": "Look at the tops of the bars. Which stack reaches higher up?",
+          "targetBarIndex": 1,
+          "showBarValues": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-4",
+          "evalMode": "compare_bars",
+          "values": [
+            {
+              "label": "Spots",
+              "value": 3,
+              "color": "blue"
+            },
+            {
+              "label": "Fluffies",
+              "value": 7,
+              "color": "green"
+            }
+          ],
+          "graphStyle": "bar",
+          "prompt": "Which group has MORE puppies?",
+          "hint": "Look at the heights of the bars to see which one reaches higher up!",
+          "targetBarIndex": 1,
+          "showBarValues": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-5",
+          "evalMode": "compare_bars",
+          "values": [
+            {
+              "label": "Bones",
+              "value": 4,
+              "color": "blue"
+            },
+            {
+              "label": "Biscuits",
+              "value": 8,
+              "color": "green"
+            }
+          ],
+          "graphStyle": "bar",
+          "prompt": "Which group has MORE treats?",
+          "hint": "Look at the height of both bars to find the taller one.",
+          "targetBarIndex": 1,
+          "showBarValues": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        }
+      ]
+    }
+  },
+  "durationMs": 1282
+}

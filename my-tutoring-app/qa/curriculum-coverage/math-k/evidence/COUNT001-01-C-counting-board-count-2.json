@@ -1,0 +1,140 @@
+{
+  "id": "COUNT001-01-C",
+  "primitive": "counting-board",
+  "mode": "count",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Count, recognize, and write numbers 11-20, with proper sequence and order",
+  "requestedAt": "2026-09-09T10:21:27.920Z",
+  "inputHash": "37ce33a6913b68335d29a168bd4e2ae0684e8069e15f5ded430e5ab3b459ee45",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-counting-board.ts": "f886dc3cefe72eacfff620abb32e97fdf9be4afae672e182d098b75c3d1f89d5",
+    "src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx": "9680a2474c9b62add9d6475ac7f9e4264f9573c197039a5e07729a00ab0588a8",
+    "catalog-entry:counting-board": "c5403e40e01903aa26956b69cb1f8202ce96e2a28f7389d92b4fb3c77aaca22e"
+  },
+  "params": {
+    "componentId": "counting-board",
+    "evalMode": "count",
+    "topic": "Count, recognize, and write numbers 11-20, with proper sequence and order",
+    "intent": "Count, recognize, and write numbers 11-20, with proper sequence and order",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "counting-board",
+    "evalMode": "count",
+    "duration": 3278,
+    "catalogMeta": {
+      "label": "Count All (Concrete)",
+      "beta": 1,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "count_all"
+      ],
+      "description": "Tap each object one by one. Concrete 1:1 correspondence — lowest cognitive load."
+    },
+    "validation": {
+      "challengeCount": 7,
+      "typesFound": [
+        "count_all"
+      ],
+      "payloadBytes": 2507,
+      "longestStringLength": 98,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Starry Night Counting Journey",
+      "description": "Count shiny stars in the night sky to practice numbers from eleven to twenty in the correct order.",
+      "objects": {
+        "type": "stars"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_all",
+          "instruction": "Can you touch and count all the glowing stars in the circle?",
+          "targetAnswer": 11,
+          "count": 11,
+          "arrangement": "line",
+          "hint": "Try tapping each star one by one as you count them in order.",
+          "narration": "Look at these bright stars arranged in a ring. Let us touch and count every single one!"
+        },
+        {
+          "id": "c2",
+          "type": "count_all",
+          "instruction": "Let us count the stars lined up neatly in a row!",
+          "targetAnswer": 13,
+          "count": 13,
+          "arrangement": "line",
+          "hint": "Start from the left end and tap each star as you go along the line.",
+          "narration": "Here they are in a straight row. Point to each star and count carefully."
+        },
+        {
+          "id": "c3",
+          "type": "count_all",
+          "instruction": "Can you find and count all these scattered stars?",
+          "targetAnswer": 12,
+          "count": 12,
+          "arrangement": "line",
+          "hint": "Take your time and tap each star so you do not miss any.",
+          "narration": "These stars are sprinkled all over the sky. Count them one by one!"
+        },
+        {
+          "id": "c4",
+          "type": "count_all",
+          "instruction": "Count the stars in these little groups together!",
+          "targetAnswer": 15,
+          "count": 15,
+          "arrangement": "line",
+          "hint": "Count the stars in the first group, then keep going to the next.",
+          "narration": "The stars are gathered in cozy little clusters. Let us count them all up.",
+          "groupSize": 5
+        },
+        {
+          "id": "c5",
+          "type": "count_all",
+          "instruction": "Here is another lovely line of twinkling stars to count.",
+          "targetAnswer": 17,
+          "count": 17,
+          "arrangement": "line",
+          "hint": "Remember to touch every star once as you count along.",
+          "narration": "Keep up the wonderful counting! Let us see how many stars are in this long line."
+        },
+        {
+          "id": "c6",
+          "type": "count_all",
+          "instruction": "Can you count these scattered stars shining bright?",
+          "targetAnswer": 19,
+          "count": 19,
+          "arrangement": "line",
+          "hint": "Tap slowly and watch the numbers appear on each star.",
+          "narration": "We are getting closer to the end of our starry path. Count each star carefully!"
+        },
+        {
+          "id": "c7",
+          "type": "count_all",
+          "instruction": "Our final challenge! Count every single star on the board.",
+          "targetAnswer": 20,
+          "count": 20,
+          "arrangement": "line",
+          "hint": "You can do it! Count all the way to the very last star.",
+          "narration": "This is our biggest star circle yet. Count them all to finish your journey!"
+        }
+      ],
+      "showOptions": {
+        "showRunningCount": true,
+        "showGroupCircles": true,
+        "highlightOnTap": true,
+        "showLastNumber": true
+      },
+      "gradeBand": "K"
+    }
+  },
+  "durationMs": 5098
+}

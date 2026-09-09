@@ -1,0 +1,148 @@
+{
+  "id": "COUNT001-01-I",
+  "primitive": "number-sequencer",
+  "mode": "count_from",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Students recite and order number names starting from any number between 1 and 20. Focus: Students demonstrate mastery of the count sequence by extending a provided sequence up to 20. Examples: 8, 9, 10, 11, 12; 14, 15, 16, 17, 18; 5, 6, 7, 8, 9; 11, 12, 13, 14, 15; 16, 17, 18, 19, 20; 3, 4, 5, 6, 7; 10, 11, 12, 13, 14; 9, 10, 11, 12, 13. Constraints: Use the counting-board primitive; start sequences at various points within the 1-20 range; ensure the student completes the sequence by identifying the next three numbers in the chain.",
+  "requestedAt": "2026-09-09T10:21:36.498Z",
+  "inputHash": "ca1f498c7b09cd4246f763c3d0170f2da066e99ab35ed248716ed99a32991eab",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-number-sequencer.ts": "ba692fa52320283241da511b84ef386191578e640eda059bc9ef9feac84fb6da",
+    "src/components/lumina/primitives/visual-primitives/math/NumberSequencer.tsx": "b9a46a100a81450ecbef127ce7c55ae6cf48b6ae5df6c9a1de9a24b4f07f6b33",
+    "catalog-entry:number-sequencer": "1bd9655e488dbefe8dcd1762b4b4c09365ed513c8d76c3000d7f71ade7068135"
+  },
+  "params": {
+    "componentId": "number-sequencer",
+    "evalMode": "count_from",
+    "topic": "Students recite and order number names starting from any number between 1 and 20. Focus: Students demonstrate mastery of the count sequence by extending a provided sequence up to 20. Examples: 8, 9, 10, 11, 12; 14, 15, 16, 17, 18; 5, 6, 7, 8, 9; 11, 12, 13, 14, 15; 16, 17, 18, 19, 20; 3, 4, 5, 6, 7; 10, 11, 12, 13, 14; 9, 10, 11, 12, 13. Constraints: Use the counting-board primitive; start sequences at various points within the 1-20 range; ensure the student completes the sequence by identifying the next three numbers in the chain.",
+    "intent": "Students recite and order number names starting from any number between 1 and 20. Focus: Students demonstrate mastery of the count sequence by extending a provided sequence up to 20. Examples: 8, 9, 10, 11, 12; 14, 15, 16, 17, 18; 5, 6, 7, 8, 9; 11, 12, 13, 14, 15; 16, 17, 18, 19, 20; 3, 4, 5, 6, 7; 10, 11, 12, 13, 14; 9, 10, 11, 12, 13. Constraints: Use the counting-board primitive; start sequences at various points within the 1-20 range; ensure the student completes the sequence by identifying the next three numbers in the chain.",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "number-sequencer",
+    "evalMode": "count_from",
+    "duration": 2064,
+    "catalogMeta": {
+      "label": "Count From (Tier 1)",
+      "beta": 1.5,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "count-from"
+      ],
+      "description": "Continue counting forward or backward from a given value."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "count-from"
+      ],
+      "payloadBytes": 1266,
+      "longestStringLength": 81,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Super Counting Adventure!",
+      "description": "Practice continuing the count sequence starting from any number between 1 and 20.",
+      "challenges": [
+        {
+          "id": "seq1",
+          "type": "count-from",
+          "instruction": "Start at 3. The next number is 4. Keep counting.",
+          "sequence": [
+            3
+          ],
+          "correctAnswers": [
+            4,
+            5,
+            6
+          ],
+          "rangeMin": 3,
+          "rangeMax": 6,
+          "direction": "forward",
+          "startNumber": 3
+        },
+        {
+          "id": "seq2",
+          "type": "count-from",
+          "instruction": "Start at 5. The next number is 6. Keep counting.",
+          "sequence": [
+            5
+          ],
+          "correctAnswers": [
+            6,
+            7,
+            8
+          ],
+          "rangeMin": 5,
+          "rangeMax": 8,
+          "direction": "forward",
+          "startNumber": 5
+        },
+        {
+          "id": "seq3",
+          "type": "count-from",
+          "instruction": "Start at 8. The next number is 9. Keep counting.",
+          "sequence": [
+            8
+          ],
+          "correctAnswers": [
+            9,
+            10,
+            11
+          ],
+          "rangeMin": 8,
+          "rangeMax": 11,
+          "direction": "forward",
+          "startNumber": 8
+        },
+        {
+          "id": "seq4",
+          "type": "count-from",
+          "instruction": "Start at 11. The next number is 12. Keep counting.",
+          "sequence": [
+            11
+          ],
+          "correctAnswers": [
+            12,
+            13,
+            14
+          ],
+          "rangeMin": 11,
+          "rangeMax": 14,
+          "direction": "forward",
+          "startNumber": 11
+        },
+        {
+          "id": "seq5",
+          "type": "count-from",
+          "instruction": "Start at 16. The next number is 17. Keep counting.",
+          "sequence": [
+            16
+          ],
+          "correctAnswers": [
+            17,
+            18,
+            19
+          ],
+          "rangeMin": 16,
+          "rangeMax": 19,
+          "direction": "forward",
+          "startNumber": 16
+        }
+      ],
+      "gradeBand": "K",
+      "showNumberLine": true,
+      "showDotArrays": true,
+      "supportTier": "easy"
+    }
+  },
+  "durationMs": 2077
+}

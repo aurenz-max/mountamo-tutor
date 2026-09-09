@@ -1,0 +1,130 @@
+{
+  "id": "MEAS001-04-B",
+  "primitive": "length-lab",
+  "mode": "estimate_then_tile",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",
+  "requestedAt": "2026-09-09T10:43:03.008Z",
+  "inputHash": "a761dd28160e7bcba3f4d1d0bfae23c811e79913e8b748d7c3dd6adbdff0c799",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-length-lab.ts": "eccb2ee703c8b397e925730264329d315a2dd376d60ac72a69a2aa4f5847297c",
+    "src/components/lumina/primitives/visual-primitives/math/LengthLab.tsx": "d0eb7da8513f70704e7d72ea37258de35c6f7195a36362868c2f7e4b789247fd",
+    "catalog-entry:length-lab": "fa08388e420b034fd974e4cb0b342fe3505f8d47e51ecf447dea1e61041fbb20"
+  },
+  "params": {
+    "componentId": "length-lab",
+    "evalMode": "estimate_then_tile",
+    "topic": "Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",
+    "intent": "Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "length-lab",
+    "evalMode": "estimate_then_tile",
+    "duration": 2274,
+    "catalogMeta": {
+      "label": "Guess, Then Measure (K)",
+      "beta": 2,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "estimate_then_tile"
+      ],
+      "description": "Estimate how many units it will take, then tile and count to find out. K.MD.1."
+    },
+    "validation": {
+      "challengeCount": 3,
+      "typesFound": [
+        "estimate_then_tile"
+      ],
+      "payloadBytes": 2065,
+      "longestStringLength": 111,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Guess and Measure with Bears!",
+      "description": "Practice estimating how many cute little bears will fit along everyday objects before laying them out to count!",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "estimate_then_tile",
+          "instruction": "Take a look at the spoon. How many bears do you think will fit along its length? Make your best guess!",
+          "hint": "Look at the length of the spoon and compare it to the size of a single bear to make your guess.",
+          "narration": "Let's check out this spoon! How many bears do you think will fit along it? Give it your best guess!",
+          "objectName0": "spoon",
+          "objectLength0": 4,
+          "objectColor0": "#81C784",
+          "objectName1": "placeholder",
+          "objectLength1": 1,
+          "objectColor1": "#FFFFFF",
+          "correctAnswer": "4",
+          "correctUnitCount": 4,
+          "unitType": "bears",
+          "estimateOptions": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "supportTier": "easy"
+        },
+        {
+          "id": "c2",
+          "type": "estimate_then_tile",
+          "instruction": "Here is a straw. Before we place any bears, how many do you guess it will take to measure it?",
+          "hint": "Count how long the straw looks, and think about how many bears can line up end-to-end.",
+          "narration": "Now we have a straw! Take a close look and make your guess before we start tiling our bears.",
+          "objectName0": "straw",
+          "objectLength0": 6,
+          "objectColor0": "#F06292",
+          "objectName1": "placeholder",
+          "objectLength1": 1,
+          "objectColor1": "#FFFFFF",
+          "correctAnswer": "6",
+          "correctUnitCount": 6,
+          "unitType": "bears",
+          "estimateOptions": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "supportTier": "easy"
+        },
+        {
+          "id": "c3",
+          "type": "estimate_then_tile",
+          "instruction": "Check out this toothbrush! Make a fun guess about how many bears will stretch from one end to the other.",
+          "hint": "This one is a bit longer! Think about how many bears you might need for a longer object.",
+          "narration": "It's time for our final challenge with the toothbrush. Make your guess before we lay down the bears!",
+          "objectName0": "toothbrush",
+          "objectLength0": 8,
+          "objectColor0": "#E57373",
+          "objectName1": "placeholder",
+          "objectLength1": 1,
+          "objectColor1": "#FFFFFF",
+          "correctAnswer": "8",
+          "correctUnitCount": 8,
+          "unitType": "bears",
+          "estimateOptions": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "supportTier": "easy"
+        }
+      ],
+      "unitType": "bears",
+      "gradeBand": "K"
+    }
+  },
+  "durationMs": 2287
+}

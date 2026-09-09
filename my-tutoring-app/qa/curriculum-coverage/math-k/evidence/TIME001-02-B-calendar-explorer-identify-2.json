@@ -1,0 +1,171 @@
+{
+  "id": "TIME001-02-B",
+  "primitive": "calendar-explorer",
+  "mode": "identify",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Identify today's day of the week on a calendar",
+  "requestedAt": "2026-09-09T10:22:18.070Z",
+  "inputHash": "44698fca385602bcc1a8d7258f33478a119fdfdd11bf34481579d757bd10d12f",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/calendar/gemini-calendar-explorer.ts": "d6f4cdb981d7c143dd8aaf52e2d859ae9173f89f505a1d9a14eccfd10030e1d2",
+    "src/components/lumina/primitives/visual-primitives/calendar/CalendarExplorer.tsx": "ea4f17ab09286d24c1bb90258b4f97d23bf564dc274cdb374017b2e560495072",
+    "catalog-entry:calendar-explorer": "3823299968b4ef632ec07174ab3bf3e62f729897fc19b7e4d1785d9e6e487b98"
+  },
+  "params": {
+    "componentId": "calendar-explorer",
+    "evalMode": "identify",
+    "topic": "Identify today's day of the week on a calendar",
+    "intent": "Identify today's day of the week on a calendar",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "calendar-explorer",
+    "evalMode": "identify",
+    "duration": 0,
+    "catalogMeta": {
+      "label": "Identify Dates (Easy)",
+      "beta": -1.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "identify"
+      ],
+      "description": "Find specific dates on calendar"
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "identify"
+      ],
+      "payloadBytes": 2123,
+      "longestStringLength": 60,
+      "longestStringPath": "title",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Date Finding: Identify today's day of the week on a calendar",
+      "description": "Practice date finding on the calendar.",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "identify",
+          "question": "The ⭐ shows today. What day of the week is today?",
+          "month": 9,
+          "year": 2026,
+          "correctAnswer": "Wednesday",
+          "options": [
+            "Wednesday",
+            "Friday",
+            "Sunday",
+            "Monday"
+          ],
+          "hint": "Find the ⭐, then read the word at the top of its column.",
+          "narration": "Let's find today on the calendar!",
+          "highlightDates": [
+            9
+          ],
+          "todayDate": 9,
+          "showDayHeaders": true,
+          "showMonthLabel": true
+        },
+        {
+          "id": "c2",
+          "type": "identify",
+          "question": "The ⭐ shows today. What day of the week is today?",
+          "month": 9,
+          "year": 2026,
+          "correctAnswer": "Thursday",
+          "options": [
+            "Saturday",
+            "Thursday",
+            "Monday",
+            "Tuesday"
+          ],
+          "hint": "Find the ⭐, then read the word at the top of its column.",
+          "narration": "Let's find today on the calendar!",
+          "highlightDates": [
+            10
+          ],
+          "todayDate": 10,
+          "showDayHeaders": true,
+          "showMonthLabel": true
+        },
+        {
+          "id": "c3",
+          "type": "identify",
+          "question": "The ⭐ shows today. What day of the week is today?",
+          "month": 9,
+          "year": 2026,
+          "correctAnswer": "Saturday",
+          "options": [
+            "Monday",
+            "Wednesday",
+            "Saturday",
+            "Thursday"
+          ],
+          "hint": "Find the ⭐, then read the word at the top of its column.",
+          "narration": "Let's find today on the calendar!",
+          "highlightDates": [
+            12
+          ],
+          "todayDate": 12,
+          "showDayHeaders": true,
+          "showMonthLabel": true
+        },
+        {
+          "id": "c4",
+          "type": "identify",
+          "question": "The ⭐ shows today. What day of the week is today?",
+          "month": 9,
+          "year": 2026,
+          "correctAnswer": "Monday",
+          "options": [
+            "Wednesday",
+            "Friday",
+            "Saturday",
+            "Monday"
+          ],
+          "hint": "Find the ⭐, then read the word at the top of its column.",
+          "narration": "Let's find today on the calendar!",
+          "highlightDates": [
+            14
+          ],
+          "todayDate": 14,
+          "showDayHeaders": true,
+          "showMonthLabel": true
+        },
+        {
+          "id": "c5",
+          "type": "identify",
+          "question": "The ⭐ shows today. What day of the week is today?",
+          "month": 9,
+          "year": 2026,
+          "correctAnswer": "Friday",
+          "options": [
+            "Friday",
+            "Sunday",
+            "Tuesday",
+            "Wednesday"
+          ],
+          "hint": "Find the ⭐, then read the word at the top of its column.",
+          "narration": "Let's find today on the calendar!",
+          "highlightDates": [
+            11
+          ],
+          "todayDate": 11,
+          "showDayHeaders": true,
+          "showMonthLabel": true
+        }
+      ],
+      "gradeBand": "K",
+      "supportTier": "easy"
+    }
+  },
+  "durationMs": 8
+}

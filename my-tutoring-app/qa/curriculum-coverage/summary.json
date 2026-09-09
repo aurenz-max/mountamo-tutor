@@ -1,0 +1,16 @@
+{
+  "scope": "la-k",
+  "subject": "LANGUAGE_ARTS",
+  "grade": "K",
+  "title": "K Language Arts",
+  "dir": "qa/curriculum-coverage",
+  "requirements": 191,
+  "counts": {
+    "candidate": 47,
+    "partial": 109,
+    "development": 35
+  },
+  "probedPairs": 6,
+  "draws": 12,
+  "generated": "2026-09-09T10:49:15.739Z"
+}

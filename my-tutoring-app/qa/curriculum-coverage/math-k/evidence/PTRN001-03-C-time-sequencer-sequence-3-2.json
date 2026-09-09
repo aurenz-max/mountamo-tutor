@@ -1,0 +1,256 @@
+{
+  "id": "PTRN001-03-C",
+  "primitive": "time-sequencer",
+  "mode": "sequence-3",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Arrange 3 picture cards to show a logical sequence (morning, noon, night)",
+  "requestedAt": "2026-09-09T10:22:15.958Z",
+  "inputHash": "3d96fe7705a73aa8f718ce7c4c52b17d97c122174c3461d5711851314dd77283",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-time-sequencer.ts": "dc5b2d16d825ba6d432d9eb0c0e433fc74e937d2faa7bfcbb95f70a083615ad6",
+    "src/components/lumina/primitives/visual-primitives/math/TimeSequencer.tsx": "b2d0e3dc69589af9133e58326cc6771c39ac9f2d6e22187735bd07297addb5da",
+    "catalog-entry:time-sequencer": "e216af8f0cdaa2c5d1e5c1043e5e2ceb072259543c6cd2ffde67c0804274ad4d"
+  },
+  "params": {
+    "componentId": "time-sequencer",
+    "evalMode": "sequence-3",
+    "topic": "Arrange 3 picture cards to show a logical sequence (morning, noon, night)",
+    "intent": "Arrange 3 picture cards to show a logical sequence (morning, noon, night)",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "time-sequencer",
+    "evalMode": "sequence-3",
+    "duration": 3719,
+    "catalogMeta": {
+      "label": "Sequence 3 Events (Scaffold 1)",
+      "beta": 1,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "sequence-events"
+      ],
+      "description": "Order 3 daily events"
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "sequence-events"
+      ],
+      "payloadBytes": 3739,
+      "longestStringLength": 105,
+      "longestStringPath": "challenges[0].strategyHint",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Field Trip Day Order",
+      "description": "Put the field trip pictures in the right order by looking at the sky.",
+      "gradeBand": "K",
+      "supportTier": "easy",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Which one happens first?",
+          "hint": "Think about what you do right when you wake up for the trip.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "pack the backpack",
+              "emoji": "🎒",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e2",
+              "label": "eat breakfast",
+              "emoji": "🍳",
+              "typicalTime": "7:30 AM",
+              "dayFraction": 0.313
+            },
+            {
+              "id": "e3",
+              "label": "ride the bus",
+              "emoji": "🚌",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        },
+        {
+          "id": "c2",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Put the trip events in order.",
+          "hint": "Where is the sun when you first get to the museum?",
+          "events": [
+            {
+              "id": "e1",
+              "label": "arrive at museum",
+              "emoji": "🎨",
+              "typicalTime": "9:30 AM",
+              "dayFraction": 0.396
+            },
+            {
+              "id": "e2",
+              "label": "eat picnic lunch",
+              "emoji": "🍎",
+              "typicalTime": "12:00 PM",
+              "dayFraction": 0.5
+            },
+            {
+              "id": "e3",
+              "label": "board bus home",
+              "emoji": "🚌",
+              "typicalTime": "2:00 PM",
+              "dayFraction": 0.583
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        },
+        {
+          "id": "c3",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Find the morning card first.",
+          "hint": "The sun comes up before you can see the dinosaurs.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "sun coming up",
+              "emoji": "🌅",
+              "typicalTime": "6:00 AM",
+              "dayFraction": 0.25
+            },
+            {
+              "id": "e2",
+              "label": "see big dinosaurs",
+              "emoji": "🦴",
+              "typicalTime": "10:00 AM",
+              "dayFraction": 0.417
+            },
+            {
+              "id": "e3",
+              "label": "sunset outside",
+              "emoji": "🌇",
+              "typicalTime": "5:00 PM",
+              "dayFraction": 0.708
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        },
+        {
+          "id": "c4",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Order your fun day.",
+          "hint": "Check the sun to see what happens before recess at the park.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "morning bell rings",
+              "emoji": "📚",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            },
+            {
+              "id": "e2",
+              "label": "play at park",
+              "emoji": "🏃",
+              "typicalTime": "11:00 AM",
+              "dayFraction": 0.458
+            },
+            {
+              "id": "e3",
+              "label": "moon is shining",
+              "emoji": "🌙",
+              "typicalTime": "7:00 PM",
+              "dayFraction": 0.792
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        },
+        {
+          "id": "c5",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Which picture is first?",
+          "hint": "The sun is right above you when it is time to eat lunch.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "wake up early",
+              "emoji": "😴",
+              "typicalTime": "6:30 AM",
+              "dayFraction": 0.271
+            },
+            {
+              "id": "e2",
+              "label": "high noon sun",
+              "emoji": "☀️",
+              "typicalTime": "12:00 PM",
+              "dayFraction": 0.5
+            },
+            {
+              "id": "e3",
+              "label": "stars come out",
+              "emoji": "⭐",
+              "typicalTime": "8:00 PM",
+              "dayFraction": 0.833
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        }
+      ]
+    }
+  },
+  "durationMs": 3726
+}

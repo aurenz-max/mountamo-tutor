@@ -1,0 +1,186 @@
+{
+  "count-from-answer-leak": {
+    "stimulus": "Hear and see the start number only: a train car showing 3, then three empty cars.",
+    "response": "Say (or tap in) the next three numbers in order.",
+    "visibility": "The instruction, hint and narration never contain any of the answers; empty cars stay blank until the child fills them.",
+    "feedback": "After the attempt, reveal the filled cars and count them together; a wrong car is corrected by re-counting from the start number.",
+    "score": "All three continuations correct and in order; response time recorded silently. Any instruction that recites an answer fails generation validation.",
+    "liveCheck": "Spoken continuation from three different starts including one in the teens"
+  },
+  "ordinal-to-tenth": {
+    "stimulus": "A line of up to ten distinct characters with the front announced; the tutor names a place from sixth to tenth.",
+    "response": "Say the name of the character in that place.",
+    "visibility": "No position labels on the line at the independent attempt; names are read aloud, never numbered.",
+    "feedback": "After a wrong name, count along the line from the front to the named place together, then ask again.",
+    "score": "Spoken name matches the character at the target place; at least three items per session with targets past fifth.",
+    "liveCheck": "Sixth, eighth and tenth asked over a ten-character line"
+  },
+  "k-story-problems-within-10": {
+    "stimulus": "A read-aloud join or separate story with numbers up to 10 on the scene.",
+    "response": "Say the answer aloud.",
+    "visibility": "The story never states the unknown; no numeral menu; the scene shows the start set only.",
+    "feedback": "After the answer, act the story out on the scene and count the result together.",
+    "score": "Spoken number equals the result; results 6-10 present in the session; no zero results.",
+    "liveCheck": "Two stories with sums above 5 answered aloud"
+  },
+  "missing-difference-form": {
+    "stimulus": "A subtraction equation with one hidden number, alternating minuend and difference.",
+    "response": "Say or pick the hidden number.",
+    "visibility": "The full equation is never printed in the instruction; visual aids only in the aided phases.",
+    "feedback": "After the attempt, show the equation complete and model counting back or up.",
+    "score": "Hidden number correct; both hidden positions appear in one session; numbers within 10.",
+    "liveCheck": "One missing minuend and one missing difference item answered"
+  },
+  "k-session-variety": {
+    "stimulus": "Each challenge in a session is a different problem: a different line and blank position, a different skip/start pair, a different pair of group sizes.",
+    "response": "Same as the underlying mode (fill the blank, tap the cells, say more/less/equal).",
+    "visibility": "Unchanged from the mode.",
+    "feedback": "Unchanged from the mode.",
+    "score": "Session validation rejects duplicate problems and single-position blanks before the child sees the session; two draws differ in most items.",
+    "liveCheck": "Two consecutive sessions of the same objective with visibly different problems"
+  },
+  "time-sequencer-k-prereader": {
+    "stimulus": "Three picture cards of daily events with one- or two-word labels and no clock times; the tutor names the cards.",
+    "response": "Drag the cards into order from first to last.",
+    "visibility": "No time anchors at K; no pre-labelled first slot at the independent attempt.",
+    "feedback": "After the attempt, replay the day in order with the pictures and say why each comes before the next.",
+    "score": "Order matches the only defensible sequence; no instruction or hint mentions reading a time.",
+    "liveCheck": "A K session driven without any printed time and without reading"
+  },
+  "calendar-today-framing": {
+    "stimulus": "A month calendar with one day marked as today; the tutor says today is marked.",
+    "response": "Say (or tap) the day of the week for today, then yesterday and tomorrow.",
+    "visibility": "The weekday name for the marked day is not highlighted in the header; options, if any, are read aloud.",
+    "feedback": "After the answer, trace up the column to the day header together.",
+    "score": "Weekday correct for the marked day; yesterday/tomorrow keyed relative to it.",
+    "liveCheck": "Today, yesterday and tomorrow answered from one marked calendar"
+  },
+  "k-draw-yield-variance": {
+    "stimulus": "Every category the objective names appears as a bin (hot, warm, cold); every session has at least three items.",
+    "response": "Unchanged from the mode.",
+    "visibility": "Unchanged from the mode.",
+    "feedback": "Unchanged from the mode.",
+    "score": "Generation validation fails a session missing a named bin or under three items; regenerate rather than ship the short session.",
+    "liveCheck": "Three consecutive draws with all named bins and three or more items each"
+  },
+  "count-to-100-k": {
+    "stimulus": "A short line of numbers starting anywhere up to 100, or a line with one wrong number.",
+    "response": "Say the next numbers, or say which number is wrong.",
+    "visibility": "The instruction never recites the continuation; the wrong number is not styled differently.",
+    "feedback": "After the attempt, count the line aloud together and fix the wrong number.",
+    "score": "Continuation correct; the wrong number is the only defensible pick.",
+    "liveCheck": "Count on from 47 and from 89; spot the error in 23, 24, 26, 25"
+  },
+  "counting-extensions": {
+    "stimulus": "A set of objects that is rearranged, a large set from which N are requested, or a set with a hidden group.",
+    "response": "Tap and say how many after rearranging; tap exactly N; say the new total after one is removed or a pair added.",
+    "visibility": "No count badge during the independent attempt; the hidden group's count is said once, not printed.",
+    "feedback": "After the attempt, re-count together and name the principle (still the same; one fewer; two more).",
+    "score": "Spoken count and tap count agree with the set; give-me-N rejects over-taps; running totals correct after each change.",
+    "liveCheck": "Rearrange-and-recount, give me 7, and remove-one-say-how-many driven aloud"
+  },
+  "k-band-floor-reaudit": {
+    "stimulus": "The floored mode's own stimulus at K sizes (4-6 objects, 3 bins, 3 objects to order).",
+    "response": "Spoken or touch-order answer as the ported mode already defines it.",
+    "visibility": "No printed reading demand at K: labels are pictures or single sayable words read aloud by the tutor.",
+    "feedback": "Unchanged from the mode.",
+    "score": "The reader-fit audit records the reading demand per mode; a lowered floor cites the audit and a K probe with usable items.",
+    "liveCheck": "One K session per lowered mode driven with the tutor reading every label"
+  },
+  "k-data-recording": {
+    "stimulus": "A small set of countable objects or a class question, and an empty one-to-one pictograph or bar chart.",
+    "response": "Tap to add one icon per item; say how many; say which has most or least; say what the graph shows.",
+    "visibility": "No totals printed during the build; bar values hidden at the independent read.",
+    "feedback": "After the attempt, count the icons in each column together and compare heights.",
+    "score": "Icon counts match the data; most/least keyed in code from the data; the spoken explanation judged on meaning.",
+    "liveCheck": "Build a three-column pictograph from objects and answer most, least and how many aloud"
+  },
+  "length-lab-extensions": {
+    "stimulus": "One object with a unit tray (cubes, paper clips, hands); or the same object with two unit trays.",
+    "response": "Say an estimate first, then tile and count; or tile with both units and say which needed more.",
+    "visibility": "The estimate is captured before any tile is shown; the count is entered by the child.",
+    "feedback": "After measuring, compare the estimate with the count and name the unit size relationship.",
+    "score": "Tiles placed end to end without gaps; count correct; the two-unit comparison keyed in code.",
+    "liveCheck": "Estimate-then-measure with cubes and hands on one object"
+  },
+  "measure-sim-weight-capacity": {
+    "stimulus": "A pan balance with two pictured objects, or two containers and a cup of rice.",
+    "response": "Say a prediction, then place the objects or pour cups and say the count or which holds more.",
+    "visibility": "The balance is level and the containers empty before the prediction; nothing tips or fills until the child acts.",
+    "feedback": "After the test, name the outcome against the prediction (you said heavier, and it tipped that way).",
+    "score": "Prediction recorded before the test; tip direction and cup counts owned by code; spoken comparison judged against them.",
+    "liveCheck": "Predict-then-test on two balances and one pour-to-fill"
+  },
+  "shapes-in-the-world": {
+    "stimulus": "A drawing of one familiar object whose outline is one 2D shape (a clock, a door, a yield sign).",
+    "response": "Say the shape name aloud.",
+    "visibility": "The object label never names the shape; no shape menu.",
+    "feedback": "After a wrong name, trace the outline with the tutor and count sides together.",
+    "score": "Spoken shape matches the code-derived shape; one defensible shape per object.",
+    "liveCheck": "Five real-object items named aloud at varied sizes"
+  },
+  "pattern-k-gaps": {
+    "stimulus": "An AB pattern with one element missing in the middle, or a three-step sequence with the middle card blank.",
+    "response": "Tap the token or card that fills the gap.",
+    "visibility": "The gap is a plain empty slot; the surrounding pattern is complete on both sides.",
+    "feedback": "After the attempt, read the pattern aloud together across the gap.",
+    "score": "The fill is the only element consistent with the core (or the only defensible step).",
+    "liveCheck": "Three missing-element and two missing-step items"
+  },
+  "analog-clock-k-parts": {
+    "stimulus": "A clock with one hand highlighted; a blank face; or a spoken whole-hour time with four faces.",
+    "response": "Say hour hand or minute hand; tap 1 through 12 in order; tap the face that shows the spoken time.",
+    "visibility": "Hands are unlabelled; the spoken time is never printed.",
+    "feedback": "After the attempt, point to the short and long hands and count the numbers together.",
+    "score": "Spoken hand name correct; taps in order 1-12; chosen face matches the spoken hour.",
+    "liveCheck": "Hand naming, a full count around the face, and three hear-a-time picks"
+  },
+  "calendar-days-k": {
+    "stimulus": "The tutor says a day of the week.",
+    "response": "Say the next day, then the one after, in a chain.",
+    "visibility": "No printed week strip during the independent attempt.",
+    "feedback": "After a wrong day, sing or say the week together from Sunday and ask again.",
+    "score": "Each spoken day is the correct successor; at least five judged turns from a random start.",
+    "liveCheck": "A spoken chain from Wednesday through the following Monday"
+  },
+  "picture-thermometer": {
+    "stimulus": "A code-drawn thermometer with hot, warm and cold zones and a fill level in one zone.",
+    "response": "Say hot, warm or cold (or tap the matching picture).",
+    "visibility": "Zones are colours, not words, during the attempt.",
+    "feedback": "After the attempt, name the zone and show a matching everyday picture.",
+    "score": "The level sits unambiguously in one zone; spoken answer matches.",
+    "liveCheck": "Six thermometer readings said aloud"
+  },
+  "physical-observation": {
+    "stimulus": "Real materials in the classroom (water, sand, timer, balance, plants, bodies).",
+    "response": "The teacher observes the physical action; where a reviewed screen half exists it runs as its own objective.",
+    "visibility": "Not applicable on screen.",
+    "feedback": "Teacher-led.",
+    "score": "An observation flag on the draft curriculum row; the planner does not route the row to a Lumina primitive.",
+    "liveCheck": "Draft edit, lineage check and publish for the flagged rows"
+  },
+  "sorting-station-k-draw-quality": {
+    "stimulus": "Four to six picture cards and two or three labelled trays, named aloud by the tutor.",
+    "response": "The child SAYS which group each card belongs with, or yes/no against two criteria.",
+    "visibility": "Nothing printed carries the answer; every card's emoji depicts the object its label names.",
+    "feedback": "The tutor's scripted affirmation or 'My turn:' correction, spoken, one card at a time.",
+    "score": "Every asked-for round is present and distinct; no card is unanswerable from its picture.",
+    "liveCheck": "A K sort_variety session that rotates the rule across all five rounds"
+  },
+  "compare-groups-objective-window": {
+    "stimulus": "Two groups of objects whose counts both sit inside the range the objective names (1-5 or 6-10), with the tier's count gap.",
+    "response": "Say (or tap) more, fewer or the same.",
+    "visibility": "Count badges only at the easy tier; no printed totals at the independent attempt.",
+    "feedback": "After the attempt, draw the correspondence lines and count both groups together.",
+    "score": "Answer key derived from the two counts in code; generation validation rejects any count outside the objective window.",
+    "liveCheck": "One K session naming up to 5 and one naming 6-10, both answered aloud"
+  },
+  "slice7-draw-quality": {
+    "stimulus": "A pile of 6-20 objects with a spoken request for N (N varies across the session); a clock with one hand to name, five faces per session.",
+    "response": "Tap exactly N; say hour hand or minute hand.",
+    "visibility": "No count badge during the tap; no hand legend before the answer.",
+    "feedback": "After the attempt, count the tapped set together; name the short and long hands.",
+    "score": "Tap count equals N; spoken hand matches the highlighted one; session validation rejects repeated N and under-sized sessions.",
+    "liveCheck": "One K give_me_n session with three distinct requests; one hand_name session of five items"
+  }
+}

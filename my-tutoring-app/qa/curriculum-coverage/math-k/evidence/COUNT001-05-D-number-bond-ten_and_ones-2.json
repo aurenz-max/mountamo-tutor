@@ -1,0 +1,121 @@
+{
+  "id": "COUNT001-05-D",
+  "primitive": "number-bond",
+  "mode": "ten_and_ones",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Break apart numbers 11-15 into ten ones and some further ones using visual models",
+  "requestedAt": "2026-09-09T10:21:47.790Z",
+  "inputHash": "30d9c1aeb02b48b87250db6f839f0d3bb06cd4521a4bdeeb64e00f74f1196724",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-number-bond.ts": "2ccefcdc83d0992bc165967067488259f97fcfa8a8c860048c28edd490eb9635",
+    "src/components/lumina/primitives/visual-primitives/math/NumberBond.tsx": "49444adf88009ced360190201c1e84b7a2e257d25a2e7d29f28c75cab56acad2",
+    "src/components/lumina/service/math/teenWindow.ts": "ad298d42aaf5acf87c005841c655ab0d94c08df89416385f6cde84a8362892bf",
+    "catalog-entry:number-bond": "2a99a3206b40399901dfb584d4e8d0e3b42bb320f25240bd8acdec9b861d856b"
+  },
+  "params": {
+    "componentId": "number-bond",
+    "evalMode": "ten_and_ones",
+    "topic": "Break apart numbers 11-15 into ten ones and some further ones using visual models",
+    "intent": "Break apart numbers 11-15 into ten ones and some further ones using visual models",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "number-bond",
+    "evalMode": "ten_and_ones",
+    "duration": 1480,
+    "catalogMeta": {
+      "label": "Ten and Ones (Teen Numbers)",
+      "beta": 2,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "ten-and-ones"
+      ],
+      "description": "Break a teen number (11-19) into a full TEN and the ones left over by splitting counters into the two circles — the only accepted pair is ten and the rest, so a sum-correct split like 6 and 8 is corrected. CCSS K.NBT.1, \"compose and decompose numbers 11-19 into ten ones and some further ones\". Concrete manipulative; no microphone needed. Kindergarten."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "ten-and-ones"
+      ],
+      "payloadBytes": 1374,
+      "longestStringLength": 119,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Teen Number Bonds: Ten and Some More",
+      "description": "Learn how to break apart teen numbers from 11 to 15 into a group of ten ones and some further ones using visual models.",
+      "maxNumber": 19,
+      "showCounters": true,
+      "showEquation": true,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "ten-and-ones",
+          "instruction": "Can you break apart the number 11 into a group of ten ones and some further ones?",
+          "whole": 11,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        },
+        {
+          "id": "c2",
+          "type": "ten-and-ones",
+          "instruction": "Show how 12 is made of a group of ten ones and some further ones!",
+          "whole": 12,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        },
+        {
+          "id": "c3",
+          "type": "ten-and-ones",
+          "instruction": "Let us split the number 13 into ten ones and the extra ones.",
+          "whole": 13,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        },
+        {
+          "id": "c4",
+          "type": "ten-and-ones",
+          "instruction": "Can you separate 14 into a full ten and the leftover ones?",
+          "whole": 14,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        },
+        {
+          "id": "c5",
+          "type": "ten-and-ones",
+          "instruction": "Great job! Now split the number 15 into ten ones and some further ones.",
+          "whole": 15,
+          "part1": null,
+          "part2": null,
+          "allPairs": null,
+          "factFamily": null,
+          "targetEquation": null
+        }
+      ],
+      "showFactFamilyHelper": true,
+      "supportTier": "easy"
+    }
+  },
+  "durationMs": 1491
+}

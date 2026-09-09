@@ -1,0 +1,128 @@
+{
+  "id": "TIME001-03-C",
+  "primitive": "analog-clock",
+  "mode": "read",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Recognize and state \"o'clock\" times when hour hand points exactly to a number",
+  "requestedAt": "2026-09-09T10:22:19.685Z",
+  "inputHash": "7cc43d80e2c0ac3d83d5fe56bdfffc6dcf6edfeba7cc4b42451b0bce5942684c",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-analog-clock.ts": "775745b467b6397d3303779cee1fb0b555a686ae59cb16485a3eb4433a582d50",
+    "src/components/lumina/primitives/visual-primitives/math/AnalogClock.tsx": "5b6ce5438d229b00578513388df170315e490f2745b1360269e05039ee6eb09a",
+    "catalog-entry:analog-clock": "6d5235dbc8bbf17e172f0ee73bbc7eb4be23b97e2fbfbf1835458d64270490f9"
+  },
+  "params": {
+    "componentId": "analog-clock",
+    "evalMode": "read",
+    "topic": "Recognize and state \"o'clock\" times when hour hand points exactly to a number",
+    "intent": "Recognize and state \"o'clock\" times when hour hand points exactly to a number",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "analog-clock",
+    "evalMode": "read",
+    "duration": 1726,
+    "catalogMeta": {
+      "label": "Read Time (Tier 1)",
+      "beta": 1.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "read"
+      ],
+      "description": "Read analog clock face and pick correct time from 4 options"
+    },
+    "validation": {
+      "challengeCount": 4,
+      "typesFound": [
+        "read"
+      ],
+      "payloadBytes": 1863,
+      "longestStringLength": 140,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Clock Shop O'Clock",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "read",
+          "instruction": "Look at the short hour hand pointing straight at a number. What o'clock is it?",
+          "targetHour": 2,
+          "targetMinute": 0,
+          "hint": "Remember, the short hand is the hour hand. Look closely at the number it points to.",
+          "option0": "2:00",
+          "option1": "4:30",
+          "option2": "1:30",
+          "option3": "1:00",
+          "correctOptionIndex": 0,
+          "showMinuteNumbers": true,
+          "showHandLegend": true,
+          "showDigitalEcho": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c2",
+          "type": "read",
+          "instruction": "Can you read this clock? Find the number the short hand is touching.",
+          "targetHour": 5,
+          "targetMinute": 0,
+          "hint": "Check where the short hand points. When it points right at the number, it is that o'clock!",
+          "option0": "4:00",
+          "option1": "7:00",
+          "option2": "3:00",
+          "option3": "5:00",
+          "correctOptionIndex": 3,
+          "showMinuteNumbers": true,
+          "showHandLegend": true,
+          "showDigitalEcho": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c3",
+          "type": "read",
+          "instruction": "What time does this clock show for lunchtime? Look at the hour hand.",
+          "targetHour": 12,
+          "targetMinute": 0,
+          "hint": "Both hands are pointing straight up at the top number!",
+          "option0": "1:30",
+          "option1": "10:00",
+          "option2": "12:00",
+          "option3": "2:00",
+          "correctOptionIndex": 2,
+          "showMinuteNumbers": true,
+          "showHandLegend": true,
+          "showDigitalEcho": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c4",
+          "type": "read",
+          "instruction": "It is almost bedtime! Read the clock to find the correct o'clock time.",
+          "targetHour": 8,
+          "targetMinute": 0,
+          "hint": "Follow the short hand to see which number it is resting on.",
+          "option0": "9:30",
+          "option1": "8:00",
+          "option2": "7:30",
+          "option3": "7:00",
+          "correctOptionIndex": 1,
+          "showMinuteNumbers": true,
+          "showHandLegend": true,
+          "showDigitalEcho": false,
+          "supportTier": "easy"
+        }
+      ],
+      "gradeBand": "K",
+      "description": "Kindergarten students practice recognizing and stating o'clock times when the short hour hand points directly to a number on the clock face."
+    }
+  },
+  "durationMs": 1737
+}

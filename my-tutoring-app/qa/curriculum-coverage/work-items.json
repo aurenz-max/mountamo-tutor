@@ -1,19 +1,5 @@
 [
   {
-    "id": "grammar-empty",
-    "priority": "P0",
-    "title": "Repair empty subject-verb practice",
-    "kind": "Repair",
-    "executor": "eval-fix",
-    "target": "di-spoken-practice / say_answer",
-    "problem": "Two published-objective draws yielded no usable items; the endpoint still returned pass.",
-    "proposal": "Preserve sentence context through generation/response-class filtering; make the audit fail on zero usable items.",
-    "acceptance": "Three fresh nonempty draws that contrast singular/plural subjects; correct grammatical keys, no answer leaked in prompt, and live correct/wrong/retry checks.",
-    "requirementIds": [
-      "LA004-06-E"
-    ]
-  },
-  {
     "id": "riddle-cues",
     "priority": "P0",
     "title": "Make riddles require their clues",
@@ -55,6 +41,7 @@
   },
   {
     "id": "k-grammar-completion",
+    "nextRank": 1,
     "priority": "P1",
     "title": "Add contextual K grammar completion",
     "kind": "Extend",

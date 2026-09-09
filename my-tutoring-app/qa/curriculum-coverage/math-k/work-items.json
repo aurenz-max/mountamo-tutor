@@ -1,0 +1,403 @@
+[
+  {
+    "id": "count-from-answer-leak",
+    "priority": "P0",
+    "title": "Stop count_from reciting its own answers",
+    "kind": "Repair",
+    "executor": "eval-fix",
+    "slice": 1,
+    "target": "number-sequencer / count_from",
+    "problem": "Every count_from instruction in both draws states the three answers before the child responds (\"Start at 3, then say 4, 5, 6\"). The item is unanswerable as assessment; the child hears or reads the key.",
+    "mechanism": "Authored into the easy support tier: service/math/gemini-number-sequencer.ts:133 tells Gemini the instruction should \"model the first step (e.g. 'Start at 3, then say 4, 5, 6…')\", which models all three continuation values. The contract (docs/contracts/number-sequencer.md:86-87) exempts count-from from the oracle answer-leak rule because \"the visible terms ARE the stimulus\", so nothing catches it. Every probe ran at difficulty=easy.",
+    "proposal": "Rewrite the easy-tier line to model ONE step at most (\"Start at 3, then say 4… keep going\"); add a post-parse validator that rejects any count-from item whose instruction, hint or narration contains every correctAnswers value; refresh the contract so the START term is the stimulus and the continuation values fall under the answer-leak rule.",
+    "acceptance": "Three fresh draws of COUNT001-01-I at easy, medium and hard with zero instructions containing all of correctAnswers; the math-k content check \"instruction does not recite the answers\" passes on every item after --redraw; /oracle-test number-sequencer count_from answer-leak rule green.",
+    "requirementIds": [
+      "COUNT001-01-I",
+      "COUNT001-01-D",
+      "COUNT001-02-H",
+      "OPS001-03-A"
+    ]
+  },
+  {
+    "id": "ordinal-to-tenth",
+    "priority": "P1",
+    "title": "Let a K ordinal objective reach tenth — FIXED 2026-09-08",
+    "kind": "Repair",
+    "executor": "eval-fix",
+    "slice": 3,
+    "target": "ordinal-line / identify, match, build_sequence",
+    "problem": "CLOSED 2026-09-08 (slice 3), confirmed on the 2026-09-09 redraw: maxPosition 10, ten characters, targets sixth through tenth in both draws. Original: COUNT001-04-D named sixth through tenth; both draws returned one challenge with maxPosition 5 targeting fifth.",
+    "mechanism": "The objective window resolver exists (gemini-ordinal-line.ts:355-372 reads \"6th through 10th\"), but gradeMaxPosition() returns 5 for K (line 372) and the window is clamped to it twice: the resolver clamps end to the grade ceiling, and the validator clamps again (line 495 `if K && maxPosition > 5 → 5`; line 509 Math.min(gradeMaxPosition, …)). So the window can never lift a K line past fifth. Nothing enforces a minimum item count.",
+    "proposal": "Treat the grade as the DEFAULT, not the ceiling, when the objective names a window: let an explicit window raise maxPosition to MAX_POSITION (10) at K; drop the line-495 clamp for windowed lessons; emit at least three challenges targeting positions inside the window; keep the four-clue hold for build_sequence by pre-filling part of the line.",
+    "acceptance": "Two fresh draws of COUNT001-04-D with maxPosition 10, at least three items, targets that include positions 6-10, and names free of numbers; COUNT001-04-A still draws first-fifth on a 5-long line (no regression of the K default).",
+    "requirementIds": [
+      "COUNT001-04-D",
+      "COUNT001-04-F"
+    ]
+  },
+  {
+    "id": "k-story-problems-within-10",
+    "priority": "P1",
+    "title": "Honor \"within 10\" in K story problems — FIXED 2026-09-09 (scene 09-08, strategy-picker 09-09)",
+    "kind": "Repair",
+    "executor": "eval-fix",
+    "slice": 3,
+    "target": "addition-subtraction-scene / solve_story, create_story; strategy-picker / guided",
+    "problem": "CLOSED 2026-09-09. addition-subtraction-scene closed 2026-09-08 and re-passed both redraws after the resolver was extracted. strategy-picker now resolves the same objective window: the OPS001-01-F objective text (\"within 10\") raises maxNumber 5 → 10 at K, and both fresh guided draws carry sums above 5 (10/4/9/8 and 6/10/10/8) while the no-window control still stops at 5.",
+    "mechanism": "maxNumber is fixed by band in the generator prompt (gemini-addition-subtraction-scene.ts:642 K=5, 650 G1=10) and the contract records it as a requirement (docs/contracts/addition-subtraction-scene.md:61, 85: \"K 5 / G1 10 at every tier\"). The scene, tile row and spoken number words already support 1-20, so the cap is policy, not capacity. strategy-picker carries the same K=5 policy. RESOLVED: the resolver is now shared at service/objectiveNumberWindow.ts and both generators call it — the scene with ceiling SPOKEN_ANSWER_MAX (20), strategy-picker with ceiling 10 (its real drawing capacity: MakeTenViz has ten cells, DrawObjectsViz overflows its SVG on a third row).",
+    "proposal": "Apply the objective number window (the slice-3 axis) to strategy-picker/guided and probe OPS001-01-F at K.",
+    "acceptance": "MET 2026-09-09: two fresh OPS001-01-F guided draws carry sums above 5 (10/4/9/8 and 6/10/10/8) at maxNumber 10; the K no-window control still stops at 5; both scene redraws still pass. scripts/probe-objective-window-caps.mjs, 12/12 draws → qa/eval-reports/objective-window-caps-2026-09-09.json. RESIDUAL (EVAL_TRACKER, not this queue): the K strategiesIntroduced default still withholds make-ten and doubles, so OPS001-01-F stays partial on the STRATEGY axis.",
+    "requirementIds": [
+      "OPS001-01-E",
+      "OPS001-01-F",
+      "OPS001-02-E"
+    ],
+    "nextRank": 2
+  },
+  {
+    "id": "missing-difference-form",
+    "priority": "P2",
+    "title": "Route the missing difference and honor the tier preference",
+    "kind": "Repair",
+    "executor": "eval-fix",
+    "slice": 6,
+    "target": "math-fact-fluency / missing_number (+ equation_solve)",
+    "problem": "OPS001-02-F names a missing difference OR minuend. All sixteen missing_number items across two draws hide the minuend; the easy tier declares a preference for the count-on position (operand2) that never appears.",
+    "mechanism": "missing_number is defined as operand1/operand2 only, never the result (gemini-math-fact-fluency.ts:46), so the missing-DIFFERENCE half is equation_solve by design, not a defect: the review now pairs both modes. The residual is real: resolveSupportStructure sets unknownPositionPref = operand2 for easy (line 148) but every easy item came back operand1, so the preference is not reaching the generated set.",
+    "proposal": "Trace unknownPositionPref from the tier resolver into the prompt/schema and post-parse; at easy, alternate operand2 and operand1 so the session holds both forms; leave result-unknown to equation_solve.",
+    "acceptance": "Two fresh easy draws with operand2 present and all equations true within 10; an equation_solve draw of the same objective yields difference-unknown items.",
+    "requirementIds": [
+      "OPS001-02-F"
+    ]
+  },
+  {
+    "id": "k-session-variety",
+    "priority": "P1",
+    "title": "Make each challenge a different problem — FIXED 2026-09-08",
+    "kind": "Repair",
+    "executor": "add-number-pool-service / eval-fix",
+    "slice": 4,
+    "target": "comparison-builder / compare_groups; number-sequencer / fill_missing; hundreds-chart / highlight_sequence",
+    "problem": "fill_missing put the blank in the second slot on every item and repeated 1,_,3,4 up to three times per session; hundreds-chart repeated the identical by-5-from-5 highlight five times in one draw; compare_groups returned the same five comparisons for two objectives and two draws.",
+    "mechanism": "comparison-builder: the tier resolver fixes only the count GAP (gemini-comparison-builder.ts:234, easy gap 3-6) and leaves the counts to Gemini, which converges on the same obvious pairs (5v1, 1v4, 3v3, 1v5). number-sequencer: Gemini places the blanks and copies the prompt example shape (line 47-50), so the blank lands in slot two and sequences repeat. hundreds-chart: startNumber is always the skipValue (line 556) and the grade-1 pool is [2,5,10] (line 355), so with a named pool of two values, seven challenges must repeat, and the extra 10 drifts in from the band pool.",
+    "proposal": "comparison-builder: run /add-number-pool-service so code pre-rolls the two counts inside the objective range with the tier gap and a guaranteed equal case. number-sequencer: Gemini emits complete sequences; code chooses the blank index round-robin and rejects duplicate sequences (ask 7, ship 5). hundreds-chart: when the objective names skip values, the pool is those values only; enumerate distinct (skip, start, givenCount) problems and cap the session at the distinct count instead of repeating.",
+    "acceptance": "Two fresh draws where every fill_missing line is unique and blanks cover at least three positions; every hundreds-chart challenge is a distinct skip/start pair within 2s and 5s; two compare_groups draws differ in at least three comparisons while still including equal. MET 2026-09-08 (live /api/lumina/eval-test draws, 2 per generator): fill_missing 5/5 distinct windows and 5/5 distinct blank slots in both draws; hundreds-chart 2 challenges from the pool [2,5] with no by-10s and no repeat; compare_groups 5/5 distinct pairs in each of 5 draws, one equal case per session, K counts inside 1-10. Tests: 20 new across three .variety.test.ts files.",
+    "requirementIds": [
+      "COUNT001-01-H",
+      "COUNT001-01-E",
+      "COUNT001-03-A",
+      "MEAS001-02-B"
+    ]
+  },
+  {
+    "id": "compare-groups-objective-window",
+    "priority": "P1",
+    "title": "Keep compare_groups inside the objective's range — FIXED 2026-09-09",
+    "kind": "Repair",
+    "executor": "eval-fix",
+    "slice": 4,
+    "target": "comparison-builder / compare_groups",
+    "problem": "Found on the 2026-09-09 full redraw: after slice 4 the pooled counts vary, but they are rolled over the K band (1-10) rather than the objective's window. COUNT001-03-A and MEAS001-02-B both name groups of UP TO 5; 7 of 10 and 6 of 10 comparisons exceed it (5v9, 10v4, 3v8).",
+    "mechanism": "The slice-4 pool service anchors compare_groups counts on the grade band (createNumberPool with the band's 1-10) and applies the tier gap; nothing reads the objective's stated ceiling. The same objective-window axis slice 3 added to ordinal-line and the scene is the missing input. Pattern to copy (slice 7, gemini-counting-board.ts): `boundIn` / `scopeCeiling` read \"to N\" / \"within N\" from topic and intent, take the min against the grade-band ceiling, and every code-owned draw is clamped to it. A prompt-only bound never reaches numbers that code picks after the call.",
+    "proposal": "Feed the objective number window (\"up to 5\", \"6-10\") into the pool anchors so both counts stay inside it; keep the tier gap and the guaranteed equal case; fall back to the band only when the objective names no window.",
+    "acceptance": "Fresh draws of COUNT001-03-A with every count in 1-5 and of COUNT001-03-B with every count in 6-10, each with an equal case and no repeated pair; a K draw with no window keeps 1-10. MET 2026-09-09 (real generations driven through geminiService, the dev server being wedged by a concurrent session): COUNT001-03-A ×2 and MEAS001-02-B every count in 1-5; COUNT001-03-B easy and medium every count in 6-10; all five draws 5/5 distinct pairs with one equal case; a K draw naming no range still spans 1-10. The window is read by the SHARED resolveScopeRange micro-call (schema, not regex — it reads the 6-10 FLOOR a ceiling-only parse cannot); the tier gap refits when a narrow window cannot supply five distinct pairs. Tests: 7 new in gemini-comparison-builder.variety.test.ts (14 total).",
+    "requirementIds": [
+      "COUNT001-03-A",
+      "COUNT001-03-B",
+      "MEAS001-02-B"
+    ],
+    "nextRank": 1
+  },
+  {
+    "id": "time-sequencer-k-prereader",
+    "priority": "P2",
+    "title": "Hear the K sequencing scaffold (the reading demand is gone)",
+    "kind": "Repair",
+    "executor": "eval-test",
+    "slice": 5,
+    "target": "time-sequencer / sequence-3",
+    "problem": "CLOSED 2026-09-08 on the screen half. Every K challenge in both draws told the child to read the clock time on each card; fresh draws now show 0 of 25 items mentioning a time, and the atlas content check \"the child is not asked to READ clock times\" passes 26/26 on both redraws. What is still owed is the SPOKEN half: the tutor lines were read from a prompt preview, never heard.",
+    "mechanism": "resolveSupportStructure(pinnedType, tier) took no grade, so the easy tier set showTimeAnchors=true and named the reading strategy at every band. It takes the band now, and at K the anchor is a sun-position picture the generator derives from the same typicalTime; tutorRevealPolicy and the catalog struggle line follow the screen. Full account: qa/reader-fit/time-sequencer-PRE-2026-09-08.md.",
+    "proposal": "Drive a K sequence-3 session with the mic and confirm the tutor names the sky strategy and never a clock, a time or a number; then decide whether K should get the sun cue with no support tier pinned (today the cue lives on the easy tier, so an unpinned K session has no perception anchor).",
+    "acceptance": "One live K drive with no clock language in the tutor audio, and a ruling on the no-tier default.",
+    "requirementIds": [
+      "PTRN001-03-C",
+      "TIME001-01-B",
+      "MEAS001-07-F"
+    ],
+    "nextRank": 6
+  },
+  {
+    "id": "calendar-today-framing",
+    "priority": "P2",
+    "title": "Frame a marked day as today",
+    "kind": "Repair",
+    "executor": "topic-fidelity",
+    "slice": 6,
+    "target": "calendar-explorer / identify",
+    "problem": "TIME001-02-B asks for today's day of the week; both draws ask which weekday an arbitrary 2025 date falls on and slip in first-Monday pattern questions. The mechanics are sound but the framing misses the objective.",
+    "mechanism": "identify is defined as date lookup (\"What date is the third Wednesday?\", service/calendar/gemini-calendar-explorer.ts:22) and the component has no notion of today: it only highlights highlightDates (CalendarExplorer.tsx:36, 291). There is no field the generator could set to mark a day as today.",
+    "proposal": "Add todayDate to the identify schema and a \"Today\" marker on that cell in CalendarExplorer; when the objective names today/yesterday/tomorrow, the prompt asks relative to the marked day; keep plain date lookups for objectives that name dates.",
+    "acceptance": "Fresh draws of TIME001-02-B/C where every question references the marked today (and yesterday/tomorrow for 02-C) with a consistent key; the Today marker is visible before the question is asked.",
+    "requirementIds": [
+      "TIME001-02-B",
+      "TIME001-02-C"
+    ]
+  },
+  {
+    "id": "k-draw-yield-variance",
+    "priority": "P2",
+    "title": "Stabilize per-draw yield and bins",
+    "kind": "Repair",
+    "executor": "eval-fix",
+    "slice": 6,
+    "target": "sorting-station / sort_one; compare-objects / identify_attribute",
+    "problem": "One sorting-station draw collapsed hot/warm/cold to two bins in all four challenges while the other produced all three; one compare-objects draw returned two items and the other seven.",
+    "mechanism": "sorting-station derives maxCategories from whatever Gemini returned (gemini-sorting-station.ts:1223 Math.max(config ?? 2, …)) and never reads the categories the objective names, so a two-bin draw is accepted. compare-objects ships min(count, returned) (gemini-compare-objects.ts:873) with no minimum and no regeneration.",
+    "proposal": "sorting-station: resolve the named categories from the objective text (schema, not regex) and reject a draw missing one of them; compare-objects: ask count+2, ship count, enforce a minimum of three and regenerate once when short.",
+    "acceptance": "Three consecutive draws each with all three temperature bins present and at least three attribute items per session.",
+    "requirementIds": [
+      "MEAS001-06-B",
+      "MEAS001-01-A"
+    ]
+  },
+  {
+    "id": "count-to-100-k",
+    "priority": "P2",
+    "title": "Count to 100 and spot sequence errors",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "number-sequencer / count_from",
+    "problem": "COUNT001-01-G asks to count on from any number to 100 and to identify sequence errors. number-sequencer is windowed 1-20 at K and no mode asks which number in a line is wrong.",
+    "mechanism": "The K window is a band constant in the generator (catalog: \"K: 1-20 range\"); no challenge type carries a wrong element. di-math-facts counting_next already reaches 120 for the count-on half.",
+    "proposal": "Widen the K window when the objective names 100 (same objective-window axis as slice 3); add an error-spotting challenge type (one wrong number in a short line) with the wrong index chosen in code.",
+    "acceptance": "Fresh draws with starts above 20 when named and error items whose wrong number is the only defensible answer.",
+    "requirementIds": [],
+    "nextRank": 10
+  },
+  {
+    "id": "counting-extensions",
+    "priority": "P2",
+    "title": "Conservation, give-me-N and count-back on the board — SHIPPED 2026-09-08",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "counting-board",
+    "problem": "SHIPPED 2026-09-08 (slice 7): counting-board give_me_n, recount_moved, add_more, take_away, and a K route for count_on; 15/15 draws clean (qa/eval-reports/counting-board-k-family-2026-09-08.json). Four rows to candidate; COUNT001-02-F stays partial only for the Grade-1 group floor. Original: Five requirements ask the child to re-count after rearrangement, count out a requested quantity from many, count back by removing, add a pair and say the new total, or combine a hidden group with visible objects. The board counts and compares only.",
+    "mechanism": "The judged loop already owns taps and a spoken count; the missing pieces are challenge types (rearrange-and-recount, give-me-N, remove-and-say, add-and-say) and a K route for count_on. Contract: docs/contracts/counting-board.md (read first; --check before editing).",
+    "proposal": "Add the four challenge types as eval modes with the arrangement change owned by the component; re-audit count_on at K for the hidden-group framing.",
+    "acceptance": "Each new type judged from the child's taps and spoken count; a rearranged set keeps its total; give-me-N rejects over-taps; /eval-test at three tiers.",
+    "requirementIds": [
+      "COUNT001-02-C",
+      "COUNT001-02-D",
+      "COUNT001-02-E",
+      "COUNT001-02-F",
+      "COUNT001-02-G"
+    ]
+  },
+  {
+    "id": "k-band-floor-reaudit",
+    "priority": "P2",
+    "title": "The two floors that HELD need a K-reachable mode, not a re-audit",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 5,
+    "target": "number-bond (fact_family, missing_part); time-sequencer (read-schedule); analog-clock (read)",
+    "problem": "CLOSED 2026-09-08 as a re-audit: twelve floored modes each got a verdict and ten floors came down (sorting-station x5, compare-objects order_three, length-lab order, time-sequencer sequence-5 / before-after / duration-compare), moving thirteen rows from partial to candidate. Two floors HELD as WRONG-BAND at PRE, and the three rows behind them still have no K home: number-bond fact_family types four equations, and time-sequencer read-schedule reads printed clock times as its task.",
+    "mechanism": "Neither hold is a medium problem the ports already solved. Typing is banned outright at PRE, and symbolic written form IS fact_family’s declared skill; reading a schedule IS read-schedule’s. Verdicts and evidence: qa/reader-fit/k-band-floor-2026-09-08.md.",
+    "proposal": "OPS001-02-G / OPS001-03-F: probe number-bond missing_part at K and judge whether two spoken related facts satisfy the inverse-operation objective; if not, add a SPOKEN fact-family eval mode rather than lowering the typed one. TIME001-03-G: probe analog-clock read for the whole-hour half and sequence-5 for the ordering half.",
+    "acceptance": "Each of the three rows has a K-routable mode with a probe behind it, or a filed development item saying which mode has to be built.",
+    "requirementIds": [],
+    "nextRank": 3
+  },
+  {
+    "id": "k-data-recording",
+    "priority": "P1",
+    "title": "K data: build and read one-to-one graphs — SHIPPED 2026-09-08 (say-what-it-shows and two-graph compare open)",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "bar-model",
+    "problem": "SHIPPED 2026-09-08 (slice 7): bar-model build_one_to_one, read_one_to_one, most_least, match_to_bar; 16/16 draws clean and a Chrome drive (qa/eval-reports/bar-model-k-data-2026-09-08.json). Seven rows re-pointed to candidate. Still open on this item: a spoken say-what-the-graph-shows turn (MEAS001-03-G) and a two-graph comparison (MEAS001-09-E). Original: Nine requirements ask a K child to record data with tallies or stickers, build a one-icon-per-item pictograph, read most/least across several bars, match objects to bars, compare two small data sets, or say what a graph shows. bar-model offers a two-bar comparison and scaled Grade 3 graphs.",
+    "mechanism": "bar-model's K surface is compare_bars only (two bars, which is taller); build_graph requires a student-chosen scale (3.MD.B.3) and picture_graph uses one icon = N. Nothing builds one-to-one.",
+    "proposal": "Add K modes: build_one_to_one (tap to add an icon per item), read_one_to_one (how many), most_least (3-4 bars) and a spoken say-what-it-shows turn; keep compare_bars.",
+    "acceptance": "Fresh draws with 1:1 icons, no printed totals during the build, most/least keys derived in code, and a spoken explanation judged on meaning.",
+    "requirementIds": [
+      "MEAS001-02-E",
+      "MEAS001-03-C",
+      "MEAS001-03-D",
+      "MEAS001-09-A",
+      "MEAS001-09-B",
+      "MEAS001-09-C",
+      "MEAS001-09-D"
+    ],
+    "nextRank": 5
+  },
+  {
+    "id": "length-lab-extensions",
+    "priority": "P2",
+    "title": "Estimate first, hand units, two units — SHIPPED 2026-09-09",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "length-lab / tile_and_count",
+    "problem": "SHIPPED 2026-09-09 (slice 7): length-lab estimate_then_tile, two_unit_compare, body-part units (hands/fingers/feet), and the unit the objective names now overrides the random pick; probed live by the slice-7 session, no report file yet. Three rows to candidate. Original: Three requirements ask to estimate before measuring, measure with hands or fingers, or measure one object with two different units and compare the counts. tile_and_count tiles one unit with no estimate phase.",
+    "mechanism": "tile_and_count has one unit type per challenge and no pre-measure phase; the component owns the tiling geometry, so an estimate capture and a second unit tray are component additions, not generator ones.",
+    "proposal": "Add an estimate-then-measure phase, hand/finger unit tiles, and a two-unit challenge on the same object.",
+    "acceptance": "The estimate is captured before tiles appear; hand units tile correctly; the two-unit item asks which unit needed more.",
+    "requirementIds": [
+      "MEAS001-04-B",
+      "MEAS001-05-B",
+      "MEAS001-05-D"
+    ]
+  },
+  {
+    "id": "measure-sim-weight-capacity",
+    "priority": "P2",
+    "title": "Pan balance and pour-to-fill simulation — BORN 2026-09-08 as measure-lab",
+    "kind": "New primitive",
+    "executor": "primitive",
+    "slice": 7,
+    "target": "new: measure-lab (weight + capacity)",
+    "problem": "BORN 2026-09-08 (slice 7) as measure-lab: balance_predict, capacity_predict, pour_count, order_capacity; 8/8 draws and a Chrome drive (qa/eval-reports/measure-lab-birth-2026-09-08.json, measure-lab-chrome-drive-2026-09-09.json). Five rows to candidate (MEAS001-01-F left the observation list). L1+ ladder (support tiers, DI loop) not started. Original: Four requirements need a balance that tips and containers that fill. The legacy balance-scale assignment is an equation balancer (a name collision); compare-objects can only say which is heavier or holds more.",
+    "mechanism": "No primitive owns weight or capacity physics; compare-objects draws static objects and judges a spoken name. A living-simulation birth (component owns the physics, Gemini supplies objects and words) is the established pattern.",
+    "proposal": "Birth a K measurement simulation: predict, place two objects on a pan balance and watch it tip; pour non-standard cups into containers and count; order three containers by amount.",
+    "acceptance": "Physics owned by the component, Gemini supplies objects and words only; prediction recorded before the test; counts judged in code; /eval-test at L0 then /add-di-loop for the spoken prediction.",
+    "requirementIds": [
+      "MEAS001-04-D",
+      "MEAS001-04-E",
+      "MEAS001-08-C",
+      "MEAS001-08-F",
+      "MEAS001-01-F"
+    ]
+  },
+  {
+    "id": "shapes-in-the-world",
+    "priority": "P2",
+    "title": "Find shapes in real objects",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "shape-sorter / identify; di-shapes / name_shape",
+    "problem": "Two requirements ask the child to recognize and describe 2D shapes in real-world objects. Both naming modes draw abstract shapes only.",
+    "mechanism": "Both generators draw code-owned abstract shapes; 3d-shape-explorer already has a match_real_world stimulus pattern (familiar object, code-owned truth) to copy.",
+    "proposal": "Add a real-object stimulus (clock face, door, sign) with the shape derived in code; keep the spoken name as the answer.",
+    "acceptance": "Draws whose objects have one defensible shape each and whose labels never name the shape.",
+    "requirementIds": [],
+    "nextRank": 7
+  },
+  {
+    "id": "pattern-k-gaps",
+    "priority": "P2",
+    "title": "Missing element and missing step",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "pattern-builder; time-sequencer",
+    "problem": "PTRN001-01-E asks for a missing element inside an AB pattern and PTRN001-03-E for the missing middle step of a familiar sequence; neither is a challenge type. The pattern-builder catalog text also places creation at grades 2-3 while K creation draws cleanly.",
+    "mechanism": "pattern-builder challenge types are extend/identify_core/translate/create/find_rule; a gap inside the pattern is a new structure the component must render. Catalog text to refresh: service/manifest/catalog/math.ts:2477 (pattern-builder create at 2-3) and :2635 (hundreds-chart K in-order only).",
+    "proposal": "Add a missing-element challenge to pattern-builder and a missing-step challenge to time-sequencer; correct the two catalog constraint lines now (no code change needed for that part).",
+    "acceptance": "Items whose gap has one defensible fill; the constraint text names K creation and K skip counting when the objective names them.",
+    "requirementIds": [],
+    "nextRank": 8
+  },
+  {
+    "id": "analog-clock-k-parts",
+    "priority": "P2",
+    "title": "Name the hands, count the face, hear a time — SHIPPED 2026-09-08",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "analog-clock",
+    "problem": "SHIPPED 2026-09-08 (slice 7): analog-clock hand_name, count_face, hear_time, probed live through the extended oracle and driven in headless Chrome by the slice-7 session; no report file under qa/eval-reports yet. Three rows to candidate (two were development). Original: Three requirements ask to name the hour and minute hands, count 1-12 around the face, or hear a whole-hour time and pick the face. None is a clock mode.",
+    "mechanism": "analog-clock's modes are read/set_time/match/elapsed; the component already draws hands and numerals, so hand highlighting and a tap-in-order face are component additions with code-owned keys.",
+    "proposal": "Add hand_name (spoken), count_face (tap in order) and hear_time (spoken time, pick the face) challenge types at K.",
+    "acceptance": "Draws with one highlighted hand per item, a 1-12 tap sequence judged in order, and four faces differing by hour.",
+    "requirementIds": [
+      "TIME001-03-A",
+      "TIME001-03-B",
+      "TIME001-03-D"
+    ]
+  },
+  {
+    "id": "calendar-days-k",
+    "priority": "P2",
+    "title": "Days of the week in order",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "calendar-explorer",
+    "problem": "TIME001-02-A asks the child to recite the seven days in order; the spoken pack can ask one next-day question but no mode asks for the sequence.",
+    "mechanism": "calendar-explorer has identify/count/pattern, all tap-answered; a spoken chain needs the judged runner (useJudgedScriptRunner) the DI ports already use.",
+    "proposal": "Add a spoken next-day chain (what comes after Monday, then after that) judged by the live tutor.",
+    "acceptance": "A chain of at least five judged turns starting from a random day.",
+    "requirementIds": [],
+    "nextRank": 9
+  },
+  {
+    "id": "picture-thermometer",
+    "priority": "P3",
+    "title": "Read a zone thermometer",
+    "kind": "Extend",
+    "executor": "add-eval-modes",
+    "slice": 7,
+    "target": "fast-fact / recognize",
+    "problem": "MEAS001-06-D asks the child to read a picture thermometer with hot, warm and cold zones; no primitive draws one.",
+    "mechanism": "fast-fact recognize already takes a visual cue with picture-primary K options; a code-drawn thermometer SVG is a new cue type.",
+    "proposal": "Add a code-drawn zone thermometer as a recognize cue with picture-primary options.",
+    "acceptance": "Draws where the level sits clearly in one zone and the options are pictures.",
+    "requirementIds": [],
+    "nextRank": 11
+  },
+  {
+    "id": "physical-observation",
+    "priority": "P3",
+    "title": "Record classroom-only observations",
+    "kind": "Curriculum",
+    "executor": "curriculum-author",
+    "slice": 7,
+    "target": "published K Mathematics rows naming physical materials or movement",
+    "problem": "Ten requirements depend on water, sand, sand timers, balance scales, plant growth, human graphs, sensory hot/cold or body movement. No screen primitive observes them; each has a screen half already reviewed where one exists.",
+    "mechanism": "These rows are curriculum content, not generator defects; the draft-first rule applies (edit draft → lineage-check → publish).",
+    "proposal": "Mark these rows as observation requirements in the draft curriculum so the planner does not route them to Lumina, keeping their screen halves as separate objectives where reviewed.",
+    "acceptance": "Each row carries an observation flag in the draft and its screen half, if any, points at the reviewed candidate.",
+    "requirementIds": [],
+    "nextRank": 12
+  },
+  {
+    "id": "sorting-station-k-draw-quality",
+    "priority": "P2",
+    "title": "K sorting draws need a full round count and an emoji that matches its label",
+    "kind": "Repair",
+    "executor": "eval-fix",
+    "slice": 6,
+    "target": "sorting-station / sort_variety, two_attributes",
+    "problem": "CLOSED 2026-09-09. Both faults were code, and each had a second cap behind it. YIELD: the orchestrator hardcoded 4 challenges regardless of the ask, and sort_variety capped rounds at 3 — so a 5-round lesson could not be served at all. It now honours config.challengeCount (2-10, default 4), and rounds past 3 come from ANOTHER on-topic object set rather than a fourth axis forced onto one (an observed draw sorted elephant/mouse/dog/horse by \"Tall/Round\"); axisRank spends a set on category/type/size before shape/color. A third cap sat below both: the keep-or-drop speakability gate runs AFTER generation, so every dropped challenge came out of the lesson and left an id gap (c1/c2/c3/c5) — single-mode sessions now generate count+2 and trim after the gate. EMOJI: cardPictureFault faults a card whose picture is a known one and whose label names a known noun it does not depict, with no other word agreeing (\"Red Banana\" 🍓 goes; \"Red Apple\" 🍎 and \"Rain Hat\" 👒 stay). Wired into the sort family, two_attributes (which had NO draw gate at all), and sort-variety, where the SET is rejected because dropping one shared card thins it below the band object floor. Evidence: 2 fresh K draws per mode at count=5 — 5/5 every time, contiguous ids, every card agreeing; 14/14 unit including a negative case driving the reported card through the real path. Contract R11 + R12 added; R12 amends R1's sort_variety probe (the set stays constant WITHIN a set, not across the lesson). Residual: two_attributes draw 1 asked \"need + food\" all five times — variety of the compound criterion is untouched and pre-existing.",
+    "mechanism": "Both are draw-quality faults, not band faults: the floors came down on the reading axis and these survive it. The yield shortfall is the distinctness/top-up pattern slice 4 addressed elsewhere (ask count+2, ship count, deterministic backfill); the emoji mismatch needs a label/emoji agreement check in the same place `hasPicture` already rejects text fragments in `gemini-sorting-station.ts`. Draws: qa/reader-fit/k-band-floor-2026-09-08.md.",
+    "proposal": "Ask for count+2 rounds and reject duplicates so `sort_variety` ships the count the lesson asked for; extend the existing picture gate so a card whose label names a different object than its emoji depicts is discarded before the child sees it.",
+    "acceptance": "Two fresh K draws per mode at the asked-for count, with every card's emoji agreeing with its label.",
+    "requirementIds": [
+      "MEAS001-02-G",
+      "PTRN001-02-D"
+    ],
+    "nextRank": 4
+  },
+  {
+    "id": "slice7-draw-quality",
+    "priority": "P2",
+    "title": "Slice-7 draws: vary give_me_n requests, fill hand_name sessions — FIXED 2026-09-09",
+    "kind": "Repair",
+    "executor": "eval-fix",
+    "slice": 7,
+    "target": "counting-board / give_me_n; analog-clock / hand_name",
+    "problem": "CLOSED 2026-09-09: give_me_n hands out distinct requests from a shuffled 2-6 pool by index and caps the pile at min(objective ceiling, 12) with at least request+2; analog-clock carries a session floor of four for the K clock modes, backfilled from the seed with shifted hours (in place and type-checked; 18 fresh draws all came back with 4-5 items from the model, so the floor has not been observed firing). Atlas redraw: give_me_n 2,6,5,3,4 and 3,2,4,5,6; hand_name 4 and 5 items alternating hands. Original: Atlas probes of the shipped slice-7 modes (2026-09-09): give_me_n asked for 2, 2, 5, 2, 5 in one draw (five requests, two values) while piles ran 6-20; hand_name returned a single item in one draw, so only the hour hand was asked.",
+    "mechanism": "give_me_n: the requested N is a model-chosen field with no distinctness gate, the same class of defect slice 4 closed for comparison-builder and number-sequencer. hand_name: the session count is min(count, returned) with no floor, the class of defect slice 6 closed for compare-objects.",
+    "proposal": "give_me_n: roll N in code across the pile (distinct values, at least one in the teens when the pile allows); hand_name: ask count+2, floor of three, alternate hour and minute in code.",
+    "acceptance": "Two fresh draws of COUNT001-02-D with at least three distinct requests and one above 5; two fresh draws of TIME001-03-A with five items alternating hands.",
+    "requirementIds": [
+      "COUNT001-02-D",
+      "TIME001-03-A"
+    ]
+  }
+]

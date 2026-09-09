@@ -1,0 +1,135 @@
+{
+  "id": "MEAS001-02-B",
+  "primitive": "comparison-builder",
+  "mode": "compare_groups",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Count and compare objects within categories (up to 5 objects), using terms \"more,\" \"fewer,\" and \"equal\"",
+  "requestedAt": "2026-09-09T11:20:35.604Z",
+  "inputHash": "f7ff585c4a98afe70808c0462ecabd0a4cea83f2e2ff64a64964c0335be6bf28",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "d057f74bf6c9658f658dcff418af60e4a2182e9c4dee74f35491a8e0d26112fb",
+    "src/components/lumina/service/math/gemini-comparison-builder.ts": "fed70414777272cfd22b6a7fd5055e4e3d50941a0d775c0d297550d1810c2714",
+    "src/components/lumina/primitives/visual-primitives/math/ComparisonBuilder.tsx": "a8fd4580b66f24b556583c80c2538f60c62a46aa975e90f413cefea3b11f0c19",
+    "catalog-entry:comparison-builder": "630dfbcd8ba6b8f30919f2a12eec636079b38525ec7326b3380a2fa646499697"
+  },
+  "params": {
+    "componentId": "comparison-builder",
+    "evalMode": "compare_groups",
+    "topic": "Count and compare objects within categories (up to 5 objects), using terms \"more,\" \"fewer,\" and \"equal\"",
+    "intent": "Count and compare objects within categories (up to 5 objects), using terms \"more,\" \"fewer,\" and \"equal\"",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "comparison-builder",
+    "evalMode": "compare_groups",
+    "duration": 2859,
+    "catalogMeta": {
+      "label": "Compare Groups (Scaffold 1)",
+      "beta": 1.5,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "compare-groups"
+      ],
+      "description": "Visual group comparison"
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "compare-groups"
+      ],
+      "payloadBytes": 1501,
+      "longestStringLength": 103,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Which Group Has More?",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "compare-groups",
+          "instruction": "Look at the boxes. Does the left group have more, fewer, or the same?",
+          "correctAnswer": "more",
+          "leftGroup": {
+            "count": 5,
+            "objectType": "stars"
+          },
+          "rightGroup": {
+            "count": 1,
+            "objectType": "stars"
+          }
+        },
+        {
+          "id": "c2",
+          "type": "compare-groups",
+          "instruction": "Look at the boxes. Does the left group have more, fewer, or the same?",
+          "correctAnswer": "less",
+          "leftGroup": {
+            "count": 1,
+            "objectType": "apples"
+          },
+          "rightGroup": {
+            "count": 3,
+            "objectType": "apples"
+          }
+        },
+        {
+          "id": "c3",
+          "type": "compare-groups",
+          "instruction": "Look at the boxes. Does the left group have more, fewer, or the same?",
+          "correctAnswer": "more",
+          "leftGroup": {
+            "count": 4,
+            "objectType": "fish"
+          },
+          "rightGroup": {
+            "count": 2,
+            "objectType": "fish"
+          }
+        },
+        {
+          "id": "c4",
+          "type": "compare-groups",
+          "instruction": "Look at the boxes. Does the left group have more, fewer, or the same?",
+          "correctAnswer": "less",
+          "leftGroup": {
+            "count": 3,
+            "objectType": "flowers"
+          },
+          "rightGroup": {
+            "count": 5,
+            "objectType": "flowers"
+          }
+        },
+        {
+          "id": "c5",
+          "type": "compare-groups",
+          "instruction": "Look at the boxes. Does the left group have more, fewer, or the same?",
+          "correctAnswer": "equal",
+          "leftGroup": {
+            "count": 1,
+            "objectType": "bears"
+          },
+          "rightGroup": {
+            "count": 1,
+            "objectType": "bears"
+          }
+        }
+      ],
+      "gradeBand": "K",
+      "showCorrespondenceLines": true,
+      "useAlligatorMnemonic": false,
+      "description": "Learn to count and compare groups of objects within categories using terms like more, fewer, and equal.",
+      "showCountBadges": true,
+      "correspondenceMode": "live",
+      "supportTier": "easy"
+    }
+  },
+  "durationMs": 2874
+}

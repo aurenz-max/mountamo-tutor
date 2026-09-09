@@ -1,0 +1,130 @@
+{
+  "id": "MEAS001-04-B",
+  "primitive": "length-lab",
+  "mode": "estimate_then_tile",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",
+  "requestedAt": "2026-09-09T10:43:02.241Z",
+  "inputHash": "5a91df55def1c4818b578150a9d7a673ea29b145f1dff692404b9c6113e04de5",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-length-lab.ts": "eccb2ee703c8b397e925730264329d315a2dd376d60ac72a69a2aa4f5847297c",
+    "src/components/lumina/primitives/visual-primitives/math/LengthLab.tsx": "d0eb7da8513f70704e7d72ea37258de35c6f7195a36362868c2f7e4b789247fd",
+    "catalog-entry:length-lab": "fa08388e420b034fd974e4cb0b342fe3505f8d47e51ecf447dea1e61041fbb20"
+  },
+  "params": {
+    "componentId": "length-lab",
+    "evalMode": "estimate_then_tile",
+    "topic": "Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",
+    "intent": "Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "length-lab",
+    "evalMode": "estimate_then_tile",
+    "duration": 2275,
+    "catalogMeta": {
+      "label": "Guess, Then Measure (K)",
+      "beta": 2,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "estimate_then_tile"
+      ],
+      "description": "Estimate how many units it will take, then tile and count to find out. K.MD.1."
+    },
+    "validation": {
+      "challengeCount": 3,
+      "typesFound": [
+        "estimate_then_tile"
+      ],
+      "payloadBytes": 1910,
+      "longestStringLength": 111,
+      "longestStringPath": "challenges[0].instruction",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Guess and Measure with Cubes!",
+      "description": "Practice estimating how long everyday objects are using cubes before you measure them!",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "estimate_then_tile",
+          "instruction": "Look at the pencil. How many cubes long do you think it is? Make your guess, then place your cubes to find out!",
+          "hint": "Count each cube carefully as you place them right next to the pencil.",
+          "narration": "Let's look at this pencil. Can you guess how many cubes long it is before we measure?",
+          "objectName0": "pencil",
+          "objectLength0": 4,
+          "objectColor0": "#E57373",
+          "objectName1": "",
+          "objectLength1": 5,
+          "objectColor1": "#E57373",
+          "correctAnswer": "4",
+          "correctUnitCount": 4,
+          "unitType": "cubes",
+          "estimateOptions": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "supportTier": "easy"
+        },
+        {
+          "id": "c2",
+          "type": "estimate_then_tile",
+          "instruction": "Here is a crayon! Take a guess at how many cubes will fit along its length, then test it out.",
+          "hint": "Start your cubes right at the very beginning of the crayon and line them up straight.",
+          "narration": "Time for the crayon! Make your best guess on how many cubes it will take.",
+          "objectName0": "crayon",
+          "objectLength0": 6,
+          "objectColor0": "#F06292",
+          "objectName1": "",
+          "objectLength1": 5,
+          "objectColor1": "#E57373",
+          "correctAnswer": "6",
+          "correctUnitCount": 6,
+          "unitType": "cubes",
+          "estimateOptions": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "supportTier": "easy"
+        },
+        {
+          "id": "c3",
+          "type": "estimate_then_tile",
+          "instruction": "Look at this fun marker! Guess how many cubes long it is, and then tile the cubes to check.",
+          "hint": "Check if your estimate was close by filling the space from start to end.",
+          "narration": "Here is a marker. How many cubes do you think fit inside its length? Let's find out!",
+          "objectName0": "marker",
+          "objectLength0": 9,
+          "objectColor0": "#4DD0E1",
+          "objectName1": "",
+          "objectLength1": 5,
+          "objectColor1": "#E57373",
+          "correctAnswer": "9",
+          "correctUnitCount": 9,
+          "unitType": "cubes",
+          "estimateOptions": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "supportTier": "easy"
+        }
+      ],
+      "unitType": "cubes",
+      "gradeBand": "K"
+    }
+  },
+  "durationMs": 2286
+}

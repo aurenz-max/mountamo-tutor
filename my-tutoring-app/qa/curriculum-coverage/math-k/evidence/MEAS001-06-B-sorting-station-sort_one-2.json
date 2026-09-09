@@ -1,0 +1,388 @@
+{
+  "id": "MEAS001-06-B",
+  "primitive": "sorting-station",
+  "mode": "sort_one",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Sort picture cards into temperature categories (hot, warm, cold) with real-world examples",
+  "requestedAt": "2026-09-09T10:22:11.426Z",
+  "inputHash": "2503dccd6e310b0a86315da4e95ccaf8b14e33ee1fd4e13f9476e5a593ea52d5",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-sorting-station.ts": "2cf9e0a5628f8367983698d18323a14d0e4b7a45ed6bbde4bb90af6b939a9c80",
+    "src/components/lumina/primitives/visual-primitives/math/SortingStation.tsx": "058deec7342752c383d49230cdebd3874e1cd82a99fa764e767c5882c5312d5e",
+    "catalog-entry:sorting-station": "dd6994e7d121337accb1b43e7324a42691e91405ebb4e746a113b7f26a7af5e9"
+  },
+  "params": {
+    "componentId": "sorting-station",
+    "evalMode": "sort_one",
+    "topic": "Sort picture cards into temperature categories (hot, warm, cold) with real-world examples",
+    "intent": "Sort picture cards into temperature categories (hot, warm, cold) with real-world examples",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "sorting-station",
+    "evalMode": "sort_one",
+    "duration": 4520,
+    "catalogMeta": {
+      "label": "Sort by One (Tier 1)",
+      "beta": 1.5,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "sort-by-one"
+      ],
+      "description": "Say which group each thing belongs with, one thing at a time. Spoken production judged by the Live tutor; no bins to drag into."
+    },
+    "validation": {
+      "challengeCount": 4,
+      "typesFound": [
+        "sort-by-one"
+      ],
+      "payloadBytes": 3848,
+      "longestStringLength": 86,
+      "longestStringPath": "challenges[2].instruction",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Temperature Time! Hot, Warm, and Cold",
+      "description": "Can you help sort these picture cards into hot, warm, and cold temperature groups?",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "sort-by-one",
+          "instruction": "Let us sort these yummy and cozy things into hot, warm, and cold bins!",
+          "sortingAttribute": "category",
+          "objects": [
+            {
+              "id": "obj1",
+              "label": "Hot Soup",
+              "emoji": "🍲",
+              "attributes": {
+                "category": "hot"
+              }
+            },
+            {
+              "id": "obj2",
+              "label": "Hot Coffee",
+              "emoji": "☕",
+              "attributes": {
+                "category": "hot"
+              }
+            },
+            {
+              "id": "obj3",
+              "label": "Warm Milk",
+              "emoji": "🥛",
+              "attributes": {
+                "category": "warm"
+              }
+            },
+            {
+              "id": "obj4",
+              "label": "Warm Bread",
+              "emoji": "🍞",
+              "attributes": {
+                "category": "warm"
+              }
+            },
+            {
+              "id": "obj5",
+              "label": "Cold Ice Cream",
+              "emoji": "🍨",
+              "attributes": {
+                "category": "cold"
+              }
+            },
+            {
+              "id": "obj6",
+              "label": "Cold Juice",
+              "emoji": "🧃",
+              "attributes": {
+                "category": "cold"
+              }
+            }
+          ],
+          "categories": [
+            {
+              "label": "Hot",
+              "rule": {
+                "category": "hot"
+              },
+              "bucketEmoji": "🔥"
+            },
+            {
+              "label": "Warm",
+              "rule": {
+                "category": "warm"
+              },
+              "bucketEmoji": "☀️"
+            },
+            {
+              "label": "Cold",
+              "rule": {
+                "category": "cold"
+              },
+              "bucketEmoji": "❄️"
+            }
+          ],
+          "modelItemId": "obj1",
+          "modelItemBin": 0
+        },
+        {
+          "id": "c2",
+          "type": "sort-by-one",
+          "instruction": "Look at these fun items! Can you sort them by hot, warm, or cold temperature?",
+          "sortingAttribute": "category",
+          "objects": [
+            {
+              "id": "obj7",
+              "label": "Hot Teapot",
+              "emoji": "🫖",
+              "attributes": {
+                "category": "hot"
+              }
+            },
+            {
+              "id": "obj8",
+              "label": "Hot Pizza",
+              "emoji": "🍕",
+              "attributes": {
+                "category": "hot"
+              }
+            },
+            {
+              "id": "obj9",
+              "label": "Warm Bath",
+              "emoji": "🛁",
+              "attributes": {
+                "category": "warm"
+              }
+            },
+            {
+              "id": "obj10",
+              "label": "Warm Cookie",
+              "emoji": "🍪",
+              "attributes": {
+                "category": "warm"
+              }
+            },
+            {
+              "id": "obj11",
+              "label": "Cold Snowman",
+              "emoji": "⛄",
+              "attributes": {
+                "category": "cold"
+              }
+            },
+            {
+              "id": "obj12",
+              "label": "Cold Water",
+              "emoji": "🧊",
+              "attributes": {
+                "category": "cold"
+              }
+            }
+          ],
+          "categories": [
+            {
+              "label": "Hot",
+              "rule": {
+                "category": "hot"
+              },
+              "bucketEmoji": "🔥"
+            },
+            {
+              "label": "Warm",
+              "rule": {
+                "category": "warm"
+              },
+              "bucketEmoji": "☀️"
+            },
+            {
+              "label": "Cold",
+              "rule": {
+                "category": "cold"
+              },
+              "bucketEmoji": "❄️"
+            }
+          ],
+          "modelItemId": "obj7",
+          "modelItemBin": 0
+        },
+        {
+          "id": "c3",
+          "type": "sort-by-one",
+          "instruction": "Time to find the right temperatures! Sort these cards into hot, warm, and cold groups.",
+          "sortingAttribute": "category",
+          "objects": [
+            {
+              "id": "obj13",
+              "label": "Hot Iron",
+              "emoji": "🔌",
+              "attributes": {
+                "category": "hot"
+              }
+            },
+            {
+              "id": "obj14",
+              "label": "Hot Cocoa",
+              "emoji": "🧋",
+              "attributes": {
+                "category": "hot"
+              }
+            },
+            {
+              "id": "obj15",
+              "label": "Warm Puppy",
+              "emoji": "🐶",
+              "attributes": {
+                "category": "warm"
+              }
+            },
+            {
+              "id": "obj16",
+              "label": "Warm Blanket",
+              "emoji": "🧶",
+              "attributes": {
+                "category": "warm"
+              }
+            },
+            {
+              "id": "obj17",
+              "label": "Cold Penguin",
+              "emoji": "🐧",
+              "attributes": {
+                "category": "cold"
+              }
+            },
+            {
+              "id": "obj18",
+              "label": "Cold Popsicle",
+              "emoji": "🍡",
+              "attributes": {
+                "category": "cold"
+              }
+            }
+          ],
+          "categories": [
+            {
+              "label": "Hot",
+              "rule": {
+                "category": "hot"
+              },
+              "bucketEmoji": "🔥"
+            },
+            {
+              "label": "Warm",
+              "rule": {
+                "category": "warm"
+              },
+              "bucketEmoji": "☀️"
+            },
+            {
+              "label": "Cold",
+              "rule": {
+                "category": "cold"
+              },
+              "bucketEmoji": "❄️"
+            }
+          ],
+          "modelItemId": "obj13",
+          "modelItemBin": 0
+        },
+        {
+          "id": "c4",
+          "type": "sort-by-one",
+          "instruction": "Let us sort one more group of temperature cards into hot, warm, and cold!",
+          "sortingAttribute": "category",
+          "objects": [
+            {
+              "id": "obj19",
+              "label": "Hot Volcano",
+              "emoji": "🌋",
+              "attributes": {
+                "category": "hot"
+              }
+            },
+            {
+              "id": "obj20",
+              "label": "Hot Stove",
+              "emoji": "🍳",
+              "attributes": {
+                "category": "hot"
+              }
+            },
+            {
+              "id": "obj21",
+              "label": "Warm Sun",
+              "emoji": "🌞",
+              "attributes": {
+                "category": "warm"
+              }
+            },
+            {
+              "id": "obj22",
+              "label": "Warm Tea",
+              "emoji": "🍵",
+              "attributes": {
+                "category": "warm"
+              }
+            },
+            {
+              "id": "obj23",
+              "label": "Cold Ice",
+              "emoji": "🧊",
+              "attributes": {
+                "category": "cold"
+              }
+            },
+            {
+              "id": "obj24",
+              "label": "Cold Snowflake",
+              "emoji": "❄️",
+              "attributes": {
+                "category": "cold"
+              }
+            }
+          ],
+          "categories": [
+            {
+              "label": "Hot",
+              "rule": {
+                "category": "hot"
+              },
+              "bucketEmoji": "🔥"
+            },
+            {
+              "label": "Warm",
+              "rule": {
+                "category": "warm"
+              },
+              "bucketEmoji": "☀️"
+            },
+            {
+              "label": "Cold",
+              "rule": {
+                "category": "cold"
+              },
+              "bucketEmoji": "❄️"
+            }
+          ],
+          "modelItemId": "obj19",
+          "modelItemBin": 0
+        }
+      ],
+      "maxCategories": 3,
+      "showCounts": true,
+      "showTallyChart": false,
+      "gradeBand": "K",
+      "supportTier": "easy"
+    }
+  },
+  "durationMs": 4531
+}

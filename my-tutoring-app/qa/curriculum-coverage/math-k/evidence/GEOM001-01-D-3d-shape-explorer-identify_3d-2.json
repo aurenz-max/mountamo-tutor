@@ -1,0 +1,102 @@
+{
+  "id": "GEOM001-01-D",
+  "primitive": "3d-shape-explorer",
+  "mode": "identify_3d",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Recognize and name 3D shapes (cubes, cones, cylinders) and distinguish between 2D and 3D objects",
+  "requestedAt": "2026-09-09T10:21:58.724Z",
+  "inputHash": "3ac73a2fafaafc91ec3e47d2d4e499471cba8d643e5e59094cd8871ebf2d478d",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-3d-shape-explorer.ts": "681f81014900a20906f0196b9f8e4be84c873855827faf5543f4968240787503",
+    "src/components/lumina/primitives/visual-primitives/math/ThreeDShapeExplorer.tsx": "7e9194e28361b2318ae2acdfc2d9ac1449baebc44cfa6472cb02b190aad05365",
+    "catalog-entry:3d-shape-explorer": "30e13ea8d814c3cb19f5523b70fddc7ffd8db0aebf8fb2f4288ffea96b0b8a19"
+  },
+  "params": {
+    "componentId": "3d-shape-explorer",
+    "evalMode": "identify_3d",
+    "topic": "Recognize and name 3D shapes (cubes, cones, cylinders) and distinguish between 2D and 3D objects",
+    "intent": "Recognize and name 3D shapes (cubes, cones, cylinders) and distinguish between 2D and 3D objects",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "3d-shape-explorer",
+    "evalMode": "identify_3d",
+    "duration": 1255,
+    "catalogMeta": {
+      "label": "Identify 3D (Tier 1)",
+      "beta": 2,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "identify-3d"
+      ],
+      "description": "Look at one unlabeled solid and SAY its mathematical name. Beta raised from 1.5: the 1-of-4 printed name menu is gone."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "identify-3d"
+      ],
+      "payloadBytes": 842,
+      "longestStringLength": 64,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Solid Shapes Exploration",
+      "description": "Look at the object and name the solid shape shown on the screen.",
+      "challenges": [
+        {
+          "id": "item-1",
+          "type": "identify-3d",
+          "shape3d": "cube",
+          "supportTier": "easy",
+          "showElementLabels": true,
+          "showFaceHighlight": true
+        },
+        {
+          "id": "item-2",
+          "type": "identify-3d",
+          "shape3d": "sphere",
+          "supportTier": "easy",
+          "showElementLabels": true,
+          "showFaceHighlight": true
+        },
+        {
+          "id": "item-3",
+          "type": "identify-3d",
+          "shape3d": "cylinder",
+          "supportTier": "easy",
+          "showElementLabels": true,
+          "showFaceHighlight": true
+        },
+        {
+          "id": "item-4",
+          "type": "identify-3d",
+          "shape3d": "cone",
+          "supportTier": "easy",
+          "showElementLabels": true,
+          "showFaceHighlight": true
+        },
+        {
+          "id": "item-5",
+          "type": "identify-3d",
+          "shape3d": "rectangular-prism",
+          "supportTier": "easy",
+          "showElementLabels": true,
+          "showFaceHighlight": true
+        }
+      ],
+      "gradeBand": "K",
+      "showUnfoldAnimation": false,
+      "show3dRotation": true
+    }
+  },
+  "durationMs": 1270
+}

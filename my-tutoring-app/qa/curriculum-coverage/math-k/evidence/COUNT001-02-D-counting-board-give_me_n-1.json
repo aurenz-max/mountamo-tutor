@@ -1,0 +1,121 @@
+{
+  "id": "COUNT001-02-D",
+  "primitive": "counting-board",
+  "mode": "give_me_n",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",
+  "requestedAt": "2026-09-09T10:51:06.965Z",
+  "inputHash": "7c1b86971995ab2a6c57335d65f480f32a0ec39936dbbfb5fad8c192565eb015",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-counting-board.ts": "4fcca5e9198f2588d9dfda15f763fca7bb665cf9a01095954467c8567b5b887f",
+    "src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx": "9680a2474c9b62add9d6475ac7f9e4264f9573c197039a5e07729a00ab0588a8",
+    "catalog-entry:counting-board": "c5403e40e01903aa26956b69cb1f8202ce96e2a28f7389d92b4fb3c77aaca22e"
+  },
+  "params": {
+    "componentId": "counting-board",
+    "evalMode": "give_me_n",
+    "topic": "Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",
+    "intent": "Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "counting-board",
+    "evalMode": "give_me_n",
+    "duration": 2498,
+    "catalogMeta": {
+      "label": "Give Me N (Concrete)",
+      "beta": 1.5,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "give_me_n"
+      ],
+      "description": "Count out a named number of objects from a bigger pile and hand them over. K.CC.B.5."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "give_me_n"
+      ],
+      "payloadBytes": 1651,
+      "longestStringLength": 96,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Apple Basket Challenge",
+      "description": "Practice counting out exact quantities of fresh apples from the pile in structured arrangements.",
+      "objects": {
+        "type": "apples"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "give_me_n",
+          "instruction": "Give me two apples.",
+          "targetAnswer": 2,
+          "count": 6,
+          "arrangement": "circle",
+          "hint": "Try tapping each apple one by one as you count them.",
+          "narration": "Welcome to the apple orchard! Can you count the apples in the circle?"
+        },
+        {
+          "id": "c2",
+          "type": "give_me_n",
+          "instruction": "Give me six apples.",
+          "targetAnswer": 6,
+          "count": 10,
+          "arrangement": "line",
+          "hint": "Start from the left and count straight across the line.",
+          "narration": "Look at these apples lined up in a row. How many are there?"
+        },
+        {
+          "id": "c3",
+          "type": "give_me_n",
+          "instruction": "Give me five apples.",
+          "targetAnswer": 5,
+          "count": 12,
+          "arrangement": "groups",
+          "hint": "Count the apples row by row so you don't miss any.",
+          "narration": "These apples are sitting in nice groups. Let's count them all together.",
+          "groupSize": 5
+        },
+        {
+          "id": "c4",
+          "type": "give_me_n",
+          "instruction": "Give me three apples.",
+          "targetAnswer": 3,
+          "count": 12,
+          "arrangement": "line",
+          "hint": "Take your time and touch each apple as you say its number.",
+          "narration": "That is a long line of apples! Let's count carefully."
+        },
+        {
+          "id": "c5",
+          "type": "give_me_n",
+          "instruction": "Give me four apples.",
+          "targetAnswer": 4,
+          "count": 12,
+          "arrangement": "groups",
+          "hint": "Count them in smaller parts to keep track easily.",
+          "narration": "You are doing amazing! Let's count this final set of apples right up to twenty.",
+          "groupSize": 5
+        }
+      ],
+      "showOptions": {
+        "showRunningCount": true,
+        "showGroupCircles": true,
+        "highlightOnTap": true,
+        "showLastNumber": true
+      },
+      "gradeBand": "K"
+    }
+  },
+  "durationMs": 4972
+}

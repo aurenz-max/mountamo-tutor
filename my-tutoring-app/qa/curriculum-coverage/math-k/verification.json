@@ -1,0 +1,6 @@
+{
+  "tests": 82,
+  "suites": 35,
+  "note": "Generator, grade-band, window and support-tier vitest suites for the 17 probed primitives passed (2026-09-07). Live tutor and microphone were not driven.",
+  "command": "./node_modules/.bin/vitest run <gemini-*.test.ts and component tests for the probed primitives>"
+}

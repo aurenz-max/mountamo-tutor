@@ -1,0 +1,344 @@
+{
+  "id": "COUNT001-04-D",
+  "primitive": "ordinal-line",
+  "mode": "identify",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Extend ordinal number understanding to tenth position (sixth through tenth)",
+  "requestedAt": "2026-09-09T10:21:42.669Z",
+  "inputHash": "c1bff6bb3afaf69dd1a85b8ac367827ab2ed2f2d95876b9447784719e18226e1",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-ordinal-line.ts": "08677141bd2a6530119f1abf39c3f5a668ad7e8a35e6e62449e9d6549a7fe47d",
+    "src/components/lumina/primitives/visual-primitives/math/OrdinalLine.tsx": "2f98a93e01d26cea546d030d86833a8fd80c0a94bd476865918a319068d088fd",
+    "catalog-entry:ordinal-line": "d38d7006bf88543bb600fde85860ba202e2755b52bd153975b1e3073749163c3"
+  },
+  "params": {
+    "componentId": "ordinal-line",
+    "evalMode": "identify",
+    "topic": "Extend ordinal number understanding to tenth position (sixth through tenth)",
+    "intent": "Extend ordinal number understanding to tenth position (sixth through tenth)",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "ordinal-line",
+    "evalMode": "identify",
+    "duration": 2080,
+    "catalogMeta": {
+      "label": "Identify (Scaffold 1)",
+      "beta": 1.5,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "identify"
+      ],
+      "description": "BAND-SPLIT, one eval mode. Kindergarten: the tutor names a place and the child SAYS THE NAME of who is there. Grade 1: the tutor names a character and the child SAYS ITS PLACE — first through tenth, the ordinal vocabulary this mode is named for. Spoken production judged by the Live tutor; nothing on the line is tappable."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "identify"
+      ],
+      "payloadBytes": 3381,
+      "longestStringLength": 117,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Animal Parade: Marching to Tenth!",
+      "description": "Join the fun animal parade and learn ordinal numbers all the way up to the tenth position as friends march in a line.",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "identify",
+          "characters": [
+            {
+              "name": "Bear",
+              "emoji": "🐻"
+            },
+            {
+              "name": "Tiger",
+              "emoji": "🐯"
+            },
+            {
+              "name": "Rabbit",
+              "emoji": "🐰"
+            },
+            {
+              "name": "Monkey",
+              "emoji": "🐵"
+            },
+            {
+              "name": "Elephant",
+              "emoji": "🐘"
+            },
+            {
+              "name": "Penguin",
+              "emoji": "🐧"
+            },
+            {
+              "name": "Kangaroo",
+              "emoji": "🦘"
+            },
+            {
+              "name": "Giraffe",
+              "emoji": "🦒"
+            },
+            {
+              "name": "Zebra",
+              "emoji": "🦓"
+            },
+            {
+              "name": "Lion",
+              "emoji": "🦁"
+            }
+          ],
+          "instruction": "Say who is sixth in the parade.",
+          "targetPosition": 6,
+          "targetOrdinalWord": "sixth",
+          "targetOrdinalSymbol": "6th",
+          "correctAnswer": "6",
+          "supportTier": "easy",
+          "showPositionLabels": true,
+          "showSlotLabels": true,
+          "highlightTarget": true,
+          "orderMatchSymbols": false
+        },
+        {
+          "id": "c2",
+          "type": "identify",
+          "characters": [
+            {
+              "name": "Bear",
+              "emoji": "🐻"
+            },
+            {
+              "name": "Tiger",
+              "emoji": "🐯"
+            },
+            {
+              "name": "Rabbit",
+              "emoji": "🐰"
+            },
+            {
+              "name": "Monkey",
+              "emoji": "🐵"
+            },
+            {
+              "name": "Elephant",
+              "emoji": "🐘"
+            },
+            {
+              "name": "Penguin",
+              "emoji": "🐧"
+            },
+            {
+              "name": "Kangaroo",
+              "emoji": "🦘"
+            },
+            {
+              "name": "Giraffe",
+              "emoji": "🦒"
+            },
+            {
+              "name": "Zebra",
+              "emoji": "🦓"
+            },
+            {
+              "name": "Lion",
+              "emoji": "🦁"
+            }
+          ],
+          "instruction": "Say who is seventh in the parade.",
+          "targetPosition": 7,
+          "targetOrdinalWord": "seventh",
+          "targetOrdinalSymbol": "7th",
+          "correctAnswer": "7",
+          "supportTier": "easy",
+          "showPositionLabels": true,
+          "showSlotLabels": true,
+          "highlightTarget": true,
+          "orderMatchSymbols": false
+        },
+        {
+          "id": "c3",
+          "type": "identify",
+          "characters": [
+            {
+              "name": "Bear",
+              "emoji": "🐻"
+            },
+            {
+              "name": "Tiger",
+              "emoji": "🐯"
+            },
+            {
+              "name": "Rabbit",
+              "emoji": "🐰"
+            },
+            {
+              "name": "Monkey",
+              "emoji": "🐵"
+            },
+            {
+              "name": "Elephant",
+              "emoji": "🐘"
+            },
+            {
+              "name": "Penguin",
+              "emoji": "🐧"
+            },
+            {
+              "name": "Kangaroo",
+              "emoji": "🦘"
+            },
+            {
+              "name": "Giraffe",
+              "emoji": "🦒"
+            },
+            {
+              "name": "Zebra",
+              "emoji": "🦓"
+            },
+            {
+              "name": "Lion",
+              "emoji": "🦁"
+            }
+          ],
+          "instruction": "Say who is tenth in the parade.",
+          "targetPosition": 10,
+          "targetOrdinalWord": "tenth",
+          "targetOrdinalSymbol": "10th",
+          "correctAnswer": "10",
+          "supportTier": "easy",
+          "showPositionLabels": true,
+          "showSlotLabels": true,
+          "highlightTarget": true,
+          "orderMatchSymbols": false
+        },
+        {
+          "id": "c4",
+          "type": "identify",
+          "characters": [
+            {
+              "name": "Bear",
+              "emoji": "🐻"
+            },
+            {
+              "name": "Tiger",
+              "emoji": "🐯"
+            },
+            {
+              "name": "Rabbit",
+              "emoji": "🐰"
+            },
+            {
+              "name": "Monkey",
+              "emoji": "🐵"
+            },
+            {
+              "name": "Elephant",
+              "emoji": "🐘"
+            },
+            {
+              "name": "Penguin",
+              "emoji": "🐧"
+            },
+            {
+              "name": "Kangaroo",
+              "emoji": "🦘"
+            },
+            {
+              "name": "Giraffe",
+              "emoji": "🦒"
+            },
+            {
+              "name": "Zebra",
+              "emoji": "🦓"
+            },
+            {
+              "name": "Lion",
+              "emoji": "🦁"
+            }
+          ],
+          "instruction": "Say who is eighth in the parade.",
+          "targetPosition": 8,
+          "targetOrdinalWord": "eighth",
+          "targetOrdinalSymbol": "8th",
+          "correctAnswer": "8",
+          "supportTier": "easy",
+          "showPositionLabels": true,
+          "showSlotLabels": true,
+          "highlightTarget": true,
+          "orderMatchSymbols": false
+        },
+        {
+          "id": "c5",
+          "type": "identify",
+          "characters": [
+            {
+              "name": "Bear",
+              "emoji": "🐻"
+            },
+            {
+              "name": "Tiger",
+              "emoji": "🐯"
+            },
+            {
+              "name": "Rabbit",
+              "emoji": "🐰"
+            },
+            {
+              "name": "Monkey",
+              "emoji": "🐵"
+            },
+            {
+              "name": "Elephant",
+              "emoji": "🐘"
+            },
+            {
+              "name": "Penguin",
+              "emoji": "🐧"
+            },
+            {
+              "name": "Kangaroo",
+              "emoji": "🦘"
+            },
+            {
+              "name": "Giraffe",
+              "emoji": "🦒"
+            },
+            {
+              "name": "Zebra",
+              "emoji": "🦓"
+            },
+            {
+              "name": "Lion",
+              "emoji": "🦁"
+            }
+          ],
+          "instruction": "Say who is ninth in the parade.",
+          "targetPosition": 9,
+          "targetOrdinalWord": "ninth",
+          "targetOrdinalSymbol": "9th",
+          "correctAnswer": "9",
+          "supportTier": "easy",
+          "showPositionLabels": true,
+          "showSlotLabels": true,
+          "highlightTarget": true,
+          "orderMatchSymbols": false
+        }
+      ],
+      "maxPosition": 10,
+      "context": "parade",
+      "showOrdinalLabels": true,
+      "labelFormat": "both",
+      "gradeBand": "1"
+    }
+  },
+  "durationMs": 2092
+}

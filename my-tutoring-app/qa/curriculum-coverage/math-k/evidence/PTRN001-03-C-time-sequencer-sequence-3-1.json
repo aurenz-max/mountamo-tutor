@@ -1,0 +1,256 @@
+{
+  "id": "PTRN001-03-C",
+  "primitive": "time-sequencer",
+  "mode": "sequence-3",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Arrange 3 picture cards to show a logical sequence (morning, noon, night)",
+  "requestedAt": "2026-09-09T10:22:14.728Z",
+  "inputHash": "ed44539c1ba316562b7b1726a41a72827561bafa5efa04a32b624c86b3a2390c",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-time-sequencer.ts": "dc5b2d16d825ba6d432d9eb0c0e433fc74e937d2faa7bfcbb95f70a083615ad6",
+    "src/components/lumina/primitives/visual-primitives/math/TimeSequencer.tsx": "b2d0e3dc69589af9133e58326cc6771c39ac9f2d6e22187735bd07297addb5da",
+    "catalog-entry:time-sequencer": "e216af8f0cdaa2c5d1e5c1043e5e2ceb072259543c6cd2ffde67c0804274ad4d"
+  },
+  "params": {
+    "componentId": "time-sequencer",
+    "evalMode": "sequence-3",
+    "topic": "Arrange 3 picture cards to show a logical sequence (morning, noon, night)",
+    "intent": "Arrange 3 picture cards to show a logical sequence (morning, noon, night)",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "time-sequencer",
+    "evalMode": "sequence-3",
+    "duration": 3324,
+    "catalogMeta": {
+      "label": "Sequence 3 Events (Scaffold 1)",
+      "beta": 1,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "sequence-events"
+      ],
+      "description": "Order 3 daily events"
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "sequence-events"
+      ],
+      "payloadBytes": 3937,
+      "longestStringLength": 105,
+      "longestStringPath": "challenges[0].strategyHint",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Rainy Day Routine",
+      "description": "Put the rainy day picture cards in order by looking at the sky and what happens first.",
+      "gradeBand": "K",
+      "supportTier": "easy",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Put them in order. Which one happens first?",
+          "hint": "Think about what you do when you first wake up to the sound of rain.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "Wake up to rain",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e2",
+              "label": "Rainy breakfast",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            },
+            {
+              "id": "e3",
+              "label": "Rain boots ready",
+              "emoji": "🎒",
+              "typicalTime": "9:00 AM",
+              "dayFraction": 0.375
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        },
+        {
+          "id": "c2",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Put them in order. Which one happens first?",
+          "hint": "Think about what happens as the sun climbs high above the rainy clouds.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "Morning puzzle fun",
+              "emoji": "🎨",
+              "typicalTime": "10:00 AM",
+              "dayFraction": 0.417
+            },
+            {
+              "id": "e2",
+              "label": "Lunch during storm",
+              "emoji": "🥤",
+              "typicalTime": "12:00 PM",
+              "dayFraction": 0.5
+            },
+            {
+              "id": "e3",
+              "label": "Afternoon indoor play",
+              "emoji": "🏃",
+              "typicalTime": "2:00 PM",
+              "dayFraction": 0.583
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        },
+        {
+          "id": "c3",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Put them in order. Which one happens first?",
+          "hint": "Think about when the afternoon rain starts to slow down.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "Read a story",
+              "emoji": "📚",
+              "typicalTime": "3:00 PM",
+              "dayFraction": 0.625
+            },
+            {
+              "id": "e2",
+              "label": "Rain stops outside",
+              "emoji": "☀️",
+              "typicalTime": "4:30 PM",
+              "dayFraction": 0.688
+            },
+            {
+              "id": "e3",
+              "label": "Evening dinner time",
+              "emoji": "🍽️",
+              "typicalTime": "6:00 PM",
+              "dayFraction": 0.75
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        },
+        {
+          "id": "c4",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Put them in order. Which one happens first?",
+          "hint": "Think about what you do when the sun goes down and stars come out.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "Warm bubble bath",
+              "emoji": "🛁",
+              "typicalTime": "7:00 PM",
+              "dayFraction": 0.792
+            },
+            {
+              "id": "e2",
+              "label": "Brush your teeth",
+              "emoji": "🦷",
+              "typicalTime": "7:30 PM",
+              "dayFraction": 0.813
+            },
+            {
+              "id": "e3",
+              "label": "Nighttime sleep",
+              "emoji": "😴",
+              "typicalTime": "8:00 PM",
+              "dayFraction": 0.833
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        },
+        {
+          "id": "c5",
+          "type": "sequence-events",
+          "instruction": "Look at the sky on each card. Put them in order. Which one happens first?",
+          "hint": "Think about what you see when the rain clears and the evening sky appears.",
+          "events": [
+            {
+              "id": "e1",
+              "label": "Evening sunset glow",
+              "emoji": "🌇",
+              "typicalTime": "6:30 PM",
+              "dayFraction": 0.771
+            },
+            {
+              "id": "e2",
+              "label": "Stars in the sky",
+              "emoji": "⭐",
+              "typicalTime": "8:00 PM",
+              "dayFraction": 0.833
+            },
+            {
+              "id": "e3",
+              "label": "Dreaming in bed",
+              "emoji": "🌙",
+              "typicalTime": "9:00 PM",
+              "dayFraction": 0.875
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "showTimeAnchors": false,
+          "showSkyCue": true,
+          "prelabelFirstSlot": true,
+          "showStrategyHint": true,
+          "strategyHint": "Look at the sky on each card. The sun comes up first, then it climbs, then it goes down, then it is dark."
+        }
+      ]
+    }
+  },
+  "durationMs": 3331
+}

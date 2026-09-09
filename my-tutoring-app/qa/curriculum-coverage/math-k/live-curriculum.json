@@ -1,0 +1,2460 @@
+{
+  "subject": "MATHEMATICS",
+  "curriculum": [
+    {
+      "id": "COUNT001",
+      "title": "Counting and Cardinality",
+      "grade": "Kindergarten",
+      "subject": "Mathematics",
+      "skills": [
+        {
+          "id": "COUNT001-01",
+          "description": "Know number names and the count sequence",
+          "subskills": [
+            {
+              "id": "COUNT001-01-A",
+              "description": "Count and recognize numbers 0-10, including matching spoken words to written numerals ",
+              "difficulty_range": {
+                "start": 1,
+                "end": 4,
+                "target": 4
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "subitize"
+              ]
+            },
+            {
+              "id": "COUNT001-01-B",
+              "description": "Write numbers 0-10 and their number words, demonstrating one-to-one correspondence with objects",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "number-tracer",
+              "target_eval_modes": [
+                "trace",
+                "write"
+              ]
+            },
+            {
+              "id": "COUNT001-01-C",
+              "description": "Count, recognize, and write numbers 11-20, with proper sequence and order",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "group"
+              ]
+            },
+            {
+              "id": "COUNT001-01-D",
+              "description": "Demonstrate sequential understanding through 20 (before/after, missing numbers, backward counting)",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "number-sequencer",
+              "target_eval_modes": [
+                "before_after",
+                "fill_missing"
+              ]
+            },
+            {
+              "id": "COUNT001-01-E",
+              "description": "Count by 2s and 5s up to 50 using visual aids and concrete objects",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "skip-counting-runner",
+              "target_eval_modes": [
+                "count_along",
+                "predict"
+              ]
+            },
+            {
+              "id": "COUNT001-01-F",
+              "description": "Count and recognize numbers from 21-100, with emphasis on decade numbers",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "hundreds-chart",
+              "target_eval_modes": [
+                "highlight_sequence",
+                "identify_pattern"
+              ]
+            },
+            {
+              "id": "COUNT001-01-G",
+              "description": "Count forward from any given number up to 100 and identify sequence errors",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "hundreds-chart",
+              "target_eval_modes": [
+                "complete_sequence",
+                "identify_pattern"
+              ]
+            },
+            {
+              "id": "COUNT001-01-H",
+              "description": "Students count forward starting from one in a linear sequence by identifying the next number in a given set. Focus: Students practice the forward counting sequence up to 10 by filling in missing numbers in a line. Examples: 1, 2, _, 4; 3, 4, 5, _; _, 2, 3, 4; 5, 6, _, 8; 1, _, 3, 4; 7, 8, 9, _; 2, 3, _, 5; 4, 5, 6, _. Constraints: Use the number-sequencer primitive to guide students; keep sequences under 10; include only one missing number per sequence initially.",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "number-sequencer",
+              "target_eval_modes": [
+                "fill_missing"
+              ]
+            },
+            {
+              "id": "COUNT001-01-I",
+              "description": "Students recite and order number names starting from any number between 1 and 20. Focus: Students demonstrate mastery of the count sequence by extending a provided sequence up to 20. Examples: 8, 9, 10, 11, 12; 14, 15, 16, 17, 18; 5, 6, 7, 8, 9; 11, 12, 13, 14, 15; 16, 17, 18, 19, 20; 3, 4, 5, 6, 7; 10, 11, 12, 13, 14; 9, 10, 11, 12, 13. Constraints: Use the counting-board primitive; start sequences at various points within the 1-20 range; ensure the student completes the sequence by identifying the next three numbers in the chain.",
+              "difficulty_range": {
+                "start": 2,
+                "end": 5,
+                "target": 3.5
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "count_on"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "COUNT001-02",
+          "description": "Count to tell the number of objects",
+          "subskills": [
+            {
+              "id": "COUNT001-02-A",
+              "description": "Count up to 5 objects using one-to-one correspondence with correct touching and tracking",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "subitize"
+              ]
+            },
+            {
+              "id": "COUNT001-02-B",
+              "description": "Count up to 10 objects in various arrangements (linear, scattered, circular) with consistent accuracy",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "group"
+              ]
+            },
+            {
+              "id": "COUNT001-02-C",
+              "description": "Demonstrate counting conservation by counting objects of different sizes and in different arrangements while recognizing total remains unchanged",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "compare"
+              ]
+            },
+            {
+              "id": "COUNT001-02-D",
+              "description": "Count up to 20 objects in structured arrangements (lines, arrays) and count out requested quantities",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "group"
+              ]
+            },
+            {
+              "id": "COUNT001-02-E",
+              "description": "Compare quantities between groups and count backwards from 10 using concrete objects",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_groups",
+                "one_more_less"
+              ]
+            },
+            {
+              "id": "COUNT001-02-F",
+              "description": "Count objects in groups of 2 up to 20 (skip counting) and track running totals as objects change",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "skip-counting-runner",
+              "target_eval_modes": [
+                "count_along",
+                "predict"
+              ]
+            },
+            {
+              "id": "COUNT001-02-G",
+              "description": "Count combined visible and hidden objects up to 10, including briefly shown then hidden sets",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "decompose",
+                "missing_part"
+              ]
+            },
+            {
+              "id": "COUNT001-02-H",
+              "description": "Count backwards from 10 to 0 using concrete objects and number lines, practicing correct descending sequence",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "number-line",
+              "target_eval_modes": [
+                "plot",
+                "order"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "COUNT001-03",
+          "description": "Compare numbers",
+          "subskills": [
+            {
+              "id": "COUNT001-03-A",
+              "description": "Compare two groups of up to 5 objects using one-to-one correspondence and the terms \"more than,\" \"less than,\" and \"equal to\"",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_groups"
+              ]
+            },
+            {
+              "id": "COUNT001-03-B",
+              "description": "Compare two groups of 6-10 objects using visual patterns and one-to-one correspondence",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_groups",
+                "compare_numbers"
+              ]
+            },
+            {
+              "id": "COUNT001-03-C",
+              "description": "Compare two written numerals between 1-10 using number lines and visual representations",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_numbers"
+              ]
+            },
+            {
+              "id": "COUNT001-03-D",
+              "description": "Order three or more numbers/groups (up to 10) from least to greatest or greatest to least",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "number-line",
+              "target_eval_modes": [
+                "order"
+              ]
+            },
+            {
+              "id": "COUNT001-03-E",
+              "description": "Use inequality symbols (<, >) correctly when comparing numbers up to 10 with justification",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_numbers"
+              ]
+            },
+            {
+              "id": "COUNT001-03-F",
+              "description": "Identify numbers that are \"one more\" or \"one less\" than a given number up to 20",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "number-line",
+              "target_eval_modes": [
+                "plot",
+                "jump"
+              ]
+            },
+            {
+              "id": "COUNT001-03-G",
+              "description": "Compare two numbers between 11-20 using place value understanding and visual models",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_numbers",
+                "order"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "COUNT001-04",
+          "description": "Understand ordinal numbers",
+          "subskills": [
+            {
+              "id": "COUNT001-04-A",
+              "description": "Recognize and name ordinal positions (first through fifth) in a simple line or sequence",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "identify"
+              ]
+            },
+            {
+              "id": "COUNT001-04-B",
+              "description": "Match ordinal number words (first through fifth) with their corresponding symbols (1st-5th)",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "match"
+              ]
+            },
+            {
+              "id": "COUNT001-04-C",
+              "description": "Apply ordinal numbers (first through fifth) to daily routines and story sequences",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "sequence_story"
+              ]
+            },
+            {
+              "id": "COUNT001-04-D",
+              "description": "Extend ordinal number understanding to tenth position (sixth through tenth)",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "identify",
+                "match"
+              ]
+            },
+            {
+              "id": "COUNT001-04-E",
+              "description": "Compare and analyze relative positions using ordinal numbers (e.g., \"What comes before fourth?\")",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "relative_position"
+              ]
+            },
+            {
+              "id": "COUNT001-04-F",
+              "description": "Create and complete sequences using ordinal numbers (first through tenth)",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "build_sequence"
+              ]
+            },
+            {
+              "id": "COUNT001-04-G",
+              "description": "Solve simple word problems involving ordinal numbers in real-world contexts",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "sequence_story",
+                "relative_position"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "COUNT001-05",
+          "description": "Compose and Decompose Numbers 11–19",
+          "subskills": [
+            {
+              "id": "COUNT001-05-A",
+              "description": "Identify a group of ten ones within numbers 11-19 using objects or drawings",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "ten-frame",
+              "target_eval_modes": [
+                "subitize",
+                "build"
+              ]
+            },
+            {
+              "id": "COUNT001-05-B",
+              "description": "Represent numbers 11-15 as ten ones plus additional ones using manipulatives",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "ten-frame",
+              "target_eval_modes": [
+                "build",
+                "make_ten"
+              ]
+            },
+            {
+              "id": "COUNT001-05-C",
+              "description": "Represent numbers 16-19 as ten ones plus additional ones using manipulatives",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "ten-frame",
+              "target_eval_modes": [
+                "build",
+                "make_ten"
+              ]
+            },
+            {
+              "id": "COUNT001-05-D",
+              "description": "Break apart numbers 11-15 into ten ones and some further ones using visual models",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "decompose"
+              ]
+            },
+            {
+              "id": "COUNT001-05-E",
+              "description": "Break apart numbers 16-19 into ten ones and some further ones using visual models",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "decompose"
+              ]
+            },
+            {
+              "id": "COUNT001-05-F",
+              "description": "Compose and decompose numbers 11-19 using equations (e.g., 14 = 10 + 4)",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "decompose",
+                "build_equation"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OPS001",
+      "title": "Operations and Algebraic Thinking",
+      "grade": "Kindergarten",
+      "subject": "Mathematics",
+      "skills": [
+        {
+          "id": "OPS001-01",
+          "description": "Understand addition as putting together and adding to",
+          "subskills": [
+            {
+              "id": "OPS001-01-A",
+              "description": "Represent addition within 5 using concrete objects, fingers, and acting out situations",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "addition-subtraction-scene",
+              "target_eval_modes": [
+                "act_out"
+              ]
+            },
+            {
+              "id": "OPS001-01-B",
+              "description": "Model addition within 5 using drawings, pictures, and number lines, connecting to concrete representations",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "number-line",
+              "target_eval_modes": [
+                "jump"
+              ]
+            },
+            {
+              "id": "OPS001-01-C",
+              "description": "Express addition situations within 5 using verbal explanations and written equations",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "build_equation"
+              ]
+            },
+            {
+              "id": "OPS001-01-D",
+              "description": "Decompose numbers up to 5 into pairs in multiple ways, using objects and drawings",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "decompose",
+                "missing_part"
+              ]
+            },
+            {
+              "id": "OPS001-01-E",
+              "description": "Solve addition word problems within 10 using objects, drawings, or equations",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "addition-subtraction-scene",
+              "target_eval_modes": [
+                "solve_story",
+                "build_equation"
+              ]
+            },
+            {
+              "id": "OPS001-01-F",
+              "description": "Use multiple strategies (ten frames, tally marks, doubles) to solve addition problems within 10",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "strategy-picker",
+              "target_eval_modes": [
+                "guided",
+                "compare"
+              ]
+            },
+            {
+              "id": "OPS001-01-G",
+              "description": "Create and solve addition stories and problems involving real-world contexts (including money)",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "addition-subtraction-scene",
+              "target_eval_modes": [
+                "create_story",
+                "solve_story"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "OPS001-02",
+          "description": "Understand subtraction as taking apart and taking from",
+          "subskills": [
+            {
+              "id": "OPS001-02-A",
+              "description": "Represent subtraction within 5 using concrete objects, fingers, and physical actions",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "addition-subtraction-scene",
+              "target_eval_modes": [
+                "act_out"
+              ]
+            },
+            {
+              "id": "OPS001-02-B",
+              "description": "Decompose numbers up to 5 into pairs using objects and drawings, recording each decomposition",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "decompose",
+                "build_equation"
+              ]
+            },
+            {
+              "id": "OPS001-02-C",
+              "description": "Solve subtraction word problems within 5 using objects, drawings, and equations",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "addition-subtraction-scene",
+              "target_eval_modes": [
+                "solve_story",
+                "build_equation"
+              ]
+            },
+            {
+              "id": "OPS001-02-D",
+              "description": "Model and solve subtraction problems within 10 using ten frames and number lines",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "ten-frame",
+              "target_eval_modes": [
+                "operate",
+                "build"
+              ]
+            },
+            {
+              "id": "OPS001-02-E",
+              "description": "Create and solve real-world subtraction situations within 10 using various representations",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "addition-subtraction-scene",
+              "target_eval_modes": [
+                "create_story",
+                "solve_story"
+              ]
+            },
+            {
+              "id": "OPS001-02-F",
+              "description": "Find missing numbers in subtraction equations within 10 (missing difference or minuend)",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "balance-scale",
+              "target_eval_modes": [
+                "equality"
+              ]
+            },
+            {
+              "id": "OPS001-02-G",
+              "description": "Connect addition and subtraction as inverse operations within 10 using related facts",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "fact_family",
+                "build_equation"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "OPS001-03",
+          "description": "Fluently add and subtract within 5",
+          "subskills": [
+            {
+              "id": "OPS001-03-A",
+              "description": "Count forward and backward within 5 fluently (within 3 seconds)",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "math-fact-fluency",
+              "target_eval_modes": [
+                "visual_fact",
+                "speed_round"
+              ]
+            },
+            {
+              "id": "OPS001-03-B",
+              "description": "Add and subtract fluently within 3 using objects and mental strategies",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "math-fact-fluency",
+              "target_eval_modes": [
+                "visual_fact",
+                "equation_solve"
+              ]
+            },
+            {
+              "id": "OPS001-03-C",
+              "description": "Match visual representations to addition and subtraction equations within 5",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "addition-subtraction-scene",
+              "target_eval_modes": [
+                "act_out",
+                "build_equation"
+              ]
+            },
+            {
+              "id": "OPS001-03-D",
+              "description": "Add and subtract fluently within 5 using mental strategies",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "math-fact-fluency",
+              "target_eval_modes": [
+                "equation_solve",
+                "speed_round"
+              ]
+            },
+            {
+              "id": "OPS001-03-E",
+              "description": "Solve missing number problems within 5 (e.g., 3 + __ = 5, 5 - __ = 2)",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "balance-scale",
+              "target_eval_modes": [
+                "equality"
+              ]
+            },
+            {
+              "id": "OPS001-03-F",
+              "description": "Complete fact families for numbers within 5, demonstrating addition-subtraction relationship",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "number-bond",
+              "target_eval_modes": [
+                "fact_family",
+                "missing_part"
+              ]
+            },
+            {
+              "id": "OPS001-03-G",
+              "description": "Solve and create word problems involving addition and subtraction within 5",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "addition-subtraction-scene",
+              "target_eval_modes": [
+                "solve_story",
+                "create_story"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GEOM001",
+      "title": "Geometry",
+      "grade": "Kindergarten",
+      "subject": "Mathematics",
+      "skills": [
+        {
+          "id": "GEOM001-01",
+          "description": "Identify and describe shapes",
+          "subskills": [
+            {
+              "id": "GEOM001-01-A",
+              "description": "Match and name basic 2D shapes (circles, squares, triangles, rectangles) regardless of size, color, or orientation",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "shape-sorter",
+              "target_eval_modes": [
+                "identify"
+              ]
+            },
+            {
+              "id": "GEOM001-01-B",
+              "description": "Identify and describe shapes in real-world environments using geometric vocabulary (sides, corners) and basic attributes (curved vs. straight sides)",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "shape-sorter",
+              "target_eval_modes": [
+                "identify",
+                "sort"
+              ]
+            },
+            {
+              "id": "GEOM001-01-C",
+              "description": "Count and compare shape properties (number of sides, vertices) and sort shapes into groups based on these characteristics",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "shape-sorter",
+              "target_eval_modes": [
+                "count",
+                "sort"
+              ]
+            },
+            {
+              "id": "GEOM001-01-D",
+              "description": "Recognize and name 3D shapes (cubes, cones, cylinders) and distinguish between 2D and 3D objects",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "3d-shape-explorer",
+              "target_eval_modes": [
+                "identify_3d",
+                "match_real_world"
+              ]
+            },
+            {
+              "id": "GEOM001-01-E",
+              "description": "Draw and trace basic shapes using templates and verbal descriptions of their properties",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "shape-tracer",
+              "target_eval_modes": [
+                "trace",
+                "complete"
+              ]
+            },
+            {
+              "id": "GEOM001-01-F",
+              "description": "Compose larger shapes by combining basic shapes and decompose larger shapes into smaller basic shapes",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "shape-builder",
+              "target_eval_modes": [
+                "compose",
+                "build"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "GEOM001-02",
+          "description": "Analyze, compare, create, and compose shapes",
+          "subskills": [
+            {
+              "id": "GEOM001-02-A",
+              "description": "Identify and name basic 2D shapes based on their attributes (sides and vertices)",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "shape-sorter",
+              "target_eval_modes": [
+                "identify",
+                "count"
+              ]
+            },
+            {
+              "id": "GEOM001-02-B",
+              "description": "Sort and classify shapes by single attributes (sides, corners, size) and identify shapes that don't belong",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "GEOM001-02-C",
+              "description": "Recognize and match shapes in different orientations and sizes, including shapes in real-world objects",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "shape-sorter",
+              "target_eval_modes": [
+                "identify",
+                "sort"
+              ]
+            },
+            {
+              "id": "GEOM001-02-D",
+              "description": "Create and complete basic shapes through drawing, building, and completing half-drawn figures",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "shape-tracer",
+              "target_eval_modes": [
+                "trace",
+                "complete"
+              ]
+            },
+            {
+              "id": "GEOM001-02-E",
+              "description": "Analyze and compare 3D shapes by building and manipulating physical models",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "3d-shape-explorer",
+              "target_eval_modes": [
+                "identify_3d",
+                "faces_properties"
+              ]
+            },
+            {
+              "id": "GEOM001-02-F",
+              "description": "Compose and decompose shapes to form larger shapes and create pictures of familiar objects",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "shape-builder",
+              "target_eval_modes": [
+                "compose"
+              ]
+            },
+            {
+              "id": "GEOM001-02-G",
+              "description": "Create, extend, and describe repeating patterns using multiple shapes and attributes",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "extend",
+                "create"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MEAS001",
+      "title": "Measurement and Data",
+      "grade": "Kindergarten",
+      "subject": "Mathematics",
+      "skills": [
+        {
+          "id": "MEAS001-01",
+          "description": "Describe and compare measurable attributes",
+          "subskills": [
+            {
+              "id": "MEAS001-01-A",
+              "description": "Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "sort_one",
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "MEAS001-01-B",
+              "description": "Compare and contrast two objects based on a single measurable attribute using direct comparison and comparative language",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "compare"
+              ]
+            },
+            {
+              "id": "MEAS001-01-C",
+              "description": "Sort and classify objects into groups based on one measurable attribute (size, weight, or length)",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "MEAS001-01-D",
+              "description": "Measure objects using non-standard units (cubes, paper clips) and compare results",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "tile_and_count"
+              ]
+            },
+            {
+              "id": "MEAS001-01-E",
+              "description": "Order 3-5 objects by a single measurable attribute (length, weight, or capacity)",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_groups",
+                "order"
+              ]
+            },
+            {
+              "id": "MEAS001-01-F",
+              "description": "Compare and measure capacity using water or sand with various containers",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "recall",
+                "apply"
+              ]
+            },
+            {
+              "id": "MEAS001-01-G",
+              "description": "Classify objects using multiple measurable attributes simultaneously (height and width, weight and size)",
+              "difficulty_range": {
+                "start": 7,
+                "end": 9,
+                "target": 8
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "two_attributes"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MEAS001-02",
+          "description": "Classify objects and count the number of objects in each category",
+          "subskills": [
+            {
+              "id": "MEAS001-02-A",
+              "description": "Create and sort objects into basic categories based on one observable attribute (color, size, or shape)",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one"
+              ]
+            },
+            {
+              "id": "MEAS001-02-B",
+              "description": "Count and compare objects within categories (up to 5 objects), using terms \"more,\" \"fewer,\" and \"equal\"",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "count_compare"
+              ]
+            },
+            {
+              "id": "MEAS001-02-C",
+              "description": "Sort objects into given categories (up to 3 categories) and count up to 10 objects per category",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "count_compare"
+              ]
+            },
+            {
+              "id": "MEAS001-02-D",
+              "description": "Classify objects using two attributes simultaneously (e.g., blue and round) and explain sorting criteria",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "two_attributes"
+              ]
+            },
+            {
+              "id": "MEAS001-02-E",
+              "description": "Record and represent category data using tally marks and simple pictographs",
+              "difficulty_range": {
+                "start": 4,
+                "end": 7,
+                "target": 5
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "tally_record"
+              ]
+            },
+            {
+              "id": "MEAS001-02-F",
+              "description": "Sort objects by function and create self-designed category systems with clear labels",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "odd_one_out"
+              ]
+            },
+            {
+              "id": "MEAS001-02-G",
+              "description": "Reclassify objects into new categories and identify items that don't belong with explanations",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "odd_one_out"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MEAS001-03",
+          "description": "Collect and Represent Data",
+          "subskills": [
+            {
+              "id": "MEAS001-03-A",
+              "description": "Sort and match data into given categories using picture cards or objects",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one"
+              ]
+            },
+            {
+              "id": "MEAS001-03-B",
+              "description": "Create physical representations of data through human graphs and object arrangements",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "group"
+              ]
+            },
+            {
+              "id": "MEAS001-03-C",
+              "description": "Record simple data using tally marks and stickers for class surveys",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "recall",
+                "apply"
+              ]
+            },
+            {
+              "id": "MEAS001-03-D",
+              "description": "Construct basic pictographs and bar charts with teacher guidance",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply"
+              ]
+            },
+            {
+              "id": "MEAS001-03-E",
+              "description": "Read and interpret simple graphs to answer \"how many\" and \"which has more/less\" questions",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply",
+                "analyze"
+              ]
+            },
+            {
+              "id": "MEAS001-03-F",
+              "description": "Make predictions about data outcomes and verify through collection",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply",
+                "analyze"
+              ]
+            },
+            {
+              "id": "MEAS001-03-G",
+              "description": "Explain data representations to others using simple comparative language",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "evaluate"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MEAS001-04",
+          "description": "Estimate and Measure",
+          "subskills": [
+            {
+              "id": "MEAS001-04-A",
+              "description": "Compare and describe objects' attributes (longer/shorter, heavier/lighter) using direct observation and manipulation",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "compare"
+              ]
+            },
+            {
+              "id": "MEAS001-04-B",
+              "description": "Estimate quantities and measurements using everyday references (steps, handspans, blocks) before measuring",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "compare",
+                "tile_and_count"
+              ]
+            },
+            {
+              "id": "MEAS001-04-C",
+              "description": "Measure lengths using non-standard units (blocks, LEGO bricks, paper strips) and record results",
+              "difficulty_range": {
+                "start": 2,
+                "end": 5,
+                "target": 3
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "tile_and_count",
+                "compare"
+              ]
+            },
+            {
+              "id": "MEAS001-04-D",
+              "description": "Compare weights of various objects using a balance scale and predict outcomes",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "balance-scale",
+              "target_eval_modes": [
+                "equality"
+              ]
+            },
+            {
+              "id": "MEAS001-04-E",
+              "description": "Measure and compare volumes using standard measuring tools (cups, spoons) with sand, water, or rice",
+              "difficulty_range": {
+                "start": 3,
+                "end": 6,
+                "target": 4
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "recall",
+                "apply"
+              ]
+            },
+            {
+              "id": "MEAS001-04-F",
+              "description": "Track and record measurements over time (plant growth, daily temperature) using simple tools and graphs",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply",
+                "analyze"
+              ]
+            },
+            {
+              "id": "MEAS001-04-G",
+              "description": "Measure time durations for simple activities using stopwatches and compare results with peers",
+              "difficulty_range": {
+                "start": 4,
+                "end": 7,
+                "target": 5
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "read",
+                "elapsed"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MEAS001-05",
+          "description": "Using Non-Standard Tools",
+          "subskills": [
+            {
+              "id": "MEAS001-05-A",
+              "description": "Compare two objects directly side by side to determine longer/shorter",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "compare"
+              ]
+            },
+            {
+              "id": "MEAS001-05-B",
+              "description": "Use body parts (fingers, hands) to measure and describe object lengths",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "tile_and_count"
+              ]
+            },
+            {
+              "id": "MEAS001-05-C",
+              "description": "Measure single objects using uniform items (paper clips, cubes) and count units",
+              "difficulty_range": {
+                "start": 2,
+                "end": 5,
+                "target": 3
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "tile_and_count",
+                "compare"
+              ]
+            },
+            {
+              "id": "MEAS001-05-D",
+              "description": "Compare measurements of the same object using different non-standard units",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "indirect",
+                "compare"
+              ]
+            },
+            {
+              "id": "MEAS001-05-E",
+              "description": "Record and represent measurement results using simple drawings or numbers",
+              "difficulty_range": {
+                "start": 3,
+                "end": 6,
+                "target": 4
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "recall",
+                "apply"
+              ]
+            },
+            {
+              "id": "MEAS001-05-F",
+              "description": "Measure and compare multiple objects using the same non-standard unit",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "length-lab",
+              "target_eval_modes": [
+                "tile_and_count",
+                "order"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MEAS001-06",
+          "description": "Exploring Temperature",
+          "subskills": [
+            {
+              "id": "MEAS001-06-A",
+              "description": "Identify objects as 'hot' or 'cold' through direct sensory experience (with safety guidance)",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one"
+              ]
+            },
+            {
+              "id": "MEAS001-06-B",
+              "description": "Sort picture cards into temperature categories (hot, warm, cold) with real-world examples",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "MEAS001-06-C",
+              "description": "Connect weather conditions to relative temperature using seasonal pictures and vocabulary",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "MEAS001-06-D",
+              "description": "Read basic picture thermometers showing hot, warm, and cold zones",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "recall",
+                "apply"
+              ]
+            },
+            {
+              "id": "MEAS001-06-E",
+              "description": "Predict temperature changes in simple scenarios (ice in sun vs. shade, hot chocolate cooling)",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply",
+                "analyze"
+              ]
+            },
+            {
+              "id": "MEAS001-06-F",
+              "description": "Compare temperatures of different locations/objects using comparative language (hotter than, colder than)",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MEAS001-07",
+          "description": "Time Durations",
+          "subskills": [
+            {
+              "id": "MEAS001-07-A",
+              "description": "Identify activities as 'quick' or 'long' using direct observation (e.g., clapping vs. drawing a picture)",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one"
+              ]
+            },
+            {
+              "id": "MEAS001-07-B",
+              "description": "Use a sand timer to measure and compare simple activity durations (e.g., hopping vs. building with blocks)",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "read",
+                "elapsed"
+              ]
+            },
+            {
+              "id": "MEAS001-07-C",
+              "description": "Order 3 familiar activities from shortest to longest duration (e.g., washing hands, eating snack, playing outside)",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_groups",
+                "order"
+              ]
+            },
+            {
+              "id": "MEAS001-07-D",
+              "description": "Predict whether an activity will finish before or after a given time marker (e.g., before/after sand timer runs out)",
+              "difficulty_range": {
+                "start": 3,
+                "end": 6,
+                "target": 4
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "read",
+                "elapsed"
+              ]
+            },
+            {
+              "id": "MEAS001-07-E",
+              "description": "Match common activities to appropriate time measurement tools (e.g., sand timer for teeth brushing, clock for naptime)",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "MEAS001-07-F",
+              "description": "Create a simple timeline of daily classroom routines using picture cards and duration vocabulary",
+              "difficulty_range": {
+                "start": 4,
+                "end": 7,
+                "target": 5
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "build_sequence",
+                "sequence_story"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MEAS001-08",
+          "description": "Comparing Capacities",
+          "subskills": [
+            {
+              "id": "MEAS001-08-A",
+              "description": "Identify containers as \"empty\" or \"full\" using visual observation",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one"
+              ]
+            },
+            {
+              "id": "MEAS001-08-B",
+              "description": "Compare two identical containers with different amounts using terms \"more\" and \"less\"",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_groups"
+              ]
+            },
+            {
+              "id": "MEAS001-08-C",
+              "description": "Sort three or more identical containers by amount (least to most)",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "count_compare"
+              ]
+            },
+            {
+              "id": "MEAS001-08-D",
+              "description": "Predict and test which of two different-shaped containers holds more liquid",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply",
+                "analyze"
+              ]
+            },
+            {
+              "id": "MEAS001-08-E",
+              "description": "Group containers by capacity size (small, medium, large) using standard measuring tools",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "MEAS001-08-F",
+              "description": "Compare capacities of different containers using non-standard units (cups of rice/sand)",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_groups"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "MEAS001-09",
+          "description": "Data Interpretation",
+          "subskills": [
+            {
+              "id": "MEAS001-09-A",
+              "description": "Place stickers or markers on simple charts to represent personal choices and identify basic patterns",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one"
+              ]
+            },
+            {
+              "id": "MEAS001-09-B",
+              "description": "Match physical objects to their corresponding quantities shown in pictographs and simple bar graphs",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "count_compare"
+              ]
+            },
+            {
+              "id": "MEAS001-09-C",
+              "description": "Identify most and least popular items in class data displays and explain basic reasoning",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply",
+                "analyze"
+              ]
+            },
+            {
+              "id": "MEAS001-09-D",
+              "description": "Use manipulatives (blocks, counters) to represent and compare data from simple charts",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "counting-board",
+              "target_eval_modes": [
+                "count",
+                "group"
+              ]
+            },
+            {
+              "id": "MEAS001-09-E",
+              "description": "Compare two related data sets to identify similarities and differences (e.g., comparing favorite foods across seasons)",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "comparison-builder",
+              "target_eval_modes": [
+                "compare_groups",
+                "compare_numbers"
+              ]
+            },
+            {
+              "id": "MEAS001-09-F",
+              "description": "Draw basic conclusions from data and suggest actions based on findings (e.g., planning quantities for class activities)",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply",
+                "evaluate"
+              ]
+            },
+            {
+              "id": "MEAS001-09-G",
+              "description": "Make predictions about future data patterns based on current trends and seasonal changes",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "analyze",
+                "evaluate"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PTRN001",
+      "title": "Patterns and Sorting",
+      "grade": "Kindergarten",
+      "subject": "Mathematics",
+      "skills": [
+        {
+          "id": "PTRN001-01",
+          "description": "Recognizing and Creating Patterns",
+          "subskills": [
+            {
+              "id": "PTRN001-01-A",
+              "description": "Identify simple patterns in everyday objects and sounds",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "identify_core"
+              ]
+            },
+            {
+              "id": "PTRN001-01-B",
+              "description": "Copy existing AB patterns using concrete objects or actions",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "extend"
+              ]
+            },
+            {
+              "id": "PTRN001-01-C",
+              "description": "Extend simple AB patterns with colors, shapes, or sounds",
+              "difficulty_range": {
+                "start": 2,
+                "end": 5,
+                "target": 3
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "extend"
+              ]
+            },
+            {
+              "id": "PTRN001-01-D",
+              "description": "Create original AB patterns using two elements",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "create"
+              ]
+            },
+            {
+              "id": "PTRN001-01-E",
+              "description": "Identify missing elements within AB patterns",
+              "difficulty_range": {
+                "start": 3,
+                "end": 6,
+                "target": 4
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "find_rule"
+              ]
+            },
+            {
+              "id": "PTRN001-01-F",
+              "description": "Extend ABC patterns using multiple elements",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "extend",
+                "translate"
+              ]
+            },
+            {
+              "id": "PTRN001-01-G",
+              "description": "Create and explain original patterns using multiple elements",
+              "difficulty_range": {
+                "start": 4,
+                "end": 7,
+                "target": 5
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "create",
+                "find_rule"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "PTRN001-02",
+          "description": "Sorting by Attributes",
+          "subskills": [
+            {
+              "id": "PTRN001-02-A",
+              "description": "Sort objects by a single obvious attribute (e.g., all red items together)",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one"
+              ]
+            },
+            {
+              "id": "PTRN001-02-B",
+              "description": "Verbally describe the sorting rule used for a single-attribute group",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "PTRN001-02-C",
+              "description": "Sort the same set of objects using a different single attribute",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one",
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "PTRN001-02-D",
+              "description": "Sort objects by two attributes simultaneously (e.g., color AND shape)",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "two_attributes"
+              ]
+            },
+            {
+              "id": "PTRN001-02-E",
+              "description": "Create and label sorting categories before grouping objects",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_attribute"
+              ]
+            },
+            {
+              "id": "PTRN001-02-F",
+              "description": "Explain complex sorting rules using \"because\" statements",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_attribute",
+                "odd_one_out"
+              ]
+            },
+            {
+              "id": "PTRN001-02-G",
+              "description": "Find objects that don't belong in a sorted group and explain why",
+              "difficulty_range": {
+                "start": 6,
+                "end": 8,
+                "target": 7
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "odd_one_out"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "PTRN001-03",
+          "description": "Exploring Sequences",
+          "subskills": [
+            {
+              "id": "PTRN001-03-A",
+              "description": "Identify \"first\" and \"last\" positions in a simple 3-step sequence using concrete objects",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "identify"
+              ]
+            },
+            {
+              "id": "PTRN001-03-B",
+              "description": "Copy and repeat a simple 2-step movement sequence (e.g., clap-jump)",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "extend"
+              ]
+            },
+            {
+              "id": "PTRN001-03-C",
+              "description": "Arrange 3 picture cards to show a logical sequence (morning, noon, night)",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "sequence_story",
+                "build_sequence"
+              ]
+            },
+            {
+              "id": "PTRN001-03-D",
+              "description": "Create and demonstrate an original 3-step movement sequence",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "create"
+              ]
+            },
+            {
+              "id": "PTRN001-03-E",
+              "description": "Identify the missing middle step in a familiar 3-step sequence",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "pattern-builder",
+              "target_eval_modes": [
+                "find_rule"
+              ]
+            },
+            {
+              "id": "PTRN001-03-F",
+              "description": "Arrange 4-5 picture cards to tell a simple story with clear sequential order",
+              "difficulty_range": {
+                "start": 5,
+                "end": 7,
+                "target": 6
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "build_sequence",
+                "sequence_story"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TIME001",
+      "title": "Time and Calendar",
+      "grade": "Kindergarten",
+      "subject": "Mathematics",
+      "skills": [
+        {
+          "id": "TIME001-01",
+          "description": "Understanding Daily and Seasonal Time",
+          "subskills": [
+            {
+              "id": "TIME001-01-A",
+              "description": "Identify parts of the day (morning, afternoon, evening) using visual cues from the sun and daily activities",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "sorting-station",
+              "target_eval_modes": [
+                "sort_one"
+              ]
+            },
+            {
+              "id": "TIME001-01-B",
+              "description": "Sequence 3 basic daily routines in chronological order (wake up, lunch, bedtime)",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "ordinal-line",
+              "target_eval_modes": [
+                "build_sequence"
+              ]
+            },
+            {
+              "id": "TIME001-01-C",
+              "description": "Sequence 5 detailed daily activities with specific times (breakfast at 8:00, school at 9:00, etc.)",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "read",
+                "match"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "TIME001-02",
+          "description": "Using Calendars",
+          "subskills": [
+            {
+              "id": "TIME001-02-A",
+              "description": "Recite days of the week in order using songs or rhymes",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "recall"
+              ]
+            },
+            {
+              "id": "TIME001-02-B",
+              "description": "Identify today's day of the week on a calendar",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "recall",
+                "apply"
+              ]
+            },
+            {
+              "id": "TIME001-02-C",
+              "description": "Point to yesterday and tomorrow on a calendar",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply"
+              ]
+            },
+            {
+              "id": "TIME001-02-D",
+              "description": "Count forward up to 7 days from any given day",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply"
+              ]
+            },
+            {
+              "id": "TIME001-02-E",
+              "description": "Identify and mark special events on a monthly calendar",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply"
+              ]
+            },
+            {
+              "id": "TIME001-02-F",
+              "description": "Count the number of days between two marked events",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "knowledge-check",
+              "target_eval_modes": [
+                "apply",
+                "analyze"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "TIME001-03",
+          "description": "Telling Time to the Hour",
+          "subskills": [
+            {
+              "id": "TIME001-03-A",
+              "description": "Identify the hour hand and minute hand on an analog clock",
+              "difficulty_range": {
+                "start": 1,
+                "end": 3,
+                "target": 2
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "read"
+              ]
+            },
+            {
+              "id": "TIME001-03-B",
+              "description": "Count numbers 1-12 in order around an analog clock face",
+              "difficulty_range": {
+                "start": 2,
+                "end": 4,
+                "target": 3
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "read"
+              ]
+            },
+            {
+              "id": "TIME001-03-C",
+              "description": "Recognize and state \"o'clock\" times when hour hand points exactly to a number",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "read"
+              ]
+            },
+            {
+              "id": "TIME001-03-D",
+              "description": "Match spoken whole-hour times to analog clock displays",
+              "difficulty_range": {
+                "start": 3,
+                "end": 5,
+                "target": 4
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "match"
+              ]
+            },
+            {
+              "id": "TIME001-03-E",
+              "description": "Draw hour hand to show specific whole-hour times on a blank clock face",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "set_time"
+              ]
+            },
+            {
+              "id": "TIME001-03-F",
+              "description": "Match analog clock times to digital displays for whole hours",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "match"
+              ]
+            },
+            {
+              "id": "TIME001-03-G",
+              "description": "Connect whole-hour times to daily activities in sequence",
+              "difficulty_range": {
+                "start": 4,
+                "end": 6,
+                "target": 5
+              },
+              "target_primitive": "analog-clock",
+              "target_eval_modes": [
+                "read",
+                "match"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

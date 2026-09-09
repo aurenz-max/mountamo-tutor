@@ -1,0 +1,169 @@
+{
+  "id": "OPS001-02-F",
+  "primitive": "math-fact-fluency",
+  "mode": "missing_number",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Find missing numbers in subtraction equations within 10 (missing difference or minuend)",
+  "requestedAt": "2026-09-09T10:21:55.421Z",
+  "inputHash": "7591ddeabd27afabceef4d126e16d47df1b4c30f5a3965cb831c0a48d9f223aa",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-math-fact-fluency.ts": "3c23dcf776dfbc7533d0273342376358928041a9c43e7205b6c259139f69749e",
+    "src/components/lumina/primitives/visual-primitives/math/MathFactFluency.tsx": "e5ce23e05cc41c68e0e20c94b4107392cbe4d6584dbd09ee88d226ed908ded40",
+    "catalog-entry:math-fact-fluency": "8a499087965fedd9ff59ba718273feee5e4e677504638e79c19e3ca3a9ffaf24"
+  },
+  "params": {
+    "componentId": "math-fact-fluency",
+    "evalMode": "missing_number",
+    "topic": "Find missing numbers in subtraction equations within 10 (missing difference or minuend)",
+    "intent": "Find missing numbers in subtraction equations within 10 (missing difference or minuend)",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "math-fact-fluency",
+    "evalMode": "missing_number",
+    "duration": 2964,
+    "catalogMeta": {
+      "label": "Missing Number (Tier 4)",
+      "beta": 4.5,
+      "scaffoldingMode": 4,
+      "allowedChallengeTypes": [
+        "missing-number"
+      ],
+      "description": "Find the unknown operand in an equation."
+    },
+    "validation": {
+      "challengeCount": 8,
+      "typesFound": [
+        "missing-number"
+      ],
+      "payloadBytes": 2417,
+      "longestStringLength": 93,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding Missing Numbers in Subtraction",
+      "description": "Practice finding missing numbers in subtraction equations within 10 using helpful strategies.",
+      "maxNumber": 10,
+      "includeSubtraction": true,
+      "showVisualAids": true,
+      "targetResponseTime": 3,
+      "adaptiveDifficulty": true,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "missing-number",
+          "instruction": "Think backwards or count how many we started with! ? - 2 = 6",
+          "equation": "8 - 2 = 6",
+          "operation": "subtraction",
+          "operand1": 8,
+          "operand2": 2,
+          "result": 6,
+          "unknownPosition": "operand2",
+          "correctAnswer": 2,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c2",
+          "type": "missing-number",
+          "instruction": "Count back from the start to find the missing part! 7 - ? = 4",
+          "equation": "7 - 3 = 4",
+          "operation": "subtraction",
+          "operand1": 7,
+          "operand2": 3,
+          "result": 4,
+          "unknownPosition": "operand1",
+          "correctAnswer": 7,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c3",
+          "type": "missing-number",
+          "instruction": "What number did we start with before taking away? ? - 3 = 5",
+          "equation": "8 - 3 = 5",
+          "operation": "subtraction",
+          "operand1": 8,
+          "operand2": 3,
+          "result": 5,
+          "unknownPosition": "operand2",
+          "correctAnswer": 3,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c4",
+          "type": "missing-number",
+          "instruction": "Figure out how many were taken away to leave 2. 9 - ? = 2",
+          "equation": "9 - 7 = 2",
+          "operation": "subtraction",
+          "operand1": 9,
+          "operand2": 7,
+          "result": 2,
+          "unknownPosition": "operand1",
+          "correctAnswer": 9,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c5",
+          "type": "missing-number",
+          "instruction": "Find the starting amount by adding the parts back together. ? - 4 = 4",
+          "equation": "8 - 4 = 4",
+          "operation": "subtraction",
+          "operand1": 8,
+          "operand2": 4,
+          "result": 4,
+          "unknownPosition": "operand2",
+          "correctAnswer": 4,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c6",
+          "type": "missing-number",
+          "instruction": "How many were taken away from 6 to leave 1? 6 - ? = 1",
+          "equation": "6 - 5 = 1",
+          "operation": "subtraction",
+          "operand1": 6,
+          "operand2": 5,
+          "result": 1,
+          "unknownPosition": "operand1",
+          "correctAnswer": 6,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c7",
+          "type": "missing-number",
+          "instruction": "What was our big starting number? ? - 1 = 9",
+          "equation": "10 - 1 = 9",
+          "operation": "subtraction",
+          "operand1": 10,
+          "operand2": 1,
+          "result": 9,
+          "unknownPosition": "operand2",
+          "correctAnswer": 1,
+          "supportTier": "easy"
+        },
+        {
+          "id": "c8",
+          "type": "missing-number",
+          "instruction": "Find the missing number that was subtracted! 5 - ? = 2",
+          "equation": "5 - 3 = 2",
+          "operation": "subtraction",
+          "operand1": 5,
+          "operand2": 3,
+          "result": 2,
+          "unknownPosition": "operand1",
+          "correctAnswer": 5,
+          "supportTier": "easy"
+        }
+      ]
+    }
+  },
+  "durationMs": 2975
+}

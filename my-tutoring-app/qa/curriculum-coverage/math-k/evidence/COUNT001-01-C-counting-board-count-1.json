@@ -1,0 +1,140 @@
+{
+  "id": "COUNT001-01-C",
+  "primitive": "counting-board",
+  "mode": "count",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Count, recognize, and write numbers 11-20, with proper sequence and order",
+  "requestedAt": "2026-09-09T10:21:27.912Z",
+  "inputHash": "0fc147afd0b0f0f193a5ab1fb46dc5b3ad9fd2c96e99753dbfd4c5e534503313",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-counting-board.ts": "f886dc3cefe72eacfff620abb32e97fdf9be4afae672e182d098b75c3d1f89d5",
+    "src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx": "9680a2474c9b62add9d6475ac7f9e4264f9573c197039a5e07729a00ab0588a8",
+    "catalog-entry:counting-board": "c5403e40e01903aa26956b69cb1f8202ce96e2a28f7389d92b4fb3c77aaca22e"
+  },
+  "params": {
+    "componentId": "counting-board",
+    "evalMode": "count",
+    "topic": "Count, recognize, and write numbers 11-20, with proper sequence and order",
+    "intent": "Count, recognize, and write numbers 11-20, with proper sequence and order",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "counting-board",
+    "evalMode": "count",
+    "duration": 3220,
+    "catalogMeta": {
+      "label": "Count All (Concrete)",
+      "beta": 1,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "count_all"
+      ],
+      "description": "Tap each object one by one. Concrete 1:1 correspondence — lowest cognitive load."
+    },
+    "validation": {
+      "challengeCount": 7,
+      "typesFound": [
+        "count_all"
+      ],
+      "payloadBytes": 2288,
+      "longestStringLength": 67,
+      "longestStringPath": "challenges[0].narration",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Counting Starry Bears",
+      "description": "Practicing counting bears in sequence from eleven to twenty.",
+      "objects": {
+        "type": "bears"
+      },
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_all",
+          "instruction": "Can you count all the bears arranged in a circle?",
+          "targetAnswer": 11,
+          "count": 11,
+          "arrangement": "line",
+          "hint": "Try tapping each bear one at a time and watch the numbers appear.",
+          "narration": "Let's start our journey by counting these lovely bears in a circle!"
+        },
+        {
+          "id": "c2",
+          "type": "count_all",
+          "instruction": "Touch each bear in the line to find out how many there are.",
+          "targetAnswer": 12,
+          "count": 12,
+          "arrangement": "line",
+          "hint": "Go slowly from left to right so you don't miss any.",
+          "narration": "Here they are lined up neatly for you. Let's count them all."
+        },
+        {
+          "id": "c3",
+          "type": "count_all",
+          "instruction": "Can you count all the scattered bears?",
+          "targetAnswer": 14,
+          "count": 14,
+          "arrangement": "line",
+          "hint": "Take your time and tap every single bear to track your count.",
+          "narration": "These bears are playing around! Can you count them all?"
+        },
+        {
+          "id": "c4",
+          "type": "count_all",
+          "instruction": "Count the bears in this new line.",
+          "targetAnswer": 15,
+          "count": 15,
+          "arrangement": "line",
+          "hint": "Tap each one gently to make sure you get the right total.",
+          "narration": "Another row of friendly bears waiting to be counted!"
+        },
+        {
+          "id": "c5",
+          "type": "count_all",
+          "instruction": "Look at these clustered bears. Can you count them all?",
+          "targetAnswer": 17,
+          "count": 17,
+          "arrangement": "line",
+          "hint": "Count the bears in one little group before moving to the next.",
+          "narration": "They are hanging out in friendly groups. Let's count them together.",
+          "groupSize": 5
+        },
+        {
+          "id": "c6",
+          "type": "count_all",
+          "instruction": "Count the bears as they form this lovely line.",
+          "targetAnswer": 19,
+          "count": 19,
+          "arrangement": "line",
+          "hint": "Keep going! You are doing a wonderful job keeping track.",
+          "narration": "We are getting higher! Let's count this longer line of bears."
+        },
+        {
+          "id": "c7",
+          "type": "count_all",
+          "instruction": "Can you count all the bears?",
+          "targetAnswer": 20,
+          "count": 20,
+          "arrangement": "line",
+          "hint": "Tap each bear carefully to reach the very last one.",
+          "narration": "This is our final challenge with all twenty bears! You can do it!"
+        }
+      ],
+      "showOptions": {
+        "showRunningCount": true,
+        "showGroupCircles": true,
+        "highlightOnTap": true,
+        "showLastNumber": true
+      },
+      "gradeBand": "K"
+    }
+  },
+  "durationMs": 5053
+}

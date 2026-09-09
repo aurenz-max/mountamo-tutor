@@ -1,0 +1,345 @@
+{
+  "id": "MEAS001-03-D",
+  "primitive": "bar-model",
+  "mode": "build_one_to_one",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Construct basic pictographs and bar charts with teacher guidance",
+  "requestedAt": "2026-09-09T10:42:54.601Z",
+  "inputHash": "f25b0041aa86e12b2e75b1814a971b64a6855458063d7c5ddced7de9a9d58a82",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-bar-model.ts": "676e9f0cabb5245ae6af8c40ac040dc6ad4647ca7e76c6fab64a56e203c385b1",
+    "src/components/lumina/primitives/visual-primitives/math/BarModel.tsx": "fe21ade70863179324428ee576f8fe4c71923b31ae09d1eab7e610049af50c78",
+    "catalog-entry:bar-model": "3258efd3e0900d7608ca2053d0eb8dff27d137818af8376193faa82d166db5a5"
+  },
+  "params": {
+    "componentId": "bar-model",
+    "evalMode": "build_one_to_one",
+    "topic": "Construct basic pictographs and bar charts with teacher guidance",
+    "intent": "Construct basic pictographs and bar charts with teacher guidance",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "bar-model",
+    "evalMode": "build_one_to_one",
+    "duration": 1251,
+    "catalogMeta": {
+      "label": "Build a Sticker Chart (K)",
+      "beta": 1.8,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "build_one_to_one"
+      ],
+      "description": "Record a mixed pile of objects onto a chart, one sticker per object. K.MD.B.3."
+    },
+    "validation": {
+      "challengeCount": 4,
+      "typesFound": [],
+      "payloadBytes": 3331,
+      "longestStringLength": 56,
+      "longestStringPath": "challenges[3].hint",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Our Toy Shelf Chart",
+      "description": "Let us show what toys are on our shelf",
+      "challenges": [
+        {
+          "id": "bm-1",
+          "evalMode": "build_one_to_one",
+          "values": [
+            {
+              "label": "Blocks",
+              "value": 0,
+              "color": "blue",
+              "emoji": "🧱"
+            },
+            {
+              "label": "Cars",
+              "value": 0,
+              "color": "green",
+              "emoji": "🚗"
+            }
+          ],
+          "graphStyle": "picture",
+          "scale": {
+            "step": 1,
+            "max": 5,
+            "iconEmoji": "🧱",
+            "iconValue": 1
+          },
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Line up one sticker for every single toy.",
+          "sourceItems": [
+            {
+              "emoji": "🧱",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🧱",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🚗",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🚗",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🚗",
+              "categoryIndex": 1
+            }
+          ],
+          "sourceScattered": false,
+          "expectedCounts": [
+            2,
+            3
+          ],
+          "showBarValues": false,
+          "showTargetHighlight": false,
+          "showPlacedCount": true,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-2",
+          "evalMode": "build_one_to_one",
+          "values": [
+            {
+              "label": "Apples",
+              "value": 0,
+              "color": "blue",
+              "emoji": "🍎"
+            },
+            {
+              "label": "Crackers",
+              "value": 0,
+              "color": "green",
+              "emoji": "🍘"
+            }
+          ],
+          "graphStyle": "picture",
+          "scale": {
+            "step": 1,
+            "max": 8,
+            "iconEmoji": "🍎",
+            "iconValue": 1
+          },
+          "prompt": "Put one sticker in a row for each snack you see.",
+          "hint": "Match one sticker to one snack so no snack is left out.",
+          "sourceItems": [
+            {
+              "emoji": "🍎",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🍎",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🍎",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🍘",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍘",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍘",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍘",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍘",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍘",
+              "categoryIndex": 1
+            }
+          ],
+          "sourceScattered": false,
+          "expectedCounts": [
+            3,
+            6
+          ],
+          "showBarValues": false,
+          "showTargetHighlight": false,
+          "showPlacedCount": true,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-3",
+          "evalMode": "build_one_to_one",
+          "values": [
+            {
+              "label": "Balls",
+              "value": 0,
+              "color": "blue",
+              "emoji": "⚽"
+            },
+            {
+              "label": "Bikes",
+              "value": 0,
+              "color": "green",
+              "emoji": "🚲"
+            }
+          ],
+          "graphStyle": "picture",
+          "scale": {
+            "step": 1,
+            "max": 8,
+            "iconEmoji": "⚽",
+            "iconValue": 1
+          },
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Match one sticker to each toy so none are left out.",
+          "sourceItems": [
+            {
+              "emoji": "⚽",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "⚽",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "⚽",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🚲",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🚲",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🚲",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🚲",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🚲",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🚲",
+              "categoryIndex": 1
+            }
+          ],
+          "sourceScattered": false,
+          "expectedCounts": [
+            3,
+            6
+          ],
+          "showBarValues": false,
+          "showTargetHighlight": false,
+          "showPlacedCount": true,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-4",
+          "evalMode": "build_one_to_one",
+          "values": [
+            {
+              "label": "Carrots",
+              "value": 0,
+              "color": "blue",
+              "emoji": "🥕"
+            },
+            {
+              "label": "Tomatoes",
+              "value": 0,
+              "color": "green",
+              "emoji": "🍅"
+            }
+          ],
+          "graphStyle": "picture",
+          "scale": {
+            "step": 1,
+            "max": 8,
+            "iconEmoji": "🥕",
+            "iconValue": 1
+          },
+          "prompt": "Put one sticker in a row for each veggie you see.",
+          "hint": "Match one sticker to each veggie so nothing gets missed.",
+          "sourceItems": [
+            {
+              "emoji": "🥕",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🥕",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🥕",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🥕",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🥕",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🥕",
+              "categoryIndex": 0
+            },
+            {
+              "emoji": "🍅",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍅",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍅",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍅",
+              "categoryIndex": 1
+            },
+            {
+              "emoji": "🍅",
+              "categoryIndex": 1
+            }
+          ],
+          "sourceScattered": false,
+          "expectedCounts": [
+            6,
+            5
+          ],
+          "showBarValues": false,
+          "showTargetHighlight": false,
+          "showPlacedCount": true,
+          "supportTier": "easy"
+        }
+      ]
+    }
+  },
+  "durationMs": 2906
+}

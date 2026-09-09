@@ -1,0 +1,124 @@
+{
+  "id": "COUNT001-01-E",
+  "primitive": "hundreds-chart",
+  "mode": "highlight_sequence",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Count by 2s and 5s up to 50 using visual aids and concrete objects",
+  "requestedAt": "2026-09-09T10:21:33.019Z",
+  "inputHash": "105a983fd88843199624c5ef1daf25f011eaed32187f0db196ada4b578620119",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-hundreds-chart.ts": "4c5d06085684aff9f9d02b26ddb2633032e1c3cc7068be0fa3b79804732069d8",
+    "src/components/lumina/primitives/visual-primitives/math/HundredsChart.tsx": "d5fa069a0a66ca4c411a139e36941fbc329aca30758673d09750ba2a4aa93bc9",
+    "catalog-entry:hundreds-chart": "41828f9bf4883326930130e067282ef66e68f06956b751f50566c280d08d478d"
+  },
+  "params": {
+    "componentId": "hundreds-chart",
+    "evalMode": "highlight_sequence",
+    "topic": "Count by 2s and 5s up to 50 using visual aids and concrete objects",
+    "intent": "Count by 2s and 5s up to 50 using visual aids and concrete objects",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "hundreds-chart",
+    "evalMode": "highlight_sequence",
+    "duration": 1666,
+    "catalogMeta": {
+      "label": "Highlight Sequence (Tier 1)",
+      "beta": 1.5,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "highlight_sequence"
+      ],
+      "description": "Highlight all cells in a skip-count pattern."
+    },
+    "validation": {
+      "challengeCount": 2,
+      "typesFound": [
+        "highlight_sequence"
+      ],
+      "payloadBytes": 997,
+      "longestStringLength": 106,
+      "longestStringPath": "challenges[0].instruction",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Skip-Count Safari!",
+      "description": "Explore exciting skip-counting paths on the chart using visual patterns.",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "highlight_sequence",
+          "instruction": "Count by 2s and tap every number you land on, all the way to 50. Tip: the ones digits repeat in a pattern.",
+          "skipValue": 2,
+          "startNumber": 2,
+          "givenCells": [],
+          "correctCells": [
+            2,
+            4,
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18,
+            20,
+            22,
+            24,
+            26,
+            28,
+            30,
+            32,
+            34,
+            36,
+            38,
+            40,
+            42,
+            44,
+            46,
+            48,
+            50
+          ],
+          "correctAnswer": "",
+          "options": [],
+          "hint": "Count by the skip value and look at how the ones digits repeat along the rows.",
+          "supportTier": "easy"
+        },
+        {
+          "id": "c2",
+          "type": "highlight_sequence",
+          "instruction": "Count by 5s and tap every number you land on, all the way to 50. Tip: the ones digits repeat in a pattern.",
+          "skipValue": 5,
+          "startNumber": 5,
+          "givenCells": [],
+          "correctCells": [
+            5,
+            10,
+            15,
+            20,
+            25,
+            30,
+            35,
+            40,
+            45,
+            50
+          ],
+          "correctAnswer": "",
+          "options": [],
+          "hint": "Count by the skip value and look at how the ones digits repeat along the rows.",
+          "supportTier": "easy"
+        }
+      ],
+      "gridMax": 50,
+      "gradeBand": "1"
+    }
+  },
+  "durationMs": 1676
+}

@@ -1,0 +1,256 @@
+{
+  "id": "MEAS001-01-A",
+  "primitive": "compare-objects",
+  "mode": "identify_attribute",
+  "draw": 2,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+  "requestedAt": "2026-09-09T10:22:03.535Z",
+  "inputHash": "8a0b483d803a09d24f7ccc62dea456f0029353873b9bfbf960f01cff125ee4cc",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-compare-objects.ts": "2c7a616330108389ffb5f62bfe8331cc8a28940b195b08675f0f1e3c8ea9bd54",
+    "src/components/lumina/primitives/visual-primitives/math/CompareObjects.tsx": "bec129a81e7a9a1b876926a401165ba33a64208ea62fe22e32b88d65c0669131",
+    "catalog-entry:compare-objects": "4f6637320bd4619e1f63ef47cfc3aee392473a37ab0ccdc5616b6d116c78c886"
+  },
+  "params": {
+    "componentId": "compare-objects",
+    "evalMode": "identify_attribute",
+    "topic": "Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+    "intent": "Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "compare-objects",
+    "evalMode": "identify_attribute",
+    "duration": 4541,
+    "catalogMeta": {
+      "label": "Identify Attribute (Tier 1)",
+      "beta": 1,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "identify_attribute"
+      ],
+      "description": "Say what the picture lets us measure — how long, how tall, how heavy, or how much it holds. The tutor names the choices and judges the spoken answer; the child's words and the grown-up word both count."
+    },
+    "validation": {
+      "challengeCount": 7,
+      "typesFound": [
+        "identify_attribute"
+      ],
+      "payloadBytes": 3471,
+      "longestStringLength": 136,
+      "longestStringPath": "title",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Compare Objects: Identify and describe basic measurable attributes (length, weight, size) of single objects using appropriate vocabulary",
+      "description": "Compare and measure real-world objects by their attributes",
+      "challenges": [
+        {
+          "id": "co-1",
+          "type": "identify_attribute",
+          "instruction": "What can we measure about these objects?",
+          "attribute": "length",
+          "objects": [
+            {
+              "name": "red crayon",
+              "visualSize": 30,
+              "actualValue": 8
+            },
+            {
+              "name": "pencil",
+              "visualSize": 70,
+              "actualValue": 15
+            }
+          ],
+          "correctAnswer": "length",
+          "comparisonWord": "longer",
+          "hint": "Think about how long each one is from end to end!",
+          "attributeOptions": [
+            "length",
+            "weight",
+            "capacity"
+          ],
+          "correctAttribute": "length",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-2",
+          "type": "identify_attribute",
+          "instruction": "What can we compare between these objects?",
+          "attribute": "weight",
+          "objects": [
+            {
+              "name": "feather",
+              "visualSize": 40,
+              "actualValue": 2
+            },
+            {
+              "name": "backpack",
+              "visualSize": 80,
+              "actualValue": 50
+            }
+          ],
+          "correctAnswer": "weight",
+          "comparisonWord": "longer",
+          "hint": "Think about which one feels heavier in your hands!",
+          "attributeOptions": [
+            "weight",
+            "length",
+            "capacity"
+          ],
+          "correctAttribute": "weight",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-3",
+          "type": "identify_attribute",
+          "instruction": "What can we measure when looking at how tall these are?",
+          "attribute": "height",
+          "objects": [
+            {
+              "name": "lamp",
+              "visualSize": 80,
+              "actualValue": 40
+            },
+            {
+              "name": "mug",
+              "visualSize": 30,
+              "actualValue": 10
+            }
+          ],
+          "correctAnswer": "height",
+          "comparisonWord": "longer",
+          "hint": "Think about measuring from the bottom all the way to the top!",
+          "attributeOptions": [
+            "height",
+            "weight",
+            "capacity"
+          ],
+          "correctAttribute": "height",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-4",
+          "type": "identify_attribute",
+          "instruction": "What can we find out about how much these can hold?",
+          "attribute": "capacity",
+          "objects": [
+            {
+              "name": "spoon",
+              "visualSize": 20,
+              "actualValue": 5
+            },
+            {
+              "name": "bucket",
+              "visualSize": 80,
+              "actualValue": 100
+            }
+          ],
+          "correctAnswer": "capacity",
+          "comparisonWord": "longer",
+          "hint": "Think about filling them up with water or sand!",
+          "attributeOptions": [
+            "capacity",
+            "weight",
+            "height"
+          ],
+          "correctAttribute": "capacity",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-5",
+          "type": "identify_attribute",
+          "instruction": "What property can we measure about these items?",
+          "attribute": "length",
+          "objects": [
+            {
+              "name": "paper strip",
+              "visualSize": 35,
+              "actualValue": 10
+            },
+            {
+              "name": "jump rope",
+              "visualSize": 85,
+              "actualValue": 120
+            }
+          ],
+          "correctAnswer": "length",
+          "comparisonWord": "longer",
+          "hint": "Think about stretching a string along each one to see how long it is.",
+          "attributeOptions": [
+            "length",
+            "capacity",
+            "weight"
+          ],
+          "correctAttribute": "length",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-6",
+          "type": "identify_attribute",
+          "instruction": "What can we measure from bottom to top?",
+          "attribute": "height",
+          "objects": [
+            {
+              "name": "flower",
+              "visualSize": 40,
+              "actualValue": 12
+            },
+            {
+              "name": "door",
+              "visualSize": 90,
+              "actualValue": 200
+            }
+          ],
+          "correctAnswer": "height",
+          "comparisonWord": "longer",
+          "hint": "Think about stacking blocks or standing things up straight.",
+          "attributeOptions": [
+            "height",
+            "capacity",
+            "weight"
+          ],
+          "correctAttribute": "height",
+          "supportTier": "easy"
+        },
+        {
+          "id": "co-7",
+          "type": "identify_attribute",
+          "instruction": "What can we measure to know how much liquid fits inside?",
+          "attribute": "capacity",
+          "objects": [
+            {
+              "name": "paper cup",
+              "visualSize": 30,
+              "actualValue": 20
+            },
+            {
+              "name": "water bottle",
+              "visualSize": 75,
+              "actualValue": 50
+            }
+          ],
+          "correctAnswer": "capacity",
+          "comparisonWord": "longer",
+          "hint": "Think about pouring juice into each container.",
+          "attributeOptions": [
+            "capacity",
+            "length",
+            "weight"
+          ],
+          "correctAttribute": "capacity",
+          "supportTier": "easy"
+        }
+      ],
+      "gradeBand": "K"
+    }
+  },
+  "durationMs": 4551
+}

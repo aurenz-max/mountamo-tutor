@@ -1,0 +1,143 @@
+{
+  "id": "COUNT001-01-H",
+  "primitive": "number-sequencer",
+  "mode": "fill_missing",
+  "draw": 1,
+  "subject": "MATHEMATICS",
+  "grade": "K",
+  "requirement": "Students count forward starting from one in a linear sequence by identifying the next number in a given set. Focus: Students practice the forward counting sequence up to 10 by filling in missing numbers in a line. Examples: 1, 2, _, 4; 3, 4, 5, _; _, 2, 3, 4; 5, 6, _, 8; 1, _, 3, 4; 7, 8, 9, _; 2, 3, _, 5; 4, 5, 6, _. Constraints: Use the number-sequencer primitive to guide students; keep sequences under 10; include only one missing number per sequence initially.",
+  "requestedAt": "2026-09-09T10:21:34.696Z",
+  "inputHash": "67f8d1885bc58cb3078212d6fb621d2c306a1f705dcc02d5668ebf1095c2c78e",
+  "sourceHashes": {
+    "src/app/api/lumina/eval-test/route.ts": "69eb5247bdb3b12daaf28498aa7a5798138abc6388e02746d0c00c465e83a9ed",
+    "src/components/lumina/service/math/gemini-number-sequencer.ts": "ba692fa52320283241da511b84ef386191578e640eda059bc9ef9feac84fb6da",
+    "src/components/lumina/primitives/visual-primitives/math/NumberSequencer.tsx": "b9a46a100a81450ecbef127ce7c55ae6cf48b6ae5df6c9a1de9a24b4f07f6b33",
+    "catalog-entry:number-sequencer": "1bd9655e488dbefe8dcd1762b4b4c09365ed513c8d76c3000d7f71ade7068135"
+  },
+  "params": {
+    "componentId": "number-sequencer",
+    "evalMode": "fill_missing",
+    "topic": "Students count forward starting from one in a linear sequence by identifying the next number in a given set. Focus: Students practice the forward counting sequence up to 10 by filling in missing numbers in a line. Examples: 1, 2, _, 4; 3, 4, 5, _; _, 2, 3, 4; 5, 6, _, 8; 1, _, 3, 4; 7, 8, 9, _; 2, 3, _, 5; 4, 5, 6, _. Constraints: Use the number-sequencer primitive to guide students; keep sequences under 10; include only one missing number per sequence initially.",
+    "intent": "Students count forward starting from one in a linear sequence by identifying the next number in a given set. Focus: Students practice the forward counting sequence up to 10 by filling in missing numbers in a line. Examples: 1, 2, _, 4; 3, 4, 5, _; _, 2, 3, 4; 5, 6, _, 8; 1, _, 3, 4; 7, 8, 9, _; 2, 3, _, 5; 4, 5, 6, _. Constraints: Use the number-sequencer primitive to guide students; keep sequences under 10; include only one missing number per sequence initially.",
+    "grade": "K",
+    "gradeLevel": "kindergarten",
+    "difficulty": "easy"
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "number-sequencer",
+    "evalMode": "fill_missing",
+    "duration": 1597,
+    "catalogMeta": {
+      "label": "Fill Missing (Tier 4)",
+      "beta": 4.5,
+      "scaffoldingMode": 4,
+      "allowedChallengeTypes": [
+        "fill-missing"
+      ],
+      "description": "Complete gaps in a number sequence pattern."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "fill-missing"
+      ],
+      "payloadBytes": 975,
+      "longestStringLength": 89,
+      "longestStringPath": "description",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Fun with Counting Forward",
+      "description": "Practice the forward counting sequence up to 10 by finding the missing numbers in a line.",
+      "challenges": [
+        {
+          "id": "seq1",
+          "type": "fill-missing",
+          "instruction": "What number is missing?",
+          "sequence": [
+            1,
+            2,
+            3,
+            null
+          ],
+          "correctAnswers": [
+            4
+          ],
+          "rangeMin": 1,
+          "rangeMax": 4
+        },
+        {
+          "id": "seq2",
+          "type": "fill-missing",
+          "instruction": "What number is missing?",
+          "sequence": [
+            2,
+            null,
+            4,
+            5
+          ],
+          "correctAnswers": [
+            3
+          ],
+          "rangeMin": 2,
+          "rangeMax": 5
+        },
+        {
+          "id": "seq3",
+          "type": "fill-missing",
+          "instruction": "What number is missing?",
+          "sequence": [
+            null,
+            6,
+            7,
+            8
+          ],
+          "correctAnswers": [
+            5
+          ],
+          "rangeMin": 5,
+          "rangeMax": 8
+        },
+        {
+          "id": "seq4",
+          "type": "fill-missing",
+          "instruction": "What number is missing?",
+          "sequence": [
+            3,
+            4,
+            null,
+            6
+          ],
+          "correctAnswers": [
+            5
+          ],
+          "rangeMin": 3,
+          "rangeMax": 6
+        },
+        {
+          "id": "seq5",
+          "type": "fill-missing",
+          "instruction": "What number is missing?",
+          "sequence": [
+            7,
+            null,
+            9,
+            10
+          ],
+          "correctAnswers": [
+            8
+          ],
+          "rangeMin": 7,
+          "rangeMax": 10
+        }
+      ],
+      "gradeBand": "K",
+      "showNumberLine": true,
+      "showDotArrays": true,
+      "supportTier": "easy"
+    }
+  },
+  "durationMs": 1608
+}
