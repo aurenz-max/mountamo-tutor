@@ -32,6 +32,11 @@ import { createNumberPool } from "./numberPoolService";
 export type BarModelGraphStyle = 'bar' | 'scaled_bar' | 'picture';
 
 export type BarModelEvalMode =
+  // K one-to-one data family (K.MD.B.3) — one icon per object, no scale to read.
+  | 'build_one_to_one'
+  | 'read_one_to_one'
+  | 'match_to_bar'
+  | 'most_least'
   | 'compare_bars'
   | 'read_scale'
   | 'picture_graph'
@@ -43,6 +48,8 @@ export interface BarValue {
   label: string;
   value: number;
   color?: string;
+  /** Per-row icon for one-to-one picture rows. Falls back to scale.iconEmoji. */
+  emoji?: string;
 }
 
 export interface BarModelScale {
@@ -71,9 +78,19 @@ export interface BarModelChallenge {
   expectedDataset?: { label: string; value: number }[];
   expectedScaleStep?: number;
   availableScaleSteps?: number[];
+  /** K one-to-one: the collection the child records from (build) or counts (match). */
+  sourceItems?: { emoji: string; categoryIndex: number }[];
+  /** K one-to-one: draw the source as a mixed pile rather than tidy groups. */
+  sourceScattered?: boolean;
+  /** build_one_to_one answer key — the true count for each row, in row order. */
+  expectedCounts?: number[];
+  /** match_to_bar: how many objects are in the stimulus cluster. */
+  stimulusCount?: number;
   /** Support-tier scaffolds (set in post-process when config.difficulty present). */
   showBarValues?: boolean;
   showTargetHighlight?: boolean;
+  /** build_one_to_one: show how many stickers the child has placed so far. */
+  showPlacedCount?: boolean;
   supportTier?: SupportTier;
 }
 
@@ -103,6 +120,10 @@ const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any mode not in COUNT_BY_MO
 const MAX_INSTANCE_COUNT = 6;
 
 const COUNT_BY_MODE: Record<BarModelEvalMode, number> = {
+  build_one_to_one: 4,     // K — each build is a whole chart, so 4 is a full session
+  read_one_to_one: 5,      // K — short reads, so more of them
+  match_to_bar: 4,         // K
+  most_least: 5,           // K — short taps, so more of them
   compare_bars: 5,         // T2 — B4 bump 4 → 5
   read_scale: 4,           // hold (not classified in §5a)
   picture_graph: 4,        // hold (not classified in §5a)
@@ -214,6 +235,10 @@ function deriveOptions(expected: number, step: number, count = 4): number[] {
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  build_one_to_one: { promptDoc: 'K record data — one sticker per object.', schemaDescription: "'build_one_to_one' (K)" },
+  read_one_to_one: { promptDoc: 'K read a one-to-one picture graph.', schemaDescription: "'read_one_to_one' (K)" },
+  match_to_bar: { promptDoc: 'K match a group of objects to the row that shows that many.', schemaDescription: "'match_to_bar' (K)" },
+  most_least: { promptDoc: 'K which row has the most / the fewest.', schemaDescription: "'most_least' (K)" },
   compare_bars: { promptDoc: 'K-1 which-is-taller.', schemaDescription: "'compare_bars' (K-1)" },
   read_scale: { promptDoc: 'G2 axis reading.', schemaDescription: "'read_scale' (G2)" },
   picture_graph: { promptDoc: 'G2-3 icon = N items.', schemaDescription: "'picture_graph' (G2-3)" },
@@ -248,6 +273,9 @@ interface SupportScaffold {
   showBarValues: boolean;
   /** Amber "read this one" cue on the bar the prompt names (tracking aid #1). */
   showTargetHighlight: boolean;
+  /** K build_one_to_one: running count of stickers placed (counting aid #1). It
+   *  mirrors the child's OWN placements, so it can never state the target count. */
+  showPlacedCount?: boolean;
   /** Prompt lines describing the tier to the sub-generator (hint-tone only #2). */
   promptLines: string[];
 }
@@ -260,6 +288,42 @@ const TIER_GUARDRAIL =
 /** easy → hard support gradient, per pinned eval mode. */
 function resolveSupportStructure(mode: BarModelEvalMode, tier: SupportTier): SupportScaffold {
   switch (mode) {
+    // ── K one-to-one family ────────────────────────────────────────────────
+    // These rows never print a number (picture rows show icons only), so the
+    // tier levers are the counting aids around the graph, not a value readout.
+    case 'build_one_to_one':
+      return {
+        showBarValues: false,
+        showTargetHighlight: false,
+        showPlacedCount: tier !== 'hard',  // hard = the child tracks their own stickers
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'hard'
+            ? 'HARD: the chart does not say how many stickers are in a row — the child keeps track by looking.'
+            : 'EASY/MEDIUM: each row shows how many stickers the child has placed so far.',
+        ],
+      };
+    case 'read_one_to_one':
+      return {
+        showBarValues: false,
+        showTargetHighlight: tier !== 'hard',  // hard = find the named row yourself
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'hard'
+            ? 'HARD: no row is marked — the child finds the row the question names, then counts it. Hint must not name the row.'
+            : 'EASY/MEDIUM: the row the question names is marked, so the child only has to count.',
+        ],
+      };
+    case 'most_least':
+    case 'match_to_bar':
+      return {
+        showBarValues: false,
+        showTargetHighlight: false,  // marking a row would BE the answer here
+        promptLines: [
+          TIER_GUARDRAIL,
+          'No row is ever marked in this task — the mark would be the answer. Hint coaches counting, never names a row.',
+        ],
+      };
     case 'read_scale':
     case 'scaled_bar_graph':
       return {
@@ -354,10 +418,70 @@ interface ProblemShape {
   forcedStep?: number;
   /** picture_graph: forced icon multiplier. */
   iconValue?: 2 | 5;
+  /** K one-to-one: how many rows (categories) this challenge carries. */
+  kRowCount?: number;
+  /** K one-to-one: distance between the answer row and its nearest rival. */
+  kGap?: number;
+  /** K build_one_to_one: mix the source objects instead of pre-grouping them. */
+  kInterleave?: boolean;
+  /** K match_to_bar: scatter the stimulus cluster instead of lining it up. */
+  kScatter?: boolean;
 }
 
 function resolveProblemShape(mode: BarModelEvalMode, tier: SupportTier): ProblemShape {
   switch (mode) {
+    // ── K one-to-one family ────────────────────────────────────────────────
+    // The lever is never "bigger counts" (K counts stay 1-10 at every tier); it
+    // is how much the child has to TRACK: how many rows, whether the objects
+    // arrive sorted or in a pile, and how close the rival row sits.
+    case 'build_one_to_one':
+      return {
+        kRowCount: tier === 'easy' ? 2 : tier === 'medium' ? 3 : 4,
+        kInterleave: tier !== 'easy',
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: two kinds of object, already sorted into tidy groups — the child records what is laid out for them.'
+            : tier === 'medium'
+              ? 'PROBLEM: three kinds of object, all mixed together in one pile — the child has to keep track of what they have already recorded.'
+              : 'PROBLEM: four kinds of object, all mixed together — four rows to keep straight at once.',
+        ],
+      };
+    case 'read_one_to_one':
+      return {
+        kRowCount: tier === 'easy' ? 3 : tier === 'medium' ? 4 : 5,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: three rows, clearly different lengths.'
+            : tier === 'medium'
+              ? 'PROBLEM: four rows of varied length.'
+              : 'PROBLEM: five rows, and a neighbouring row is only one icon different — miscounting by one gives a wrong answer that looks right.',
+        ],
+      };
+    case 'most_least':
+      return {
+        kRowCount: tier === 'hard' ? 4 : 3,
+        kGap: tier === 'easy' ? 3 : tier === 'medium' ? 2 : 1,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: the winning row stands out clearly.'
+            : tier === 'medium'
+              ? 'PROBLEM: the winning row is only a little ahead.'
+              : 'PROBLEM: four rows and the winner is ahead by a single icon — the child must count, not eyeball.',
+        ],
+      };
+    case 'match_to_bar':
+      return {
+        kRowCount: tier === 'easy' ? 3 : 4,
+        kGap: tier === 'easy' ? 3 : tier === 'medium' ? 2 : 1,
+        kScatter: tier === 'hard',
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: three rows, and the rows that do not match are clearly different.'
+            : tier === 'medium'
+              ? 'PROBLEM: four rows, with one row close to the right answer.'
+              : 'PROBLEM: four rows, a rival row one icon off, and the objects are scattered rather than lined up — the child must count carefully on both sides.',
+        ],
+      };
     case 'read_scale':
       return {
         forcedStep: tier === 'easy' ? 1 : 2,
@@ -433,6 +557,575 @@ function buildTierPromptSection(mode: BarModelEvalMode, tier: SupportTier): stri
     ...resolveProblemShape(mode, tier).promptLines,
   ];
   return `\n\n## SUPPORT TIER "${tier}" (scaffolding + structural problem difficulty — NOT bigger numbers)\n${lines.map((l) => `- ${l}`).join('\n')}`;
+}
+
+// ===========================================================================
+// K one-to-one data family — build_one_to_one, read_one_to_one, match_to_bar,
+// most_least (K.MD.B.3: classify, count and compare category data).
+//
+// Division of labour, per [[feedback_llm-window-code-builds-structure]]: Gemini
+// supplies SCOPE ONLY — a topical title, the category names, one emoji each and
+// the child-facing wording. CODE owns every count, the answer key, the option
+// set, the row order and how the objects are arranged. The answer cannot leak
+// into the prompt because the numbers do not exist until after the model call
+// returns. Every count stays in 1-10 at every support tier; the tier changes how
+// much the child has to TRACK, never how big the numbers are.
+// ===========================================================================
+
+const K_FALLBACK_EMOJI = ['🔵', '🟢', '🟣', '🟠', '🟡', '🔴'];
+
+interface KCategory { label: string; emoji: string }
+
+/** Keep an emoji, drop a word. Models sometimes answer "a dog" for an emoji slot. */
+function sanitizeEmoji(raw: unknown, fallback: string): string {
+  const s = String(raw ?? '').trim();
+  if (!s || /[A-Za-z0-9]/.test(s)) return fallback;
+  const cps = Array.from(s);
+  return cps.length <= 3 ? s : cps[0];
+}
+
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** `n` distinct integers drawn from [min, max]; pads with min when the band is short. */
+function distinctCounts(n: number, min: number, max: number): number[] {
+  const pool: number[] = [];
+  for (let v = min; v <= max; v++) pool.push(v);
+  shuffleInPlace(pool);
+  const out = pool.slice(0, n);
+  while (out.length < n) out.push(Math.max(1, min));
+  return out;
+}
+
+const randInt = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1));
+
+/** 4 distinct K-sized options containing `expected`, never below 1. */
+function deriveKOptions(expected: number, count = 4): number[] {
+  const opts = new Set<number>([expected]);
+  for (const d of [1, -1, 2, -2, 3, -3, 4]) {
+    if (opts.size >= count) break;
+    const v = expected + d;
+    if (v >= 1 && v <= 12) opts.add(v);
+  }
+  for (let fill = 1; opts.size < count && fill <= 12; fill++) opts.add(fill);
+  return Array.from(opts).sort((a, b) => a - b);
+}
+
+/** N label+emoji category slots for a K schema. */
+function kCategorySlots(n: number) {
+  const props: Record<string, Schema> = {};
+  const required: string[] = [];
+  for (let i = 0; i < n; i++) {
+    props[`cat${i}Label`] = { type: Type.STRING, description: `Category ${i} name — one or two words a 5-year-old knows (e.g. "Dogs")` };
+    props[`cat${i}Emoji`] = { type: Type.STRING, description: `ONE emoji picturing category ${i}. Emoji only, no words.` };
+    required.push(`cat${i}Label`, `cat${i}Emoji`);
+  }
+  return { props, required };
+}
+
+/** Pull N categories out of a flat response, with unique labels and unique emoji. */
+function extractCategories(raw: Record<string, unknown>, n: number): KCategory[] {
+  const out: KCategory[] = [];
+  const seenLabel = new Set<string>();
+  const seenEmoji = new Set<string>();
+  for (let i = 0; i < n; i++) {
+    let label = String(raw[`cat${i}Label`] ?? '').trim() || `Group ${i + 1}`;
+    if (seenLabel.has(label.toLowerCase())) label = `${label} ${i + 1}`;
+    seenLabel.add(label.toLowerCase());
+
+    let emoji = sanitizeEmoji(raw[`cat${i}Emoji`], K_FALLBACK_EMOJI[i % K_FALLBACK_EMOJI.length]);
+    if (seenEmoji.has(emoji)) {
+      emoji = K_FALLBACK_EMOJI.find((e) => !seenEmoji.has(e)) ?? K_FALLBACK_EMOJI[i % K_FALLBACK_EMOJI.length];
+    }
+    seenEmoji.add(emoji);
+    out.push({ label, emoji });
+  }
+  return out;
+}
+
+/**
+ * Reject wording that states a quantity. "One" is exempt — every sticker prompt
+ * says "one sticker for each" — but any other number word or digit in a K data
+ * prompt is the answer being recited (CLAUDE.md pedagogy rule #1).
+ */
+const K_COUNT_WORD_RE = /(\d|\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b)/i;
+function safeKText(raw: unknown, fallback: string): string {
+  const s = String(raw ?? '').trim();
+  return s && !K_COUNT_WORD_RE.test(s) ? s : fallback;
+}
+
+/** Build the picture rows every K mode renders: one icon = one object. */
+function kRows(cats: KCategory[], counts: number[]): BarValue[] {
+  return cats.map((c, i) => ({ label: c.label, value: counts[i], color: pickColor(i), emoji: c.emoji }));
+}
+
+const kScale = (max: number, iconEmoji: string): BarModelScale =>
+  ({ step: 1, max: Math.max(1, max), iconEmoji, iconValue: 1 });
+
+/**
+ * The N challenges in a session are independent parallel calls on the same
+ * prompt, and structured output converges: left alone, four calls return the
+ * same four animals. Each call gets a different everyday setting so the charts
+ * differ in CONTENT, not just in the numbers code assigns afterwards.
+ * See [[feedback_n-challenges-n-problems]].
+ */
+const K_SETTINGS = [
+  'the classroom toy bin', 'the snack table', 'the playground', 'a vegetable garden',
+  'the pet shop window', 'a lunch box', 'the art table', 'the fish tank',
+];
+const kSettingLine = (variant: number) =>
+  `- Set this one at ${K_SETTINGS[variant % K_SETTINGS.length]} and choose objects that belong there. Other charts in this lesson use other settings, so do not reach for the most obvious animals.`;
+
+const K_AUDIENCE_RULES =
+  '- The child is 5 years old and cannot read fluently: every line is read ALOUD to them, so keep it short and spoken-plain.\n'
+  + '- NEVER state, imply or hint how many of anything there are. You are not told the numbers — the app picks them after you answer.\n'
+  + '- No digits and no number words except "one" (as in "one sticker for each").';
+
+const K_MODES = new Set<BarModelEvalMode>([
+  'build_one_to_one', 'read_one_to_one', 'match_to_bar', 'most_least',
+]);
+
+/** The card a K challenge presents: which rows, holding what. */
+function kCardKey(ch: BarModelChallenge): string {
+  const counts = ch.evalMode === 'build_one_to_one'
+    ? (ch.expectedCounts ?? [])
+    : ch.values.map((v) => v.value);
+  return `${ch.values.map((v) => v.label).join('|')}::${counts.join(',')}`;
+}
+
+/** Modes the child answers by tapping a row — the row INDEX is guessable. */
+const K_ROW_ANSWER_MODES = new Set<BarModelEvalMode>(['most_least', 'match_to_bar']);
+
+/**
+ * Walk the answer round the rows across a session. Each challenge picks its own
+ * winning row independently, so four parallel calls land on the same row often
+ * enough that a child can win by always tapping the third one. Rotation moves
+ * the counts one row along and carries the answer with them, so the position is
+ * spread without touching the numbers the tier chose.
+ */
+function spreadKAnswerPositions(challenges: BarModelChallenge[]): void {
+  challenges.forEach((ch, i) => {
+    if (!K_ROW_ANSWER_MODES.has(ch.evalMode)) return;
+    const rows = ch.values.length;
+    if (rows < 2) return;
+    const want = i % rows;
+    for (let guard = 0; ch.targetBarIndex !== want && guard < rows; guard++) rotateKCounts(ch);
+  });
+}
+
+/**
+ * Move every count one row along, repairing each derived field. The multiset of
+ * counts is unchanged — so the tier's row gap and the K band still hold — but
+ * the answer moves, which is what makes it a different problem. Used only to
+ * break an exact repeat inside a session; code owns these numbers, so it costs
+ * no extra model call. See [[feedback_n-challenges-n-problems]].
+ */
+function rotateKCounts(ch: BarModelChallenge): void {
+  const n = ch.values.length;
+  if (n < 2) return;
+  const counts = ch.evalMode === 'build_one_to_one'
+    ? [...(ch.expectedCounts ?? [])]
+    : ch.values.map((v) => v.value);
+  if (counts.length !== n) return;
+  const rotated = counts.map((_, i) => counts[(i + n - 1) % n]);
+  const iconEmoji = ch.scale?.iconEmoji ?? '';
+
+  if (ch.evalMode === 'build_one_to_one') {
+    ch.expectedCounts = rotated;
+    const items: { emoji: string; categoryIndex: number }[] = [];
+    ch.values.forEach((v, i) => {
+      for (let k = 0; k < rotated[i]; k++) items.push({ emoji: v.emoji ?? iconEmoji, categoryIndex: i });
+    });
+    ch.sourceItems = ch.sourceScattered ? shuffleInPlace(items) : items;
+    ch.scale = kScale(Math.max(...rotated) + 2, iconEmoji);
+    return;
+  }
+
+  ch.values = ch.values.map((v, i) => ({ ...v, value: rotated[i] }));
+  ch.scale = kScale(Math.max(...rotated), iconEmoji);
+
+  if (ch.evalMode === 'read_one_to_one') {
+    const idx = ch.targetBarIndex ?? 0;
+    ch.expectedValue = rotated[idx];
+    ch.options = deriveKOptions(rotated[idx]);
+  } else if (ch.evalMode === 'most_least') {
+    // The winner is wherever the extreme now sits; the prompt says which end.
+    const want: 'max' | 'min' = K_LESS_RE.test(ch.prompt) && !K_MORE_RE.test(ch.prompt) ? 'min' : 'max';
+    let best = 0;
+    for (let i = 1; i < rotated.length; i++) {
+      if (want === 'max' ? rotated[i] > rotated[best] : rotated[i] < rotated[best]) best = i;
+    }
+    ch.targetBarIndex = best;
+  } else if (ch.evalMode === 'match_to_bar') {
+    // Rotation preserves the multiset, so the matching count is still on a row.
+    const target = ch.stimulusCount ?? rotated[ch.targetBarIndex ?? 0];
+    const idx = rotated.indexOf(target);
+    ch.targetBarIndex = idx >= 0 ? idx : 0;
+    ch.stimulusCount = rotated[ch.targetBarIndex];
+    ch.sourceItems = Array.from({ length: ch.stimulusCount }, () => ({ emoji: iconEmoji, categoryIndex: 0 }));
+  }
+}
+
+// ===========================================================================
+// Sub-generator: build_one_to_one — record a pile of objects onto a chart
+// ===========================================================================
+
+async function generateBuildOneToOne(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null, variant = 0): Promise<SubGenResult> {
+  const shape = tier ? resolveProblemShape('build_one_to_one', tier) : null;
+  const tierSection = tier ? buildTierPromptSection('build_one_to_one', tier) : '';
+  const slots = kCategorySlots(4);
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Warm K title for the chart (e.g. 'Our Snack Chart')" },
+      description: { type: Type.STRING, description: 'One short line tying the chart to the topic' },
+      collectionName: { type: Type.STRING, description: "What the pile of objects is, as a plural phrase (e.g. 'the toys in the bin')" },
+      prompt: { type: Type.STRING, description: 'Tell the child to put ONE sticker in a row for each object of that kind. Never say how many.' },
+      hint: { type: Type.STRING, description: 'Gentle hint about matching one sticker to one object. Never says a number.' },
+      ...slots.props,
+    },
+    required: ['title', 'description', 'collectionName', 'prompt', 'hint', ...slots.required],
+  };
+
+  const prompt = `Write the WORDS for a Kindergarten data-recording chart (K.MD.B.3).
+The child sees a pile of objects and puts one sticker in a row for each one.
+
+TOPIC: ${topic}
+AUDIENCE: ${gradeContext}
+INTENT: ${intent}
+
+YOU CHOOSE NO NUMBERS. The app decides how many objects of each kind there are
+AFTER your answer, so any number you write would be wrong as well as unfair.
+
+RULES:
+${K_AUDIENCE_RULES}
+- FOUR categories of everyday object a Kindergartner can picture and name.
+- One emoji per category, all four different, each obviously matching its label.
+- collectionName: what the pile is, e.g. "the fruit in the basket".
+- prompt: e.g. "Put one sticker in a row for each animal you see."
+${kSettingLine(variant)}${tierSection}`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json', responseSchema: schema },
+  });
+  if (!response.text) throw new Error('No content generated (build_one_to_one)');
+  const raw = JSON.parse(response.text) as Record<string, unknown>;
+
+  const rowCount = shape?.kRowCount ?? 3;
+  const interleave = shape?.kInterleave ?? true;
+  const cats = extractCategories(raw, 4).slice(0, rowCount);
+  // Distinct counts: two rows of the same length make "did I record it right?"
+  // ambiguous to a child scanning the chart, and blunt the oracle's recount.
+  const counts = distinctCounts(rowCount, 2, tier === 'hard' ? 9 : 7);
+
+  const items: { emoji: string; categoryIndex: number }[] = [];
+  cats.forEach((c, i) => {
+    for (let k = 0; k < counts[i]; k++) items.push({ emoji: c.emoji, categoryIndex: i });
+  });
+  const sourceItems = interleave ? shuffleInPlace(items) : items;
+
+  // Every row is the same width, two cells longer than the longest answer, so a
+  // row's capacity never tells the child when to stop.
+  const rowCapacity = Math.max(...counts) + 2;
+  const collection = String(raw.collectionName ?? 'the things').trim() || 'the things';
+
+  return {
+    title: String(raw.title ?? 'Our Chart'),
+    description: String(raw.description ?? 'Put one sticker on the chart for each thing.'),
+    challenge: {
+      id: 'bm-pending',
+      evalMode: 'build_one_to_one',
+      values: cats.map((c, i) => ({ label: c.label, value: 0, color: pickColor(i), emoji: c.emoji })),
+      graphStyle: 'picture',
+      scale: kScale(rowCapacity, cats[0].emoji),
+      prompt: safeKText(raw.prompt, `Put one sticker in a row for each of ${collection}.`),
+      hint: safeKText(raw.hint, 'Touch one thing, then put one sticker in its row. Keep going until every one has a sticker.'),
+      sourceItems,
+      sourceScattered: interleave,
+      expectedCounts: counts,
+    },
+  };
+}
+
+// ===========================================================================
+// Sub-generator: read_one_to_one — how many does this row show?
+// ===========================================================================
+
+async function generateReadOneToOne(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null, variant = 0): Promise<SubGenResult> {
+  const shape = tier ? resolveProblemShape('read_one_to_one', tier) : null;
+  const tierSection = tier ? buildTierPromptSection('read_one_to_one', tier) : '';
+  const slots = kCategorySlots(5);
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Warm K title for the graph (e.g. 'Our Favorite Pets')" },
+      description: { type: Type.STRING, description: 'One short line tying the graph to the topic' },
+      targetLabel: { type: Type.STRING, description: 'The category the question asks about — MUST be exactly one of cat0Label..cat4Label' },
+      prompt: { type: Type.STRING, description: 'Question naming that category, e.g. "How many children picked cats?". Never say how many.' },
+      hint: { type: Type.STRING, description: 'Hint telling the child to touch each picture as they count. Never says a number.' },
+      ...slots.props,
+    },
+    required: ['title', 'description', 'targetLabel', 'prompt', 'hint', ...slots.required],
+  };
+
+  const prompt = `Write the WORDS for a Kindergarten picture graph where ONE picture stands for ONE thing (K.MD.B.3).
+The child counts the pictures in one row and says how many.
+
+TOPIC: ${topic}
+AUDIENCE: ${gradeContext}
+INTENT: ${intent}
+
+YOU CHOOSE NO NUMBERS. The app fills each row AFTER your answer.
+
+RULES:
+${K_AUDIENCE_RULES}
+- FIVE categories of everyday thing, one emoji each, all different.
+- targetLabel must exactly match one of the category labels you wrote.
+- prompt: ask how many for THAT category by name.
+${kSettingLine(variant)}${tierSection}`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json', responseSchema: schema },
+  });
+  if (!response.text) throw new Error('No content generated (read_one_to_one)');
+  const raw = JSON.parse(response.text) as Record<string, unknown>;
+
+  const rowCount = shape?.kRowCount ?? 4;
+  const cats = extractCategories(raw, 5).slice(0, rowCount);
+  const wanted = String(raw.targetLabel ?? '').trim().toLowerCase();
+  const found = cats.findIndex((c) => c.label.toLowerCase() === wanted);
+  const targetIdx = found >= 0 ? found : randInt(0, rowCount - 1);
+
+  // Counts are assigned AFTER the model call, around the row it named.
+  const counts = new Array<number>(rowCount);
+  if (tier === 'easy') {
+    // The named row is the longest and nothing sits within one of it.
+    const target = randInt(4, 7);
+    counts[targetIdx] = target;
+    const others = distinctCounts(rowCount - 1, 1, target - 2);
+    let p = 0;
+    for (let i = 0; i < rowCount; i++) if (i !== targetIdx) counts[i] = others[p++];
+  } else if (tier === 'hard') {
+    // A neighbouring row sits one icon away, so an off-by-one count is wrong.
+    const target = randInt(4, 8);
+    counts[targetIdx] = target;
+    const near = shuffleInPlace([target - 1, target + 1]);
+    const far = distinctCounts(rowCount, 2, 9).filter((v) => Math.abs(v - target) > 1);
+    const rest = [...near, ...far];
+    let p = 0;
+    for (let i = 0; i < rowCount; i++) {
+      if (i === targetIdx) continue;
+      counts[i] = rest[p++] ?? Math.max(1, target - 2);
+    }
+  } else {
+    const all = distinctCounts(rowCount, 2, 9);
+    for (let i = 0; i < rowCount; i++) counts[i] = all[i];
+  }
+
+  const expectedValue = counts[targetIdx];
+  const rows = kRows(cats, counts);
+
+  return {
+    title: String(raw.title ?? 'Picture Graph'),
+    description: String(raw.description ?? 'Count the pictures in the row.'),
+    challenge: {
+      id: 'bm-pending',
+      evalMode: 'read_one_to_one',
+      values: rows,
+      graphStyle: 'picture',
+      scale: kScale(Math.max(...counts), cats[targetIdx].emoji),
+      prompt: safeKText(raw.prompt, `How many ${cats[targetIdx].label}?`),
+      hint: safeKText(raw.hint, 'Touch each picture in the row as you count it out loud.'),
+      expectedValue,
+      options: deriveKOptions(expectedValue),
+      targetBarIndex: targetIdx,
+    },
+  };
+}
+
+// ===========================================================================
+// Sub-generator: most_least — which row has the most / the fewest?
+// ===========================================================================
+
+const K_MORE_RE = /\b(more|most|greater|greatest|tallest|largest|highest|biggest)\b/i;
+const K_LESS_RE = /\b(less|least|fewer|fewest|smallest|shortest|lowest)\b/i;
+
+async function generateMostLeast(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null, variant = 0): Promise<SubGenResult> {
+  const shape = tier ? resolveProblemShape('most_least', tier) : null;
+  const tierSection = tier ? buildTierPromptSection('most_least', tier) : '';
+  const slots = kCategorySlots(4);
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Warm K title (e.g. 'Snack Day Votes')" },
+      description: { type: Type.STRING, description: 'One short line tying the graph to the topic' },
+      promptMost: { type: Type.STRING, description: 'Question asking which row has the MOST. Must contain the word "most". Never say how many.' },
+      promptLeast: { type: Type.STRING, description: 'Question asking which row has the FEWEST. Must contain "fewest" or "least". Never say how many.' },
+      hint: { type: Type.STRING, description: 'Hint about counting each row and comparing. Never says a number.' },
+      ...slots.props,
+    },
+    required: ['title', 'description', 'promptMost', 'promptLeast', 'hint', ...slots.required],
+  };
+
+  const prompt = `Write the WORDS for a Kindergarten most/fewest question on a picture graph where ONE picture stands for ONE thing (K.MD.B.3).
+
+TOPIC: ${topic}
+AUDIENCE: ${gradeContext}
+INTENT: ${intent}
+
+YOU CHOOSE NO NUMBERS and you do NOT know which row will win — the app fills the
+rows after your answer. Write both questions so either one can be used.
+
+RULES:
+${K_AUDIENCE_RULES}
+- FOUR categories of everyday thing, one emoji each, all different.
+- promptMost must use the word "most"; promptLeast must use "fewest" or "least".
+- Never name a category as the answer in either question.
+${kSettingLine(variant)}${tierSection}`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json', responseSchema: schema },
+  });
+  if (!response.text) throw new Error('No content generated (most_least)');
+  const raw = JSON.parse(response.text) as Record<string, unknown>;
+
+  const rowCount = shape?.kRowCount ?? 3;
+  const gap = shape?.kGap ?? 2;
+  const cats = extractCategories(raw, 4).slice(0, rowCount);
+  const want: 'max' | 'min' = Math.random() < 0.5 ? 'max' : 'min';
+
+  // The winner is UNIQUE and exactly `gap` clear of its nearest rival: the band
+  // the rivals are drawn from leaves room for the gap on the winning side.
+  const lo = want === 'min' ? 2 + gap : 2;
+  const hi = want === 'min' ? 9 : Math.min(9, 10 - gap);
+  const rivals = distinctCounts(rowCount - 1, lo, hi);
+  const winner = want === 'max'
+    ? Math.min(10, Math.max(...rivals) + gap)
+    : Math.max(1, Math.min(...rivals) - gap);
+  const targetIdx = randInt(0, rowCount - 1);
+  const counts = [...rivals];
+  counts.splice(targetIdx, 0, winner);
+
+  // Trust the model's wording only when its superlative matches the question we
+  // actually assembled — otherwise the child (and the oracle) would be misled.
+  const modelPrompt = String((want === 'max' ? raw.promptMost : raw.promptLeast) ?? '');
+  const correctlyWorded = want === 'max'
+    ? K_MORE_RE.test(modelPrompt) && !K_LESS_RE.test(modelPrompt)
+    : K_LESS_RE.test(modelPrompt) && !K_MORE_RE.test(modelPrompt);
+  const fallbackPrompt = want === 'max' ? 'Which row has the most?' : 'Which row has the fewest?';
+
+  return {
+    title: String(raw.title ?? 'Most and Fewest'),
+    description: String(raw.description ?? 'Count each row, then compare.'),
+    challenge: {
+      id: 'bm-pending',
+      evalMode: 'most_least',
+      values: kRows(cats, counts),
+      graphStyle: 'picture',
+      scale: kScale(Math.max(...counts), cats[0].emoji),
+      prompt: correctlyWorded ? safeKText(modelPrompt, fallbackPrompt) : fallbackPrompt,
+      hint: safeKText(raw.hint, 'Count the pictures in each row. Then look at which row is longest.'),
+      targetBarIndex: targetIdx,
+    },
+  };
+}
+
+// ===========================================================================
+// Sub-generator: match_to_bar — which row shows how many are in the group?
+// ===========================================================================
+
+async function generateMatchToBar(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null, variant = 0): Promise<SubGenResult> {
+  const shape = tier ? resolveProblemShape('match_to_bar', tier) : null;
+  const tierSection = tier ? buildTierPromptSection('match_to_bar', tier) : '';
+  const slots = kCategorySlots(4);
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Warm K title (e.g. 'Match the Buttons')" },
+      description: { type: Type.STRING, description: 'One short line tying the task to the topic' },
+      objectName: { type: Type.STRING, description: "The objects in the group, plural (e.g. 'buttons')" },
+      objectEmoji: { type: Type.STRING, description: 'ONE emoji for that object. Emoji only, no words.' },
+      prompt: { type: Type.STRING, description: 'Ask which row shows the same number as the group. Never say how many.' },
+      hint: { type: Type.STRING, description: 'Hint about counting the group first, then each row. Never says a number.' },
+      ...slots.props,
+    },
+    required: ['title', 'description', 'objectName', 'objectEmoji', 'prompt', 'hint', ...slots.required],
+  };
+
+  const prompt = `Write the WORDS for a Kindergarten matching task: a group of objects, and rows on a graph. The child picks the row that shows the same number (K.MD.B.3).
+
+TOPIC: ${topic}
+AUDIENCE: ${gradeContext}
+INTENT: ${intent}
+
+YOU CHOOSE NO NUMBERS. The app fills the group and the rows after your answer.
+
+RULES:
+${K_AUDIENCE_RULES}
+- objectName + objectEmoji: the thing being counted, e.g. "buttons" and a button emoji.
+- FOUR row names — short child names or places, one or two words. The rows all show
+  the same object, so still give one emoji per row slot even though it is unused.
+- prompt: e.g. "Which row shows the same number of buttons?"
+${kSettingLine(variant)}${tierSection}`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json', responseSchema: schema },
+  });
+  if (!response.text) throw new Error('No content generated (match_to_bar)');
+  const raw = JSON.parse(response.text) as Record<string, unknown>;
+
+  const rowCount = shape?.kRowCount ?? 4;
+  const gap = shape?.kGap ?? 2;
+  const cats = extractCategories(raw, 4).slice(0, rowCount);
+  const objectEmoji = sanitizeEmoji(raw.objectEmoji, '🔘');
+  const objectName = String(raw.objectName ?? 'things').trim() || 'things';
+
+  // Every row shows the SAME object, so the task is purely "how many". Exactly
+  // one rival sits at the tier's gap — that is the tier's claim, so it is built
+  // rather than hoped for — and the rest sit further out. Counts stay 1-10.
+  const match = randInt(3, 8);
+  const near = shuffleInPlace([match - gap, match + gap].filter((v) => v >= 1 && v <= 10));
+  const far = shuffleInPlace(
+    Array.from({ length: 10 }, (_, i) => i + 1).filter((v) => Math.abs(v - match) > gap),
+  );
+  const rivals = [...near.slice(0, 1), ...far].slice(0, rowCount - 1);
+  while (rivals.length < rowCount - 1) rivals.push(Math.max(1, Math.min(10, match + gap + rivals.length)));
+  const targetIdx = randInt(0, rowCount - 1);
+  const counts = [...rivals];
+  counts.splice(targetIdx, 0, match);
+
+  const sourceItems = Array.from({ length: match }, () => ({ emoji: objectEmoji, categoryIndex: 0 }));
+
+  return {
+    title: String(raw.title ?? 'Match the Group'),
+    description: String(raw.description ?? 'Count the group, then find the row that shows the same.'),
+    challenge: {
+      id: 'bm-pending',
+      evalMode: 'match_to_bar',
+      values: cats.map((c, i) => ({ label: c.label, value: counts[i], color: pickColor(i), emoji: objectEmoji })),
+      graphStyle: 'picture',
+      scale: kScale(Math.max(...counts), objectEmoji),
+      prompt: safeKText(raw.prompt, `Which row shows the same number of ${objectName}?`),
+      hint: safeKText(raw.hint, 'Count the group first. Then count each row until you find one that matches.'),
+      sourceItems,
+      sourceScattered: shape?.kScatter ?? false,
+      stimulusCount: match,
+      targetBarIndex: targetIdx,
+    },
+  };
 }
 
 // ===========================================================================
@@ -936,8 +1629,12 @@ RULES:
 // Orchestrator: fan out N parallel sub-generator calls for one eval mode
 // ===========================================================================
 
-function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string, tier?: SupportTier | null) => Promise<SubGenResult> {
+function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string, tier?: SupportTier | null, variant?: number) => Promise<SubGenResult> {
   switch (mode) {
+    case 'build_one_to_one':   return generateBuildOneToOne;
+    case 'read_one_to_one':    return generateReadOneToOne;
+    case 'most_least':         return generateMostLeast;
+    case 'match_to_bar':       return generateMatchToBar;
     case 'read_scale':         return generateReadScale;
     case 'picture_graph':      return generatePictureGraph;
     case 'scaled_bar_graph':   return generateScaledBarGraph;
@@ -995,7 +1692,7 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   // converges per-call, not across independent calls).
   const runOne = subGeneratorFor(mode);
   const subResults = await Promise.all(
-    Array.from({ length: instanceCount }, () => runOne(topic, gradeContext, intent, supportTier)),
+    Array.from({ length: instanceCount }, (_, idx) => runOne(topic, gradeContext, intent, supportTier, idx)),
   );
 
   // First sub-result provides session-level title/description; both are
@@ -1006,6 +1703,22 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
     id: `bm-${idx + 1}`,
   }));
 
+  // N challenges must be N problems. The parallel calls converge often enough
+  // that two K charts can arrive identical; code owns those counts, so a repeat
+  // is rotated into a different problem rather than re-drawn from the model.
+  if (K_MODES.has(mode)) {
+    spreadKAnswerPositions(challenges);
+    const seen = new Set<string>();
+    for (const ch of challenges) {
+      let key = kCardKey(ch);
+      for (let attempt = 0; seen.has(key) && attempt < ch.values.length; attempt++) {
+        rotateKCounts(ch);
+        key = kCardKey(ch);
+      }
+      seen.add(key);
+    }
+  }
+
   // Apply the support tier deterministically AFTER structural assembly. Resolve
   // each challenge's scaffold from its OWN mode (so a future blended session
   // still gets difficulty); single-mode just gives every challenge the same one.
@@ -1015,6 +1728,7 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
       const sc = resolveSupportStructure(ch.evalMode, supportTier);
       ch.showBarValues = sc.showBarValues;
       ch.showTargetHighlight = sc.showTargetHighlight;
+      if (sc.showPlacedCount !== undefined) ch.showPlacedCount = sc.showPlacedCount;
       ch.supportTier = supportTier;
     }
     console.log(`[BarModel] Support tier "${supportTier}" applied per-challenge (single-mode ${mode})`);

@@ -10,8 +10,8 @@ import { ComponentDefinition } from '../../../types';
 export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'bar-model',
-    description: 'K-5 categorical-data graph: simple comparison bars (K-1), scaled bar graphs with step-2/5/10 axes (3.MD.B.3), and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction; not for histograms or numeric distributions.',
-    constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
+    description: 'K-5 categorical-data graph. K one-to-one data (K.MD.B.3): record a pile of objects onto a sticker chart one sticker per object, read a graph where one picture stands for one thing, match a group of objects to the row that shows that many, and say which row has the most or the fewest. K-1 also has a two-bar which-is-taller comparison. Grades 2-5: scaled bar graphs with step-2/5/10 axes (3.MD.B.3) and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction, from tally-and-sticker recording to scaled construction; not for histograms or numeric distributions.',
+    constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. K one-to-one modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) show one picture per object with no axis to read, print no numbers on the graph, and keep every count within 1-10; each row carries its own emoji so a pre-reader can tell the rows apart. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
     affordances: { representation: 'pictorial', answers: ['tap'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Work through {{totalChallenges}} {{graphStyle}} graph challenges. Mode: {{evalMode}}. Currently on challenge {{currentChallengeIndex}}. Values: {{values}}.',
@@ -40,6 +40,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'Never just say "bigger" — always tie bar size to the actual quantity it represents.',
         },
         {
+          title: 'K ONE-TO-ONE COACHING',
+          instruction:
+            'For the K modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) the whole '
+            + 'skill is one-to-one correspondence: ONE picture for ONE thing. Coach the touching, not '
+            + 'the number — "touch each one as you say it", "did every animal get a sticker?". NEVER '
+            + 'say how many are in a pile, a row or a group, and never name the row that wins; that is '
+            + 'the answer. If the child loses their place, say "start at this end and go one at a time" '
+            + 'rather than counting for them. Keep every sentence short enough to be read aloud to a '
+            + 'five-year-old.',
+        },
+        {
           title: 'BUILD_GRAPH SCALE-CHOICE COACHING',
           instruction:
             'When the student is constructing a graph, the scale choice IS the learning goal '
@@ -52,12 +63,48 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     evalModes: [
       {
+        evalMode: 'read_one_to_one',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] },
+        label: 'Read a One-to-One Graph (K)',
+        beta: 1.2,
+        scaffoldingMode: 1,
+        challengeTypes: ['read_one_to_one'],
+        description: 'Count the pictures in the row the question names, where one picture = one thing. K.MD.B.3.',
+      },
+      {
+        evalMode: 'most_least',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] },
+        label: 'Most and Fewest (K)',
+        beta: 1.4,
+        scaffoldingMode: 1,
+        challengeTypes: ['most_least'],
+        description: 'Say which of 3-4 one-to-one rows has the most or the fewest. K.MD.B.3.',
+      },
+      {
         evalMode: 'compare_bars',
         label: 'Compare Bars (K-1)',
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['compare_bars'],
         description: 'Identify which of two bars is taller. K.MD.A.2.',
+      },
+      {
+        evalMode: 'match_to_bar',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] },
+        label: 'Match a Group to a Row (K)',
+        beta: 1.6,
+        scaffoldingMode: 1,
+        challengeTypes: ['match_to_bar'],
+        description: 'Count a group of objects, then pick the row that shows that many. K.MD.B.3.',
+      },
+      {
+        evalMode: 'build_one_to_one',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'build'] },
+        label: 'Build a Sticker Chart (K)',
+        beta: 1.8,
+        scaffoldingMode: 1,
+        challengeTypes: ['build_one_to_one'],
+        description: 'Record a mixed pile of objects onto a chart, one sticker per object. K.MD.B.3.',
       },
       {
         evalMode: 'read_scale',

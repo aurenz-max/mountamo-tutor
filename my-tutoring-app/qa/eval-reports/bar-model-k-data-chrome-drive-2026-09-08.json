@@ -1,0 +1,25 @@
+{
+  "log": [
+    "PASS build: generated challenges arrived",
+    "PASS build: the prompt is on screen (\"Put one sticker in a row for each toy yo…\")",
+    "PASS build: the pile panel rendered",
+    "PASS build: empty sticker slots rendered (24)",
+    "PASS build: a placed-count chip per row (3/3)",
+    "PASS build: no row prints its answer",
+    "PASS build: 3 tappable rows for 3 categories",
+    "PASS build: a short chart is judged wrong",
+    "PASS build: the hint appears after a wrong try",
+    "PASS build: the exact chart is judged correct",
+    "PASS build: the session advances",
+    "PASS most_least: generated",
+    "PASS most_least: a wrong row is judged wrong",
+    "PASS most_least: the winning row is judged correct",
+    "PASS most_least: rendered",
+    "PASS read: options generated",
+    "PASS read: 4 options rendered",
+    "PASS read: a wrong count is judged wrong",
+    "PASS read: the true count is judged correct",
+    "PASS match: the group panel rendered",
+    "PASS match: the matching row is judged correct"
+  ]
+}

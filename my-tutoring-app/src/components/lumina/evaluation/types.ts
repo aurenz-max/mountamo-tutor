@@ -880,6 +880,10 @@ export interface BarModelMetrics extends BasePrimitiveMetrics {
 
   // Which mode the session practiced (all challenges share a mode)
   evalMode:
+    | 'build_one_to_one'
+    | 'read_one_to_one'
+    | 'match_to_bar'
+    | 'most_least'
     | 'compare_bars'
     | 'read_scale'
     | 'picture_graph'

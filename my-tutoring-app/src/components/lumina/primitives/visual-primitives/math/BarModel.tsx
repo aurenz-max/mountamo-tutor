@@ -31,6 +31,11 @@ import {
 export type BarModelGraphStyle = 'bar' | 'scaled_bar' | 'picture';
 
 export type BarModelEvalMode =
+  // K one-to-one data family (K.MD.B.3) — one icon per object, no scale to read.
+  | 'build_one_to_one'
+  | 'read_one_to_one'
+  | 'match_to_bar'
+  | 'most_least'
   | 'compare_bars'
   | 'read_scale'
   | 'picture_graph'
@@ -49,6 +54,8 @@ export interface BarValue {
   label: string;
   value: number;
   color?: string;
+  /** Per-row icon for one-to-one picture rows. Falls back to scale.iconEmoji. */
+  emoji?: string;
 }
 
 export interface BarModelChallenge {
@@ -66,6 +73,14 @@ export interface BarModelChallenge {
   expectedDataset?: { label: string; value: number }[];
   expectedScaleStep?: number;
   availableScaleSteps?: number[];
+  /** K one-to-one: the collection the child records from (build) or counts (match). */
+  sourceItems?: { emoji: string; categoryIndex: number }[];
+  /** K one-to-one: draw the source as a mixed pile rather than tidy groups. */
+  sourceScattered?: boolean;
+  /** build_one_to_one answer key — the true count for each row, in row order. */
+  expectedCounts?: number[];
+  /** match_to_bar: how many objects are in the stimulus cluster. */
+  stimulusCount?: number;
   /**
    * Support-tier scaffolds (set by the generator from config.difficulty).
    * showBarValues = numeric readout next to NON-answer bars; showTargetHighlight
@@ -73,6 +88,8 @@ export interface BarModelChallenge {
    */
   showBarValues?: boolean;
   showTargetHighlight?: boolean;
+  /** build_one_to_one: show how many stickers the child has placed so far. */
+  showPlacedCount?: boolean;
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
@@ -140,6 +157,10 @@ interface BarsAreaProps {
   showBarValues?: boolean;
   /** The bar whose value IS the answer — its number is NEVER shown, at any tier. */
   answerBarIndex?: number | null;
+  /** K build: mark empty picture cells so the child can see where a sticker goes. */
+  showEmptySlots?: boolean;
+  /** K build: show how many stickers the child has placed in each row so far. */
+  showPlacedCount?: boolean;
 }
 
 const BarsArea: React.FC<BarsAreaProps> = ({
@@ -153,8 +174,14 @@ const BarsArea: React.FC<BarsAreaProps> = ({
   feedbackIndex = null,
   showBarValues = true,
   answerBarIndex = null,
+  showEmptySlots = false,
+  showPlacedCount = false,
 }) => {
-  const showAxis = (graphStyle === 'scaled_bar' || graphStyle === 'picture') && !!scale;
+  // A one-to-one chart carries NO numeric axis: the icons are the count, and a
+  // numbered axis under them lets the child read the answer off the scale
+  // instead of counting — which is the K skill itself. Scaled bars and 1-icon-
+  // = N picture graphs keep theirs; reading the axis is their skill.
+  const showAxis = (graphStyle === 'scaled_bar' || (graphStyle === 'picture' && (scale?.iconValue ?? 1) > 1)) && !!scale;
   const maxBar = Math.max(1, ...values.map((v) => v.value));
   const axisMax = scale?.max ?? maxBar;
   const ticks = useMemo(() => {
@@ -169,7 +196,7 @@ const BarsArea: React.FC<BarsAreaProps> = ({
   return (
     <div className="w-full">
       {/* Picture graph key */}
-      {graphStyle === 'picture' && scale?.iconEmoji && scale?.iconValue ? (
+      {graphStyle === 'picture' && scale?.iconEmoji && (scale?.iconValue ?? 1) > 1 ? (
         <div className="mb-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-white/10 text-sm text-slate-200">
           <span className="text-xl leading-none">{scale.iconEmoji}</span>
           <span className="font-mono">= {scale.iconValue} items</span>
@@ -225,19 +252,23 @@ const BarsArea: React.FC<BarsAreaProps> = ({
 
             return (
               <div key={i} className="space-y-1">
-                <div className="flex text-sm">
+                <div className="flex items-center gap-2 text-sm">
                   <span className={`font-medium ${isHighlighted ? 'text-amber-300' : 'text-slate-200'}`}>
                     {item.label}
                   </span>
+                  {showPlacedCount ? (
+                    <span className="font-mono text-xs text-slate-400">{item.value} placed</span>
+                  ) : null}
                 </div>
 
-                {graphStyle === 'picture' && scale?.iconEmoji && scale?.iconValue ? (
+                {graphStyle === 'picture' && (item.emoji || scale?.iconEmoji) ? (
                   <PictureBar
                     value={item.value}
-                    iconEmoji={scale.iconEmoji}
-                    iconValue={scale.iconValue}
+                    iconEmoji={item.emoji ?? scale?.iconEmoji ?? '⭐'}
+                    iconValue={scale?.iconValue ?? 1}
                     axisMax={axisMax}
                     ringClass={ringClass}
+                    showEmptySlots={showEmptySlots}
                     onClick={clickable && onBarClick ? () => onBarClick(i) : undefined}
                   />
                 ) : (
@@ -301,10 +332,11 @@ interface PictureBarProps {
   iconValue: number;
   axisMax: number;
   ringClass: string;
+  showEmptySlots?: boolean;
   onClick?: () => void;
 }
 
-const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, axisMax, ringClass, onClick }) => {
+const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, axisMax, ringClass, showEmptySlots = false, onClick }) => {
   const iconCount = Math.max(0, Math.round(value / iconValue));
   const maxIconCount = Math.max(1, Math.ceil(axisMax / iconValue));
 
@@ -317,13 +349,73 @@ const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, ax
       style={{ gridTemplateColumns: `repeat(${maxIconCount}, minmax(0, 1fr))` }}
     >
       {Array.from({ length: maxIconCount }).map((_, i) => (
-        <span key={i} className="text-2xl text-center leading-none select-none">
-          {i < iconCount ? iconEmoji : ' '}
+        <span
+          key={i}
+          className={`text-2xl text-center leading-none select-none ${i < iconCount ? '' : 'text-white/20'}`}
+        >
+          {i < iconCount ? iconEmoji : (showEmptySlots ? '○' : ' ')}
         </span>
       ))}
     </button>
   );
 };
+
+// ---------------------------------------------------------------------------
+// K one-to-one data family (build_one_to_one, read_one_to_one, match_to_bar,
+// most_least). The pile the child records from — or, in match_to_bar, the group
+// they count before choosing a row. Never labelled with its own total.
+// ---------------------------------------------------------------------------
+
+interface SourceCollectionProps {
+  items: { emoji: string; categoryIndex: number }[];
+  scattered?: boolean;
+  heading: string;
+}
+
+const SourceCollection: React.FC<SourceCollectionProps> = ({ items, scattered = false, heading }) => (
+  <LuminaPanel className="px-4 py-4">
+    <div className="text-center">
+      <LuminaSectionLabel accent="cyan" size="sm">{heading}</LuminaSectionLabel>
+    </div>
+    <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+      {items.map((item, i) => (
+        <span
+          key={i}
+          className="text-3xl leading-none select-none"
+          // Jitter is index-derived, not random: a re-render must never move an
+          // object mid-count. Scatter is the hard tier's structural lever.
+          style={scattered ? { transform: `translateY(${((i * 7) % 5) - 2}px) rotate(${((i * 13) % 21) - 10}deg)` } : undefined}
+        >
+          {item.emoji}
+        </span>
+      ))}
+    </div>
+  </LuminaPanel>
+);
+
+interface StickerControlsProps {
+  values: BarValue[];
+  onRemove: (i: number) => void;
+  disabled?: boolean;
+}
+
+/** Undo affordance for the sticker chart. Placing is done on the row itself. */
+const StickerControls: React.FC<StickerControlsProps> = ({ values, onRemove, disabled }) => (
+  <div className="flex flex-wrap justify-center gap-2">
+    {values.map((v, i) => (
+      <LuminaButton
+        key={i}
+        size="sm"
+        tone="ghost"
+        disabled={disabled || v.value === 0}
+        onClick={() => { SoundManager.tick(); onRemove(i); }}
+        className="px-3 py-1.5"
+      >
+        {`Take one off ${v.label}`}
+      </LuminaButton>
+    ))}
+  </div>
+);
 
 // ---------------------------------------------------------------------------
 // Build-graph controls (used only for build_graph mode)
@@ -415,6 +507,19 @@ const BuildControls: React.FC<BuildControlsProps> = ({
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   graph: { label: 'Graph', icon: '📊', accentColor: 'emerald' },
 };
+
+/** Modes answered by tapping a row: the answer key is targetBarIndex. */
+const ROW_TAP_MODES = new Set<BarModelEvalMode>(['compare_bars', 'most_least', 'match_to_bar']);
+
+/** Modes answered by picking a number from the options row. */
+const OPTION_MODES = new Set<BarModelEvalMode>([
+  'read_one_to_one', 'read_scale', 'picture_graph', 'scaled_bar_graph', 'graph_word_problem',
+]);
+
+/** Modes whose answer IS a row's own count, so that row never shows its number. */
+const READ_ROW_MODES = new Set<BarModelEvalMode>([
+  'read_one_to_one', 'read_scale', 'picture_graph', 'scaled_bar_graph',
+]);
 
 /**
  * Keep the tutor's reveal level in sync with the on-screen support tier so it
@@ -694,11 +799,39 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   // ── Interaction handlers ───────────────────────────────────────────────────
   const handleBarClick = (i: number) => {
     if (!currentChallenge || feedback === 'correct' || isComplete) return;
-    if (currentChallenge.evalMode === 'compare_bars') {
+    // K sticker chart: tapping a row places one sticker in it. The row's own
+    // capacity is two cells longer than the answer, so running out of room can
+    // never tell the child they are finished.
+    if (currentChallenge.evalMode === 'build_one_to_one') {
+      const capacity = currentChallenge.scale?.max ?? 10;
+      SoundManager.tick();
+      setBuiltValues((prev) => prev.map((v, idx) => (
+        idx === i ? { ...v, value: Math.min(capacity, v.value + 1) } : v
+      )));
+      setFeedback(null);
+      return;
+    }
+    if (ROW_TAP_MODES.has(currentChallenge.evalMode)) {
       const correct = currentChallenge.targetBarIndex === i;
       setSelectedBarIndex(i);
       submitResult(correct, { selectedIndex: i });
     }
+  };
+
+  const handleStickerRemove = (i: number) => {
+    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    setBuiltValues((prev) => prev.map((v, idx) => (
+      idx === i ? { ...v, value: Math.max(0, v.value - 1) } : v
+    )));
+    setFeedback(null);
+  };
+
+  const handleStickerSubmit = () => {
+    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    const expected = currentChallenge.expectedCounts ?? [];
+    const correct = expected.length === builtValues.length
+      && expected.every((n, i) => builtValues[i]?.value === n);
+    submitResult(correct, { placedCounts: builtValues.map((v) => v.value) });
   };
 
   const handleOptionClick = (opt: number) => {
@@ -730,8 +863,10 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   };
 
   // ── Derived render data ────────────────────────────────────────────────────
+  const isStickerBuild = currentChallenge?.evalMode === 'build_one_to_one';
+
   const valuesToRender: BarValue[] =
-    currentChallenge?.evalMode === 'build_graph'
+    currentChallenge?.evalMode === 'build_graph' || isStickerBuild
       ? builtValues
       : (currentChallenge?.values ?? []);
 
@@ -740,21 +875,14 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
       ? { ...currentChallenge.scale, step: chosenStep ?? currentChallenge.scale.step }
       : currentChallenge?.scale;
 
-  const showOptions = currentChallenge && (
-    currentChallenge.evalMode === 'read_scale'
-    || currentChallenge.evalMode === 'picture_graph'
-    || currentChallenge.evalMode === 'scaled_bar_graph'
-    || currentChallenge.evalMode === 'graph_word_problem'
-  );
+  const showOptions = !!currentChallenge && OPTION_MODES.has(currentChallenge.evalMode);
 
   // The bar named by the prompt (read modes only). Its value is the answer, so
   // BarsArea hides it at every tier regardless of the highlight cue below.
   const answerBarIndex =
-    currentChallenge && (
-      currentChallenge.evalMode === 'read_scale'
-      || currentChallenge.evalMode === 'picture_graph'
-      || currentChallenge.evalMode === 'scaled_bar_graph'
-    ) && typeof currentChallenge.targetBarIndex === 'number'
+    currentChallenge
+      && READ_ROW_MODES.has(currentChallenge.evalMode)
+      && typeof currentChallenge.targetBarIndex === 'number'
       ? currentChallenge.targetBarIndex
       : null;
 
@@ -765,8 +893,9 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
       ? answerBarIndex
       : null;
 
-  const compareFeedback =
-    currentChallenge?.evalMode === 'compare_bars' && selectedBarIndex != null && feedback
+  const rowTapFeedback =
+    currentChallenge && ROW_TAP_MODES.has(currentChallenge.evalMode)
+      && selectedBarIndex != null && feedback
       ? { index: selectedBarIndex, correct: feedback === 'correct' }
       : null;
 
@@ -832,6 +961,14 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                 <span className="text-base">{currentChallenge.prompt}</span>
               </LuminaPrompt>
 
+              {currentChallenge.sourceItems && currentChallenge.sourceItems.length > 0 ? (
+                <SourceCollection
+                  items={currentChallenge.sourceItems}
+                  scattered={currentChallenge.sourceScattered}
+                  heading={isStickerBuild ? 'Everything we found' : 'Count this group'}
+                />
+              ) : null}
+
               <div className="px-2">
                 <BarsArea
                   values={valuesToRender}
@@ -839,13 +976,41 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                   scale={scaleToRender}
                   highlightedIndex={highlightedIndex}
                   selectedIndex={selectedBarIndex}
-                  onBarClick={currentChallenge.evalMode === 'compare_bars' ? handleBarClick : undefined}
-                  clickable={currentChallenge.evalMode === 'compare_bars' && feedback !== 'correct'}
-                  feedbackIndex={compareFeedback}
+                  onBarClick={
+                    isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode)
+                      ? handleBarClick
+                      : undefined
+                  }
+                  clickable={
+                    (isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode))
+                    && feedback !== 'correct'
+                  }
+                  feedbackIndex={rowTapFeedback}
                   showBarValues={currentChallenge.showBarValues ?? true}
                   answerBarIndex={answerBarIndex}
+                  showEmptySlots={isStickerBuild}
+                  showPlacedCount={isStickerBuild && (currentChallenge.showPlacedCount ?? true)}
                 />
               </div>
+
+              {isStickerBuild ? (
+                <div className="space-y-4">
+                  <StickerControls
+                    values={builtValues}
+                    onRemove={handleStickerRemove}
+                    disabled={feedback === 'correct'}
+                  />
+                  <div className="flex justify-center">
+                    <LuminaActionButton
+                      action="check"
+                      disabled={feedback === 'correct'}
+                      onClick={handleStickerSubmit}
+                    >
+                      Check my chart
+                    </LuminaActionButton>
+                  </div>
+                </div>
+              ) : null}
 
               {showOptions && currentChallenge.options && currentChallenge.options.length > 0 ? (
                 <div className="flex flex-wrap justify-center gap-3 pt-2">

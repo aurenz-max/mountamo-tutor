@@ -1,0 +1,1483 @@
+{
+  "startedAt": "2026-09-09T02:05:04.220Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "build_one_to_one/none draw 1",
+      "mode": "build_one_to_one",
+      "tier": "",
+      "failures": [],
+      "title": "Our Toy Bin Chart",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Put one sticker in a row for each toy you find.",
+          "hint": "Match one sticker to one toy, just like lining up to go outside.",
+          "rows": [
+            "🧱Blocks=0",
+            "🚗Cras=0",
+            "🧸Bears=0"
+          ],
+          "expectedCounts": [
+            6,
+            2,
+            7
+          ],
+          "pile": "🧱🧸🧸🚗🚗🧸🧱🧱🧸🧸🧱🧱🧸🧸🧱",
+          "rowCapacity": 9
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Put one sticker in a row for each snack you see.",
+          "hint": "Match one sticker to one snack so nobody misses out.",
+          "rows": [
+            "🍎Apples=0",
+            "🍘Crackers=0",
+            "🧀Cheese=0"
+          ],
+          "expectedCounts": [
+            5,
+            2,
+            4
+          ],
+          "pile": "🧀🍘🍎🧀🍎🧀🍎🍘🧀🍎🍎",
+          "rowCapacity": 7
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Match one sticker to one toy so none get missed.",
+          "rows": [
+            "⚽Balls=0",
+            "🧶Jump Ropes=0",
+            "🪣Buckets=0"
+          ],
+          "expectedCounts": [
+            7,
+            2,
+            6
+          ],
+          "pile": "🪣⚽🪣🧶⚽⚽⚽⚽🪣🧶🪣🪣⚽⚽🪣",
+          "rowCapacity": 9
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Put one sticker in a row for each vegetable you see.",
+          "hint": "Match one sticker to each vegetable so nothing gets missed.",
+          "rows": [
+            "🥕Carrots=0",
+            "🍅Tomatoes=0",
+            "🟢Peas=0"
+          ],
+          "expectedCounts": [
+            5,
+            4,
+            6
+          ],
+          "pile": "🍅🥕🟢🥕🍅🥕🥕🟢🟢🍅🥕🟢🟢🍅🟢",
+          "rowCapacity": 8
+        }
+      ]
+    },
+    {
+      "label": "build_one_to_one/easy draw 1",
+      "mode": "build_one_to_one",
+      "tier": "easy",
+      "failures": [],
+      "title": "Our Toy Box Chart",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Put one sticker for each toy so none are left out.",
+          "rows": [
+            "🧱Blocks=0",
+            "🚗Cars=0"
+          ],
+          "expectedCounts": [
+            4,
+            5
+          ],
+          "pile": "🧱🧱🧱🧱🚗🚗🚗🚗🚗",
+          "rowCapacity": 7,
+          "showPlacedCount": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Put one sticker in a row for each snack you see.",
+          "hint": "Put one sticker for every snack.",
+          "rows": [
+            "🍎Apples=0",
+            "🍌Bananas=0"
+          ],
+          "expectedCounts": [
+            3,
+            4
+          ],
+          "pile": "🍎🍎🍎🍌🍌🍌🍌",
+          "rowCapacity": 6,
+          "showPlacedCount": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Match one sticker to each toy so none are left out.",
+          "rows": [
+            "⚽Balls=0",
+            "🧶Jump Ropes=0"
+          ],
+          "expectedCounts": [
+            4,
+            7
+          ],
+          "pile": "⚽⚽⚽⚽🧶🧶🧶🧶🧶🧶🧶",
+          "rowCapacity": 9,
+          "showPlacedCount": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Put one sticker in a row for each vegetable you see.",
+          "hint": "Put one sticker for each vegetable.",
+          "rows": [
+            "🥕Carrots=0",
+            "🍅Tomatoes=0"
+          ],
+          "expectedCounts": [
+            3,
+            6
+          ],
+          "pile": "🥕🥕🥕🍅🍅🍅🍅🍅🍅",
+          "rowCapacity": 8,
+          "showPlacedCount": true,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        }
+      ]
+    },
+    {
+      "label": "build_one_to_one/medium draw 1",
+      "mode": "build_one_to_one",
+      "tier": "medium",
+      "failures": [],
+      "title": "Our Toy Bin Chart",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Match one sticker to one toy as you sort them out.",
+          "rows": [
+            "🧱Blocks=0",
+            "🚗Cars=0",
+            "🧸Bears=0"
+          ],
+          "expectedCounts": [
+            4,
+            3,
+            6
+          ],
+          "pile": "🧱🧸🧸🧱🧱🚗🚗🧸🧸🚗🧱🧸🧸",
+          "rowCapacity": 8,
+          "showPlacedCount": true,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Put one sticker in a row for each snack you see.",
+          "hint": "Match one sticker to one snack so no snack is left out.",
+          "rows": [
+            "🍎Apples=0",
+            "🍘Crackers=0",
+            "🧀Cheese=0"
+          ],
+          "expectedCounts": [
+            5,
+            2,
+            3
+          ],
+          "pile": "🍎🍎🍘🍎🍎🧀🍘🧀🍎🧀",
+          "rowCapacity": 7,
+          "showPlacedCount": true,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Match one sticker to each toy so you do not miss any.",
+          "rows": [
+            "⚽Balls=0",
+            "🪣Buckets=0",
+            "🥄Shovels=0"
+          ],
+          "expectedCounts": [
+            3,
+            5,
+            7
+          ],
+          "pile": "🪣🥄🥄⚽🥄🥄🥄🥄🪣⚽🪣🪣🥄🪣⚽",
+          "rowCapacity": 9,
+          "showPlacedCount": true,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Put one sticker in a row for each vegetable you see.",
+          "hint": "Check each vegetable one by one so you do not miss any.",
+          "rows": [
+            "🥕Carrots=0",
+            "🍅Tomatoes=0",
+            "🟢Peas=0"
+          ],
+          "expectedCounts": [
+            7,
+            4,
+            2
+          ],
+          "pile": "🥕🍅🟢🥕🥕🍅🥕🍅🥕🥕🥕🍅🟢",
+          "rowCapacity": 9,
+          "showPlacedCount": true,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        }
+      ]
+    },
+    {
+      "label": "build_one_to_one/hard draw 1",
+      "mode": "build_one_to_one",
+      "tier": "hard",
+      "failures": [],
+      "title": "Our Toy Bin Chart",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Check each toy carefully and place one sticker for every single one.",
+          "rows": [
+            "🧱Blocks=0",
+            "🧸Bears=0",
+            "🚗Cars=0",
+            "⚽Balls=0"
+          ],
+          "expectedCounts": [
+            3,
+            4,
+            5,
+            9
+          ],
+          "pile": "🧸🧱⚽🧱⚽🧸🧸🚗⚽🧱⚽⚽🚗⚽⚽🚗🧸⚽🚗🚗⚽",
+          "rowCapacity": 11,
+          "showPlacedCount": false,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Put one sticker in a row for each snack you see.",
+          "hint": "Check each snack and put one sticker for it.",
+          "rows": [
+            "🍎Apples=0",
+            "🍘Crackers=0",
+            "🧀Cheese=0",
+            "🍇Grapes=0"
+          ],
+          "expectedCounts": [
+            9,
+            6,
+            7,
+            4
+          ],
+          "pile": "🍇🧀🍎🧀🍇🧀🧀🍎🍘🍎🍎🍘🍎🍎🍘🍎🧀🍘🧀🍇🧀🍎🍎🍇🍘🍘",
+          "rowCapacity": 11,
+          "showPlacedCount": false,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Put one sticker in a row for each toy you see.",
+          "hint": "Check every toy and match one sticker to one toy.",
+          "rows": [
+            "⚽Balls=0",
+            "🪣Buckets=0",
+            "🪁Kites=0",
+            "🚚Trucks=0"
+          ],
+          "expectedCounts": [
+            7,
+            6,
+            5,
+            4
+          ],
+          "pile": "🪣🪁🪣⚽⚽🪁🪣🪣🪁🚚🪣🪁⚽⚽⚽🚚⚽🚚🪣🚚🪁⚽",
+          "rowCapacity": 9,
+          "showPlacedCount": false,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Put one sticker in a row for each vegetable you find.",
+          "hint": "Match one sticker to one vegetable as you go.",
+          "rows": [
+            "🥕Carrots=0",
+            "🟢Peas=0",
+            "🍅Tomatoes=0",
+            "🫑Peppers=0"
+          ],
+          "expectedCounts": [
+            6,
+            3,
+            9,
+            4
+          ],
+          "pile": "🟢🥕🍅🥕🥕🥕🍅🫑🍅🥕🟢🍅🥕🍅🍅🍅🍅🟢🍅🫑🫑🫑",
+          "rowCapacity": 11,
+          "showPlacedCount": false,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "read_one_to_one/none draw 1",
+      "mode": "read_one_to_one",
+      "tier": "",
+      "failures": [],
+      "title": "Toys in Our Bin",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "How many blocks do we have in our toy bin?",
+          "hint": "Touch each block with your finger as you count them one by one.",
+          "rows": [
+            "🧱Blocks=3",
+            "🖍️Crayons=7",
+            "🚗Cars=9",
+            "🧸Bears=2"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 3,
+          "options": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "pile": "",
+          "rowCapacity": 9
+        },
+        {
+          "id": "bm-2",
+          "prompt": "How many friends picked an apple?",
+          "hint": "Touch each apple with your finger as you count them.",
+          "rows": [
+            "🍎Apple=9",
+            "🍌Banana=5",
+            "🍪Cookie=6",
+            "🧀Cheese=4"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 9,
+          "options": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "pile": "",
+          "rowCapacity": 9
+        },
+        {
+          "id": "bm-3",
+          "prompt": "How many friends are playing on the swings?",
+          "hint": "Touch each swing one by one as you count them.",
+          "rows": [
+            "🎠Swings=6",
+            "🛝Slides=8",
+            "⚽Balls=9",
+            "🚲Bikes=2"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 6,
+          "options": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "pile": "",
+          "rowCapacity": 9
+        },
+        {
+          "id": "bm-4",
+          "prompt": "How many carrots are growing in the garden?",
+          "hint": "Touch each carrot as you count them one by one.",
+          "rows": [
+            "🥕Carrots=3",
+            "🍅Tomatoes=8",
+            "🟢Peas=5",
+            "🌽Corn=6"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 3,
+          "options": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "pile": "",
+          "rowCapacity": 8
+        },
+        {
+          "id": "bm-5",
+          "prompt": "How many fish are in the window?",
+          "hint": "Touch each fish with your finger as you count them one by one.",
+          "rows": [
+            "🐶Puppies=2",
+            "🐱Kittens=8",
+            "🐠Fish=5",
+            "🐰Bunnies=4"
+          ],
+          "targetBarIndex": 2,
+          "expectedValue": 5,
+          "options": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "pile": "",
+          "rowCapacity": 8
+        }
+      ]
+    },
+    {
+      "label": "read_one_to_one/easy draw 1",
+      "mode": "read_one_to_one",
+      "tier": "easy",
+      "failures": [],
+      "title": "Our Toy Bin",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "How many blocks are in the toy bin?",
+          "hint": "Touch each block one by one as you count them.",
+          "rows": [
+            "🧱Blocks=6",
+            "🖍️Crayons=3",
+            "🧩Puzzles=2"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 6,
+          "options": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "pile": "",
+          "rowCapacity": 6,
+          "showTargetHighlight": true,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "How many children picked Apples for snack?",
+          "hint": "Touch each Apple with your finger as you count them one by one.",
+          "rows": [
+            "🍎Apples=4",
+            "🍌Bananas=1",
+            "🍘Crackers=2"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 4,
+          "options": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "pile": "",
+          "rowCapacity": 4,
+          "showTargetHighlight": true,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "How many children are playing on the swings?",
+          "hint": "Touch each swing picture one by one as you count them.",
+          "rows": [
+            "🛝Swings=4",
+            "🎢Slides=2",
+            "🏖️Sand=1"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 4,
+          "options": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "pile": "",
+          "rowCapacity": 4,
+          "showTargetHighlight": true,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "How many Carrots are growing in the garden?",
+          "hint": "Touch each carrot with your finger as you count them one by one.",
+          "rows": [
+            "🥕Carrots=5",
+            "🍅Tomatoes=2",
+            "🟢Peas=3"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 5,
+          "options": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "pile": "",
+          "rowCapacity": 5,
+          "showTargetHighlight": true,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-5",
+          "prompt": "How many puppies are looking out the window?",
+          "hint": "Touch each puppy with your finger as you count.",
+          "rows": [
+            "🐶Puppies=6",
+            "🐱Kittens=3",
+            "🦜Parrots=4"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 6,
+          "options": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "pile": "",
+          "rowCapacity": 6,
+          "showTargetHighlight": true,
+          "supportTier": "easy"
+        }
+      ]
+    },
+    {
+      "label": "read_one_to_one/medium draw 1",
+      "mode": "read_one_to_one",
+      "tier": "medium",
+      "failures": [],
+      "title": "Our Toy Bin",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "How many blocks are in the toy bin?",
+          "hint": "Touch each block with your finger as you count them one by one.",
+          "rows": [
+            "🧱Blocks=5",
+            "🚗Cars=9",
+            "🧸Bears=3",
+            "🥁Drums=6"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 5,
+          "options": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "pile": "",
+          "rowCapacity": 9,
+          "showTargetHighlight": true,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "How many friends brought apples?",
+          "hint": "Touch each picture with your finger as you count.",
+          "rows": [
+            "🍎Apples=9",
+            "🍘Crackers=4",
+            "🧀Cheese=2",
+            "🍇Grapes=6"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 9,
+          "options": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "pile": "",
+          "rowCapacity": 9,
+          "showTargetHighlight": true,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "How many children are on the swings?",
+          "hint": "Touch each swing as you count them one by one.",
+          "rows": [
+            "🎠Swings=6",
+            "🛝Slides=7",
+            "⚽Balls=2",
+            "🚲Bikes=4"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 6,
+          "options": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": true,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "How many carrots are growing in the garden?",
+          "hint": "Touch each carrot as you count them one by one.",
+          "rows": [
+            "🥕Carrots=2",
+            "🟢Peas=7",
+            "🌽Corn=3",
+            "🍅Tomatoes=5"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 2,
+          "options": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": true,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-5",
+          "prompt": "How many fish are in the pet shop window?",
+          "hint": "Touch each fish as you count them one by one.",
+          "rows": [
+            "🐠Fish=4",
+            "🐰Bunnies=6",
+            "🐢Turtles=9",
+            "🦜Birds=5"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 4,
+          "options": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "pile": "",
+          "rowCapacity": 9,
+          "showTargetHighlight": true,
+          "supportTier": "medium"
+        }
+      ]
+    },
+    {
+      "label": "read_one_to_one/hard draw 1",
+      "mode": "read_one_to_one",
+      "tier": "hard",
+      "failures": [],
+      "title": "Toy Box Fun",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "How many blocks are in the toy bin?",
+          "hint": "Touch each picture one by one as you count.",
+          "rows": [
+            "🧱Blocks=6",
+            "🚗Cars=5",
+            "⚽Balls=7",
+            "🧸Bears=2",
+            "🪆Dolls=3"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 6,
+          "options": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "How many children brought apples for snack?",
+          "hint": "Touch each snack picture as you count them.",
+          "rows": [
+            "🍎Apples=4",
+            "🍌Bananas=3",
+            "🍘Crackers=5",
+            "🧀Cheese=9",
+            "🍇Grapes=8"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 4,
+          "options": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "pile": "",
+          "rowCapacity": 9,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "How many children are playing on the swings?",
+          "hint": "Touch each picture carefully as you count them",
+          "rows": [
+            "🛝Swings=8",
+            "🎢Slides=7",
+            "⚽Balls=9",
+            "🚲Bikes=6",
+            "🪁Kites=2"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 8,
+          "options": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "pile": "",
+          "rowCapacity": 9,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "How many Carrots are growing in the garden?",
+          "hint": "Touch each vegetable picture one by one as you count.",
+          "rows": [
+            "🥕Carrots=4",
+            "🍅Tomatoes=3",
+            "🫑Peppers=5",
+            "🥬Lettuce=2",
+            "🌽Corn=7"
+          ],
+          "targetBarIndex": 0,
+          "expectedValue": 4,
+          "options": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-5",
+          "prompt": "How many little ferrets do you see?",
+          "hint": "Touch each ferret in its row as you count them one by one.",
+          "rows": [
+            "🐶Puppies=9",
+            "🐱Kittens=7",
+            "🦦Ferrets=8",
+            "🐰Bunnies=5",
+            "🦜Parrots=6"
+          ],
+          "targetBarIndex": 2,
+          "expectedValue": 8,
+          "options": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "pile": "",
+          "rowCapacity": 9,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "most_least/none draw 1",
+      "mode": "most_least",
+      "tier": "",
+      "failures": [],
+      "title": "Toy Bin Fun",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Which toy has the least votes?",
+          "hint": "Count the pictures in each row and compare them.",
+          "rows": [
+            "🧱Blocks=2",
+            "🚗Cars=4",
+            "🧸Dolls=7"
+          ],
+          "targetBarIndex": 0,
+          "pile": "",
+          "rowCapacity": 7
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Which snack has the most?",
+          "hint": "Count the snacks in each row to compare.",
+          "rows": [
+            "🍎Apple=7",
+            "🥨Pretzel=10",
+            "🧀Cheese=8"
+          ],
+          "targetBarIndex": 1,
+          "pile": "",
+          "rowCapacity": 10
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Which playground toy has the most votes?",
+          "hint": "Count the pictures in each row and compare them.",
+          "rows": [
+            "🛝Swing=2",
+            "🎢Slide=6",
+            "⚽Ball=8"
+          ],
+          "targetBarIndex": 2,
+          "pile": "",
+          "rowCapacity": 8
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Which vegetable row has the most?",
+          "hint": "Count the pictures in each row to see which one is longer.",
+          "rows": [
+            "🥕Carrots=10",
+            "🍅Tomatoes=8",
+            "🟢Peas=5"
+          ],
+          "targetBarIndex": 0,
+          "pile": "",
+          "rowCapacity": 10
+        },
+        {
+          "id": "bm-5",
+          "prompt": "Which pet has the fewest?",
+          "hint": "Count the toys in each row to see which line is longer.",
+          "rows": [
+            "🐠Fish=6",
+            "🦜Bird=4",
+            "🐸Frog=9"
+          ],
+          "targetBarIndex": 1,
+          "pile": "",
+          "rowCapacity": 9
+        }
+      ]
+    },
+    {
+      "label": "most_least/easy draw 1",
+      "mode": "most_least",
+      "tier": "easy",
+      "failures": [],
+      "title": "Toy Box Fun",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Which toy has the fewest friends playing with it?",
+          "hint": "Count the pictures in each row and compare to find the answer",
+          "rows": [
+            "🧱Blocks=3",
+            "🚂Trains=6",
+            "🧸Dolls=9"
+          ],
+          "targetBarIndex": 0,
+          "pile": "",
+          "rowCapacity": 9,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Which snack has the most votes?",
+          "hint": "Count the pictures in each row and compare to see.",
+          "rows": [
+            "🍎Apples=7",
+            "🍘Crackers=10",
+            "🧀Cheese=4"
+          ],
+          "targetBarIndex": 1,
+          "pile": "",
+          "rowCapacity": 10,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Which playground toy has the most votes?",
+          "hint": "Count the pictures in each row and compare them.",
+          "rows": [
+            "🛝Swing=5",
+            "🎢Slide=6",
+            "⚽Ball=9"
+          ],
+          "targetBarIndex": 2,
+          "pile": "",
+          "rowCapacity": 9,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Which vegetable row has the most votes?",
+          "hint": "Count the pictures in each row and compare them.",
+          "rows": [
+            "🥕Carrot=7",
+            "🍅Tomato=2",
+            "🟢Peas=4"
+          ],
+          "targetBarIndex": 0,
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-5",
+          "prompt": "Which pet has the fewest friends looking at it?",
+          "hint": "Count the pictures in each row and compare to find the answer.",
+          "rows": [
+            "🐶Puppies=5",
+            "🐱Kittens=2",
+            "🐰Rabbits=6"
+          ],
+          "targetBarIndex": 1,
+          "pile": "",
+          "rowCapacity": 6,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        }
+      ]
+    },
+    {
+      "label": "most_least/medium draw 1",
+      "mode": "most_least",
+      "tier": "medium",
+      "failures": [],
+      "title": "Toy Box Fun",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Which toy has the most votes?",
+          "hint": "Count the pictures in each row and compare them",
+          "rows": [
+            "🧱Blocks=10",
+            "🚗Cars=5",
+            "🧸Dolls=8"
+          ],
+          "targetBarIndex": 0,
+          "pile": "",
+          "rowCapacity": 10,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Which snack has the most votes?",
+          "hint": "Count the pictures in each row and compare",
+          "rows": [
+            "🍎Apple=4",
+            "🧀Cheese=7",
+            "🥨Pretzel=5"
+          ],
+          "targetBarIndex": 1,
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Which game has the fewest votes?",
+          "hint": "Count the pictures in each row to see which line is longer and which is shorter.",
+          "rows": [
+            "🎠Swings=6",
+            "🛝Slide=4",
+            "⚽Balls=2"
+          ],
+          "targetBarIndex": 2,
+          "pile": "",
+          "rowCapacity": 6,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Which row has the most?",
+          "hint": "Count each row carefully to see which one has more.",
+          "rows": [
+            "🥕Carrots=10",
+            "🍅Tomatoes=4",
+            "🟢Peas=8"
+          ],
+          "targetBarIndex": 0,
+          "pile": "",
+          "rowCapacity": 10,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-5",
+          "prompt": "Which animal has the fewest?",
+          "hint": "Count each row carefully to see which one has more and which one has less.",
+          "rows": [
+            "🐠Fish=7",
+            "🦜Birds=3",
+            "🐸Frogs=5"
+          ],
+          "targetBarIndex": 1,
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        }
+      ]
+    },
+    {
+      "label": "most_least/hard draw 1",
+      "mode": "most_least",
+      "tier": "hard",
+      "failures": [],
+      "title": "Toy Bin Fun",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Which toy has the least votes from our class?",
+          "hint": "Count the icons in each row very carefully to see which group has more.",
+          "rows": [
+            "🧱Blocks=2",
+            "🚂Trains=3",
+            "🧸Dolls=5",
+            "🧩Puzzles=6"
+          ],
+          "targetBarIndex": 0,
+          "pile": "",
+          "rowCapacity": 6,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Which snack has the fewest votes?",
+          "hint": "Count the icons in each row very carefully and compare.",
+          "rows": [
+            "🍎Apple=5",
+            "🍘Crackers=3",
+            "🧀Cheese=4",
+            "🍇Grapes=6"
+          ],
+          "targetBarIndex": 1,
+          "pile": "",
+          "rowCapacity": 6,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Which playground game has the most votes?",
+          "hint": "Count every item in each row carefully to see which one is longer.",
+          "rows": [
+            "🎠Swing=3",
+            "🛝Slide=5",
+            "⚽Ball=6",
+            "🚲Bike=4"
+          ],
+          "targetBarIndex": 2,
+          "pile": "",
+          "rowCapacity": 6,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Which vegetable row has the fewest votes?",
+          "hint": "Count the icons in each row very carefully to see which is higher by one",
+          "rows": [
+            "🥕Carrot=7",
+            "🍅Tomato=4",
+            "🟢Peas=3",
+            "🫑Pepper=2"
+          ],
+          "targetBarIndex": 3,
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-5",
+          "prompt": "Which pet has the most friends looking?",
+          "hint": "Count each row carefully to see which is higher",
+          "rows": [
+            "🐶Puppies=7",
+            "🐱Kittens=2",
+            "🐰Bunnies=4",
+            "🦜Parrots=6"
+          ],
+          "targetBarIndex": 0,
+          "pile": "",
+          "rowCapacity": 7,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "match_to_bar/none draw 1",
+      "mode": "match_to_bar",
+      "tier": "",
+      "failures": [],
+      "title": "Toy Bin Match",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Which row shows the same number of blocks?",
+          "hint": "Count the blocks in the bin first, then count each row.",
+          "rows": [
+            "🧱Emma=7",
+            "🧱Liam=9",
+            "🧱Noah=3",
+            "🧱Mia=1"
+          ],
+          "targetBarIndex": 0,
+          "stimulusCount": 7,
+          "pile": "🧱🧱🧱🧱🧱🧱🧱",
+          "rowCapacity": 9
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Which row shows the same number of crackers?",
+          "hint": "Count the crackers in the group first, then touch each row to see which one matches",
+          "rows": [
+            "🍪Mia=4",
+            "🍪Leo=7",
+            "🍪Zoe=9",
+            "🍪Max=1"
+          ],
+          "targetBarIndex": 1,
+          "stimulusCount": 7,
+          "pile": "🍪🍪🍪🍪🍪🍪🍪",
+          "rowCapacity": 9
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Which row shows the same number of balls?",
+          "hint": "Count the balls in the box first, then count each row.",
+          "rows": [
+            "⚽Slide=5",
+            "⚽Swings=2",
+            "⚽Sandbox=7",
+            "⚽Climber=4"
+          ],
+          "targetBarIndex": 2,
+          "stimulusCount": 7,
+          "pile": "⚽⚽⚽⚽⚽⚽⚽",
+          "rowCapacity": 7
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Which row shows the same number of carrots?",
+          "hint": "Count the carrots in the top box, then count each row to find the match.",
+          "rows": [
+            "🥕Emma=10",
+            "🥕Leo=9",
+            "🥕Mia=7",
+            "🥕Sam=5"
+          ],
+          "targetBarIndex": 3,
+          "stimulusCount": 5,
+          "pile": "🥕🥕🥕🥕🥕",
+          "rowCapacity": 10
+        }
+      ]
+    },
+    {
+      "label": "match_to_bar/easy draw 1",
+      "mode": "match_to_bar",
+      "tier": "easy",
+      "failures": [],
+      "title": "Toy Bin Match",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Which row shows the same number of blocks?",
+          "hint": "Count the blocks in the bin first, then count the blocks in each row to find the match.",
+          "rows": [
+            "🧱Emma=6",
+            "🧱Noah=10",
+            "🧱Mia=3"
+          ],
+          "targetBarIndex": 0,
+          "stimulusCount": 6,
+          "pile": "🧱🧱🧱🧱🧱🧱",
+          "rowCapacity": 10,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Which row shows the same number of crackers?",
+          "hint": "Count the crackers in the group first. Then count each row to find the matching one.",
+          "rows": [
+            "🍘Emma=3",
+            "🍘Liam=6",
+            "🍘Mia=1"
+          ],
+          "targetBarIndex": 1,
+          "stimulusCount": 6,
+          "pile": "🍘🍘🍘🍘🍘🍘",
+          "rowCapacity": 6,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Which row shows the same number of blocks?",
+          "hint": "Count the blocks in the top box first. Then count each row to find the match.",
+          "rows": [
+            "🧱Mia=5",
+            "🧱Leo=3",
+            "🧱Zoe=8"
+          ],
+          "targetBarIndex": 2,
+          "stimulusCount": 8,
+          "pile": "🧱🧱🧱🧱🧱🧱🧱🧱",
+          "rowCapacity": 8,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Which row shows the same number of carrots?",
+          "hint": "Count the garden carrots first, then count each row to find the match.",
+          "rows": [
+            "🥕Emma=8",
+            "🥕Liam=5",
+            "🥕Noah=2"
+          ],
+          "targetBarIndex": 0,
+          "stimulusCount": 8,
+          "pile": "🥕🥕🥕🥕🥕🥕🥕🥕",
+          "rowCapacity": 8,
+          "showTargetHighlight": false,
+          "supportTier": "easy"
+        }
+      ]
+    },
+    {
+      "label": "match_to_bar/medium draw 1",
+      "mode": "match_to_bar",
+      "tier": "medium",
+      "failures": [],
+      "title": "Toy Bin Match",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Which row shows the same number of blocks as the toy bin?",
+          "hint": "Count the blocks in the bin first, then count each row to find the match.",
+          "rows": [
+            "🧱Emma=3",
+            "🧱Liam=8",
+            "🧱Noah=5",
+            "🧱Mia=7"
+          ],
+          "targetBarIndex": 0,
+          "stimulusCount": 3,
+          "pile": "🧱🧱🧱",
+          "rowCapacity": 8,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Which row shows the same number of crackers?",
+          "hint": "Count the crackers in the group first. Then count each row carefully to find the match.",
+          "rows": [
+            "🍪Emma=1",
+            "🍪Leo=3",
+            "🍪Mia=8",
+            "🍪Noah=6"
+          ],
+          "targetBarIndex": 1,
+          "stimulusCount": 3,
+          "pile": "🍪🍪🍪",
+          "rowCapacity": 8,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Which row shows the same number of balls?",
+          "hint": "Count the balls in the box first, then count each row to find the match.",
+          "rows": [
+            "⚽Slide=6",
+            "⚽Swings=8",
+            "⚽Sandbox=3",
+            "⚽Benches=1"
+          ],
+          "targetBarIndex": 2,
+          "stimulusCount": 3,
+          "pile": "⚽⚽⚽",
+          "rowCapacity": 8,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Which row shows the same number of carrots?",
+          "hint": "Count the carrots in the box first, then count each row to find the matching one.",
+          "rows": [
+            "🥕Grandpa=7",
+            "🥕Maya=8",
+            "🥕Leo=1",
+            "🥕Nana=5"
+          ],
+          "targetBarIndex": 3,
+          "stimulusCount": 5,
+          "pile": "🥕🥕🥕🥕🥕",
+          "rowCapacity": 8,
+          "showTargetHighlight": false,
+          "supportTier": "medium"
+        }
+      ]
+    },
+    {
+      "label": "match_to_bar/hard draw 1",
+      "mode": "match_to_bar",
+      "tier": "hard",
+      "failures": [],
+      "title": "Match the Blocks",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "bm-1",
+          "prompt": "Which row shows the same number of blocks?",
+          "hint": "Count the blocks in the pile first, then count each row to find the match.",
+          "rows": [
+            "🧱Emma=3",
+            "🧱Leo=8",
+            "🧱Mia=9",
+            "🧱Sam=2"
+          ],
+          "targetBarIndex": 0,
+          "stimulusCount": 3,
+          "pile": "🧱🧱🧱",
+          "rowCapacity": 9,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-2",
+          "prompt": "Which row shows the same number of crackers?",
+          "hint": "Count the crackers in the group first, then count each row to find the matching one.",
+          "rows": [
+            "🍪Emma=6",
+            "🍪Liam=4",
+            "🍪Sofia=8",
+            "🍪Noah=3"
+          ],
+          "targetBarIndex": 1,
+          "stimulusCount": 4,
+          "pile": "🍪🍪🍪🍪",
+          "rowCapacity": 8,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-3",
+          "prompt": "Which row shows the same number of balls?",
+          "hint": "Count the scattered balls first, then touch and count each row carefully.",
+          "rows": [
+            "⚽Slide=7",
+            "⚽Swings=10",
+            "⚽Sandbox=6",
+            "⚽Climber=2"
+          ],
+          "targetBarIndex": 2,
+          "stimulusCount": 6,
+          "pile": "⚽⚽⚽⚽⚽⚽",
+          "rowCapacity": 10,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "bm-4",
+          "prompt": "Which row shows the same number of carrots?",
+          "hint": "Count the scattered carrots first, then count each row carefully to find the match.",
+          "rows": [
+            "🥕Emma=7",
+            "🥕Liam=4",
+            "🥕Maya=10",
+            "🥕Noah=3"
+          ],
+          "targetBarIndex": 3,
+          "stimulusCount": 3,
+          "pile": "🥕🥕🥕",
+          "rowCapacity": 10,
+          "showTargetHighlight": false,
+          "supportTier": "hard"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 16,
+    "failedDraws": 0
+  }
+}

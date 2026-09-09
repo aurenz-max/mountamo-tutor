@@ -11,6 +11,17 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions, parseScopeCeilin
  * array-grid class (the correct value isn't among the choices).
  *
  * The component (BarModel.tsx) judges correctness per mode:
+ *  - build_one_to_one (handleStickerSubmit): correct = every row's placed sticker
+ *    count equals expectedCounts[row]. The key is independently re-derivable —
+ *    recount `sourceItems` by categoryIndex — so a pile that disagrees with the
+ *    key, a pre-filled row, or a row too short to hold its own answer is caught.
+ *  - match_to_bar (handleBarClick): correct = clicked index === targetBarIndex,
+ *    and the keyed row must be the one whose value equals stimulusCount, with no
+ *    second row showing the same count (two right answers, one accepted).
+ *  - most_least (handleBarClick): same shape as compare_bars — the prompt's
+ *    superlative plus the row counts re-derive the winner.
+ *  - read_one_to_one (handleOptionClick): a read mode — expectedValue must be the
+ *    count of the row the prompt names, and must be among the options.
  *  - compare_bars (handleBarClick, :697-700): correct = clicked index ===
  *    targetBarIndex. So targetBarIndex IS the answer key; it must be a real bar
  *    index, and — when the prompt asks for the "most/least" — it must point at the
@@ -69,8 +80,14 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions, parseScopeCeilin
  * with /eval-test.
  */
 
-const READ_MODES = new Set(['read_scale', 'picture_graph', 'scaled_bar_graph']);
+const READ_MODES = new Set(['read_one_to_one', 'read_scale', 'picture_graph', 'scaled_bar_graph']);
+/** Modes whose answer key is targetBarIndex and whose prompt carries a superlative. */
+const EXTREME_MODES = new Set(['compare_bars', 'most_least']);
 const KNOWN_MODES = new Set([
+  'build_one_to_one',
+  'read_one_to_one',
+  'match_to_bar',
+  'most_least',
   'compare_bars',
   'read_scale',
   'picture_graph',
@@ -209,7 +226,94 @@ export const barModelOracle: ContentOracle = {
         if (over) violations.push({ check: 'scope', where: id, detail: `bar "${over.label}"=${over.value} exceeds objective ceiling ${ceiling} (topic "${ctx.topic}")` });
       }
 
-      if (mode === 'compare_bars') {
+      // ── build_one_to_one: the key must be a recount of the pile ──
+      if (mode === 'build_one_to_one') {
+        const key = Array.isArray(c.expectedCounts) ? (c.expectedCounts as unknown[]) : null;
+        if (!key || key.length !== bars.length) {
+          violations.push({ check: 'schema', where: id, detail: `build_one_to_one needs one expectedCounts entry per row; got ${JSON.stringify(c.expectedCounts)} for ${bars.length} rows` });
+          continue;
+        }
+        // Independence: recount the source pile per category rather than trusting
+        // the stored key — a pile that disagrees with the key marks a child who
+        // recorded it correctly as wrong.
+        const src = Array.isArray(c.sourceItems) ? (c.sourceItems as Array<Record<string, unknown>>) : null;
+        if (!src || src.length === 0) {
+          violations.push({ check: 'schema', where: id, detail: 'build_one_to_one needs a non-empty sourceItems pile — there is nothing to record' });
+        } else {
+          const tally = new Array<number>(bars.length).fill(0);
+          let stray = 0;
+          for (const it of src) {
+            const ci = it.categoryIndex;
+            if (isInt(ci) && (ci as number) >= 0 && (ci as number) < bars.length) tally[ci as number]++;
+            else stray++;
+          }
+          if (stray > 0) {
+            violations.push({ check: 'answer-key-desync', where: id, detail: `${stray} source object(s) belong to no row — they can never be recorded, so a perfect chart is still marked wrong` });
+          }
+          for (let r = 0; r < bars.length; r++) {
+            if (tally[r] !== key[r]) {
+              violations.push({
+                check: 'answer-key-desync',
+                where: id,
+                detail: `row "${bars[r].label}" holds ${tally[r]} object(s) in the pile but the key expects ${String(key[r])} — recording what is on screen would be marked wrong`,
+              });
+            }
+          }
+        }
+        // Reachability: the row has to hold its own answer, and starts empty.
+        const cap = isNum((c.scale as Record<string, unknown> | undefined)?.max) ? ((c.scale as Record<string, unknown>).max as number) : undefined;
+        for (let r = 0; r < key.length; r++) {
+          const k = key[r];
+          if (!isInt(k) || (k as number) < 1) {
+            violations.push({ check: 'schema', where: id, detail: `expectedCounts[${r}] must be a positive integer; got ${JSON.stringify(k)}` });
+          } else if (cap !== undefined && (k as number) > cap) {
+            violations.push({ check: 'answer-key-desync', where: id, detail: `row "${bars[r].label}" needs ${k} stickers but the row only holds ${cap} — the correct chart cannot be built` });
+          }
+          if (ceiling !== undefined && isNum(k) && (k as number) > ceiling) {
+            violations.push({ check: 'scope', where: id, detail: `expectedCounts[${r}] = ${k} exceeds objective ceiling ${ceiling} (topic "${ctx.topic}")` });
+          }
+        }
+        const prefilled = bars.find((b) => b.value !== 0);
+        if (prefilled) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `row "${prefilled.label}" already shows ${prefilled.value} sticker(s) — the chart must start empty or the recording is done for the child` });
+        }
+        checked++;
+        (answersByMode.build_one_to_one ??= []).push(key.map((k) => String(k)).join(','));
+        bump(cardSeen, `build1to1|${bars.map((b) => b.label).join(',')}|${key.map((k) => String(k)).join(',')}`);
+        continue;
+      }
+
+      // ── match_to_bar: exactly one row shows the size of the group ──
+      if (mode === 'match_to_bar') {
+        const tbi = c.targetBarIndex;
+        const stim = c.stimulusCount;
+        if (!isInt(tbi) || (tbi as number) < 0 || (tbi as number) >= bars.length) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `targetBarIndex ${JSON.stringify(tbi)} is not a valid row index [0,${bars.length - 1}] — the correct row can never be tapped` });
+          continue;
+        }
+        if (!isInt(stim) || (stim as number) < 1) {
+          violations.push({ check: 'schema', where: id, detail: `match_to_bar needs a positive integer stimulusCount; got ${JSON.stringify(stim)}` });
+          continue;
+        }
+        const n = stim as number;
+        if (bars[tbi as number].value !== n) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `the group holds ${n} but the keyed row "${bars[tbi as number].label}" shows ${bars[tbi as number].value} — the match is not the answer` });
+        }
+        const matching = bars.filter((b) => b.value === n).length;
+        if (matching > 1) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `${matching} rows show ${n} — more than one row is a correct match, but only one is accepted` });
+        }
+        const src = Array.isArray(c.sourceItems) ? (c.sourceItems as unknown[]) : null;
+        if (src && src.length !== n) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `the drawn group has ${src.length} object(s) but stimulusCount says ${n} — counting what is on screen gives the wrong row` });
+        }
+        checked++;
+        (answersByMode.match_to_bar ??= []).push(`pos${tbi}`);
+        bump(cardSeen, `match|${bars.map((b) => `${b.label}=${b.value}`).join(',')}|${n}`);
+        continue;
+      }
+
+      if (EXTREME_MODES.has(mode)) {
         const tbi = c.targetBarIndex;
         if (!isInt(tbi) || (tbi as number) < 0 || (tbi as number) >= bars.length) {
           violations.push({
@@ -234,15 +338,15 @@ export const barModelOracle: ContentOracle = {
               detail: `prompt asks for the ${want === 'max' ? 'greatest' : 'least'} bar; magnitudes ${JSON.stringify(bars.map((b) => `${b.label}=${b.value}`))} → index ${expectedIdx} ("${bars[expectedIdx].label}"), but targetBarIndex is ${tbi} ("${bars[tbi as number].label}") — a correct click would be marked wrong`,
             });
           }
-          if (expectedIdx < 0) uncheckedTypes.add('compare_bars(tie)');
+          if (expectedIdx < 0) uncheckedTypes.add(`${mode}(tie)`);
         } else {
           // No clear superlative → the semantic winner isn't independently derivable.
-          uncheckedTypes.add('compare_bars(ambiguous-prompt)');
+          uncheckedTypes.add(`${mode}(ambiguous-prompt)`);
         }
         // Clustering here tracks the answer POSITION (what the student actually
         // clicks), not the winning value — an always-same-side set is guessable.
-        (answersByMode.compare_bars ??= []).push(`pos${tbi}`);
-        bump(cardSeen, `compare|${bars.map((b) => `${b.label}=${b.value}`).join(',')}|${tbi}`);
+        (answersByMode[mode] ??= []).push(`pos${tbi}`);
+        bump(cardSeen, `${mode}|${bars.map((b) => `${b.label}=${b.value}`).join(',')}|${tbi}`);
         continue;
       }
 
