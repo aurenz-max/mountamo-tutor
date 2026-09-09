@@ -4483,11 +4483,41 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description:
       'Interactive analog clock with draggable hands, digital display sync, and timeline scrubber. '
       + 'Students read clock faces, set times by dragging hands, match analog to digital, and measure elapsed time with a stopwatch. '
+      + 'It also teaches the parts of the clock at Kindergarten, before any time is read: point at the hand that tells the hour or the minutes, '
+      + 'count the numbers 1 to 12 all the way round the face, and hear a whole-hour time and pick the clock face that shows it. '
       + 'Perfect for K-5 time-telling standards. ESSENTIAL for K.MD and 1.MD.3.',
     constraints:
-      'K: hour and half-hour only (:00/:30). G1-2: quarter-hour (:15 intervals). G3-5: 5-minute intervals. Maximum 6 challenges per session.',
+      'K clock parts (hand_name, count_face, hear_time) need no time-telling at all — the child points, counts round the face, or matches a spoken hour to a face. '
+      + 'K: hour and half-hour only (:00/:30). G1-2: quarter-hour (:15 intervals). G3-5: 5-minute intervals. Maximum 6 challenges per session.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
     evalModes: [
+      {
+        evalMode: 'hand_name',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] },
+        label: 'Which Hand (K)',
+        beta: 0.8,
+        scaffoldingMode: 1,
+        challengeTypes: ['hand_name'],
+        description: 'Point at the hand that tells the hour, or the one that tells the minutes. K.MD.',
+      },
+      {
+        evalMode: 'count_face',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] },
+        label: 'Count the Face (K)',
+        beta: 1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['count_face'],
+        description: 'Tap the numbers 1 to 12 in order all the way round the clock face. K.CC.A.1 on the dial.',
+      },
+      {
+        evalMode: 'hear_time',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] },
+        label: 'Hear the Time (K)',
+        beta: 1.3,
+        scaffoldingMode: 1,
+        challengeTypes: ['hear_time'],
+        description: 'Hear a whole-hour time and pick the clock face that shows it. K.MD / 1.MD.3 foundation.',
+      },
       {
         evalMode: 'read',
         affordances: { answers: ['tap'] },

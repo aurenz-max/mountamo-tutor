@@ -1,0 +1,19 @@
+{
+  "log": [
+    "PASS hand: challenges generated",
+    "PASS hand: the instruction is on screen",
+    "PASS hand: both hands are tap targets",
+    "PASS hand: Check waits for a choice",
+    "PASS hand: the wrong hand is judged wrong",
+    "PASS hand: the named hand is judged correct",
+    "PASS count: challenges generated",
+    "PASS count: every numeral is a tap target",
+    "PASS count: an out-of-order tap restarts the walk",
+    "PASS count: 1 through 12 in order is judged correct",
+    "PASS hear: the time is said in words",
+    "PASS hear: no reference dial is shown above the faces",
+    "PASS hear: four clock faces offered (found 4)",
+    "PASS hear: the wrong face is judged wrong",
+    "PASS hear: the matching face is judged correct"
+  ]
+}

@@ -16,6 +16,28 @@ import { buildScopePromptSection } from "../scopeContext";
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  hand_name: {
+    promptDoc:
+      `"hand_name": Kindergarten. The child POINTS at the hand the question names — the short one for the hour, `
+      + `the long one for the minutes. Give only targetHour and targetMinute (any time on the dial); the system `
+      + `chooses which hand is asked for and writes the instruction, so do NOT say "hour hand" or "minute hand" `
+      + `in yours. K.MD / 1.MD.3 foundation.`,
+    schemaDescription: "'hand_name' (K: point at the named hand)",
+  },
+  count_face: {
+    promptDoc:
+      `"count_face": Kindergarten. The child taps the numbers 1 to 12 in order around the face. `
+      + `Give only targetHour and targetMinute for the hands to rest at; the system writes the instruction. `
+      + `No options, no time to read.`,
+    schemaDescription: "'count_face' (K: tap 1-12 around the face)",
+  },
+  hear_time: {
+    promptDoc:
+      `"hear_time": Kindergarten. The child hears a whole-hour time read aloud and picks the clock FACE that shows it `
+      + `from four faces. Give only targetHour (targetMinute is forced to :00); the system builds the four faces and `
+      + `writes the instruction. Do NOT author options.`,
+    schemaDescription: "'hear_time' (K: hear a time, pick the face)",
+  },
   read: {
     promptDoc:
       `"read": Student reads an analog clock face and picks the correct time from 4 options. `
@@ -44,7 +66,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
-type ChallengeType = 'read' | 'set_time' | 'match' | 'elapsed';
+type ChallengeType =
+  | 'read' | 'set_time' | 'match' | 'elapsed'
+  // K clock-parts family: the face itself, before the time it tells.
+  | 'hand_name' | 'count_face' | 'hear_time';
 
 // ---------------------------------------------------------------------------
 // Within-mode difficulty = structural SUPPORT tier (config.difficulty)
@@ -101,7 +126,9 @@ interface SupportScaffold {
  */
 function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
   const showMinuteNumbers = tier === 'easy';
-  const showHandLegend = tier !== 'hard';
+  // The hand legend says which hand is which — in hand_name that IS the answer,
+  // so it is off at every tier there. (Answer-leak rule, not a tier decision.)
+  const showHandLegend = pinnedType !== 'hand_name' && tier !== 'hard';
   // ANSWER-LEAK guard: echo only on set_time (target given), and only at easy.
   const showDigitalEcho = pinnedType === 'set_time' && tier === 'easy';
 
@@ -126,6 +153,13 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
           : tier === 'hard'
             ? 'Bare dial, no digital echo: the student must judge the hand positions against the target by eye and explain how they know they have it right.'
             : 'Keep the hand legend but drop the minute numbers and the digital echo; the student aligns the hands to the target using the dial alone.',
+      );
+      break;
+    case 'hand_name':
+    case 'count_face':
+    case 'hear_time':
+      promptLines.push(
+        'Kindergarten clock parts: the child points at a hand, counts the numbers round the face, or picks the face that matches a spoken time. Never name which hand is which in the instruction or the hint — that is the answer in hand_name.',
       );
       break;
     case 'elapsed':
@@ -205,6 +239,44 @@ function buildTimeDistractors(targetHour: number, targetMinute: number, gradeBan
   return shuffleInPlace(Array.from(pool)).slice(0, 3);
 }
 
+/** How far apart the two hands sit on the dial, in degrees (0 = one behind the other). */
+function handSeparation(hour: number, minute: number): number {
+  const hourDeg = ((hour % 12) + minute / 60) * 30;
+  const minuteDeg = minute * 6;
+  const d = Math.abs(hourDeg - minuteDeg) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+/**
+ * A time whose two hands a child can tell apart. `hand_name` asks them to point
+ * at one, and at 6:30 the hands sit fifteen degrees apart — the long one is
+ * hidden behind the short one and the question has no answer. Found on the
+ * 2026-09-09 K probe; the oracle now refuses it, and this keeps it from arising.
+ */
+function separableTime(hour: number, minute: number): { hour: number; minute: number } {
+  const candidates = [
+    { hour, minute },
+    { hour, minute: minute === 0 ? 30 : 0 },
+    { hour: shiftHour(hour, 3), minute },
+    { hour: shiftHour(hour, 3), minute: minute === 0 ? 30 : 0 },
+  ];
+  return candidates.find((c) => handSeparation(c.hour, c.minute) >= 25) ?? { hour: 3, minute: 0 };
+}
+
+/** Hour words, so a K instruction can SAY the time the child is listening for. */
+const HOUR_WORDS = [
+  '', 'one', 'two', 'three', 'four', 'five', 'six',
+  'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+];
+
+/** 3 wrong whole-hour faces for hear_time — every option differs by the HOUR,
+ *  so the child is choosing between clock faces, not reading minute hands. */
+function buildHourFaceDistractors(targetHour: number): string[] {
+  const pool: string[] = [];
+  for (let h = 1; h <= 12; h++) if (h !== targetHour) pool.push(formatClockTime(h, 0));
+  return shuffleInPlace(pool).slice(0, 3);
+}
+
 /** 3 plausible wrong elapsed durations, distinct from the correct duration. */
 function buildDurationDistractors(elapsedMins: number): string[] {
   const correct = formatDuration(elapsedMins);
@@ -257,6 +329,10 @@ function synthesizeMCOptions(
     const elapsedMins = endTotal - startTotal;
     correctStr = formatDuration(elapsedMins);
     distractors = buildDurationDistractors(elapsedMins);
+  } else if (ch.type === 'hear_time') {
+    // The options are FACES, and they differ by the hour alone.
+    correctStr = formatClockTime(ch.targetHour, 0);
+    distractors = buildHourFaceDistractors(ch.targetHour);
   } else {
     // read / match — the answer is the time shown on the dial
     correctStr = formatClockTime(ch.targetHour, ch.targetMinute);
@@ -455,7 +531,7 @@ Return the complete analog clock configuration.
   }
 
   // Filter to valid challenge types
-  const validTypes = ['read', 'set_time', 'match', 'elapsed'];
+  const validTypes = ['read', 'set_time', 'match', 'elapsed', 'hand_name', 'count_face', 'hear_time'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type),
   );
@@ -519,6 +595,83 @@ Return the complete analog clock configuration.
     }];
   }
 
+  // ── SESSION FLOOR for the K clock parts. A live atlas draw came back with a
+  // single hand_name item (AC-7): one item is a demo, not practice, and with one
+  // item the hand alternation below can only ever ask for the hour — the child
+  // never meets the minute hand at all. The clones carry different hours; the
+  // pass underneath then owns their hands, times and wording, exactly as it does
+  // for the model's own. ──
+  {
+    const K_CLOCK_MODES = new Set(['hand_name', 'count_face', 'hear_time']);
+    const pinnedK = pinnedType && K_CLOCK_MODES.has(pinnedType) ? pinnedType : null;
+    const list = data.challenges as Array<{ id: string; type: string; targetHour: number; targetMinute: number }>;
+    if (pinnedK && list.length > 0 && list.length < 4) {
+      const seed = list.find((c) => c.type === pinnedK) ?? list[0];
+      let guard = 0;
+      while (list.length < 4 && guard++ < 8) {
+        const i = list.length;
+        list.push({
+          ...seed,
+          id: `c${i + 1}`,
+          type: pinnedK,
+          targetHour: shiftHour(seed.targetHour, i * 2 + 1),
+          targetMinute: seed.targetMinute,
+        });
+      }
+      console.log(`[AnalogClock] Session floor: backfilled to ${list.length} ${pinnedK} challenges`);
+    }
+  }
+
+  // ── K clock parts: code owns which hand is asked for, the hand positions
+  // that make the two hands tellable apart, and the wording. The model is never
+  // told which hand the question is about, so it cannot answer it in the
+  // instruction — and a face where both hands overlap (12:00) has no answer at
+  // all, so it is moved rather than shipped. ──
+  {
+    let handIndex = 0;
+    for (const ch of data.challenges as Array<{
+      type: string;
+      targetHour: number;
+      targetMinute: number;
+      targetHand?: 'hour' | 'minute';
+      instruction?: string;
+      hint?: string;
+    }>) {
+      if (ch.type === 'hand_name') {
+        // Alternate the asked-for hand: drawn per challenge, a five-item session
+        // lands on one hand every time often enough to be guessable.
+        ch.targetHand = handIndex % 2 === 0 ? 'hour' : 'minute';
+        handIndex += 1;
+        // The hands must be far apart on the dial. :30 puts the long hand down
+        // and the short hand mid-way between two numbers; :00 puts it straight
+        // up, which collides with the short hand at twelve o'clock.
+        // Whole hours or half past, then moved if the two hands would sit on
+        // top of each other (12:00, and 5:30 / 6:30 where the short hand has
+        // drifted down to meet the long one).
+        const snapped = ch.targetMinute >= 15 && ch.targetMinute < 45 ? 30 : 0;
+        const separable = separableTime(ch.targetHour, snapped);
+        ch.targetHour = separable.hour;
+        ch.targetMinute = separable.minute;
+        ch.instruction = ch.targetHand === 'hour'
+          ? 'Touch the hand that tells us the hour.'
+          : 'Touch the hand that tells us the minutes.';
+        ch.hint = ch.targetHand === 'hour'
+          ? 'One hand is short and one is long. The short one moves slowly, all day long.'
+          : 'One hand is short and one is long. The long one races all the way round in an hour.';
+      }
+      if (ch.type === 'count_face') {
+        ch.instruction = 'Touch the numbers all the way round the clock. Start at 1.';
+        ch.hint = 'After 1 comes 2. Keep going round the same way.';
+      }
+      if (ch.type === 'hear_time') {
+        // Whole hours only: the child is matching a spoken time to a face.
+        ch.targetMinute = 0;
+        ch.instruction = `Which clock shows ${HOUR_WORDS[ch.targetHour] ?? ch.targetHour} o'clock?`;
+        ch.hint = 'Look at the short hand on each clock. Which one points at the number you heard?';
+      }
+    }
+  }
+
   // ── Synthesize MC options + correctOptionIndex for every read/match/elapsed
   // challenge (real or fallback). System owns the options — see synthesizeMCOptions. ──
   for (const ch of data.challenges as Array<{
@@ -533,7 +686,7 @@ Return the complete analog clock configuration.
     option3?: string;
     correctOptionIndex?: number;
   }>) {
-    if (ch.type === 'read' || ch.type === 'match' || ch.type === 'elapsed') {
+    if (ch.type === 'read' || ch.type === 'match' || ch.type === 'elapsed' || ch.type === 'hear_time') {
       synthesizeMCOptions(ch, data.gradeBand);
     }
   }

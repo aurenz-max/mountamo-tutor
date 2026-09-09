@@ -28,7 +28,10 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface ClockChallenge {
   id: string;
-  type: 'read' | 'set_time' | 'match' | 'elapsed';
+  type:
+    | 'read' | 'set_time' | 'match' | 'elapsed'
+    // K clock-parts family: what the face IS, before what it says.
+    | 'hand_name' | 'count_face' | 'hear_time';
   instruction: string;
   /** Target time as { hour: 1-12, minute: 0-59 } */
   targetHour: number;
@@ -45,6 +48,8 @@ export interface ClockChallenge {
   startMinute?: number;
   /** For elapsed: duration description e.g. "1 hour" */
   elapsedDescription?: string;
+  /** hand_name: which hand the child has to point at. Code-owned. */
+  targetHand?: 'hour' | 'minute';
   hint: string;
 
   // ── Within-mode support tier (config.difficulty) reading-aid levers ──
@@ -93,6 +98,9 @@ const TICK_INNER_MAJOR = FACE_RADIUS - 16;
 const TICK_INNER_MINOR = FACE_RADIUS - 10;
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  hand_name: { label: 'Which Hand', icon: '👆', accentColor: 'cyan' },
+  count_face: { label: 'Count the Face', icon: '🔢', accentColor: 'emerald' },
+  hear_time: { label: 'Hear the Time', icon: '👂', accentColor: 'purple' },
   read: { label: 'Read', icon: '🕐', accentColor: 'blue' },
   set_time: { label: 'Set Time', icon: '🖐️', accentColor: 'purple' },
   match: { label: 'Match', icon: '🔗', accentColor: 'emerald' },
@@ -169,7 +177,17 @@ const ClockFace: React.FC<{
   showMinuteNumbers?: boolean;
   highlightColor?: string;
   isPulsing?: boolean;
-}> = ({ hourDeg, minuteDeg, showMinuteTicks, showMinuteNumbers, highlightColor = '#60a5fa', isPulsing }) => {
+  /** hand_name: the child points at a hand, so the hands become targets. */
+  onHandClick?: (hand: 'hour' | 'minute') => void;
+  pickedHand?: 'hour' | 'minute' | null;
+  /** count_face: the numerals become targets, tapped 1 through 12. */
+  onNumeralClick?: (num: number) => void;
+  countedNumerals?: number[];
+}> = ({
+  hourDeg, minuteDeg, showMinuteTicks, showMinuteNumbers,
+  highlightColor = '#60a5fa', isPulsing,
+  onHandClick, pickedHand = null, onNumeralClick, countedNumerals,
+}) => {
   const numerals = Array.from({ length: 12 }, (_, i) => {
     const num = i + 1;
     const angle = (num * 30 - 90) * (Math.PI / 180);
@@ -276,28 +294,47 @@ const ClockFace: React.FC<{
         </text>
       ))}
 
-      {/* Numerals */}
-      {numerals.map(({ num, x, y }) => (
-        <text
-          key={num}
-          x={x} y={y}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="rgba(255,255,255,0.85)"
-          fontSize={num === 12 ? 18 : 16}
-          fontWeight={num === 12 ? 700 : 500}
-          fontFamily="system-ui, sans-serif"
-        >
-          {num}
-        </text>
-      ))}
+      {/* Numerals. In count_face each one is a tap target — an SVG <g> is not
+          reliably clickable, so the hit area is an explicit <circle>
+          (see [[feedback_svg-g-unclickable-jsdom-blind]]). */}
+      {numerals.map(({ num, x, y }) => {
+        const counted = countedNumerals?.includes(num) ?? false;
+        return (
+          <g key={num}>
+            {onNumeralClick ? (
+              <circle
+                cx={x} cy={y} r={16}
+                fill={counted ? 'rgba(52,211,153,0.22)' : 'rgba(255,255,255,0.05)'}
+                stroke={counted ? 'rgba(52,211,153,0.7)' : 'rgba(255,255,255,0.18)'}
+                strokeWidth={counted ? 2 : 1}
+                className="cursor-pointer"
+                role="button"
+                aria-label={`Number ${num}`}
+                onClick={() => onNumeralClick(num)}
+              />
+            ) : null}
+            <text
+              x={x} y={y}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill={counted ? 'rgb(167,243,208)' : 'rgba(255,255,255,0.85)'}
+              fontSize={num === 12 ? 18 : 16}
+              fontWeight={num === 12 ? 700 : 500}
+              fontFamily="system-ui, sans-serif"
+              className={onNumeralClick ? 'pointer-events-none select-none' : undefined}
+            >
+              {num}
+            </text>
+          </g>
+        );
+      })}
 
       {/* Hour hand */}
       <line
         x1={CENTER} y1={CENTER}
         x2={CENTER} y2={CENTER - HOUR_HAND_LENGTH}
-        stroke={highlightColor}
-        strokeWidth={5}
+        stroke={pickedHand === 'hour' ? '#facc15' : highlightColor}
+        strokeWidth={pickedHand === 'hour' ? 8 : 5}
         strokeLinecap="round"
         transform={`rotate(${hourDeg}, ${CENTER}, ${CENTER})`}
         style={{ transition: isPulsing ? 'none' : 'transform 0.3s ease-out' }}
@@ -307,12 +344,40 @@ const ClockFace: React.FC<{
       <line
         x1={CENTER} y1={CENTER}
         x2={CENTER} y2={CENTER - MINUTE_HAND_LENGTH}
-        stroke="rgba(255,255,255,0.9)"
-        strokeWidth={3}
+        stroke={pickedHand === 'minute' ? '#facc15' : 'rgba(255,255,255,0.9)'}
+        strokeWidth={pickedHand === 'minute' ? 7 : 3}
         strokeLinecap="round"
         transform={`rotate(${minuteDeg}, ${CENTER}, ${CENTER})`}
         style={{ transition: isPulsing ? 'none' : 'transform 0.3s ease-out' }}
       />
+
+      {/* hand_name hit areas — fat invisible strokes over each hand, drawn last
+          so a five-year-old's finger lands on the hand and not near it. */}
+      {onHandClick ? (
+        <g>
+          <line
+            x1={CENTER} y1={CENTER}
+            x2={CENTER} y2={CENTER - HOUR_HAND_LENGTH}
+            stroke="transparent" strokeWidth={26} strokeLinecap="round"
+            transform={`rotate(${hourDeg}, ${CENTER}, ${CENTER})`}
+            className="cursor-pointer"
+            role="button"
+            aria-label="Point at this hand (short)"
+            onClick={() => onHandClick('hour')}
+          />
+          {/* Only the stretch BEYOND the short hand, so the two targets never overlap. */}
+          <line
+            x1={CENTER} y1={CENTER - HOUR_HAND_LENGTH}
+            x2={CENTER} y2={CENTER - MINUTE_HAND_LENGTH}
+            stroke="transparent" strokeWidth={26} strokeLinecap="round"
+            transform={`rotate(${minuteDeg}, ${CENTER}, ${CENTER})`}
+            className="cursor-pointer"
+            role="button"
+            aria-label="Point at this hand (long)"
+            onClick={() => onHandClick('minute')}
+          />
+        </g>
+      ) : null}
 
       {/* Center cap */}
       <circle cx={CENTER} cy={CENTER} r={6} fill={highlightColor} />
@@ -489,6 +554,10 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
 
   // Interaction state
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  /** hand_name: the hand the child pointed at. */
+  const [pickedHand, setPickedHand] = useState<'hour' | 'minute' | null>(null);
+  /** count_face: the numerals tapped so far, in the order they were tapped. */
+  const [countedNumerals, setCountedNumerals] = useState<number[]>([]);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [isDragging, setIsDragging] = useState(false);
@@ -513,8 +582,20 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     setFeedback('');
     setFeedbackType('');
 
-    if (currentChallenge.type === 'read' || currentChallenge.type === 'match') {
-      // Show the target time on the clock
+    setPickedHand(null);
+    setCountedNumerals([]);
+
+    if (
+      currentChallenge.type === 'read' || currentChallenge.type === 'match'
+      || currentChallenge.type === 'hand_name' || currentChallenge.type === 'count_face'
+    ) {
+      // The face just shows a time; in the K modes it is the STIMULUS, not the
+      // question — what is asked is which hand, or the numbers around it.
+      setDisplayHour(currentChallenge.targetHour);
+      setDisplayMinute(currentChallenge.targetMinute);
+    } else if (currentChallenge.type === 'hear_time') {
+      // No single face here: the options ARE faces. Park the main dial on the
+      // target so nothing on screen contradicts the key if it is ever shown.
       setDisplayHour(currentChallenge.targetHour);
       setDisplayMinute(currentChallenge.targetMinute);
     } else if (currentChallenge.type === 'set_time') {
@@ -664,9 +745,20 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     let correct = false;
     const targetTime = formatTime(currentChallenge.targetHour, currentChallenge.targetMinute);
 
-    if (currentChallenge.type === 'read' || currentChallenge.type === 'match') {
+    if (
+      currentChallenge.type === 'read' || currentChallenge.type === 'match'
+      || currentChallenge.type === 'hear_time'
+    ) {
       if (selectedOption === null) return;
       correct = selectedOption === currentChallenge.correctOptionIndex;
+    } else if (currentChallenge.type === 'hand_name') {
+      if (pickedHand === null) return;
+      correct = pickedHand === currentChallenge.targetHand;
+    } else if (currentChallenge.type === 'count_face') {
+      // Right only when all twelve are tapped in order — the sequence is reset
+      // on the first out-of-order tap, so reaching twelve IS the proof.
+      correct = countedNumerals.length === 12
+        && countedNumerals.every((n, i) => n === i + 1);
     } else if (currentChallenge.type === 'set_time') {
       // Check if displayed time matches target
       const dispH = displayHour % 12;
@@ -708,8 +800,37 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     }
   }, [
     currentChallenge, selectedOption, displayHour, displayMinute,
+    pickedHand, countedNumerals,
     currentAttempts, hasSubmittedEvaluation, recordResult, incrementAttempts, sendText,
   ]);
+
+  // ── K clock parts: pointing at a hand, and counting the face ──────────────
+  const handleHandClick = useCallback((hand: 'hour' | 'minute') => {
+    if (!currentChallenge || currentChallenge.type !== 'hand_name') return;
+    if (hasSubmittedEvaluation || feedbackType === 'success') return;
+    SoundManager.select();
+    setPickedHand(hand);
+  }, [currentChallenge, hasSubmittedEvaluation, feedbackType]);
+
+  const handleNumeralClick = useCallback((num: number) => {
+    if (!currentChallenge || currentChallenge.type !== 'count_face') return;
+    if (hasSubmittedEvaluation || feedbackType === 'success') return;
+    setCountedNumerals((prev) => {
+      // Out of order: start the walk again rather than scoring it wrong. A
+      // five-year-old losing their place mid-circle is the ordinary case, and
+      // the challenge is only scored when the whole ring is in order.
+      if (num !== prev.length + 1) {
+        SoundManager.invalid();
+        setFeedback('Start again at 1 and go around in order.');
+        setFeedbackType('error');
+        return [];
+      }
+      SoundManager.tap();
+      setFeedback('');
+      setFeedbackType('');
+      return [...prev, num];
+    });
+  }, [currentChallenge, hasSubmittedEvaluation, feedbackType]);
 
   // -------------------------------------------------------------------------
   // Advance to next challenge
@@ -869,8 +990,14 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
         {/* Clock face */}
         {!allChallengesComplete && (
           <>
+            {/* hear_time draws NO reference dial: the four option faces are the
+                whole surface. A dial above them turns "which clock shows two
+                o'clock?" into matching against an answer already on screen —
+                caught in the 2026-09-09 Chrome drive, where the big dial sat
+                over the options showing exactly the time being asked for. */}
             <div
               ref={svgContainerRef}
+              hidden={currentChallenge?.type === 'hear_time'}
               className={`relative cursor-${currentChallenge?.type === 'set_time' ? 'grab' : 'default'} touch-none`}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -888,6 +1015,10 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                   '#60a5fa'
                 }
                 isPulsing={stopwatchRunning}
+                onHandClick={currentChallenge?.type === 'hand_name' ? handleHandClick : undefined}
+                pickedHand={currentChallenge?.type === 'hand_name' ? pickedHand : null}
+                onNumeralClick={currentChallenge?.type === 'count_face' ? handleNumeralClick : undefined}
+                countedNumerals={currentChallenge?.type === 'count_face' ? countedNumerals : undefined}
               />
 
               {/* Drag hint overlay for set_time */}
@@ -962,6 +1093,49 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
               </div>
             )}
 
+            {/* hear_time: the child hears a time and picks the FACE that shows
+                it — the inverse of `read`, and the only mode whose options are
+                clocks rather than words. */}
+            {currentChallenge && currentChallenge.type === 'hear_time' && !isCurrentChallengeCorrect && (
+              <div className="grid grid-cols-2 gap-4">
+                {getOptions(currentChallenge).map((option, i) => {
+                  const [oh, om] = option.split(':').map((n) => parseInt(n, 10));
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-label={`Clock face ${i + 1}`}
+                      onClick={() => { SoundManager.select(); setSelectedOption(i); }}
+                      disabled={hasSubmittedEvaluation}
+                      className={`rounded-2xl border p-2 transition-colors disabled:opacity-50 ${
+                        selectedOption === i
+                          ? 'bg-blue-500/20 border-blue-400/60'
+                          : 'bg-white/5 border-white/20 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="scale-[0.55] origin-center -m-16">
+                        <ClockFace
+                          hourDeg={((oh % 12) + (om || 0) / 60) * 30}
+                          minuteDeg={(om || 0) * 6}
+                          showMinuteTicks={false}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* count_face: the child's own progress round the ring. Never the
+                answer — it counts what they have already tapped. */}
+            {currentChallenge?.type === 'count_face' && !isCurrentChallengeCorrect && (
+              <p className="text-sm text-slate-300">
+                {countedNumerals.length === 0
+                  ? 'Start at 1 and tap all the way around.'
+                  : `You are up to ${countedNumerals[countedNumerals.length - 1]}.`}
+              </p>
+            )}
+
             {/* Multiple choice options (read / match / elapsed) */}
             {currentChallenge && ['read', 'match', 'elapsed'].includes(currentChallenge.type) && !isCurrentChallengeCorrect && (
               <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
@@ -1000,7 +1174,11 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                     onClick={handleCheckAnswer}
                     disabled={
                       hasSubmittedEvaluation ||
-                      (currentChallenge.type !== 'set_time' && selectedOption === null) ||
+                      (currentChallenge.type === 'hand_name'
+                        ? pickedHand === null
+                        : currentChallenge.type === 'count_face'
+                          ? countedNumerals.length < 12
+                          : currentChallenge.type !== 'set_time' && selectedOption === null) ||
                       stopwatchRunning
                     }
                   />

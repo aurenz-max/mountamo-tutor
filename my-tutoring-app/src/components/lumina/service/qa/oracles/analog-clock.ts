@@ -62,7 +62,11 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions } from './helpers
  * honest to bite on here.
  */
 
-const KNOWN_TYPES = new Set(['read', 'match', 'elapsed', 'set_time']);
+const KNOWN_TYPES = new Set([
+  'read', 'match', 'elapsed', 'set_time',
+  // K clock parts: the face itself, before the time it tells.
+  'hand_name', 'count_face', 'hear_time',
+]);
 const MC_TYPES = new Set(['read', 'match', 'elapsed']);
 
 function isInt(v: unknown): v is number {
@@ -174,6 +178,52 @@ export const analogClockOracle: ContentOracle = {
         });
       }
 
+      // ── hand_name: the two hands must be tellable apart on the dial. ──
+      // The child points at one of them, so a face where the hands overlap (or
+      // very nearly) has no answer, however well the key is stored.
+      if (type === 'hand_name') {
+        const hand = c.targetHand;
+        if (hand !== 'hour' && hand !== 'minute') {
+          violations.push({ check: 'schema', where: id, detail: `hand_name needs targetHand 'hour' or 'minute'; got ${JSON.stringify(hand)}` });
+          continue;
+        }
+        // Hour hand: 30° per hour plus the drift from the minutes. Minute hand: 6° per minute.
+        const hourDeg = ((targetHour % 12) + targetMinute / 60) * 30;
+        const minuteDeg = targetMinute * 6;
+        // Angular separation, 0 = one hand hidden behind the other.
+        let sep = Math.abs(hourDeg - minuteDeg) % 360;
+        if (sep > 180) sep = 360 - sep;
+        if (sep < 20) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `at ${targetHour}:${String(targetMinute).padStart(2, '0')} the hands lie ${Math.round(sep)}° apart — one is hidden behind the other, so "point at that hand" has no answer`,
+          });
+        }
+        // The instruction must not name which hand is which; that IS the answer.
+        const text = `${String(c.instruction ?? '')} ${String(c.hint ?? '')}`.toLowerCase();
+        if (/(short|long)\s+hand/.test(text) || /(hour|minute)\s+hand/.test(text)) {
+          violations.push({
+            check: 'answer-leak',
+            where: id,
+            detail: `the wording names the hand by its kind ("${String(c.instruction ?? '')}") — the child is asked to identify exactly that`,
+          });
+        }
+        checked++;
+        (answersByMode.hand_name ??= []).push(hand);
+        bump(cardSeen, `hand_name|${targetHour}:${targetMinute}|${hand}`);
+        continue;
+      }
+
+      // ── count_face: nothing to key — the answer is 1..12 in order, which the
+      // dial itself defines. Only the scope/schema checks above apply. ──
+      if (type === 'count_face') {
+        checked++;
+        (answersByMode.count_face ??= []).push(`${targetHour}:${targetMinute}`);
+        bump(cardSeen, `count_face|${targetHour}:${targetMinute}`);
+        continue;
+      }
+
       if (type === 'set_time') {
         // No MC key — the student dials the target. Schema + scope only.
         checked++;
@@ -204,7 +254,38 @@ export const analogClockOracle: ContentOracle = {
       const correctOption = options[coi as number];
       checked++;
 
-      if (MC_TYPES.has(type) && type !== 'elapsed') {
+      if (type === 'hear_time') {
+        // The options are FACES. The keyed one must show the time the child
+        // heard, and every face must differ by the HOUR — two faces an hour
+        // apart are a choice; two faces differing by minutes are a trick.
+        const parsed = parseClockOption(correctOption);
+        if (parsed === null) {
+          violations.push({ check: 'schema', where: id, detail: `hear_time correct option "${String(correctOption)}" is not an "H:MM" time string` });
+        } else if (parsed !== dialMinutes(targetHour, targetMinute)) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `the keyed face reads ${String(correctOption)} but the child was asked for ${targetHour}:${String(targetMinute).padStart(2, '0')}`,
+          });
+        }
+        if (targetMinute !== 0) {
+          violations.push({
+            check: 'scope',
+            where: id,
+            detail: `hear_time is whole hours at K; ${targetHour}:${String(targetMinute).padStart(2, '0')} asks a K child to hear minutes`,
+          });
+        }
+        const hours = present.map((o) => parseClockOption(o)).filter((v): v is number => v !== null);
+        if (new Set(hours.map((v) => Math.floor(v / 60))).size !== hours.length) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `two faces share an hour (${JSON.stringify(present)}) — more than one face can look like the answer`,
+          });
+        }
+        (answersByMode.hear_time ??= []).push(dialMinutes(targetHour, targetMinute));
+        bump(cardSeen, `hear_time|${targetHour}:${targetMinute}`);
+      } else if (MC_TYPES.has(type) && type !== 'elapsed') {
         // ── read / match: the pointed-at option must READ as the shown time. ──
         const parsed = parseClockOption(correctOption);
         if (parsed === null) {

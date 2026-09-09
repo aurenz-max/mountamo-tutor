@@ -1,0 +1,1064 @@
+{
+  "startedAt": "2026-09-09T10:49:32.039Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "hand_name/none draw 1",
+      "mode": "hand_name",
+      "tier": "",
+      "failures": [],
+      "title": "Which Hand Is Which?",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "3:00",
+          "targetHand": "hour",
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "6:00",
+          "targetHand": "minute",
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "9:00",
+          "targetHand": "hour",
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "12:30",
+          "targetHand": "minute",
+          "options": []
+        },
+        {
+          "id": "c5",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "5:00",
+          "targetHand": "hour",
+          "options": []
+        }
+      ]
+    },
+    {
+      "label": "hand_name/none draw 2",
+      "mode": "hand_name",
+      "tier": "",
+      "failures": [],
+      "title": "Which Hand Is Which?",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "3:00",
+          "targetHand": "hour",
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "6:00",
+          "targetHand": "minute",
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "9:00",
+          "targetHand": "hour",
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "12:30",
+          "targetHand": "minute",
+          "options": []
+        }
+      ]
+    },
+    {
+      "label": "hand_name/none draw 3",
+      "mode": "hand_name",
+      "tier": "",
+      "failures": [],
+      "title": "Which Hand Is It?",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "3:00",
+          "targetHand": "hour",
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "6:00",
+          "targetHand": "minute",
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "9:00",
+          "targetHand": "hour",
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "12:30",
+          "targetHand": "minute",
+          "options": []
+        },
+        {
+          "id": "c5",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "4:30",
+          "targetHand": "hour",
+          "options": []
+        }
+      ]
+    },
+    {
+      "label": "hand_name/hard draw 1",
+      "mode": "hand_name",
+      "tier": "hard",
+      "failures": [],
+      "title": "Meeting the Clock Hands",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "3:00",
+          "targetHand": "hour",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "6:00",
+          "targetHand": "minute",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "9:00",
+          "targetHand": "hour",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "12:30",
+          "targetHand": "minute",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "hand_name/hard draw 2",
+      "mode": "hand_name",
+      "tier": "hard",
+      "failures": [],
+      "title": "Which Hand Is Which?",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "3:00",
+          "targetHand": "hour",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "6:00",
+          "targetHand": "minute",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "9:00",
+          "targetHand": "hour",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "12:30",
+          "targetHand": "minute",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "hand_name/hard draw 3",
+      "mode": "hand_name",
+      "tier": "hard",
+      "failures": [],
+      "title": "Meeting the Clock Hands",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "3:00",
+          "targetHand": "hour",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "6:00",
+          "targetHand": "minute",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the hour.",
+          "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+          "time": "9:00",
+          "targetHand": "hour",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "hand_name",
+          "instruction": "Touch the hand that tells us the minutes.",
+          "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+          "time": "12:30",
+          "targetHand": "minute",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "count_face/none draw 1",
+      "mode": "count_face",
+      "tier": "",
+      "failures": [],
+      "title": "Counting Numbers Around the Clock",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "12:00",
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "3:30",
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "6:00",
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "9:30",
+          "options": []
+        }
+      ]
+    },
+    {
+      "label": "count_face/none draw 2",
+      "mode": "count_face",
+      "tier": "",
+      "failures": [],
+      "title": "Counting Numbers on the Clock",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "2:00",
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "4:30",
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "7:00",
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "10:30",
+          "options": []
+        }
+      ]
+    },
+    {
+      "label": "count_face/none draw 3",
+      "mode": "count_face",
+      "tier": "",
+      "failures": [],
+      "title": "Counting Numbers on the Clock Face",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "1:00",
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "3:00",
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "6:30",
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "9:30",
+          "options": []
+        },
+        {
+          "id": "c5",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "12:00",
+          "options": []
+        }
+      ]
+    },
+    {
+      "label": "count_face/hard draw 1",
+      "mode": "count_face",
+      "tier": "hard",
+      "failures": [],
+      "title": "Counting Numbers Around the Clock",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "12:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "3:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "6:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "9:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "count_face/hard draw 2",
+      "mode": "count_face",
+      "tier": "hard",
+      "failures": [],
+      "title": "Counting Around the Clock",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "12:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "3:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "6:30",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "9:30",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "count_face/hard draw 3",
+      "mode": "count_face",
+      "tier": "hard",
+      "failures": [],
+      "title": "Counting Around the Clock",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "12:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "3:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "6:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "count_face",
+          "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+          "hint": "After 1 comes 2. Keep going round the same way.",
+          "time": "9:00",
+          "options": [],
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "hear_time/none draw 1",
+      "mode": "hear_time",
+      "tier": "",
+      "failures": [],
+      "title": "Clock Shop Fun",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hear_time",
+          "instruction": "Which clock shows two o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "2:00",
+          "options": [
+            "4:00",
+            "2:00",
+            "9:00",
+            "6:00"
+          ],
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "c2",
+          "type": "hear_time",
+          "instruction": "Which clock shows five o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "5:00",
+          "options": [
+            "12:00",
+            "6:00",
+            "1:00",
+            "5:00"
+          ],
+          "correctOptionIndex": 3
+        },
+        {
+          "id": "c3",
+          "type": "hear_time",
+          "instruction": "Which clock shows nine o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "9:00",
+          "options": [
+            "9:00",
+            "11:00",
+            "2:00",
+            "3:00"
+          ],
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "c4",
+          "type": "hear_time",
+          "instruction": "Which clock shows twelve o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "12:00",
+          "options": [
+            "8:00",
+            "2:00",
+            "1:00",
+            "12:00"
+          ],
+          "correctOptionIndex": 3
+        }
+      ]
+    },
+    {
+      "label": "hear_time/none draw 2",
+      "mode": "hear_time",
+      "tier": "",
+      "failures": [],
+      "title": "Clock Shop Time Match",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hear_time",
+          "instruction": "Which clock shows two o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "2:00",
+          "options": [
+            "11:00",
+            "5:00",
+            "2:00",
+            "6:00"
+          ],
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "c2",
+          "type": "hear_time",
+          "instruction": "Which clock shows five o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "5:00",
+          "options": [
+            "5:00",
+            "7:00",
+            "6:00",
+            "4:00"
+          ],
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "c3",
+          "type": "hear_time",
+          "instruction": "Which clock shows nine o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "9:00",
+          "options": [
+            "5:00",
+            "9:00",
+            "12:00",
+            "10:00"
+          ],
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "c4",
+          "type": "hear_time",
+          "instruction": "Which clock shows twelve o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "12:00",
+          "options": [
+            "1:00",
+            "12:00",
+            "2:00",
+            "7:00"
+          ],
+          "correctOptionIndex": 1
+        }
+      ]
+    },
+    {
+      "label": "hear_time/none draw 3",
+      "mode": "hear_time",
+      "tier": "",
+      "failures": [],
+      "title": "Clock Shop Fun",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hear_time",
+          "instruction": "Which clock shows two o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "2:00",
+          "options": [
+            "1:00",
+            "7:00",
+            "2:00",
+            "10:00"
+          ],
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "c2",
+          "type": "hear_time",
+          "instruction": "Which clock shows five o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "5:00",
+          "options": [
+            "12:00",
+            "5:00",
+            "4:00",
+            "10:00"
+          ],
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "c3",
+          "type": "hear_time",
+          "instruction": "Which clock shows nine o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "9:00",
+          "options": [
+            "12:00",
+            "9:00",
+            "10:00",
+            "6:00"
+          ],
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "c4",
+          "type": "hear_time",
+          "instruction": "Which clock shows twelve o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "12:00",
+          "options": [
+            "2:00",
+            "12:00",
+            "11:00",
+            "1:00"
+          ],
+          "correctOptionIndex": 1
+        }
+      ]
+    },
+    {
+      "label": "hear_time/hard draw 1",
+      "mode": "hear_time",
+      "tier": "hard",
+      "failures": [],
+      "title": "Hear and Match the Time",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hear_time",
+          "instruction": "Which clock shows two o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "2:00",
+          "options": [
+            "4:00",
+            "3:00",
+            "2:00",
+            "5:00"
+          ],
+          "correctOptionIndex": 2,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "hear_time",
+          "instruction": "Which clock shows five o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "5:00",
+          "options": [
+            "5:00",
+            "6:00",
+            "7:00",
+            "4:00"
+          ],
+          "correctOptionIndex": 0,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "hear_time",
+          "instruction": "Which clock shows nine o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "9:00",
+          "options": [
+            "3:00",
+            "11:00",
+            "5:00",
+            "9:00"
+          ],
+          "correctOptionIndex": 3,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "hear_time",
+          "instruction": "Which clock shows twelve o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "12:00",
+          "options": [
+            "12:00",
+            "7:00",
+            "1:00",
+            "5:00"
+          ],
+          "correctOptionIndex": 0,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c5",
+          "type": "hear_time",
+          "instruction": "Which clock shows seven o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "7:00",
+          "options": [
+            "6:00",
+            "3:00",
+            "10:00",
+            "7:00"
+          ],
+          "correctOptionIndex": 3,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "hear_time/hard draw 2",
+      "mode": "hear_time",
+      "tier": "hard",
+      "failures": [],
+      "title": "Clock Party: Matching Whole Hours",
+      "checkedChallenges": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hear_time",
+          "instruction": "Which clock shows two o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "2:00",
+          "options": [
+            "2:00",
+            "7:00",
+            "6:00",
+            "10:00"
+          ],
+          "correctOptionIndex": 0,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "hear_time",
+          "instruction": "Which clock shows five o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "5:00",
+          "options": [
+            "1:00",
+            "5:00",
+            "4:00",
+            "11:00"
+          ],
+          "correctOptionIndex": 1,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "hear_time",
+          "instruction": "Which clock shows nine o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "9:00",
+          "options": [
+            "2:00",
+            "9:00",
+            "11:00",
+            "7:00"
+          ],
+          "correctOptionIndex": 1,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "hear_time",
+          "instruction": "Which clock shows twelve o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "12:00",
+          "options": [
+            "11:00",
+            "2:00",
+            "12:00",
+            "6:00"
+          ],
+          "correctOptionIndex": 2,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c5",
+          "type": "hear_time",
+          "instruction": "Which clock shows seven o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "7:00",
+          "options": [
+            "3:00",
+            "9:00",
+            "7:00",
+            "10:00"
+          ],
+          "correctOptionIndex": 2,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    },
+    {
+      "label": "hear_time/hard draw 3",
+      "mode": "hear_time",
+      "tier": "hard",
+      "failures": [],
+      "title": "Hear the Clock Tick",
+      "checkedChallenges": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "hear_time",
+          "instruction": "Which clock shows two o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "2:00",
+          "options": [
+            "1:00",
+            "2:00",
+            "8:00",
+            "6:00"
+          ],
+          "correctOptionIndex": 1,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c2",
+          "type": "hear_time",
+          "instruction": "Which clock shows five o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "5:00",
+          "options": [
+            "5:00",
+            "3:00",
+            "7:00",
+            "11:00"
+          ],
+          "correctOptionIndex": 0,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c3",
+          "type": "hear_time",
+          "instruction": "Which clock shows nine o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "9:00",
+          "options": [
+            "10:00",
+            "4:00",
+            "7:00",
+            "9:00"
+          ],
+          "correctOptionIndex": 3,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        },
+        {
+          "id": "c4",
+          "type": "hear_time",
+          "instruction": "Which clock shows twelve o'clock?",
+          "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+          "time": "12:00",
+          "options": [
+            "8:00",
+            "12:00",
+            "9:00",
+            "11:00"
+          ],
+          "correctOptionIndex": 1,
+          "showHandLegend": false,
+          "supportTier": "hard"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 18,
+    "failedDraws": 0
+  }
+}
