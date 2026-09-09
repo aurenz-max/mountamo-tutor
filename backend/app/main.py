@@ -10,14 +10,12 @@ from .api.endpoints import (
     curriculum,
     problems,
     learning_paths,
-    gemini,
     analytics,
     playground,
     education,
     user_profiles,
     daily_activities,
     daily_briefing_live,
-    packages,
     practice_tutor,
     lumina_tutor,
     assessments,
@@ -174,21 +172,7 @@ app.include_router(
     # Note: Auth handled per-route like daily_briefing_live
 )
 
-# 🔥 NEW: Packages and Discovery Threads 
-app.include_router(
-    packages.router, 
-    prefix="/api/packages", 
-    tags=["packages"],
-    dependencies=[Depends(get_user_context)]
-)
 
-# 🔥 COMPATIBILITY: Keep discovery threads route for existing frontend
-app.include_router(
-    packages.router, 
-    prefix="/api/discovery", 
-    tags=["discovery-threads"],
-    dependencies=[Depends(get_user_context)]
-)
 
 # 🔥 NEW: Daily Activities Endpoint
 app.include_router(
@@ -314,7 +298,6 @@ async def root():
             "curriculum": "/api/curriculum",
             "competency": "/api/competency",
             "daily_activities": "/api/daily-activities",
-            "discovery_threads": "/api/discovery",  # 🔥 NEW: Discovery threads for packages
             "assessments": "/api/assessments"  # 🔥 NEW: Personalized subject assessments
         },
         "features": {
@@ -327,7 +310,6 @@ async def root():
             "streaks": True,
             "data_isolation": True,
             "daily_activities": True,
-            "discovery_threads": True,  # 🔥 NEW: Discovery threads for learning packages
             "personalized_assessments": True  # 🔥 NEW: Subject-based personalized assessments
         }
     }
@@ -350,7 +332,6 @@ async def health_check():
             "automatic_student_mapping": True,
             "simplified_dependencies": True,
             "daily_activities": True,
-            "discovery_threads": True,  # 🔥 NEW: Discovery threads for packages
             "personalized_assessments": True  # 🔥 NEW: Subject-based personalized assessments
         },
         "endpoints": {

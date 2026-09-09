@@ -5,7 +5,6 @@ from typing import Optional
 from fastapi import Depends, BackgroundTasks
 
 from .services.azure_tts import AzureSpeechService
-from .services.anthropic import AnthropicService
 from .services.problems import ProblemService
 from .services.competency import CompetencyService
 from .services.curriculum_service import CurriculumService
@@ -19,7 +18,6 @@ from .services.ai_service_factory import AIServiceFactory
 
 from .services.gemini_problem import GeminiProblemIntegration
 from .services.learning_paths import LearningPathsService
-from .services.gemini_read_along import GeminiReadAlongIntegration
 from .services.review import ReviewService
 
 from .services.daily_activities import DailyActivitiesService
@@ -51,11 +49,9 @@ logger.setLevel(logging.INFO)
 _cosmos_db: Optional[CosmosDBService] = None
 _firestore_service: Optional[FirestoreService] = None
 _curriculum_service: Optional[CurriculumService] = None
-_anthropic_service: Optional[AnthropicService] = None
 _gemini_generate_service: Optional[GeminiGenerateService] = None
 _visual_content_service: Optional[VisualContentService] = None
 _visual_content_manager: Optional[VisualContentManager] = None
-_read_along_integration: Optional[GeminiReadAlongIntegration] = None
 
 # Global services that depend on the above
 _competency_service: Optional[CompetencyService] = None
@@ -161,16 +157,8 @@ def get_blob_storage_service():
 def get_ai_service(service_type: str = None) -> BaseAIService:
     """Get AI service instance based on type or default configuration"""
     if service_type is None:
-        service_type = getattr(settings, "DEFAULT_AI_SERVICE", "anthropic")
+        service_type = getattr(settings, "DEFAULT_AI_SERVICE", "gemini")
     return AIServiceFactory.get_service(service_type)
-
-def get_anthropic_service() -> AnthropicService:
-    """Get or create AnthropicService singleton."""
-    global _anthropic_service
-    if _anthropic_service is None:
-        logger.info("Initializing AnthropicService")
-        _anthropic_service = AnthropicService()
-    return _anthropic_service
 
 def get_gemini_generate_service() -> GeminiGenerateService:
     """Get or create GeminiGenerateService singleton."""
@@ -197,14 +185,6 @@ def get_visual_content_manager(
         logger.info("Initializing VisualContentManager")
         _visual_content_manager = VisualContentManager(visual_content_service)
     return _visual_content_manager
-
-def get_read_along_integration() -> GeminiReadAlongIntegration:
-    """Get or create GeminiReadAlongIntegration singleton."""
-    global _read_along_integration
-    if _read_along_integration is None:
-        logger.info("Initializing GeminiReadAlongIntegration")
-        _read_along_integration = GeminiReadAlongIntegration()
-    return _read_along_integration
 
 # 🔥 UPDATED: Get user profiles service
 def get_user_profiles_service():
@@ -352,7 +332,7 @@ async def get_problem_service(
     
     # Set AI service using factory
     if _problem_service.ai_service is None:
-        default_ai_service = getattr(settings, "DEFAULT_AI_SERVICE", "anthropic").lower()
+        default_ai_service = getattr(settings, "DEFAULT_AI_SERVICE", "gemini").lower()
         logger.info(f"Setting AI service to {default_ai_service} on ProblemService")
         _problem_service.set_ai_service(default_ai_service)
         
@@ -395,7 +375,7 @@ def get_review_service(
         _review_service = ReviewService()
         
         # Set default AI service from config
-        default_review_service = getattr(settings, "DEFAULT_AI_REVIEW_SERVICE", "anthropic")
+        default_review_service = getattr(settings, "DEFAULT_AI_REVIEW_SERVICE", "gemini")
         logger.info(f"Setting default AI service to {default_review_service} for ReviewService")
         _review_service.set_ai_service(default_review_service)
     

@@ -11,9 +11,6 @@ class Settings(BaseSettings):
     # Database settings
     DATABASE_URL: str = "sqlite:///./ai_tutor.db"
     
-    # Anthropic API settings
-    ANTHROPIC_API_KEY: Optional[str] = None
-    
     # Azure Text-to-Speech settings
     TTS_KEY: Optional[str] = None
     TTS_REGION: Optional[str] = None

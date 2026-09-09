@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 class GeminiGenerateService(BaseAIService):
     def __init__(self):
-        # Initialize with the client approach (similar to gemini_read_along.py)
+        # Initialize with the google-genai Client
         try:
-            # Configure using Client like in the working gemini_read_along.py
+            # Configure the Client
             self.client = genai.Client(
                 api_key=settings.GEMINI_GENERATE_KEY,
                 http_options={"api_version": "v1alpha"},
@@ -39,7 +39,7 @@ class GeminiGenerateService(BaseAIService):
         clean_json: bool = True  # Default to cleaning JSON responses
     ) -> str:
         """
-        Generate a response using Gemini API with compatible interface to AnthropicService
+        Generate a response using the Gemini API through the BaseAIService interface
         
         Args:
             prompt: Either a string or a list of message objects
@@ -85,7 +85,7 @@ class GeminiGenerateService(BaseAIService):
                 return ""  # Only return empty string if no response
                 
             else:
-                # Handle Anthropic-style message format with potential images
+                # Handle list-of-messages format with potential images
                 # Convert to Google's expected format
                 google_content = []
                 has_images = False

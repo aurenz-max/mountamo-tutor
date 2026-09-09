@@ -426,7 +426,7 @@ class ProblemService:
         Set the AI service to use for generating problems
         
         Args:
-            service_type: 'anthropic', 'claude', or 'gemini'
+            service_type: 'gemini' (the only backend LLM service)
         """
         self._current_ai_service_type = service_type
         # Update the current service instance

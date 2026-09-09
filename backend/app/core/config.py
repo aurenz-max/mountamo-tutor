@@ -47,9 +47,6 @@ class Settings(BaseSettings):
 
     DEFAULT_AI_REVIEW_SERVICE: str
     
-    # Anthropic API settings
-    ANTHROPIC_API_KEY: Optional[str] = None
-    
     # Azure Text-to-Speech settings
     TTS_KEY: Optional[str] = None
     TTS_REGION: Optional[str] = None

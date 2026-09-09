@@ -88,7 +88,7 @@ Primitive UI is built from the Lumina kit, never raw shadcn — full rules (kit 
 
 ## Architecture (brief)
 
-- **Backend:** FastAPI + Firestore + BigQuery (analytics only). Key services: CompetencyService, MasteryLifecycleEngine (4-gate model), PlanningService (stateless, Firestore-native).
-- **AI:** Gemini for content generation (manifests, generators, tutoring). Azure Speech for TTS. Gemini Live for real-time audio tutoring.
+- **Backend:** FastAPI + Firestore. Key services: CompetencyService, MasteryLifecycleEngine (4-gate model), PlanningService (stateless, Firestore-native).
+- **AI:** Gemini for content generation (manifests, generators, tutoring). Gemini Live for real-time audio tutoring.
 - **Manifest pipeline:** Topic → Gemini manifest (picks primitives from live catalog) → per-primitive Gemini generators → hydrated interactive content.
 - **Auth:** Firebase Auth on all endpoints.
