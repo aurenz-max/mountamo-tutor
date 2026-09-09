@@ -288,6 +288,40 @@ const shapeSorterSchema: Schema = {
 const VALID_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
 const VALID_SIZES = ['small', 'medium', 'large'];
 const VALID_TYPES = ['identify', 'count', 'sort'];
+
+/**
+ * Everyday things whose shape is not in dispute, with the shape held in CODE.
+ * A model asked "which shape is a clock?" answers correctly most of the time,
+ * and the exceptions reach a five-year-old as a wrong answer marked right — so
+ * the pairing is a table, exactly as 3d-shape-explorer holds its own.
+ * No object NAME contains a shape word: the name would otherwise answer the
+ * question the picture is asking.
+ */
+const REAL_WORLD_OBJECTS: Array<{ object: string; emoji: string; shape: string }> = [
+  { object: 'clock face', emoji: '🕐', shape: 'circle' },
+  { object: 'plate', emoji: '🍽️', shape: 'circle' },
+  { object: 'door', emoji: '🚪', shape: 'rectangle' },
+  { object: 'book', emoji: '📕', shape: 'rectangle' },
+  { object: 'window', emoji: '🪟', shape: 'square' },
+  { object: 'dice', emoji: '🎲', shape: 'square' },
+  { object: 'pizza slice', emoji: '🍕', shape: 'triangle' },
+  { object: 'party hat', emoji: '🎉', shape: 'triangle' },
+  { object: 'kite', emoji: '🪁', shape: 'diamond' },
+  { object: 'egg', emoji: '🥚', shape: 'oval' },
+];
+
+function shuffleObjects<T>(arr: readonly T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Does the lesson ask for shapes as they appear in the world, not on a page? */
+const namesRealWorld = (text: string): boolean =>
+  /real[- ]?world|real objects|everyday|around (us|you|the room)|in the world|things we see/i.test(text);
 const VALID_RULES = ['shape', 'color', 'sides', 'curved'];
 
 // ── Generator ────────────────────────────────────────────────────
@@ -310,6 +344,12 @@ export const generateShapeSorter = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ShapeSorterConfig;
+  // Does this lesson want shapes as they appear in the world? Read from the
+  // objective in CODE — the pool it selects is code-owned, so a prompt-only
+  // read would leave the stimulus to chance.
+  const wantsRealObjects = namesRealWorld(
+    `${topic} ${ctx.intent ?? ''} ${(config as { objectiveText?: string })?.objectiveText ?? ''}`,
+  );
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'shape-sorter',
@@ -598,6 +638,34 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
   // a sort ask NAMES its groups aloud. The two surviving `show*` flags stay
   // display-only, and correctness is still derived from the geometry table, so
   // no flag can leak or invalidate an answer.
+  // ── Shapes in the world (K.G.A.2 / K.G.B.4) ─────────────────────────────
+  // When the objective asks for shapes in REAL objects, the identify pool is
+  // rebuilt from a code-owned table: a clock face is a circle whatever the model
+  // thinks, and an object called "round plate" would answer the question in the
+  // picture. The model is not asked for either half.
+  if (wantsRealObjects) {
+    for (const ch of data.challenges as ShapeSorterChallengeWithTier[]) {
+      if (ch.type !== 'identify') continue;
+      const pool = shuffleObjects(REAL_WORLD_OBJECTS)
+        // One object per shape KIND: the identify walk asks each kind once, so a
+        // second circle in the pool is a shape the child never gets asked about.
+        .filter((o, i, arr) => arr.findIndex((x) => x.shape === o.shape) === i)
+        .slice(0, 4);
+      if (pool.length < 2) continue;
+      (ch as unknown as { shapes: ShapeDraft[] }).shapes = pool.map((o, i) => ({
+        shape: o.shape,
+        color: ['blue', 'green', 'purple', 'orange'][i % 4],
+        size: 'large',
+        rotation: 0,
+        realObject: o.object,
+        emoji: o.emoji,
+      }));
+      (ch as unknown as { instruction: string }).instruction =
+        'Look at each thing. What shape do you see in it?';
+    }
+    console.log(`[ShapeSorter] Real-world stimulus pools applied (objective names everyday objects)`);
+  }
+
   if (supportTier) {
     for (const ch of data.challenges as ShapeSorterChallengeWithTier[]) {
       const scaffold = resolveSupportStructure(ch.type as ChallengeType, supportTier);
@@ -612,7 +680,10 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
 };
 
 /** A challenge as it arrives from the model and is narrowed in place. */
-type ShapeDraft = { shape: string; color: string; size: string; rotation: number };
+type ShapeDraft = {
+  shape: string; color: string; size: string; rotation: number;
+  realObject?: string; emoji?: string;
+};
 type ShapeSorterChallengeDraft = {
   id: string;
   type: string;

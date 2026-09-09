@@ -96,6 +96,11 @@ export interface ShapeSorterShape {
   color: string;
   size: 'small' | 'medium' | 'large';
   rotation: number;
+  /** Drawn as an everyday thing rather than a bare figure, when the objective
+   *  asks the child to find shapes in real objects (K.G.A.2 / K.G.B.4). The
+   *  name never contains a shape word — that is what is being asked for. */
+  realObject?: string;
+  emoji?: string;
 }
 
 export interface ShapeSorterChallenge {
@@ -165,8 +170,24 @@ const MAT_COLORS = ['text-cyan-300', 'text-purple-300', 'text-amber-300', 'text-
 function renderShapeSVG(
   shape: string, cx: number, cy: number, baseSize: number,
   color: string, rotation: number,
-  opts?: { dimmed?: boolean; showCorners?: boolean },
+  opts?: { dimmed?: boolean; showCorners?: boolean; emoji?: string },
 ): React.ReactNode {
+  // A real-world stimulus is drawn AS the object: the child has to see the
+  // shape in the clock face, which is the whole task. Drawing the outline too
+  // would hand them the answer.
+  if (opts?.emoji) {
+    return (
+      <text
+        x={cx} y={cy}
+        textAnchor="middle" dominantBaseline="central"
+        fontSize={baseSize}
+        opacity={opts.dimmed ? 0.25 : 1}
+        className="select-none"
+      >
+        {opts.emoji}
+      </text>
+    );
+  }
   const fill = SHAPE_COLORS[color] || color || '#94a3b8';
   const opacity = opts?.dimmed ? 0.25 : 1;
   const stroke = 'rgba(255,255,255,0.3)';
@@ -498,6 +519,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
                 )}
                 {renderShapeSVG(s.shape, cx, cy, baseSize, s.color, s.rotation, {
                   dimmed: !isCurrent,
+                  emoji: s.emoji,
                 })}
               </g>
             );

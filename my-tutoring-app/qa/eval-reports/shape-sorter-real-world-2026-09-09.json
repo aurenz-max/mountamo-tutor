@@ -1,0 +1,222 @@
+{
+  "startedAt": "2026-09-09T10:44:59.138Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "real-world objective draw 1",
+      "failures": [],
+      "title": "Classroom Shape Hunt!",
+      "challenges": [
+        {
+          "id": "c1",
+          "instruction": "Look at each thing. What shape do you see in it?",
+          "shapes": [
+            "🎲dice=square",
+            "🎉party hat=triangle",
+            "🍽️plate=circle",
+            "🥚egg=oval"
+          ]
+        },
+        {
+          "id": "c2",
+          "instruction": "Look at each thing. What shape do you see in it?",
+          "shapes": [
+            "🪁kite=diamond",
+            "🎉party hat=triangle",
+            "🪟window=square",
+            "📕book=rectangle"
+          ]
+        },
+        {
+          "id": "c3",
+          "instruction": "Look at each thing. What shape do you see in it?",
+          "shapes": [
+            "📕book=rectangle",
+            "🪁kite=diamond",
+            "🍕pizza slice=triangle",
+            "🪟window=square"
+          ]
+        },
+        {
+          "id": "c4",
+          "instruction": "Look at each thing. What shape do you see in it?",
+          "shapes": [
+            "🎲dice=square",
+            "🍕pizza slice=triangle",
+            "🍽️plate=circle",
+            "🥚egg=oval"
+          ]
+        }
+      ],
+      "asks": [
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?"
+      ]
+    },
+    {
+      "label": "real-world objective draw 2",
+      "failures": [],
+      "title": "Classroom Shape Safari",
+      "challenges": [
+        {
+          "id": "c1",
+          "instruction": "Look at each thing. What shape do you see in it?",
+          "shapes": [
+            "🎉party hat=triangle",
+            "🍽️plate=circle",
+            "📕book=rectangle",
+            "🥚egg=oval"
+          ]
+        },
+        {
+          "id": "c2",
+          "instruction": "Look at each thing. What shape do you see in it?",
+          "shapes": [
+            "🪟window=square",
+            "📕book=rectangle",
+            "🍕pizza slice=triangle",
+            "🥚egg=oval"
+          ]
+        },
+        {
+          "id": "c3",
+          "instruction": "Look at each thing. What shape do you see in it?",
+          "shapes": [
+            "🎲dice=square",
+            "🥚egg=oval",
+            "🍽️plate=circle",
+            "🚪door=rectangle"
+          ]
+        },
+        {
+          "id": "c4",
+          "instruction": "Look at each thing. What shape do you see in it?",
+          "shapes": [
+            "📕book=rectangle",
+            "🕐clock face=circle",
+            "🪟window=square",
+            "🥚egg=oval"
+          ]
+        }
+      ],
+      "asks": [
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?"
+      ]
+    },
+    {
+      "label": "plain objective (regression) draw 1",
+      "failures": [],
+      "title": "Shape Safari!",
+      "challenges": [
+        {
+          "id": "c1",
+          "instruction": "Look at the shape that is marked and listen for the question.",
+          "shapes": [
+            "circle=circle",
+            "square=square",
+            "triangle=triangle",
+            "rectangle=rectangle"
+          ]
+        },
+        {
+          "id": "c2",
+          "instruction": "Look at the shape that is marked and listen for the question.",
+          "shapes": [
+            "triangle=triangle",
+            "square=square",
+            "rectangle=rectangle",
+            "circle=circle"
+          ]
+        },
+        {
+          "id": "c3",
+          "instruction": "Look at the shape that is marked and listen for the question.",
+          "shapes": [
+            "square=square",
+            "rectangle=rectangle",
+            "circle=circle",
+            "triangle=triangle"
+          ]
+        },
+        {
+          "id": "c4",
+          "instruction": "Look at the shape that is marked and listen for the question.",
+          "shapes": [
+            "rectangle=rectangle",
+            "triangle=triangle",
+            "circle=circle",
+            "square=square"
+          ]
+        }
+      ],
+      "asks": [
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?"
+      ]
+    },
+    {
+      "label": "plain objective (regression) draw 2",
+      "failures": [],
+      "title": "Shape Safari: Naming Flat Shapes",
+      "challenges": [
+        {
+          "id": "c1",
+          "instruction": "Look at the shape that is marked and listen for the question.",
+          "shapes": [
+            "circle=circle",
+            "square=square",
+            "triangle=triangle",
+            "rectangle=rectangle"
+          ]
+        },
+        {
+          "id": "c2",
+          "instruction": "Look at the shape that is marked and listen for the question.",
+          "shapes": [
+            "triangle=triangle",
+            "circle=circle",
+            "square=square",
+            "rectangle=rectangle"
+          ]
+        },
+        {
+          "id": "c3",
+          "instruction": "Look at the shape that is marked and listen for the question.",
+          "shapes": [
+            "rectangle=rectangle",
+            "triangle=triangle",
+            "circle=circle",
+            "square=square"
+          ]
+        },
+        {
+          "id": "c4",
+          "instruction": "Look at the shape that is marked and listen for the question.",
+          "shapes": [
+            "square=square",
+            "rectangle=rectangle",
+            "triangle=triangle",
+            "circle=circle"
+          ]
+        }
+      ],
+      "asks": [
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?",
+        "Your turn. What shape is this?"
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 4,
+    "failedDraws": 0
+  }
+}

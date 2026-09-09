@@ -340,6 +340,14 @@ export interface ShapeSorterItem extends JudgedScriptItem {
   answer: string;
   /** identify only — the other names for THIS drawing that count as correct. */
   spokenAlternates: string[];
+  /**
+   * The everyday thing this shape is drawn AS ("clock face", "door"), when the
+   * objective asks the child to find shapes in real objects. The name is
+   * code-owned and never contains a shape word — the shape is what is being
+   * asked for, so an object called "the round plate" would answer the question
+   * in the stimulus. Absent = the plain geometric drawing.
+   */
+  realObject?: string;
   /** count only — the numeral behind `answer`, for the code side and the tests. */
   countNumeral?: number;
   /** count only — which feature this item asks about. */
@@ -467,6 +475,9 @@ export interface ShapeSorterShapeLike {
   color: string;
   size?: string;
   rotation?: number;
+  /** The everyday thing this shape is drawn as (see ShapeSorterItem.realObject). */
+  realObject?: string;
+  emoji?: string;
 }
 
 export interface ShapeSorterChallengeLike {
@@ -566,6 +577,7 @@ export const itemsFromChallenge = (
       shape: sanitize(s.shape).toLowerCase(),
       color: sanitize(s.color).toLowerCase(),
       rotation: typeof s.rotation === 'number' ? s.rotation : 0,
+      realObject: s.realObject ? sanitize(s.realObject).toLowerCase() : undefined,
     }))
     .filter((s) => !!SHAPE_PROPERTIES[s.shape]);
   if (pool.length === 0) return [];
@@ -574,15 +586,15 @@ export const itemsFromChallenge = (
     // Keyed on the DRAWING, not the word: diamond and rhombus are one figure,
     // so naming either spends both (see `nameClassOf`).
     const seen = new Set<string>();
-    const kept: Array<{ index: number; shape: string }> = [];
+    const kept: Array<{ index: number; shape: string; realObject?: string }> = [];
     pool.forEach((s, index) => {
       if (!isNameable(s.shape, s.rotation)) return;
       const key = nameClassOf(s.shape);
       if (seen.has(key) || named.has(key)) return;
       seen.add(key);
-      kept.push({ index, shape: s.shape });
+      kept.push({ index, shape: s.shape, realObject: s.realObject });
     });
-    return kept.slice(0, MAX_ITEMS_PER_CHALLENGE).map(({ index, shape }) => ({
+    return kept.slice(0, MAX_ITEMS_PER_CHALLENGE).map(({ index, shape, realObject }) => ({
       id: `${ch.id}::name-${index}`,
       mode: 'identify' as const,
       answerKind: 'voice' as const,
@@ -594,6 +606,12 @@ export const itemsFromChallenge = (
       shape,
       answer: shape,
       spokenAlternates: SHAPE_ALTERNATES[shape] ?? [],
+      // An object whose NAME contains a shape word would answer the question in
+      // the stimulus, so it is dropped back to the plain drawing rather than
+      // shipped. (The generator's table never produces one; this is the gate.)
+      realObject: realObject && !VALID_SHAPES.some((sh) => realObject.includes(sh))
+        ? realObject
+        : undefined,
       choices: [],
       namesChoices: false,
       showCornerHints,
@@ -1100,7 +1118,11 @@ export const pronounceCue = (item: ShapeSorterItem): string => {
 export const stimulusFor = (item: ShapeSorterItem): string => {
   switch (item.mode) {
     case 'identify':
-      return 'one shape highlighted on the screen, with other shapes drawn beside it';
+      // The object is public — it is what the child is LOOKING at. Its shape is
+      // not, and the code-owned object names never contain a shape word.
+      return item.realObject
+        ? `a ${item.realObject} highlighted on the screen, with other everyday things beside it`
+        : 'one shape highlighted on the screen, with other shapes drawn beside it';
     case 'count':
       return 'one shape drawn large on the screen';
     case 'sort':

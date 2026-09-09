@@ -3895,7 +3895,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       + 'group it belongs with. The tutor judges the spoken answer from the audio, corrects by re-modelling, and '
       + 'its own affirmation advances the lesson. Nothing is tapped, dragged or typed. REQUIRES A MICROPHONE. '
       + 'Teaches Defining vs Non-Defining Attributes; correctness is derived in code from the geometry, never '
-      + 'from the model. ESSENTIAL for Kindergarten and Grade 1 geometry.',
+      + 'from the model. When the objective asks for shapes in REAL objects or everyday things, the naming pool '
+      + 'is drawn as familiar objects instead of bare figures — a clock face, a door, a window, a slice of pizza — '
+      + 'and the child names the shape they can see in each one. ESSENTIAL for Kindergarten and Grade 1 geometry.',
     constraints:
       'REQUIRES A MICROPHONE — every answer is spoken; there is no tap, drag, stepper or button path. '
       + 'Shapes limited to: circle, square, triangle, rectangle, diamond, rhombus, hexagon, pentagon, oval. '
