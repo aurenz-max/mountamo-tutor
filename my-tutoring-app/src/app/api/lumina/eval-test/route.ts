@@ -50,6 +50,12 @@ export async function GET(request: NextRequest) {
     // stamped per objective by flattenManifestToLayout. This tap lets Phase 2
     // Probe G exercise the real registry/generator path without a live student.
     const remediationFocus = searchParams.get('remediationFocus') || undefined;
+    // Optional ?count= — how many challenges the lesson is asking this instance for,
+    // stamped as config.challengeCount (the field the registry already uses). Threaded
+    // here so "did the mode ship the count the lesson asked for" is testable, which is
+    // the yield half of a mastery session — a mode that quietly ships 2 of 5 is a demo.
+    const countParam = searchParams.get('count');
+    const challengeCount = countParam !== null ? parseInt(countParam, 10) : undefined;
 
     const component = UNIVERSAL_CATALOG.find((c) => c.id === componentId);
     const modeDefinition = component?.evalModes?.find((m) => m.evalMode === evalMode);
@@ -65,6 +71,9 @@ export async function GET(request: NextRequest) {
         ...(intent ? { intent } : {}),
         ...(grade ? { objectiveGrade: grade } : {}),
         ...(remediationFocus ? { remediationFocus } : {}),
+        ...(challengeCount !== undefined && Number.isFinite(challengeCount) && challengeCount > 0
+          ? { challengeCount }
+          : {}),
       },
     };
 
@@ -330,7 +339,7 @@ interface ValidationResult {
  * Look up the catalog to find allowed types, then check generated data.
  * Handles both array-based challenges and root-level type fields.
  */
-function validateChallengeTypes(
+export function validateChallengeTypes(
   data: Record<string, unknown>,
   componentId: string,
   evalMode: string,
@@ -381,12 +390,16 @@ function validateChallengeTypes(
   }
 
   if (!challenges || challenges.length === 0) {
-    // No array found — might be a different structure, pass with warning
+    // An eval mode without usable items is a failed generation. Root-level
+    // task shapes already returned above; an empty or unknown array shape must
+    // not be reported as a pass.
     return {
-      valid: true,
+      valid: false,
       challengeCount: 0,
       typesFound: [],
-      error: `No challenge array found (checked: ${arrayNames.join(', ')}). Data keys: [${Object.keys(data).join(', ')}]`,
+      error: challenges
+        ? `Generated ${arrayName} array is empty; no usable evaluation content was produced`
+        : `No challenge array found (checked: ${arrayNames.join(', ')}). Data keys: [${Object.keys(data).join(', ')}]`,
     };
   }
 
