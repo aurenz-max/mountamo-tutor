@@ -56,7 +56,13 @@ describe('SortingStation objective binding', () => {
       intent,
     ));
 
-    const prompt = String(generateContent.mock.calls[0][0].contents);
+    // A sort-family session opens with the named-category extraction call, so the sort
+    // prompt is found by content rather than by call index.
+    const prompt = String(
+      generateContent.mock.calls
+        .map((call) => String(call[0].contents))
+        .find((text) => text.includes('TASK TYPE:')),
+    );
     expect(prompt).toContain(`Specific objective for THIS activity: "${intent}"`);
     expect(prompt).toContain('Keep the SAME taught classification rule across challenges');
     expect(prompt).toContain('NEVER by switching to an unrelated color/size/shape sort');

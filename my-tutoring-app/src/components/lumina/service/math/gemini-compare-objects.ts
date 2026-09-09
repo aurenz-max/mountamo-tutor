@@ -810,11 +810,20 @@ function shuffleNonTrivial(objects: CompareObject[]): CompareObject[] {
 // Sub-generators (one Gemini call per challenge type)
 // ---------------------------------------------------------------------------
 
-async function generateIdentifyAttributeChallenges(
+/**
+ * Session floor for identify_attribute. Fewer than three items cannot establish
+ * "identify and describe measurable attributes" — one K atlas draw of MEAS001-01-A
+ * shipped a two-item session (the model returned 2 of the 7 asked) while the other
+ * shipped seven. Yield is a draw property, so the floor is enforced, not hoped for.
+ */
+const IDENTIFY_ATTRIBUTE_MIN = 3;
+
+/** One identify_attribute draw: asks for `count` challenges, returns the valid ones. */
+async function drawIdentifyAttribute(
   topic: string,
   gradeLevel: string,
   count: number,
-  tierSection = '',
+  tierSection: string,
 ): Promise<CompareObjectsChallenge[]> {
   const prompt = `
 Create ${count} "identify the measurable attribute" challenges for teaching "${topic}" to ${gradeLevel} students.
@@ -870,8 +879,7 @@ Return exactly ${count} challenges.
 
   const valid: CompareObjectsChallenge[] = [];
   let rejected = 0;
-  const limit = Math.min(count, data.challenges.length);
-  for (let i = 0; i < limit; i++) {
+  for (let i = 0; i < data.challenges.length; i++) {
     const ch = reconstructIdentifyAttribute(data.challenges[i], i);
     if (ch) valid.push(ch);
     else rejected++;
@@ -880,6 +888,47 @@ Return exactly ${count} challenges.
     console.log(`[CompareObjects] identify_attribute: ${rejected} rejected, ${valid.length} valid`);
   }
   return valid;
+}
+
+/**
+ * Ask for two more than the session ships, then hold the floor with one redraw.
+ *
+ * The spare pair absorbs the ordinary losses — the model under-returns, and
+ * reconstruction rejects items whose names carry a size adjective or whose menu offers
+ * both length and height. When even that leaves the session below the floor, a second
+ * draw runs and the two are merged (a short draw is still usable material), deduped on
+ * the object pair so the merge cannot ship the same two objects twice.
+ */
+async function generateIdentifyAttributeChallenges(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+  tierSection = '',
+): Promise<CompareObjectsChallenge[]> {
+  const ask = count + 2;
+  let pool = await drawIdentifyAttribute(topic, gradeLevel, ask, tierSection);
+
+  if (pool.length < IDENTIFY_ATTRIBUTE_MIN) {
+    console.log(
+      `[CompareObjects] identify_attribute: ${pool.length} usable (floor ${IDENTIFY_ATTRIBUTE_MIN}) — redrawing once`,
+    );
+    pool = [...pool, ...(await drawIdentifyAttribute(topic, gradeLevel, ask, tierSection))];
+  }
+
+  const seenPairs = new Set<string>();
+  const deduped = pool.filter((ch) => {
+    const key = ch.objects.map((o) => o.name.trim().toLowerCase()).sort().join('|');
+    if (seenPairs.has(key)) return false;
+    seenPairs.add(key);
+    return true;
+  });
+
+  if (deduped.length < IDENTIFY_ATTRIBUTE_MIN) {
+    console.log(
+      `[CompareObjects] identify_attribute: still ${deduped.length} usable after a redraw — session is below the floor`,
+    );
+  }
+  return deduped.slice(0, count);
 }
 
 async function generateCompareTwoChallenges(

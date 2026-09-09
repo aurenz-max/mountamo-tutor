@@ -34,6 +34,15 @@ export interface CalendarExplorerChallenge {
   narration: string;
   /** For identify: which date(s) to highlight after answering */
   highlightDates?: number[];
+  /**
+   * The day of `month` that counts as TODAY, marked with a star from the moment the
+   * question appears (highlightDates only land after a correct answer, so they cannot
+   * carry this). An objective like "identify today's day of the week" or "point to
+   * yesterday and tomorrow" is unanswerable without it: the calendar had no notion of
+   * today, so the generator could only ask about arbitrary dates. Absent ⇒ no marker,
+   * which is every plain date-lookup challenge.
+   */
+  todayDate?: number;
   /** For count: which day of week to count (e.g., "Tuesday") */
   targetDayOfWeek?: string;
 
@@ -470,14 +479,21 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
 
                   const isWeekend = new Date(currentChallenge.year, currentChallenge.month - 1, day).getDay() % 6 === 0;
 
+                  // The today marker is a STIMULUS, not feedback: it is on screen before
+                  // the child answers, and it survives selection and highlighting, so it
+                  // rides as an extra ring rather than a rung of the colour ladder.
+                  const isToday = currentChallenge.todayDate === day;
+
                   return (
                     <button
                       key={day}
                       onClick={() => handleDateClick(day)}
                       data-testid={`date-${day}`}
                       data-target-day={isTargetDay ? 'true' : undefined}
+                      data-today={isToday ? 'true' : undefined}
                       className={`
-                        h-10 rounded-lg text-sm font-mono transition-all duration-150
+                        relative h-10 rounded-lg text-sm font-mono transition-all duration-150
+                        ${isToday ? 'ring-2 ring-amber-400/80 font-bold' : ''}
                         ${isHighlighted
                           ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
                           : isSelected
@@ -493,10 +509,31 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
                       `}
                     >
                       {day}
+                      {/* Wordless, so the marker reads for a pre-reader. */}
+                      {isToday && (
+                        <span
+                          aria-label="today"
+                          className="absolute -top-1 -right-1 text-[10px] leading-none"
+                        >
+                          ⭐
+                        </span>
+                      )}
                     </button>
                   );
                 })}
               </div>
+
+              {/* Legend — only when a day is marked. The star is the child's anchor for
+                  today / yesterday / tomorrow, so it is named once, above the grid's
+                  own answer surface, and never prints the date itself. */}
+              {currentChallenge.todayDate !== undefined && (
+                <p
+                  data-testid="today-legend"
+                  className="text-xs text-amber-300/80 text-center mt-2"
+                >
+                  ⭐ = today
+                </p>
+              )}
             </div>
 
             {/* Answer Options — every challenge that is NOT answered by clicking a

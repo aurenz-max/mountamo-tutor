@@ -43,7 +43,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'missing-number': {
     promptDoc:
       `"missing-number": Show an equation with a blank. `
-      + `unknownPosition = "operand1" or "operand2" (NOT result). `
+      + `unknownPosition = "operand1" or "operand2" (NOT result) — the post-process assigns `
+      + `which of the two is blank, so emit a TRUE equation and let it decide. `
       + `No options — student types the answer. `
       + `Transitional: requires inverse thinking.`,
     schemaDescription: "'missing-number' (find unknown in equation)",
@@ -148,8 +149,9 @@ function resolveProblemShape(type: ChallengeType, tier: SupportTier): ProblemSha
         unknownPositionPref: tier === 'hard' ? 'operand1' : 'operand2',
         promptLines: [
           tier === 'hard'
-            ? 'Make the FIRST operand the unknown ("? + b = c") — a harder start-unknown that forces inverse reasoning.'
-            : 'Make the SECOND operand the unknown ("a + ? = c") — an easier count-on from the known first operand.',
+            ? 'Every equation hides the FIRST operand ("? + b = c") — a start-unknown that forces inverse reasoning.'
+            : 'Equations ALTERNATE between hiding the second operand ("a + ? = c", an easier count-on) and the first ("? + b = c", a start-unknown), so the session holds both forms.',
+          'The post-process assigns which side is blank and recomputes correctAnswer from it — emit operand1, operand2 and result as a TRUE equation and do not try to pick the blank yourself.',
         ],
       };
     case 'match':
@@ -177,6 +179,28 @@ function buildTierPromptSection(type: ChallengeType, tier: SupportTier): string 
     + `- ${TIER_GUARDRAIL}\n`
     + lines.map((l) => `- ${l}`).join('\n')
     + '\n';
+}
+
+/**
+ * Which side of a missing-number equation is blank, for the nth missing-number item.
+ *
+ * The tier has declared a preference since the structural axis landed, but it only ever
+ * reached the PROMPT: sixteen of sixteen probed easy items came back operand1 (K math
+ * atlas, OPS001-02-F). Code owns the position now. Reassigning it after the operands are
+ * reconciled cannot make the equation false — operand1, operand2 and result already
+ * agree — and correctAnswer is recomputed from the position immediately below.
+ *
+ * `operand1` (start-unknown, the `hard` preference) holds for the whole session. The
+ * easier `operand2` preference ALTERNATES, so an easy session still carries the
+ * start-unknown form the K objective names ("missing difference or minuend") rather than
+ * eight count-ons in a row. Result-unknown is equation-solve's task, never this one's.
+ */
+export function missingNumberPosition(
+  pref: 'operand1' | 'operand2',
+  ordinal: number,
+): 'operand1' | 'operand2' {
+  if (pref === 'operand1') return 'operand1';
+  return ordinal % 2 === 0 ? 'operand2' : 'operand1';
 }
 
 /** Build a simple in-scope addition equation that evaluates to `r`. */
@@ -483,6 +507,14 @@ Return the complete math fact fluency configuration.
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
 
+  // The tier's declared unknown-position preference, applied in code below. No tier ⇒
+  // the count-on preference, which still alternates, so a missing-number session never
+  // ships eight items of one form.
+  const missingNumberPref =
+    (supportTier ? resolveProblemShape('missing-number', supportTier).unknownPositionPref : undefined)
+    ?? 'operand2';
+  let missingNumberOrdinal = 0;
+
   // Per-challenge validation
   for (const challenge of data.challenges as MathFactFluencyChallenge[]) {
     // Validate operation
@@ -511,6 +543,14 @@ Return the complete math fact fluency configuration.
         challenge.operand2 = temp;
         challenge.result = challenge.operand1 - challenge.operand2;
       }
+    }
+
+    // Code owns which side of a missing-number equation is blank (see
+    // missingNumberPosition). Runs AFTER the operand/result reconciliation above — the
+    // subtraction swap can exchange operand1 and operand2, so an earlier assignment
+    // would name the wrong side — and BEFORE correctAnswer is derived from it.
+    if (challenge.type === 'missing-number') {
+      challenge.unknownPosition = missingNumberPosition(missingNumberPref, missingNumberOrdinal++);
     }
 
     // Ensure correctAnswer matches unknownPosition

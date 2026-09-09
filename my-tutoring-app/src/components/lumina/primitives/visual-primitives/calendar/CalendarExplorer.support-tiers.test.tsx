@@ -331,3 +331,54 @@ describe('calendar-explorer — tutor reveal policy', () => {
     expect(wrongSend).not.toContain('[SUPPORT_TIER');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Today marker (K atlas TIME001-02-B/C)
+// ---------------------------------------------------------------------------
+
+/** A today-framed identify challenge: the star is the child's only anchor. */
+const todayIdentify = (
+  overrides: Partial<CalendarExplorerChallenge> = {},
+): CalendarExplorerChallenge => ({
+  id: 't1',
+  type: 'identify',
+  question: 'The ⭐ shows today. Tap tomorrow on the calendar.',
+  month: 3,
+  year: 2025,
+  correctAnswer: '13',
+  options: ['10', '13', '15', '16'],
+  hint: 'Tomorrow is the square just after the ⭐.',
+  narration: "Let's find tomorrow on the calendar!",
+  highlightDates: [13],
+  todayDate: 12,
+  ...overrides,
+});
+
+describe('calendar-explorer render — today marker', () => {
+  it('marks today before the child answers, on that cell only', () => {
+    renderExplorer({ challenges: [todayIdentify()] });
+
+    // A stimulus, not feedback: no answer has been given yet.
+    expect(screen.getByTestId('date-12').getAttribute('data-today')).toBe('true');
+    expect(screen.getByTestId('date-13').getAttribute('data-today')).toBeNull();
+    expect(screen.getByTestId('date-11').getAttribute('data-today')).toBeNull();
+    expect(screen.getByTestId('today-legend').textContent).toContain('today');
+  });
+
+  it('keeps the marker on today while the child selects the answer square', () => {
+    renderExplorer({ challenges: [todayIdentify()] });
+
+    fireEvent.click(screen.getByTestId('date-13'));
+
+    expect(screen.getByTestId('date-12').getAttribute('data-today')).toBe('true');
+    // The grid is the answer channel for a date answer, so the selection must land.
+    expect(screen.getByTestId('date-13').className).toContain('ring-blue-400/30');
+  });
+
+  it('LEGACY: a plain date lookup carries no marker and no legend', () => {
+    renderExplorer({ challenges: [dateIdentify()] });
+
+    expect(screen.queryByTestId('today-legend')).toBeNull();
+    expect(screen.getByTestId('date-11').getAttribute('data-today')).toBeNull();
+  });
+});

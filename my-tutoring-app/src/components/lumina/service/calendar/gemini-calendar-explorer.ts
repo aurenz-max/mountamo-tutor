@@ -773,6 +773,194 @@ EXAMPLE:
 }
 
 // ===========================================================================
+// Today-framed identify — code-owned, correct by construction
+//
+// "Identify today's day of the week" and "point to yesterday and tomorrow" are the two
+// K calendar objectives the identify mode could not serve: the mode is defined as date
+// lookup, and the component had no notion of today, so both draws of TIME001-02-B asked
+// which weekday an arbitrary 2025 date fell on. Nothing about a marked-today question is
+// generative — the frame, the question, the key and the options all follow from one date —
+// so the whole set is built here rather than asked for and then corrected. The Gemini
+// identify schema is untouched; plain date lookups keep the LLM path.
+// ===========================================================================
+
+type RelativeDay = 'today' | 'yesterday' | 'tomorrow';
+
+export interface TodayFraming {
+  /** Which relative days the objective asks about. */
+  relatives: RelativeDay[];
+  /** What the child answers with: the weekday name, or the date they point at. */
+  form: 'day-name' | 'date';
+}
+
+/**
+ * Does this objective frame its questions around today? Returns null for every other
+ * calendar objective, which keeps the LLM date-lookup path exactly as it was.
+ *
+ * The test is syntactic on purpose: "today", "yesterday" and "tomorrow" are the literal
+ * words the objective uses, and a child pointing at a marked day is what "point to
+ * yesterday" means. The ANSWER FORM comes from the verb — "identify today's day of the
+ * week" wants a weekday name, "point to yesterday" wants a date in the grid, which is
+ * also the only answer channel the grid offers (isGridAnswerChallenge).
+ */
+export function resolveTodayFraming(objective: string): TodayFraming | null {
+  const t = objective.toLowerCase();
+  const yesterday = /\byesterday\b/.test(t);
+  const tomorrow = /\btomorrow\b/.test(t);
+  const today = /\btoday\b/.test(t);
+  if (!today && !yesterday && !tomorrow) return null;
+
+  const wantsDayName = /day of the week|weekday|what day/.test(t);
+  const wantsPointing = /\b(point|tap|touch|click|show)\b/.test(t);
+  const form: TodayFraming['form'] =
+    wantsPointing && !wantsDayName ? 'date'
+      : wantsDayName ? 'day-name'
+        : yesterday || tomorrow ? 'date'
+          : 'day-name';
+
+  const relatives: RelativeDay[] = [];
+  // Today alone carries the session only when the objective names nothing else; when it
+  // names yesterday/tomorrow, those ARE the task and "which is today" is the given.
+  if (yesterday) relatives.push('yesterday');
+  if (tomorrow) relatives.push('tomorrow');
+  if (relatives.length === 0) relatives.push('today');
+  return { relatives, form };
+}
+
+interface TodayFrame {
+  month: number;
+  year: number;
+  todayDate: number;
+}
+
+/**
+ * The session's frames. The first is the real today — the child's own calendar — and the
+ * rest are further days of the same month, so five items are five different questions
+ * instead of the same one asked five times. Offsets 1, 3, 5, 2, 4, 6 are distinct modulo
+ * 7, so consecutive frames land on different weekdays and the answers differ too.
+ *
+ * `needsNeighbours` pulls a frame off the edges of the month: the grid draws one month,
+ * so a "tomorrow" on the 31st would point at a square that is not on screen.
+ */
+export function buildTodayFrames(count: number, needsNeighbours: boolean, now = new Date()): TodayFrame[] {
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const daysInMonth = getDaysInMonth(month, year);
+  const lo = needsNeighbours ? 2 : 1;
+  const hi = needsNeighbours ? daysInMonth - 1 : daysInMonth;
+  const clamp = (d: number) => Math.min(Math.max(d, lo), hi);
+
+  const frames: TodayFrame[] = [];
+  const seen = new Set<number>();
+  for (const offset of [0, 1, 3, 5, 2, 4, 6, 8, 10, 12]) {
+    if (frames.length >= count) break;
+    const day = clamp(((now.getDate() - 1 + offset) % daysInMonth) + 1);
+    if (seen.has(day)) continue;
+    seen.add(day);
+    frames.push({ month, year, todayDate: day });
+  }
+  return frames;
+}
+
+function dateForRelative(frame: TodayFrame, rel: RelativeDay): number {
+  if (rel === 'yesterday') return frame.todayDate - 1;
+  if (rel === 'tomorrow') return frame.todayDate + 1;
+  return frame.todayDate;
+}
+
+/** Four weekday names including the answer, rotated so the key isn't always in one slot. */
+function dayNameOptions(correct: string, slot: number): string[] {
+  const i = DAYS_OF_WEEK.findIndex((d) => d === correct);
+  const others = [2, 4, 5].map((step) => DAYS_OF_WEEK[(i + step) % 7]);
+  const out: string[] = [...others];
+  out.splice(slot % 4, 0, correct);
+  return out.slice(0, 4);
+}
+
+/** Four in-month dates including the answer, rotated the same way. */
+function dateOptions(correct: number, daysInMonth: number, slot: number): string[] {
+  const others: number[] = [];
+  for (const off of [-2, 2, -3, 3, -4, 4]) {
+    if (others.length >= 3) break;
+    const d = correct + off;
+    if (d >= 1 && d <= daysInMonth && !others.includes(d)) others.push(d);
+  }
+  const out = others.map(String);
+  out.splice(slot % 4, 0, String(correct));
+  return out.slice(0, 4);
+}
+
+const RELATIVE_QUESTION: Record<RelativeDay, Record<'day-name' | 'date', string>> = {
+  today: {
+    'day-name': 'The ⭐ shows today. What day of the week is today?',
+    date: 'The ⭐ shows today. Tap today on the calendar.',
+  },
+  yesterday: {
+    'day-name': 'The ⭐ shows today. What day of the week was yesterday?',
+    date: 'The ⭐ shows today. Tap yesterday on the calendar.',
+  },
+  tomorrow: {
+    'day-name': 'The ⭐ shows today. What day of the week is tomorrow?',
+    date: 'The ⭐ shows today. Tap tomorrow on the calendar.',
+  },
+};
+
+const RELATIVE_HINT: Record<RelativeDay, Record<'day-name' | 'date', string>> = {
+  today: {
+    'day-name': 'Find the ⭐, then read the word at the top of its column.',
+    date: 'Today is the square with the ⭐ on it.',
+  },
+  yesterday: {
+    'day-name': 'Yesterday is the square just before the ⭐. Read the word at the top of that column.',
+    date: 'Yesterday is the square just before the ⭐.',
+  },
+  tomorrow: {
+    'day-name': 'Tomorrow is the square just after the ⭐. Read the word at the top of that column.',
+    date: 'Tomorrow is the square just after the ⭐.',
+  },
+};
+
+/** Build the session. Every question is asked against the starred day, so every one of
+ *  them is answerable from what is on screen. */
+export function buildTodayFrameChallenges(
+  framing: TodayFraming,
+  count: number,
+  now = new Date(),
+): CalendarExplorerChallenge[] {
+  const needsNeighbours = framing.relatives.some((r) => r !== 'today');
+  const frames = buildTodayFrames(count, needsNeighbours, now);
+  if (frames.length === 0) return [];
+
+  const challenges: CalendarExplorerChallenge[] = [];
+  for (let i = 0; i < count; i++) {
+    const frame = frames[i % frames.length];
+    const rel = framing.relatives[i % framing.relatives.length];
+    const daysInMonth = getDaysInMonth(frame.month, frame.year);
+    const day = dateForRelative(frame, rel);
+    if (day < 1 || day > daysInMonth) continue;
+
+    const dayName = getDayOfWeek(day, frame.month, frame.year);
+    const isDateForm = framing.form === 'date';
+    const correctAnswer = isDateForm ? String(day) : dayName;
+
+    challenges.push({
+      id: `c${i + 1}`,
+      type: 'identify',
+      question: RELATIVE_QUESTION[rel][framing.form],
+      month: frame.month,
+      year: frame.year,
+      correctAnswer,
+      options: isDateForm ? dateOptions(day, daysInMonth, i) : dayNameOptions(dayName, i),
+      hint: RELATIVE_HINT[rel][framing.form],
+      narration: `Let's find ${rel} on the calendar!`,
+      highlightDates: [day],
+      todayDate: frame.todayDate,
+    });
+  }
+  return challenges;
+}
+
+// ===========================================================================
 // Fallbacks — one per type, correct by construction
 // ===========================================================================
 
@@ -832,6 +1020,8 @@ export const generateCalendarExplorer = async (
   const { topic } = ctx;
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
+  // The per-component objective is the contract; the broad topic is the fallback.
+  const todayFraming = resolveTodayFraming(`${ctx.intent ?? ''} ${topic}`);
   // Axis 3 — normalized once upstream in resolveGenerationContext. Never re-parse
   // config.difficulty here.
   const supportTier = ctx.supportTier;
@@ -859,7 +1049,13 @@ export const generateCalendarExplorer = async (
     typeOrder.push(type);
     switch (type) {
       case "identify":
-        generators.push(generateIdentifyChallenges(topic, scopeSection, gradeLevel, countPerType));
+        // A today-framed objective is served in code (see buildTodayFrameChallenges);
+        // every other identify objective keeps the LLM date-lookup path.
+        generators.push(
+          todayFraming
+            ? Promise.resolve(buildTodayFrameChallenges(todayFraming, countPerType))
+            : generateIdentifyChallenges(topic, scopeSection, gradeLevel, countPerType),
+        );
         break;
       case "count":
         generators.push(generateCountChallenges(topic, scopeSection, gradeLevel, countPerType));
@@ -922,6 +1118,13 @@ export const generateCalendarExplorer = async (
     console.log(
       `[CalendarExplorer] Support tier "${supportTier}" applied to ${challenges.length} challenge(s)`
       + (preReader ? " (K band floor: orientation scaffolds held)" : ""),
+    );
+  }
+
+  if (todayFraming) {
+    console.log(
+      `[CalendarExplorer] Today-framed objective — identify built in code `
+      + `(${todayFraming.form} answers, relatives: ${todayFraming.relatives.join(", ")})`,
     );
   }
 

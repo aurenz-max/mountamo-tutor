@@ -234,16 +234,28 @@ function resolveProblemShape(
   pinnedType: ChallengeType,
   tier: SupportTier,
   gradeBand: 'K' | '1',
+  namedCategories: string[] = [],
 ): ProblemShape {
   const win = gradeObjectWindow(gradeBand);
   const binCap = gradeBinCap(gradeBand);
   // Object count ramps within the grade window: easy = low end, hard = high end (capped).
-  const objectCount =
+  let objectCount =
     tier === 'easy' ? win.min : tier === 'hard' ? win.max : Math.round((win.min + win.max) / 2);
 
   // Category/bin count ramps 2 → 3 → 4, hard-capped by grade.
   const baseBins = tier === 'easy' ? 2 : tier === 'hard' ? 4 : 3;
-  const categoryCount = Math.min(baseBins, binCap);
+  // An objective that NAMES its groups fixes the bin count; the tier ramps only what the
+  // objective leaves free. Without this, "sort into hot, warm, cold" met an easy tier
+  // asking for "about 2 groups" and one K atlas draw collapsed the objective to hot/cold
+  // in all four challenges — a cap below what the lesson names is a bug, not a support
+  // level. The grade bin cap is a default for open objectives and does not clamp a named
+  // set either: the set is the task.
+  let categoryCount = Math.min(baseBins, binCap);
+  if (namedCategories.length >= 2 && namedCategories.length <= binCap) {
+    categoryCount = namedCategories.length;
+    // A named set needs enough objects to fill every bin; hold the grade ceiling.
+    objectCount = Math.min(win.max, Math.max(objectCount, categoryCount * 2));
+  }
 
   const promptLines: string[] = [];
   const shape: ProblemShape = { objectCount, categoryCount, promptLines };
@@ -254,7 +266,9 @@ function resolveProblemShape(
     case 'tally-record':
     case 'sort-variety':
       promptLines.push(
-        `Use about ${objectCount} objects across about ${categoryCount} groups (stay within the grade band — do not exceed ${binCap} groups or ${win.max} objects).`,
+        namedCategories.length >= 2
+          ? `Use about ${objectCount} objects across EXACTLY the ${categoryCount} groups the objective names — at least one object in every one of them.`
+          : `Use about ${objectCount} objects across about ${categoryCount} groups (stay within the grade band — do not exceed ${binCap} groups or ${win.max} objects).`,
       );
       break;
     case 'count-and-compare': {
@@ -295,9 +309,10 @@ function buildTierPromptSection(
   pinnedType: ChallengeType,
   tier: SupportTier,
   gradeBand: 'K' | '1',
+  namedCategories: string[] = [],
 ): string {
   const scaffold = resolveSupportStructure(pinnedType, tier);
-  const shape = resolveProblemShape(pinnedType, tier, gradeBand);
+  const shape = resolveProblemShape(pinnedType, tier, gradeBand, namedCategories);
   const lines = [...scaffold.promptLines, ...shape.promptLines];
   return `\n## WITHIN-MODE SUPPORT TIER (scaffolding level + problem STRUCTURE — NOT raw magnitude beyond the grade cap)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
 }
@@ -541,6 +556,279 @@ export function buildSortingObjectiveSection(topic: string, intent?: string): st
 `;
 }
 
+// ============================================================================
+// Named categories — the groups the OBJECTIVE itself enumerates
+// ============================================================================
+
+/**
+ * Some objectives name their bins ("Sort picture cards into temperature categories
+ * (hot, warm, cold)"); most do not ("Sort objects by color"). When they do, that set is
+ * the task and everything downstream — the tier's bin count, the prompt, the acceptance
+ * check — has to answer to it.
+ *
+ * Extraction is a SCHEMA call, not a regex: the enumerations appear as parentheticals,
+ * "into X, Y and Z", "by X or Y", and a pattern that catches those also catches the
+ * attribute words in "sort by color or shape", which name an axis rather than a bin set.
+ */
+const namedCategoriesSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    namesAnExplicitSet: {
+      type: Type.BOOLEAN,
+      description:
+        "True ONLY when the objective enumerates the specific groups objects go into "
+        + "(e.g. 'hot, warm, cold', 'living and non-living', 'needs and wants'). False when "
+        + "it merely names an attribute to sort by ('by color', 'by size') or names no groups.",
+    },
+    categories: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        "The group names in the objective's own words, lowercase, one per item. Empty when "
+        + "namesAnExplicitSet is false. Never invent a group the objective does not name.",
+    },
+  },
+  required: ["namesAnExplicitSet", "categories"],
+};
+
+/** Upper bound on a named set — beyond this the extraction has almost certainly read a
+ *  list of examples as a list of bins, and a sort with 7 trays is not a K-1 task. */
+const MAX_NAMED_CATEGORIES = 6;
+
+/**
+ * Resolve the groups the objective names. Returns [] whenever the objective leaves the
+ * grouping open — the overwhelmingly common case, and the one where the tier's own bin
+ * ramp is correct. Never throws: an extraction failure degrades to the open case.
+ */
+export async function resolveNamedCategories(
+  topic: string,
+  intent?: string,
+): Promise<string[]> {
+  const objective = intent?.trim() || topic;
+  if (!objective) return [];
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: `Read this K-1 sorting objective and report the groups it names.
+
+OBJECTIVE: "${objective}"
+
+Report the groups the child sorts objects INTO, exactly as the objective words them.
+- "Sort picture cards into temperature categories (hot, warm, cold)" → hot, warm, cold
+- "Sort objects into living and non-living" → living, non-living
+- "Sort objects by color" → names no groups (the objective picks an attribute, not a set)
+- "Group animals by where they live" → names no groups`,
+      config: { responseMimeType: "application/json", responseSchema: namedCategoriesSchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (!data?.namesAnExplicitSet || !Array.isArray(data.categories)) return [];
+    const seen = new Set<string>();
+    const named = data.categories
+      .filter((c: unknown): c is string => typeof c === 'string')
+      .map((c: string) => c.trim().toLowerCase())
+      .filter((c: string) => {
+        if (!c || seen.has(c)) return false;
+        seen.add(c);
+        return true;
+      });
+    if (named.length < 2 || named.length > MAX_NAMED_CATEGORIES) return [];
+    return named;
+  } catch (e) {
+    console.log(`[SortingStation] named-category extraction failed (${String(e)}) — treating the objective as open`);
+    return [];
+  }
+}
+
+/** The REQUIRED GROUPS block. Overrides every other group-count line in the prompt. */
+function buildNamedCategoriesSection(named: string[]): string {
+  if (named.length < 2) return '';
+  return `
+## REQUIRED GROUPS (from the objective — overrides any group count suggested elsewhere)
+- Every challenge sorts into EXACTLY these ${named.length} groups: ${named.join(', ')}.
+- Set sortingAttribute to "category" and put one of those exact words (lowercase) in every object's category field.
+- Every one of the ${named.length} groups must hold at least one object in EVERY challenge. A challenge that uses only some of them is the wrong task and will be thrown away.
+- Give one categoryEmojis entry per group, keyed by that same word.
+`;
+}
+
+/** Does this challenge offer every group the objective named? */
+function coversNamedCategories(ch: SortingStationChallenge, named: string[]): boolean {
+  if (named.length < 2) return true;
+  const labels = new Set((ch.categories ?? []).map(k => k.label.trim().toLowerCase()));
+  return named.every(n => labels.has(n));
+}
+
+/** A K sort is picture-primary: a tile whose "emoji" is a text fragment renders as
+ *  letters the pre-reader cannot use. One live draw shipped "Ic". */
+function hasPicture(emoji?: string): boolean {
+  // Character codes, not a \p{Extended_Pictographic} regex: the unicode property escape
+  // needs a newer tsc target than this surface compiles at. An emoji always carries a
+  // code unit outside Latin-1 (a surrogate pair, at minimum); "Ic" never does.
+  const s = emoji?.trim() ?? '';
+  for (let i = 0; i < s.length; i++) {
+    if (s.charCodeAt(i) > 0x00ff) return true;
+  }
+  return false;
+}
+
+/**
+ * Kindergarten sorting vocabulary: the noun a label can name → the pictures that
+ * depict it. Used ONLY to catch a card whose label and emoji name different objects
+ * (one live K draw shipped "Red Banana" carrying 🍓). At the pre-reader band the
+ * picture IS the object, so that card cannot be answered by eye at all.
+ *
+ * Deliberately a known-answer table, not a classifier: an entry is added when both
+ * the word and the picture are common in K sorting sets, and anything absent is
+ * treated as unknown rather than wrong. Recall is the thing being traded away —
+ * a false reject costs the child a whole challenge, a miss costs one card.
+ */
+const CARD_NOUN_PICTURES: Record<string, string[]> = {
+  // fruit + vegetables
+  apple: ['🍎', '🍏'], banana: ['🍌'], strawberry: ['🍓'], grape: ['🍇'], grapes: ['🍇'],
+  orange: ['🍊'], lemon: ['🍋'], watermelon: ['🍉'], pear: ['🍐'], peach: ['🍑'],
+  cherry: ['🍒'], cherries: ['🍒'], pineapple: ['🍍'], carrot: ['🥕'], broccoli: ['🥦'],
+  corn: ['🌽'], potato: ['🥔'], tomato: ['🍅'], cucumber: ['🥒'], pepper: ['🫑'],
+  onion: ['🧅'], mushroom: ['🍄'],
+  // food + drink
+  bread: ['🍞'], cheese: ['🧀'], egg: ['🥚'], milk: ['🥛'], juice: ['🧃'],
+  water: ['💧', '🥛', '🚰'], glass: ['🥛'], bottle: ['🍼', '🧴'], cup: ['🥤', '☕'],
+  cookie: ['🍪'], cake: ['🍰'], candy: ['🍬'], pizza: ['🍕'], sandwich: ['🥪'],
+  soup: ['🍲', '🥣'], bowl: ['🥣'], rice: ['🍚'], hamburger: ['🍔'], burger: ['🍔'],
+  ice: ['🧊', '🍨'], cream: ['🍨', '🍦'], popcorn: ['🍿'], donut: ['🍩'], honey: ['🍯'],
+  // animals
+  dog: ['🐶', '🐕'], puppy: ['🐶', '🐕'], cat: ['🐱', '🐈'], kitten: ['🐱', '🐈'],
+  bird: ['🐦'], fish: ['🐟', '🐠'], cow: ['🐮', '🐄'], pig: ['🐷', '🐖'],
+  horse: ['🐴', '🐎'], sheep: ['🐑'], chicken: ['🐔'], duck: ['🦆'],
+  rabbit: ['🐰', '🐇'], bunny: ['🐰', '🐇'], bear: ['🐻'], lion: ['🦁'], tiger: ['🐯'],
+  elephant: ['🐘'], monkey: ['🐵', '🐒'], frog: ['🐸'], turtle: ['🐢'], snake: ['🐍'],
+  bee: ['🐝'], butterfly: ['🦋'], ant: ['🐜'], whale: ['🐳'], dolphin: ['🐬'],
+  penguin: ['🐧'], owl: ['🦉'], fox: ['🦊'], mouse: ['🐭'], giraffe: ['🦒'], zebra: ['🦓'],
+  // vehicles
+  car: ['🚗'], truck: ['🚚', '🚛'], firetruck: ['🚒'], bus: ['🚌'], train: ['🚂', '🚆'],
+  plane: ['✈️'], airplane: ['✈️'], jet: ['✈️'], boat: ['⛵', '🚤'], ship: ['🚢'],
+  bike: ['🚲'], bicycle: ['🚲'], rocket: ['🚀'], helicopter: ['🚁'], tractor: ['🚜'],
+  ambulance: ['🚑'],
+  // clothing
+  shirt: ['👕'], pants: ['👖'], jeans: ['👖'], dress: ['👗'], coat: ['🧥'],
+  jacket: ['🧥'], hat: ['🎩', '👒'], cap: ['🧢'], shoe: ['👟', '👞'], shoes: ['👟', '👞'],
+  boot: ['🥾'], boots: ['🥾'], sock: ['🧦'], socks: ['🧦'], glove: ['🧤'], gloves: ['🧤'],
+  scarf: ['🧣'], glasses: ['👓'], umbrella: ['☂️', '🌂'],
+  // toys + school
+  ball: ['⚽', '🏀', '🏐'], teddy: ['🧸'], block: ['🧱'], blocks: ['🧱'], kite: ['🪁'],
+  balloon: ['🎈'], drum: ['🥁'], guitar: ['🎸'], book: ['📕', '📗', '📘', '📙', '📚'],
+  crayon: ['🖍️'], pencil: ['✏️'], pen: ['🖊️'], scissors: ['✂️'], paint: ['🎨'],
+  backpack: ['🎒'], robot: ['🤖'], puzzle: ['🧩'], skateboard: ['🛹'],
+  // household
+  house: ['🏠', '🏡'], home: ['🏠', '🏡'], bed: ['🛏️'], chair: ['🪑'], lamp: ['💡'],
+  clock: ['🕐', '⏰'], key: ['🔑'], phone: ['📱'], computer: ['💻'], television: ['📺'],
+  tv: ['📺'], plate: ['🍽️'], spoon: ['🥄'], fork: ['🍴'], knife: ['🔪'], pot: ['🍲'],
+  broom: ['🧹'], soap: ['🧼'], toothbrush: ['🪥'],
+  // tools + helper gear
+  hammer: ['🔨'], wrench: ['🔧'], screwdriver: ['🪛'], saw: ['🪚'], ladder: ['🪜'],
+  axe: ['🪓'], magnet: ['🧲'], flashlight: ['🔦'], bandage: ['🩹'],
+  stethoscope: ['🩺'], thermometer: ['🌡️'],
+  // nature
+  tree: ['🌳', '🌲'], flower: ['🌸', '🌷', '🌹'], leaf: ['🍃', '🍂'], sun: ['☀️'],
+  moon: ['🌙'], star: ['⭐', '🌟'], cloud: ['☁️'], rain: ['🌧️'], snow: ['❄️'],
+  rock: ['🪨'], stone: ['🪨'], shell: ['🐚'], fire: ['🔥'],
+};
+
+/** noun-picture table inverted once: normalized emoji → the nouns it may depict. */
+const CARD_PICTURE_NOUNS: Map<string, Set<string>> = (() => {
+  const index = new Map<string, Set<string>>();
+  for (const [noun, pictures] of Object.entries(CARD_NOUN_PICTURES)) {
+    for (const picture of pictures) {
+      const key = normalizePicture(picture);
+      const nouns = index.get(key) ?? new Set<string>();
+      nouns.add(noun);
+      index.set(key, nouns);
+    }
+  }
+  return index;
+})();
+
+/** Drop the presentation-only code points so 🛏️ and 🛏 are the same picture. */
+function normalizePicture(emoji: string): string {
+  return Array.from(emoji.trim())
+    .filter(c => c !== '️' && c !== '︎' && !(c >= '\u{1F3FB}' && c <= '\u{1F3FF}'))
+    .join('');
+}
+
+/** The nouns a label could be naming, crudely de-pluralized ("Boots" → boots, boot). */
+function labelNouns(label: string): string[] {
+  const words = (label ?? '').toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(Boolean);
+  const nouns: string[] = [];
+  for (const word of words) {
+    nouns.push(word);
+    if (word.endsWith('ies')) nouns.push(`${word.slice(0, -3)}y`);
+    else if (word.endsWith('es')) nouns.push(word.slice(0, -2));
+    if (word.endsWith('s')) nouns.push(word.slice(0, -1));
+  }
+  return nouns;
+}
+
+/**
+ * Why this card cannot be answered by eye, or null when it can.
+ *
+ * A card is faulted only when the picture is a KNOWN one and some word in the label
+ * is a KNOWN noun that the picture does not depict — and no other word in the label
+ * agrees. "Red Apple" 🍎 passes on `apple`; "Rain Hat" 👒 passes on `hat` even though
+ * `rain` disagrees; "Red Banana" 🍓 has nothing that agrees, so it goes.
+ */
+function cardPictureFault(label: string, emoji?: string): string | null {
+  const picture = normalizePicture(emoji ?? '');
+  const depicted = CARD_PICTURE_NOUNS.get(picture);
+  if (!depicted) return null; // picture outside the table — never guess at it
+  let disagreeing: string | undefined;
+  for (const noun of labelNouns(label)) {
+    const pictures = CARD_NOUN_PICTURES[noun];
+    if (!pictures) continue;
+    if (pictures.some(p => normalizePicture(p) === picture)) return null; // one agreement is enough
+    disagreeing ??= noun;
+  }
+  if (!disagreeing) return null;
+  return `"${label}" names a ${disagreeing} but shows ${emoji} (${Array.from(depicted).join('/')})`;
+}
+
+/** Every card fault in one challenge's object set: no picture at all, or the wrong one. */
+function cardFaults(objects: { label: string; emoji?: string }[]): string[] {
+  const faults: string[] = [];
+  const pictureless = objects.filter(o => !hasPicture(o.emoji)).map(o => o.label);
+  if (pictureless.length > 0) faults.push(`no picture on: ${pictureless.join(', ')}`);
+  for (const o of objects) {
+    const mismatch = cardPictureFault(o.label, o.emoji);
+    if (mismatch) faults.push(mismatch);
+  }
+  return faults;
+}
+
+/**
+ * Why this challenge cannot be asked as drawn, or null when it can. Every fault here is
+ * a demand the prompt already states and the draw missed, and every one of them costs
+ * the child the task rather than making it easier: a group the objective named is gone,
+ * there are too few objects for the bins to mean anything, or a tile's picture is
+ * missing or shows a different object than its own label names.
+ */
+function sortChallengeFault(
+  ch: SortingStationChallenge,
+  named: string[],
+  gradeBand: 'K' | '1',
+): string | null {
+  if (!coversNamedCategories(ch, named)) {
+    const labels = (ch.categories ?? []).map(k => k.label.toLowerCase()).join('/');
+    return `bins [${labels}] miss a group the objective names`;
+  }
+  const min = gradeObjectWindow(gradeBand).min;
+  if (ch.objects.length < min) {
+    return `${ch.objects.length} objects is under the ${gradeBand} floor of ${min}`;
+  }
+  const faults = cardFaults(ch.objects);
+  if (faults.length > 0) {
+    return faults.join('; ');
+  }
+  return null;
+}
+
 interface RawSortingObject {
   label: string;
   emoji: string;
@@ -614,6 +902,7 @@ async function generateSortChallenges(
   sortType: 'sort-by-one' | 'sort-by-attribute' | 'tally-record',
   count: number,
   tierSection: string,
+  namedCategories: string[] = [],
 ): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
   const typeGuide = {
     'sort-by-one':
@@ -637,7 +926,7 @@ async function generateSortChallenges(
 Create a sorting activity for teaching "${topic}" to ${gradeLevel} students.
 ${gradeGuidance(gradeBand)}
 ${buildSortingObjectiveSection(topic, intent)}
-
+${buildNamedCategoriesSection(namedCategories)}
 TASK TYPE: ${sortType}
 ${typeGuide}
 ${tierSection}
@@ -650,34 +939,72 @@ Generate exactly ${count} challenges. Each challenge needs:
 - Use familiar kid-friendly emojis and examples that belong to the objective; do not introduce an unrelated theme just for variety
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: sortSchema },
-  });
+  const draw = async (): Promise<{ title?: string; description?: string; challenges: SortingStationChallenge[] }> => {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: sortSchema },
+    });
 
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.challenges?.length) throw new Error(`No ${sortType} challenges returned`);
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (!data?.challenges?.length) return { challenges: [] };
 
-  const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
-    (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[]; categoryEmojis?: { value?: string; emoji?: string }[] }, i: number) => {
-      const sortAttr = ch.sortingAttribute || 'type';
-      const objects = toLuminaObjects(ch.objects || [], i * 10);
-      const emojiByValue = buildEmojiByValue(ch.categoryEmojis);
-      const categories = deriveCategories(objects, sortAttr, emojiByValue);
+    const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
+      (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[]; categoryEmojis?: { value?: string; emoji?: string }[] }, i: number) => {
+        const sortAttr = ch.sortingAttribute || 'type';
+        const objects = toLuminaObjects(ch.objects || [], i * 10);
+        const emojiByValue = buildEmojiByValue(ch.categoryEmojis);
+        const categories = deriveCategories(objects, sortAttr, emojiByValue);
 
-      return {
-        id: `c${i + 1}`,
-        type: sortType,
-        instruction: ch.instruction,
-        sortingAttribute: sortAttr,
-        objects,
-        categories: categories.length >= 2 ? categories : deriveCategories(objects, 'type', emojiByValue),
-      } as SortingStationChallenge;
-    },
-  );
+        return {
+          id: `c${i + 1}`,
+          type: sortType,
+          instruction: ch.instruction,
+          sortingAttribute: sortAttr,
+          objects,
+          categories: categories.length >= 2 ? categories : deriveCategories(objects, 'type', emojiByValue),
+        } as SortingStationChallenge;
+      },
+    );
 
-  return { title: data.title, description: data.description, challenges };
+    return { title: data.title, description: data.description, challenges };
+  };
+
+  // Bins are DERIVED from the object attribute values, so a draw that never mentions
+  // "warm" silently ships a two-bin sort for a three-bin objective. That is the wrong
+  // task, not an easier one, so faulted challenges are rejected here and redrawn once —
+  // the required-groups block is already in the prompt, which is what makes a second
+  // sample worth taking.
+  const keep = (challenges: SortingStationChallenge[]): SortingStationChallenge[] =>
+    challenges.filter((ch) => {
+      const fault = sortChallengeFault(ch, namedCategories, gradeBand);
+      if (fault) console.log(`[SortingStation] ${sortType} REJECT ${ch.id} — ${fault}`);
+      return !fault;
+    });
+
+  const first = await draw();
+  let title = first.title;
+  let description = first.description;
+  let challenges = keep(first.challenges);
+
+  if (challenges.length < first.challenges.length && challenges.length < count) {
+    console.log(`[SortingStation] ${sortType}: ${challenges.length}/${count} usable — redrawing once`);
+    const second = await draw();
+    title = title || second.title;
+    description = description || second.description;
+    challenges = [...challenges, ...keep(second.challenges)].slice(0, count);
+  }
+
+  if (challenges.length === 0) {
+    if (first.challenges.length === 0) throw new Error(`No ${sortType} challenges returned`);
+    // Two draws and neither was clean. A faulted sort still teaches sorting, so it ships
+    // rather than emptying the lesson — but it is a finding, and the log says so instead
+    // of the payload looking clean.
+    console.log(`[SortingStation] ${sortType}: no clean draw — shipping the first draw FAULTED`);
+    challenges = first.challenges;
+  }
+
+  return { title: title ?? '', description: description ?? '', challenges };
 }
 
 async function generateCountCompareChallenges(
@@ -824,6 +1151,7 @@ Objects must include:
 The objective category is the MAIN modality. Never make color/size the knowledge being assessed unless the objective explicitly names it. Prefer a semantically relevant secondary type (food, tool, clothing) over color when the lesson supports one.
 `;
 
+  const draw = async (): Promise<{ title?: string; description?: string; challenges: SortingStationChallenge[] }> => {
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
@@ -831,7 +1159,7 @@ The objective category is the MAIN modality. Never make color/size the knowledge
   });
 
   const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.challenges?.length) throw new Error('No two-attributes challenges returned');
+  if (!data?.challenges?.length) return { challenges: [] };
 
   const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
     (ch: { instruction: string; objects: RawSortingObject[]; targetCategory: string; secondaryAttribute: string; secondaryValue: string; categoryLabel: string }, i: number) => {
@@ -886,7 +1214,40 @@ The objective category is the MAIN modality. Never make color/size the knowledge
     },
   );
 
-  return { title: data.title, description: data.description, challenges };
+    return { title: data.title, description: data.description, challenges };
+  };
+
+  // The compound ask is judged one card at a time against the card's own picture, so a
+  // card whose picture is not the object its label names has no answer at all — at K the
+  // picture IS the object. This mode had no draw gate; the sort family's shape applies
+  // unchanged (reject, redraw once, ship faulted with a log rather than an empty lesson).
+  const keep = (challenges: SortingStationChallenge[]): SortingStationChallenge[] =>
+    challenges.filter((ch) => {
+      const faults = cardFaults(ch.objects);
+      if (faults.length > 0) console.log(`[SortingStation] two-attributes REJECT ${ch.id} — ${faults.join('; ')}`);
+      return faults.length === 0;
+    });
+
+  const first = await draw();
+  if (first.challenges.length === 0) throw new Error('No two-attributes challenges returned');
+  let title = first.title;
+  let description = first.description;
+  let challenges = keep(first.challenges);
+
+  if (challenges.length < count) {
+    console.log(`[SortingStation] two-attributes: ${challenges.length}/${count} usable — redrawing once`);
+    const second = await draw();
+    title = title || second.title;
+    description = description || second.description;
+    challenges = [...challenges, ...keep(second.challenges)].slice(0, count);
+  }
+
+  if (challenges.length === 0) {
+    console.log('[SortingStation] two-attributes: no clean draw — shipping the first draw FAULTED');
+    challenges = first.challenges;
+  }
+
+  return { title: title ?? '', description: description ?? '', challenges };
 }
 
 /**
@@ -917,14 +1278,40 @@ function buildVarietyObjectiveSection(topic: string, intent: string | undefined,
 const varietyObjectItemSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    label: { type: Type.STRING, description: "Display label (e.g., 'Fire Truck')" },
-    emoji: { type: Type.STRING, description: "Single emoji (e.g., '🚒')" },
+    label: { type: Type.STRING, description: "Display label (e.g., 'Fire Truck'). The emoji MUST depict this exact object." },
+    emoji: { type: Type.STRING, description: "Single emoji depicting the label's object (e.g., 'Fire Truck' → '🚒'). NEVER a picture of a different object." },
     type: { type: Type.STRING, description: "What KIND it is — ONE simple lowercase word (e.g. 'truck', 'boat')." },
     size: { type: Type.STRING, description: "Size — ONE simple lowercase word, from a small shared set (e.g. 'big' or 'small')." },
     category: { type: Type.STRING, description: "A meaning group — ONE simple lowercase word, from a small shared set (e.g. 'land' or 'water')." },
+    color: { type: Type.STRING, description: "OPTIONAL — fill ONLY when colour is a genuinely meaningful, stable property of this object (a red fire truck, a yellow banana). Leave empty rather than inventing one." },
+    shape: { type: Type.STRING, description: "OPTIONAL — fill ONLY when shape is a genuinely meaningful, stable property of this object. Leave empty rather than inventing one." },
   },
   required: ["label", "emoji", "type", "size", "category"],
 };
+
+/**
+ * Which axes a variety set should spend its rounds on, best first. Meaning before
+ * perception: what a thing IS and what it is FOR are properties of the object, while
+ * colour and shape are properties of the drawing and only sometimes real ("sort the
+ * animals by shape" is not a sort). Colour and shape stay available — on blocks or
+ * 2D shapes they ARE the objective — they just go last.
+ */
+const AXIS_PREFERENCE = ['category', 'type', 'size', 'shape', 'color'] as const;
+
+function axisRank(attr?: string): number {
+  const i = AXIS_PREFERENCE.indexOf((attr ?? '').trim() as typeof AXIS_PREFERENCE[number]);
+  return i === -1 ? AXIS_PREFERENCE.length : i;
+}
+
+/**
+ * How many rounds ONE object set may carry. Three is the flexible-classification sweet
+ * spot the mode was built on: enough to show the set groups several ways, few enough
+ * that every axis stays a genuine property of it. Past three, a draw starts inventing
+ * perceptual axes to fill the quota. A lesson asking for more rounds than this gets
+ * them from ANOTHER on-topic set, which is the honest way to add rounds — the cap is
+ * about what one set can mean, not about how long the lesson may be.
+ */
+const MAX_ROUNDS_PER_SET = 3;
 
 /** sort-variety: one shared object set + N rounds, each round naming a different sort rule. */
 const varietySchema: Schema = {
@@ -980,21 +1367,32 @@ async function generateVarietyChallenges(
   count: number,
   tierSection: string,
 ): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
-  // 2-3 rounds is the flexible-classification sweet spot: enough to show the same
-  // set groups multiple ways, few enough that every axis stays genuinely meaningful
-  // (a 4th forced axis is where contrived perceptual sorts creep in).
-  const roundCount = Math.min(3, Math.max(2, count - 1));
+  // The lesson's count is the round count. It used to be capped at 3 on the reasoning that
+  // a 4th axis breeds contrived perceptual sorts — but the cap was reading a schema limit
+  // as a pedagogical one: only type/size/category were askable, so 3 was all the set could
+  // ever carry. Colour and shape are now askable and OPTIONAL, and code still admits an
+  // axis only when the objects genuinely split on it, so the contrivance guard is intact
+  // while a 5-round lesson can be served. A cap below what the lesson asks is a bug.
+  const roundCount = Math.max(2, count);
+  // Ask each set for slack: an axis the objects do not actually split on is discarded, so
+  // asking for exactly what we will take guarantees a shortfall on any imperfect draw.
+  // The ask is per-SET, not per-lesson — asking one set for seven rules is how a draw ends
+  // up sorting animals by "tall or round".
+  const roundsAsked = Math.min(roundCount, MAX_ROUNDS_PER_SET) + 2;
 
-  const prompt = `
+  const buildPrompt = (excludeLabels: string[]): string => `
 Create a FLEXIBLE-CLASSIFICATION sorting activity for teaching "${topic}" to ${gradeLevel} students.
 ${gradeGuidance(gradeBand)}
-${buildVarietyObjectiveSection(topic, intent, roundCount)}
+${buildVarietyObjectiveSection(topic, intent, roundsAsked)}
 ${tierSection}
-Provide ONE shared set of objects and ${roundCount} sorting rules.
+Provide ONE shared set of objects and ${roundsAsked} sorting rules.
 - objects: 4-8 objects. Every object fills type, size, AND category, each with ONE simple lowercase word. Example: { "label": "Fire Truck", "emoji": "🚒", "type": "truck", "size": "big", "category": "land" }. NEVER put two ideas in one field, NEVER use slashes.
-- Use a SMALL shared vocabulary so objects share groups (e.g. every object's size is 'big' or 'small'; category is 'land' or 'water'). Each field must have 2+ distinct values across the set so it forms real groups.
-- rounds: ${roundCount} entries, each naming a DIFFERENT field (type / size / category), with a warm instruction naming that round's rule + categoryEmojis (one per group).
+- Every object's emoji MUST be a picture of that object. A label naming one thing beside a picture of another (e.g. "Red Banana" shown as 🍓) cannot be answered by a child who does not read yet, and the whole set is discarded.
+- Also fill color and/or shape when they are genuinely meaningful, stable properties of these objects — those give extra sorting rules. Leave them empty rather than inventing a property the objects do not really have.
+- Use a SMALL shared vocabulary so objects share groups (e.g. every object's size is 'big' or 'small'; category is 'land' or 'water'). Each field you fill must have 2+ distinct values across the set so it forms real groups.
+- rounds: ${roundsAsked} entries, each naming a DIFFERENT field you actually filled (type / size / category / color / shape), with a warm instruction naming that round's rule + categoryEmojis (one per group).
 - Every round sorts the SAME objects; do not introduce new objects between rounds. Stay on the objective's topic and object family.
+${excludeLabels.length > 0 ? `- This set must be a DIFFERENT group of on-topic objects from the last one. Do NOT reuse: ${excludeLabels.join(', ')}.` : ''}
 `;
 
   const binCap = gradeBinCap(gradeBand);
@@ -1004,11 +1402,23 @@ Provide ONE shared set of objects and ${roundCount} sorting rules.
   // supplies the object window + optional instruction/emoji hints. This makes "a different
   // rule each round" true by construction and caps bins at the grade band. Returns the
   // challenges (may be < 2 if the set is thin — the caller retries).
-  const buildRounds = (data: {
-    objects?: RawSortingObject[];
-    rounds?: { sortingAttribute?: string; instruction?: string; categoryEmojis?: { value?: string; emoji?: string }[] }[];
-  }): SortingStationChallenge[] => {
+  const buildRounds = (
+    data: {
+      objects?: RawSortingObject[];
+      rounds?: { sortingAttribute?: string; instruction?: string; categoryEmojis?: { value?: string; emoji?: string }[] }[];
+    },
+    limit: number,
+  ): SortingStationChallenge[] => {
     const rawObjects = data.objects ?? [];
+    // The object set is SHARED by every round this draw produces, so one card whose
+    // picture is not the object its label names makes all of them unanswerable by eye.
+    // The set goes back, not the card — dropping a card would silently thin the set below
+    // the band's object floor and leave the remaining rounds sorting four things.
+    const faults = cardFaults(rawObjects);
+    if (faults.length > 0) {
+      console.log(`[SortingStation] sort-variety REJECT object set — ${faults.join('; ')}`);
+      return [];
+    }
     const challenges: SortingStationChallenge[] = [];
     const usedAttrs = new Set<string>();
 
@@ -1018,7 +1428,7 @@ Provide ONE shared set of objects and ${roundCount} sorting rules.
       emojis?: { value?: string; emoji?: string }[],
     ): void => {
       const sortAttr = (attr || '').trim();
-      if (!sortAttr || usedAttrs.has(sortAttr) || challenges.length >= roundCount) return;
+      if (!sortAttr || usedAttrs.has(sortAttr) || challenges.length >= limit) return;
       // Fresh object instances per round (same labels/attributes) so the orchestrator's
       // per-challenge id re-numbering stays independent; pedagogically it's still the same set.
       const objects = toLuminaObjects(rawObjects, challenges.length * 100);
@@ -1037,36 +1447,68 @@ Provide ONE shared set of objects and ${roundCount} sorting rules.
       } satisfies SortingStationChallenge);
     };
 
-    // 1. Honor the LLM's intended rounds first (keeps its instructions + emojis).
-    for (const round of data.rounds ?? []) {
+    // 1. Honor the LLM's intended rounds first (keeps its instructions + emojis), but in
+    //    OUR order, not its own. A set carries only so many rounds, and the ones it
+    //    spends them on should be the meaningful axes — a draw that led with "sort the
+    //    animals by shape: tall or round" spent a round on a sort no child can do by eye.
+    const ordered = [...(data.rounds ?? [])].sort(
+      (a, b) => axisRank(a.sortingAttribute) - axisRank(b.sortingAttribute),
+    );
+    for (const round of ordered) {
       tryAddRound(round.sortingAttribute, round.instruction, round.categoryEmojis);
     }
-    // 2. Supplement from whatever OTHER required axes the objects carry, so a thin `rounds`
-    //    still reaches roundCount. 'category' first (objective-relevant), then the rest.
-    for (const attr of ['category', 'type', 'size', 'shape', 'color']) tryAddRound(attr);
+    // 2. Supplement from whatever OTHER axes the objects carry, so a thin `rounds`
+    //    still reaches the limit. 'category' first (objective-relevant), then the rest.
+    for (const attr of AXIS_PREFERENCE) tryAddRound(attr);
 
     return challenges;
   };
 
-  // Retry once: with type/size/category required, a single draw usually yields 2-3 axes, but
-  // flash-lite occasionally collapses a field to one shared value (unsplittable). A second draw
-  // almost always recovers; only then do we fail loudly rather than shipping a 1-rule "variety".
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // One object set is asked to carry the whole count first — "re-sort THIS set another way"
+  // is the declared task, and a lesson served by a single set is the mode at its purest.
+  // A set only carries as many rounds as it has axes that genuinely split, though, so when
+  // it comes up short a fresh on-topic set continues the rotation rather than the lesson
+  // shipping two rounds where it asked for five. Rounds within a set never repeat an axis;
+  // across sets a repeated axis is a different problem, because the objects are different.
+  const challenges: SortingStationChallenge[] = [];
+  let title = '';
+  let description = '';
+  const seenLabels: string[] = [];
+
+  // One draw per set the count needs, plus one spare for a set that yields nothing.
+  const maxDraws = Math.ceil(roundCount / MAX_ROUNDS_PER_SET) + 1;
+  for (let draw = 0; draw < maxDraws && challenges.length < roundCount; draw++) {
     const result = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
-      contents: prompt,
+      contents: buildPrompt(seenLabels),
       config: { responseMimeType: "application/json", responseSchema: varietySchema },
     });
     const data = result.text ? JSON.parse(result.text) : null;
     if (!data?.objects?.length) continue;
-    const challenges = buildRounds(data);
-    if (challenges.length >= 2) {
-      return { title: data.title, description: data.description, challenges };
+
+    const rounds = buildRounds(data, Math.min(MAX_ROUNDS_PER_SET, roundCount - challenges.length));
+    if (rounds.length === 0) {
+      console.warn(`[SortingStation] sort-variety draw ${draw + 1}: no rotatable rule from this set`);
+      continue;
     }
-    console.warn(`[SortingStation] sort-variety attempt ${attempt + 1}: only ${challenges.length} rotatable rule(s), retrying`);
+    if (!title) title = data.title ?? '';
+    if (!description) description = data.description ?? '';
+    for (const label of (data.objects as RawSortingObject[]).map(o => o.label).filter(Boolean)) {
+      seenLabels.push(label);
+    }
+    challenges.push(...rounds);
   }
 
-  throw new Error('sort-variety: could not build 2+ rotatable rules after retry (object set lacked 2 separately-splittable axes)');
+  if (challenges.length < 2) {
+    throw new Error('sort-variety: could not build 2+ rotatable rules (no object set carried 2 separately-splittable axes)');
+  }
+  if (challenges.length < roundCount) {
+    // Honest shortfall rather than a silent one: the lesson asked for more rounds than the
+    // draws could make genuinely meaningful, and the log is where that shows up.
+    console.warn(`[SortingStation] sort-variety: ${challenges.length}/${roundCount} rounds — the draws ran out of axes that genuinely split`);
+  }
+
+  return { title, description, challenges: challenges.slice(0, roundCount) };
 }
 
 // ============================================================================
@@ -1080,12 +1522,15 @@ type SubGenerator = (
   gradeBand: 'K' | '1',
   count: number,
   tierSection: string,
+  /** Groups the objective enumerates; [] when it leaves the grouping open. Only the
+   *  sort family binds them — the other modes build their own structure. */
+  namedCategories?: string[],
 ) => Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }>;
 
 const GENERATOR_MAP: Record<string, SubGenerator> = {
-  'sort-by-one': (t, i, g, b, n, ts) => generateSortChallenges(t, i, g, b, 'sort-by-one', n, ts),
-  'sort-by-attribute': (t, i, g, b, n, ts) => generateSortChallenges(t, i, g, b, 'sort-by-attribute', n, ts),
-  'tally-record': (t, i, g, b, n, ts) => generateSortChallenges(t, i, g, b, 'tally-record', n, ts),
+  'sort-by-one': (t, i, g, b, n, ts, nc) => generateSortChallenges(t, i, g, b, 'sort-by-one', n, ts, nc),
+  'sort-by-attribute': (t, i, g, b, n, ts, nc) => generateSortChallenges(t, i, g, b, 'sort-by-attribute', n, ts, nc),
+  'tally-record': (t, i, g, b, n, ts, nc) => generateSortChallenges(t, i, g, b, 'tally-record', n, ts, nc),
   'count-and-compare': generateCountCompareChallenges,
   'odd-one-out': generateOddOneOutChallenges,
   'two-attributes': generateTwoAttributesChallenges,
@@ -1098,6 +1543,10 @@ const GENERATOR_MAP: Record<string, SubGenerator> = {
  * N rotated rules) — meaningless as a single interleaved challenge — so it runs
  * only when the eval mode is pinned or intent-resolved, never in a random mix.
  */
+/** The modes whose bins come from the objective rather than from their own structure —
+ *  the only ones that consult the named-category set. */
+const SORT_FAMILY_TYPES: readonly string[] = ['sort-by-one', 'sort-by-attribute', 'tally-record'];
+
 const MIXED_TYPES: readonly string[] = [
   'sort-by-one',
   'sort-by-attribute',
@@ -1122,7 +1571,18 @@ interface SortingStationConfig {
   challengeTypes?: string[];
   maxCategories?: number;
   targetEvalMode?: string;
+  /** How many challenges the LESSON asked for. Absent on most manifests; when present it
+   *  is the count, not a hint (see DEFAULT_SINGLE_MODE_COUNT). */
+  challengeCount?: number;
 }
+
+/** What a pinned single-mode session generates when the caller names no count. */
+const DEFAULT_SINGLE_MODE_COUNT = 4;
+/** Ceiling on a caller-supplied count — a session, not a runaway prompt. */
+const MAX_SINGLE_MODE_COUNT = 10;
+/** Spare challenges generated per single-mode session so the keep-or-drop speakability
+ *  gate trims the overage rather than the lesson. */
+const SINGLE_MODE_DRAW_OVERAGE = 2;
 
 export const generateSortingStation = async (
   ctx: GenerationContext,
@@ -1148,20 +1608,66 @@ export const generateSortingStation = async (
   // mixed-mode session has no single mode to describe to the LLM.
   const supportTier = normalizeSupportTier(config?.difficulty);
   const pinnedType = allowedTypes.length === 1 ? (allowedTypes[0] as ChallengeType) : undefined;
+
+  // Resolve the objective's named groups BEFORE the prompt is built — they set the bin
+  // count the tier would otherwise ramp, so a post-hoc check would arrive too late to
+  // stop the tier asking for two groups on a three-group objective. Only the sort family
+  // binds them, so the extra call is skipped for every other session.
+  const bindsNamedCategories = allowedTypes.some(t => SORT_FAMILY_TYPES.includes(t));
+  const resolvedNames = bindsNamedCategories ? await resolveNamedCategories(topic, intent) : [];
+  // The band bin cap is a BAND CONTRACT, not an arbitrary ceiling (contract R8, backed by
+  // the PRE interactive-element ceiling), so a named set does not get to exceed it. An
+  // objective naming more groups than the band allows is a real cap-below-objective
+  // finding, but it needs its own decision — it is surfaced here and the tier's ramp
+  // stands, rather than being resolved as a side effect of this binding.
+  const namedCategories = resolvedNames.length <= gradeBinCap(gradeBand) ? resolvedNames : [];
+  if (namedCategories.length >= 2) {
+    console.log(`[SortingStation] objective names ${namedCategories.length} groups: ${namedCategories.join(', ')}`);
+  } else if (resolvedNames.length > 0) {
+    console.log(
+      `[SortingStation] objective names ${resolvedNames.length} groups [${resolvedNames.join(', ')}] `
+      + `but the ${gradeBand} band caps bins at ${gradeBinCap(gradeBand)} — NOT bound; the tier's bin ramp stands`,
+    );
+  }
+
   const tierSection =
-    pinnedType && supportTier ? buildTierPromptSection(pinnedType, supportTier, gradeBand) : '';
+    pinnedType && supportTier
+      ? buildTierPromptSection(pinnedType, supportTier, gradeBand, namedCategories)
+      : '';
 
   // Determine how many challenges each sub-generator should produce.
-  // Constrained (single type): 4 challenges from one generator.
+  // Constrained (single type): the count the lesson asked for, from one generator.
   // Mixed (unconstrained): 1 challenge per type, run all in parallel.
+  //
+  // This used to be a flat 4 regardless of what the caller asked, which is a cap below
+  // lesson intent — a lesson requesting a 5-challenge mastery session got 4 and no signal
+  // that it had been trimmed. `challengeCount` is the field the rest of the registry
+  // already uses for this; the default only applies when the caller sends none.
   const isSingleMode = allowedTypes.length === 1;
-  const challengesPerType = isSingleMode ? 4 : 1;
+  const rawRequestedCount = Number(config?.challengeCount);
+  const requestedChallenges = isSingleMode
+    ? Math.min(
+        MAX_SINGLE_MODE_COUNT,
+        Math.max(2, Number.isFinite(rawRequestedCount) && rawRequestedCount > 0
+          ? Math.round(rawRequestedCount)
+          : DEFAULT_SINGLE_MODE_COUNT),
+      )
+    : 1;
+  // Ask for MORE than ships. The speakability gate below is keep-or-drop by design, and
+  // it runs after generation — so without slack every dropped challenge came straight out
+  // of the lesson (an observed 5-round variety draw shipped 4, one round's tray labels
+  // having collided by ear). The overage is what gets dropped instead. This is not the
+  // backfill that gate forbids: nothing faulted is repaired or shipped, there is simply a
+  // spare good challenge behind it.
+  const challengesPerType = isSingleMode
+    ? requestedChallenges + SINGLE_MODE_DRAW_OVERAGE
+    : 1;
 
   // Launch all allowed sub-generators in parallel
   const results = await Promise.all(
     allowedTypes
       .filter(t => GENERATOR_MAP[t])
-      .map(t => GENERATOR_MAP[t](topic, intent, gradeLevel, gradeBand, challengesPerType, tierSection)),
+      .map(t => GENERATOR_MAP[t](topic, intent, gradeLevel, gradeBand, challengesPerType, tierSection, namedCategories)),
   );
 
   // Combine: flatten challenges, re-number IDs, pick first title
@@ -1308,12 +1814,24 @@ export const generateSortingStation = async (
   // render. Validation is keep-or-drop, NEVER backfill — a repaired placeholder
   // in a judged loop becomes a spoken ask the tutor has to stand behind.
   const faults = allChallenges.map(ch => ({ ch, fault: speakabilityFault(ch) }));
-  const speakableChallenges = faults.filter(f => !f.fault).map(f => f.ch);
-  if (speakableChallenges.length < allChallenges.length) {
+  const speakable = faults.filter(f => !f.fault).map(f => f.ch);
+  if (speakable.length < allChallenges.length) {
     console.warn(
-      `[SortingStation] dropped ${allChallenges.length - speakableChallenges.length} of `
+      `[SortingStation] dropped ${allChallenges.length - speakable.length} of `
       + `${allChallenges.length} challenge(s) that could not be asked aloud: `
       + faults.filter(f => f.fault).map(f => `${f.ch.type}: ${f.fault}`).join(' | '),
+    );
+  }
+
+  // Trim the overage to what the lesson actually asked for, then re-number: the ids
+  // assigned before the drop gate now have holes in them, and a payload numbered
+  // c1/c2/c3/c5 is a session that visibly lost a challenge on its way to the child.
+  const speakableChallenges = speakable.slice(0, isSingleMode ? requestedChallenges : speakable.length);
+  speakableChallenges.forEach((ch, i) => { ch.id = `c${i + 1}`; });
+  if (isSingleMode && speakableChallenges.length < requestedChallenges) {
+    console.warn(
+      `[SortingStation] ${speakableChallenges.length}/${requestedChallenges} challenges — `
+      + 'the draws plus overage did not survive the askable-aloud gate',
     );
   }
 
