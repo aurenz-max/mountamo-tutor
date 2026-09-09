@@ -32,7 +32,7 @@ cd "<abs>/backend" && venv/Scripts/python -m uvicorn app.main:app --reload --por
 
 ## Primitives
 
-When building new primitives, always use the Gemini generator pattern — never hardcode test data. Follow the established registration pattern: component, types, catalog entry, generator, and tester. Follow the `ADDING_PRIMITIVES.md` checklist exactly. Create all files before moving to verification.
+When building new primitives, always use the Gemini generator pattern — never hardcode test data. Follow the established registration pattern: component, types, catalog entry, generator, and tester. `/primitive` is the executable checklist; `ADDING_PRIMITIVES.md` is the human reference behind it, not a second list to follow. Create all files before moving to verification.
 
 When Gemini schemas are too complex (6+ types, deeply nested), the LLM will produce malformed JSON. Simplify schemas proactively to 3-4 types max and reduce redundancy.
 
@@ -64,6 +64,10 @@ over memory and over stale reports. Mechanics + registers: `/pm`.
 - **If your own residual names the next executor skill and it is in scope, run it in the same push.** Naming a gap in a report is not closing it. Queue it only when it genuinely needs a separate decision, new data, or a user ruling.
 - **A single ladder rung can be structurally low-yield.** Where `/add-support-tiers` only toggles help text and the problems stay byte-identical, the visible change is `/add-structural-difficulty` — pair them rather than shipping the rung alone.
 
+### Plain prose
+
+**Say what you mean.** Mannered prose substitutes metaphor and flourish for direct statement: "a dial worth turning" for "a parameter worth varying", "this point earns its keep" for "this point still matters". The phrase exists to display the writer, not to convey the idea, and readers can tell. It makes the reader work harder so the writer can perform, and it is imprecise — metaphors drag in connotations the writer did not choose and cannot control. When a literal phrase is available, use it. This applies to everything written for a human reader: chat replies, reports, queue entries, commit messages, memories, skill docs, and docblocks.
+
 ### Verification Doctrine
 
 A change is "fixed" or "done" only after the affected flow has been **exercised at runtime** — driven in the running app, an `/eval-test` run, or a probe with real inputs. A type check is never verification of behavior.
@@ -82,9 +86,7 @@ Primitive UI is built from the Lumina kit, never raw shadcn — full rules (kit 
 
 ## Curriculum Rules
 
-**Draft-first rule:** NEVER edit `curriculum_published` directly. All curriculum changes go through: edit draft → `lineage-check` → publish → deploy. The publish pipeline in `draft_curriculum_service.py` is the ONLY writer to `curriculum_published`.
-
-**Before any subskill ID change:** Create a lineage record via `POST /api/lineage/` BEFORE modifying the draft. The `curriculum_lineage` collection maps old subskill IDs to canonical successors so student data survives curriculum iteration.
+**Draft-first rule:** NEVER edit `curriculum_published` directly. All curriculum changes go through: edit draft → `lineage-check` → publish. `publish` is one atomic call that also deploys and publishes edges; there is no `/deploy` endpoint. The publish pipeline in `draft_curriculum_service.py` is the ONLY writer to `curriculum_published`.
 
 ## Architecture (brief)
 
