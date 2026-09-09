@@ -3,6 +3,7 @@ import { StrategyPickerData, StrategyPickerChallenge, StrategyId } from "../../p
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { resolveObjectiveNumberWindow } from '../objectiveNumberWindow';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -212,6 +213,40 @@ function strategyMatchesProblem(strat: StrategyId, p: Problem): boolean {
 }
 
 // ============================================================================
+// Number scope — band DEFAULT, primitive CEILING, objective AUTHORITY
+// ============================================================================
+//
+// `maxNumber` used to come from the grade band alone (K 5, G1 10), and the pool
+// service picks every problem in CODE from it — so `buildScopePromptSection`
+// could not reach it. A K objective reading "solve addition word problems within
+// 10" got problems that stopped at 5: the cap silently rewrote the lesson into a
+// different one ([[trust-intent-over-hardcoded-caps]]). Same defect, same repair
+// and the same shared resolver as addition-subtraction-scene.
+
+/** Raw band string used for the DEFAULTS. Deliberately un-normalized: the
+ *  returned `gradeBand` field normalizes separately, and that split is the
+ *  behavior every existing draw was made under. */
+function rawGradeBand(configBand: string | undefined, gradeLevel: string): string {
+  return configBand || (gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1');
+}
+
+/** The number ceiling a band gets by DEFAULT, when the lesson names no scope of
+ *  its own. Not a ceiling on the lesson — an explicit objective scope raises it. */
+function bandMaxNumber(band: string): number {
+  return band === 'K' ? 5 : 10;
+}
+
+/**
+ * The largest number this primitive can DRAW — capacity, not grade policy, which
+ * is why it bounds the objective window. `MakeTenViz` has exactly ten cells and
+ * fills `i < total`, so an eleventh object silently does not appear, and a ten
+ * frame that under-counts is worse than none. `DrawObjectsViz` wraps five per
+ * row and a third row runs past the 140px SVG. Both hold exactly to 10; raising
+ * this means fixing those two visualizations first.
+ */
+const PRIMITIVE_MAX_NUMBER = 10;
+
+// ============================================================================
 // Setup Schema (lightweight first call — title + description only)
 // ============================================================================
 
@@ -250,9 +285,11 @@ async function generateSetup(
     gradeBand: string;
   }>,
   tierSection = '',
+  resolvedMaxNumber: number | null = null,
 ): Promise<SetupResult> {
-  const gradeBand = config?.gradeBand || (gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1');
-  const maxNumber = config?.maxNumber || (gradeBand === 'K' ? 5 : 10);
+  const gradeBand = rawGradeBand(config?.gradeBand, gradeLevel);
+  // Explicit manifest scope → the objective's own scope → the band default.
+  const maxNumber = config?.maxNumber || resolvedMaxNumber || bandMaxNumber(gradeBand);
   const operations = config?.operations || (gradeBand === 'K' ? ['addition'] : ['addition', 'subtraction']);
   const strategies = config?.strategiesIntroduced ||
     (gradeBand === 'K'
@@ -1166,7 +1203,33 @@ export const generateStrategyPicker = async (
   // front from the student's tier. Hard → 'tight' near-neighbor foils.
   const distractorTightness: DistractorTightness = supportTier === 'hard' ? 'tight' : 'wide';
 
-  const setup = await generateSetup(topic, scopeSection, gradeLevel, config, tierSection);
+  // ── Resolve the objective's number window onto the maxNumber axis ──────────
+  // Gated on the explicit override being absent; null on failure / general
+  // practice / a scope equal to the band default → the band default stands, so
+  // the unchanged path stays byte-identical. The ceiling passed is the
+  // PRIMITIVE'S capacity, never the grade's — narrowing to the grade is what
+  // produced the finding.
+  const band = rawGradeBand(config?.gradeBand, gradeLevel);
+  const resolvedMaxNumber = config?.maxNumber
+    ? null
+    : await resolveObjectiveNumberWindow({
+        topic,
+        intent: ctx.scope?.intent ?? ctx.intent,
+        objectiveText: ctx.scope?.objectiveText,
+        gradeLevel,
+        bandDefault: bandMaxNumber(band),
+        ceiling: PRIMITIVE_MAX_NUMBER,
+        logPrefix: 'StrategyPicker',
+      });
+  if (resolvedMaxNumber !== null) {
+    console.log(
+      `[StrategyPicker] topic-resolved number window: maxNumber=${resolvedMaxNumber} `
+      + `(band default ${bandMaxNumber(band)}; topic="${topic}", `
+      + `objective="${ctx.scope?.objectiveText ?? ''}", intent="${ctx.scope?.intent ?? ''}")`,
+    );
+  }
+
+  const setup = await generateSetup(topic, scopeSection, gradeLevel, config, tierSection, resolvedMaxNumber);
 
   let challenges: StrategyPickerChallenge[];
   if (allowedTypes.size === 1) {

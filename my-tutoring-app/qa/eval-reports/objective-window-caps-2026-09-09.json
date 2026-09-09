@@ -1,0 +1,265 @@
+{
+  "startedAt": "2026-09-09T11:14:52.135Z",
+  "cases": [
+    {
+      "id": "ordinal-K-window-6-to-10",
+      "what": "K objective naming 6th-10th raises the 5-long line",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxPosition": 10,
+        "cast": 10,
+        "asked": [
+          10,
+          7,
+          9,
+          6,
+          8
+        ]
+      }
+    },
+    {
+      "id": "ordinal-K-window-6-to-10",
+      "what": "K objective naming 6th-10th raises the 5-long line",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxPosition": 10,
+        "cast": 10,
+        "asked": [
+          6,
+          7,
+          8,
+          10,
+          9
+        ]
+      }
+    },
+    {
+      "id": "ordinal-K-no-window-control",
+      "what": "K general ordinal practice keeps the 5-long line (no regression)",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxPosition": 5,
+        "asked": [
+          3,
+          4,
+          2,
+          1,
+          5
+        ]
+      }
+    },
+    {
+      "id": "ordinal-K-no-window-control",
+      "what": "K general ordinal practice keeps the 5-long line (no regression)",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxPosition": 5,
+        "asked": [
+          5,
+          3,
+          4,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "id": "scene-K-window-make-10",
+      "what": "K \"making 10\" objective raises maxNumber past the band default of 5",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 10,
+        "showTenFrame": true,
+        "results": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ]
+      }
+    },
+    {
+      "id": "scene-K-window-make-10",
+      "what": "K \"making 10\" objective raises maxNumber past the band default of 5",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 10,
+        "showTenFrame": true,
+        "results": [
+          10,
+          10,
+          10,
+          6,
+          10,
+          7,
+          10
+        ]
+      }
+    },
+    {
+      "id": "scene-K-no-window-control",
+      "what": "K within-5 practice keeps maxNumber 5 (no regression)",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 5,
+        "showTenFrame": true,
+        "results": [
+          4,
+          2,
+          4,
+          3,
+          4,
+          1,
+          5
+        ]
+      }
+    },
+    {
+      "id": "scene-K-no-window-control",
+      "what": "K within-5 practice keeps maxNumber 5 (no regression)",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 5,
+        "showTenFrame": true,
+        "results": [
+          3,
+          2,
+          4,
+          3,
+          4,
+          1,
+          5,
+          1
+        ]
+      }
+    },
+    {
+      "id": "strategy-K-within-10-OPS001-01-F",
+      "what": "K \"within 10\" objective raises strategy-picker past the band default of 5",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 10,
+        "equations": [
+          "2 + 8",
+          "1 + 3",
+          "5 + 4",
+          "1 + 7"
+        ],
+        "results": [
+          10,
+          4,
+          9,
+          8
+        ],
+        "strategies": [
+          "counting-on",
+          "draw-objects",
+          "tally-marks",
+          "counting-on"
+        ],
+        "introduced": [
+          "counting-on",
+          "tally-marks",
+          "draw-objects"
+        ]
+      }
+    },
+    {
+      "id": "strategy-K-within-10-OPS001-01-F",
+      "what": "K \"within 10\" objective raises strategy-picker past the band default of 5",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 10,
+        "equations": [
+          "5 + 1",
+          "6 + 4",
+          "3 + 7",
+          "5 + 3"
+        ],
+        "results": [
+          6,
+          10,
+          10,
+          8
+        ],
+        "strategies": [
+          "tally-marks",
+          "counting-on",
+          "draw-objects",
+          "tally-marks"
+        ],
+        "introduced": [
+          "counting-on",
+          "tally-marks",
+          "draw-objects"
+        ]
+      }
+    },
+    {
+      "id": "strategy-K-no-window-control",
+      "what": "K general strategy practice keeps maxNumber 5 (no regression)",
+      "draw": 1,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 5,
+        "equations": [
+          "1 + 3",
+          "2 + 3",
+          "3 + 2",
+          "2 + 2"
+        ],
+        "results": [
+          4,
+          5,
+          5,
+          4
+        ]
+      }
+    },
+    {
+      "id": "strategy-K-no-window-control",
+      "what": "K general strategy practice keeps maxNumber 5 (no regression)",
+      "draw": 2,
+      "pass": true,
+      "failures": [],
+      "summary": {
+        "maxNumber": 5,
+        "equations": [
+          "4 + 1",
+          "3 + 1",
+          "4 + 1",
+          "1 + 2"
+        ],
+        "results": [
+          5,
+          4,
+          5,
+          3
+        ]
+      }
+    }
+  ]
+}
