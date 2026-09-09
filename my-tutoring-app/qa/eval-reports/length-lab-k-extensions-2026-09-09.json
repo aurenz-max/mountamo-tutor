@@ -1,0 +1,151 @@
+{
+  "startedAt": "2026-09-09T10:35:35.972Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "estimate_then_tile draw 1",
+      "mode": "estimate_then_tile",
+      "failures": [],
+      "title": "Estimate and Measure!",
+      "unitType": "paper_clips",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "estimate_then_tile",
+          "instruction": "Look at the straw. How many paper clips long do you think it is? Make your guess, then place the clips to check!",
+          "object": "straw=4",
+          "unitType": "paper_clips",
+          "correctUnitCount": 4,
+          "estimateOptions": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "correctAnswer": "4"
+        },
+        {
+          "id": "c2",
+          "type": "estimate_then_tile",
+          "instruction": "Here is a toothbrush. How many paper clips do you think will fit along its length?",
+          "object": "toothbrush=6",
+          "unitType": "paper_clips",
+          "correctUnitCount": 6,
+          "estimateOptions": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "correctAnswer": "6"
+        },
+        {
+          "id": "c3",
+          "type": "estimate_then_tile",
+          "instruction": "Check out this book! Make a guess on how many paper clips long it is before measuring.",
+          "object": "book=8",
+          "unitType": "paper_clips",
+          "correctUnitCount": 8,
+          "estimateOptions": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "correctAnswer": "8"
+        }
+      ]
+    },
+    {
+      "label": "two_unit_compare draw 1",
+      "mode": "two_unit_compare",
+      "failures": [],
+      "title": "Measuring with Different Units!",
+      "unitType": "erasers",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "two_unit_compare",
+          "instruction": "Look at the paintbrush. Do you need more small erasers or big erasers to measure it?",
+          "object": "paintbrush=6",
+          "unitType": "erasers",
+          "unitTypeB": "bears",
+          "correctUnitCount": 6,
+          "correctUnitCountB": 2,
+          "correctAnswer": "erasers"
+        },
+        {
+          "id": "c2",
+          "type": "two_unit_compare",
+          "instruction": "Measure the pencil with two different units. Which unit count is a bigger number?",
+          "object": "pencil=8",
+          "unitType": "erasers",
+          "unitTypeB": "bears",
+          "correctUnitCount": 8,
+          "correctUnitCountB": 4,
+          "correctAnswer": "erasers"
+        },
+        {
+          "id": "c3",
+          "type": "two_unit_compare",
+          "instruction": "Compare the crayon measurements using the two different units. Which one has a larger total count?",
+          "object": "crayon=4",
+          "unitType": "erasers",
+          "unitTypeB": "bears",
+          "correctUnitCount": 4,
+          "correctUnitCountB": 2,
+          "correctAnswer": "erasers"
+        }
+      ]
+    },
+    {
+      "label": "tile_and_count draw 1",
+      "mode": "tile_and_count",
+      "failures": [],
+      "title": "Measure with Our Hands and Feet!",
+      "unitType": "feet",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "tile_and_count",
+          "instruction": "Let us measure this little crayon! Place feet end-to-end along the crayon to find out how many feet long it is.",
+          "object": "crayon=3",
+          "unitType": "feet",
+          "correctUnitCount": 3,
+          "correctAnswer": "3"
+        },
+        {
+          "id": "c2",
+          "type": "tile_and_count",
+          "instruction": "Wonderful! Now let us measure this shiny spoon. How many feet long is the spoon?",
+          "object": "spoon=5",
+          "unitType": "feet",
+          "correctUnitCount": 5,
+          "correctAnswer": "5"
+        },
+        {
+          "id": "c3",
+          "type": "tile_and_count",
+          "instruction": "You are doing amazing! Can you measure this long pencil using feet?",
+          "object": "pencil=7",
+          "unitType": "feet",
+          "correctUnitCount": 7,
+          "correctAnswer": "7"
+        },
+        {
+          "id": "c4",
+          "type": "tile_and_count",
+          "instruction": "Here is our final measuring challenge! Measure this lovely ribbon using feet.",
+          "object": "ribbon=9",
+          "unitType": "feet",
+          "correctUnitCount": 9,
+          "correctAnswer": "9"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 3,
+    "failedDraws": 0
+  }
+}

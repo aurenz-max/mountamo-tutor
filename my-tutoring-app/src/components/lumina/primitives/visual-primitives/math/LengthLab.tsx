@@ -30,7 +30,10 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface LengthLabChallenge {
   id: string;
-  type: 'compare' | 'tile_and_count' | 'order' | 'indirect';
+  type:
+    | 'compare' | 'tile_and_count' | 'order' | 'indirect'
+    // K measuring family: guess before you measure, and measure the same thing twice.
+    | 'estimate_then_tile' | 'two_unit_compare';
   instruction: string;
   hint: string;
   narration: string;
@@ -51,6 +54,13 @@ export interface LengthLabChallenge {
   correctUnitCount?: number;
   /** Unit type for tiling */
   unitType?: string;
+  /** estimate_then_tile: the guesses offered before the units appear. The
+   *  estimate is RECORDED, never marked right or wrong — a guess that can be
+   *  wrong is not a guess. Code-owned so the true count is always among them. */
+  estimateOptions?: number[];
+  /** two_unit_compare: the second unit the same object is measured with. */
+  unitTypeB?: string;
+  correctUnitCountB?: number;
   /** For order: correct sequence CSV (e.g. "pencil,crayon,marker") shortest→longest */
   correctOrderCsv?: string;
   /** For indirect: the reference object info */
@@ -87,6 +97,8 @@ export interface LengthLabData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  estimate_then_tile: { label: 'Guess, Then Measure', icon: '🤔', accentColor: 'amber' },
+  two_unit_compare:   { label: 'Two Units',           icon: '⚖️', accentColor: 'purple' },
   compare:        { label: 'Compare',        icon: '↔️', accentColor: 'blue' },
   tile_and_count: { label: 'Tile & Count',   icon: '🧱', accentColor: 'emerald' },
   order:          { label: 'Order',           icon: '📏', accentColor: 'purple' },
@@ -98,6 +110,11 @@ const UNIT_EMOJI: Record<string, string> = {
   paper_clips: '📎',
   bears: '🧸',
   erasers: '▬',
+  // Body-part units: what a child reaches for when there is no ruler
+  // (MEAS001-05-B — measuring with hands and fingers).
+  hands: '🖐️',
+  fingers: '☝️',
+  feet: '👣',
 };
 
 const UNIT_WIDTH = 36; // px per unit cell
@@ -184,9 +201,13 @@ interface TilingWorkspaceProps {
   disabled: boolean;
   /** Easy support tier — show the live "fit" self-check. Defaults on (medium/hard withdraw). */
   showAlignmentFeedback?: boolean;
+  /** How many object-cells ONE of these units covers. A bigger unit is drawn
+   *  wider, so "fewer of them reach the end" is something the child SEES rather
+   *  than something the feedback line tells them. */
+  unitSpan?: number;
 }
 
-function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true }: TilingWorkspaceProps) {
+function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1 }: TilingWorkspaceProps) {
   const [placedUnits, setPlacedUnits] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const objectWidthPx = Math.min(objectLength, MAX_BAR_UNITS) * UNIT_WIDTH;
@@ -213,9 +234,10 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
   useEffect(() => {
     setPlacedUnits(0);
     setSubmitted(false);
-  }, [objectName, correctCount]);
+  }, [objectName, correctCount, unitType]);
 
-  const unitWidthPx = placedUnits * UNIT_WIDTH;
+  const tileWidthPx = UNIT_WIDTH * Math.max(1, unitSpan);
+  const unitWidthPx = placedUnits * tileWidthPx;
   const isCorrect = submitted && placedUnits === correctCount;
   const isWrong = submitted && placedUnits !== correctCount;
 
@@ -238,7 +260,7 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
             <div
               key={i}
               className="flex items-center justify-center border border-white/20 bg-white/10 text-lg"
-              style={{ width: `${UNIT_WIDTH}px`, height: '28px' }}
+              style={{ width: `${tileWidthPx}px`, height: '28px' }}
             >
               {unitEmoji}
             </div>
@@ -537,6 +559,12 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
   const currentChallenge = challenges[currentIndex] || null;
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  /** estimate_then_tile: the guess the child committed BEFORE the units appeared.
+   *  Recorded with the result and never graded — the measuring is what is scored. */
+  const [estimate, setEstimate] = useState<number | null>(null);
+  /** two_unit_compare: the counts the child got with each unit, in order. */
+  const [unitACount, setUnitACount] = useState<number | null>(null);
+  const [unitBCount, setUnitBCount] = useState<number | null>(null);
 
   // ── Stable order items (memoized so OrderingWorkspace doesn't reset on every parent re-render) ──
   const orderItems = useMemo<OrderItem[]>(() => {
@@ -556,6 +584,9 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
   useEffect(() => {
     setSelectedAnswer(null);
     setShowFeedback(false);
+    setEstimate(null);
+    setUnitACount(null);
+    setUnitBCount(null);
   }, [currentIndex]);
 
   // ── Announce challenge to AI ──
@@ -626,6 +657,52 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       });
     }
   }, [currentChallenge, showFeedback, currentAttempts, incrementAttempts, recordResult, sendText]);
+
+  // ── The guess, and the two-unit walk ────────────────────────────────────
+  const handleEstimate = useCallback((guess: number) => {
+    if (estimate !== null) return;
+    SoundManager.select();
+    setEstimate(guess);
+    sendText(
+      `[ESTIMATE] The child guessed ${guess} before measuring. Do not say whether that is close — they are about to find out by measuring.`,
+      { silent: true },
+    );
+  }, [estimate, sendText]);
+
+  /** two_unit_compare: the first tiling is recorded, the second opens the question. */
+  const handleUnitATile = useCallback((count: number) => {
+    setUnitACount(count);
+  }, []);
+  const handleUnitBTile = useCallback((count: number) => {
+    setUnitBCount(count);
+  }, []);
+
+  const handleTwoUnitAnswer = useCallback((answerUnit: string) => {
+    if (!currentChallenge || showFeedback) return;
+    setSelectedAnswer(answerUnit);
+    setShowFeedback(true);
+    incrementAttempts();
+    // The unit you need MORE of is the smaller one — that inverse is the whole
+    // insight, so it is re-derived from the two counts, never stored separately.
+    const countA = currentChallenge.correctUnitCount ?? 0;
+    const countB = currentChallenge.correctUnitCountB ?? 0;
+    const expected = countA > countB
+      ? (currentChallenge.unitType || unitType)
+      : (currentChallenge.unitTypeB || unitType);
+    const correct = answerUnit === expected;
+    if (correct) {
+      SoundManager.playCorrect();
+      sendText(`[ANSWER_CORRECT] The child saw that the ${expected} were needed more often. Congratulate briefly.`, { silent: true });
+    } else {
+      SoundManager.playIncorrect();
+      sendText(`[ANSWER_INCORRECT] The child picked "${answerUnit}". Ask them to look again at how many of each they laid down — never say which.`, { silent: true });
+    }
+    recordResult({
+      challengeId: currentChallenge.id,
+      correct,
+      attempts: currentAttempts + 1,
+    });
+  }, [currentChallenge, showFeedback, currentAttempts, unitType, incrementAttempts, recordResult, sendText]);
 
   // ── Handle tile completion ──
   const handleTileComplete = useCallback((count: number) => {
@@ -699,6 +776,9 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     if (!advanceProgress()) return; // already at end
     setSelectedAnswer(null);
     setShowFeedback(false);
+    setEstimate(null);
+    setUnitACount(null);
+    setUnitBCount(null);
   }, [advanceProgress]);
 
   // ── Render challenge content ──
@@ -746,6 +826,139 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
 
             {isCorrect && <div className="text-emerald-400 text-sm font-medium">That&apos;s right!</div>}
             {isWrong && <div className="text-red-400 text-sm font-medium">Not quite. Look at the bars — which one sticks out farther?</div>}
+          </div>
+        );
+      }
+
+      // ── Guess first, then measure. The guess is never graded: a K child who
+      // is marked wrong for guessing learns to stop guessing, and estimating
+      // before measuring is the point of the row this serves. ──
+      case 'estimate_then_tile':
+        return (
+          <div className="space-y-5">
+            {estimate === null ? (
+              <div className="space-y-3">
+                <p className="text-sm text-amber-300">
+                  Before you measure — how many do you think it will take?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(ch.estimateOptions ?? []).map((guess) => (
+                    <Button
+                      key={guess}
+                      variant="ghost"
+                      className="bg-white/5 border border-white/20 hover:bg-white/10 px-5 text-lg font-mono"
+                      onClick={() => handleEstimate(guess)}
+                    >
+                      {guess}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-slate-300">
+                  You guessed <span className="font-mono text-amber-300">{estimate}</span>. Now measure and see.
+                </p>
+                <TilingWorkspace
+                  objectName={ch.objectName0}
+                  objectLength={ch.objectLength0}
+                  objectColor={ch.objectColor0}
+                  unitType={ch.unitType || unitType}
+                  correctCount={ch.correctUnitCount || ch.objectLength0}
+                  onComplete={handleTileComplete}
+                  disabled={allChallengesComplete}
+                  showAlignmentFeedback={ch.showAlignmentFeedback !== false}
+                />
+              </>
+            )}
+          </div>
+        );
+
+      // ── The same object, measured twice with different units. The child lays
+      // both out and then says which they needed more of — the inverse
+      // relationship between unit size and count. ──
+      case 'two_unit_compare': {
+        const unitA = ch.unitType || unitType;
+        const unitB = ch.unitTypeB || unitType;
+        const label = (u: string) => u.replace('_', ' ');
+        return (
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="text-sm text-slate-300">
+                First, measure the {ch.objectName0} with {label(unitA)}.
+              </p>
+              <TilingWorkspace
+                key={`${ch.id}-a`}
+                objectName={ch.objectName0}
+                objectLength={ch.objectLength0}
+                objectColor={ch.objectColor0}
+                unitType={unitA}
+                correctCount={ch.correctUnitCount || ch.objectLength0}
+                onComplete={handleUnitATile}
+                disabled={allChallengesComplete}
+                showAlignmentFeedback={ch.showAlignmentFeedback !== false}
+              />
+            </div>
+
+            {unitACount !== null ? (
+              <div className="space-y-2">
+                <p className="text-sm text-slate-300">
+                  Now measure the same {ch.objectName0} with {label(unitB)}.
+                </p>
+                <TilingWorkspace
+                  key={`${ch.id}-b`}
+                  objectName={ch.objectName0}
+                  objectLength={ch.objectLength0}
+                  objectColor={ch.objectColor0}
+                  unitType={unitB}
+                  correctCount={ch.correctUnitCountB || ch.objectLength0}
+                  // One big unit spans several small ones — that ratio is why
+                  // fewer of them reach the end, so it is drawn, not asserted.
+                  unitSpan={Math.max(1, Math.round(ch.objectLength0 / Math.max(1, ch.correctUnitCountB ?? 1)))}
+                  onComplete={handleUnitBTile}
+                  disabled={allChallengesComplete}
+                  showAlignmentFeedback={ch.showAlignmentFeedback !== false}
+                />
+              </div>
+            ) : null}
+
+            {unitACount !== null && unitBCount !== null ? (
+              <div className="space-y-3">
+                <p className="text-sm text-purple-300">
+                  Which one did you need more of?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[unitA, unitB].map((u) => {
+                    const isSelected = selectedAnswer === u;
+                    const correctUnit = (ch.correctUnitCount ?? 0) > (ch.correctUnitCountB ?? 0) ? unitA : unitB;
+                    return (
+                      <Button
+                        key={u}
+                        variant="ghost"
+                        className={`bg-white/5 border border-white/20 hover:bg-white/10 ${
+                          isSelected && showFeedback && u === correctUnit ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300' :
+                          isSelected && showFeedback ? 'bg-red-500/20 border-red-400/30 text-red-300' : ''
+                        }`}
+                        onClick={() => handleTwoUnitAnswer(u)}
+                        disabled={showFeedback}
+                      >
+                        {UNIT_EMOJI[u] || '🟦'} {label(u)}
+                      </Button>
+                    );
+                  })}
+                </div>
+                {showFeedback && selectedAnswer === ((ch.correctUnitCount ?? 0) > (ch.correctUnitCountB ?? 0) ? unitA : unitB) ? (
+                  <div className="text-emerald-400 text-sm font-medium">
+                    That&apos;s right — the smaller unit takes more of them to reach the end.
+                  </div>
+                ) : null}
+                {showFeedback && selectedAnswer !== ((ch.correctUnitCount ?? 0) > (ch.correctUnitCountB ?? 0) ? unitA : unitB) ? (
+                  <div className="text-red-400 text-sm font-medium">
+                    Not quite. Look back at how many of each you laid down.
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         );
       }

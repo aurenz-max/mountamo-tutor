@@ -4417,8 +4417,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'length-lab',
-    description: 'Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units (cubes, paper clips) end-to-end to measure, arrange objects by length, and use indirect comparison via a reference. Perfect for K.MD.1 and K.MD.2 standards. ESSENTIAL for Kindergarten measurement.',
-    constraints: 'Objects limited to 1-12 unit lengths. K: compare + tile only. G1: order + indirect.',
+    description: 'Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units end-to-end to measure, arrange objects by length, and use indirect comparison via a reference. The units can be classroom objects (cubes, paper clips, bears, erasers) or the body a child already has (hands, fingers, feet) when the objective asks them to measure with their hands. Two more K tasks: GUESS how many units it will take before any unit appears and then measure to find out, and measure the SAME object with two different-sized units and say which one was needed more of. Perfect for K.MD.1 and K.MD.2 standards. ESSENTIAL for Kindergarten measurement.',
+    constraints: 'Objects limited to 1-12 unit lengths. In estimate_then_tile the guess is recorded and never marked wrong — the measuring is what is scored. In two_unit_compare the app picks both units and both counts so the object is a whole number of each, and the bigger unit is drawn wider so "fewer of them reach the end" is visible rather than asserted. K: compare, tile and order. G1 adds indirect (transitive reasoning through a reference object). `order` came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): every object is drawn as a length bar and the picker chip carries the same colour, so the child matches a picture rather than reading a name. K.MD.2 asks for exactly this.',
     // reader: 'none' — BACKLOG direct-manipulation sibling audit (qa/reader-fit/BACKLOG.md,
     // "Systemic items" section) cleared length-lab: "TilingWorkspace derives from placedUnits =
     // good" — the answer comes from what the child tiles/points at, never a read-then-type proxy.
@@ -4432,6 +4432,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['compare'],
         description: 'Which object is longer or shorter? Direct visual comparison.',
+      },
+      {
+        evalMode: 'estimate_then_tile',
+        affordances: { representation: 'concrete', reader: 'none', answers: ['tap', 'manipulate'] },
+        label: 'Guess, Then Measure (K)',
+        beta: 2.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['estimate_then_tile'],
+        description: 'Estimate how many units it will take, then tile and count to find out. K.MD.1.',
+      },
+      {
+        evalMode: 'two_unit_compare',
+        affordances: { representation: 'concrete', reader: 'none', answers: ['tap', 'manipulate'] },
+        label: 'Two Units (K)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['two_unit_compare'],
+        description: 'Measure one object with two different units and say which one you needed more of. K.MD.1.',
       },
       {
         evalMode: 'tile_and_count',
@@ -4449,7 +4467,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['order'],
-        description: 'Arrange three objects from shortest to longest.',
+        description: 'Arrange three objects from shortest to longest. Kindergarten and up.',
       },
       {
         evalMode: 'indirect',

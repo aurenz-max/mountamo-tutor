@@ -1,0 +1,15 @@
+{
+  "log": [
+    "PASS estimate: challenges generated",
+    "PASS estimate: the guess is asked before the units appear",
+    "PASS estimate: no tiles until the guess is in",
+    "PASS estimate: an off guess is not marked wrong",
+    "PASS estimate: the tiles appear once the guess is committed",
+    "PASS estimate: the measurement is what gets scored",
+    "PASS two-unit: a second, different unit",
+    "PASS two-unit: only the first unit is offered to begin with",
+    "PASS two-unit: the second unit opens after the first measurement",
+    "PASS two-unit: the comparison is asked last",
+    "PASS two-unit: naming the BIGGER unit is judged wrong"
+  ]
+}

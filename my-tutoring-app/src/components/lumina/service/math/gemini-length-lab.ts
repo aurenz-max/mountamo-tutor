@@ -16,6 +16,20 @@ import {
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  estimate_then_tile: {
+    promptDoc:
+      `"estimate_then_tile": Kindergarten. The child GUESSES how many units it will take before any unit appears, `
+      + `then lays them out and counts. Give objectName0, objectLength0 and objectColor0 only — the app builds the `
+      + `guesses and the answer key. The guess is never marked wrong. Never state a number in the instruction.`,
+    schemaDescription: "'estimate_then_tile' (K: guess, then measure)",
+  },
+  two_unit_compare: {
+    promptDoc:
+      `"two_unit_compare": Kindergarten. The SAME object is measured twice with two different-sized units, and the `
+      + `child says which unit they needed more of. Give objectName0, objectLength0 and objectColor0 only — the app `
+      + `picks both units and works out both counts. Never state a number in the instruction.`,
+    schemaDescription: "'two_unit_compare' (K: the same object, two units)",
+  },
   compare: {
     promptDoc:
       `"compare": Two objects on a baseline. Student picks longer/shorter/same. `
@@ -401,6 +415,10 @@ type LengthLabConfig = Partial<{
    * NEVER changes raw magnitude — only structure and help.
    */
   difficulty?: string;
+  /** Component intent from the manifest — carries the unit the objective names. */
+  intent?: string;
+  /** Parent objective text (stamped by flattenManifestToLayout). */
+  objectiveText?: string;
 }>;
 
 export const generateLengthLab = async (
@@ -409,7 +427,9 @@ export const generateLengthLab = async (
   const { topic } = ctx;
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
-  const config = ctx.raw as LengthLabConfig;
+  // ctx.intent is the manifest's per-component steering; ctx.raw carries the
+  // objective text. Both feed the unit-fidelity read below.
+  const config: LengthLabConfig = { ...(ctx.raw as LengthLabConfig), intent: ctx.intent };
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     'length-lab',
@@ -444,8 +464,32 @@ export const generateLengthLab = async (
   const colorPool = ['#4A90D9', '#E57373', '#81C784', '#FFB74D', '#BA68C8', '#4DD0E1', '#F06292'];
   const sampleColors = colorPool.sort(() => Math.random() - 0.5).slice(0, 3).join(', ');
 
-  const validUnitTypes = ['cubes', 'paper_clips', 'bears', 'erasers'];
-  const randomUnit = validUnitTypes[Math.floor(Math.random() * validUnitTypes.length)];
+  // Body-part units are real K measuring tools (MEAS001-05-B), not decoration:
+  // a child with no ruler measures the table in hands.
+  const validUnitTypes = ['cubes', 'paper_clips', 'bears', 'erasers', 'hands', 'fingers', 'feet'];
+  /**
+   * THE UNIT THE OBJECTIVE NAMES WINS.
+   *
+   * A row that says "measure with your hands" and a lesson that hands the child
+   * cubes are not the same lesson, and the unit was being drawn at random from
+   * the whole list — a hands objective drew cubes three times out of three on
+   * the 2026-09-09 K probe. The objective is read here rather than only stated
+   * in the prompt, because the same string is also written into the schema
+   * instruction below, so a prompt-only fix would still be a coin toss.
+   */
+  const unitFromObjective = (text: string): string | undefined => {
+    const t = text.toLowerCase();
+    if (/hand(s|span|spans)?/.test(t)) return 'hands';
+    if (/finger(s|width|widths)?/.test(t)) return 'fingers';
+    if (/feet|foot|footstep/.test(t)) return 'feet';
+    if (/paper ?clip/.test(t)) return 'paper_clips';
+    if (/erasers?/.test(t)) return 'erasers';
+    if (/bears?|counters?/.test(t)) return 'bears';
+    if (/cubes?|blocks?|lego/.test(t)) return 'cubes';
+    return undefined;
+  };
+  const namedUnit = unitFromObjective(`${topic} ${config?.intent ?? ''} ${config?.objectiveText ?? ''}`);
+  const randomUnit = namedUnit ?? validUnitTypes[Math.floor(Math.random() * validUnitTypes.length)];
 
   const prompt = `
 Create an educational length measurement activity for teaching "${topic}"
@@ -528,15 +572,21 @@ Return the complete length lab configuration.
     data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
   }
 
-  // Validate unitType
-  if (!validUnitTypes.includes(data.unitType)) {
+  // Validate unitType. A unit the objective NAMED is not a suggestion — it is
+  // the lesson, so it overrides whatever the model returned.
+  if (namedUnit) {
+    data.unitType = namedUnit;
+  } else if (!validUnitTypes.includes(data.unitType)) {
     data.unitType = 'cubes';
   }
 
   // CSS hex color validation
   const isValidColor = (c: string): boolean => /^#[0-9A-Fa-f]{6}$/.test(c);
 
-  const validChallengeTypes = ['compare', 'tile_and_count', 'order', 'indirect'];
+  const validChallengeTypes = [
+    'compare', 'tile_and_count', 'order', 'indirect',
+    'estimate_then_tile', 'two_unit_compare',
+  ];
 
   // Filter to valid challenge types
   data.challenges = (data.challenges || []).filter(
@@ -576,6 +626,47 @@ Return the complete length lab configuration.
         if (challenge.correctAnswer !== expected) {
           challenge.correctAnswer = expected;
         }
+        break;
+      }
+
+      // ── Guess, then measure. Code owns the guesses so the true count is
+      // always reachable and the spread is honest — a menu that does not
+      // contain the answer teaches a child their guess was never the point. ──
+      case 'estimate_then_tile': {
+        challenge.correctUnitCount = challenge.objectLength0;
+        if (!challenge.unitType || !validUnitTypes.includes(challenge.unitType)) {
+          challenge.unitType = data.unitType;
+        }
+        const truth = challenge.correctUnitCount as number;
+        const guesses = new Set<number>([truth]);
+        for (const d of [1, -1, 2, -2, 3]) {
+          if (guesses.size >= 4) break;
+          const v = truth + d;
+          if (v >= 1 && v <= 12) guesses.add(v);
+        }
+        challenge.estimateOptions = Array.from(guesses).sort((a, b) => a - b);
+        if (!challenge.correctAnswer) challenge.correctAnswer = String(truth);
+        break;
+      }
+
+      // ── The same object, two units. The SECOND unit is bigger, so it takes
+      // fewer of them: code owns both counts because the inverse relationship
+      // between unit size and count is the thing being taught. ──
+      case 'two_unit_compare': {
+        if (!challenge.unitType || !validUnitTypes.includes(challenge.unitType)) {
+          challenge.unitType = data.unitType;
+        }
+        const smallCount = challenge.objectLength0 as number;
+        // A bigger unit spans 2 or 3 of the small ones; the object length is a
+        // whole number of both, so neither measurement ends mid-unit.
+        const factor = smallCount % 3 === 0 ? 3 : 2;
+        const bigCount = Math.max(1, Math.round(smallCount / factor));
+        challenge.objectLength0 = bigCount * factor;   // exact in both units
+        challenge.correctUnitCount = bigCount * factor; // small unit
+        challenge.correctUnitCountB = bigCount;         // big unit
+        const bigger = ['bears', 'hands', 'erasers', 'feet'];
+        challenge.unitTypeB = bigger.find((u) => u !== challenge.unitType) ?? 'bears';
+        challenge.correctAnswer = challenge.unitType;   // the smaller unit is needed more
         break;
       }
 
