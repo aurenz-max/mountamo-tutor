@@ -1,0 +1,14 @@
+{
+  "port": "3001",
+  "log": [
+    "PASS clock: the generator returned a clock-sequence payload",
+    "PASS clock: 3 analog face(s) drawn on the cards (need 3+)",
+    "PASS clock: no printed clock time anywhere on the K stage",
+    "PASS clock: 3 tappable card(s) carry a face",
+    "PASS clock: tapping a card moves it into the order",
+    "PASS bond: the generator returned a related-fact payload",
+    "PASS bond: the Related Facts phase chip is on the stage",
+    "PASS bond: turn 2 (take away) is not on the stage before turn 1 is answered",
+    "PASS bond: the unknown part renders as ? rather than the answer"
+  ]
+}

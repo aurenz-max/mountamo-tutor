@@ -31,6 +31,23 @@ export interface EventCard {
   label: string;
   emoji: string;
   typicalTime?: string;
+  /**
+   * Position through the day, 0 (midnight) to 1 (the next midnight), derived in the
+   * generator from `typicalTime`. It is the PRE-READER form of the same information:
+   * the card draws a sun on a dawn-to-night strip at this fraction instead of printing
+   * "8:30 AM", which a Kindergarten student cannot read.
+   */
+  dayFraction?: number;
+  /**
+   * Whole-hour position on a 12-hour dial, 0-11, derived in the generator from
+   * `typicalTime`. `clock-sequence` draws an analog FACE at this hour on the
+   * card. It is a PICTURE, not a printed time: a pre-reader who cannot read
+   * "8:00" can still see where the short hand points, and connecting that
+   * position to an activity is the K objective (TIME001-03-G, skill "Telling
+   * Time to the Hour"). Only whole hours ever reach it — the generator drops a
+   * challenge whose events are not all on the hour.
+   */
+  clockHour?: number;
 }
 
 export interface ScheduleEntry {
@@ -41,7 +58,7 @@ export interface ScheduleEntry {
 
 export interface TimeSequencerChallenge {
   id: string;
-  type: 'sequence-events' | 'match-time-of-day' | 'before-after' | 'duration-compare' | 'read-schedule';
+  type: 'sequence-events' | 'clock-sequence' | 'match-time-of-day' | 'before-after' | 'duration-compare' | 'read-schedule';
   instruction: string;
 
   // sequence-events
@@ -72,8 +89,14 @@ export interface TimeSequencerChallenge {
   hint?: string;
 
   // ── Within-mode support tier (scaffolding only; never changes events/times/answer) ──
-  /** #1 perception: show per-event elapsed-time (typicalTime) anchors. easy = on, hard = off. */
+  /** #1 perception: show per-event elapsed-time (typicalTime) anchors. easy = on, hard = off.
+   *  Kindergarten never sets this — reading a clock is not a scaffold at that band. */
   showTimeAnchors?: boolean;
+  /** #1 perception, Kindergarten form: show the sun-position strip built from `dayFraction`. */
+  showSkyCue?: boolean;
+  /** clock-sequence: draw the analog face on every card. Structural, NOT a
+   *  scaffold — the face IS the task, so no support tier withdraws it. */
+  showClockFace?: boolean;
   /** #1 answer-leak-guarded: pre-seed ONLY the first ordered slot as a start-here anchor. */
   prelabelFirstSlot?: boolean;
   /** #2 instruction-as-scaffold: surface the named ordering/time-reasoning strategy. */
@@ -105,6 +128,7 @@ export interface TimeSequencerData {
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'sequence-events': { label: 'Sequence', icon: '📋', accentColor: 'purple' },
+  'clock-sequence': { label: 'Clock Order', icon: '🕐', accentColor: 'purple' },
   'match-time-of-day': { label: 'Time of Day', icon: '🌅', accentColor: 'orange' },
   'before-after': { label: 'Before/After', icon: '⏪', accentColor: 'blue' },
   'duration-compare': { label: 'Duration', icon: '⏱️', accentColor: 'emerald' },
@@ -128,18 +152,161 @@ const PERIOD_DISPLAY: Record<string, { label: string; emoji: string; color: stri
  * what the tier hid. At 'hard' the tutor must NOT name the order or the elapsed
  * time; it asks what the student thinks happens first and never reveals the sequence.
  */
-function tutorRevealPolicy(tier: 'easy' | 'medium' | 'hard' | undefined): string {
+function tutorRevealPolicy(tier: 'easy' | 'medium' | 'hard' | undefined, isPreReader = false): string {
   if (!tier) return '';
   const common = 'Never state the correct order, the answer, or which option is right.';
   switch (tier) {
     case 'easy':
-      return `SUPPORT TIER easy: maximum scaffolding. You may name the ordering strategy (read the time on each card, go earliest to latest) and point to the time anchors on screen. ${common}`;
+      // At Kindergarten the on-screen anchor is a sun picture, not a clock time, so the
+      // strategy the tutor is allowed to name has to be the picture one. Naming the
+      // clock strategy here would hand a pre-reader back the exact demand the band
+      // removed from the screen.
+      return isPreReader
+        ? `SUPPORT TIER easy (Kindergarten): maximum scaffolding. You may point to the sky picture on each card — the sun comes up, climbs, goes down, then it is dark. NEVER mention a clock, a time, or a number: this student cannot read one. ${common}`
+        : `SUPPORT TIER easy: maximum scaffolding. You may name the ordering strategy (read the time on each card, go earliest to latest) and point to the time anchors on screen. ${common}`;
     case 'medium':
-      return `SUPPORT TIER medium: the time anchors are withdrawn. Nudge the reasoning — ask what the student does first in their day — but do not name the full strategy or the elapsed times. ${common}`;
+      return `SUPPORT TIER medium: the on-screen anchors are withdrawn. Nudge the reasoning — ask what the student does first in their day — but do not name the full strategy${isPreReader ? '' : ' or the elapsed times'}. ${common}`;
     default:
-      return `SUPPORT TIER hard: minimal coaching. The on-screen instruction does NOT name a strategy and there are no time anchors — reasoning out the order is the task. Do NOT name the order or the elapsed time; ask the student what they think happens first and let them judge it. ${common}`;
+      return `SUPPORT TIER hard: minimal coaching. The on-screen instruction does NOT name a strategy and there are no anchors — reasoning out the order is the task. Do NOT name the order or the elapsed time; ask the student what they think happens first and let them judge it. ${common}`;
   }
 }
+
+// ============================================================================
+// Sun-position strip — the pre-reader's time anchor
+// ============================================================================
+
+/** Sky colour at a point in the day, midnight through midnight. The stops are the
+ *  ordinary shape of a day — dark, dawn amber, midday blue, dusk orange, dark — so the
+ *  strip reads as a sky without a single word on it. */
+const SKY_STOPS: readonly [number, [number, number, number]][] = [
+  [0.00, [30, 27, 75]],
+  [0.22, [49, 46, 129]],
+  [0.30, [245, 158, 11]],
+  [0.50, [125, 211, 252]],
+  [0.76, [251, 146, 60]],
+  [0.86, [49, 46, 129]],
+  [1.00, [30, 27, 75]],
+];
+
+function skyColorAt(f: number): string {
+  const x = Math.min(1, Math.max(0, f));
+  let lo = SKY_STOPS[0];
+  let hi = SKY_STOPS[SKY_STOPS.length - 1];
+  for (let i = 0; i < SKY_STOPS.length - 1; i++) {
+    if (x >= SKY_STOPS[i][0] && x <= SKY_STOPS[i + 1][0]) {
+      lo = SKY_STOPS[i];
+      hi = SKY_STOPS[i + 1];
+      break;
+    }
+  }
+  const span = hi[0] - lo[0];
+  const t = span === 0 ? 0 : (x - lo[0]) / span;
+  const [r, g, b] = lo[1].map((c, i) => Math.round(c + (hi[1][i] - c) * t));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+/**
+ * The window one challenge's strips are drawn over, from the day fractions of its own
+ * events.
+ *
+ * A full-day strip is unusable when a challenge's three events sit inside one morning:
+ * 7:00, 8:00 and 9:00 land 4% apart, which on a 140px strip is about five pixels and
+ * no five-year-old can order that. Zooming to the challenge's own span — padded, and
+ * never narrower than a couple of hours — puts those same three cards a third of the
+ * strip apart while the gradient still says "this is morning", so the picture stays
+ * true and becomes readable.
+ */
+function skyWindowFor(fractions: (number | undefined)[]): [number, number] {
+  const valid = fractions.filter((f): f is number => typeof f === 'number');
+  if (valid.length === 0) return [0, 1];
+  const lo = Math.min(...valid);
+  const hi = Math.max(...valid);
+  const pad = Math.max(0.03, (hi - lo) * 0.35);
+  return [Math.max(0, lo - pad), Math.min(1, hi + pad)];
+}
+
+/**
+ * The sun (or moon) drawn on a slice of sky at the event's own time — the pre-reader's
+ * replacement for the printed clock time.
+ *
+ * It is a POSITION, not one of four sky emojis, on purpose: three events inside one
+ * morning would all be the same sunrise picture and the child could not order them.
+ * The marker slides monotonically with the time, so two events that differ in time
+ * differ on screen.
+ */
+/**
+ * A small analog face at a whole hour — the PICTURE form of a clock time.
+ *
+ * The hour hand is the load-bearing mark and is drawn short and thick; the
+ * minute hand points straight up because every hour this mode uses is on the
+ * hour. Twelve tick marks give the hand something to point AT, and the 12/3/6/9
+ * numerals are the only text on the card — single or double digits a pre-reader
+ * matches by shape, which is the same demand analog-clock's K modes already
+ * make (hand_name, count_face, hear_time).
+ */
+// 44px, not the 34 the first draft used: at 34 the hour hand was legible to an
+// adult reading a desktop screenshot and marginal for the five-year-old who has
+// to tell 7 o'clock from 9 o'clock, and telling them apart IS the task here.
+const ClockFace: React.FC<{ hour: number; size?: number }> = ({ hour, size = 44 }) => {
+  const r = size / 2;
+  const h12 = ((hour % 12) + 12) % 12;
+  const hourAngle = (h12 / 12) * 2 * Math.PI;
+  const hx = r + Math.sin(hourAngle) * r * 0.46;
+  const hy = r - Math.cos(hourAngle) * r * 0.46;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" className="flex-shrink-0">
+      <circle cx={r} cy={r} r={r - 1} fill="rgb(248 250 252)" stroke="rgb(100 116 139)" strokeWidth="1.5" />
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * 2 * Math.PI;
+        const inner = r * 0.76;
+        return (
+          <line
+            key={i}
+            x1={r + Math.sin(a) * inner} y1={r - Math.cos(a) * inner}
+            x2={r + Math.sin(a) * (r * 0.9)} y2={r - Math.cos(a) * (r * 0.9)}
+            stroke="rgb(148 163 184)" strokeWidth={i % 3 === 0 ? 1.4 : 0.7}
+          />
+        );
+      })}
+      {/* Minute hand — straight up on every whole hour. */}
+      <line x1={r} y1={r} x2={r} y2={r - r * 0.72} stroke="rgb(71 85 105)" strokeWidth="1.4" strokeLinecap="round" />
+      {/* Hour hand — short and thick, the mark the child reads. */}
+      <line x1={r} y1={r} x2={hx} y2={hy} stroke="rgb(15 23 42)" strokeWidth="2.6" strokeLinecap="round" />
+      <circle cx={r} cy={r} r="1.8" fill="rgb(15 23 42)" />
+    </svg>
+  );
+};
+
+const SkyStrip: React.FC<{ fraction: number; window?: [number, number] }> = ({ fraction, window }) => {
+  const clamped = Math.min(1, Math.max(0, fraction));
+  const [start, end] = window ?? [0, 1];
+  const span = Math.max(0.02, end - start);
+  const offset = Math.min(1, Math.max(0, (clamped - start) / span));
+  const glyph = clamped < 0.25 || clamped >= 0.84
+    ? '🌙'
+    : clamped < 0.46
+      ? '🌅'
+      : clamped < 0.68
+        ? '☀️'
+        : '🌇';
+  const gradient = [0, 0.25, 0.5, 0.75, 1]
+    .map((t) => `${skyColorAt(start + span * t)} ${Math.round(t * 100)}%`)
+    .join(', ');
+  return (
+    <div
+      aria-hidden
+      className="relative mt-1 h-3.5 w-full max-w-[150px] rounded-full overflow-hidden border border-white/10"
+      style={{ background: `linear-gradient(90deg, ${gradient})` }}
+    >
+      <span
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 text-[12px] leading-none"
+        style={{ left: `${6 + offset * 88}%` }}
+      >
+        {glyph}
+      </span>
+    </div>
+  );
+};
 
 // ============================================================================
 // Event Card Visual Component
@@ -152,11 +319,17 @@ interface EventCardVisualProps {
   onClick?: () => void;
   disabled?: boolean;
   showTime?: boolean;
+  /** Kindergarten form of `showTime`: the sun-position strip instead of the digits. */
+  showSky?: boolean;
+  /** clock-sequence: the analog face at `event.clockHour`, drawn beside the emoji. */
+  showClock?: boolean;
+  /** The challenge-local day window the sky strips share, so the cards are comparable. */
+  skyWindow?: [number, number];
   className?: string;
 }
 
 const EventCardVisual: React.FC<EventCardVisualProps> = ({
-  event, index, selected, onClick, disabled, showTime, className = '',
+  event, index, selected, onClick, disabled, showTime, showSky, showClock, skyWindow, className = '',
 }) => (
   <button
     type="button"
@@ -177,10 +350,16 @@ const EventCardVisual: React.FC<EventCardVisualProps> = ({
       </span>
     )}
     <span className="text-2xl flex-shrink-0">{event.emoji}</span>
+    {/* The face sits BESIDE the activity picture, not under the label: on
+        clock-sequence the pairing of the two is the thing being learned. */}
+    {showClock && event.clockHour !== undefined && <ClockFace hour={event.clockHour} />}
     <div className="flex-1 min-w-0">
       <span className="text-slate-200 text-sm font-medium block truncate">{event.label}</span>
       {showTime && event.typicalTime && (
         <span className="text-slate-500 text-xs">{event.typicalTime}</span>
+      )}
+      {showSky && event.dayFraction !== undefined && (
+        <SkyStrip fraction={event.dayFraction} window={skyWindow} />
       )}
     </div>
   </button>
@@ -299,7 +478,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
-    const revealPolicy = tutorRevealPolicy(supportTier);
+    const revealPolicy = tutorRevealPolicy(supportTier, gradeBand === 'K');
     sendText(
       `[ACTIVITY_START] Time Sequencer for ${gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`}. `
       + `${challenges.length} challenges. First: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
@@ -325,7 +504,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
   // remaining slots stay blank for the student; the checker reads correctOrder.
   useEffect(() => {
     if (
-      currentChallenge?.type === 'sequence-events'
+      (currentChallenge?.type === 'sequence-events' || currentChallenge?.type === 'clock-sequence')
       && currentChallenge.prelabelFirstSlot
       && (currentChallenge.correctOrder?.length ?? 0) > 1
     ) {
@@ -349,7 +528,14 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     } else {
       // Count how many are in the right position
       const correctCount = orderedEvents.filter((id, i) => currentChallenge.correctOrder?.[i] === id).length;
-      setFeedback(`Not quite — ${correctCount} out of ${orderedEvents.length} are in the right spot. Try again!`);
+      // "2 out of 3 are in the right spot" is a sentence a five-year-old has to read and
+      // then do arithmetic on. The tutor still receives the count below; the child gets
+      // the plain retry.
+      setFeedback(
+        gradeBand === 'K'
+          ? 'Not quite — try again!'
+          : `Not quite — ${correctCount} out of ${orderedEvents.length} are in the right spot. Try again!`,
+      );
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student's order: ${orderedEvents.join(', ')}. Correct: ${currentChallenge.correctOrder?.join(', ')}. `
@@ -457,7 +643,9 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
 
     let correct = false;
     switch (currentChallenge.type) {
-      case 'sequence-events': correct = handleCheckSequence(); break;
+      // clock-sequence IS the ordering interaction — same gesture, same
+      // `correctOrder` key. What differs is what each card carries.
+      case 'sequence-events': case 'clock-sequence': correct = handleCheckSequence(); break;
       case 'match-time-of-day': correct = handleCheckTimeOfDay(); break;
       case 'before-after': correct = handleCheckBeforeAfter(); break;
       case 'duration-compare': correct = handleCheckDuration(); break;
@@ -565,6 +753,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     if (!currentChallenge) return false;
     switch (currentChallenge.type) {
       case 'sequence-events':
+      case 'clock-sequence':
         return orderedEvents.length === (currentChallenge.events?.length ?? 0);
       case 'match-time-of-day':
         return !!selectedPeriod;
@@ -596,6 +785,9 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
   const renderSequenceEvents = () => {
     if (!currentChallenge) return null;
     const events = shuffledEvents;
+    // One window for every card in this challenge — a per-card window would put each
+    // sun in the middle of its own strip and destroy the comparison.
+    const skyWindow = skyWindowFor(events.map((e) => e.dayFraction));
     const unselected = events.filter((e) => !orderedEvents.includes(e.id));
     const selected = orderedEvents.map((id) => events.find((e) => e.id === id)!).filter(Boolean);
 
@@ -612,6 +804,9 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
                 index={i}
                 selected
                 showTime={currentChallenge.showTimeAnchors}
+                showSky={currentChallenge.showSkyCue}
+                showClock={currentChallenge.showClockFace}
+                skyWindow={skyWindow}
                 onClick={() => handleToggleSequenceEvent(event.id)}
                 disabled={isCurrentChallengeCorrect}
               />
@@ -630,6 +825,9 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
                 key={event.id}
                 event={event}
                 showTime={currentChallenge.showTimeAnchors}
+                showSky={currentChallenge.showSkyCue}
+                showClock={currentChallenge.showClockFace}
+                skyWindow={skyWindow}
                 onClick={() => handleToggleSequenceEvent(event.id)}
                 disabled={isCurrentChallengeCorrect}
               />
@@ -683,7 +881,15 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
           <span className="text-slate-400 text-xs block mb-1">
             What happens <span className="text-blue-300 font-bold">{currentChallenge.relation}</span>...
           </span>
-          {ref && <EventCardVisual event={ref} disabled showTime={currentChallenge.showTimeAnchors} className="max-w-xs mx-auto" />}
+          {ref && (
+            <EventCardVisual
+              event={ref}
+              disabled
+              showTime={currentChallenge.showTimeAnchors}
+              showSky={currentChallenge.showSkyCue}
+              className="max-w-xs mx-auto"
+            />
+          )}
         </div>
         <div className="space-y-2">
           {opts.map((event) => (
@@ -747,6 +953,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
                 : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400'
             }`}
           >
+            <span className="text-lg mr-2" aria-hidden>⚖️</span>
             About the Same
           </Button>
         </div>
@@ -886,7 +1093,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               </div>
             )}
 
-            {currentChallenge.type === 'sequence-events' && renderSequenceEvents()}
+            {(currentChallenge.type === 'sequence-events' || currentChallenge.type === 'clock-sequence') && renderSequenceEvents()}
             {currentChallenge.type === 'match-time-of-day' && renderMatchTimeOfDay()}
             {currentChallenge.type === 'before-after' && renderBeforeAfter()}
             {currentChallenge.type === 'duration-compare' && renderDurationCompare()}

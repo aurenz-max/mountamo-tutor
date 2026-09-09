@@ -1,0 +1,1397 @@
+{
+  "startedAt": "2026-09-09T11:34:35.357Z",
+  "mode": "clock-sequence",
+  "topic": "Connect whole-hour times to daily activities in sequence",
+  "draws": [
+    {
+      "label": "TIME001-03-G K/none draw 1",
+      "failures": [],
+      "title": "Rainy Day Routines",
+      "description": "Put the fun rainy day activities in order from start to finish.",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which one happens first on a rainy morning?",
+          "hint": "Think about what you do right after you wake up.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Eat warm oats",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e2",
+              "label": "Brush your teeth",
+              "emoji": "🦷",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            },
+            {
+              "id": "e3",
+              "label": "Get dressed",
+              "emoji": "🎒",
+              "typicalTime": "10:00 AM",
+              "clockHour": 10
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "clock-sequence",
+          "instruction": "Can you sort these morning rainy day fun cards?",
+          "hint": "What do you do first when you start playing inside?",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Paint a picture",
+              "emoji": "🎨",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            },
+            {
+              "id": "e2",
+              "label": "Listen to music",
+              "emoji": "🎵",
+              "typicalTime": "10:00 AM",
+              "clockHour": 10
+            },
+            {
+              "id": "e3",
+              "label": "Drink water",
+              "emoji": "🥤",
+              "typicalTime": "11:00 AM",
+              "clockHour": 11
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "clock-sequence",
+          "instruction": "Put these afternoon rainy day activities in order.",
+          "hint": "What is the first thing you might do after lunch?",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Read a book",
+              "emoji": "📚",
+              "typicalTime": "1:00 PM",
+              "clockHour": 1
+            },
+            {
+              "id": "e2",
+              "label": "Run in place",
+              "emoji": "🏃",
+              "typicalTime": "2:00 PM",
+              "clockHour": 2
+            },
+            {
+              "id": "e3",
+              "label": "Eat a snack",
+              "emoji": "🍽️",
+              "typicalTime": "3:00 PM",
+              "clockHour": 3
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "clock-sequence",
+          "instruction": "Order these evening cozy time cards.",
+          "hint": "What happens right before you go to sleep?",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Take a bath",
+              "emoji": "🛁",
+              "typicalTime": "6:00 PM",
+              "clockHour": 6
+            },
+            {
+              "id": "e2",
+              "label": "Brush your teeth",
+              "emoji": "🦷",
+              "typicalTime": "7:00 PM",
+              "clockHour": 7
+            },
+            {
+              "id": "e3",
+              "label": "Go to sleep",
+              "emoji": "😴",
+              "typicalTime": "8:00 PM",
+              "clockHour": 8
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G K/none draw 2",
+      "failures": [],
+      "title": "My Fun Weekend Day",
+      "description": "Put your fun weekend activities in order from start to finish.",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "clock-sequence",
+          "instruction": "Put the morning cards in order. Which one happens first?",
+          "hint": "Think about what you do right after you wake up in the morning.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Wake Up",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Eat Breakfast",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Brush Teeth",
+              "emoji": "🦷",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "clock-sequence",
+          "instruction": "Can you put these morning fun cards in the right order?",
+          "hint": "What do you do with your pets before you make art?",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Feed Dog",
+              "emoji": "🐕",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            },
+            {
+              "id": "e2",
+              "label": "Paint Pictures",
+              "emoji": "🎨",
+              "typicalTime": "10:00 AM",
+              "clockHour": 10
+            },
+            {
+              "id": "e3",
+              "label": "Drink Juice",
+              "emoji": "🥤",
+              "typicalTime": "11:00 AM",
+              "clockHour": 11
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "clock-sequence",
+          "instruction": "Help put the afternoon cards in order. What happens first?",
+          "hint": "You need to eat lunch before you play outside.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Eat Lunch",
+              "emoji": "🍽️",
+              "typicalTime": "12:00 PM",
+              "clockHour": 0
+            },
+            {
+              "id": "e2",
+              "label": "Play Outside",
+              "emoji": "🏃",
+              "typicalTime": "1:00 PM",
+              "clockHour": 1
+            },
+            {
+              "id": "e3",
+              "label": "Eat Apple",
+              "emoji": "🍎",
+              "typicalTime": "2:00 PM",
+              "clockHour": 2
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "clock-sequence",
+          "instruction": "Order these afternoon cards from start to finish.",
+          "hint": "Listen to some nice songs before you clean your room.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Listen Music",
+              "emoji": "🎵",
+              "typicalTime": "2:00 PM",
+              "clockHour": 2
+            },
+            {
+              "id": "e2",
+              "label": "Clean Room",
+              "emoji": "🧹",
+              "typicalTime": "3:00 PM",
+              "clockHour": 3
+            },
+            {
+              "id": "e3",
+              "label": "Read Books",
+              "emoji": "📚",
+              "typicalTime": "4:00 PM",
+              "clockHour": 4
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "clock-sequence",
+          "instruction": "Put these bedtime routine cards in the correct order.",
+          "hint": "Take a nice warm bath before you go to sleep.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Take Bath",
+              "emoji": "🛁",
+              "typicalTime": "7:00 PM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Brush Teeth",
+              "emoji": "🦷",
+              "typicalTime": "8:00 PM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Go To Sleep",
+              "emoji": "😴",
+              "typicalTime": "9:00 PM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G K/easy draw 1",
+      "failures": [],
+      "title": "My Weekend Morning and Afternoon",
+      "description": "Put your fun weekend activities in order from start to finish.",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "clock-sequence",
+          "instruction": "Look at the clocks on the cards. Put them in order from earliest to latest!",
+          "hint": "What do you do right after you wake up?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Wake up",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Eat breakfast",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Brush teeth",
+              "emoji": "🦷",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "clock-sequence",
+          "instruction": "Check the little hands on the clocks. Which one happens first in the morning?",
+          "hint": "Find the activity where you get dressed for fun.",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Get dressed",
+              "emoji": "🎒",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e2",
+              "label": "Feed dog",
+              "emoji": "🐕",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            },
+            {
+              "id": "e3",
+              "label": "Drink juice",
+              "emoji": "🥤",
+              "typicalTime": "10:00 AM",
+              "clockHour": 10
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "clock-sequence",
+          "instruction": "Look at the clocks and put your afternoon in the right order.",
+          "hint": "What do you do right after lunch?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Read a book",
+              "emoji": "📚",
+              "typicalTime": "1:00 PM",
+              "clockHour": 1
+            },
+            {
+              "id": "e2",
+              "label": "Listen to music",
+              "emoji": "🎵",
+              "typicalTime": "2:00 PM",
+              "clockHour": 2
+            },
+            {
+              "id": "e3",
+              "label": "Eat an apple",
+              "emoji": "🍎",
+              "typicalTime": "3:00 PM",
+              "clockHour": 3
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "clock-sequence",
+          "instruction": "Order the afternoon activities from earliest to latest using the clocks.",
+          "hint": "Time to tidy up before the sun goes down.",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Clean up toys",
+              "emoji": "🧹",
+              "typicalTime": "5:00 PM",
+              "clockHour": 5
+            },
+            {
+              "id": "e2",
+              "label": "Take a bath",
+              "emoji": "🛁",
+              "typicalTime": "6:00 PM",
+              "clockHour": 6
+            },
+            {
+              "id": "e3",
+              "label": "Go to sleep",
+              "emoji": "😴",
+              "typicalTime": "7:00 PM",
+              "clockHour": 7
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G K/easy draw 2",
+      "failures": [],
+      "title": "Morning Routine Time Train",
+      "description": "Put the picture cards in order, from the start of the day to the end.",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which one happens first in the morning?",
+          "hint": "Which one happens right when you wake up in bed?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Wake up",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Eat breakfast",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Brush teeth",
+              "emoji": "🦷",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "clock-sequence",
+          "instruction": "Put the morning cards in order. What do you do first?",
+          "hint": "Think about getting dressed before you walk out the door.",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Get dressed",
+              "emoji": "🎒",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Feed dog",
+              "emoji": "🐕",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Ride bus",
+              "emoji": "🚌",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "clock-sequence",
+          "instruction": "Can you put these morning steps in order?",
+          "hint": "You drink your juice before you run out to play.",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Drink juice",
+              "emoji": "🥤",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Pack bag",
+              "emoji": "🎒",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Run outside",
+              "emoji": "🏃",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "clock-sequence",
+          "instruction": "Put the morning cards in order from start to finish.",
+          "hint": "Look at the sun on the clock. Which time is the very earliest?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Eat toast",
+              "emoji": "🍳",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Brush hair",
+              "emoji": "🦷",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Go to school",
+              "emoji": "🚌",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "clock-sequence",
+          "instruction": "Tap the morning pictures in the order they happen.",
+          "hint": "Which card shows the very beginning of the morning?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "See sunrise",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Eat fruit",
+              "emoji": "🍎",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Read book",
+              "emoji": "📚",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G K/hard draw 1",
+      "failures": [],
+      "title": "Grandma's Visit Day",
+      "description": "Put the daily activities in order from morning to afternoon.",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which one happens first?",
+          "hint": "Which one happens right when you wake up?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Wake up",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Eat breakfast",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Pack bag",
+              "emoji": "🎒",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which one happens first?",
+          "hint": "What do you do in the afternoon with Grandma?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Play outside",
+              "emoji": "🏃",
+              "typicalTime": "1:00 PM",
+              "clockHour": 1
+            },
+            {
+              "id": "e2",
+              "label": "Listen to music",
+              "emoji": "🎵",
+              "typicalTime": "2:00 PM",
+              "clockHour": 2
+            },
+            {
+              "id": "e3",
+              "label": "Walk the dog",
+              "emoji": "🐕",
+              "typicalTime": "3:00 PM",
+              "clockHour": 3
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which one happens first?",
+          "hint": "Think about getting ready for dinner time.",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Clean up toys",
+              "emoji": "🧹",
+              "typicalTime": "4:00 PM",
+              "clockHour": 4
+            },
+            {
+              "id": "e2",
+              "label": "Wash hands",
+              "emoji": "🛁",
+              "typicalTime": "5:00 PM",
+              "clockHour": 5
+            },
+            {
+              "id": "e3",
+              "label": "Eat dinner",
+              "emoji": "🍽️",
+              "typicalTime": "6:00 PM",
+              "clockHour": 6
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which one happens first?",
+          "hint": "What do you do right before going to sleep?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Put on pajamas",
+              "emoji": "🌙",
+              "typicalTime": "7:00 PM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Brush teeth",
+              "emoji": "🦷",
+              "typicalTime": "8:00 PM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Go to sleep",
+              "emoji": "😴",
+              "typicalTime": "9:00 PM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G K/hard draw 2",
+      "failures": [],
+      "title": "A Day at Grandma's House",
+      "description": "Put the daily events in the correct order.",
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which one happens first?",
+          "hint": "Which one happens when you wake up in the morning?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Wake up",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Eat breakfast",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Brush teeth",
+              "emoji": "🦷",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. What do you do next?",
+          "hint": "Think about what you pack before leaving the house.",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Pack bag",
+              "emoji": "🎒",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e2",
+              "label": "Ride bus",
+              "emoji": "🚌",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            },
+            {
+              "id": "e3",
+              "label": "Walk dog",
+              "emoji": "🐕",
+              "typicalTime": "10:00 AM",
+              "clockHour": 10
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which happens first?",
+          "hint": "What do you do right after arriving at Grandma's?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Draw pictures",
+              "emoji": "🎨",
+              "typicalTime": "1:00 PM",
+              "clockHour": 1
+            },
+            {
+              "id": "e2",
+              "label": "Eat snack",
+              "emoji": "🍎",
+              "typicalTime": "2:00 PM",
+              "clockHour": 2
+            },
+            {
+              "id": "e3",
+              "label": "Play music",
+              "emoji": "🎵",
+              "typicalTime": "3:00 PM",
+              "clockHour": 3
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. What is the first step?",
+          "hint": "Look for the activity you do in the afternoon sun.",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Run outside",
+              "emoji": "🏃",
+              "typicalTime": "2:00 PM",
+              "clockHour": 2
+            },
+            {
+              "id": "e2",
+              "label": "Drink juice",
+              "emoji": "🥤",
+              "typicalTime": "3:00 PM",
+              "clockHour": 3
+            },
+            {
+              "id": "e3",
+              "label": "Read books",
+              "emoji": "📚",
+              "typicalTime": "4:00 PM",
+              "clockHour": 4
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "clock-sequence",
+          "instruction": "Put the cards in order. Which one starts the evening?",
+          "hint": "Which one gets you ready for bedtime?",
+          "showClockFace": true,
+          "showTimeAnchors": false,
+          "showSkyCue": false,
+          "prelabelFirstSlot": false,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Eat dinner",
+              "emoji": "🍽️",
+              "typicalTime": "6:00 PM",
+              "clockHour": 6
+            },
+            {
+              "id": "e2",
+              "label": "Take bath",
+              "emoji": "🛁",
+              "typicalTime": "7:00 PM",
+              "clockHour": 7
+            },
+            {
+              "id": "e3",
+              "label": "Go to sleep",
+              "emoji": "😴",
+              "typicalTime": "8:00 PM",
+              "clockHour": 8
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "G1-control 1/none draw 1",
+      "failures": [],
+      "title": "Morning School Day Routine",
+      "description": "Connect whole-hour times to your morning school activities in the right order!",
+      "gradeBand": "1",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "clock-sequence",
+          "instruction": "Tap the morning events in the order they happen from first to last!",
+          "hint": "Think about what you do first when you wake up before you eat or brush.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Eat breakfast",
+              "emoji": "🍳",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Wake up",
+              "emoji": "🌅",
+              "typicalTime": "6:00 AM",
+              "clockHour": 6
+            },
+            {
+              "id": "e3",
+              "label": "Brush teeth",
+              "emoji": "🦷",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            }
+          ],
+          "correctOrder": [
+            "e2",
+            "e1",
+            "e3"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "clock-sequence",
+          "instruction": "Put these morning school activities in order!",
+          "hint": "You pack your bag before you catch your ride to school.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Pack your school bag",
+              "emoji": "🎒",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Ride the bus",
+              "emoji": "🚌",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Get dressed",
+              "emoji": "🏃",
+              "typicalTime": "6:00 AM",
+              "clockHour": 6
+            }
+          ],
+          "correctOrder": [
+            "e3",
+            "e1",
+            "e2"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "clock-sequence",
+          "instruction": "Can you order these early morning steps?",
+          "hint": "Look at the clock hours to help you find what comes first.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Drink a cup of juice",
+              "emoji": "🥤",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "Put on shoes",
+              "emoji": "👟",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Stretch and yawn",
+              "emoji": "☀️",
+              "typicalTime": "6:00 AM",
+              "clockHour": 6
+            }
+          ],
+          "correctOrder": [
+            "e3",
+            "e1",
+            "e2"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "clock-sequence",
+          "instruction": "Tap the morning events in correct chronological order!",
+          "hint": "Check the whole hours on the clock faces to guide your way.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Read a morning story",
+              "emoji": "📚",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e2",
+              "label": "Walk the cute dog",
+              "emoji": "🐕",
+              "typicalTime": "6:00 AM",
+              "clockHour": 6
+            },
+            {
+              "id": "e3",
+              "label": "Comb your hair",
+              "emoji": "🎨",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            }
+          ],
+          "correctOrder": [
+            "e2",
+            "e3",
+            "e1"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "clock-sequence",
+          "instruction": "Order these four morning activities from start to finish!",
+          "hint": "Follow the time from six, to seven, to eight, and nine o'clock!",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Arrive at the classroom",
+              "emoji": "🍎",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            },
+            {
+              "id": "e2",
+              "label": "Wash your face",
+              "emoji": "🛁",
+              "typicalTime": "6:00 AM",
+              "clockHour": 6
+            },
+            {
+              "id": "e3",
+              "label": "Eat a healthy snack",
+              "emoji": "🍽️",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            }
+          ],
+          "correctOrder": [
+            "e2",
+            "e3",
+            "e1"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "G1-control 1/none draw 2",
+      "failures": [],
+      "title": "Weekend Morning and Afternoon Routines",
+      "description": "Connect whole-hour times to daily activities in sequence for a fun weekend at home.",
+      "gradeBand": "1",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "clock-sequence",
+          "instruction": "Put these lovely morning activities in order from when you wake up!",
+          "hint": "Think about what you do right after you wake up, before you eat breakfast.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Eat yummy breakfast",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "clockHour": 8
+            },
+            {
+              "id": "e2",
+              "label": "Wake up and stretch",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "clockHour": 7
+            },
+            {
+              "id": "e3",
+              "label": "Brush your teeth",
+              "emoji": "🦷",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e2",
+            "e1",
+            "e3"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "clock-sequence",
+          "instruction": "Can you order these fun morning playtime events?",
+          "hint": "Do you listen to music before or after you paint a picture?",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Listen to fun songs",
+              "emoji": "🎵",
+              "typicalTime": "11:00 AM",
+              "clockHour": 11
+            },
+            {
+              "id": "e2",
+              "label": "Paint a colorful picture",
+              "emoji": "🎨",
+              "typicalTime": "10:00 AM",
+              "clockHour": 10
+            },
+            {
+              "id": "e3",
+              "label": "Play with your puppy",
+              "emoji": "🐕",
+              "typicalTime": "9:00 AM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e3",
+            "e2",
+            "e1"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "clock-sequence",
+          "instruction": "Can you arrange these afternoon chores and games in order?",
+          "hint": "Think about doing tidy-up time before you play outside.",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Clean up your bedroom",
+              "emoji": "🧹",
+              "typicalTime": "4:00 PM",
+              "clockHour": 4
+            },
+            {
+              "id": "e2",
+              "label": "Run and play outside",
+              "emoji": "🏃",
+              "typicalTime": "5:00 PM",
+              "clockHour": 5
+            },
+            {
+              "id": "e3",
+              "label": "Eat a tasty dinner",
+              "emoji": "🍽️",
+              "typicalTime": "6:00 PM",
+              "clockHour": 6
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "clock-sequence",
+          "instruction": "Put these peaceful nighttime routine activities in order!",
+          "hint": "What is the very last thing you do right before you go to sleep?",
+          "showClockFace": true,
+          "events": [
+            {
+              "id": "e1",
+              "label": "Take a warm bubble bath",
+              "emoji": "🛁",
+              "typicalTime": "7:00 PM",
+              "clockHour": 7
+            },
+            {
+              "id": "e2",
+              "label": "See the bright stars twinkle",
+              "emoji": "⭐",
+              "typicalTime": "8:00 PM",
+              "clockHour": 8
+            },
+            {
+              "id": "e3",
+              "label": "Fall fast asleep in bed",
+              "emoji": "😴",
+              "typicalTime": "9:00 PM",
+              "clockHour": 9
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 8,
+    "failedDraws": 0
+  }
+}

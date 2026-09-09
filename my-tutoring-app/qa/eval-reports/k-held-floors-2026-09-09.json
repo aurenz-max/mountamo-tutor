@@ -1,0 +1,996 @@
+{
+  "startedAt": "2026-09-09T11:13:49.663Z",
+  "grade": "Kindergarten",
+  "draws": [
+    {
+      "label": "OPS001-02-G number-bond/missing_part draw 1",
+      "row": "OPS001-02-G",
+      "primitive": "number-bond",
+      "mode": "missing_part",
+      "title": "Number Bond Fun",
+      "challengeCount": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "missing-part",
+          "instruction": "The whole is 3. If one part is 1, what is the missing part?",
+          "whole": 3,
+          "part1": 1,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "missing-part",
+          "instruction": "The whole is 4. If one part is 2, what is the missing part?",
+          "whole": 4,
+          "part1": 2,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "missing-part",
+          "instruction": "The whole is 5. If one part is 3, what is the missing part?",
+          "whole": 5,
+          "part1": 3,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "missing-part",
+          "instruction": "The whole is 4. If one part is 1, what is the missing part?",
+          "whole": 4,
+          "part1": 1,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c5",
+          "type": "missing-part",
+          "instruction": "The whole is 5. If one part is 2, what is the missing part?",
+          "whole": 5,
+          "part1": 2,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        }
+      ],
+      "droppedChallenges": 0,
+      "spokenTurns": [
+        {
+          "id": "c1",
+          "kind": "missing-part",
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Three is the whole. One part is one. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"three\" and \"one\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and one make three.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at one and count up to three: two, three. That is two more. Your turn. One part is one — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c2",
+          "kind": "missing-part",
+          "whole": 4,
+          "knownPart": 2,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Four is the whole. One part is two. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"four\" out loud, so that number said back is NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and two make four.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at two and count up to four: three, four. That is two more. Your turn. One part is two — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c3",
+          "kind": "missing-part",
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Five is the whole. One part is three. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"five\" and \"three\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and three make five.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at three and count up to five: four, five. That is two more. Your turn. One part is three — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c4",
+          "kind": "missing-part",
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "cue": "[NB_ITEM] Say exactly: \"Four is the whole. One part is one. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"three\". The question already says \"four\" and \"one\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"three\", \"three more\", or \"three\" said after counting up all count as three. If the answer is right, say exactly: \"Yes, three — three and one make four.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at one and count up to four: two, three, four. That is three more. Your turn. One part is one — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c5",
+          "kind": "missing-part",
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "cue": "[NB_ITEM] Say exactly: \"Five is the whole. One part is two. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"three\". The question already says \"five\" and \"two\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"three\", \"three more\", or \"three\" said after counting up all count as three. If the answer is right, say exactly: \"Yes, three — three and two make five.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at two and count up to five: three, four, five. That is three more. Your turn. One part is two — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        }
+      ]
+    },
+    {
+      "label": "OPS001-02-G number-bond/missing_part draw 2",
+      "row": "OPS001-02-G",
+      "primitive": "number-bond",
+      "mode": "missing_part",
+      "title": "Number Bond Fun",
+      "challengeCount": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "missing-part",
+          "instruction": "Can you find the missing part when the whole is 3 and one part is 1?",
+          "whole": 3,
+          "part1": 1,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "missing-part",
+          "instruction": "Find the missing part for the whole number 4 when one part is 2!",
+          "whole": 4,
+          "part1": 2,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "missing-part",
+          "instruction": "What is the missing part if the whole is 5 and you already have 3?",
+          "whole": 5,
+          "part1": 3,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "missing-part",
+          "instruction": "Help us complete the number bond where the whole is 4 and one part is 1.",
+          "whole": 4,
+          "part1": 1,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c5",
+          "type": "missing-part",
+          "instruction": "Let us finish this puzzle! The whole is 5 and one part is 2. What is the other part?",
+          "whole": 5,
+          "part1": 2,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        }
+      ],
+      "droppedChallenges": 0,
+      "spokenTurns": [
+        {
+          "id": "c1",
+          "kind": "missing-part",
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Three is the whole. One part is one. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"three\" and \"one\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and one make three.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at one and count up to three: two, three. That is two more. Your turn. One part is one — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c2",
+          "kind": "missing-part",
+          "whole": 4,
+          "knownPart": 2,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Four is the whole. One part is two. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"four\" out loud, so that number said back is NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and two make four.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at two and count up to four: three, four. That is two more. Your turn. One part is two — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c3",
+          "kind": "missing-part",
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Five is the whole. One part is three. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"five\" and \"three\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and three make five.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at three and count up to five: four, five. That is two more. Your turn. One part is three — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c4",
+          "kind": "missing-part",
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "cue": "[NB_ITEM] Say exactly: \"Four is the whole. One part is one. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"three\". The question already says \"four\" and \"one\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"three\", \"three more\", or \"three\" said after counting up all count as three. If the answer is right, say exactly: \"Yes, three — three and one make four.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at one and count up to four: two, three, four. That is three more. Your turn. One part is one — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c5",
+          "kind": "missing-part",
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "cue": "[NB_ITEM] Say exactly: \"Five is the whole. One part is two. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"three\". The question already says \"five\" and \"two\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"three\", \"three more\", or \"three\" said after counting up all count as three. If the answer is right, say exactly: \"Yes, three — three and two make five.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at two and count up to five: three, four, five. That is three more. Your turn. One part is two — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        }
+      ]
+    },
+    {
+      "label": "OPS001-03-F number-bond/missing_part draw 1",
+      "row": "OPS001-03-F",
+      "primitive": "number-bond",
+      "mode": "missing_part",
+      "title": "Bonding With 5",
+      "challengeCount": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "missing-part",
+          "instruction": "The whole is 3. One part is 1. Say the missing part!",
+          "whole": 3,
+          "part1": 1,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "missing-part",
+          "instruction": "We have a whole of 4. We know 2 is a part. Say the missing part!",
+          "whole": 4,
+          "part1": 2,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "missing-part",
+          "instruction": "Look at the whole number 5. One part is 3. Say the missing part!",
+          "whole": 5,
+          "part1": 3,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "missing-part",
+          "instruction": "The whole is 4. One part is 3. Say the missing part!",
+          "whole": 4,
+          "part1": 3,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c5",
+          "type": "missing-part",
+          "instruction": "Can you find the missing part when the whole is 5 and one part is 2? Say it out loud!",
+          "whole": 5,
+          "part1": 2,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        }
+      ],
+      "droppedChallenges": 0,
+      "spokenTurns": [
+        {
+          "id": "c1",
+          "kind": "missing-part",
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Three is the whole. One part is one. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"three\" and \"one\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and one make three.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at one and count up to three: two, three. That is two more. Your turn. One part is one — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c2",
+          "kind": "missing-part",
+          "whole": 4,
+          "knownPart": 2,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Four is the whole. One part is two. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"four\" out loud, so that number said back is NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and two make four.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at two and count up to four: three, four. That is two more. Your turn. One part is two — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c3",
+          "kind": "missing-part",
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Five is the whole. One part is three. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"five\" and \"three\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and three make five.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at three and count up to five: four, five. That is two more. Your turn. One part is three — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c4",
+          "kind": "missing-part",
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "cue": "[NB_ITEM] Say exactly: \"Four is the whole. One part is three. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The question already says \"four\" and \"three\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"one\", \"one more\", or \"one\" said after counting up all count as one. If the answer is right, say exactly: \"Yes, one — one and three make four.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at three and count up to four: four. That is one more. Your turn. One part is three — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c5",
+          "kind": "missing-part",
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "cue": "[NB_ITEM] Say exactly: \"Five is the whole. One part is two. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"three\". The question already says \"five\" and \"two\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"three\", \"three more\", or \"three\" said after counting up all count as three. If the answer is right, say exactly: \"Yes, three — three and two make five.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at two and count up to five: three, four, five. That is three more. Your turn. One part is two — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        }
+      ]
+    },
+    {
+      "label": "OPS001-03-F number-bond/missing_part draw 2",
+      "row": "OPS001-03-F",
+      "primitive": "number-bond",
+      "mode": "missing_part",
+      "title": "Bond Buddies to 5",
+      "challengeCount": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "missing-part",
+          "instruction": "Look at the whole number 3. If one part is 1, what is the missing part? Say it out loud!",
+          "whole": 3,
+          "part1": 1,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c2",
+          "type": "missing-part",
+          "instruction": "We have a whole of 4. One part is 2. What is the other part? Say the number!",
+          "whole": 4,
+          "part1": 2,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c3",
+          "type": "missing-part",
+          "instruction": "Can you solve this for 5? The whole is 5 and one part is 1. Say the missing part!",
+          "whole": 5,
+          "part1": 1,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c4",
+          "type": "missing-part",
+          "instruction": "The whole is 2. If one part is 1, what is the other part? Say it out loud!",
+          "whole": 2,
+          "part1": 1,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        },
+        {
+          "id": "c5",
+          "type": "missing-part",
+          "instruction": "Let us try the whole number 5 again. If one part is 3, what is the missing part? Speak your answer!",
+          "whole": 5,
+          "part1": 3,
+          "part2": null,
+          "factFamily": null,
+          "options": []
+        }
+      ],
+      "droppedChallenges": 0,
+      "spokenTurns": [
+        {
+          "id": "c1",
+          "kind": "missing-part",
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Three is the whole. One part is one. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"three\" and \"one\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and one make three.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at one and count up to three: two, three. That is two more. Your turn. One part is one — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c2",
+          "kind": "missing-part",
+          "whole": 4,
+          "knownPart": 2,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Four is the whole. One part is two. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"four\" out loud, so that number said back is NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and two make four.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at two and count up to four: three, four. That is two more. Your turn. One part is two — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c3",
+          "kind": "missing-part",
+          "whole": 5,
+          "knownPart": 1,
+          "answer": 4,
+          "cue": "[NB_ITEM] Say exactly: \"Five is the whole. One part is one. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"four\". The question already says \"five\" and \"one\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"four\", \"four more\", or \"four\" said after counting up all count as four. If the answer is right, say exactly: \"Yes, four — four and one make five.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at one and count up to five: two, three, four, five. That is four more. Your turn. One part is one — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c4",
+          "kind": "missing-part",
+          "whole": 2,
+          "knownPart": 1,
+          "answer": 1,
+          "cue": "[NB_ITEM] Say exactly: \"Two is the whole. One part is one. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"one\". The question already says \"two\" out loud, so that number said back is NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"one\", \"one more\", or \"one\" said after counting up all count as one. If the answer is right, say exactly: \"Yes, one — one and one make two.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at one and count up to two: two. That is one more. Your turn. One part is one — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "c5",
+          "kind": "missing-part",
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "cue": "[NB_ITEM] Say exactly: \"Five is the whole. One part is three. What is the other part?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. The correct answer is \"two\". The question already says \"five\" and \"three\" out loud, so those numbers said back are NOT the answer, however confident it sounds. Counting up aloud is the learner working, not answering — judge the number they OFFER when the counting stops. \"two\", \"two more\", or \"two\" said after counting up all count as two. If the answer is right, say exactly: \"Yes, two — two and three make five.\" and stop there — add no praise, no encouragement and no mention of what comes next. If it is wrong, say exactly: \"My turn: start at three and count up to five: four, five. That is two more. Your turn. One part is three — what is the other part?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G analog-clock/read draw 1",
+      "row": "TIME001-03-G",
+      "primitive": "analog-clock",
+      "mode": "read",
+      "title": "My Daily Schedule",
+      "challengeCount": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "read",
+          "instruction": "Look at the clock. This is when you wake up in the morning. What time is it?",
+          "hint": "Look at the short hour hand pointing to the number 7. The long minute hand is straight up at the 12.",
+          "time": "7:00",
+          "options": [
+            "7:00",
+            "9:30",
+            "5:30",
+            "6:00"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "read",
+          "instruction": "Look at the clock. This is when you eat yummy lunch at school. What time is it?",
+          "hint": "Check where the short hour hand is pointing. It is pointing right at the 11!",
+          "time": "11:00",
+          "options": [
+            "9:00",
+            "9:30",
+            "1:30",
+            "11:00"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "read",
+          "instruction": "Look at the clock. This is when you play outside at the park in the afternoon. What time is it?",
+          "hint": "Find the short hand pointing to the 3. The long hand is pointing straight up at 12.",
+          "time": "3:00",
+          "options": [
+            "2:00",
+            "4:00",
+            "2:30",
+            "3:00"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "read",
+          "instruction": "Look at the clock. This is when it is time to brush your teeth and go to sleep. What time is it?",
+          "hint": "The short hour hand has moved all the way around to the 8. Time for bed!",
+          "time": "8:00",
+          "options": [
+            "8:00",
+            "8:30",
+            "7:30",
+            "9:00"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G analog-clock/read draw 2",
+      "row": "TIME001-03-G",
+      "primitive": "analog-clock",
+      "mode": "read",
+      "title": "My Daily Schedule: Reading Whole Hours",
+      "challengeCount": 4,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "read",
+          "instruction": "What time does the clock say when it is time to wake up in the morning?",
+          "hint": "Look at the short hour hand. Which number is it pointing directly at?",
+          "time": "7:00",
+          "options": [
+            "7:30",
+            "7:00",
+            "6:00",
+            "5:00"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "read",
+          "instruction": "Look at the clock face. What time do we usually eat our lunch?",
+          "hint": "Both hands point straight up to the top of the clock for this hour.",
+          "time": "12:00",
+          "options": [
+            "10:30",
+            "12:00",
+            "11:00",
+            "1:30"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "read",
+          "instruction": "What time is it on the clock when we go out to play in the afternoon?",
+          "hint": "Find the short hour hand pointing towards the number 3.",
+          "time": "3:00",
+          "options": [
+            "5:30",
+            "5:00",
+            "4:00",
+            "3:00"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "read",
+          "instruction": "Check the clock. What time is it when we get ready for bed at night?",
+          "hint": "The short hand is pointing down past the middle towards the bottom.",
+          "time": "8:00",
+          "options": [
+            "6:00",
+            "8:00",
+            "9:30",
+            "6:30"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G time-sequencer/sequence-5 draw 1",
+      "row": "TIME001-03-G",
+      "primitive": "time-sequencer",
+      "mode": "sequence-5",
+      "title": "Morning Routine Order",
+      "challengeCount": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "sequence-events",
+          "instruction": "Put the cards in order. Which one happens first?",
+          "hint": "Which one happens when you first wake up in the morning?",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Eat Breakfast",
+              "emoji": "🍳",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            },
+            {
+              "id": "e2",
+              "label": "Wake Up",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e3",
+              "label": "Brush Teeth",
+              "emoji": "🦷",
+              "typicalTime": "8:30 AM",
+              "dayFraction": 0.354
+            },
+            {
+              "id": "e4",
+              "label": "Pack Bag",
+              "emoji": "🎒",
+              "typicalTime": "9:00 AM",
+              "dayFraction": 0.375
+            }
+          ],
+          "correctOrder": [
+            "e2",
+            "e1",
+            "e3",
+            "e4"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "sequence-events",
+          "instruction": "Tap the pictures to show what happens from start to finish.",
+          "hint": "What do you do right before you leave the house?",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Put On Shoes",
+              "emoji": "🏃",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            },
+            {
+              "id": "e2",
+              "label": "Comb Hair",
+              "emoji": "🧹",
+              "typicalTime": "7:30 AM",
+              "dayFraction": 0.313
+            },
+            {
+              "id": "e3",
+              "label": "Get Dressed",
+              "emoji": "🎨",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e4",
+              "label": "Wait For Bus",
+              "emoji": "🚌",
+              "typicalTime": "9:00 AM",
+              "dayFraction": 0.375
+            }
+          ],
+          "correctOrder": [
+            "e3",
+            "e2",
+            "e1",
+            "e4"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "sequence-events",
+          "instruction": "Can you order these morning fun steps?",
+          "hint": "Think about what starts your happy morning.",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Feed Pet",
+              "emoji": "🐕",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            },
+            {
+              "id": "e2",
+              "label": "Drink Juice",
+              "emoji": "🥤",
+              "typicalTime": "7:30 AM",
+              "dayFraction": 0.313
+            },
+            {
+              "id": "e3",
+              "label": "Open Eyes",
+              "emoji": "☀️",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e4",
+              "label": "Grab Apple",
+              "emoji": "🍎",
+              "typicalTime": "8:30 AM",
+              "dayFraction": 0.354
+            }
+          ],
+          "correctOrder": [
+            "e3",
+            "e2",
+            "e1",
+            "e4"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "sequence-events",
+          "instruction": "Put these routine events in the right order.",
+          "hint": "What is the very first thing you hear in the morning?",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Hear Alarm",
+              "emoji": "⭐",
+              "typicalTime": "6:00 AM",
+              "dayFraction": 0.25
+            },
+            {
+              "id": "e2",
+              "label": "Wash Face",
+              "emoji": "🛁",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e3",
+              "label": "Sing Song",
+              "emoji": "🎵",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            },
+            {
+              "id": "e4",
+              "label": "Walk Out",
+              "emoji": "🚪",
+              "typicalTime": "9:00 AM",
+              "dayFraction": 0.375
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3",
+            "e4"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "sequence-events",
+          "instruction": "Arrange the morning cards from start to finish.",
+          "hint": "Look at the sun to help you find the first one.",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Eat Toast",
+              "emoji": "🍽️",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            },
+            {
+              "id": "e2",
+              "label": "Put On Hat",
+              "emoji": "🎒",
+              "typicalTime": "9:00 AM",
+              "dayFraction": 0.375
+            },
+            {
+              "id": "e3",
+              "label": "Stretch Arms",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e4",
+              "label": "Ride Bus",
+              "emoji": "🚌",
+              "typicalTime": "10:00 AM",
+              "dayFraction": 0.417
+            }
+          ],
+          "correctOrder": [
+            "e3",
+            "e1",
+            "e2",
+            "e4"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "TIME001-03-G time-sequencer/sequence-5 draw 2",
+      "row": "TIME001-03-G",
+      "primitive": "time-sequencer",
+      "mode": "sequence-5",
+      "title": "Morning Routine Fun",
+      "challengeCount": 5,
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "sequence-events",
+          "instruction": "Put the cards in order. Which one happens first?",
+          "hint": "Which one happens when you first wake up?",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Wake up",
+              "emoji": "🌅",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e2",
+              "label": "Brush teeth",
+              "emoji": "🦷",
+              "typicalTime": "7:15 AM",
+              "dayFraction": 0.302
+            },
+            {
+              "id": "e3",
+              "label": "Eat breakfast",
+              "emoji": "🍳",
+              "typicalTime": "7:30 AM",
+              "dayFraction": 0.313
+            },
+            {
+              "id": "e4",
+              "label": "Put on shoes",
+              "emoji": "🏃",
+              "typicalTime": "7:45 AM",
+              "dayFraction": 0.323
+            }
+          ],
+          "correctOrder": [
+            "e1",
+            "e2",
+            "e3",
+            "e4"
+          ]
+        },
+        {
+          "id": "c2",
+          "type": "sequence-events",
+          "instruction": "Can you order these busy morning moments?",
+          "hint": "Think about what you do right after you wake up.",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Get dressed",
+              "emoji": "🎒",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e2",
+              "label": "Stretch up",
+              "emoji": "☀️",
+              "typicalTime": "7:10 AM",
+              "dayFraction": 0.299
+            },
+            {
+              "id": "e3",
+              "label": "Drink juice",
+              "emoji": "🥤",
+              "typicalTime": "7:30 AM",
+              "dayFraction": 0.313
+            },
+            {
+              "id": "e4",
+              "label": "Grab backpack",
+              "emoji": "📚",
+              "typicalTime": "7:50 AM",
+              "dayFraction": 0.326
+            }
+          ],
+          "correctOrder": [
+            "e2",
+            "e1",
+            "e3",
+            "e4"
+          ]
+        },
+        {
+          "id": "c3",
+          "type": "sequence-events",
+          "instruction": "Touch the cards to show your morning steps!",
+          "hint": "What do you do before you walk out the door?",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Feed puppy",
+              "emoji": "🐕",
+              "typicalTime": "7:05 AM",
+              "dayFraction": 0.295
+            },
+            {
+              "id": "e2",
+              "label": "Wash face",
+              "emoji": "🛁",
+              "typicalTime": "7:15 AM",
+              "dayFraction": 0.302
+            },
+            {
+              "id": "e3",
+              "label": "Eat snack",
+              "emoji": "🍎",
+              "typicalTime": "7:35 AM",
+              "dayFraction": 0.316
+            },
+            {
+              "id": "e4",
+              "label": "Wait outside",
+              "emoji": "🚌",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            }
+          ],
+          "correctOrder": [
+            "e2",
+            "e1",
+            "e3",
+            "e4"
+          ]
+        },
+        {
+          "id": "c4",
+          "type": "sequence-events",
+          "instruction": "Put these cheerful morning activities in order.",
+          "hint": "Look at the pictures to see what starts your day.",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Comb hair",
+              "emoji": "🧹",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e2",
+              "label": "Sun shines",
+              "emoji": "🌅",
+              "typicalTime": "7:20 AM",
+              "dayFraction": 0.306
+            },
+            {
+              "id": "e3",
+              "label": "Eat oatmeal",
+              "emoji": "🍽️",
+              "typicalTime": "7:40 AM",
+              "dayFraction": 0.319
+            },
+            {
+              "id": "e4",
+              "label": "Pack lunch",
+              "emoji": "🎒",
+              "typicalTime": "7:50 AM",
+              "dayFraction": 0.326
+            }
+          ],
+          "correctOrder": [
+            "e2",
+            "e1",
+            "e3",
+            "e4"
+          ]
+        },
+        {
+          "id": "c5",
+          "type": "sequence-events",
+          "instruction": "Order your morning routine from start to finish!",
+          "hint": "Which fun picture happens at the very beginning?",
+          "options": [],
+          "events": [
+            {
+              "id": "e1",
+              "label": "Sing a song",
+              "emoji": "🎵",
+              "typicalTime": "7:00 AM",
+              "dayFraction": 0.292
+            },
+            {
+              "id": "e2",
+              "label": "Paint a star",
+              "emoji": "🎨",
+              "typicalTime": "7:10 AM",
+              "dayFraction": 0.299
+            },
+            {
+              "id": "e3",
+              "label": "Morning glow",
+              "emoji": "🌅",
+              "typicalTime": "7:30 AM",
+              "dayFraction": 0.313
+            },
+            {
+              "id": "e4",
+              "label": "Go to school",
+              "emoji": "🚌",
+              "typicalTime": "8:00 AM",
+              "dayFraction": 0.333
+            }
+          ],
+          "correctOrder": [
+            "e3",
+            "e1",
+            "e2",
+            "e4"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 8,
+    "errors": 0
+  }
+}

@@ -4764,25 +4764,29 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'time-sequencer',
-    description: 'Event sequencer and time concepts for grades K-2. Students order daily events, match activities to time of day (morning/afternoon/night), reason about before/after relationships, compare durations, and read simple schedules. Progressive difficulty from 3-event sequencing through clock-time schedule reading. Bridges to AnalogClock for formal time-telling. ESSENTIAL for K-2 time and daily routine concepts.',
-    constraints: 'Best for grades K-2. K: 3-event sequences and time-of-day matching only. Grades 1-2: 5-event sequences, before/after reasoning, duration comparison, and schedule reading.',
+    description: 'Event sequencer and time concepts for grades K-2. Students order daily events, match activities to time of day (morning/afternoon/night), reason about before/after relationships, compare durations, order activity cards that each carry an analog CLOCK FACE at a whole hour, and read simple schedules. Progressive difficulty from 3-event sequencing through clock-time schedule reading. Bridges to AnalogClock for formal time-telling. ESSENTIAL for K-2 time and daily routine concepts.',
+    constraints: 'Best for grades K-2. K: 3- and 5-event sequences, time-of-day matching, before/after reasoning, duration comparison and clock-sequence. Grades 1-2 add schedule reading. At Kindergarten NOTHING on screen prints a clock time: the easy tier\'s perception anchor is a sun-position picture the generator derives from each event\'s typicalTime, and instructions, hints and the tutor are all barred from naming a time or a clock. sequence-5, before-after and duration-compare came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md); read-schedule stays Grade 1-2 because reading printed clock times off a schedule IS its task. clock-sequence is the ONE exception to the no-clock-at-K rule, and the exception is the objective: K TIME001-03-G asks the child to connect whole-hour times to daily activities in sequence, under the skill "Telling Time to the Hour". Its cards carry an analog FACE, which is a picture, never printed digits — and the generator DROPS any challenge whose times are not all whole hours inside one half of the day, because a 12-hour face cannot separate 8 in the morning from 8 at night.',
     // reader: 'none' — qa/reader-fit/how-it-works-PRE-2026-07-21.md names time-sequencer as the
     // recommended K routing destination for procedural/ordering content precisely because it is
     // "already K-2, picture-primary"; read-schedule is the one mode that requires reading printed
     // clock times off a schedule, so it is overridden to 'developing' below.
+    // 2026-09-08: that 'none' was a claim the SCAFFOLD broke. The easy support tier printed a clock
+    // time on every card and told the child to read it (10/10 items on the K probe), because
+    // resolveSupportStructure had no grade to consult. The tag is true again now that the K band
+    // gets a sun-position picture instead — qa/reader-fit/k-band-floor-2026-09-08.md.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Student is ordering daily events or matching activities to times of day. Connects to personal routines.',
       contextKeys: ['instruction', 'events', 'correctOrder', 'event', 'correctPeriod', 'referenceEvent', 'relation', 'schedule', 'targetTime', 'gradeBand'],
       scaffoldingLevels: {
-        level1: '"Think about your day. What do you do first when you wake up?"',
+        level1: '"Think about your day. What do you do first when you wake up?" At gradeBand K you may also point at the sky picture on the cards — the sun comes up, climbs, goes down, then it is dark — but never name a time, a clock or a number.',
         level2: '"Breakfast comes in the morning. Is the morning before or after lunchtime?"',
         level3: '"Here\'s the order: wake up comes first, then breakfast, then school. You got 2 out of 3 right!"',
       },
       commonStruggles: [
         { pattern: 'Confusing afternoon/evening boundary', response: '"Afternoon is after lunch but before dinner. Evening starts around dinnertime when it gets dark."' },
         { pattern: 'Sequencing events they don\'t personally experience (e.g., "go to work")', response: '"Think about what grown-ups do — they go to work after breakfast, like you go to school!"' },
-        { pattern: 'Reading clock times on schedules (bridge to AnalogClock)', response: '"Look at the number before the colon. If it\'s small like 7 or 8, that\'s morning. If it\'s bigger like 3 or 4, that\'s afternoon."' },
+        { pattern: 'Reading clock times on schedules (bridge to AnalogClock) — GRADE 1-2 ONLY; at gradeBand K no PRINTED clock time is ever on screen and you must never introduce one. The ONE exception is challengeType clock-sequence, where an analog FACE on each card IS the task', response: '"Look at the number before the colon. If it\'s small like 7 or 8, that\'s morning. If it\'s bigger like 3 or 4, that\'s afternoon."' },
       ],
     },
     supportsEvaluation: true,
@@ -4809,7 +4813,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.0,
         scaffoldingMode: 2,
         challengeTypes: ['sequence-events'],
-        description: 'Order 5 daily events',
+        description: 'Order 5 daily events. Kindergarten and up (K PTRN001-03-F arranges 4-5 picture cards).',
       },
       {
         evalMode: 'before-after',
@@ -4817,7 +4821,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['before-after'],
-        description: 'What happens before/after X?',
+        description: 'What happens before/after X? Kindergarten and up — the options are picture cards and the relation word is spoken.',
       },
       {
         evalMode: 'duration-compare',
@@ -4825,7 +4829,20 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.0,
         scaffoldingMode: 2,
         challengeTypes: ['duration-compare'],
-        description: 'Which takes longer?',
+        description: 'Which takes longer? Kindergarten and up (K MEAS001-07-C compares activity durations); no clock time appears at any band.',
+      },
+      {
+        evalMode: 'clock-sequence',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] },
+        label: 'Clock Order (Scaffold 3)',
+        beta: 3.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['clock-sequence'],
+        // β fills the gap between duration-compare (3.0) and read-schedule
+        // (4.0), and the placement is the pedagogy: this IS the bridge from
+        // ordering a routine to reading a schedule — the same ordering gesture
+        // sequence-5 uses (2.0), plus a clock face to read the order from.
+        description: 'Order daily activity cards where each card shows an analog CLOCK FACE at the hour that activity happens — connect the whole-hour time to the activity and put the day in order. Kindergarten and up (K TIME001-03-G, skill "Telling Time to the Hour"). The face is a picture, not printed digits, so it carries no reading demand; the times are always whole hours inside one half of the day, and a challenge that breaks either rule is dropped rather than shown.',
       },
       {
         evalMode: 'read-schedule',
@@ -4834,7 +4851,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.0,
         scaffoldingMode: 3,
         challengeTypes: ['read-schedule'],
-        description: 'Read a simple daily schedule with clock times',
+        description: 'Read a simple daily schedule with clock times. Grade 1-2 ONLY — printed clock times ARE the task, so the floor HELD on the 2026-09-08 reader-fit re-audit.',
       },
     ],
   },
