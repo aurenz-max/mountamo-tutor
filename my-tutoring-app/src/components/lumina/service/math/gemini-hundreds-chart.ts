@@ -228,7 +228,7 @@ function buildHundredsChartSchema(count: number, legalSkips: number[]): Schema {
     },
     challenges: {
       type: Type.ARRAY,
-      description: `Exactly ${count} challenges. IMPORTANT: vary skipValue across challenges for variety; repeats are allowed only if the grade-appropriate skip pool has fewer values than challenges.`,
+      description: `Exactly ${count} challenges, each a DIFFERENT (type, skipValue) pair — the count is exactly the number of distinct pairs available, so no pair repeats.`,
       items: {
         type: Type.OBJECT,
         properties: {
@@ -351,6 +351,14 @@ const SKIP_VALUE_DISTRACTORS: Record<number, number[]> = {
 };
 
 /** Grade-appropriate skip values */
+/** The four modes, as the single source for both the parse filter and the cap. */
+const validChallengeTypes = new Set<ChallengeType>([
+  'highlight_sequence',
+  'complete_sequence',
+  'identify_pattern',
+  'find_skip_value',
+]);
+
 const GRADE_SKIP_VALUES: Record<string, number[]> = {
   '1': [2, 5, 10],
   '2': [2, 5, 10],
@@ -381,7 +389,7 @@ const GRADE_SKIP_VALUES: Record<string, number[]> = {
 const CHART_WINDOW_MIN = 10;
 const CHART_WINDOW_MAX = 100;
 
-const chartWindowSchema: Schema = {
+const chartScopeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     hasExplicitRange: {
@@ -392,19 +400,45 @@ const chartWindowSchema: Schema = {
       type: Type.INTEGER,
       description: 'The highest number the lesson works with (10-100). 100 when unbounded.',
     },
+    namedSkips: {
+      type: Type.ARRAY,
+      items: { type: Type.INTEGER },
+      description:
+        'The skip-counting intervals the lesson NAMES, as integers (e.g. "count by 2s and 5s" '
+        + '-> [2, 5]; "counting by tens" -> [10]). Empty when the lesson names none. Read the '
+        + 'words as well as the digits ("by fives" is 5). Never invent an interval the lesson '
+        + 'does not name.',
+    },
   },
-  required: ['hasExplicitRange', 'max'],
+  required: ['hasExplicitRange', 'max', 'namedSkips'],
 };
 
+/** What one lesson bounds about a chart: how far it counts, and by what. */
+interface ChartScope {
+  /** Resolved ceiling, or null when the lesson names none (the 1-100 board stands). */
+  max: number | null;
+  /** The intervals the lesson names, unfiltered. Empty when it names none. */
+  namedSkips: number[];
+}
+
+const UNSCOPED: ChartScope = { max: null, namedSkips: [] };
+
 /**
- * Resolve the chart's ceiling from the lesson's own words. Returns null for
- * every unbounded lesson, which leaves the legacy 1-100 board untouched.
+ * Resolve what the lesson bounds about this chart, from its own words: the ceiling
+ * and the skip intervals it names. Both come back empty for a generic lesson, which
+ * leaves the legacy 1-100 board and the full grade pool untouched.
+ *
+ * The intervals are read by the model, not by a regex over the objective: "by fives"
+ * and "counting in tens" are ordinary lesson prose that no pattern catches, and the
+ * model is already reading this text for the ceiling ([[schema-over-regex-and-prompt]]).
+ * Runs on every render, including one whose gridMax is pinned by the manifest — the
+ * pin settles the ceiling, never which intervals the lesson is about.
  */
-async function resolveChartWindow(
+async function resolveChartScope(
   topic: string,
   objectiveText: string | undefined,
   intent: string | undefined,
-): Promise<number | null> {
+): Promise<ChartScope> {
   try {
     const result = await ai.models.generateContent({
       model: 'gemini-flash-lite-latest',
@@ -412,28 +446,41 @@ async function resolveChartWindow(
 
 TOPIC: "${topic}"
 ${objectiveText ? `LEARNING OBJECTIVE: "${objectiveText}"\n` : ''}${intent ? `COMPONENT INTENT: "${intent}"\n` : ''}
-A hundreds chart is a grid of 1..max, 10 numbers per row. Return the highest number the LESSON works with.
+A hundreds chart is a grid of 1..max, 10 numbers per row. Return the highest number the LESSON works with, and the skip intervals it names.
 
 Return hasExplicitRange=true ONLY when the lesson content itself names or clearly implies a highest number.
 Examples: "counting to 10" -> 10; "numbers 1 to 20 in order" -> 20; "skip count within 50" -> 50; "count to 100" -> 100.
 - Do NOT treat grade names ("Grade 1"), challenge counts, dates, IDs, or generic "number practice"/"skip counting patterns" as a ceiling.
 - Clamp max to at least ${CHART_WINDOW_MIN} and at most ${CHART_WINDOW_MAX}.
-- If the lesson names no ceiling, return hasExplicitRange=false, max=${CHART_WINDOW_MAX}.`,
+- If the lesson names no ceiling, return hasExplicitRange=false, max=${CHART_WINDOW_MAX}.
+
+namedSkips: every skip-counting interval the lesson names, digits or words.
+Examples: "count by 2s and 5s" -> [2, 5]; "skip count by fives to 100" -> [5]; "counting in tens" -> [10]; "count to 20 in order" -> []; "skip counting patterns" -> [].
+- Return [] whenever the lesson leaves the interval open. Never add an interval it does not name.`,
       config: {
         temperature: 0,
         responseMimeType: 'application/json',
-        responseSchema: chartWindowSchema,
+        responseSchema: chartScopeSchema,
       },
     });
-    if (!result.text) return null;
-    const parsed = JSON.parse(result.text) as { hasExplicitRange?: unknown; max?: unknown };
-    if (parsed.hasExplicitRange !== true) return null;
+    if (!result.text) return UNSCOPED;
+    const parsed = JSON.parse(result.text) as {
+      hasExplicitRange?: unknown;
+      max?: unknown;
+      namedSkips?: unknown;
+    };
+    const namedSkips = Array.isArray(parsed.namedSkips)
+      ? parsed.namedSkips
+        .map((value) => Math.round(Number(value)))
+        .filter((value) => Number.isInteger(value) && value >= 1 && value <= CHART_WINDOW_MAX)
+      : [];
+    if (parsed.hasExplicitRange !== true) return { max: null, namedSkips };
     const max = Math.round(Number(parsed.max));
-    if (!Number.isFinite(max)) return null;
-    return Math.min(CHART_WINDOW_MAX, Math.max(CHART_WINDOW_MIN, max));
+    if (!Number.isFinite(max)) return { max: null, namedSkips };
+    return { max: Math.min(CHART_WINDOW_MAX, Math.max(CHART_WINDOW_MIN, max)), namedSkips };
   } catch (error) {
-    console.warn('[HundredsChart] window resolution failed:', error);
-    return null;
+    console.warn('[HundredsChart] scope resolution failed:', error);
+    return UNSCOPED;
   }
 }
 
@@ -458,6 +505,35 @@ export function resolveLegalSkips(gradeSkips: number[], gridMax: number): number
   const fits = gradeSkips.filter((sv) => Math.floor(gridMax / sv) >= MIN_SEQUENCE_CELLS);
   if (gridMax <= 20) return [1, ...fits];
   return fits.length > 0 ? fits : [gradeSkips[0]];
+}
+
+/**
+ * Narrow the pool to the intervals the LESSON names.
+ *
+ * The defect this closes (HC-4): a K objective reading "count by 2s and 5s" drew
+ * from the whole band-1 pool [2, 5, 10], so one or two challenges per session asked
+ * the child to count by 10s - a skill the lesson was not teaching and the curriculum
+ * had not reached. The grade pool is a CAPABILITY ceiling; the objective is the
+ * assignment, and where it names the intervals it is the tighter of the two.
+ *
+ * An interval the window cannot hold is dropped before it gets here, and a lesson
+ * whose every named interval is unholdable falls back to the window pool rather than
+ * shipping a one-cell "sequence".
+ */
+export function restrictToNamedSkips(pool: number[], named: number[]): number[] {
+  const holdable = named.filter((skip) => pool.includes(skip));
+  return holdable.length > 0 ? Array.from(new Set(holdable)).sort((a, b) => a - b) : pool;
+}
+
+/**
+ * A hint that cannot name the answer, whatever mode it lands on. The deterministic
+ * paths (empty-model fallback, distinct-problem top-up) write their own hints, and
+ * "start at 5 and keep adding 5" IS the answer to find_skip_value.
+ */
+function genericHint(type: string): string {
+  return type === 'find_skip_value' || type === 'identify_pattern'
+    ? 'Look at the highlighted numbers - how far apart are they each time?'
+    : 'Make the same size jump every time, and tap every number you land on.';
 }
 
 /** Obviously-wrong "far" pattern distractors (used at the easy tier). The
@@ -675,26 +751,62 @@ export const generateHundredsChart = async (
   const gradeBand = config?.gradeBand ?? hundredsChartGradeBandFromGrade(ctx.grade) ?? '2';
   const gradeSkips = GRADE_SKIP_VALUES[gradeBand] ?? GRADE_SKIP_VALUES['2'];
 
-  // ── Resolve the chart's ceiling from the lesson (explicit config pin wins).
-  // Unbounded lessons keep the 1-100 board and the untouched grade pool. ──
+  // ── Resolve what the lesson bounds: the ceiling and the intervals it names.
+  // An explicit config gridMax pin outranks the resolved ceiling; nothing outranks
+  // the named intervals. A generic lesson bounds neither, and keeps the 1-100 board
+  // with the untouched grade pool. ──
   const pinnedMax = config?.gridMax != null
     ? Math.min(CHART_WINDOW_MAX, Math.max(CHART_WINDOW_MIN, Math.round(config.gridMax)))
     : null;
-  const gridMax = pinnedMax
-    ?? (await resolveChartWindow(topic, ctx.objective?.text, intent))
-    ?? CHART_WINDOW_MAX;
-  const legalSkips = resolveLegalSkips(gradeSkips, gridMax);
+  const scope = await resolveChartScope(topic, ctx.objective?.text, intent);
+  const gridMax = pinnedMax ?? scope.max ?? CHART_WINDOW_MAX;
+  const windowSkips = resolveLegalSkips(gradeSkips, gridMax);
+  const namedPool = restrictToNamedSkips(windowSkips, scope.namedSkips);
+  // An explicit config.skipValue is a soft "include this one", never a restriction,
+  // so it survives the narrowing whenever the window allowed it at all.
+  const legalSkips = config?.skipValue != null
+    && windowSkips.includes(config.skipValue)
+    && !namedPool.includes(config.skipValue)
+    ? [...namedPool, config.skipValue].sort((a, b) => a - b)
+    : namedPool;
   console.log(
     `[HundredsChart] numeric window: 1-${gridMax} `
-    + `(source=${pinnedMax ? 'config' : gridMax === CHART_WINDOW_MAX ? 'default' : 'topic-intent'}) `
-    + `→ legal skips [${legalSkips.join(', ')}]`,
+    + `(source=${pinnedMax ? 'config' : scope.max ? 'topic-intent' : 'default'}) `
+    + `→ legal skips [${legalSkips.join(', ')}]`
+    + (scope.namedSkips.length > 0
+      ? ` (lesson names [${scope.namedSkips.join(', ')}]; window pool was [${windowSkips.join(', ')}])`
+      : ''),
   );
 
   // ── Resolve per-mode instance count (only meaningful when an eval mode is pinned) ──
   const singleMode = effectiveChallengeTypes && effectiveChallengeTypes.length === 1
     ? (effectiveChallengeTypes[0] as ChallengeType)
     : undefined;
-  const count = resolveCount(singleMode);
+
+  // ── Cap the session at the number of DISTINCT problems that exist ──
+  // Everything a challenge shows is derived from (type, skipValue) once the board and
+  // the tier are fixed, so a session cannot hold more problems than that product. The
+  // atlas caught the arithmetic: 7 highlight_sequence slots against a two-interval
+  // lesson shipped by-5s-from-5 five times, byte-identical. Asking for exactly the
+  // distinct count is not a cap below the lesson's intent — it IS the intent, sized
+  // ([[trust-intent-over-hardcoded-caps]]).
+  const sessionTypes = (effectiveChallengeTypes ?? Array.from(validChallengeTypes)) as ChallengeType[];
+  const distinctProblems = Math.max(1, legalSkips.length * sessionTypes.length);
+  const requestedCount = resolveCount(singleMode);
+  const count = Math.min(requestedCount, distinctProblems);
+  if (count < requestedCount) {
+    console.log(
+      `[HundredsChart] session capped ${requestedCount} → ${count} `
+      + `(${sessionTypes.length} type(s) × ${legalSkips.length} skip(s) = every distinct problem)`,
+    );
+    if (count < 3) {
+      console.warn(
+        `[HundredsChart] only ${count} distinct problem(s) exist for [${sessionTypes.join(', ')}] `
+        + `× [${legalSkips.join(', ')}] — below the 3-challenge mastery floor. The lesson's named `
+        + `intervals bound this session; widen the objective or blend a second mode.`,
+      );
+    }
+  }
 
   // ── Resolve support tier (config.difficulty) — DRIVES application per challenge.
   // pinnedType is ONLY for the prompt-section tone (a blend has no single mode). ──
@@ -711,10 +823,10 @@ export const generateHundredsChart = async (
   // (instructions/hints stay generic), so this cannot leak a find_skip_value answer.
   const objectiveSection = intent
     ? `\n## PRIMARY OBJECTIVE FOR THIS ACTIVITY\n${intent}\n`
-      + `- This is the specific focus the lesson assigned for this activity. If it names a particular `
-      + `skip-counting interval (e.g. "by 5s", "counting by 10"), make MOST challenges use THAT interval — `
-      + `it must be one of the legal values [${legalSkips.join(', ')}]; include at most one or two `
-      + `other intervals for contrast. If it names no specific interval, vary across the pool per the rule below.\n`
+      + `- This is the specific focus the lesson assigned for this activity. The skip pool below is `
+      + `ALREADY narrowed to the intervals this lesson works with, and the challenge count is `
+      + `exactly the number of distinct problems available — so cover the pool rather than `
+      + `favouring one interval, and never reuse a (type, skipValue) pair.\n`
       + (legalSkips.includes(1)
         ? `- skipValue=1 is legal here and means COUNTING IN ORDER (1, 2, 3, ...). When the objective is `
           + `about naming/identifying/ordering the numbers themselves rather than about skip-counting, `
@@ -743,7 +855,7 @@ PROGRESSION (use this order when no eval mode is specified):
 RULES:
 - Generate exactly ${count} challenges.
 - skipValue MUST come from this pool: ${legalSkips.join(', ')}. Any other value is rejected.
-- Unless the PRIMARY OBJECTIVE above directs you to focus on a specific interval, vary skipValue across challenges. Each skipValue from the pool should appear at least once before any repeats; if there are more challenges than skip values, you may reuse a skipValue but pair it with a different challenge type so the activity still feels varied.
+- Every challenge must be a DIFFERENT problem: no two challenges may share the same (type, skipValue) pair. The count above is exactly the number of distinct pairs available, so use each pool value before any type repeats. A duplicate pair is rejected in code and replaced.
 ${config?.skipValue ? `- At least one challenge must use skipValue=${config.skipValue}.` : ''}
 ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChallengeTypes.join(' or ')}.` : ''}
 - Hints should guide thinking without giving away the answer or the skip value. Keep them short (one sentence).
@@ -769,7 +881,7 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
   }
 
   // ── Build challenges deterministically; Gemini supplies only type/skip/hint ──
-  const validTypes = new Set(['highlight_sequence', 'complete_sequence', 'identify_pattern', 'find_skip_value']);
+  const validTypes = validChallengeTypes;
 
   const rawChallenges = Array.isArray(raw.challenges) ? raw.challenges : [];
   const challenges: HundredsChartChallenge[] = rawChallenges
@@ -798,24 +910,51 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
       );
     });
 
+  // ── Distinct-problem gate: (type, skipValue) IS the problem ──
+  // With the board and tier fixed, two challenges sharing that pair are the same
+  // screen twice — the atlas saw by-5s-from-5 five times in one draw. Reject the
+  // repeat, then fill the freed slots from the pairs nobody used.
+  const seenPairs = new Set<string>();
+  const deduped = challenges.filter((challenge) => {
+    const pair = `${challenge.type}|${challenge.skipValue}`;
+    if (seenPairs.has(pair)) {
+      console.warn(`[HundredsChart] Rejected duplicate problem ${pair} — already in this session`);
+      return false;
+    }
+    seenPairs.add(pair);
+    return true;
+  });
+  const duplicatesDropped = challenges.length - deduped.length;
+  if (duplicatesDropped > 0) {
+    for (const type of sessionTypes) {
+      for (const skip of legalSkips) {
+        if (deduped.length >= count) break;
+        const pair = `${type}|${skip}`;
+        if (seenPairs.has(pair)) continue;
+        seenPairs.add(pair);
+        deduped.push(buildChallenge(deduped.length, type, skip, genericHint(type), supportTier, gridMax));
+      }
+    }
+    console.log(
+      `[HundredsChart] Replaced ${duplicatesDropped} duplicate(s) → ${deduped.length} distinct problem(s)`,
+    );
+  }
+  challenges.length = 0;
+  challenges.push(...deduped);
+
   // Fallback if Gemini returned nothing usable
   if (challenges.length === 0) {
     const pinned = config?.skipValue;
     const sv = pinned && legalSkips.includes(pinned)
       ? pinned
       : legalSkips.includes(5) ? 5 : legalSkips[0];
-    challenges.push(buildChallenge(
-      0,
-      effectiveChallengeTypes?.[0] ?? 'highlight_sequence',
-      sv,
-      sv === 1
-        ? `Start at 1 and say each number as you click it.`
-        : `Start at ${sv} and keep adding ${sv}. Click each number you land on.`,
-      supportTier,
-      gridMax,
-    ));
+    const type = effectiveChallengeTypes?.[0] ?? 'highlight_sequence';
+    challenges.push(buildChallenge(0, type, sv, genericHint(type), supportTier, gridMax));
     console.log('[HundredsChart] No valid challenges from Gemini — using fallback');
   }
+
+  // Ids are positional, so renumber after dedupe/top-up (the component keys on them).
+  challenges.forEach((challenge, index) => { challenge.id = `c${index + 1}`; });
 
   if (supportTier) {
     const tierBreakdown = challenges

@@ -3,6 +3,8 @@ import { ComparisonBuilderData, ComparisonBuilderChallenge } from "../../primiti
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
+import { createNumberPool } from "./numberPoolService";
+import { resolveScopeRange } from "../scopeRangeResolver";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -275,6 +277,222 @@ function buildTierPromptSection(
 }
 
 // ---------------------------------------------------------------------------
+// compare-groups: code pre-rolls the group COUNTS
+// ---------------------------------------------------------------------------
+// The K atlas (CB-4) found the same five comparisons — 5v1, 1v4, 3v3, 1v5 — across
+// two objectives and two draws, with only the objectType changing. That is the
+// convergence /add-number-pool-service exists for: flash-lite resolves a free
+// numeric field the same way every run whatever the temperature, so the counts have
+// to be rolled in code and handed to it.
+//
+// Both axes stay where they belong. MAGNITUDE comes from the grade band (K 1-10,
+// G1 1-20) — the pool never widens because a tier hardened. The GAP between the two
+// sides is structure, which the support tier already owns (resolveProblemShape), so
+// the pool draws its pairs to fit the tier's gap instead of fighting the
+// code-enforcement pass that follows. An untiered session gets a mixed profile:
+// some obvious pairs, some adjacent ones, and one equal pair.
+//
+// The equal pair is guaranteed rather than hoped for: 'equal' is a third answer with
+// its own misconception (a child who reads "more" off the wider scatter rather than
+// the count), and a session that never shows it never tests it. It is withheld only
+// at the hard tier, where the contract excludes gap=0 on purpose.
+
+interface CountPair {
+  left: number;
+  right: number;
+}
+
+/** The inclusive count range one compare-groups draw may use. */
+interface CountWindow {
+  min: number;
+  max: number;
+}
+
+/**
+ * The count range the OBJECTIVE names, brought into CODE — not only stated in the
+ * prompt. The 2026-09-09 K redraw found COUNT001-03-A and MEAS001-02-B (both "groups
+ * of UP TO 5") shipping 5v9, 10v4 and 3v8: the pool was anchored on the grade band
+ * alone, and a prompt-only bound never reaches numbers that code picks BEFORE the call.
+ *
+ * The reading itself is the shared Tier-2 micro-call (`resolveScopeRange`), the same
+ * one array-grid, circle-explorer and factor-tree use for their code-picked values: a
+ * tiny {min,max} schema over topic + intent + objective. Not a regex — reading scope
+ * language is language understanding, and a regex misses "groups of five"
+ * ([[schema-over-regex-and-prompt]] rule 1). This function only VALIDATES what came
+ * back: the grade band stays the outer ceiling, and anything unusable leaves the band
+ * in place, so a lesson that names no range is byte-identical to before.
+ */
+function normalizeCountWindow(
+  resolved: { min: number; max: number } | null,
+  bandMax: number,
+): CountWindow {
+  const band: CountWindow = { min: 1, max: bandMax };
+  if (!resolved) return band;
+  const max = Math.min(bandMax, Math.round(resolved.max));
+  const min = Math.max(1, Math.round(resolved.min));
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max < 2) return band;
+  // A floor that no longer clears the ceiling (a Grade-1 range read against a K band,
+  // or a resolver that answered with a single value) is dropped rather than shipped:
+  // a window with no room in it holds no comparison.
+  return { min: min < max ? min : 1, max };
+}
+
+/**
+ * The tier's count gap, refitted to what the objective window can actually supply.
+ * Scope wins over structure: a 1-5 window holds only three pairs three-or-more apart,
+ * so a five-challenge easy session would have to repeat one ("N challenges = N
+ * problems") or leave the window. The gap relaxes instead — downward first (finer
+ * gaps), then upward — and only as far as the supply forces.
+ */
+function fitGapToWindow(
+  gap: { min: number; max: number; allowEqual: boolean },
+  window: CountWindow,
+  wanted: number,
+): { min: number; max: number; allowEqual: boolean } {
+  const span = Math.max(1, window.max - window.min);
+  let max = Math.max(1, Math.min(gap.max, span));
+  let min = Math.max(1, Math.min(gap.min, max));
+  // Distinct pairs a gap range can produce inside the window: one per (size, low).
+  const supply = (): number => {
+    let pairs = 0;
+    for (let size = min; size <= max; size++) pairs += span - size + 1;
+    return pairs;
+  };
+  while (supply() < wanted && (min > 1 || max < span)) {
+    if (min > 1) min -= 1;
+    else max += 1;
+  }
+  return { min, max, allowEqual: gap.allowEqual };
+}
+
+/** Any count the model authored, pulled back inside the objective's range. */
+function clampToWindow(count: number, window: CountWindow): number {
+  if (!Number.isFinite(count)) return window.min;
+  return Math.max(window.min, Math.min(Math.round(count), window.max));
+}
+
+/** Untiered sessions still get variety: mixed gaps within the band, equal allowed. */
+const UNTIERED_COUNT_GAP = { min: 1, max: 4, allowEqual: true };
+
+function rollBetween(min: number, max: number): number {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+/**
+ * Pre-roll `wanted` LEFT/RIGHT count pairs inside the objective's window whose gaps
+ * satisfy the tier, with one equal pair when the tier allows one. Orientation is
+ * rolled too so the answer key is not "more" every time.
+ *
+ * `guaranteeWithin` is the number of pairs the session will actually serve: the pool
+ * carries spare pairs, and an equal case parked in the spares is an equal case the
+ * child never sees. Pass 0 to roll pairs with no equal case at all (a spare drawn to
+ * replace a repeat — the guarantee is already met by then).
+ */
+function buildCountPairPool(
+  window: CountWindow,
+  gap: { min: number; max: number; allowEqual: boolean },
+  wanted: number,
+  guaranteeWithin: number,
+): CountPair[] {
+  const span = Math.max(1, window.max - window.min);
+  const widest = Math.max(1, Math.min(gap.max, span));
+  const narrowest = Math.max(1, Math.min(gap.min, widest));
+  // The anchor is the LARGER side: it needs room for the gap underneath it AND the
+  // smaller side has to land at or above the window's floor.
+  const anchorPool = createNumberPool(
+    { min: Math.min(window.min + narrowest, window.max), max: window.max },
+    { count: wanted, integers: true },
+  );
+  if (!anchorPool || anchorPool.numbers.length === 0) return [];
+  // A narrow objective window (6-10 holds five counts) has fewer distinct anchors
+  // than the session has challenges, and createNumberPool dedupes. Cycle them and
+  // let the GAP carry the variety the anchor cannot.
+  const anchors = Array.from(
+    { length: wanted },
+    (_, index) => anchorPool.numbers[index % anchorPool.numbers.length],
+  );
+
+  const taken = new Set<string>();
+  const pairs = anchors.map((anchor) => {
+    const room = Math.max(1, Math.min(widest, anchor - window.min));
+    const low = Math.max(1, Math.min(narrowest, room));
+    const spread = room - low + 1;
+    const start = rollBetween(0, spread - 1);
+    // Walk the legal sizes from a random start and take the first that is not
+    // already a pair in this pool — a repeated anchor then differs by its gap.
+    let size = low + start;
+    for (let step = 0; step < spread; step++) {
+      const candidate = low + ((start + step) % spread);
+      if (!taken.has(pairKey(anchor, Math.max(window.min, anchor - candidate)))) {
+        size = candidate;
+        break;
+      }
+    }
+    const other = Math.max(window.min, anchor - size);
+    taken.add(pairKey(anchor, other));
+    return Math.random() < 0.5
+      ? { left: anchor, right: other }
+      : { left: other, right: anchor };
+  });
+
+  if (gap.allowEqual && guaranteeWithin > 0 && pairs.length > 0) {
+    const served = Math.max(1, Math.min(guaranteeWithin, pairs.length));
+    const index = Math.floor(Math.random() * served);
+    const same = pairs[index].left;
+    pairs[index] = { left: same, right: same };
+  }
+  return pairs;
+}
+
+/** Two counts make one comparison whichever side they land on. */
+function pairKey(left: number, right: number): string {
+  return `${Math.min(left, right)}-${Math.max(left, right)}`;
+}
+
+/**
+ * A pair no challenge in this session is using yet: the pool's spares first, then a
+ * fresh roll. Returns null only if even the rolls keep colliding, in which case the
+ * repeat is left alone rather than replaced with something off-tier.
+ */
+function pickUnusedPair(
+  used: Set<string>,
+  pool: CountPair[],
+  window: CountWindow,
+  gap: { min: number; max: number; allowEqual: boolean },
+): CountPair | null {
+  for (const pair of pool) {
+    if (!used.has(pairKey(pair.left, pair.right))) return pair;
+  }
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const [fresh] = buildCountPairPool(window, gap, 1, 0);
+    if (fresh && !used.has(pairKey(fresh.left, fresh.right))) return fresh;
+  }
+  return null;
+}
+
+/**
+ * The pool as prompt text. Counts are assigned; the objectType, the flavour and the
+ * order of the OTHER modes stay the model's — it reads the topic, we own the numbers.
+ */
+function buildCountPoolPromptSection(pairs: CountPair[], window: CountWindow): string {
+  if (pairs.length === 0) return '';
+  const lines = pairs
+    .map((pair, index) => `- Comparison ${index + 1}: LEFT ${pair.left}, RIGHT ${pair.right}`)
+    .join('\n');
+  return `
+## GROUP COUNT POOL — MANDATORY for compare-groups (do NOT invent your own counts)
+Every count below already sits inside the objective's range (${window.min}-${window.max}).
+Take the two group counts for each compare-groups challenge from this list, in order:
+${lines}
+- Use each pair EXACTLY as written: do not swap the sides, round, merge or replace a pair.
+- If you generate fewer compare-groups challenges than there are pairs, use the first ones.
+- Vary the objectType instead — that choice is yours, and both groups in one challenge
+  must use the SAME objectType.
+- Never state either count, or which side has more, in the instruction text.
+`;
+}
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -465,10 +683,67 @@ export const generateComparisonBuilder = async (
   // supportTier is the STUDENT's tier and DRIVES the deterministic application at
   // the end (per challenge, blends included). pinnedType is ONLY used for the
   // prompt tone (a curated blend has no single mode to describe to the LLM).
+  // ── Grade band: curriculum metadata, never a model choice ──
+  // The band picks the number ceiling (K 1-10, G1 1-20), so the pool below cannot be
+  // rolled without it, and it cannot come from Gemini: an `eval-test` run at grade=K
+  // with the generic 'elementary' prose shipped band '1' and the pool rolled 19v15
+  // for a Kindergarten comparison. `ctx.grade` is already normalized by
+  // resolveGenerationContext (the only grade parser); the prose fallback is kept for
+  // lessons that carry no canonical grade at all.
+  const canonicalBand = ctx.grade === 'K' ? 'K' : ctx.grade ? '1' : null;
+  const resolvedBand: 'K' | '1' =
+    config?.gradeBand
+    ?? canonicalBand
+    ?? (gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1');
+
   const supportTier = normalizeSupportTier(config?.difficulty);
   const tierSection =
     (pinnedType && supportTier ? buildTierPromptSection(pinnedType, supportTier) : '')
     + buildRemediationPrompt(ctx.remediationFocus);
+
+  // ── Pre-rolled compare-groups counts (see the pool section above) ──
+  // Built per call, so two independent generations of the same lesson diverge. Only
+  // compare-groups is pooled: it is the mode the atlas caught converging, and its
+  // counts are incidental DATA (the pedagogy is the comparison), so the band is the
+  // only ceiling that applies. Ask for two more pairs than the session ships.
+  const bandMax = resolvedBand === 'K' ? 10 : 20;
+  // ── The objective's own count range (atlas CB-5) ──
+  // The band is the outer ceiling; the range the OBJECTIVE names is the real one, and
+  // the pool is rolled in code BEFORE the prompt exists, so a prompt-only bound cannot
+  // reach it. One shared micro-call, gated on compare-groups being in play — the other
+  // three modes pick their own numbers and pay nothing for this.
+  const poolsGroups = !pinnedType || pinnedType === 'compare-groups';
+  const scopeWindow = poolsGroups
+    ? await resolveScopeRange(
+      { ...ctx.scope, topic, intent },
+      gradeLevel,
+      'the two group counts the student compares (how many objects sit in each group)',
+      { min: 1, max: bandMax },
+    )
+    : null;
+  const countWindow = normalizeCountWindow(scopeWindow, bandMax);
+  if (countWindow.min > 1 || countWindow.max < bandMax) {
+    console.log(
+      `[ComparisonBuilder] objective count window → ${countWindow.min}-${countWindow.max} `
+      + `(band 1-${bandMax})`,
+    );
+  }
+  const tierGap = supportTier
+    ? resolveProblemShape('compare-groups', supportTier).countGap ?? UNTIERED_COUNT_GAP
+    : UNTIERED_COUNT_GAP;
+  // The window can be too narrow to hold a session's worth of distinct pairs at the
+  // tier's gap; the gap gives, never the window (see fitGapToWindow).
+  const countGap = fitGapToWindow(tierGap, countWindow, instanceCount + 1);
+  const countPairs = poolsGroups
+    ? buildCountPairPool(countWindow, countGap, instanceCount + 2, instanceCount)
+    : [];
+  const countPoolSection = buildCountPoolPromptSection(countPairs, countWindow);
+  const countWindowLine = countWindow.min > 1 || countWindow.max < bandMax
+    ? `\nCOUNT RANGE (overrides the grade guidance below): every group count in this activity`
+      + ` MUST be between ${countWindow.min} and ${countWindow.max} inclusive — the objective says so,`
+      + ` and the grade band is only the outer ceiling. Never state the range, either count, or`
+      + ` which side has more inside an instruction, hint or narration.`
+    : '';
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
@@ -480,7 +755,7 @@ THIS ACTIVITY'S SPECIFIC FOCUS: ${intent}
 Choose the numbers and group counts so the activity targets that focus (e.g. a focus on
 "teen numbers" → numbers in the 11-20 range; "numbers near each other" → close values).
 Stay within the grade band below — the grade is the CEILING and is never exceeded. Do NOT
-name or hint at any answer (more/less/=, the sorted order) in the instruction text.
+name or hint at any answer (more/less/=, the sorted order) in the instruction text.${countWindowLine}
 
 CONTEXT:
 - A comparison builder helps students learn to compare quantities and use inequality symbols (<, >, =)
@@ -489,6 +764,7 @@ CONTEXT:
 
 ${challengeTypeSection}
 ${tierSection}
+${countPoolSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -583,9 +859,8 @@ Return the complete comparison builder configuration.
 
   // ── Structural validation ──
 
-  if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
-    data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
-  }
+  // The band the pool was rolled against is the band that ships (see above).
+  data.gradeBand = resolvedBand;
 
   if (typeof data.showCorrespondenceLines !== 'boolean') {
     data.showCorrespondenceLines = true;
@@ -629,8 +904,11 @@ Return the complete comparison builder configuration.
         if (!challenge.rightGroup) {
           challenge.rightGroup = { count: 5, objectType: 'bears' };
         }
-        challenge.leftGroup.count = Math.max(1, Math.min(challenge.leftGroup.count, maxNumber));
-        challenge.rightGroup.count = Math.max(1, Math.min(challenge.rightGroup.count, maxNumber));
+        // The objective's range, not just the band: a "groups of up to 5" lesson that
+        // ships a 9 is out of scope even though 9 is a legal K count. The answer key is
+        // recomputed from the clamped counts immediately below (contract R4).
+        challenge.leftGroup.count = clampToWindow(challenge.leftGroup.count, countWindow);
+        challenge.rightGroup.count = clampToWindow(challenge.rightGroup.count, countWindow);
         if (!validObjectTypes.includes(challenge.leftGroup.objectType)) {
           challenge.leftGroup.objectType = 'bears';
         }
@@ -693,14 +971,20 @@ Return the complete comparison builder configuration.
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'compare-groups';
+    // Even the degraded path honors the window — the pool's first pair when there is
+    // one, the literal counts pulled into range when there is not.
+    const fallbackPair = countPairs[0]
+      ?? { left: clampToWindow(3, countWindow), right: clampToWindow(5, countWindow) };
     const fallbacks: Record<string, ComparisonBuilderChallenge> = {
       'compare-groups': {
         id: 'c1',
         type: 'compare-groups' as const,
         instruction: 'Which group has more bears?',
-        leftGroup: { count: 3, objectType: 'bears' },
-        rightGroup: { count: 5, objectType: 'bears' },
-        correctAnswer: 'less' as const,
+        leftGroup: { count: fallbackPair.left, objectType: 'bears' },
+        rightGroup: { count: fallbackPair.right, objectType: 'bears' },
+        correctAnswer: fallbackPair.left > fallbackPair.right
+          ? 'more'
+          : fallbackPair.left < fallbackPair.right ? 'less' : 'equal',
       },
       'compare-numbers': {
         id: 'c1',
@@ -747,17 +1031,32 @@ Return the complete comparison builder configuration.
         // (1..maxNumber). Anchor on the larger side and derive the smaller from the
         // enforced gap so we never push past maxNumber. allowEqual=false (hard)
         // excludes gap=0 (equal is its own answer/the '=' case).
-        const { min, max, allowEqual } = shape.countGap;
-        const wasEqual = challenge.leftGroup.count === challenge.rightGroup.count;
-        // Keep a genuine equal case at easy/medium (allowEqual) if the LLM made one.
-        if (wasEqual && allowEqual) {
-          challenge.correctAnswer = 'equal';
+        // The FITTED gap (what the pool was built to), not the raw tier gap: a narrow
+        // objective window can force the gap to relax, and re-testing against the raw
+        // tier here would rewrite every pooled pair straight back out of the window.
+        const { min, max, allowEqual } = countGap;
+        const currentGap = Math.abs(challenge.leftGroup.count - challenge.rightGroup.count);
+        // A gap that already satisfies the tier is LEFT ALONE — that is how the
+        // pre-rolled pairs survive this pass. Rewriting unconditionally pinned every
+        // gap to max and threw away the pool's variety (and any equal case with it).
+        const gapSatisfied = currentGap === 0 ? allowEqual : currentGap >= min && currentGap <= max;
+        if (gapSatisfied) {
+          challenge.correctAnswer = currentGap === 0
+            ? 'equal'
+            : challenge.leftGroup.count > challenge.rightGroup.count ? 'more' : 'less';
         } else {
           const leftWasLarger = challenge.leftGroup.count >= challenge.rightGroup.count;
           const anchor = Math.max(challenge.leftGroup.count, challenge.rightGroup.count);
-          const high = Math.max(min + 1, Math.min(anchor, maxNumber)); // room for the gap below
-          const gap = Math.max(min, Math.min(max, high - 1));          // 1..high-1, in band
-          const low = Math.max(1, high - gap);
+          // Anchor on the larger side, inside the window at both ends. When the window
+          // is too tight to hold the tier's gap the WINDOW wins — scope outranks the
+          // structural lever, exactly as the grade band already outranks it.
+          const high = Math.min(
+            countWindow.max,
+            Math.max(countWindow.min + min, Math.min(anchor, countWindow.max)),
+          );
+          const room = Math.max(1, high - countWindow.min);
+          const gap = Math.min(Math.max(min, Math.min(max, room)), room);
+          const low = Math.max(countWindow.min, high - gap);
           if (leftWasLarger) {
             challenge.leftGroup.count = high;
             challenge.rightGroup.count = low;
@@ -851,9 +1150,52 @@ Return the complete comparison builder configuration.
     );
   }
 
+  // ── Distinct-problem gate for compare-groups ──
+  // The pool hands the model distinct pairs, and it can still copy one: a live K draw
+  // came back 10v10, 8v10, 6v5, 10v10, 10v10. Reassign the repeat from the pairs
+  // nobody used (the pool is rolled two deep for exactly this) instead of dropping
+  // the challenge — the session keeps its length, its object types and its prose, and
+  // the pairs are already built to the tier's gap so the structure survives. Runs
+  // AFTER the tier pass, which can itself collapse two pairs onto one gap.
+  if (countPairs.length > 0) {
+    const used = new Set<string>();
+    let reassigned = 0;
+    for (const challenge of data.challenges as ComparisonBuilderChallenge[]) {
+      if (challenge.type !== 'compare-groups' || !challenge.leftGroup || !challenge.rightGroup) continue;
+      const key = pairKey(challenge.leftGroup.count, challenge.rightGroup.count);
+      if (!used.has(key)) {
+        used.add(key);
+        continue;
+      }
+      const replacement = pickUnusedPair(used, countPairs, countWindow, countGap);
+      if (!replacement) continue;
+      challenge.leftGroup.count = replacement.left;
+      challenge.rightGroup.count = replacement.right;
+      challenge.correctAnswer = replacement.left > replacement.right
+        ? 'more'
+        : replacement.left < replacement.right ? 'less' : 'equal';
+      used.add(pairKey(replacement.left, replacement.right));
+      reassigned += 1;
+    }
+    if (reassigned > 0) {
+      console.log(`[ComparisonBuilder] Reassigned ${reassigned} repeated comparison(s) to unused pairs`);
+    }
+  }
+
   // Final summary log
   const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
   console.log(`[ComparisonBuilder] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
+  if (countPairs.length > 0) {
+    const served = (data.challenges as ComparisonBuilderChallenge[])
+      .filter((c) => c.type === 'compare-groups' && c.leftGroup && c.rightGroup)
+      .map((c) => `${c.leftGroup!.count}v${c.rightGroup!.count}`);
+    console.log(
+      `[ComparisonBuilder] count pool (window ${countWindow.min}-${countWindow.max}, `
+      + `gap ${countGap.min}-${countGap.max}`
+      + `${countGap.allowEqual ? ', equal included' : ''}): `
+      + `[${countPairs.map((p) => `${p.left}v${p.right}`).join(', ')}] → served [${served.join(', ')}]`,
+    );
+  }
 
   // Apply config overrides
   if (config) {

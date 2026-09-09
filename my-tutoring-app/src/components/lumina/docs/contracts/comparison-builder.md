@@ -59,6 +59,12 @@
 - **Evidence:** generator `maxNumber` clamps; prompt "Do NOT name or hint at any answer"; oracle scope check.
 - **Probe:** `/oracle-test` scope 0; `/eval-test @ K` no leak.
 
+### R8 — compare-groups counts are code-rolled, distinct, and include an equal case · OBSERVED
+- **Property:** The two group counts come from a pool rolled in code per generation and injected into the prompt — never invented by the model. Magnitude stays inside the range the OBJECTIVE names — resolved through the shared Tier-2 micro-call (`resolveScopeRange`, `{min,max}` schema over topic/intent/objective) with the grade band as the OUTER ceiling (K 1-10, G1 1-20); a lesson that names no range keeps the band. The gap comes from the tier (R5), refitted downward when a window is too narrow to supply a session's worth of distinct pairs, so the two axes stay separate and scope outranks structure. Every session includes at least one equal pair wherever the tier allows one (withheld at `hard`, which excludes gap=0 by contract), orientation is rolled so the key is not "more" every time, and no two comparisons in a session use the same pair of counts — a repeat is reassigned to an unused pooled pair. The grade band itself comes from `config.gradeBand` → `ctx.grade` → grade prose, never from the model.
+- **Demanded by:** K `COUNT001-03-A` + `MEAS001-02-B` (atlas finding CB-4: the same five comparisons — 5v1, 1v4, 3v3, 1v5 — across two objectives and two draws, only the objectType changing).
+- **Evidence:** `gemini-comparison-builder.ts` (`buildCountPairPool`, `pickUnusedPair`, the distinct-problem gate); `gemini-comparison-builder.variety.test.ts` 7/7; five live `eval-test` draws 5/5 distinct each.
+- **Probe:** two `/api/lumina/eval-test?componentId=comparison-builder&evalMode=compare_groups&grade=K` draws — pairs differ between draws, one equal case per session, every count inside the objective's range (the band when it names none).
+
 ## Conflicts
 
 _None open._ (2026-07-16 chrome band-gate is COMPATIBLE — see changelog.)
@@ -80,6 +86,32 @@ _None open._ (2026-07-16 chrome band-gate is COMPATIBLE — see changelog.)
 
 ## Changelog
 
+- 2026-09-09 — R8 AMENDED for atlas CB-5 (`/eval-fix`): the pooled counts now sit inside
+  the range the objective names, not just the grade band. The 09-09 K redraw found
+  COUNT001-03-A and MEAS001-02-B ("groups of UP TO 5") shipping 5v9, 10v4, 3v8 — the pool
+  was anchored on the band and nothing read the objective. The window comes from the
+  SHARED `resolveScopeRange` micro-call (not a regex — [[schema-over-regex-and-prompt]]
+  rule 1; it reads the 6-10 FLOOR in COUNT001-03-B that a ceiling-only parse cannot), and
+  the band remains the outer clamp, so a lesson naming no range is byte-identical to
+  before. Assessed **COMPATIBLE**: R4 still recomputes every key from the shipped counts;
+  R7's band ceiling is unchanged and now strengthened by a tighter objective clamp; R6
+  counts untouched. The ONE tension is R5 — a window narrower than the tier's gap (1-5
+  holds three pairs three-or-more apart, one short of a five-challenge session) now
+  relaxes the GAP rather than the window, because leaving the window would break both the
+  objective and "N challenges = N problems". Magnitude never widens for a tier, which is
+  what R5 exists to protect. Verified on real generations (vite module-runner drive, the
+  dev server being wedged by another session): A ×2 + MEAS 1-5, B easy+medium 6-10, all
+  5/5 distinct with an equal case, no-window K still 1-10. 14/14 focused tests,
+  `typecheck:lumina` clean for this file.
+- 2026-09-08 — R8 added for atlas CB-4 via `/add-number-pool-service` (counts pooled
+  in code, one guaranteed equal case, repeats reassigned). Assessed **COMPATIBLE**:
+  R4 still recomputes every answer from the shipped counts, R5's tier levers are
+  unchanged and the gap-enforcement pass now LEAVES a gap that already satisfies the
+  tier (it used to pin every gap to the maximum, which was itself throwing away
+  variety), R6 counts are untouched, R7 is strengthened — the band was being taken
+  from Gemini, so a `grade=K` run shipped band 1 and rolled 19v15; it now reads
+  `ctx.grade` (already normalized by `resolveGenerationContext`). Focused 7/7, Lumina
+  typecheck 0. Residual: the other three modes still let the model pick its numbers.
 - 2026-07-16 — derived (initial). 7 requirements, 0 conflicts, 1 gap (G1).
 - 2026-07-16 — item 2b edit (K chrome band-gate + symmetric one_more_less DISAMBIGUATE + shared 🔊 Read-me). Assessed **COMPATIBLE**: band-gating `showCountBadges` OFF at all K tiers is *stricter than* the R5 tier lever (which only hid it at `hard`) and no consumer depends on K count badges being visible — the reader-fit Audit A already classified them as a count leak ("Supportive→leaks count"). R5's grade-1 behavior is untouched (band-gate keys on `gradeBand==='K'`, not on tier). R1 tap surface preserved (band-gate hides chrome, not the group pictures/`=`). R2 extended (one_less now voiced identically). No fork required.
 - 2026-07-20 — item 2b TAIL edit (rule-5 feedback-on-object at K + per-mode PRE picture passes for compare_numbers / order / one_more_less). Assessed **COMPATIBLE** — a band+mode fork keyed on `gradeBand==='K'`, never on tier; it BUILDS gap G1. Other-consumer probes held: R1 compare-groups tap surface unchanged (added only a shake class on wrong taps); R5 Grade-1 tier levers untouched (K gates are band-scoped — the alligator/count-badge/target-marker/slot-hint tier withdrawal still applies at Grade-1); R4/R7 generator untouched; R6 K taps still record + submit on completion; R2 directive reworded compare-numbers answer-free ("tap the bigger number"), keys unchanged. R3 no handlebars/answer added. Verified: `typecheck:lumina` 0, full vitest **857/857**, `ComparisonBuilder.reader-fit.test.tsx` **25/25**. Check report: `qa/primitive-contracts/comparison-builder-check-2026-07-20.md`. No fork ladder needed (K presentation is the fork). Residual: live `--lesson` + browser pixel → HUMAN-CHECKS.
