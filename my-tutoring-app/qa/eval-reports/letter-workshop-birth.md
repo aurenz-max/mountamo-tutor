@@ -24,8 +24,8 @@ L1 implementation update (2026-09-07): trace/copy/write now run with mode resolu
 | 0 | Human template/device review | Review all 52 manuscript forms and stroke conventions; trace with child-sized fingers/stylus, including dots and multi-stroke letters. Calibrate provisional thresholds against real attempts before claiming validated formation scoring. |
 | 1 | `/add-eval-modes` + `/eval-test` | Three practice modes implemented and runtime-tested; copy/write feedback remains local-only. Finish actual audible-cue/device checks and review/calibrate the provisional formation assessor before enabling adaptive updates. Design priors are registered, not empirically calibrated. |
 | 2 | `/add-tutoring-scaffold` | Implemented: mode-aware catalog scaffold, 15 context keys, three hint levels, six struggle responses, Help me, and guarded speech moments. Three-mode tutor probes and live connection pass. Full live coaching/device audio remains to verify. [Tutor report](../tutor-reports/letter-workshop-2026-09-07.md). |
-| 3 | `/add-support-tiers` | Withdraw numbered starts/arrows separately; do not relabel a visible-guide trace as independent writing. |
-| 4 | `/add-structural-difficulty` | After support tiers: stroke count, joins, curves, ascenders/descenders and case contrasts; retain curriculum letter-group scope. |
+| 3 | `/add-support-tiers` | Implemented: starts/arrows, line labels, and reminders withdraw per challenge; mode identity preserved. Nine mode/tier browser flows pass. [Tier report](letter-workshop-tiers-2026-09-07.md). |
+| 4 | `/add-structural-difficulty` | Implemented: code-owned stroke/curve/corner/extension complexity selects low/middle/high available forms within each allowed case. Fixed-letter scopes saturate; 9,000 scoped structural combinations and live tier sweep pass. Empirical difficulty remains uncalibrated. |
 | 5 | `/add-sound` | Soft pen-lift/check/retry feedback; avoid continuous sound that masks tutor speech. |
 | Every change | `/eval-test` | Re-run live scope draws, geometric negatives and gesture lifecycle; per-mode/tier checks after those layers exist. |
 
