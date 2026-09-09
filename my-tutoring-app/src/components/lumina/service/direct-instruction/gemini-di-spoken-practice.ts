@@ -43,6 +43,7 @@ import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
 import { createDiscretePool } from '../math/numberPoolService';
 import {
   planSpokenPractice, modeForSpokenPlan, buildPlannedSpokenItems, hasPlannedCoverage,
+  buildSubjectVerbAgreementItems, hasSubjectVerbAgreementCoverage,
   spokenChoiceMenu, hasChoiceCoverage, spokenConceptPlan, hasConceptCoverage,
 } from './spokenPracticePlan';
 import type { DiSpokenPracticeData } from '../../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
@@ -126,7 +127,8 @@ const itemSchema: Schema = {
       description:
         'ONE emoji picturing the stimulus, or an empty string. Required for count_and_say '
         + '(it is what gets drawn) and for compare_choice (the FIRST of the two things). '
-        + 'Never an emoji that spells out the answer.',
+        + 'Never an emoji that spells out the answer. For riddles or context-clue tasks this is '
+        + 'always empty: the clues, not a picture of their answer, must determine the response.',
     },
     stimulusText2: {
       type: Type.STRING,
@@ -404,7 +406,10 @@ reinforcement, not the carrier. Set "printStimulus" true for a written prompt wo
 and FALSE for a listening task where seeing the word would change the skill — printing the word during a
 sound task changes what is being practised; leave the emoji empty there. If a PICTURE is the stimulus,
 give the emoji and keep "stimulusText" to the thing pictured — then the ask asks ABOUT the picture
-without naming it.`}${seedSection}
+without naming it. A picture is valid only when the picture itself is the evidence being questioned and
+its label is NOT an accepted answer. For a riddle or context-clue task, the spoken clues are the entire
+stimulus: put the complete clue wording in BOTH "stimulusText" and "ask", set "printStimulus" false,
+and leave "stimulusEmoji" empty. Never illustrate the riddle's answer.`}${seedSection}
 
 Return the JSON only.`;
 
@@ -539,6 +544,26 @@ export const generateDiSpokenPractice = async (
   // A named-concept explain plan likewise hands over a session-wide SLOT (the
   // sentence + anchors) that code stamps into every generated instance.
   const concept = spokenConceptPlan(plan);
+
+  if (plan.task === 'subject_verb_agreement') {
+    const result = gateSpokenItems(buildSubjectVerbAgreementItems(count));
+    if (!hasSubjectVerbAgreementCoverage(result.kept, count)) {
+      console.error('[DiSpokenPractice] subject-verb session incomplete after gates:', result.reasons);
+      return empty();
+    }
+    console.log('[DiSpokenPractice] planned subject-verb session:', {
+      kept: result.kept.length,
+      pairs: result.kept.map(item => `${item.agreementPairId}:${item.agreementNumber}`),
+      answers: result.kept.map(item => item.expectedAnswer),
+    });
+    return {
+      title: 'Finish the Sentence',
+      description: 'Listen to each sentence and say the missing word!',
+      challengeType: mode,
+      gradeLevel,
+      items: result.kept,
+    };
+  }
 
   if (plan.targets.length && !menu.length && !concept) {
     count = Math.max(count, plan.targets.length);

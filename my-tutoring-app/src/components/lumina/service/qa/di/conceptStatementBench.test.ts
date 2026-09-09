@@ -20,6 +20,7 @@ import {
 import { benchPasses, isFalseAffirmation, type OpenSetProbeResult } from './openSetWordBench';
 import { buildDiDrivePlan } from './diDrivePlan';
 import { RESPONSE_CLASSES } from '../../../hooks/judgedScriptContract';
+import { buildSubjectVerbAgreementItems } from '../../direct-instruction/spokenPracticePlan';
 import {
   buildSpokenItem,
   findConceptDefects,
@@ -328,6 +329,18 @@ describe('the ordinary drive path — the adapter is not bench-only', () => {
     expect(compare.answers.plainWrong).toBe('longer');
     // The menu is in the ask by contract, so the flat oracle is off for it.
     expect(compare.answers.leakTokens).toEqual([]);
+  });
+
+  it('uses the opposite agreement form as the signature wrong answer', () => {
+    const agreement = buildSubjectVerbAgreementItems(2);
+    const agreementPlan = buildDiDrivePlan(
+      'di-spoken-practice',
+      { items: agreement },
+      'Kindergarten',
+    );
+    expect(agreementPlan.items.map(item => item.answers.correct)).toEqual(['is', 'are']);
+    expect(agreementPlan.items.map(item => item.answers.signatureWrong?.text)).toEqual(['are', 'is']);
+    expect(agreementPlan.packGateIssues).toEqual([]);
   });
 
   it('re-runs the shipped gate over a hand-edited payload and reports the drop', () => {

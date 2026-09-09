@@ -2,13 +2,13 @@ import { Type, type Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import {
   CONCEPT_ANCHOR_MAX_WORDS, CONCEPT_STATEMENT_MAX_WORDS, CONCEPT_STATEMENT_MIN_WORDS,
-  deriveResponseClass, normalizeConceptAnchors, normalizeSpokenAnswer, wordCount,
+  deriveResponseClass, HOW_TO_PLAY, normalizeConceptAnchors, normalizeSpokenAnswer, wordCount,
   type SpokenPracticeItem, type SpokenPracticeMode,
 } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 
 const TASKS = [
-  'visual_naming', 'read_aloud', 'say_answer', 'count_and_say', 'compare_choice', 'explain_concept',
-  'unsupported',
+  'visual_naming', 'read_aloud', 'say_answer', 'subject_verb_agreement', 'count_and_say',
+  'compare_choice', 'explain_concept', 'unsupported',
 ] as const;
 type Task = typeof TASKS[number];
 // Task interpretation and review are semantic judgments, like lesson coverage.
@@ -167,7 +167,9 @@ export function parseSpokenPlan(raw: unknown, sources: string[]): SpokenPractice
 }
 
 export function modeForSpokenPlan(plan: SpokenPracticePlan): SpokenPracticeMode | null {
-  return plan.task === 'unsupported' ? null : plan.task === 'visual_naming' ? 'say_answer' : plan.task;
+  return plan.task === 'unsupported' ? null
+    : plan.task === 'visual_naming' || plan.task === 'subject_verb_agreement' ? 'say_answer'
+      : plan.task;
 }
 
 export async function planSpokenPractice(
@@ -191,6 +193,10 @@ TASKS:
   Showing + and saying its name is recall, NOT reading. Never print the name to be recalled.
 - read_aloud: decode printed words or numerals; the printed text itself is the utterance.
 - say_answer: listening recall, arithmetic, or spoken manipulation of sounds/words.
+- subject_verb_agreement: complete a short present-progressive sentence by saying "is" or "are".
+  Choose this when the child must apply present-tense agreement across singular and plural subjects.
+  This task preserves the subject and predicate as an answer-free spoken frame; targets is empty and
+  closedSet is false because a later code-owned builder supplies contrasting sentence pairs.
 - count_and_say: count displayed objects and say the total (1-10).
 - compare_choice: the text names a FIXED SET of comparison words (longer/shorter, heavier/lighter,
   more/fewer) and the child says which one describes TWO things they are shown. Choose this only
@@ -260,8 +266,11 @@ concept, where the single target only NAMES the concept (a token from the text, 
 grounding hook — the instances the child actually sees are written later, so the hook's glyph or
 picture is NOT grounds for rejection; judge only that conceptStatement is TRUE and grade-appropriate
 and that every anchor MEANS the same thing as it, and reject on any no. An open explain_concept plan
-(the rule varies per instance) has no targets and no conceptStatement, which is correct. For listening recall, arithmetic, counting,
-or reading from a range/pattern, targets MUST be empty and closedSet false: a later generator
+(the rule varies per instance) has no targets and no conceptStatement, which is correct.
+subject_verb_agreement is valid only when the requested action is present-tense agreement across
+singular and plural subjects; its targets MUST be empty because code builds answer-free is/are
+sentence pairs after this review. For listening recall, arithmetic, counting, or reading from a
+range/pattern, targets MUST be empty and closedSet false: a later generator
 writes those items. A numerical range (within five), a phonics pattern, or an arithmetic topic
 does NOT enumerate a required set. Do not reject a valid open plan for lacking practice items.
 Reject if the task changes the requested learner action, any required named member is missing,
@@ -321,6 +330,84 @@ export function buildPlannedSpokenItems(plan: SpokenPracticePlan, count: number)
       correctionBody: reading ? `It says ${t.expectedAnswer}.` : `This is called ${t.expectedAnswer}.`,
     };
   });
+}
+
+/**
+ * A K agreement item is a sentence-completion task, not verb recall. The
+ * original generator asked a complete sentence ("The birds fly") and then
+ * keyed `fly`; the answer-leak gate correctly removed every item. These paired
+ * frames retain the subject and predicate while code owns the missing `is/are`
+ * word and all dependent feedback.
+ */
+const AGREEMENT_PAIRS = [
+  { id: 'cat', singular: 'The cat', plural: 'The cats', predicate: 'sleeping on the mat' },
+  { id: 'dog', singular: 'The dog', plural: 'The dogs', predicate: 'running in the park' },
+  { id: 'bird', singular: 'The bird', plural: 'The birds', predicate: 'flying over the tree' },
+  { id: 'duck', singular: 'The duck', plural: 'The ducks', predicate: 'swimming in the pond' },
+  { id: 'frog', singular: 'The frog', plural: 'The frogs', predicate: 'jumping by the log' },
+  { id: 'rabbit', singular: 'The rabbit', plural: 'The rabbits', predicate: 'eating a carrot' },
+] as const;
+
+export function buildSubjectVerbAgreementItems(count: number): SpokenPracticeItem[] {
+  if (count < 2) return [];
+  const offset = Math.floor(Math.random() * AGREEMENT_PAIRS.length);
+  const pairCount = Math.ceil(count / 2);
+  const selected = Array.from(
+    { length: pairCount },
+    (_, i) => AGREEMENT_PAIRS[(offset + i) % AGREEMENT_PAIRS.length],
+  );
+  const rows = selected.flatMap((pair) => ([
+    { pair, agreementNumber: 'singular' as const, subject: pair.singular, answer: 'is', wrong: 'are' },
+    { pair, agreementNumber: 'plural' as const, subject: pair.plural, answer: 'are', wrong: 'is' },
+  ])).slice(0, count);
+
+  return rows.map(({ pair, agreementNumber, subject, answer, wrong }, index) => {
+    const frame = `${subject} ... ${pair.predicate}.`;
+    const oneOrMore = agreementNumber === 'singular' ? 'one subject' : 'more than one subject';
+    return {
+      id: `dsp-${index + 1}`,
+      targetId: `agreement-${pair.id}-${agreementNumber}`,
+      agreementNumber,
+      agreementPairId: pair.id,
+      mode: 'say_answer',
+      action: 'say_answer',
+      answerKind: 'voice',
+      responseClass: deriveResponseClass('say_answer', answer, frame)!,
+      stimulusKind: 'none',
+      answerSource: 'recall',
+      stimulusText: frame,
+      stimulusEmoji: '',
+      stimulusCount: 0,
+      ask: `Listen: ${frame} Say the missing word.`,
+      howToPlay: HOW_TO_PLAY.say_answer,
+      expectedAnswer: answer,
+      alternates: [],
+      acceptRule: '',
+      signatureError: `Saying "${wrong}" for ${oneOrMore} is not correct agreement.`,
+      correctionBody: `Use ${answer} with ${oneOrMore}. ${subject} ${answer} ${pair.predicate}.`,
+    };
+  });
+}
+
+/** Every shipped agreement session must retain a singular/plural contrast, a
+ *  matched pair, and the code-owned key for each grammatical number. */
+export function hasSubjectVerbAgreementCoverage(
+  items: readonly SpokenPracticeItem[], count: number,
+): boolean {
+  if (items.length !== count) return false;
+  if (!items.every(item => item.agreementNumber === 'singular'
+    ? item.expectedAnswer === 'is'
+    : item.agreementNumber === 'plural' && item.expectedAnswer === 'are')) return false;
+  const numbers = new Set(items.map(item => item.agreementNumber));
+  if (!numbers.has('singular') || !numbers.has('plural')) return false;
+  const byPair = new Map<string, Set<string>>();
+  for (const item of items) {
+    if (!item.agreementPairId) return false;
+    const seen = byPair.get(item.agreementPairId) ?? new Set<string>();
+    seen.add(item.agreementNumber!);
+    byPair.set(item.agreementPairId, seen);
+  }
+  return Array.from(byPair.values()).some(seen => seen.has('singular') && seen.has('plural'));
 }
 
 /** Run AFTER item gates. A surviving label alone is not coverage of a target. */

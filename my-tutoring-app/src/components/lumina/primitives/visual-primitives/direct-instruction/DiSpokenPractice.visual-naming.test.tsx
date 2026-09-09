@@ -46,6 +46,20 @@ describe('visual naming reaches the displayed stimulus and affordances', () => {
     expect(screen.queryByRole('button', { name: /Hear it/ })).toBeNull();
   });
 
+  it('shows only the listening surface after an answer-depicting riddle picture is removed', () => {
+    mount({
+      ...naming,
+      stimulusRole: undefined,
+      stimulusKind: 'none',
+      stimulusText: 'I have four legs and bark. What animal am I?',
+      stimulusEmoji: '',
+      expectedAnswer: 'dog',
+    });
+    expect(screen.getByText('listen')).toBeTruthy();
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(screen.queryByText('dog')).toBeNull();
+  });
+
   it('preserves tap-to-hear for an ordinary spoken arithmetic problem', () => {
     mount({ ...naming, stimulusRole: undefined, stimulusText: '2 + 1', expectedAnswer: 'three' });
     fireEvent.click(screen.getByRole('button', { name: /Hear it/ }));

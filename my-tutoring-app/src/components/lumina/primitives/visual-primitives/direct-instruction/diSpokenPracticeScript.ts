@@ -133,6 +133,11 @@ export interface SpokenPracticeItem extends JudgedScriptItem {
   mode: SpokenPracticeMode;
   /** Present on code-planned items; used to verify post-filter session coverage. */
   targetId?: string;
+  /** Code-owned subject-verb completion metadata. These fields let the
+   *  generator verify that both grammatical numbers survived every gate and
+   *  that the spoken key agrees with the requested subject number. */
+  agreementNumber?: 'singular' | 'plural';
+  agreementPairId?: string;
   /** A displayed naming target must not be spoken by the ask or tap-to-hear.
    * Absent on legacy items, whose existing delivery behavior is preserved. */
   stimulusRole?: 'visual_target';
@@ -801,9 +806,9 @@ export const buildSpokenItem = (
   concept?: { conceptStatement: string; anchors: readonly string[] },
 ): SpokenPracticeItem | null => {
   const shape = MODE_SHAPE[mode];
-  const stimulusText = str(raw.stimulusText);
+  const generatedStimulusText = str(raw.stimulusText);
   const ask = str(raw.ask);
-  if (!ask || !stimulusText) return null;
+  if (!ask || !generatedStimulusText) return null;
   // A pair with one thing in it is not a comparison, and a pair with nothing
   // drawn is two names a pre-reader cannot hold — both are missing halves of
   // the stimulus, refused here rather than rendered as a blank side.
@@ -827,9 +832,9 @@ export const buildSpokenItem = (
   // Reading preserves the printed utterance, including supported numeral → word
   // normalization. A symbol NAME is recall and cannot be relabeled as decoding.
   if (mode === 'read_aloud'
-    && normalizeSpokenAnswer(stimulusText).toLowerCase() !== expectedAnswer.toLowerCase()) return null;
+    && normalizeSpokenAnswer(generatedStimulusText).toLowerCase() !== expectedAnswer.toLowerCase()) return null;
 
-  const responseClass = deriveResponseClass(mode, expectedAnswer, stimulusText);
+  const responseClass = deriveResponseClass(mode, expectedAnswer, generatedStimulusText);
   if (!responseClass) return null;
 
   const offered = (concept ? concept.anchors.slice(1).join(',') : str(raw.alsoAccept))
@@ -852,22 +857,36 @@ export const buildSpokenItem = (
   // stamped set may therefore ride as a SUBSET on some items —
   // `hasConceptCoverage` checks the subset, never byte-equality.
   const reconciled = mode === 'explain_concept'
-    ? reconcileConceptAnchors(expectedAnswer, normalizeConceptAnchors(expectedAnswer, offered, stimulusText), ask)
+    ? reconcileConceptAnchors(expectedAnswer, normalizeConceptAnchors(expectedAnswer, offered, generatedStimulusText), ask)
     : { primary: expectedAnswer, alternates: offered };
   const alternates = reconciled.alternates;
   if (!reconciled.primary) return null;
 
   const stimulusEmoji = str(raw.stimulusEmoji).slice(0, 8);
+  // A generated picture whose label is an accepted answer is the answer in
+  // pictorial form. That is valid only for a code-planned visual_naming task,
+  // which bypasses this builder and carries stimulusRole='visual_target'. For
+  // listening riddles and context-clue questions, keep the complete spoken ask
+  // as the replayable stimulus and remove the answer-depicting picture. This is
+  // a lossless repair: the clues, answer, alternates, judge and correction stay
+  // synchronized; only the unauthorized shortcut is removed.
+  const answerDepictingPicture = mode === 'say_answer' && Boolean(stimulusEmoji)
+    && [reconciled.primary, ...alternates].some((answer) =>
+      containsPhrase(generatedStimulusText, answer) || containsPhrase(answer, generatedStimulusText));
+  const stimulusText = answerDepictingPicture ? ask : generatedStimulusText;
   // 'objects' needs something to draw; without an emoji the mode has no
   // stimulus at all, so fall back to a neutral counter rather than a blank board.
-  const emoji = mode === 'count_and_say' && !stimulusEmoji ? '🔵' : stimulusEmoji;
+  const emoji = answerDepictingPicture
+    ? ''
+    : mode === 'count_and_say' && !stimulusEmoji ? '🔵' : stimulusEmoji;
 
   // How the stimulus APPEARS. say_answer varies three ways: a picture, printed
   // text, or nothing at all — and the last is pedagogy, not layout. Showing the
   // word during a sound-manipulation task turns an auditory skill into a visual
   // one. explain_concept reuses the picture branch only: its instance is
   // printed or pictured, never withheld (the child explains what they SEE).
-  const listenOnly = mode === 'say_answer' && raw.printStimulus === false && !emoji;
+  const listenOnly = mode === 'say_answer'
+    && (answerDepictingPicture || (raw.printStimulus === false && !emoji));
   const stimulusKind = mode === 'say_answer'
     ? listenOnly ? 'none' : emoji ? 'emoji' : 'text'
     : mode === 'explain_concept'

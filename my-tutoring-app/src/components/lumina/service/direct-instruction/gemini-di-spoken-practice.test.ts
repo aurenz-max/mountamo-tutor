@@ -4,7 +4,10 @@ const { generateContent } = vi.hoisted(() => ({ generateContent: vi.fn() }));
 vi.mock('../geminiClient', () => ({ ai: { models: { generateContent } } }));
 
 import { generateDiSpokenPractice } from './gemini-di-spoken-practice';
-import { buildPlannedSpokenItems, hasPlannedCoverage, parseSpokenPlan, spokenSourceTokens } from './spokenPracticePlan';
+import {
+  buildPlannedSpokenItems, buildSubjectVerbAgreementItems, hasPlannedCoverage,
+  hasSubjectVerbAgreementCoverage, parseSpokenPlan, spokenSourceTokens,
+} from './spokenPracticePlan';
 import {
   contextFor, findAnswerLeaks, findChoiceMenuDefects, findConceptDefects, findUnspokenStimulus, itemCue, pronounceCue,
 } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
@@ -167,6 +170,44 @@ describe('named target ownership through the generation boundary', () => {
 });
 
 describe('neighboring tasks retain their delivery and identity', () => {
+  it('removes answer-depicting riddle pictures while retaining the spoken clues and replay', async () => {
+    acceptPlan({ task: 'say_answer', closedSet: false, targets: [] });
+    const riddles = [
+      ['sun', '☀️', 'I shine in the sky during the day. What am I?'],
+      ['dog', '🐶', 'I have four legs and bark. What animal am I?'],
+      ['apple', '🍎', 'I am a crunchy fruit that grows on a tree. What am I?'],
+      ['fish', '🐟', 'I have fins and live in water. What am I?'],
+    ].map(([answer, stimulusEmoji, ask]) => ({
+      ...raw(answer, answer, ask), stimulusEmoji,
+    }));
+    generateContent.mockResolvedValueOnce(reply({ title: 'Riddle Time', items: riddles }));
+
+    const data = await gen(
+      'say_answer',
+      'Solve simple word riddles using context clues and prior vocabulary knowledge',
+      { intent: 'Solve simple word riddles using context clues and prior vocabulary knowledge' },
+    );
+
+    expect(data.items).toHaveLength(4);
+    expect(data.items.every(i => i.stimulusKind === 'none' && i.stimulusEmoji === '')).toBe(true);
+    expect(data.items.map(i => i.stimulusText)).toEqual(riddles.map(i => i.ask));
+    expect(data.items.every(i => pronounceCue(i).includes(i.ask))).toBe(true);
+    expect(findAnswerLeaks(data.items)).toEqual([]);
+    expect(findUnspokenStimulus(data.items)).toEqual([]);
+  });
+
+  it('keeps a picture that supplies non-answer evidence for the spoken question', async () => {
+    acceptPlan({ task: 'say_answer', closedSet: false, targets: [] });
+    generateContent.mockResolvedValueOnce(reply({ items: Array.from({ length: 4 }, (_, index) => ({
+      ...raw('dog', index % 2 ? 'wag' : 'bark', 'Look at this dog. What can it do?'),
+      stimulusEmoji: '🐕',
+    })) }));
+
+    const data = await gen('say_answer', 'Use a picture to name an animal action');
+    expect(data.items).toHaveLength(4);
+    expect(data.items.every(i => i.stimulusKind === 'emoji' && i.stimulusEmoji === '🐕')).toBe(true);
+  });
+
   it('reads an explicit word/numeral set with digit normalization and no recall affordance', async () => {
     const text = 'Read the printed word cat and the numeral 2 aloud.';
     acceptPlan({ task: 'read_aloud', closedSet: true,
@@ -213,6 +254,48 @@ describe('neighboring tasks retain their delivery and identity', () => {
  * come back having asked all four — a session that quietly covers two of them
  * is the named-set failure, not a thin session.
  */
+describe('DSP-4 subject-verb agreement completion', () => {
+  const agreementObjective =
+    'Apply basic subject-verb agreement in present tense (singular/plural subjects)';
+  const agreementPlan = {
+    task: 'subject_verb_agreement', closedSet: false, conceptStatement: '', targets: [],
+  };
+
+  it('builds a nonempty singular/plural contrast without speaking either answer first', async () => {
+    acceptPlan(agreementPlan);
+    const data = await gen('say_answer', agreementObjective);
+
+    expect(data.challengeType).toBe('say_answer');
+    expect(data.items).toHaveLength(4);
+    expect(new Set(data.items.map(item => item.agreementNumber)))
+      .toEqual(new Set(['singular', 'plural']));
+    expect(hasSubjectVerbAgreementCoverage(data.items, 4)).toBe(true);
+    expect(findAnswerLeaks(data.items)).toEqual([]);
+    expect(findUnspokenStimulus(data.items)).toEqual([]);
+    expect(generateContent).toHaveBeenCalledTimes(2); // plan + review; item keys are code-owned
+
+    for (const item of data.items) {
+      expect(item.expectedAnswer).toBe(item.agreementNumber === 'singular' ? 'is' : 'are');
+      expect(item.ask).toContain(item.stimulusText);
+      expect(item.ask.toLowerCase()).not.toMatch(new RegExp(`\\b${item.expectedAnswer}\\b`));
+      expect(item.correctionBody).toContain(`Use ${item.expectedAnswer} with`);
+      expect(itemCue(item, { opening: false, howToPlay: false }))
+        .toContain(`My turn: ${item.correctionBody} Your turn. ${item.ask}`);
+    }
+  });
+
+  it('coverage rejects a lost number contrast and a desynchronized grammatical key', () => {
+    const items = buildSubjectVerbAgreementItems(4);
+    expect(hasSubjectVerbAgreementCoverage(items, 4)).toBe(true);
+    expect(hasSubjectVerbAgreementCoverage(items.filter(item => item.agreementNumber === 'singular'), 2))
+      .toBe(false);
+    expect(hasSubjectVerbAgreementCoverage(
+      items.map((item, index) => index === 0 ? { ...item, expectedAnswer: 'are' } : item),
+      4,
+    )).toBe(false);
+  });
+});
+
 const compareObjective =
   'Describe the size and weight of objects using words like longer, shorter, heavier, and lighter.';
 const MENU = ['longer', 'shorter', 'heavier', 'lighter'];

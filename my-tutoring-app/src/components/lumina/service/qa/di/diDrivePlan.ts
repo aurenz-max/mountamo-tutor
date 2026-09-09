@@ -1998,6 +1998,18 @@ const spokenAnswerMaterial = (item: SpokenPracticeItem): DiHarnessAnswers => {
     }
     case 'say_answer':
     default:
+      if (item.agreementNumber) {
+        const wrong = item.agreementNumber === 'singular' ? 'are' : 'is';
+        return {
+          correct: item.expectedAnswer,
+          plainWrong: 'banana',
+          signatureWrong: {
+            text: wrong,
+            why: `the opposite agreement form for a ${item.agreementNumber} subject`,
+          },
+          leakTokens: anchors,
+        };
+      }
       return {
         correct: item.expectedAnswer,
         plainWrong: NUMBER_WORD_SET.has(item.expectedAnswer.toLowerCase())
