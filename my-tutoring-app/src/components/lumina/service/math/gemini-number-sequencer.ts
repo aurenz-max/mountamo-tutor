@@ -130,7 +130,7 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
       structuralCount = tier === 'easy' ? 3 : tier === 'medium' ? 4 : 5;
       promptLines.push(
         tier === 'easy'
-          ? `Give EXACTLY ${structuralCount} continuation values in correctAnswers. The instruction should NAME the strategy and model the first step (e.g. "Start at 3, then say 4, 5, 6…"). Forward counting only.`
+          ? `Give EXACTLY ${structuralCount} continuation values in correctAnswers. The instruction NAMES the strategy and models ONE step — the first continuation value and nothing after it (e.g. starting at 3: "Start at 3. The next number is 4. Keep counting."). NEVER write the remaining continuation values in the instruction; those are what the student has to produce. Forward counting only.`
           : tier === 'medium'
             ? `Give EXACTLY ${structuralCount} continuation values in correctAnswers. The instruction states the task only ("Keep counting forward from N") without modelling the steps.`
             : `Give EXACTLY ${structuralCount} continuation values in correctAnswers. Bare instruction ("Continue the count"); for Grade 1 you may count backward to add structural load. Never enlarge the numbers beyond scope.`,
@@ -458,6 +458,137 @@ function shuffleOrderCards(sorted: number[]): number[] {
   return best;
 }
 
+// ---------------------------------------------------------------------------
+// Blank placement: code owns WHICH slot is missing
+// ---------------------------------------------------------------------------
+// The K atlas found the blank in the SECOND slot on 10/10 fill-missing items
+// (COUNT001-01-H) and "1, _, 3, 4" served two or three times in one session. Two
+// independent causes, both a free choice nobody owned: flash-lite converges on
+// blanking the slot right after the anchor, and the support-tier reshape re-blanked
+// from a hardcoded `pos = 1` stride. A slot index is an enumerable field the model
+// picks convergently, so code takes the choice - the /add-number-pool-service
+// pattern applied to a position instead of a value.
+//
+// Derivability (contract R6) is what bounds the choice, not taste: with one blank
+// the visible terms still fix the step from ANY slot, edges included, so every
+// position is a legal problem. Two or three blanks stay non-adjacent so each is
+// read from its own neighbours. decade-fill keeps its blanks ON the decade
+// boundary (R5) - a blank moved off it leaves the student filling an ordinary
+// successor and never crossing.
+
+/** Slots whose value sits on a decade seam (...9 or ...0) - the decade-fill task. */
+function decadeBoundaryIndices(full: number[]): number[] {
+  return full
+    .map((value, index) => ({ value, index }))
+    .filter(({ value }) => value % 10 === 0 || value % 10 === 9)
+    .map(({ index }) => index);
+}
+
+/**
+ * `n` non-adjacent slots out of `length`, drawn uniformly.
+ *
+ * Picking n from the n-shorter list [0 .. length-n] and shifting the k-th pick by
+ * k maps every combination of that list onto exactly one non-adjacent placement,
+ * so consecutive blanks are impossible by construction rather than by rejection.
+ */
+function pickNonAdjacent(length: number, n: number): number[] {
+  const highestStart = length - n;
+  const picks = new Set<number>();
+  while (picks.size < n) picks.add(Math.floor(Math.random() * (highestStart + 1)));
+  return Array.from(picks).sort((a, b) => a - b).map((start, k) => start + k);
+}
+
+/** Pick at random from the candidates this session has blanked least often. */
+function leastUsed(candidates: number[], usage: number[]): number {
+  let fewest = Infinity;
+  for (const index of candidates) fewest = Math.min(fewest, usage[index] ?? 0);
+  const rarest = candidates.filter((index) => (usage[index] ?? 0) === fewest);
+  return rarest[Math.floor(Math.random() * rarest.length)];
+}
+
+/**
+ * Choose `want` blank slots, reduced to what the sequence can hold non-adjacently.
+ * `preferred` (decade-fill) narrows the draw when it can be satisfied whole.
+ *
+ * `usage` counts how often each slot has already been blanked in THIS session. A
+ * single blank goes to a least-used slot, which spreads the session across positions
+ * instead of leaving it to five independent draws (five uniform draws over four slots
+ * land on three positions only about half the time — the atlas asks for three).
+ */
+function chooseBlankIndices(
+  length: number,
+  want: number,
+  preferred?: number[],
+  usage: number[] = [],
+): number[] {
+  if (length <= 0 || want <= 0) return [];
+  const n = Math.max(1, Math.min(want, Math.floor((length + 1) / 2)));
+  const legal = (preferred ?? []).filter((index) => index >= 0 && index < length);
+  if (legal.length > 0) {
+    if (n === 1) return [leastUsed(legal, usage)];
+    // Multi-blank on a seam: keep drawing until every blank lands on one, then
+    // settle for a plain non-adjacent placement rather than loop forever.
+    const wanted = new Set(legal);
+    let candidate = pickNonAdjacent(length, n);
+    for (let attempt = 0; attempt < 8 && !candidate.every((i) => wanted.has(i)); attempt++) {
+      candidate = pickNonAdjacent(length, n);
+    }
+    return candidate;
+  }
+  if (n === 1) return [leastUsed(Array.from({ length }, (_, index) => index), usage)];
+  return pickNonAdjacent(length, n);
+}
+
+/** Rebuild the complete value list a null-fill challenge is cut from. */
+function reconstructFull(
+  challenge: Pick<NumberSequencerChallenge, 'sequence' | 'correctAnswers'>,
+): number[] | null {
+  const answers = challenge.correctAnswers.filter((n): n is number => typeof n === 'number');
+  const full: number[] = [];
+  let next = 0;
+  for (const value of challenge.sequence) {
+    if (value === null) {
+      if (next >= answers.length) return null;
+      full.push(answers[next++]);
+    } else if (typeof value === 'number') {
+      full.push(value);
+    }
+  }
+  return next === answers.length && full.length > 0 ? full : null;
+}
+
+/**
+ * Re-cut a null-fill challenge's blanks at code-chosen slots. Every value is one
+ * the challenge already carried, so no magnitude moves and the scope filters above
+ * stay valid. The instruction was written before the slot was known, so an
+ * instruction that names a value we just blanked is replaced rather than shipped:
+ * the same leak channel as count-from, opened from the other end.
+ */
+function placeBlanks(
+  challenge: NumberSequencerChallenge,
+  want: number,
+  usage: number[] = [],
+): boolean {
+  const full = reconstructFull(challenge);
+  if (!full || full.length < 2) return false;
+  const preferred = challenge.type === 'decade-fill' ? decadeBoundaryIndices(full) : undefined;
+  const blanks = chooseBlankIndices(full.length, Math.max(1, want), preferred, usage);
+  if (blanks.length === 0) return false;
+  for (const index of blanks) usage[index] = (usage[index] ?? 0) + 1;
+
+  const blanked = new Set(blanks);
+  challenge.sequence = full.map((value, index) => (blanked.has(index) ? null : value));
+  challenge.correctAnswers = blanks.map((index) => full[index]);
+
+  const stated = statedNumbers(challenge.instruction ?? '');
+  if (challenge.correctAnswers.some((answer) => stated.has(answer))) {
+    challenge.instruction = challenge.correctAnswers.length > 1
+      ? 'Can you find the missing numbers?'
+      : 'Can you find the missing number?';
+  }
+  return true;
+}
+
 function buildFallbackChallenge(
   type: ChallengeType,
   range: { min: number; max: number },
@@ -466,7 +597,11 @@ function buildFallbackChallenge(
   const rangeLo = Math.max(1, Math.round(range.min));
   const hi = Math.max(rangeLo + 1, Math.round(range.max));
   const maxWindowStart = Math.max(rangeLo, hi - 4);
-  const lo = Math.min(maxWindowStart, rangeLo + ordinal * 5);
+  // Walk the range in 5s and WRAP: saturating at maxWindowStart made every ordinal
+  // past the top the same window, so a backfill could only ever offer 4 distinct
+  // problems on a 1-20 range no matter how many duplicates it was replacing.
+  const distinctStarts = Math.max(1, maxWindowStart - rangeLo + 1);
+  const lo = rangeLo + ((ordinal * 5) % distinctStarts);
   const values = Array.from(
     { length: Math.min(5, hi - lo + 1) },
     (_, index) => lo + index,
@@ -501,6 +636,77 @@ function challengeValues(challenge: Pick<NumberSequencerChallenge, 'sequence' | 
     ...challenge.correctAnswers.filter((n): n is number => typeof n === 'number'),
     ...(typeof challenge.startNumber === 'number' ? [challenge.startNumber] : []),
   ];
+}
+
+/**
+ * The problem a challenge IS, independent of how it is presented: the mode, the
+ * numbers involved, and (for count-from) which way the child counts. Two
+ * fill-missing items on 1,2,3,4 that differ only in which slot is blank are one
+ * problem to the student, and the same four order-cards in two shuffles are one
+ * problem too.
+ */
+function windowSignature(
+  challenge: Pick<
+    NumberSequencerChallenge,
+    'type' | 'sequence' | 'correctAnswers' | 'startNumber' | 'direction'
+  >,
+): string {
+  const values = Array.from(new Set(challengeValues(challenge))).sort((a, b) => a - b);
+  const backward = challenge.type === 'count-from' && challenge.direction === 'backward';
+  return `${challenge.type}|${values.join(',')}${backward ? '|back' : ''}`;
+}
+
+// ---------------------------------------------------------------------------
+// count-from instruction leak guard
+// ---------------------------------------------------------------------------
+// For count-from the visible terms ARE the stimulus (startNumber is stated by
+// design), so the leak lives in the INSTRUCTION: an easy-tier prompt that models
+// the whole run ("Start at 3, then say 4, 5, 6") ships the answer key in prose and
+// leaves nothing for the student to produce. One modelled step is scaffolding; the
+// complete continuation is not.
+
+const NUMBER_WORDS: Record<string, number> = {
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
+  nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30,
+  forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, hundred: 100,
+};
+
+/**
+ * Integer values an instruction states in the clear: digit runs plus standalone
+ * number words. Hyphenated compounds are skipped rather than decomposed, so the
+ * "one" in "twenty-one" never reads as a bare 1 and trips the guard falsely.
+ */
+function statedNumbers(instruction: string): Set<number> {
+  const stated = new Set<number>();
+  const digits = /\d+/g;
+  let digitMatch: RegExpExecArray | null;
+  while ((digitMatch = digits.exec(instruction)) !== null) {
+    const value = Number(digitMatch[0]);
+    if (Number.isInteger(value)) stated.add(value);
+  }
+  const lower = instruction.toLowerCase();
+  const words = /[a-z]+/g;
+  let wordMatch: RegExpExecArray | null;
+  while ((wordMatch = words.exec(lower)) !== null) {
+    const value = NUMBER_WORDS[wordMatch[0]];
+    if (value === undefined) continue;
+    const index = wordMatch.index;
+    if (lower[index - 1] === '-' || lower[index + wordMatch[0].length] === '-') continue;
+    stated.add(value);
+  }
+  return stated;
+}
+
+/** True when a count-from instruction already names EVERY continuation value. */
+function instructionLeaksAnswers(
+  challenge: Pick<NumberSequencerChallenge, 'type' | 'instruction' | 'correctAnswers'>,
+): boolean {
+  if (challenge.type !== 'count-from') return false;
+  const answers = (challenge.correctAnswers ?? []).filter((n): n is number => typeof n === 'number');
+  if (answers.length === 0) return false;
+  const stated = statedNumbers(challenge.instruction ?? '');
+  return answers.every((answer) => stated.has(answer));
 }
 
 function challengeFitsRange(
@@ -623,6 +829,7 @@ REQUIREMENTS:
 2. Progress from easier to harder challenges
 3. Each challenge needs a unique id field (e.g., 'seq1', 'seq2', etc.)
 4. CRITICAL: For fill-missing, before-after, and decade-fill, correctAnswers must contain ONLY the values that fill in the null positions, in order
+4b. For fill-missing and decade-fill the instruction must be POSITION-NEUTRAL ("What number is missing?" / "Which numbers are hiding?") - code chooses which slot is blank, so an instruction naming the blank's neighbours or its value is wrong and gets replaced. Give every challenge a DIFFERENT stretch of numbers; a repeated window is rejected
 5. CRITICAL: For order-cards, sequence must contain ONLY numbers (no nulls), and correctAnswers must be the sorted version
 6. CRITICAL: For count-from, set startNumber and direction fields
 7. rangeMin and rangeMax should reflect the actual number range used in that challenge
@@ -838,42 +1045,12 @@ Return the complete number sequencer configuration.
           // shuffle — a rotation would leave every card but one already in place.
           ch.sequence = shuffleOrderCards(set);
         }
-      } else if (ch.type === 'fill-missing' || ch.type === 'decade-fill') {
-        // Re-derive a complete value list (fill the existing nulls with the answers
-        // in order), then choose `target` NON-ADJACENT positions to blank back out —
-        // every value is one the LLM already produced, so nothing's magnitude changes.
-        const answers = ch.correctAnswers.filter((n) => typeof n === 'number');
-        // Reconstruct full sequence: walk sequence, substitute answers for nulls.
-        let ai = 0;
-        const full: number[] = [];
-        let ok = true;
-        for (const v of ch.sequence) {
-          if (v === null) {
-            if (ai < answers.length) full.push(answers[ai++]);
-            else { ok = false; break; }
-          } else if (typeof v === 'number') {
-            full.push(v);
-          }
-        }
-        // Only reshape when we have a clean full reconstruction and room to place
-        // `target` non-adjacent blanks (need at least 2*target-1 positions).
-        if (ok && ai === answers.length && full.length >= Math.max(2, 2 * target - 1)) {
-          const want = Math.min(target, Math.floor((full.length + 1) / 2));
-          // Pick interior, non-adjacent indices (avoid the first/last anchor when possible).
-          const blankIdx: number[] = [];
-          let pos = full.length >= 3 ? 1 : 0;
-          while (blankIdx.length < want && pos < full.length) {
-            blankIdx.push(pos);
-            pos += 2; // guarantees non-adjacency
-          }
-          if (blankIdx.length === want) {
-            const newSeq: (number | null)[] = full.map((n, i) => (blankIdx.includes(i) ? null : n));
-            ch.sequence = newSeq;
-            ch.correctAnswers = blankIdx.map((i) => full[i]);
-          }
-        }
-        // before-after intentionally untouched here (always its single adjacent blank).
       }
+      // fill-missing / decade-fill: the tier owns the blank COUNT (structuralCount)
+      // and the blank-placement pass below owns the POSITIONS, on every path. The
+      // branch that used to sit here re-blanked from a fixed `pos = 1` stride, which
+      // is half of why every K item blanked its second slot. before-after is
+      // untouched by definition: one adjacent blank IS the mode.
     }
 
     // CPA / perception levers are component-global booleans (one per render), so they
@@ -913,23 +1090,56 @@ Return the complete number sequencer configuration.
       + `outside resolved range ${resolvedNumberRange.min}-${resolvedNumberRange.max}`,
     );
   }
+
+  // ── count-from instruction leak guard ──
+  // Runs after the support-tier reshape, which can rewrite correctAnswers, so the
+  // check is against the run the student is actually asked to produce. Rejected
+  // challenges are replaced by the deterministic backfill below, which never
+  // states more than the start value.
+  data.challenges = (data.challenges as NumberSequencerChallenge[]).filter((challenge) => {
+    if (!instructionLeaksAnswers(challenge)) return true;
+    console.warn(
+      `[NumberSequencer] Rejected count-from "${challenge.id}" — instruction `
+      + `"${challenge.instruction}" states every continuation value `
+      + `[${challenge.correctAnswers.join(', ')}], leaving nothing to produce`,
+    );
+    return false;
+  });
+
   if (data.challenges.length === 0) {
     const fallbackType = (evalResolution?.allowedTypes[0] ?? 'fill-missing') as ChallengeType;
     data.challenges = [buildFallbackChallenge(fallbackType, resolvedNumberRange)];
   }
 
-  // Filtering must not turn a mastery session into a one-card demo. Add distinct,
-  // deterministic, in-range cards until the oracle's three-challenge floor holds.
-  const minimumChallengeCount = Math.min(3, challengeCount);
+  // ── Distinct-problem gate ──
+  // One number window is one problem. K COUNT001-01-H served "1, _, 3, 4" two or
+  // three times in a single session: flash-lite converges on a window as hard as it
+  // converges on a value, and nothing rejected the repeat.
   const fallbackType = (evalResolution?.allowedTypes[0] ?? 'fill-missing') as ChallengeType;
-  const signatures = new Set(
-    (data.challenges as NumberSequencerChallenge[]).map((challenge) =>
-      `${challenge.type}|${challenge.sequence.join(',')}|${challenge.correctAnswers.join(',')}`,
-    ),
-  );
-  for (let ordinal = 0; data.challenges.length < minimumChallengeCount && ordinal < 20; ordinal++) {
+  const signatures = new Set<string>();
+  const beforeDedupe = data.challenges.length;
+  data.challenges = (data.challenges as NumberSequencerChallenge[]).filter((challenge) => {
+    const signature = windowSignature(challenge);
+    if (signatures.has(signature)) {
+      console.warn(
+        `[NumberSequencer] Rejected duplicate window [${signature}] — that problem is `
+        + `already in this session`,
+      );
+      return false;
+    }
+    signatures.add(signature);
+    return true;
+  });
+
+  // Rejection must not turn a mastery session into a one-card demo. Add distinct,
+  // deterministic, in-range windows: back to the count the lesson asked for when
+  // duplicates cost us slots the model DID try to fill, and never below the oracle's
+  // three-challenge floor otherwise.
+  const masteryFloor = Math.min(3, challengeCount);
+  const topUpTarget = data.challenges.length < beforeDedupe ? challengeCount : masteryFloor;
+  for (let ordinal = 0; data.challenges.length < topUpTarget && ordinal < 40; ordinal++) {
     const candidate = buildFallbackChallenge(fallbackType, resolvedNumberRange, ordinal);
-    const signature = `${candidate.type}|${candidate.sequence.join(',')}|${candidate.correctAnswers.join(',')}`;
+    const signature = windowSignature(candidate);
     if (signatures.has(signature)) continue;
     signatures.add(signature);
     data.challenges.push(candidate);
@@ -953,6 +1163,19 @@ Return the complete number sequencer configuration.
       );
       challenge.sequence = reshuffled;
     }
+  }
+
+  // ── Blank placement (code-owned, EVERY path: model, tiered reshape, backfill) ──
+  // Runs last so it sees the final value list of every shipped challenge. Positions
+  // only — the values are untouched, so the scope filters above stay valid.
+  const slotUsage: number[] = [];
+  for (const challenge of data.challenges as NumberSequencerChallenge[]) {
+    if (challenge.type !== 'fill-missing' && challenge.type !== 'decade-fill') continue;
+    const tierCount = supportTier
+      ? resolveSupportStructure(challenge.type, supportTier).structuralCount
+      : null;
+    const want = tierCount ?? challenge.sequence.filter((value) => value === null).length;
+    placeBlanks(challenge, want, slotUsage);
   }
 
   // Derive the render/input window from the values the child actually sees or

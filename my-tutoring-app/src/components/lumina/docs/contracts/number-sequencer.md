@@ -83,8 +83,36 @@ beside its neighbour) are forbidden on every path — model output, support-tier
 reshape, and the deterministic fallback. Code owns this presentation; the shuffle is
 seeded from the card values so the same set always renders the same way. Enforced in
 `gemini-number-sequencer.ts` (`shuffleOrderCards` + the post-generation guard) and
-checked by the oracle's `answer-leak` rule, which is scoped to `order-cards` alone —
-for the null-fill modes and `count-from` the visible terms ARE the intended stimulus.
+checked by the oracle's `answer-leak` rule, which is scoped to `order-cards` alone.
+
+For the null-fill modes and `count-from` the visible SEQUENCE terms are the intended
+stimulus, so the oracle's pool check does not apply to them. That exemption covers
+the sequence only, never the instruction text: a `count-from` instruction must not
+state every value in `correctAnswers`. One modelled step is easy-tier scaffolding;
+the whole continuation is the answer key written out, and the student is left with
+nothing to produce. Enforced in `gemini-number-sequencer.ts` by the post-parse
+`instructionLeaksAnswers` filter, which runs after the support-tier reshape (so it
+sees the final run) and drops offending challenges into the deterministic backfill.
+
+### R10 — one window is one problem, and code owns the blank slot · OBSERVED
+
+For `fill-missing` and `decade-fill` the missing SLOT is chosen in code on every path
+(model output, support-tier reshape, deterministic backfill), never by the model and
+never from a fixed stride: a single blank may sit in any slot including the edges, two
+or three blanks stay non-adjacent, `decade-fill` keeps its blanks on the decade seam
+(…9 / …0) so the child still crosses, and a session spreads its blanks across slots
+rather than repeating one. The instruction is written before the slot is known, so it
+must be position-neutral; one that names a value the placement just blanked is
+replaced with the neutral wording (the count-from leak channel, entered from the other
+end). No two challenges in a session may work the same number WINDOW — the mode plus
+the values involved, presentation aside — and a rejected duplicate is replaced by a
+distinct in-range window rather than shortening the session.
+
+Enforced in `gemini-number-sequencer.ts` (`chooseBlankIndices` / `placeBlanks` /
+`windowSignature`). Demanded by K `COUNT001-01-H` (atlas finding NS-4: the blank sat
+in slot two on 10/10 items and `1, _, 3, 4` was served two or three times per
+session). Probe: two `/api/lumina/eval-test?componentId=number-sequencer&evalMode=fill_missing`
+draws — every window distinct, blanks covering at least three slots.
 
 ## Conflict resolved by 14h
 
@@ -111,3 +139,17 @@ while retaining the generic ≤100 default and the five existing mode identities
   task was solvable from layout and read as a rendering bug. Replaced with a
   seeded derangement search applied on every path; the oracle gained the
   `answer-leak` rule that would have caught it. Full Vitest 1709/1709.
+- 2026-09-08 — R10 added for atlas NS-4 (session variety). The support tier keeps the
+  blank COUNT and loses the blank POSITION, which it used to take from a hardcoded
+  `pos = 1` stride — half of why every K item blanked its second slot. Assessed
+  COMPATIBLE: R5 alignment and R6 derivability hold at every slot (the visible terms
+  still fix the step), R7 magnitudes are untouched (placement only re-cuts values the
+  challenge already carried), R9 order-cards is out of scope. Focused 17/17, full
+  Vitest 5356 passed / 1 failed (another lane's uncommitted story-ribbon catalog
+  row), Lumina typecheck 0. The 14h test's `max answer === 119` assertion was
+  pinning the mock's blank slot, not a scope rule; it now asserts the window instead.
+- 2026-09-08 — R9 extended after a P0 leak: the easy-tier `count-from` prompt told
+  Gemini to model the first step with `"Start at 3, then say 4, 5, 6…"`, so the
+  instruction enumerated the entire continuation. Prompt now models exactly one
+  step; a post-parse `instructionLeaksAnswers` filter rejects any `count-from`
+  challenge whose instruction states every `correctAnswers` value.

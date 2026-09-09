@@ -72,6 +72,9 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * the student reasons to the blank), and count-from states startNumber. A leak test
  * there would fire on the intended stimulus, so those stay with /eval-test. order-cards
  * is the exception: there the ARRANGEMENT of the pool is the task, not the stimulus.
+ * The exemption covers those types' SEQUENCE only — a count-from instruction that
+ * states every continuation value is still a leak, rejected in the generator by
+ * `instructionLeaksAnswers` (contract number-sequencer.md R9).
  */
 
 const KNOWN_TYPES = new Set(['fill-missing', 'before-after', 'order-cards', 'count-from', 'decade-fill']);

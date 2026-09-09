@@ -113,7 +113,12 @@ describe('number-sequencer reader-fit 14h', () => {
     expect(data.gradeBand).toBe('1');
     expect(data.challenges.map(({ rangeMin, rangeMax }) => [rangeMin, rangeMax]))
       .toEqual([[101, 104], [108, 111], [117, 120]]);
-    expect(Math.max(...data.challenges.flatMap((challenge) => challenge.correctAnswers))).toBe(119);
+    // Scope, not slot: code chooses which cell is blank (NS-4), so the answer set is
+    // whatever the seam offers — the claim is that 101-120 is reachable and nothing
+    // leaves the window.
+    const answers = data.challenges.flatMap((challenge) => challenge.correctAnswers);
+    expect(Math.max(...answers)).toBeGreaterThan(100);
+    expect(answers.every((answer) => answer >= 101 && answer <= 120)).toBe(true);
     const prompt = String((generateContent.mock.calls[1][0] as { contents: string }).contents);
     expect(prompt).toContain('RESOLVED NUMERIC WINDOW — AUTHORITATIVE FOR THIS RENDER: 101 through 120');
     expect(prompt).toContain('use 101-120 only when the AUTHORITATIVE scope explicitly requires it');
