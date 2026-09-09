@@ -338,6 +338,14 @@ function LetterWorkshopSession({ data }: { data: LetterWorkshopData }) {
             {support.showArrows && <path data-testid="letter-arrow" d="M-5 -4 L0 0 L-5 4" transform={`translate(${start.x + 17 * Math.cos(angle * Math.PI / 180)} ${start.y + 17 * Math.sin(angle * Math.PI / 180)}) rotate(${angle})`} fill="none" stroke="#80551c" strokeWidth="2" />}
           </g>;
         })}
+        {mode !== 'trace' && assessment && <g
+          data-testid="letter-feedback-reference"
+          aria-hidden="true"
+          transform={`translate(${assessment.referenceOffsetX ?? 0} 0)`}
+          opacity="0.72">
+          {template.strokes.map((path, index) => <path key={index} d={pointsToPath(path)} fill="none"
+            stroke="#b77824" strokeWidth="3" strokeDasharray="7 5" strokeLinecap="round" />)}
+        </g>}
         {strokes.map((stroke, index) => stroke.points.length === 1
           ? <circle key={index} cx={stroke.points[0].x} cy={stroke.points[0].y} r="3" fill="#244d76" />
           : <path key={index} d={pointsToPath(stroke.points)} fill="none" stroke="#244d76" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />)}

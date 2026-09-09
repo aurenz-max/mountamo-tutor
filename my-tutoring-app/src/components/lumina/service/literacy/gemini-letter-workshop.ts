@@ -130,8 +130,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 const wrapperSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: { type: Type.STRING, description: 'Brief generic letter practice title, no target letters.' },
-    description: { type: Type.STRING, description: 'Neutral encouragement for letter practice; per-item instructions are supplied by code.' },
+    title: { type: Type.STRING, enum: ['Letter Workshop'], description: 'Use exactly this code-approved letter-practice title.' },
+    description: { type: Type.STRING, enum: ['Practice making clear letter forms on the writing lines.'], description: 'Use exactly this neutral letter-practice description. Never mention numbers, digits, or numerals.' },
     challengeType: { type: Type.STRING, enum: [...LETTER_WORKSHOP_MODES] },
   },
   required: ['title', 'description', 'challengeType'],
@@ -142,6 +142,9 @@ export function validateLetterWorkshopWrapper(value: unknown, allowed: readonly 
   const wrapper = value as Record<string, unknown>;
   for (const field of ['title', 'description']) {
     if (typeof wrapper[field] !== 'string' || !(wrapper[field] as string).trim() || (wrapper[field] as string).length > 300) fail(`invalid wrapper ${field}.`);
+  }
+  if (/\b(?:numbers?|digits?|numerals?|number\s+sense|math(?:ematics)?)\b/i.test(`${wrapper.title} ${wrapper.description}`)) {
+    fail('wrapper substitutes numerals for letters.');
   }
   if (!isLetterWorkshopMode(wrapper.challengeType) || !allowed.includes(wrapper.challengeType)) fail('invalid wrapper task identity.');
   if (allowed.length === 1 && allowed[0] === 'trace' && /\b(copy|independent(?:ly)?|from memory)\b/i.test(`${wrapper.title} ${wrapper.description}`)) fail('wrapper misrepresents assisted tracing.');

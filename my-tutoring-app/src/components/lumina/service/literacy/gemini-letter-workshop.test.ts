@@ -78,6 +78,12 @@ describe('Letter Workshop wrapper boundary', () => {
   it.each([null, {}, { title: '', description: 'Trace.', challengeType: 'trace' }, { title: 'Writing', description: 'Trace.', challengeType: 'copy' }, { title: 'Writing', description: 'Write independently.', challengeType: 'trace' }])('rejects malformed wrapper %j', wrapper => {
     expect(() => validateLetterWorkshopWrapper(wrapper)).toThrow();
   });
+  it.each([
+    { title: 'Number Sense Practice', description: 'Follow the guides.', challengeType: 'trace' },
+    { title: 'Writing Practice', description: 'Practice forming digits and numerals.', challengeType: 'trace' },
+  ])('rejects numeral substitution in framing: %j', wrapper => {
+    expect(() => validateLetterWorkshopWrapper(wrapper)).toThrow('substitutes numerals');
+  });
   it('calls Gemini only for framing and preserves curriculum context and owned geometry', async () => {
     generateContent.mockResolvedValue({ text: JSON.stringify({ title: 'Letter paths', description: 'Start at the dot and follow the arrows.', challengeType: 'trace', challenges: [{ templateId: 'fake' }] }) });
     const data = await generateLetterWorkshop(context({ intent: 'Trace lowercase l', objective: { text: 'Form the letter l' }, grade: 'K', raw: { challengeCount: 3 } }));

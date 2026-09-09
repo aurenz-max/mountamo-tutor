@@ -1,6 +1,6 @@
 # Letter Workshop contracts
 
-Updated 2026-09-07 after the trace/copy/write implementation. [Birth record](../../../../../qa/eval-reports/letter-workshop-birth.md) and [mode verification](../../../../../qa/eval-reports/letter-workshop-modes-2026-09-07.md).
+Updated 2026-09-09 after the trace/copy/write acceptance audit. [Birth record](../../../../../qa/eval-reports/letter-workshop-birth.md), [mode verification](../../../../../qa/eval-reports/letter-workshop-modes-2026-09-07.md), and [acceptance audit](../../../../../qa/eval-reports/letter-workshop-acceptance-2026-09-09.md).
 
 **Runtime: three practice modes implemented.** Copy/write geometric feedback is provisional and local-only; it does not update adaptive state. Human template/device review, real audible playback, and empirical calibration remain open. Catalog/backend beta values are matching design priors, not measured difficulty.
 
@@ -12,7 +12,7 @@ Updated 2026-09-07 after the trace/copy/write implementation. [Birth record](../
 
 ## Generation and scope
 
-- Code owns 52 uppercase/lowercase template identities and stroke geometry. Gemini supplies framing only; current-mode instructions are code-owned. Copy/write descriptions are code-owned too.
+- Code owns 52 uppercase/lowercase template identities and stroke geometry. Gemini supplies framing only; its schema pins approved letter-only title/description text and validation rejects numeral substitution. Current-mode instructions and copy/write descriptions are code-owned too.
 - Objective, intent, title, topic, and explicit letter constraints intersect. Cumulative Groups 1?4, case restrictions, and counts 3?6 hold across every mode. Conflicting scopes and unsupported mode keys fail explicitly.
 - `resolveEvalModes` consumes the context's target pin, intent/title/topic, and objective text. Pins bypass the resolver LLM call. Explicit `copy|write` blends and `mixed` are supported.
 - The wrapper's root `challengeType` enum is constrained before generation and validated against the allowed types afterward. Gemini cannot supply letter geometry or challenge IDs.
@@ -26,7 +26,7 @@ Copy has separate model and drawing SVGs. Model scaling never changes recorded w
 
 Write has no visible target before submission. Its cue uses an English letter name and case, independent of live-tutor connectivity and without a tutor transcript. Drawing waits for playback completion. Playback errors or a 20-second timeout offer retry without scoring an unheard prompt. Old playback is cancelled on advance, payload replacement, and unmount; readiness is keyed to the current challenge.
 
-Write feedback reveals a separate model after the attempt is saved. That model stays visible on retry, and retry evidence changes to `beside-model`. Model visibility is keyed to challenge ID so it cannot flash the next target. Prior exposure to the same template in earlier items is retained: write after a model is practice, not an unaided baseline. New sessions start fresh exposure history; the app does not infer exposure across sessions.
+Copy/write feedback overlays a dashed reference on the submitted ink, horizontally aligned to the learner's placement without normalizing its writing-line height. Write feedback also reveals a separate model after the attempt is saved. That model stays visible on retry, and retry evidence changes to `beside-model`. Model visibility is keyed to challenge ID so it cannot flash the next target. Prior exposure to the same template in earlier items is retained: write after a model is practice, not an unaided baseline. New sessions start fresh exposure history; the app does not infer exposure across sessions.
 
 Tutor context explicitly overwrites letter and case with `withheld` during write, including after feedback, so prior targets cannot survive a merged context update. The catalog scaffold receives 15 keys covering mode, assistance, item progress, feedback, attempts, drawing and cue state. Help me requests levels 1?3 with the current state. Trace/copy introductions fire once per item; write introductions are suppressed to preserve the browser cue. Checked work in every mode emits short, target-free feedback. Inactive lesson primitives and late connections over existing ink do not introduce themselves. Drawing gestures emit no speech triggers; help/read-aloud controls are disabled during drawing or cue playback. The scaffold instructs the tutor to stay silent then. Live tutor audio and browser speech coordination still need a full device check.
 

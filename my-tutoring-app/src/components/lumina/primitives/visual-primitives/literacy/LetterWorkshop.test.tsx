@@ -27,8 +27,11 @@ describe('Letter Workshop copy and auditory writing', () => {
     render(<LetterWorkshop data={modeData('copy')} />);
     const paper = screen.getByTestId('letter-writing-paper');
     expect(paper.querySelector('path[stroke="#386f72"]')).toBeNull();
+    expect(screen.queryByTestId('letter-feedback-reference')).toBeNull();
     expect(screen.getByTestId('letter-copy-model').contains(paper)).toBe(false);
-    trace('l'); fireEvent.click(screen.getByRole('button', { name: 'Check my writing' })); next();
+    trace('l'); fireEvent.click(screen.getByRole('button', { name: 'Check my writing' }));
+    expect(screen.getByTestId('letter-feedback-reference')).toBeTruthy();
+    next();
     expect(submit.mock.calls[0][2]).toMatchObject({ challengeType: 'copy', correctCount: 1 });
     expect(submit.mock.calls[0][3].attempts[0]).toMatchObject({ type: 'copy', assistance: 'beside-model' });
     expect(evaluationOptions).toHaveBeenLastCalledWith(expect.objectContaining({ localOnly: true }));
@@ -45,11 +48,13 @@ describe('Letter Workshop copy and auditory writing', () => {
     expect(screen.queryByTestId('letter-copy-model')).toBeNull();
     trace('l');
     expect(screen.getByTestId('letter-writing-paper').querySelector('path[stroke="#244d76"]')).toBeNull();
+    expect(screen.queryByTestId('letter-feedback-reference')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Hear the letter name' }));
     expect(speak.mock.calls[0][0].text).toBe('Write the lowercase letter ell.');
     act(() => speak.mock.calls[0][0].onend());
     trace('l'); fireEvent.click(screen.getByRole('button', { name: 'Check my writing' }));
     expect(screen.getByTestId('letter-copy-model')).toBeTruthy();
+    expect(screen.getByTestId('letter-feedback-reference')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Try this letter again' }));
     trace('l'); fireEvent.click(screen.getByRole('button', { name: 'Check my writing' })); next();
     const attempts = submit.mock.calls[0][3].attempts;

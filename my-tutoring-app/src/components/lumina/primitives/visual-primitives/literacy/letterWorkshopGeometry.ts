@@ -17,6 +17,8 @@ export interface TraceAssessment {
   strokeCountMatch: boolean;
   feedback: string;
   correctionPoint?: Point;
+  /** Horizontal shift that places the reference over the learner's formation. */
+  referenceOffsetX?: number;
 }
 
 // Provisional assisted-tracing thresholds, not a handwriting/mastery classifier.
@@ -192,6 +194,7 @@ export function evaluateLetterFormation(template: LetterTemplate, strokes: Trace
     return (min + max) / 2;
   };
   const dx = centerX(reference) - centerX(ink);
+  result.referenceOffsetX = -dx;
   let passed = result.strokeCountMatch;
   template.strokes.forEach((path, index) => {
     const actual = strokes[index]?.points.map(p => ({ x: p.x + dx, y: p.y }));

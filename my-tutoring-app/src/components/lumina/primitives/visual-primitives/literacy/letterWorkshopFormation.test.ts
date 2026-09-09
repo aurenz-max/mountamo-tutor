@@ -7,7 +7,9 @@ const ink = (id: string, dx = 0, dy = 0): TraceStroke[] => getLetterTemplate(id)
 
 describe('Provisional free formation checks', () => {
   it.each(LETTER_TEMPLATES.map(t => t.id))('accepts the school model %s at another horizontal position', id => {
-    expect(evaluateLetterFormation(getLetterTemplate(id), ink(id, 25)).passed).toBe(true);
+    const result = evaluateLetterFormation(getLetterTemplate(id), ink(id, 25));
+    expect(result.passed).toBe(true);
+    expect(result.referenceOffsetX).toBeCloseTo(25);
   });
   it('preserves writing-line placement rather than normalizing wrong-case height', () => {
     expect(evaluateLetterFormation(getLetterTemplate('lowercase-o'), ink('uppercase-O')).passed).toBe(false);
