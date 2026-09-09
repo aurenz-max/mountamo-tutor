@@ -16,6 +16,12 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    ? whole - part2 : whole - part1`. Exactly ONE part is the shown/known part;
  *    the other MUST be null or the diagram (showLeft/showRight) renders the
  *    answer on screen.
+ *  - related-fact (numberBondScript `itemsFromChallenge`): one challenge expands
+ *    into TWO spoken turns over {whole, part1, part2} — turn 0's answer is part2,
+ *    turn 1's is part1. The load-bearing key is `part1 + part2 === whole` AND
+ *    `part1 !== part2`: a symmetric bond gives both turns the same answer, so the
+ *    script drops it and the challenge yields nothing. Both parts must be in
+ *    1..whole-1 (the shared `isValidBondPart` gate), because both are spoken.
  *  - fact-family (handleCheckFactFamily, ~L737): correctness is computed from
  *    `factFamilyCanonicalKeys(whole, part1, part2)` — the component does NOT read
  *    the shipped `factFamily` strings to grade. So the load-bearing key is simply
@@ -53,7 +59,7 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * stays with /eval-test.
  */
 
-const KNOWN_TYPES = new Set(['decompose', 'missing-part', 'fact-family', 'build-equation']);
+const KNOWN_TYPES = new Set(['decompose', 'missing-part', 'related-fact', 'fact-family', 'build-equation']);
 
 interface ParsedEq {
   left: number;
@@ -274,6 +280,50 @@ export const numberBondOracle: ContentOracle = {
           varietyValues.push(missingVal);
           taskSeen.set(`missing-part|${w}|${k}`, (taskSeen.get(`missing-part|${w}|${k}`) ?? 0) + 1);
         }
+        continue;
+      }
+
+      if (type === 'related-fact') {
+        if (!isInt(part1) || !isInt(part2)) {
+          violations.push({ check: 'schema', where, detail: `related-fact needs integer part1/part2, got ${JSON.stringify(part1)} / ${JSON.stringify(part2)}` });
+          continue;
+        }
+        const p1 = part1 as number;
+        const p2 = part2 as number;
+        flagScope(where, 'part1', p1);
+        flagScope(where, 'part2', p2);
+        if (p1 + p2 !== w) {
+          violations.push({
+            check: 'answer-key-desync',
+            where,
+            detail: `part1 + part2 ≠ whole: ${p1} + ${p2} = ${p1 + p2}, but whole is ${w}`,
+          });
+        }
+        // Both parts are SPOKEN answers, so both must be inside the shared
+        // 1..whole-1 gate — a part of 0 or of the whole makes one turn trivial
+        // and puts "zero" (unbenched) or the whole in the child's mouth.
+        for (const [name, v] of [['part1', p1], ['part2', p2]] as const) {
+          if (v < 1 || v > w - 1) {
+            violations.push({
+              check: 'answer-key-desync',
+              where,
+              detail: `${name} ${v} outside 1..${w - 1} — a related-fact turn would be trivial or unsayable`,
+            });
+          }
+        }
+        // THE PEDAGOGY GATE. With part1 === part2 the addition turn and the
+        // subtraction turn have the same answer, so a child who simply repeats
+        // themselves scores the turn that measures the relationship.
+        if (p1 === p2) {
+          violations.push({
+            check: 'answer-key-desync',
+            where,
+            detail: `symmetric bond ${p1} and ${p2} — both spoken turns answer ${p1}, so the second turn scores on a repeat`,
+          });
+        }
+        // Both turns produce an answer, and both belong in the spread.
+        varietyValues.push(p2, p1);
+        taskSeen.set(`related-fact|${w}|${p1}`, (taskSeen.get(`related-fact|${w}|${p1}`) ?? 0) + 1);
         continue;
       }
 

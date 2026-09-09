@@ -14,6 +14,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { resolveTeenWindow, teenSweep, TEEN_MIN as TEEN_WHOLE_MIN, TEEN_MAX as TEEN_WHOLE_MAX } from "./teenWindow";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -28,6 +29,15 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Example for whole=5: [[0,5],[1,4],[2,3]]. Concrete manipulative with full guidance.`,
     schemaDescription: "'decompose' (find all pairs)",
   },
+  'ten-and-ones': {
+    promptDoc:
+      `"ten-and-ones": The whole is a TEEN NUMBER, 11-19, and the student splits it into a full TEN `
+      + `and the ones left over — the only accepted pair (CCSS K.NBT.1, "14 = 10 + 4"). `
+      + `Set whole to the teen number; part1 and part2 should be null (the student produces both). `
+      + `VARY the whole across challenges — nine teen numbers exist, so do not repeat one in a set. `
+      + `Concrete manipulative; the student answers with their hands, not their voice.`,
+    schemaDescription: "'ten-and-ones' (split a teen number into a ten and the ones)",
+  },
   'missing-part': {
     promptDoc:
       `"missing-part": Given the whole and one part, find the other. `
@@ -35,6 +45,16 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `part1 MUST be between 1 and whole-1 — never 0 and never the whole. `
       + `The child SAYS the missing part out loud to the live tutor. Pictorial representation.`,
     schemaDescription: "'missing-part' (find unknown part)",
+  },
+  'related-fact': {
+    promptDoc:
+      `"related-fact": The SPOKEN fact family — the child says two related facts over ONE bond, `
+      + `the addition fact and then its matching subtraction. `
+      + `Set part1 and part2 to the two parts (part1 + part2 = whole). `
+      + `part1 and part2 MUST BE DIFFERENT — a symmetric bond like 3 and 3 gives both turns the `
+      + `same answer, and the activity DROPS the challenge rather than ask it. `
+      + `Both parts must be between 1 and whole-1. Kindergarten and Grade 1.`,
+    schemaDescription: "'related-fact' (say the addition fact, then its related subtraction)",
   },
   'fact-family': {
     promptDoc:
@@ -66,8 +86,16 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 type NumberBondChallengeType =
   | 'decompose'
   | 'missing-part'
+  | 'related-fact'
+  | 'ten-and-ones'
   | 'fact-family'
   | 'build-equation';
+
+// `ten-and-ones` is the one mode whose whole LEAVES the 2..maxNumber window:
+// its wholes are the teen numbers the objective names, and its answer is a
+// placement rather than a spoken number, so neither the K cap of 5 nor the
+// Grade-1 cap of 10 binds it. The window and the sweep are shared with
+// ten-frame's two teen modes (`teenWindow.ts`).
 
 const DEFAULT_INSTANCE_COUNT = 5; // T2 fallback
 const MAX_INSTANCE_COUNT = 6;
@@ -79,7 +107,15 @@ const COUNT_BY_MODE: Record<NumberBondChallengeType, number> = {
   // the same student-visible volume the other modes get. Manifest
   // challengeCount still overrides.
   decompose: 3,
+  // One judged turn per item (no pair expansion — there is exactly one right
+  // pair), and nine distinct teen numbers to draw from, so a five-item session
+  // is still all-distinct content.
+  'ten-and-ones': 5,
   'missing-part': 5,    // T2 — B4 bump 3-5 → 5
+  // Each challenge EXPANDS into two judged turns (the addition fact, then its
+  // related subtraction), so 3 challenges is 6 tutor-judged turns — the same
+  // student-visible volume `missing-part` gets from 5 one-turn challenges.
+  'related-fact': 3,
   'fact-family': 5,     // T2 — B4 bump 3-5 → 5
   'build-equation': 5,  // T2 — B4 bump 3-5 → 5
 };
@@ -178,6 +214,23 @@ function resolveSupportStructure(
       );
       break;
 
+    case 'ten-and-ones':
+      // Same as decompose: the dots track the STUDENT's live placement, not a
+      // given answer, so they are a self-check rather than a leak. The lever is
+      // how many ones are left over once the ten is taken out — eleven asks the
+      // child to notice one, nineteen to notice nine. The teen window itself
+      // never narrows; the objective owns it.
+      showCounters = tier !== 'hard';
+      showEquation = tier === 'easy';
+      promptLines.push(
+        tier === 'easy'
+          ? 'Favour the smallest teen wholes (11, 12, 13) so few ones remain beside the ten; show dot counters and the live "L + R = whole" equation so the student can self-check the split as they build it.'
+          : tier === 'hard'
+            ? 'Favour the largest teen wholes (17, 18, 19); numerals only — no dot counters and no equation mirror, so the student counts out the ten unaided.'
+            : 'Mix teen wholes across the middle of the range (13-16); show dot counters but hide the live equation mirror.',
+      );
+      break;
+
     case 'missing-part':
       // Dots on a GIVEN part render the answer-by-counting → OFF except easy.
       showCounters = tier === 'easy';
@@ -232,7 +285,13 @@ function resolveSupportStructure(
 /** Fields relevant to each challenge type (beyond the always-required id/type/instruction/whole) */
 const CHALLENGE_TYPE_FIELDS: Record<string, string[]> = {
   decompose: ['allPairs'],
+  // No optional fields: both parts are the student's to place, and the ten is
+  // fixed by the mode rather than carried on the wire.
+  'ten-and-ones': [],
   'missing-part': ['part1'],
+  // Both parts travel: the mode asks a fact about each of them in turn, and the
+  // activity needs them to differ before it will build the pair.
+  'related-fact': ['part1', 'part2'],
   'fact-family': ['part1', 'part2', 'factFamily'],
   'build-equation': ['part1', 'part2', 'targetEquation'],
 };
@@ -370,8 +429,12 @@ function generateInstruction(type: string, whole: number): string {
   switch (type) {
     case 'decompose':
       return `Find all the ways to break apart ${whole}. How many pairs can you find?`;
+    case 'ten-and-ones':
+      return `The whole is ${whole}. Break it into a ten and some more!`;
     case 'missing-part':
       return `The whole is ${whole}. One part is shown — can you find the missing part?`;
+    case 'related-fact':
+      return `The whole is ${whole}. Say the two facts that go with this number bond.`;
     case 'fact-family':
       return `Write all 4 equations for this number bond with ${whole}.`;
     case 'build-equation':
@@ -428,6 +491,10 @@ export const generateNumberBond = async (
   // For config.challengeTypes without an eval mode, use them as a hint
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
 
+  // The teen mode carries its own number window, so every cap below has to
+  // know about it before it fires.
+  const hasTeenType = !!evalConstraint?.allowedTypes.includes('ten-and-ones');
+
   // ── Resolve per-mode instance count up-front ──
   const pinnedType =
     evalConstraint?.allowedTypes.length === 1
@@ -473,7 +540,8 @@ ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
   * maxNumber: 5 (wholes range from 2 to 5)
-  * Focus on 'decompose' and 'missing-part' types ONLY
+  * Focus on 'decompose', 'missing-part' and 'related-fact' types ONLY — EXCEPT 'ten-and-ones',
+    which is a Kindergarten place-value mode (CCSS K.NBT.1) whose wholes are 11-19
   * Use warm, playful language ("Can you break apart 4? How many ways?")
   * showCounters: true (visual dots help young learners)
   * showEquation: false (K students work visually, not symbolically)
@@ -498,13 +566,17 @@ REQUIREMENTS:
 1. Generate EXACTLY ${instanceCount} challenges that progress in difficulty
 2. Start with smaller wholes and simpler types, increase gradually
 3. Use warm, encouraging instruction text for young children
-4. For Kindergarten: ONLY use 'decompose' and 'missing-part' types
+4. For Kindergarten: ONLY use 'decompose', 'missing-part', 'related-fact' and 'ten-and-ones' types
+4b. For 'ten-and-ones', the whole is a TEEN NUMBER 11-19 (never 10, never 20) and both
+    parts are null — the student places the ten and the ones. Vary the whole across the set.
 5. For Grade 1: mix all 4 types, progressing from decompose to build-equation
 6. For decompose challenges, allPairs MUST include ALL valid unique pairs (a <= b)
 7. For fact-family challenges, factFamily MUST have exactly 4 equations
 8. Vary the whole numbers across challenges (don't repeat the same whole consecutively)
 9. Ensure part1 + part2 = whole whenever parts are specified
 10. For missing-part, choose part1 values that are not trivially 0 or equal to whole
+10b. For related-fact, part1 and part2 must both be 1..whole-1 AND DIFFERENT from each other
+    (never 2 and 2 for a whole of 4) — the two spoken turns must not share an answer
 11. CRITICAL: Each challenge's "instruction" text MUST reference the SAME number as its "whole" field. If whole is 5, the instruction must say 5 — never a different number.
 
 Return the complete number bond configuration.
@@ -534,15 +606,21 @@ Return the complete number bond configuration.
     data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
   }
 
-  // Validate maxNumber
-  if (!data.maxNumber || data.maxNumber < 2) {
-    data.maxNumber = data.gradeBand === 'K' ? 5 : 10;
-  }
-  if (data.gradeBand === 'K' && data.maxNumber > 5) {
-    data.maxNumber = 5;
-  }
-  if (data.maxNumber > 10) {
-    data.maxNumber = 10;
+  // Validate maxNumber. A ten-and-ones session is pinned to the teen window at
+  // every band — the K cap of 5 and the global cap of 10 are about SPOKEN and
+  // symbolic answers, and this mode has neither.
+  if (hasTeenType) {
+    data.maxNumber = TEEN_WHOLE_MAX;
+  } else {
+    if (!data.maxNumber || data.maxNumber < 2) {
+      data.maxNumber = data.gradeBand === 'K' ? 5 : 10;
+    }
+    if (data.gradeBand === 'K' && data.maxNumber > 5) {
+      data.maxNumber = 5;
+    }
+    if (data.maxNumber > 10) {
+      data.maxNumber = 10;
+    }
   }
 
   // Ensure booleans
@@ -554,8 +632,12 @@ Return the complete number bond configuration.
   }
 
   // Valid challenge types (safety net — schema enum handles eval mode case)
-  const validTypes = ['decompose', 'missing-part', 'fact-family', 'build-equation'];
-  const kOnlyTypes = ['decompose', 'missing-part'];
+  const validTypes = ['decompose', 'missing-part', 'related-fact', 'ten-and-ones', 'fact-family', 'build-equation'];
+  // `related-fact` is K-legal and `fact-family` is not, deliberately: both teach
+  // the inverse relationship, but one is said out loud and the other is typed,
+  // and typing is what the pre-reader band excludes
+  // (qa/reader-fit/k-band-floor-2026-09-08.md).
+  const kOnlyTypes = ['decompose', 'missing-part', 'related-fact', 'ten-and-ones'];
 
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type)
@@ -575,23 +657,65 @@ Return the complete number bond configuration.
     data.challenges = data.challenges.slice(0, instanceCount);
   }
 
+  // ── The teen wholes are CODE-OWNED ───────────────────────────────────────
+  // Assigned from the lesson's own window, not left to the model: a live
+  // ten-frame draw against "16-19" came back mostly 13-15, and the same drift
+  // here would silently put a teen-number lesson back inside the cap this mode
+  // exists to escape. See `teenWindow.ts`.
+  {
+    const teenChallenges = (data.challenges as Array<{ type: string; whole: number }>)
+      .filter((ch) => ch.type === 'ten-and-ones');
+    if (teenChallenges.length > 0) {
+      const window = resolveTeenWindow(ctx.scope?.objectiveText, ctx.scope?.intent, topic);
+      const sweep = teenSweep(window, teenChallenges.length);
+      teenChallenges.forEach((ch, i) => { ch.whole = sweep[i]; });
+      console.log(
+        `[NumberBond] Teen window ${window.start}-${window.end} from the lesson text `
+        + `→ ${teenChallenges.length} item(s): [${sweep.join(', ')}]`,
+      );
+    }
+  }
+
   // Per-challenge validation
   let buildEqIndex = 0;
   for (const challenge of data.challenges) {
     // Capture original whole before clamping (to detect instruction drift)
     const originalWhole = challenge.whole;
 
-    // Ensure whole is within range
-    if (!challenge.whole || challenge.whole < 2) {
-      challenge.whole = data.gradeBand === 'K' ? 4 : 7;
-    }
-    if (challenge.whole > data.maxNumber) {
-      challenge.whole = data.maxNumber;
+    // Ensure whole is within range. ten-and-ones has its own window: a whole
+    // of ten or twenty has no "ten and some more" to make, so it is repaired
+    // into 11-19 rather than clamped against maxNumber.
+    if (challenge.type === 'ten-and-ones') {
+      if (!Number.isInteger(challenge.whole) || challenge.whole < TEEN_WHOLE_MIN) {
+        challenge.whole = TEEN_WHOLE_MIN + 3;
+      }
+      if (challenge.whole > TEEN_WHOLE_MAX) {
+        challenge.whole = TEEN_WHOLE_MAX;
+      }
+    } else {
+      if (!challenge.whole || challenge.whole < 2) {
+        challenge.whole = data.gradeBand === 'K' ? 4 : 7;
+      }
+      if (challenge.whole > data.maxNumber) {
+        challenge.whole = data.maxNumber;
+      }
     }
 
     // If whole was clamped, the instruction likely references the wrong number — regenerate it
     if (originalWhole !== challenge.whole || !instructionMatchesWhole(challenge.instruction, challenge.whole)) {
       challenge.instruction = generateInstruction(challenge.type, challenge.whole);
+    }
+
+    // ten-and-ones: BOTH parts are the student's to place, and the accepted
+    // pair is fixed by the mode (a ten and the rest), so nothing about it
+    // travels on the wire. Clearing the other fields keeps a stray part1 from
+    // rendering as a given.
+    if (challenge.type === 'ten-and-ones') {
+      challenge.part1 = null;
+      challenge.part2 = null;
+      challenge.allPairs = null;
+      challenge.factFamily = null;
+      challenge.targetEquation = null;
     }
 
     // Compute allPairs for decompose if missing or incomplete
@@ -615,6 +739,25 @@ Return the complete number bond configuration.
         challenge.part1 = Math.max(1, Math.floor(challenge.whole / 2));
       }
       challenge.part2 = null;
+      challenge.allPairs = null;
+      challenge.factFamily = null;
+      challenge.targetEquation = null;
+    }
+
+    // Validate related-fact. Two spoken turns share one bond, so BOTH parts are
+    // real and they must DIFFER — with part1 === part2 the addition turn and the
+    // subtraction turn have the same answer and a child who repeats themselves
+    // scores the second one. The script drops a symmetric bond outright, so the
+    // repair here is what keeps a draw from losing challenges to it.
+    if (challenge.type === 'related-fact') {
+      // A whole of 2 has only the symmetric split; nothing to repair it into.
+      if (challenge.whole < 3) challenge.whole = data.gradeBand === 'K' ? 5 : 7;
+      let p1 = isValidBondPart(challenge.whole, challenge.part1)
+        ? (challenge.part1 as number)
+        : Math.max(1, Math.floor(challenge.whole / 3));
+      if (p1 * 2 === challenge.whole) p1 = p1 > 1 ? p1 - 1 : p1 + 1;
+      challenge.part1 = p1;
+      challenge.part2 = challenge.whole - p1;
       challenge.allPairs = null;
       challenge.factFamily = null;
       challenge.targetEquation = null;
@@ -701,6 +844,16 @@ Return the complete number bond configuration.
         factFamily: null,
         targetEquation: null,
       },
+      'ten-and-ones': {
+        type: 'ten-and-ones',
+        instruction: `The whole is 14. Break it into a ten and some more!`,
+        whole: 14,
+        part1: null,
+        part2: null,
+        allPairs: null,
+        factFamily: null,
+        targetEquation: null,
+      },
       'missing-part': {
         type: 'missing-part',
         instruction: `The whole is ${w}. One part is 2. What is the other part?`,
@@ -739,7 +892,9 @@ Return the complete number bond configuration.
 
   // Apply explicit config overrides
   if (config) {
-    if (config.maxNumber !== undefined) {
+    // A manifest maxNumber override must not shrink a teen session back under
+    // its own window — every item would then be repaired out of the objective.
+    if (config.maxNumber !== undefined && !hasTeenType) {
       data.maxNumber = Math.min(config.maxNumber, data.gradeBand === 'K' ? 5 : 10);
     }
   }

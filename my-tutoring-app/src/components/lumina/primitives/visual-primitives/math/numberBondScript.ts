@@ -94,8 +94,63 @@
 import type { JudgedScriptItem, ResponseClassId, JudgedCueSurface } from '../../../hooks/judgedScriptContract';
 import { numberWordFor } from './countingBoardScript';
 
-export type NumberBondKind = 'decompose' | 'missing-part' | 'fact-family' | 'build-equation';
+export type NumberBondKind =
+  | 'decompose'
+  | 'missing-part'
+  | 'related-fact'
+  | 'ten-and-ones'
+  | 'fact-family'
+  | 'build-equation';
 export type BondBand = 'K' | '1';
+
+/**
+ * `ten-and-ones` — the bond side of CCSS K.NBT.1, added 2026-09-08 alongside
+ * ten-frame's two teen modes.
+ *
+ * WHY IT IS NOT `decompose` WITH A BIGGER WHOLE. `decompose` asks for EVERY
+ * pair and treats each one as a right answer; fourteen has eight of them and
+ * seven are not what this objective is about. Here exactly ONE pair is
+ * accepted — a full ten and the rest — and refusing 6+8 is the whole
+ * pedagogy. Two different accept sets over the same gesture is a task
+ * identity, not a difficulty setting, so it forks as a mode.
+ *
+ * WHY ITS WHOLE MAY EXCEED `BOND_WHOLE_MAX`. Every other kind is capped at ten
+ * because its answer is spoken or symbolic and the caps keep both inside
+ * benched ranges. This one is answered with HANDS and its whole is stated in
+ * the ask, so the cap that binds it is the objective's own: 11-19.
+ */
+/**
+ * `related-fact` — the SPOKEN half of the fact family, added 2026-09-09 for the
+ * two K rows the 2026-09-08 band-floor re-audit left homeless (OPS001-02-G,
+ * OPS001-03-F; qa/reader-fit/k-band-floor-2026-09-08.md).
+ *
+ * WHY IT IS NOT `missing-part`. A K probe of `missing_part` against both
+ * objectives returned ten turns, every one of them "W is the whole. One part is
+ * P. What is the other part?" — part-part-whole, ten times. The words "take
+ * away" never occur, and nothing in the session asks the child to carry a fact
+ * they just found into its subtraction form. The objectives name the CONNECTION
+ * ("connect addition and subtraction as inverse operations ... using related
+ * facts"), and one unknown-addend turn is one fact, not a relationship.
+ *
+ * WHY IT IS NOT `fact-family`. That mode's floor HELD at PRE and should: it
+ * types four equations, and written symbolic form IS its declared skill. This
+ * one asks for the same relationship in the K-legal channel — the child SAYS
+ * both facts, one number word each.
+ *
+ * THE SHAPE. One bond, two judged turns:
+ *   turn 0 (addition)     "Two and how many more make five?"      -> three
+ *   turn 1 (subtraction)  "Five take away three — what is left?"  -> two
+ * Turn 1's known part is the number turn 0 produced, so the child has to spend
+ * their own answer to get the next one. That is the inverse relationship as an
+ * action rather than an assertion.
+ *
+ * WHY THE PARTS MUST DIFFER. If part1 === part2 both turns have the SAME answer
+ * and turn 1 scores for a child who simply repeats themselves. `itemsFromChallenge`
+ * drops a symmetric bond outright — the pedagogy does not survive it.
+ */
+export const BOND_TEN = 10;
+export const TEEN_WHOLE_MIN = 11;
+export const TEEN_WHOLE_MAX = 19;
 
 /** The benched spoken-number window (shared family constants). Zero is
  *  excluded by the class record itself; 20 is the benched ceiling. */
@@ -128,18 +183,33 @@ export const isValidBondPart = (whole: number, part: unknown): part is number =>
 
 // ── Answer material — the fork, as code ─────────────────────────────────────
 
+const SPOKEN_KINDS: readonly NumberBondKind[] = ['missing-part', 'related-fact'];
+
 export const answerKindFor = (kind: NumberBondKind): 'voice' | 'gesture' =>
-  kind === 'missing-part' ? 'voice' : 'gesture';
+  SPOKEN_KINDS.includes(kind) ? 'voice' : 'gesture';
+
+/** How many ones sit beside the ten on a `ten-and-ones` item. */
+export const onesOf = (whole: number): number => whole - BOND_TEN;
 
 export const responseClassFor = (kind: NumberBondKind): ResponseClassId =>
-  kind === 'missing-part' ? 'number_word_to_20' : 'manipulation';
+  SPOKEN_KINDS.includes(kind) ? 'number_word_to_20' : 'manipulation';
 
 /** Task identity for the runner's how-to-play policy: when consecutive items
  *  change `action`, the next cue re-speaks what to do. */
 export const actionFor = (kind: NumberBondKind): string => {
   switch (kind) {
     case 'decompose': return 'split';
+    // Same gesture as decompose, different accept set — and the ASK is
+    // materially different ("break it into a ten and some more"), so a session
+    // that moves between them re-speaks the how-to-play rather than assuming a
+    // five-year-old carried the rule across.
+    case 'ten-and-ones': return 'ten-split';
     case 'missing-part': return 'say';
+    // A DIFFERENT action id from `missing-part` on purpose: both are spoken, but
+    // this one runs two linked turns over one bond, so a session that moves
+    // between the two re-speaks the how-to-play instead of assuming the rule
+    // carried across.
+    case 'related-fact': return 'say-family';
     case 'fact-family': return 'write';
     case 'build-equation': return 'build';
   }
@@ -247,8 +317,8 @@ export interface BondBuildContext {
   maxNumber: number;
 }
 
-const KINDS: readonly NumberBondKind[] = ['decompose', 'missing-part', 'fact-family', 'build-equation'];
-const K_KINDS: readonly NumberBondKind[] = ['decompose', 'missing-part'];
+const KINDS: readonly NumberBondKind[] = ['decompose', 'missing-part', 'related-fact', 'ten-and-ones', 'fact-family', 'build-equation'];
+const K_KINDS: readonly NumberBondKind[] = ['decompose', 'missing-part', 'related-fact', 'ten-and-ones'];
 
 /**
  * One generated challenge → its judged items, or [] when it cannot be asked
@@ -268,18 +338,35 @@ export const itemsFromChallenge = (
   if (!kind) return [];
   if (ctx.band === 'K' && !K_KINDS.includes(kind)) return [];
 
-  const ceiling = Math.min(BOND_WHOLE_MAX, int(ctx.maxNumber) ? ctx.maxNumber : BOND_WHOLE_MAX);
   const whole = ch.whole;
-  if (!int(whole) || whole < BOND_WHOLE_MIN || whole > ceiling) return [];
-
   const base = {
     band: ctx.band,
     sourceId: ch.id,
-    whole,
+    whole: whole as number,
     answerKind: answerKindFor(kind),
     responseClass: responseClassFor(kind),
     action: actionFor(kind),
   };
+
+  if (kind === 'ten-and-ones') {
+    // Gestural, and the whole is PUBLIC (the ask states it), so neither the
+    // spoken bench nor `maxNumber` binds — the objective's own 11-19 window
+    // does. A whole of ten or twenty has no "ten and some more" to make.
+    if (!int(whole) || whole < TEEN_WHOLE_MIN || whole > TEEN_WHOLE_MAX) return [];
+    return [{
+      ...base,
+      id: ch.id,
+      kind,
+      knownPart: BOND_TEN,
+      otherPart: onesOf(whole),
+      pairIndex: 0,
+      pairCount: 1,
+      answer: whole,
+    }];
+  }
+
+  const ceiling = Math.min(BOND_WHOLE_MAX, int(ctx.maxNumber) ? ctx.maxNumber : BOND_WHOLE_MAX);
+  if (!int(whole) || whole < BOND_WHOLE_MIN || whole > ceiling) return [];
 
   if (kind === 'decompose') {
     // allPairs is NEVER trusted from the wire — the pair space is arithmetic.
@@ -306,6 +393,24 @@ export const itemsFromChallenge = (
     // capacity change cannot launder an unbenched class into production.
     if (!isSayableAnswer(p2)) return [];
     return [{ ...base, id: ch.id, kind, knownPart: p1, otherPart: p2, pairIndex: 0, pairCount: 1, answer: p2 }];
+  }
+
+  if (kind === 'related-fact') {
+    // TWO spoken turns, so BOTH numbers have to be sayable — not just the one
+    // `missing-part` would have asked for.
+    if (!isSayableAnswer(p1) || !isSayableAnswer(p2)) return [];
+    // A symmetric bond (three and three make six) gives both turns the same
+    // answer, and a child who repeats themselves scores turn 1 without the
+    // relationship. Dropped, never repaired: the pair IS the item.
+    if (p1 === p2) return [];
+    return [
+      // turn 0 — the ADDITION fact. The child produces p2.
+      { ...base, id: `${ch.id}::f0`, kind, knownPart: p1, otherPart: p2, pairIndex: 0, pairCount: 2, answer: p2 },
+      // turn 1 — the RELATED SUBTRACTION over the same three numbers. Its known
+      // part is what the child just said, so the answer is the OTHER part: the
+      // echo of turn 0 is now a wrong answer, and `discriminationFor` says so.
+      { ...base, id: `${ch.id}::f1`, kind, knownPart: p2, otherPart: p1, pairIndex: 1, pairCount: 2, answer: p1 },
+    ];
   }
 
   return [{ ...base, id: ch.id, kind, knownPart: p1, otherPart: p2, pairIndex: 0, pairCount: 1, answer: whole }];
@@ -345,8 +450,19 @@ export const howToPlayFor = (item: NumberBondItem): string => {
   switch (item.kind) {
     case 'decompose':
       return 'Tap the two circles to split the counters into two parts. When you stop, I will look at your way. ';
+    case 'ten-and-ones':
+      // The RULE has to be taught, not just the gesture: this is the one bond
+      // mode where only one split is accepted, and a child who has just come
+      // from `decompose` has been told the opposite.
+      return 'Tap the two circles to split the counters. Put a whole ten in one circle and the rest in the other. ';
     case 'missing-part':
       return 'Look at the number bond and think, then say the missing part out loud. ';
+    case 'related-fact':
+      // NO NUMBER WORDS. "the same three numbers two ways" reads naturally and
+      // is a leak: "three" and "two" are both answers this mode produces, and
+      // the how-to-play is spoken immediately before the ask. Said in counts
+      // ("twice") rather than numerals, the same sentence carries no answer.
+      return 'I will ask about the same number bond twice. Look at it, think, then say your answer out loud. ';
     case 'fact-family':
       return 'Write all four equations in the boxes — two plus and two take away. When you stop, I will check them. ';
     case 'build-equation':
@@ -368,11 +484,25 @@ const askFor = (item: NumberBondItem): string => {
       return item.pairIndex === item.pairCount - 1
         ? `Find the last way to make ${wholeWord}.`
         : `Find a different way to make ${wholeWord}.`;
+    case 'ten-and-ones':
+      // The whole and the TEN are both public — the ten is the structure the
+      // objective names, not a number the child has to find. The ONES are the
+      // answer and appear nowhere before the verdict.
+      return `${cap(wholeWord)} is the whole. Your turn — break it into a ten and some more.`;
     case 'missing-part':
       // "has TWO parts" would put the word "two" in every ask — and two IS the
       // answer whenever whole − part = 2. "is the whole" carries no number but
       // the public ones.
       return `${cap(wholeWord)} is the whole. One part is ${numberWordFor(item.knownPart)}. What is the other part?`;
+    case 'related-fact':
+      // Turn 0 is the ADDITION form of the same unknown `missing-part` asks for
+      // — worded as a fact ("and how many more make") rather than as a part, so
+      // turn 1 can then quote it back as the fact they already know.
+      // Turn 1 names the whole and the part the child JUST PRODUCED; the answer
+      // is the third number, which the ask does not say.
+      return item.pairIndex === 0
+        ? `${cap(numberWordFor(item.knownPart))} and how many more make ${wholeWord}?`
+        : `Good — now the other way round. ${cap(wholeWord)} take away ${numberWordFor(item.knownPart)}. What is left?`;
     case 'fact-family':
       return `The parts are ${numberWordFor(item.knownPart)} and ${numberWordFor(item.otherPart)}, and the whole is ${wholeWord}. Write all four equations for this fact family.`;
     case 'build-equation':
@@ -391,10 +521,35 @@ const correctionFor = (item: NumberBondItem): string => {
   const answerWord = numberWordFor(item.answer);
   const knownWord = numberWordFor(item.knownPart);
   const wholeWord = numberWordFor(item.whole);
-  // Only missing-part carries a spoken correction inside its item cue; the
-  // hand modes are corrected through their code-computed verdict cues below.
+  // Only the spoken modes carry a correction inside the item cue; the hand
+  // modes are corrected through their code-computed verdict cues below.
+  if (item.kind === 'related-fact' && item.pairIndex === 1) {
+    // The subtraction turn is not corrected by counting up — the whole point is
+    // that the addition fact ALREADY answers it. The correction states the
+    // relationship, then re-asks in the same words the ask used.
+    return `My turn: ${knownWord} and ${answerWord} make ${wholeWord}, so ${wholeWord} take away ${knownWord} is ${answerWord}. `
+      + `Your turn. ${cap(wholeWord)} take away ${knownWord}. What is left?`;
+  }
+  const reAsk = item.kind === 'related-fact'
+    ? `${cap(knownWord)} and how many more make ${wholeWord}?`
+    : `One part is ${knownWord} — what is the other part?`;
   return `My turn: start at ${knownWord} and count up to ${wholeWord}: ${countUpWalk(item.knownPart, item.whole)}. `
-    + `That is ${answerWord} more. Your turn. One part is ${knownWord} — what is the other part?`;
+    + `That is ${answerWord} more. Your turn. ${reAsk}`;
+};
+
+/**
+ * The affirmation — the ONE line a right answer earns. On the related-fact
+ * subtraction turn it says the connection out loud, because that connection is
+ * what the mode measures and the child has just supplied the evidence for it.
+ */
+const affirmationFor = (item: NumberBondItem): string => {
+  const answerWord = numberWordFor(item.answer);
+  const knownWord = numberWordFor(item.knownPart);
+  const wholeWord = numberWordFor(item.whole);
+  if (item.kind === 'related-fact' && item.pairIndex === 1) {
+    return `Yes, ${answerWord} — ${knownWord} and ${answerWord} make ${wholeWord}, and ${wholeWord} take away ${knownWord} is ${answerWord}. The same bond, both ways.`;
+  }
+  return `Yes, ${answerWord} — ${answerWord} and ${knownWord} make ${wholeWord}.`;
 };
 
 // ── Judging contract (missing-part — the pack's one spoken mode) ────────────
@@ -427,7 +582,7 @@ const judgingContract = (item: NumberBondItem): string =>
   + `Never say the answer during their turn and never count aloud with them. `
   + `The correct answer is "${numberWordFor(item.answer)}". `
   + discriminationFor(item)
-  + `If the answer is right, say exactly: "Yes, ${numberWordFor(item.answer)} — ${numberWordFor(item.answer)} and ${numberWordFor(item.knownPart)} make ${numberWordFor(item.whole)}." and stop there — add no praise, no encouragement and no mention of what comes next. `
+  + `If the answer is right, say exactly: "${affirmationFor(item)}" and stop there — add no praise, no encouragement and no mention of what comes next. `
   + `If it is wrong, say exactly: "${correctionFor(item)}" and stop there; that correction is the whole turn, `
   + `and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — `
   + `never paraphrase it, never soften it, and never replace it with a hint of your own.`;
@@ -439,7 +594,11 @@ const silenceContract = (item: NumberBondItem): string =>
   `The quoted line is the ONLY thing you say on this turn; the learner answers with their HANDS on the screen, not with their voice, so you then stay completely silent. `
   + (item.kind === 'decompose'
     ? `Do not count the counters aloud and never say which pairs make ${numberWordFor(item.whole)}. `
-    : item.kind === 'fact-family'
+    : item.kind === 'ten-and-ones'
+      // Ten may be said — it is the ask. What is banned is the REST, which is
+      // the number the child is producing.
+      ? `Do not count the counters aloud and never say how many are left over after the ten. `
+      : item.kind === 'fact-family'
       ? `Do not read the equations aloud and never say what any equation should be. `
       : `Do not read the tiles aloud and never say what the number sentence should be. `)
   + `Do not narrate what they are doing or fill the pause. `
@@ -506,6 +665,56 @@ export const splitVerdictCue = (
     line = `Say exactly: "My turn: you already made ${numberWordFor(lo)} and ${numberWordFor(hi)}. Your turn — find a way you have not made yet." `;
   }
   return `${head}${line}Never read bracket tags aloud.`;
+};
+
+/**
+ * `ten-and-ones` faults — code-decided, so the correction names the actual
+ * misconception. `no-ten` is the one this mode exists for: 6 and 8 is a
+ * perfectly good pair that makes fourteen and a perfectly wrong answer to
+ * K.NBT.1, and a judge that only checked the sum would affirm it.
+ */
+export type TenAndOnesFault = 'match' | 'empty' | 'miscount' | 'no-ten';
+
+export const tenAndOnesFaultOf = (
+  item: NumberBondItem,
+  left: number,
+  right: number,
+): TenAndOnesFault => {
+  if (left + right === 0) return 'empty';
+  if (left + right !== item.whole) return 'miscount';
+  if (left !== BOND_TEN && right !== BOND_TEN) return 'no-ten';
+  return 'match';
+};
+
+/**
+ * The `ten-and-ones` verdict. Ten may be spoken on every branch — it is the
+ * ask — but the LEFTOVER is the child's to produce and appears only in the
+ * affirmation, where it names the decomposition they just built.
+ */
+export const tenAndOnesVerdictCue = (
+  item: NumberBondItem,
+  left: number,
+  right: number,
+): string => {
+  const fault = tenAndOnesFaultOf(item, left, right);
+  const wholeWord = numberWordFor(item.whole);
+  const onesWord = numberWordFor(item.otherPart);
+  const head =
+    `[NB_TEN] The learner split the counters into ${left} and ${right}; the whole is ${item.whole} `
+    + `and exactly one part must be a full ten — that ${fault === 'match' ? 'MATCHES' : 'does NOT match'}. `;
+
+  if (fault === 'match') {
+    return `${head}Say exactly: "Yes! A ten and ${onesWord} more. ${cap(wholeWord)} is one ten and ${onesWord} ones." Never read bracket tags aloud.`;
+  }
+  const specific =
+    fault === 'empty'
+      ? `My turn: the counters go into the circles first. Your turn — put a whole ten in one circle and the rest in the other.`
+      : fault === 'miscount'
+        ? `My turn: ${numberWordFor(left)} and ${numberWordFor(right)} make ${numberWordFor(left + right)}, not ${wholeWord}. Count all ${wholeWord} in. Your turn — put a whole ten in one circle and the rest in the other.`
+        // Names NO part: "not a ten" is the property that was missed, and the
+        // leftover is exactly what the child still has to work out.
+        : `My turn: that makes ${wholeWord}, but neither part is a ten. ${cap(wholeWord)} is one ten and some more. Your turn — put a whole ten in one circle and the rest in the other.`;
+  return `${head}Say exactly: "${specific}" Never read bracket tags aloud.`;
 };
 
 /** Which of the fact-family faults happened — code-decided so the correction
@@ -628,11 +837,20 @@ export const stimulusFor = (item: NumberBondItem): string => {
   switch (item.kind) {
     case 'decompose':
       return `breaking ${numberWordFor(item.whole)} into two parts on the number bond`;
+    case 'ten-and-ones':
+      // Stimulus-side only: the whole is on screen and in the ask, and the ten
+      // is the structure being taught. The leftover ones are never pushed.
+      return `breaking ${numberWordFor(item.whole)} into a full ten and the ones left over`;
     case 'missing-part':
       // "one part shown" would put the word "one" in the channel — and one IS
       // the answer whenever whole − part = 1. Same class as the "two parts"
       // ask fix.
       return 'a number bond with the whole shown and a single part shown; the other part is hidden';
+    case 'related-fact':
+      // Stimulus-side only, and the SAME line on both turns: naming which turn
+      // it is would tell the tutor that turn 2's answer is the part turn 1
+      // started from. The shape is all the channel carries.
+      return 'a number bond with the whole shown and a single part shown; the other part is hidden, and the same three numbers are asked about twice';
     case 'fact-family':
       return 'a number bond with all three numbers shown; writing the four related equations';
     case 'build-equation':
@@ -730,6 +948,45 @@ export const numberBondHarnessAnswers = (item: NumberBondItem): NumberBondHarnes
           : [numberWordFor(item.answer)],
       };
     }
+    case 'related-fact': {
+      const answerWord = numberWordFor(item.answer);
+      return {
+        correct: answerWord,
+        plainWrong: numberWordFor(plainWrongFor(item)),
+        // The signature miss is different on each turn, and turn 1's is the
+        // reason the mode exists: the child who says their OWN previous answer
+        // back has repeated a number instead of using the relationship. On turn
+        // 1 `knownPart` IS what they said on turn 0.
+        signatureWrong: item.pairIndex === 0
+          ? {
+            text: numberWordFor(item.whole),
+            why: 'the whole said back instead of the missing part — the ask itself just said it',
+          }
+          : {
+            text: numberWordFor(item.knownPart),
+            why: 'the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around',
+          },
+        // "one" is in every count-up walk; the answer word otherwise must not
+        // appear before the child produces it.
+        leakTokens: item.answer === 1 ? [] : [answerWord],
+      };
+    }
+    case 'ten-and-ones': {
+      // The signature miss is a VALID PAIR THAT IS NOT A TEN — seven and seven
+      // for fourteen. It sums correctly, it looks like a finished answer, and
+      // it is precisely the child who has not yet seen a ten as one thing.
+      const near = Math.floor(item.whole / 2);
+      return {
+        correct: `split ${BOND_TEN} and ${item.otherPart}`,
+        plainWrong: `split 0 and ${item.whole}`,
+        signatureWrong: {
+          text: `split ${near} and ${item.whole - near}`,
+          why: 'a pair that makes the whole but contains no ten — the sum is right and the place-value structure is missing',
+        },
+        placed: { correct: BOND_TEN * 100 + item.otherPart, wrong: near * 100 + (item.whole - near) },
+        leakTokens: [],
+      };
+    }
     case 'decompose': {
       const a = Math.floor(item.whole / 2);
       const b = item.whole - a;
@@ -770,6 +1027,10 @@ export const bondVerdictCueForPlaced = (item: NumberBondItem, placed: number): s
   switch (item.kind) {
     case 'decompose':
       return splitVerdictCue(item, Math.floor(placed / 100), placed % 100, []);
+    case 'ten-and-ones':
+      // Same left×100 + right packing as decompose — one gesture shape, two
+      // accept sets.
+      return tenAndOnesVerdictCue(item, Math.floor(placed / 100), placed % 100);
     case 'fact-family': {
       const { whole, knownPart: p1, otherPart: p2 } = item;
       const inputs = placed === 1

@@ -1,0 +1,3004 @@
+{
+  "startedAt": "2026-09-09T11:26:24.857Z",
+  "mode": "related_fact",
+  "draws": [
+    {
+      "label": "OPS001-02-G K/none draw 1",
+      "failures": [],
+      "title": "Related Facts with Number Bonds",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at the bond for 4. First tell the addition fact, then the subtraction fact!"
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Practice with the number 5. Say the addition fact, then the matching subtraction fact!"
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 1,
+          "part2": 4,
+          "instruction": "Great job! Now do the same for 5 again with different parts. What addition and subtraction facts fit 5?"
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 1,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make five?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 4,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away four. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-02-G K/none draw 2",
+      "failures": [],
+      "title": "Fact Family Fun!",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at the whole number 4. First tell the addition fact, and then tell the matching subtraction fact!"
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Look at the whole number 5. First tell the addition fact, and then tell the matching subtraction fact!"
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 1,
+          "part2": 4,
+          "instruction": "Look at the whole number 5. First tell the addition fact, and then tell the matching subtraction fact!"
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 1,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make five?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 4,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away four. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-02-G K/none draw 3",
+      "failures": [],
+      "title": "Fact Family Fun",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at the number bond for 4. First, say the addition fact for 1 and 3. Then, say the matching subtraction fact!"
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Let us work with 5! Say the addition fact for 2 and 3, and then say the subtraction fact that goes with it."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 1,
+          "part2": 4,
+          "instruction": "Now try this bond with 5. Say the addition fact for 1 and 4, then say the matching subtraction fact."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 1,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make five?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 4,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away four. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-02-G K/hard draw 1",
+      "failures": [],
+      "title": "Related Fact Fun",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at the number bond for 4. Can you say the addition and subtraction facts?"
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Let us practice with 5. Find the related facts for our number 5!"
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 3,
+          "part1": 1,
+          "part2": 2,
+          "instruction": "Here is a challenge for 3. Say the two related facts for 3!"
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make three?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make three?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 3,
+          "knownPart": 2,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Three take away two. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Three take away two. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "two",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-02-G K/hard draw 2",
+      "failures": [],
+      "title": "Related Fact Fun",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at the number 4. Say the addition fact and the subtraction fact!"
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Explore the number 5. Say the addition fact and the subtraction fact!"
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 1,
+          "part2": 4,
+          "instruction": "Practice with the number 5 again. Say the addition fact and the subtraction fact!"
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 1,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make five?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 4,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away four. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-02-G K/hard draw 3",
+      "failures": [],
+      "title": "Related Fact Fun",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Let us practice with 4! Say the addition fact and the subtraction fact."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Now let us try 5! Say the addition fact and the subtraction fact."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 1,
+          "part2": 4,
+          "instruction": "You are doing great! Let us do the final challenge with 5."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 1,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make five?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 4,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away four. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-03-F K/none draw 1",
+      "failures": [],
+      "title": "Fact Family Fun with 5",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 3,
+          "part1": 1,
+          "part2": 2,
+          "instruction": "Let us explore 3! First, say the addition fact with parts 1 and 2, then the matching subtraction fact for 3."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at 4! Say the addition fact for parts 1 and 3, and then the matching subtraction fact for 4."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Time for 5! Say the addition fact using parts 2 and 3, then the matching subtraction fact for 5."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make three?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make three?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 3,
+          "knownPart": 2,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Three take away two. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Three take away two. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "two",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-03-F K/none draw 2",
+      "failures": [],
+      "title": "Fact Family Fun with 5",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 3,
+          "part1": 1,
+          "part2": 2,
+          "instruction": "Look at the whole number 3. Say the addition fact and the matching subtraction fact!"
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at the whole number 4. Say the addition fact and the matching subtraction fact!"
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Look at the whole number 5. Say the addition fact and the matching subtraction fact!"
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make three?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make three?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 3,
+          "knownPart": 2,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Three take away two. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Three take away two. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "two",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-03-F K/none draw 3",
+      "failures": [],
+      "title": "Fact Family Fun with 5",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 3,
+          "part1": 1,
+          "part2": 2,
+          "instruction": "Let's work with 3! First, say the addition fact with 1 and 2. Then, say the subtraction fact for 3."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at 4! Say the addition fact using 1 and 3, and then say the subtraction fact for 4."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Now for 5! Say the addition fact using 2 and 3, and then say the subtraction fact for 5."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make three?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make three?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 3,
+          "knownPart": 2,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Three take away two. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Three take away two. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "two",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-03-F K/hard draw 1",
+      "failures": [],
+      "title": "Fact Family Fun with 5",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 3,
+          "part1": 1,
+          "part2": 2,
+          "instruction": "Let us make addition and subtraction facts for the whole number 3!"
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Can you share the related facts for the whole number 4?"
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Great job! Now let us practice our related facts for the whole number 5."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make three?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make three?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 3,
+          "knownPart": 2,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Three take away two. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Three take away two. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "two",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-03-F K/hard draw 2",
+      "failures": [],
+      "title": "Fact Family Fun with 5",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 3,
+          "part1": 1,
+          "part2": 2,
+          "instruction": "Look at the number bond for 3. Tell the addition fact and the matching subtraction fact!"
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Explore the number bond for 4. What is the addition fact and what is the subtraction fact?"
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Practice with the number bond for 5. Say both the addition fact and the subtraction fact!"
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make three?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make three?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 3,
+          "knownPart": 2,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Three take away two. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Three take away two. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "two",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "OPS001-03-F K/hard draw 3",
+      "failures": [],
+      "title": "Fact Family Fun with 5",
+      "maxNumber": 5,
+      "gradeBand": "K",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 3,
+          "part1": 1,
+          "part2": 2,
+          "instruction": "Look at the number 3. Tell the addition and subtraction facts for 3."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 4,
+          "part1": 1,
+          "part2": 3,
+          "instruction": "Look at the number 4. Tell the addition and subtraction facts for 4."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Look at the number 5. Tell the addition and subtraction facts for 5."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 3,
+          "knownPart": 1,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make three?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make three?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 3,
+          "knownPart": 2,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Three take away two. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Three take away two. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "four",
+            "signatureWrong": {
+              "text": "two",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 4,
+          "knownPart": 1,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "One and how many more make four?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. One and how many more make four?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 4,
+          "knownPart": 3,
+          "answer": 1,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Four take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Four take away three. What is left?",
+          "harness": {
+            "correct": "one",
+            "plainWrong": "two",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": []
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "G1-control 1/none draw 1",
+      "failures": [],
+      "title": "Fact Family Fun",
+      "maxNumber": 10,
+      "gradeBand": "1",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 6,
+          "part1": 2,
+          "part2": 4,
+          "instruction": "Let us explore the number 6! First, say the addition fact, then the matching subtraction fact."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 8,
+          "part1": 3,
+          "part2": 5,
+          "instruction": "Now let us look at the number 8! Say the addition fact and its related subtraction fact."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 10,
+          "part1": 4,
+          "part2": 6,
+          "instruction": "Great job! Finally, practice with the number 10. Say both the addition and subtraction facts."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 6,
+          "knownPart": 2,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make six?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make six?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "six",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 6,
+          "knownPart": 4,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Six take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Six take away four. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 8,
+          "knownPart": 3,
+          "answer": 5,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Three and how many more make eight?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Three and how many more make eight?",
+          "harness": {
+            "correct": "five",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "eight",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "five"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 8,
+          "knownPart": 5,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Eight take away five. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Eight take away five. What is left?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 10,
+          "knownPart": 4,
+          "answer": 6,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Four and how many more make ten?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Four and how many more make ten?",
+          "harness": {
+            "correct": "six",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "ten",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "six"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 10,
+          "knownPart": 6,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Ten take away six. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Ten take away six. What is left?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "six",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "G1-control 1/none draw 2",
+      "failures": [],
+      "title": "Fact Family Fun",
+      "maxNumber": 10,
+      "gradeBand": "1",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 5,
+          "part1": 2,
+          "part2": 3,
+          "instruction": "Let's work with the whole number 5! Say the addition fact, then the matching subtraction fact."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 7,
+          "part1": 4,
+          "part2": 3,
+          "instruction": "Look at the whole number 7. Can you tell the addition fact and the matching subtraction fact?"
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 9,
+          "part1": 5,
+          "part2": 4,
+          "instruction": "Here is the whole number 9. Practice your related addition and subtraction facts!"
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 5,
+          "knownPart": 2,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make five?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make five?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 5,
+          "knownPart": 3,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Five take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Five take away three. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 7,
+          "knownPart": 4,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Four and how many more make seven?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Four and how many more make seven?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "seven",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 7,
+          "knownPart": 3,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Seven take away three. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Seven take away three. What is left?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "three",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 9,
+          "knownPart": 5,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Five and how many more make nine?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Five and how many more make nine?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "nine",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 9,
+          "knownPart": 4,
+          "answer": 5,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Nine take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Nine take away four. What is left?",
+          "harness": {
+            "correct": "five",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "five"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "G1-control 1/none draw 3",
+      "failures": [],
+      "title": "Related Fact Fun",
+      "maxNumber": 10,
+      "gradeBand": "1",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 6,
+          "part1": 2,
+          "part2": 4,
+          "instruction": "Let us work with 6! Say the addition and subtraction facts."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 8,
+          "part1": 3,
+          "part2": 5,
+          "instruction": "Now let us look at 8! Find the related facts."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 10,
+          "part1": 4,
+          "part2": 6,
+          "instruction": "Great job! Let us finish with 10. Tell the related facts."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 6,
+          "knownPart": 2,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make six?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make six?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "six",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 6,
+          "knownPart": 4,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Six take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Six take away four. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 8,
+          "knownPart": 3,
+          "answer": 5,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Three and how many more make eight?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Three and how many more make eight?",
+          "harness": {
+            "correct": "five",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "eight",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "five"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 8,
+          "knownPart": 5,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Eight take away five. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Eight take away five. What is left?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 10,
+          "knownPart": 4,
+          "answer": 6,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Four and how many more make ten?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Four and how many more make ten?",
+          "harness": {
+            "correct": "six",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "ten",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "six"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 10,
+          "knownPart": 6,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Ten take away six. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Ten take away six. What is left?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "six",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "G1-control 1/hard draw 1",
+      "failures": [],
+      "title": "Fact Family Fun",
+      "maxNumber": 10,
+      "gradeBand": "1",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 6,
+          "part1": 2,
+          "part2": 4,
+          "instruction": "Say the addition fact and the subtraction fact for 6."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 8,
+          "part1": 3,
+          "part2": 5,
+          "instruction": "Find the related facts for 8."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 10,
+          "part1": 4,
+          "part2": 6,
+          "instruction": "Practice your addition and subtraction facts using 10."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 6,
+          "knownPart": 2,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make six?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make six?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "six",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 6,
+          "knownPart": 4,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Six take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Six take away four. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 8,
+          "knownPart": 3,
+          "answer": 5,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Three and how many more make eight?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Three and how many more make eight?",
+          "harness": {
+            "correct": "five",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "eight",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "five"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 8,
+          "knownPart": 5,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Eight take away five. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Eight take away five. What is left?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 10,
+          "knownPart": 4,
+          "answer": 6,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Four and how many more make ten?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Four and how many more make ten?",
+          "harness": {
+            "correct": "six",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "ten",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "six"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 10,
+          "knownPart": 6,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Ten take away six. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Ten take away six. What is left?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "six",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "G1-control 1/hard draw 2",
+      "failures": [],
+      "title": "Fact Family Fun",
+      "maxNumber": 10,
+      "gradeBand": "1",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 6,
+          "part1": 2,
+          "part2": 4,
+          "instruction": "Say two related facts for 6."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 7,
+          "part1": 3,
+          "part2": 4,
+          "instruction": "Say two related facts for 7."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 8,
+          "part1": 3,
+          "part2": 5,
+          "instruction": "Say two related facts for 8."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 6,
+          "knownPart": 2,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make six?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make six?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "six",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 6,
+          "knownPart": 4,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Six take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Six take away four. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 7,
+          "knownPart": 3,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Three and how many more make seven?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Three and how many more make seven?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "seven",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 7,
+          "knownPart": 4,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Seven take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Seven take away four. What is left?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 8,
+          "knownPart": 3,
+          "answer": 5,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Three and how many more make eight?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Three and how many more make eight?",
+          "harness": {
+            "correct": "five",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "eight",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "five"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 8,
+          "knownPart": 5,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Eight take away five. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Eight take away five. What is left?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "label": "G1-control 1/hard draw 3",
+      "failures": [],
+      "title": "Related Facts with Number Bonds",
+      "maxNumber": 10,
+      "gradeBand": "1",
+      "challenges": [
+        {
+          "id": "c1",
+          "type": "related-fact",
+          "whole": 6,
+          "part1": 2,
+          "part2": 4,
+          "instruction": "Say the addition fact and subtraction fact for 6."
+        },
+        {
+          "id": "c2",
+          "type": "related-fact",
+          "whole": 8,
+          "part1": 3,
+          "part2": 5,
+          "instruction": "Say the addition fact and subtraction fact for 8."
+        },
+        {
+          "id": "c3",
+          "type": "related-fact",
+          "whole": 9,
+          "part1": 4,
+          "part2": 5,
+          "instruction": "Say the addition fact and subtraction fact for 9."
+        }
+      ],
+      "droppedChallenges": 0,
+      "checkedChallenges": 3,
+      "turns": [
+        {
+          "id": "c1::f0",
+          "pairIndex": 0,
+          "whole": 6,
+          "knownPart": 2,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Two and how many more make six?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Two and how many more make six?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "six",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        },
+        {
+          "id": "c1::f1",
+          "pairIndex": 1,
+          "whole": 6,
+          "knownPart": 4,
+          "answer": 2,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Six take away four. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Six take away four. What is left?",
+          "harness": {
+            "correct": "two",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "four",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "two"
+            ]
+          }
+        },
+        {
+          "id": "c2::f0",
+          "pairIndex": 0,
+          "whole": 8,
+          "knownPart": 3,
+          "answer": 5,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Three and how many more make eight?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Three and how many more make eight?",
+          "harness": {
+            "correct": "five",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "eight",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "five"
+            ]
+          }
+        },
+        {
+          "id": "c2::f1",
+          "pairIndex": 1,
+          "whole": 8,
+          "knownPart": 5,
+          "answer": 3,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Eight take away five. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Eight take away five. What is left?",
+          "harness": {
+            "correct": "three",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "three"
+            ]
+          }
+        },
+        {
+          "id": "c3::f0",
+          "pairIndex": 0,
+          "whole": 9,
+          "knownPart": 4,
+          "answer": 5,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Four and how many more make nine?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Four and how many more make nine?",
+          "harness": {
+            "correct": "five",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "nine",
+              "why": "the whole said back instead of the missing part — the ask itself just said it"
+            },
+            "leakTokens": [
+              "five"
+            ]
+          }
+        },
+        {
+          "id": "c3::f1",
+          "pairIndex": 1,
+          "whole": 9,
+          "knownPart": 5,
+          "answer": 4,
+          "answerKind": "voice",
+          "responseClass": "number_word_to_20",
+          "ask": "Good — now the other way round. Nine take away five. What is left?",
+          "openingAsk": "Hi! Time for number bonds! I will ask about the same number bond twice. Look at it, think, then say your answer out loud. Good — now the other way round. Nine take away five. What is left?",
+          "harness": {
+            "correct": "four",
+            "plainWrong": "one",
+            "signatureWrong": {
+              "text": "five",
+              "why": "the answer to turn 1 said again — the ask names it, and repeating it is what a child does instead of turning the fact around"
+            },
+            "leakTokens": [
+              "four"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "draws": 18,
+    "failedDraws": 0
+  }
+}

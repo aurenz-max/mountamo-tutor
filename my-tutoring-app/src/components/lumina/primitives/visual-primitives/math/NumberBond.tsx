@@ -9,10 +9,17 @@
  *    SAYS the missing part into an open mic. The −/+ stepper and its Check
  *    button are deleted — a child who cannot find the part can still operate a
  *    stepper, so the stepper was a costume (and a 0…max row is a weak menu).
+ *  - related-fact (K + 1): the SPOKEN fact family. One bond, two judged turns —
+ *    the child SAYS the addition fact's missing number, then says what the
+ *    matching subtraction leaves. The K-legal form of the inverse relationship
+ *    fact-family types (qa/reader-fit/k-band-floor-2026-09-08.md).
  *  - decompose (K + 1): the child SPLITS the counters into the two part
  *    circles. One judged turn per pair — "make five with two parts", then
  *    "find a different way" — the same one-pair-at-a-time pacing the click era
  *    ran through its Submit Pair button.
+ *  - ten-and-ones (K): the child SPLITS a teen whole (11-19) into a full ten
+ *    and the ones left over. Same two circles as decompose, one accepted pair
+ *    instead of every pair — refusing 6+8 for fourteen is the point (K.NBT.1).
  *  - fact-family (1): the child WRITES all four equations in the boxes. The
  *    page a teacher pushes across the table; form is the skill.
  *  - build-equation (1): the child BUILDS the number sentence from tiles.
@@ -75,6 +82,8 @@ import {
   numberBondPackBase,
   parseBondEquation,
   splitVerdictCue,
+  tenAndOnesVerdictCue,
+  BOND_TEN,
   type NumberBondItem,
 } from './numberBondScript';
 import { numberWordFor } from './countingBoardScript';
@@ -89,7 +98,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface NumberBondChallenge {
   id: string;
-  type: 'decompose' | 'missing-part' | 'fact-family' | 'build-equation';
+  type: 'decompose' | 'missing-part' | 'related-fact' | 'ten-and-ones' | 'fact-family' | 'build-equation';
   instruction: string;
   whole: number;
   part1?: number | null;
@@ -132,6 +141,8 @@ export interface NumberBondData {
 const PHASE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   decompose:        { label: 'Decompose',      icon: '🔀' },
   'missing-part':   { label: 'Missing Part',   icon: '❓' },
+  'related-fact':   { label: 'Related Facts',  icon: '🔁' },
+  'ten-and-ones':   { label: 'Ten and Ones',   icon: '🔟' },
   'fact-family':    { label: 'Fact Family',    icon: '🔄' },
   'build-equation': { label: 'Build Equation', icon: '🧩' },
 };
@@ -490,6 +501,22 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
               ? `Heard "${lastHeard}".`
               : 'The tutor judged the answer wrong from the audio.',
           };
+        case 'related-fact':
+          return {
+            challenge: item.pairIndex === 0
+              ? `related-fact turn 1 of 2 (addition): ${item.knownPart} and how many more make ${item.whole}?`
+              : `related-fact turn 2 of 2 (the related subtraction): ${item.whole} take away ${item.knownPart}.`,
+            expected: `${numberWordFor(item.answer)} (${item.answer})`,
+            observed: lastHeard
+              ? `Heard "${lastHeard}".`
+              : 'The tutor judged the answer wrong from the audio.',
+          };
+        case 'ten-and-ones':
+          return {
+            challenge: `ten-and-ones: break ${item.whole} into a full ten and the ones left over.`,
+            expected: `${BOND_TEN} and ${item.otherPart}`,
+            observed: `Split ${pendingSplitRef.current.left} and ${pendingSplitRef.current.right}.`,
+          };
         case 'decompose':
           return {
             challenge: `decompose: find a new pair that makes ${item.whole}.`,
@@ -576,8 +603,22 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
         setReward(`${left} + ${right} = ${item.whole}`);
         return;
       }
+      if (item.kind === 'ten-and-ones') {
+        // The place-value sentence the child just built, in the objective's
+        // own form (14 = 10 + 4).
+        setReward(`${item.whole} = ${BOND_TEN} + ${item.otherPart}`);
+        return;
+      }
       if (item.kind === 'missing-part') {
         setReward(`${item.knownPart} + ${item.answer} = ${item.whole}`);
+        return;
+      }
+      // The reward mirrors the FORM the turn asked for, so the two turns of one
+      // bond print the two related facts rather than the same sum twice.
+      if (item.kind === 'related-fact') {
+        setReward(item.pairIndex === 0
+          ? `${item.knownPart} + ${item.answer} = ${item.whole}`
+          : `${item.whole} − ${item.knownPart} = ${item.answer}`);
         return;
       }
       if (item.kind === 'build-equation') {
@@ -590,7 +631,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       // The tutor's correction re-modeled and re-asked in-band; restore the
       // working surface for another go. The settle window is re-armed by the
       // runner on this path.
-      if (item.kind === 'decompose') {
+      if (item.kind === 'decompose' || item.kind === 'ten-and-ones') {
         setLeftCount(0);
         setRightCount(0);
         pendingSplitRef.current = { left: 0, right: 0 };
@@ -621,10 +662,16 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
   // close describes the committed artifact; the MATCH IS COMPUTED IN CODE.
   const commitSplit = useCallback(() => {
     const item = runner.currentItem;
-    if (!item || item.kind !== 'decompose') return;
+    if (!item || (item.kind !== 'decompose' && item.kind !== 'ten-and-ones')) return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const { left, right } = pendingSplitRef.current;
-    runner.submitGestureAttempt(splitVerdictCue(item, left, right, foundPairs));
+    // One gesture, two accept sets: decompose wants a pair it has not banked
+    // yet, ten-and-ones wants the one pair that contains a full ten.
+    runner.submitGestureAttempt(
+      item.kind === 'ten-and-ones'
+        ? tenAndOnesVerdictCue(item, left, right)
+        : splitVerdictCue(item, left, right, foundPairs),
+    );
   }, [runner, foundPairs]);
 
   const commitFamily = useCallback(() => {
@@ -674,7 +721,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
   const remaining = whole - leftCount - rightCount;
 
   const addCounter = useCallback((side: 'left' | 'right') => {
-    if (!currentItem || currentItem.kind !== 'decompose') return;
+    if (!currentItem || (currentItem.kind !== 'decompose' && currentItem.kind !== 'ten-and-ones')) return;
     if (!runner.canAttempt || runner.isAwaitingGesture() || remaining <= 0) return;
     SoundManager.tap();
     const left = leftCount + (side === 'left' ? 1 : 0);
@@ -726,11 +773,16 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
   // ── Live equation bar (render lever, unchanged semantics) ─────────────────
   const liveEquation = useMemo(() => {
     if (!currentItem || !showEquation) return null;
-    if (currentItem.kind === 'decompose') {
+    if (currentItem.kind === 'decompose' || currentItem.kind === 'ten-and-ones') {
       return `${leftCount || '?'} + ${rightCount || '?'} = ${currentItem.whole}`;
     }
     if (currentItem.kind === 'missing-part') {
       return `${currentItem.knownPart} + ${currentSolved ? currentItem.answer : '?'} = ${currentItem.whole}`;
+    }
+    if (currentItem.kind === 'related-fact') {
+      return currentItem.pairIndex === 0
+        ? `${currentItem.knownPart} + ${currentSolved ? currentItem.answer : '?'} = ${currentItem.whole}`
+        : `${currentItem.whole} − ${currentItem.knownPart} = ${currentSolved ? currentItem.answer : '?'}`;
     }
     return null;
   }, [currentItem, showEquation, leftCount, rightCount, currentSolved]);
@@ -818,7 +870,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
             {/* Bond diagram — the missing part stays "?" until the tutor
                 affirms (reveal-on-affirm; answer-leak rule). */}
             <div className="flex justify-center">
-              {kind === 'decompose' && (
+              {(kind === 'decompose' || kind === 'ten-and-ones') && (
                 <BondDiagram
                   whole={whole}
                   leftValue={leftCount || '?'}
@@ -835,7 +887,11 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
                   rightCounters={showCounters ? rightCount : undefined}
                 />
               )}
-              {kind === 'missing-part' && (
+              {/* related-fact shares this diagram: on turn 2 the KNOWN part is
+                  the number the child produced on turn 1, so the bond redraws
+                  with the other circle blank and the answer-leak rule holds
+                  across both turns. */}
+              {(kind === 'missing-part' || kind === 'related-fact') && (
                 <BondDiagram
                   whole={whole}
                   leftValue={currentItem.knownPart}
@@ -865,8 +921,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
               </div>
             )}
 
-            {/* === Decompose workspace === */}
-            {kind === 'decompose' && !currentSolved && (
+            {/* === Decompose / ten-and-ones workspace — one gesture, two rules === */}
+            {(kind === 'decompose' || kind === 'ten-and-ones') && !currentSolved && (
               <div className="space-y-3">
                 <div className="flex justify-center gap-3">
                   <LuminaButton
@@ -1004,7 +1060,9 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
                   ? 'Write the four equations'
                   : kind === 'build-equation'
                     ? 'Build the number sentence'
-                    : 'Show me your way'
+                    : kind === 'ten-and-ones'
+                      ? 'Show me the ten and the ones'
+                      : 'Show me your way'
               }
             />
           </>

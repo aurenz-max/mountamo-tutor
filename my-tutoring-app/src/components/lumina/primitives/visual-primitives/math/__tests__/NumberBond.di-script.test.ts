@@ -48,6 +48,8 @@ import {
   responseClassFor,
   splitVerdictCue,
   stimulusFor,
+  tenAndOnesFaultOf,
+  tenAndOnesVerdictCue,
   type NumberBondItem,
 } from '../numberBondScript';
 import {
@@ -76,7 +78,12 @@ const MP_SYM = itemsFromChallenge({ id: 'c3', type: 'missing-part', whole: 6, pa
 const FAMILY = itemsFromChallenge({ id: 'c4', type: 'fact-family', whole: 7, part1: 3 }, CTX_1)[0];
 const BUILD_EQ = itemsFromChallenge({ id: 'c5', type: 'build-equation', whole: 7, part1: 3 }, CTX_1)[0];
 
-const ITEMS: NumberBondItem[] = [...DECOMPOSE, MP, MP_SYM, FAMILY, BUILD_EQ];
+/** The teen bond is a KINDERGARTEN mode whose whole leaves the K maxNumber
+ *  window entirely — that is the fork, and it is built from the K context on
+ *  purpose so the test proves the cap does not bind it. */
+const TEN_AND_ONES = itemsFromChallenge({ id: 'c6', type: 'ten-and-ones', whole: 14 }, CTX_K)[0];
+
+const ITEMS: NumberBondItem[] = [...DECOMPOSE, MP, MP_SYM, FAMILY, BUILD_EQ, TEN_AND_ONES];
 
 /** The pack's CUE SURFACE — the real one; the component and the DI drive-plan
  *  endpoint spread this same export, so this fixture tests the wire. */
@@ -416,9 +423,16 @@ describe('number-bond catalog · DI frame', () => {
     expect(entry.constraints).toMatch(/no Check button/i);
     expect(entry.description).toMatch(/SAY the missing part OUT LOUD/);
     // Eval modes keep their identities and βs — task identities are stable.
+    // `ten_and_ones` (2.0) joined 2026-09-08 for K.NBT.1: the same two-circle
+    // gesture as `decompose` with a single accepted pair, which is why it sits
+    // one step above it rather than sharing its β.
+    // `related_fact` (3.0) joined 2026-09-09 as the SPOKEN form of the fact
+    // family, for the two K rows the band-floor re-audit left homeless. It sits
+    // between `missing_part` (whose ask its first turn reuses) and `fact_family`
+    // (whose relationship it teaches without typing), 0.5 from each.
     expect(entry.evalModes?.map((m) => m.evalMode))
-      .toEqual(['decompose', 'missing_part', 'fact_family', 'build_equation']);
-    expect(entry.evalModes?.map((m) => m.beta)).toEqual([1.5, 2.5, 3.5, 4.5]);
+      .toEqual(['decompose', 'ten_and_ones', 'missing_part', 'related_fact', 'fact_family', 'build_equation']);
+    expect(entry.evalModes?.map((m) => m.beta)).toEqual([1.5, 2.0, 2.5, 3.0, 3.5, 4.5]);
   });
 });
 
@@ -464,5 +478,101 @@ describe('number-bond pack · headless drive answers', () => {
       expect(plainWrong).not.toMatch(/zero/);
       expect(plainWrong.length).toBeGreaterThan(0);
     }
+  });
+});
+
+// ── 9. `ten-and-ones` — the teen bond (K.NBT.1) ─────────────────────────────
+
+/** The LEFTOVER of fourteen, which is the only number the child produces. */
+const LEFTOVER_WORD = /\bfour\b/i;
+
+describe('number-bond pack · ten-and-ones', () => {
+  it('takes the teen window, not maxNumber — its answer is a placement', () => {
+    // Every other kind is capped at maxNumber because its answer is spoken or
+    // symbolic. This one is answered with hands and its whole is stated in the
+    // ask, so the cap that binds it is the objective's own: 11-19. It is a
+    // KINDERGARTEN mode, so the K context must build it even at maxNumber 5.
+    expect(TEN_AND_ONES.whole).toBe(14);
+    expect(TEN_AND_ONES.band).toBe('K');
+    expect(TEN_AND_ONES.answerKind).toBe('gesture');
+    expect(TEN_AND_ONES.responseClass).toBe('manipulation');
+    // One judged turn, not one per pair: there is exactly one right pair.
+    expect(TEN_AND_ONES.pairCount).toBe(1);
+    expect(TEN_AND_ONES.knownPart).toBe(10);
+    expect(TEN_AND_ONES.otherPart).toBe(4);
+  });
+
+  it('DROPS a whole outside 11-19 — ten and twenty have no ten-and-some-more', () => {
+    for (const whole of [9, 10, 20, 21]) {
+      expect(itemsFromChallenge({ id: `t${whole}`, type: 'ten-and-ones', whole }, CTX_K)).toEqual([]);
+    }
+    for (const whole of [11, 19]) {
+      expect(itemsFromChallenge({ id: `u${whole}`, type: 'ten-and-ones', whole }, CTX_K)).toHaveLength(1);
+    }
+  });
+
+  it('refuses a sum-correct pair that contains no ten — that IS the mode', () => {
+    // `decompose` would affirm 6 and 8 for fourteen: it makes the whole and it
+    // is a way the child has not shown. Here it is wrong, and refusing it is
+    // the entire pedagogical difference between the two modes.
+    expect(tenAndOnesFaultOf(TEN_AND_ONES, 10, 4)).toBe('match');
+    expect(tenAndOnesFaultOf(TEN_AND_ONES, 4, 10)).toBe('match');   // either circle
+    expect(tenAndOnesFaultOf(TEN_AND_ONES, 6, 8)).toBe('no-ten');
+    expect(tenAndOnesFaultOf(TEN_AND_ONES, 7, 7)).toBe('no-ten');
+    expect(tenAndOnesFaultOf(TEN_AND_ONES, 10, 3)).toBe('miscount');
+    expect(tenAndOnesFaultOf(TEN_AND_ONES, 0, 0)).toBe('empty');
+  });
+
+  it('never names the leftover before the child has produced it', () => {
+    // The whole and the TEN are both the question — the ten is the structure
+    // K.NBT.1 names, not a number to find. The leftover is the answer.
+    const surfaces = [
+      spokenLine(itemCue(TEN_AND_ONES, { opening: true, howToPlay: true })),
+      spokenLine(pronounceCue(TEN_AND_ONES)),
+      stimulusFor(TEN_AND_ONES),
+      spokenLine(tenAndOnesVerdictCue(TEN_AND_ONES, 6, 8)),
+      spokenLine(tenAndOnesVerdictCue(TEN_AND_ONES, 0, 0)),
+      spokenLine(tenAndOnesVerdictCue(TEN_AND_ONES, 10, 3)),
+    ];
+    for (const surface of surfaces) {
+      expect(surface).not.toMatch(LEFTOVER_WORD);
+    }
+    expect(spokenLine(itemCue(TEN_AND_ONES))).toContain('Fourteen is the whole');
+    expect(spokenLine(itemCue(TEN_AND_ONES))).toContain('a ten and some more');
+    // The silence contract carries the ban for the whole hand turn.
+    expect(itemCue(TEN_AND_ONES)).toContain('never say how many are left over after the ten');
+  });
+
+  it('names the decomposition ONLY in the affirmation the child earned', () => {
+    expect(spokenLine(tenAndOnesVerdictCue(TEN_AND_ONES, 10, 4)))
+      .toBe('Yes! A ten and four more. Fourteen is one ten and four ones.');
+  });
+
+  it('corrects the no-ten miss on the PROPERTY, never with a pair', () => {
+    const noTen = spokenLine(tenAndOnesVerdictCue(TEN_AND_ONES, 6, 8));
+    expect(noTen).toContain('neither part is a ten');
+    expect(noTen).toContain('Fourteen is one ten and some more');
+    // A miscount is a different lesson and gets a different line.
+    expect(spokenLine(tenAndOnesVerdictCue(TEN_AND_ONES, 10, 3)))
+      .toContain('make thirteen, not fourteen');
+  });
+
+  it('drives the harness at the sum-correct miss, not at an arithmetic slip', () => {
+    const answers = numberBondHarnessAnswers(TEN_AND_ONES);
+    expect(answers.placed).toEqual({ correct: 10 * 100 + 4, wrong: 7 * 100 + 7 });
+    expect(answers.signatureWrong?.why).toMatch(/no ten/);
+    expect(answers.leakTokens).toEqual([]);
+    // The packed encoding decodes back through the shared harness entry point.
+    expect(bondVerdictCueForPlaced(TEN_AND_ONES, answers.placed!.correct))
+      .toBe(tenAndOnesVerdictCue(TEN_AND_ONES, 10, 4));
+    expect(bondVerdictCueForPlaced(TEN_AND_ONES, answers.placed!.wrong))
+      .toContain('does NOT match');
+  });
+
+  it('teaches the RULE on entry, because decompose just taught the opposite', () => {
+    expect(actionFor('ten-and-ones')).toBe('ten-split');
+    expect(actionFor('ten-and-ones')).not.toBe(actionFor('decompose'));
+    expect(moveOnCue(D0, TEN_AND_ONES, { howToPlay: true }))
+      .toContain('Put a whole ten in one circle and the rest in the other');
   });
 });

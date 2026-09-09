@@ -3282,8 +3282,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-bond',
-    description: 'Live tutor-judged number bond practice (DI modality) on the classic circle-and-branch part-part-whole diagram. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the missing part OUT LOUD (missing-part, both grades); they answer WITH THEIR HANDS by splitting counters into the two part circles to find every pair (decompose — one judged turn per pair), by writing all four fact-family equations (fact-family), and by building a number sentence from tiles (build-equation) — in those three, constructing it IS the skill. Perfect for K-1 addition/subtraction fluency. ESSENTIAL for Kindergarten and Grade 1 number decomposition.',
-    constraints: 'Max number 5 for Kindergarten, 10 for Grade 1, so every spoken answer is a number word from 1 to 9. Requires a microphone: the missing-part answer is spoken and judged by the Live tutor, and there is no Check button, no stepper and no typed number answer anywhere. Kindergarten uses decompose and missing-part only; fact-family and build-equation are Grade 1. Known parts are never 0 and never the whole.',
+    description: 'Live tutor-judged number bond practice (DI modality) on the classic circle-and-branch part-part-whole diagram. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the missing part OUT LOUD (missing-part, both grades); they SAY a related pair of facts out loud over one bond — the addition fact, then the subtraction that matches it (related-fact, both grades); they answer WITH THEIR HANDS by splitting counters into the two part circles to find every pair (decompose — one judged turn per pair), by breaking a TEEN number 11-19 into a full ten and the ones left over (ten-and-ones), by writing all four fact-family equations (fact-family), and by building a number sentence from tiles (build-equation) — in those four, constructing it IS the skill. Perfect for K-1 addition/subtraction fluency. ESSENTIAL for Kindergarten and Grade 1 number decomposition, and for teen numbers as ten ones and some further ones (K.NBT.1).',
+    constraints: 'Max number 5 for Kindergarten, 10 for Grade 1, so every spoken answer is a number word from 1 to 9. Requires a microphone: the missing-part answer is spoken and judged by the Live tutor, and there is no Check button, no stepper and no typed number answer anywhere. Kindergarten uses decompose, missing-part, related-fact and ten-and-ones only; fact-family and build-equation are Grade 1 — related-fact and fact-family teach the SAME inverse relationship, and which one a band gets turns on whether the answer is said or typed. In related-fact the two parts must differ (a symmetric bond like three and three would give both spoken turns the same answer, and the activity drops it). The ten-and-ones mode is the one exception to the max-number caps: its wholes are the teen numbers 11-19 at Kindergarten, because its answer is a placement rather than a spoken number. Known parts are never 0 and never the whole.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'build', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'LIVE-JUDGED number bond practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the bond, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
@@ -3317,7 +3317,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
           instruction:
             'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
-            + 'On a SPOKEN item (missing-part) the answer is ONE number word from 1 to 9 and nothing else. '
+            + 'On a SPOKEN item (missing-part; related-fact) the answer is ONE number word from 1 to 9 and nothing else. '
             + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
             + 'On a HANDS item (decompose; fact-family; build-equation) the child answers by changing what is on the screen, and you are told what they made and whether it matches. '
             + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
@@ -3368,6 +3368,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Break the whole into parts by splitting counters into the two circles — one judged turn per pair until every way is found. Concrete manipulative.',
       },
       {
+        evalMode: 'ten_and_ones',
+        affordances: { representation: 'concrete', answers: ['build'] },
+        label: 'Ten and Ones (Teen Numbers)',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['ten-and-ones'],
+        // β sits above `decompose` (1.5) because the accept set is a single
+        // pair rather than any pair: a split that makes the whole is still
+        // wrong unless one part is a full ten, which is the place-value
+        // demand the mode exists to measure.
+        description: 'Break a teen number (11-19) into a full TEN and the ones left over by splitting counters into the two circles — the only accepted pair is ten and the rest, so a sum-correct split like 6 and 8 is corrected. CCSS K.NBT.1, "compose and decompose numbers 11-19 into ten ones and some further ones". Concrete manipulative; no microphone needed. Kindergarten.',
+      },
+      {
         evalMode: 'missing_part',
         affordances: { answers: ['spoken'] },
         label: 'Missing Part (Tier 2)',
@@ -3381,6 +3394,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Find the unknown part and SAY it out loud — the tutor judges the spoken number. Unaided spoken production; no stepper and no menu.',
       },
       {
+        evalMode: 'related_fact',
+        affordances: { answers: ['spoken'] },
+        label: 'Related Facts (Spoken)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['related-fact'],
+        // β sits between `missing_part` (2.5) and `fact_family` (3.5), and the
+        // spacing is the point: turn 1 IS a missing_part ask, and turn 2 adds
+        // the demand neither neighbour measures — carrying the fact just found
+        // into its subtraction form. Both gaps are 0.5, inside the densify rule.
+        description: 'Say TWO related facts over one bond: first the addition fact ("two and how many more make five?"), then the subtraction that matches it ("five take away three — what is left?"). The second turn is answered with the number the child produced on the first, so the inverse relationship is something they DO rather than something they are told. Unaided spoken production, one number word per turn; no typing and no menu. Kindergarten and Grade 1 — this is the K-reachable form of the fact family (K OPS001-02-G, OPS001-03-F).',
+      },
+      {
         evalMode: 'fact_family',
         affordances: { representation: 'symbolic', answers: ['type'] },
         label: 'Fact Family (Tier 3)',
@@ -3389,7 +3415,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['fact-family'],
         // β HELD — the written surface is untouched (the same four boxes);
         // only the Check button became a stillness close.
-        description: 'Write all 4 related equations in the boxes; the tutor judges the written family. Symbolic FORM is the skill, so the answer is written, not spoken. Grade 1.',
+        description: 'Write all 4 related equations in the boxes; the tutor judges the written family. Symbolic FORM is the skill, so the answer is written, not spoken. Grade 1 — and the floor HELD on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): writing four equations is typing, which the pre-reader band excludes by rule. Route K inverse-operation objectives (K OPS001-02-G, OPS001-03-F) to the spoken related_fact instead — a 2026-09-09 K probe of missing_part against both objectives came back ten unknown-addend turns with no subtraction anywhere, so missing_part is the part-part-whole half only, not the relationship (qa/eval-reports/k-held-floors-2026-09-09.json).',
       },
       {
         evalMode: 'build_equation',
