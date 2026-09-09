@@ -43,6 +43,7 @@ import StoryTalk from '../primitives/visual-primitives/literacy/StoryTalk';
 import WordFlip from '../primitives/visual-primitives/literacy/WordFlip';
 import YouAndMe from '../primitives/visual-primitives/literacy/YouAndMe';
 import StoryBridge from '../primitives/visual-primitives/literacy/StoryBridge';
+import StoryRibbon from '../primitives/visual-primitives/literacy/StoryRibbon';
 
 import {
   EvaluationProvider,
@@ -79,7 +80,8 @@ type PrimitiveType =
   | 'story-talk'
   | 'word-flip'
   | 'you-and-me'
-  | 'story-bridge';
+  | 'story-bridge'
+  | 'story-ribbon';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -123,6 +125,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   // ===== SL: Speaking & Listening =====
   { value: 'read-aloud-studio', label: 'Read Aloud Studio', icon: '🎙️', topic: 'Fluency practice with model reading', strand: 'SL', wave: 4 },
   { value: 'story-talk', label: 'Story Talk', icon: '👂', topic: 'A squirrel hides an acorn', strand: 'SL', wave: 5 },
+  { value: 'story-ribbon', label: 'Story Ribbon', icon: '🎗️', topic: 'Tell a connected story from three picture moments', strand: 'SL', wave: 6 },
   // ===== L: Language =====
   { value: 'you-and-me', label: 'You & Me', icon: '\uD83D\uDC65', topic: 'Speaker and listener pronouns in familiar routines', strand: 'L', wave: 6 },
   { value: 'sentence-builder', label: 'Sentence Builder', icon: '🧱', topic: 'Building compound sentences', strand: 'L', wave: 1 },
@@ -175,6 +178,14 @@ const PrimitiveRenderer: React.FC<{
         <StoryBridge data={{
           ...(data as Parameters<typeof StoryBridge>[0]['data']),
           instanceId: 'story-bridge-tester',
+          onEvaluationSubmit,
+        }} />
+      );
+    case 'story-ribbon':
+      return (
+        <StoryRibbon data={{
+          ...(data as Parameters<typeof StoryRibbon>[0]['data']),
+          instanceId: 'story-ribbon-tester',
           onEvaluationSubmit,
         }} />
       );
@@ -419,6 +430,17 @@ const EvaluationResultsPanel: React.FC = () => {
                   </div>
                 )}
                 {result.metrics.type === 'story-bridge' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Hear again: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
+                )}
+                {result.metrics.type === 'story-ribbon' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.challengeType}</span>
                     <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>

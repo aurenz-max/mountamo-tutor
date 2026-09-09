@@ -62,6 +62,7 @@ import { generateStoryTalk } from '../../literacy/gemini-story-talk';
 import { generateWordFlip } from '../../literacy/gemini-word-flip';
 import { generateYouAndMe } from '../../literacy/gemini-you-and-me';
 import { generateStoryBridge } from '../../literacy/gemini-story-bridge';
+import { generateStoryRibbon } from '../../literacy/gemini-story-ribbon';
 
 // ============================================================================
 // Wave 1: Writing — Paragraph Architect
@@ -679,4 +680,11 @@ registerContextGenerator('story-bridge', async (ctx) => ({
   data: await generateStoryBridge(ctx),
 }));
 
-console.log('📚 Literacy generators registered: 33 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip + You & Me + Story Bridge)');
+// Story Ribbon — K connected oral storytelling from three arranged pictures.
+registerContextGenerator('story-ribbon', async (ctx) => ({
+  type: 'story-ribbon',
+  instanceId: ctx.instanceId,
+  data: await generateStoryRibbon(ctx),
+}));
+
+console.log('📚 Literacy generators registered: 34 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip + You & Me + Story Bridge + Story Ribbon)');

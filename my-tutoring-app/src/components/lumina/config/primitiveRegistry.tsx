@@ -10,6 +10,7 @@ import { MathVisuals } from '../primitives/MathVisuals';
 import SentenceAnalyzer from '../primitives/visual-primitives/literacy/SentenceAnalyzer';
 import YouAndMe from '../primitives/visual-primitives/literacy/YouAndMe';
 import StoryBridge from '../primitives/visual-primitives/literacy/StoryBridge';
+import StoryRibbon from '../primitives/visual-primitives/literacy/StoryRibbon';
 import { CustomVisual } from '../primitives/CustomVisual';
 import GraphBoard from '../primitives/GraphBoard';
 import ThreeDShapeExplorer from '../primitives/visual-primitives/math/ThreeDShapeExplorer';
@@ -393,6 +394,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'story-bridge': {
     component: StoryBridge,
     sectionTitle: 'Story Bridge',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'story-ribbon': {
+    component: StoryRibbon,
+    sectionTitle: 'Story Ribbon',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

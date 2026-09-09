@@ -190,6 +190,7 @@ export type {
   WordFlipMetrics,
   YouAndMeMetrics,
   StoryBridgeMetrics,
+  StoryRibbonMetrics,
   InteractiveBookMetrics,
   WordWorkoutMetrics,
   WordSorterMetrics,

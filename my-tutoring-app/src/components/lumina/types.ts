@@ -166,6 +166,7 @@ export interface SentenceSchemaData {
 export type { SentenceAnalyzerData, SentenceAnalyzerChallenge, SentenceWord } from './primitives/visual-primitives/literacy/SentenceAnalyzer';
 export type { YouAndMeData, YouAndMeChallenge } from './primitives/visual-primitives/literacy/YouAndMe';
 export type { StoryBridgeData, StoryBridgeChallenge, StoryBridgeStory, StoryBridgeCharacter } from './primitives/visual-primitives/literacy/StoryBridge';
+export type { StoryRibbonData, StoryRibbonChallenge, StoryRibbonEvent } from './primitives/visual-primitives/literacy/StoryRibbon';
 export type { StoryTalkData } from './primitives/visual-primitives/literacy/StoryTalk';
 export type { WordFlipData, WordFlipChallenge } from './primitives/visual-primitives/literacy/WordFlip';
 export type { DiDiceRollData, DiDiceRollChallenge, DiceComparison, DieValue } from './primitives/visual-primitives/direct-instruction/DiDiceRoll';
@@ -1437,6 +1438,7 @@ export type ComponentId =
   | 'sentence-analyzer'  // Linguistic breakdown
   | 'you-and-me'         // Spoken I/you sentences from the current speaker's perspective
   | 'story-bridge'       // K comparing texts: tap the character in the OTHER story who is alike (judged loop)
+  | 'story-ribbon'       // K oral storytelling: arrange three picture moments and tell a connected account
   | 'graph-board'        // Interactive polynomial graphing tool
 
   // Math & Science Engines

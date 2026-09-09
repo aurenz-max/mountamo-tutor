@@ -185,6 +185,177 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     },
   },
   {
+    id: 'story-ribbon',
+    description:
+      'Kindergarten Language Arts oral storytelling: arrange three pictorial event cues and tell one connected account '
+      + 'of what happened from beginning to end. Children produce an original spoken retelling that covers all three '
+      + 'events in chronological order; they are not choosing a sentence or repeating a visible script. ESSENTIAL for '
+      + 'K speaking and listening, guided storytelling, temporal sequence, and connected oral language. Mode-specific '
+      + 'tasks also assess present/past/future tense control or an explained story-to-experience connection.',
+    constraints:
+      'Requires a microphone and live tutor. Use exactly three familiar, concrete, safely picturable events per story. '
+      + 'Picture labels are short time-neutral noun phrases; full model sentences remain hidden until a verdict. The '
+      + 'manifest must NOT supply story events or model sentences — the Fork B orchestrator generates and validates them. '
+      + 'The base mode scores event coverage, connection, and chronological order without requiring a tense or the literal '
+      + 'words first/next/last. Tense modes score consistent present, future, or past time without demanding exact model verbs. '
+      + 'Within each retell mode, difficulty changes narrative structure from a familiar routine to a direct problem-solution '
+      + 'arc to a failed-attempt/adapted-solution arc; event count and time requirements stay fixed. '
+      + 'Story-to-experience accepts personal, familiar, observed, heard-about, or imagined examples; never require private '
+      + 'disclosure or grade the truth or emotional value of a memory. Its structural axis intentionally saturates because '
+      + 'the current response contract permits a connection to any one event.',
+    evalModes: [
+      {
+        evalMode: 'tell_connected_account', label: 'Connected account', beta: 2.5, discrimination: 1.0,
+        scaffoldingMode: 2, challengeTypes: ['tell_connected_account'],
+        description: 'Arrange three pictured events and tell one connected chronological account; any consistent tense is accepted.',
+      },
+      {
+        evalMode: 'tell_present_account', label: 'Present-time account', beta: 3.0, discrimination: 1.6,
+        scaffoldingMode: 3, challengeTypes: ['tell_present_account'],
+        description: 'Tell all three pictured events consistently in present time, as if they are happening today.',
+      },
+      {
+        evalMode: 'tell_future_account', label: 'Future-time account', beta: 3.5, discrimination: 1.6,
+        scaffoldingMode: 3, challengeTypes: ['tell_future_account'],
+        description: 'Tell all three pictured events consistently in future time, as if they will happen tomorrow.',
+      },
+      {
+        evalMode: 'tell_past_account', label: 'Past-time account', beta: 3.5, discrimination: 1.6,
+        scaffoldingMode: 3, challengeTypes: ['tell_past_account'],
+        description: 'Tell all three pictured events consistently in past time, as if they happened yesterday.',
+      },
+      {
+        evalMode: 'story_to_experience', label: 'Story-to-world connection', beta: 4.0, discrimination: 1.0,
+        scaffoldingMode: 4, challengeTypes: ['story_to_experience'],
+        description: 'Identify one story event and explain its connection to a personal, familiar, observed, heard-about, or imagined experience.',
+      },
+    ],
+    supportsEvaluation: true,
+    audioInput: JUDGED_AUDIO_INPUT,
+    tutoring: {
+      taskDescription:
+        'Story Ribbon is a live-judged oral-language activity. The child is on turn {{currentTurn}} of '
+        + '{{totalTurns}} in mode "{{challengeType}}". Story: {{storyTitle}}; character: {{characterName}}; '
+        + 'setting: {{setting}}; visible time cue: {{timeCue}}. {{taskFocus}} The child plans with three '
+        + 'visible, time-neutral picture cues, then answers aloud in original words. The full event sentences '
+        + 'are hidden answer material until a verdict. The scripted runner owns every prompt, correction, '
+        + 'affirmation, advance, replay, and closing line. Support tier: {{supportTier}}. {{tutorRevealPolicy}}',
+      contextKeys: [
+        'challengeType',
+        'storyTitle',
+        'characterName',
+        'setting',
+        'timeCue',
+        'taskFocus',
+        'currentTurn',
+        'totalTurns',
+        'supportTier',
+        'showSequenceLabels',
+        'showFlowArrows',
+        'showSelfCheck',
+        'showConnectionFrame',
+        'instructionLevel',
+        'tutorRevealPolicy',
+      ],
+      scaffoldingLevels: {
+        level1:
+          'The visible ribbon and the current [SR_ITEM] ask are the first scaffold. After the ask, wait. '
+          + 'If the child taps hear-again, speak only the exact [SR_HEAR] line; do not describe an event, '
+          + 'supply an order, conjugate a verb, or invent a connection.',
+        level2:
+          'After an incorrect spoken attempt, use only the exact "My turn" correction carried by the current '
+          + 'item cue. It models the current three-event account or a privacy-safe story connection, then '
+          + 'returns the task to the child. Do not add another hint or question.',
+        level3:
+          'If the child still needs support, repeat the same scripted correction a little slower and stop. '
+          + 'The runner enforces the correction cap and supplies the move-on line; never solve a later item, '
+          + 'announce progress, or continue coaching after the scripted line.',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Tells only one or two pictured events, or says disconnected picture labels instead of one account',
+          response:
+            'Use the current item\'s exact scripted correction. It models all three meanings in connected order only after the attempt, then asks for the whole story again.',
+        },
+        {
+          pattern: 'Includes all three events but tells them in reverse or another non-chronological order',
+          response:
+            'Use the exact scripted correction and wait. Do not point to a card, state the hidden order separately, or add positional hints beyond the supplied line.',
+        },
+        {
+          pattern: 'Covers the story events but drifts away from the visible Today, Yesterday, or Tomorrow time cue',
+          response:
+            'Use the exact correction for the active tense mode. It re-models the account and names the required time; never supply an extra conjugated verb or accept tense drift because the events were covered.',
+        },
+        {
+          pattern: 'In story_to_experience, gives only a story event or only another experience',
+          response:
+            'Use the exact privacy-safe connection correction. Accept something done, seen, heard about, familiar, or imagined; never press for a personal memory.',
+        },
+        {
+          pattern: 'In story_to_experience, names both parts but does not explain what connects them',
+          response:
+            'Use the exact connection correction and wait for the child to explain the similarity. Do not decide whether the memory is true, important, or emotionally appropriate.',
+        },
+        {
+          pattern: 'Pauses while arranging pictures or preparing a spoken response',
+          response:
+            'Stay silent and allow planning time. Speak again only when the application sends an [SR_HEAR], verdict, move-on, or completion message.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'SUPPORT WITHDRAWAL',
+          instruction:
+            'Current support tier: {{supportTier}}. {{tutorRevealPolicy}} The current visibility flags are '
+            + 'sequence labels={{showSequenceLabels}}, flow arrows={{showFlowArrows}}, live self-check={{showSelfCheck}}, '
+            + 'and connection frame={{showConnectionFrame}}; instruction detail={{instructionLevel}}. These flags '
+            + 'override generic scaffold wording. Never restore a withdrawn visual or step through speech. Structural '
+            + 'difficulty may change the generated three-event arc from routine to direct solution to adapted solution. '
+            + 'The event count, canonical order, mode, time condition, privacy boundary, and verdict standard stay fixed.',
+        },
+        {
+          title: 'LIVE-JUDGED STORY RIBBON SCRIPT',
+          instruction:
+            'Messages tagged [SR_ITEM], [SR_MOVE], [SR_COMPLETE], or [SR_HEAR] contain the only lesson '
+            + 'words you may speak. Each message identifies its exact spoken line with "Say exactly" or '
+            + '"Say only". Speak that quoted line and nothing else. Never read a bracket tag, judging rule, '
+            + 'hidden event meaning, or application instruction aloud. The application owns progression; '
+            + 'do not greet separately, announce a new item, or add praise or a follow-up question.',
+        },
+        {
+          title: 'JUDGE THE ACTIVE MODE',
+          instruction:
+            'Use the latest [SR_ITEM] contract as the sole judging authority because modes may change within '
+            + 'one session. tell_connected_account requires all three event meanings in connected chronological '
+            + 'order but permits any consistent tense. tell_present_account, tell_future_account, and '
+            + 'tell_past_account additionally require consistent Today, Tomorrow, or Yesterday time. '
+            + 'story_to_experience requires one story event, another personal/familiar/observed/heard-about/'
+            + 'imagined experience, and an explained similarity. Accept child grammar and paraphrase; never '
+            + 'require literal model verbs or the words first, next, and last.',
+        },
+        {
+          title: 'ANSWER AND PRIVACY BOUNDARY',
+          instruction:
+            'Before a verdict, never reveal, paraphrase, or hint at a hidden event sentence, the canonical '
+            + 'event order, a target conjugated verb, or a sample connection. Visible title, character, setting, '
+            + 'time cue, picture labels, and task directions are safe. A correction after an actual incorrect '
+            + 'attempt is the only modeling exception, and its exact line is already supplied by the item cue. '
+            + 'For story_to_experience, never require private disclosure, ask for more personal detail, or judge '
+            + 'the truth or emotional value of an example; observed, heard-about, familiar, and imagined examples count.',
+        },
+        {
+          title: 'WAIT FOR THE CHILD',
+          instruction:
+            'After the ask or a correction, stop speaking. The child may need time to inspect, swap, or choose '
+            + 'picture cards before talking. Do not fill silence, narrate the screen, repeat the question on your '
+            + 'own, or treat card taps as a finished spoken answer. The application will send the next cue.',
+        },
+      ],
+    },
+    affordances: { representation: 'pictorial', answers: ['spoken', 'manipulate'], role: 'apply', minutes: 5 },
+  },
+  {
     id: 'letter-workshop',
     description: 'Letter formation practice: trace guided strokes, copy a separate model onto blank writing lines, or write from an audible letter name and case. All 26 letters in both cases, with cumulative Groups 1-4 and 3-6 challenges.',
     constraints: 'Code owns letter templates and scope. difficulty easy/medium/hard withdraws support and selects low/middle/high available form complexity within each allowed case, widening to the neighbouring complexity band so every item in a session is a different letter; only a narrow scope saturates. Use letters, letterCase, letterGroup (1-4), and count (3-6). Trace is assisted path following. Copy/write use provisional geometric feedback retained locally, excluded from adaptive updates pending calibration. Independent write hides the target until submission and requires audio playback. Mixed write after a model is practice, not an unaided baseline.',

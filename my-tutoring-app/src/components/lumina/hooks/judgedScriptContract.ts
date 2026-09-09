@@ -57,6 +57,9 @@ export type ResponseClassId =
   | 'closed_set_choice'
   | 'open_set_word'
   | 'concept_statement'
+  | 'connected_account'
+  | 'tense_controlled_account'
+  | 'story_experience_connection'
   | 'procedure_step'
   | 'deduction';
 
@@ -274,6 +277,45 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
       + 'long correction runs; never raise maxCorrections.\n'
       + '(4) THE LENGTH CEILING IS ON THE ANCHORS, NOT THE CHILD. A rambling correct answer is '
       + 'correct. Anchors ≤ 4 words, the concept sentence ≤ 12, so the affirm line stays speakable.',
+  },
+  connected_account: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'USER BUILD REQUEST 2026-09-08 for the Story Ribbon design, whose explicit core task is '
+      + 'telling a connected account of three pictured events. First caller: story-ribbon. '
+      + 'A live microphone/judge acceptance sitting remains owed before adaptive mastery credit.',
+    notes:
+      'An original spoken account connecting exactly three visible event meanings in chronological order. '
+      + 'The judge scores meaning and order, not verbatim sentences or required transition tokens. The pack '
+      + 'must accept child grammar, paraphrase and extra relevant detail; refuse disconnected picture labels, '
+      + 'missing events, reversed order, and a different invented story. Tense is not part of the birth class. '
+      + 'The two-correction cap is load-bearing for this open response and must not be raised.',
+  },
+  tense_controlled_account: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'USER BUILD REQUEST 2026-09-08 for Story Ribbon L1 modes, explicitly approving separate '
+      + 'present-, future-, and past-time story production. First caller: story-ribbon. A live '
+      + 'microphone/judge acceptance sitting remains owed before adaptive mastery credit.',
+    notes:
+      'A connected three-event account with the additional requirement that story time remain '
+      + 'consistent with one visible non-conjugated cue: Today, Tomorrow, or Yesterday. Judge meaning, '
+      + 'chronology, and temporal consistency rather than exact model verbs. Accept age-appropriate '
+      + 'inflection and paraphrase, but refuse an otherwise correct account that switches away from the '
+      + 'target time. The two-correction cap is load-bearing.',
+  },
+  story_experience_connection: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'USER BUILD REQUEST 2026-09-08 for Story Ribbon L1 modes, explicitly approving the '
+      + 'story_to_experience task. First caller: story-ribbon. A live microphone/judge acceptance '
+      + 'sitting remains owed before adaptive mastery credit.',
+    notes:
+      'The child identifies one event from a visible three-event story, supplies a personal, familiar, '
+      + 'observed, heard-about, or imagined experience, and explains a meaningful connection. The judge '
+      + 'must not grade truth, emotional value, or private detail, and must accept a non-personal or imagined '
+      + 'alternative when the child declines disclosure. An event alone, an experience alone, or a bare claim '
+      + 'that they connect is insufficient. The two-correction cap is load-bearing.',
   },
   procedure_step: {
     status: 'accepted-build-ahead',

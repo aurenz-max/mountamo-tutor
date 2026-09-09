@@ -2530,6 +2530,25 @@ export interface StoryBridgeMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+/** story-ribbon — K connected oral storytelling, judged-loop birth (2026-09-08). */
+export interface StoryRibbonMetrics extends BasePrimitiveMetrics {
+  type: 'story-ribbon';
+  challengeType:
+    | 'tell_connected_account'
+    | 'tell_present_account'
+    | 'tell_future_account'
+    | 'tell_past_account'
+    | 'story_to_experience'
+    | 'mixed';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface WordWorkoutMetrics extends BasePrimitiveMetrics {
   type: 'word-workout';
   mode: 'real-vs-nonsense' | 'picture-match' | 'word-chains' | 'sentence-reading';
@@ -3840,6 +3859,7 @@ export type PrimitiveMetrics =
   | WordFlipMetrics
   | YouAndMeMetrics
   | StoryBridgeMetrics
+  | StoryRibbonMetrics
   // Literacy (Wave 5)
   | WordWorkoutMetrics
   | WordSorterMetrics
