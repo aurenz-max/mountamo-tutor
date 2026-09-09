@@ -1,6 +1,17 @@
 # K Language Arts coverage audit
 
-**Build update, 2026-09-07:** Letter Workshop's first assisted-tracing task is now implemented and browser-tested. See [build status](build-status.md) for the implementation queue and remaining copy/independent writing work. The frozen coverage findings below are not promoted by this build.
+**Build update, 2026-09-09:** Four design themes are built: Letter Workshop (`letter-workshop`,
+trace/copy/write with a mode-aware tutor scaffold, support tiers and scoped structural
+difficulty) and You & Me (`you-and-me`, spoken I/you perspective sentences with support
+tiers). Story Bridge (`story-bridge`, committed `e1ba04bd`) is a judged-loop gesture birth with a
+tutoring block and a passing headless DI drive. Story Ribbon (`story-ribbon`) is built through
+five eval modes, tutoring, support tiers, structural difficulty and sound; eight themes remain
+proposed. The atlas carries this as a build-status layer read from `build-status.json`, the
+structured twin of [build status](build-status.md): a "Built primitive" filter, build chips on
+requirements, work items and primitives, and a build record listing what was verified and what
+is still owed. The frozen coverage findings below are not promoted by any build; the artifact
+build validates every build item against the design themes, work items, live catalog and report
+files.
 
 Open [the HTML atlas](index.html). It is the primary report: 191 live published
 requirements, explicit primitive/mode reviews in both directions, generated task
@@ -28,13 +39,16 @@ captures drawing or scores strokes. The recommendation is to reuse those display
 inspect tracing infrastructure, then implement an evaluated letter-writing interaction.
 This is not a claim that the repository has no writing-related code.
 
-The current catalog now contains 202 primitives. The added `di-worked-procedure`
-is restricted to multi-digit subtraction and has no K Language Arts home. Comparing
-the catalog exports confirmed all previous capabilities were unchanged. The reviewed
-catalog baseline records this check; saved probe hashes remain untouched, so the atlas
-conservatively marks those draws as needing revalidation while retaining their findings.
+The current catalog contains 208 primitives. Since the review baseline, `di-worked-procedure`
+(multi-digit subtraction), `di-deduction` (no K Language Arts home), `letter-workshop`,
+`you-and-me`, `story-bridge`, `story-ribbon`, and the K Mathematics `measure-lab` were added. Comparing the catalog exports
+confirmed every previously reviewed entry is unchanged in description, constraints, domain and
+modes, so all decisions and edges stand; `review-basis.json` records each check. The literacy
+additions are surfaced as build status, not as reviewed fits. Saved probe hashes remain untouched,
+so the atlas conservatively marks those draws as needing revalidation while retaining their
+findings.
 
-2026-09-07 scope: 47 direct candidates, 109 partial fits, 35 development requirements.
+2026-09-09 scope: 47 direct candidates, 109 partial fits, 35 development requirements.
 These are catalog capability findings, not verified learning outcomes. Six pairs were
 probed with two fresh generation draws each: 12 draws, 62 usable post-conversion items,
 five draws with confirmed content findings. Production item/cue conversion ran; live
@@ -66,6 +80,18 @@ Full generated payloads live in `evidence/`; the HTML embeds human-readable prev
 and check results, so reading JSON is unnecessary. Different subject/grade snapshots
 need their own reviews and must not inherit these decisions.
 
-The next slice is the P0 repair queue in the atlas: empty subject-verb practice and
-riddle answer pictures. Picture-pair tasks, K sentence construction and letter writing
-are separate capability investments, not reasons to weaken curriculum requirements.
+The Development queue opened on a three-item execution slice instead of the full 31-item
+backlog. The empty subject-verb practice, answer-picture riddle, and text-as-picture stimulus
+repairs closed on 2026-09-09. PV-3 now rejects malformed generated pictures before assembly
+and again at the cached-payload boundary; two association draws plus every sibling mode
+passed. Choose **All findings** to inspect the complete backlog. `k-grammar-completion` is
+now the next capability investment; picture-pair tasks and K sentence construction remain
+separate work.
+
+## Other scopes
+
+K Mathematics (166 requirements, 20 probed pairs) lives in [math-k/](math-k/README.md) with its
+own review, basis, evidence and atlas; the two matrices cross-link. Every script takes
+`--scope la-k|math-k` (default `la-k`); scopes are declared in
+`scripts/lib/curriculum-coverage-scopes.mjs`. The probe keeps stale draws unless `--redraw`
+is passed.

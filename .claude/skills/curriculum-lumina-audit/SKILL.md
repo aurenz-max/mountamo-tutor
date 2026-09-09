@@ -17,9 +17,17 @@ Arguments: `audit <subject> [grade] [unit]`, `gaps`, `unused`, `verify <requirem
 
 Read `my-tutoring-app/qa/curriculum-coverage/README.md`. It documents the runnable
 snapshot, explicit review, generation probe, content checks and HTML build commands.
-The implemented pilot is K LANGUAGE_ARTS (191 requirements); the six content-probed
-pairs are listed in `scripts/curriculum-coverage-probe.mjs`. Do not run it for a different
-subject and imply that subject was tested. Extend scope-specific inputs/reviews first.
+Two scopes are reviewed: K LANGUAGE_ARTS (191 requirements, six probed pairs, the
+original pilot at `qa/curriculum-coverage/`) and K MATHEMATICS (166 requirements, twenty
+probed pairs, `qa/curriculum-coverage/math-k/`, own README). Every script takes
+`--scope la-k|math-k`; scopes (probe pairs, per-primitive source hashes, frozen catalog
+files) live in `scripts/lib/curriculum-coverage-scopes.mjs`, content checks in
+`scripts/lib/curriculum-coverage-checks/<scope>.mjs`, the review in
+`scripts/curriculum-coverage-review[-<scope>].py`. Do not run a scope for a different
+subject and imply that subject was tested: a new scope needs its own snapshot, basis
+(`curriculum-coverage-basis.mjs`), review, probe list and checks. Decisions never inherit
+across scopes. The probe keeps stale draws unless `--redraw` is passed, so a frozen
+pilot's findings survive a routine re-run.
 
 The atlas at `qa/curriculum-coverage/index.html` includes grade/subject navigation,
 requirements and primitive modes in both directions, generated task previews, source
@@ -57,6 +65,11 @@ minimal change, executor and acceptance examples. Deduplicate shared missing act
 Distinguish generator/interaction repair, existing-mode extension, new primitive, and
 ambiguous curriculum. Confirmed component/generator defects also enter EVAL_TRACKER.md.
 Prioritize actual blocked tasks; do not count an untested assignment as solved.
+
+`work-items.json` and `modality-prescriptions.json` must stay the SAME LENGTH — the
+artifact builder throws otherwise — so a residual found while EXECUTING an item is
+filed in `EVAL_TRACKER.md`, not appended to the atlas queue. Mark a finished item by
+striking its title and recording the met acceptance in place.
 
 The previous `upgrade`/`full-loop` behavior that rewrote curriculum to name a primitive
 is retired. Curriculum defines what to teach; audited mappings live in QA. If the user

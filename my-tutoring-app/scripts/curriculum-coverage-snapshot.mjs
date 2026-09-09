@@ -2,10 +2,13 @@ import { writeFileSync,mkdirSync } from 'node:fs';
 import { resolve,dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer,createServerModuleRunner } from 'vite';
+import { scopeFromArgv, curriculumUrl } from './lib/curriculum-coverage-scopes.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const out=resolve(root,'qa/curriculum-coverage');
-// This is the reviewed K Language Arts pilot. Other scopes need their own decisions.
-const url='http://127.0.0.1:8000/api/curriculum/curriculum/LANGUAGE_ARTS?grade=K';
+// Each scope is a separately reviewed pilot (see lib/curriculum-coverage-scopes.mjs).
+// Default scope is the original K Language Arts review; pass --scope math-k for K Mathematics.
+const scope=scopeFromArgv();
+const out=resolve(root,scope.dir);
+const url=curriculumUrl(scope);
 const response=await fetch(url,{signal:AbortSignal.timeout(30000)});
 if(!response.ok)throw new Error(`Published curriculum read failed: ${response.status}`);
 const live=await response.json();
@@ -20,5 +23,5 @@ try{
  if(new Set(catalog.map(c=>c.id)).size!==catalog.length)throw new Error('Duplicate catalog primitive');
  mkdirSync(out,{recursive:true});
  for(const [name,value]of Object.entries({'live-curriculum.json':live,'requirements.json':requirements,'catalog-export.json':catalog}))writeFileSync(resolve(out,name),JSON.stringify(value,null,2)+'\n');
- console.log(JSON.stringify({subject:'LANGUAGE_ARTS',grade:'K',requirements:requirements.length,primitives:catalog.length}));
+ console.log(JSON.stringify({scope:scope.id,subject:scope.subject,grade:scope.grade,requirements:requirements.length,primitives:catalog.length}));
 }finally{await server.close();}
