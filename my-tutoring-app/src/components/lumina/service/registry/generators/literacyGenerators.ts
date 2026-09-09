@@ -63,6 +63,7 @@ import { generateWordFlip } from '../../literacy/gemini-word-flip';
 import { generateYouAndMe } from '../../literacy/gemini-you-and-me';
 import { generateStoryBridge } from '../../literacy/gemini-story-bridge';
 import { generateStoryRibbon } from '../../literacy/gemini-story-ribbon';
+import { generateOralSentenceStudio } from '../../literacy/gemini-oral-sentence-studio';
 
 // ============================================================================
 // Wave 1: Writing — Paragraph Architect
@@ -687,4 +688,11 @@ registerContextGenerator('story-ribbon', async (ctx) => ({
   data: await generateStoryRibbon(ctx),
 }));
 
-console.log('📚 Literacy generators registered: 34 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip + You & Me + Story Bridge + Story Ribbon)');
+// Oral Sentence Studio — K-4 original vocabulary use in complete spoken sentences.
+registerContextGenerator('oral-sentence-studio', async (ctx) => ({
+  type: 'oral-sentence-studio',
+  instanceId: ctx.instanceId,
+  data: await generateOralSentenceStudio(ctx),
+}));
+
+console.log('📚 Literacy generators registered: 35 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip + You & Me + Story Bridge + Story Ribbon + Oral Sentence Studio)');

@@ -2482,6 +2482,18 @@ export interface PictureVocabularyMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface OralSentenceStudioMetrics extends BasePrimitiveMetrics {
+  type: 'oral-sentence-studio';
+  challengeType: 'describe_scene';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface StoryTalkMetrics extends BasePrimitiveMetrics {
   type: 'story-talk';
   challengeType: 'who_what_where' | 'feeling_check' | 'why_because';
@@ -3873,6 +3885,7 @@ export type PrimitiveMetrics =
   | LetterWorkshopMetrics
   | CvcSpellerMetrics
   | PictureVocabularyMetrics
+  | OralSentenceStudioMetrics
   | StoryTalkMetrics
   | WordFlipMetrics
   | YouAndMeMetrics

@@ -187,6 +187,7 @@ export type {
   LetterWorkshopMetrics,
   CvcSpellerMetrics,
   PictureVocabularyMetrics,
+  OralSentenceStudioMetrics,
   StoryTalkMetrics,
   WordFlipMetrics,
   YouAndMeMetrics,

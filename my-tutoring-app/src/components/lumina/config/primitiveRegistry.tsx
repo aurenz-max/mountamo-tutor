@@ -205,6 +205,7 @@ import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
 import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
 import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExplorer';
 import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureVocabulary';
+import OralSentenceStudio from '../primitives/visual-primitives/literacy/OralSentenceStudio';
 import SoundSwap from '../primitives/visual-primitives/literacy/SoundSwap';
 import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotter';
 import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
@@ -2248,6 +2249,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'picture-vocabulary': {
     component: PictureVocabulary,
     sectionTitle: 'Picture Vocabulary',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'oral-sentence-studio': {
+    component: OralSentenceStudio,
+    sectionTitle: 'Oral Sentence Studio',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -1546,6 +1546,7 @@ export type ComponentId =
   | 'genre-explorer'            // Text genre classification with feature checklists (grades 1-6)
   | 'text-structure-analyzer'   // Informational text organizational pattern identification (grades 2-6)
   | 'evidence-finder'           // Text evidence citing with CER framework (grades 2-6)
+  | 'oral-sentence-studio'      // Produce original oral sentences using target vocabulary
   | 'paragraph-architect'       // Scaffolded paragraph construction (grades 1-6)
   | 'phoneme-explorer'          // Interactive phoneme exploration and manipulation
   | 'picture-vocabulary'        // Picture-based vocabulary learning and practice
@@ -2278,6 +2279,7 @@ export type { RhymeStudioData } from './primitives/visual-primitives/literacy/Rh
 export type { SyllableClapperData } from './primitives/visual-primitives/literacy/SyllableClapper';
 export type { PhonemeExplorerData } from './primitives/visual-primitives/literacy/PhonemeExplorer';
 export type { PictureVocabularyData } from './primitives/visual-primitives/literacy/PictureVocabulary';
+export type { OralSentenceStudioData } from './primitives/visual-primitives/literacy/OralSentenceStudio';
 export type { SoundSwapData } from './primitives/visual-primitives/literacy/SoundSwap';
 export type { LetterSpotterData } from './primitives/visual-primitives/literacy/LetterSpotter';
 export type { LetterSoundLinkData } from './primitives/visual-primitives/literacy/LetterSoundLink';

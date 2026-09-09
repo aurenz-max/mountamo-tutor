@@ -2555,6 +2555,30 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'oral-sentence-studio',
+    description:
+      'Kindergarten Language Arts oral vocabulary and sentence production. A child studies a meaningful visible scene and '
+      + 'exactly two new target vocabulary words, then produces one original complete spoken sentence that describes '
+      + 'the scene and uses both words meaningfully. A semantic live tutor judge accepts natural paraphrases and '
+      + 'multiple valid sentences while distinguishing successful concept use from fragments, irrelevant responses, '
+      + 'and unrelated memorized sentences. Supports guided vocabulary activities, creating simple sentences from '
+      + 'newly learned story words, multiword image or scenario descriptions from a word bank, and oral rehearsal for '
+      + 'class stories, recipes, and other guided writing. ESSENTIAL for Kindergarten vocabulary use, complete oral sentences, '
+      + 'scene description, and expressive language.',
+    constraints:
+      'Requires a microphone and live tutor. Use exactly three content-bearing describe_scene challenges per session. '
+      + 'Keep the meaningful scene and exactly two target vocabulary words visible while the child answers; hide all '
+      + 'model sentences and answer wording until feedback. Each response must be one child-generated complete oral '
+      + 'sentence that describes the current scene and uses both target words coherently and with appropriate meaning. '
+      + 'Judge meaning and use rather than exact wording; accept age-appropriate grammar, inflections, and paraphrases '
+      + 'when the sentence remains complete and both concepts are clear. Reject fragments, word lists, irrelevant '
+      + 'sentences, and unrelated memorized responses. After an attempt, acknowledge conveyed meaning first, then model '
+      + 'or prompt revision only for the specific missing word, meaning, or sentence structure. The manifest must NOT '
+      + 'supply scenes, target words, or model sentences; the content-bearing generator builds all three challenges.',
+    supportsEvaluation: true,
+    audioInput: JUDGED_AUDIO_INPUT,
+  },
+  {
     id: 'picture-vocabulary',
     misconceptionScope: 'skill',
     description:

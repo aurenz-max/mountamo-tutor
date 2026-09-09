@@ -57,6 +57,7 @@ export type ResponseClassId =
   | 'closed_set_choice'
   | 'open_set_word'
   | 'concept_statement'
+  | 'vocabulary_sentence'
   | 'connected_account'
   | 'tense_controlled_account'
   | 'story_experience_connection'
@@ -277,6 +278,24 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
       + 'long correction runs; never raise maxCorrections.\n'
       + '(4) THE LENGTH CEILING IS ON THE ANCHORS, NOT THE CHILD. A rambling correct answer is '
       + 'correct. Anchors ≤ 4 words, the concept sentence ≤ 12, so the affirm line stays speakable.',
+  },
+  vocabulary_sentence: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'USER BUILD REQUEST 2026-09-09 for Oral Sentence Studio: capture new vocabulary in complete '
+      + 'child sentences, judge meaning/use rather than exact wording, and explicitly distinguish '
+      + 'valid paraphrases from fragments and unrelated memorized sentences. First caller: '
+      + 'oral-sentence-studio. A live microphone/judge acceptance sitting remains owed before '
+      + 'adaptive mastery credit.',
+    notes:
+      'One original spoken sentence grounded in a visible scene and containing exactly two visible '
+      + 'target words used with their intended meanings. The judge receives one private scene-meaning '
+      + 'sentence plus three distinct valid examples, but treats those only as semantic anchors. A '
+      + 'valid paraphrase may change word order, pronouns, grammar, and details. Four failures stay '
+      + 'separate because their feedback differs: a fragment lacks a complete thought; a relevant '
+      + 'sentence may omit a required word; both words may be present but semantically misused; and a '
+      + 'grammatical memorized sentence may be unrelated to the scene. The two-correction cap is '
+      + 'load-bearing for this open response and must not be raised.',
   },
   connected_account: {
     status: 'accepted-build-ahead',
