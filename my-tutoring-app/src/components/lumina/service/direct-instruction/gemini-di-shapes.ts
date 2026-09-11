@@ -13,11 +13,12 @@
  * extended shape at K — the objective asked for it); then the model's hint,
  * filtered to the grade menu; then the grade default (the K.G.2 five).
  *
- * EVAL MODES (L1, 2026-08-07). Four task identities, resolved per generation:
+ * EVAL MODES (L1, 2026-08-07). Five task identities, resolved per generation:
  * `name_shape` (base), `shape_review` (the same naming act over a WIDE
  * cumulative draw rather than the objective's focused set — the family review
  * convention), and the two attribute-counting skills `count_sides` /
- * `count_corners`. Fork A has no per-challenge schema to constrain, so the
+ * `count_corners`, plus `name_real_object` for naming the shape in a familiar
+ * code-drawn object. Fork A has no per-challenge schema to constrain, so the
  * resolution drives which challenge types we BUILD, exactly as di-math-facts
  * does. A blend or the unconstrained mixed path interleaves the modes so every
  * resolved identity actually appears (SP-21) — the top-level `challengeType` is
@@ -38,8 +39,8 @@
  * SUPPORT TIERS (L3, 2026-08-07). `config.difficulty` stamps a per-challenge
  * `supportTier` that the SCRIPT composes the cue from — easy = model + guide +
  * test, medium = model + test, hard = the ask alone. It is applied at the very
- * END, per challenge, from each challenge's OWN mode, and gated only on a tier
- * being present so a blended/mixed session gets it too.
+ * END and only when one mode resolves. A blended/mixed session has no single
+ * structural support surface and deliberately stays untiered.
  *
  * STRUCTURAL DIFFICULTY (L4, 2026-08-07). The SAME `config.difficulty` dial also
  * changes the PROBLEM, not just the help — because L3 alone left easy/medium/hard
@@ -75,11 +76,16 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import { resolveEvalModes, type ChallengeTypeDoc } from "../evalMode";
+import { resolveEvalModes } from "../evalMode";
+import { supportForSingleDiMode } from '../../hooks/diModeContract';
+import {
+  DI_SHAPES_CHALLENGE_TYPES,
+  DI_SHAPES_TYPE_DOCS,
+  type DiShapesChallengeType,
+} from '../../primitives/visual-primitives/direct-instruction/diShapesModes';
 import {
   isCountingType,
   type DiShapesChallenge,
-  type DiShapesChallengeType,
   type DiShapeName,
   type DiShapesSupportTier,
   type ShapeExemplar,
@@ -89,6 +95,10 @@ import {
   SAFE_ROTATION_DEG,
 } from "../../primitives/visual-primitives/direct-instruction/diShapesGeometry";
 import type { DiShapesData } from "../../primitives/visual-primitives/direct-instruction/DiShapes";
+import {
+  REAL_WORLD_SHAPE_OBJECTS,
+  type RealWorldShapeObjectId,
+} from "../../primitives/visual-primitives/shared/realWorldShapeObjects";
 
 // ── Support tier harness (L3) ───────────────────────────────────────
 
@@ -105,7 +115,7 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 /**
  * How much of the DISTAR sequence precedes the child's answer.
  *
- * The withdrawal is IDENTICAL across all four eval modes, and that is correct
+ * The withdrawal is IDENTICAL across all five eval modes, and that is correct
  * rather than lazy: every mode is the same act (look at the drawing, produce
  * the answer aloud), so the same three sub-steps precede it. What a MODE
  * changes is which shapes are drawn and how the cue is phrased (the script owns
@@ -209,7 +219,7 @@ interface ProblemShape {
  * validate an LLM against — `resolveProblemShape` is consumed by the enforcer
  * alone. One dial, one place, no drift possible.
  *
- * The lever is identical across all four eval modes because the percept is the
+ * The lever is identical across all five eval modes because the percept is the
  * same act in every one (resolve the drawing, then either name it or enumerate
  * it). What differs per mode is only what "confusable" MEANS — a near NAME for
  * the naming modes, a near COUNT for the counting ones — and that lives in
@@ -442,7 +452,7 @@ const isKindergarten = (gradeLevel: string): boolean =>
 // ── Challenge builder (all fields derived — never from the LLM) ─────
 
 /** Fisher-Yates. App code, not a workflow script — Math.random is fine. */
-const shuffle = <T,>(items: T[]): T[] => {
+const shuffle = <T,>(items: readonly T[]): T[] => {
   const out = [...items];
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -465,6 +475,7 @@ const buildChallenge = (
   shape: DiShapeName,
   index: number,
   type: DiShapesChallengeType,
+  realObject?: { id: RealWorldShapeObjectId; label: string },
 ): DiShapesChallenge => {
   const spec = SHAPE_MENU[shape];
   const base: DiShapesChallenge = {
@@ -477,6 +488,9 @@ const buildChallenge = (
     corners: spec.corners,
     rotationDeg: rotationFor(shape),
     asrAliases: spec.asrAliases,
+    ...(realObject
+      ? { realObjectId: realObject.id, realObjectLabel: realObject.label, rotationDeg: 0 }
+      : {}),
   };
 
   if (isCountingType(type)) {
@@ -518,6 +532,43 @@ export const buildShapeSequence = (
   return out;
 };
 
+interface DiShapeSeed {
+  shape: DiShapeName;
+  realObject?: { id: RealWorldShapeObjectId; label: string };
+}
+
+/** A code-owned object sequence; the table, not Gemini, supplies every answer. */
+const shapeForObject = (shape: (typeof REAL_WORLD_SHAPE_OBJECTS)[number]['shape']): DiShapeName =>
+  shape === 'diamond' ? 'rhombus' : shape;
+
+const buildRealObjectSequence = (count: number, shapePool: DiShapeName[]): DiShapeSeed[] => {
+  const out: DiShapeSeed[] = [];
+  const scopedObjects = REAL_WORLD_SHAPE_OBJECTS.filter(
+    (object) => shapePool.includes(shapeForObject(object.shape)),
+  );
+  const source = scopedObjects.length > 0 ? scopedObjects : REAL_WORLD_SHAPE_OBJECTS;
+  let pool = shuffle(source);
+  while (out.length < count) {
+    if (pool.length === 0) pool = shuffle(source);
+    const object = pool.shift();
+    if (!object) break;
+    const shape = shapeForObject(object.shape);
+    out.push({
+      shape,
+      realObject: { id: object.id, label: object.label },
+    });
+  }
+  return out;
+};
+
+const buildSeedSequence = (
+  type: DiShapesChallengeType,
+  shapePool: DiShapeName[],
+  count: number,
+): DiShapeSeed[] => type === 'name_real_object'
+  ? buildRealObjectSequence(count, shapePool)
+  : buildShapeSequence(shapePool, count).map((shape) => ({ shape }));
+
 /** Split `total` into `k` shares as evenly as possible (di-math-facts). */
 const distribute = (total: number, k: number): number[] => {
   const base = Math.floor(total / k);
@@ -531,33 +582,10 @@ const MAX_INSTANCE_COUNT = 6;
 // ── Gemini wrapper (title/description/shape hint ONLY — Fork A) ─────
 
 /** Skill docs for the intent→mode router (Fork A — no schema to constrain). */
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  name_shape: {
-    promptDoc:
-      `"name_shape": the child sees ONE drawn flat shape at some rotation and SAYS ITS NAME ("triangle"). The base skill, drilled over the objective's focused set of shapes.`,
-    schemaDescription: "'name_shape' (say the drawn shape's name)",
-  },
-  shape_review: {
-    promptDoc:
-      `"shape_review": cumulative / spaced review of shape NAMING — the same act as name_shape, but the shapes are drawn as a WIDE mix across everything taught at this grade rather than the objective's one focused set.`,
-    schemaDescription: "'shape_review' (mixed cumulative naming review)",
-  },
-  count_sides: {
-    promptDoc:
-      `"count_sides": the child sees ONE drawn flat shape and SAYS HOW MANY SIDES it has ("three"). An attribute skill, not a naming skill — the answer is a number word. Straight-sided shapes only.`,
-    schemaDescription: "'count_sides' (say how many sides)",
-  },
-  count_corners: {
-    promptDoc:
-      `"count_corners": the child sees ONE drawn flat shape and SAYS HOW MANY CORNERS (vertices) it has ("three"). Corners are harder to enumerate than sides — a point is easier to skip or double-count than a whole edge. Straight-sided shapes only.`,
-    schemaDescription: "'count_corners' (say how many corners)",
-  },
-};
+export const CHALLENGE_TYPE_DOCS = DI_SHAPES_TYPE_DOCS;
 
 /** Every identity this pack can build, easiest → hardest (the mixed spread). */
-const ALL_TYPES: DiShapesChallengeType[] = [
-  'name_shape', 'shape_review', 'count_sides', 'count_corners',
-];
+const ALL_TYPES: readonly DiShapesChallengeType[] = DI_SHAPES_CHALLENGE_TYPES;
 
 const wrapperSchema: Schema = {
   type: Type.OBJECT,
@@ -637,8 +665,11 @@ export const generateDiShapes = async (
     CHALLENGE_TYPE_DOCS,
   );
   const modeTypes: DiShapesChallengeType[] =
-    (resolution?.allowedTypes as DiShapesChallengeType[] | undefined) ?? ALL_TYPES; // mixed = all four
-  const supportTier = normalizeSupportTier(config?.difficulty);
+    (resolution?.allowedTypes as DiShapesChallengeType[] | undefined) ?? [...ALL_TYPES]; // mixed = all five
+  const supportTier = supportForSingleDiMode(
+    resolution,
+    normalizeSupportTier(config?.difficulty) ?? undefined,
+  ) ?? null;
 
   let title = DEFAULT_TITLE;
   let description = DEFAULT_DESCRIPTION;
@@ -716,6 +747,7 @@ Return the wrapper JSON only.`;
   let countingScopeWidened = false;
   const poolFor = (type: DiShapesChallengeType): DiShapeName[] => {
     if (type === 'shape_review') return namedShapes.length > 0 ? namedShapes : gradeMenu;
+    if (type === 'name_real_object') return namedShapes.length > 0 ? namedShapes : gradeMenu;
     if (!isCountingType(type)) return selected;
     const scoped = polygonsOf(selected);
     if (scoped.length > 0) return scoped;
@@ -731,22 +763,22 @@ Return the wrapper JSON only.`;
   // mixed → an interleaved spread so every resolved identity appears (SP-21).
   let challenges: DiShapesChallenge[];
   if (modeTypes.length === 1) {
-    challenges = buildShapeSequence(poolFor(modeTypes[0]), count)
-      .map((shape, i) => buildChallenge(shape, i, modeTypes[0]));
+    challenges = buildSeedSequence(modeTypes[0], poolFor(modeTypes[0]), count)
+      .map((seed, i) => buildChallenge(seed.shape, i, modeTypes[0], seed.realObject));
   } else {
     const shares = distribute(count, modeTypes.length);
-    const perMode = modeTypes.map((t, i) => buildShapeSequence(poolFor(t), shares[i]));
-    const interleaved: Array<{ shape: DiShapeName; type: DiShapesChallengeType }> = [];
+    const perMode = modeTypes.map((t, i) => buildSeedSequence(t, poolFor(t), shares[i]));
+    const interleaved: Array<DiShapeSeed & { type: DiShapesChallengeType }> = [];
     const maxLen = Math.max(...perMode.map((s) => s.length));
     for (let round = 0; round < maxLen; round++) {
       for (let m = 0; m < modeTypes.length; m++) {
-        const shape = perMode[m][round];
-        if (shape) interleaved.push({ shape, type: modeTypes[m] });
+        const seed = perMode[m][round];
+        if (seed) interleaved.push({ ...seed, type: modeTypes[m] });
       }
     }
     challenges = interleaved
       .slice(0, count)
-      .map(({ shape, type }, i) => buildChallenge(shape, i, type));
+      .map(({ shape, type, realObject }, i) => buildChallenge(shape, i, type, realObject));
   }
 
   // Guarantee a runnable session even if every pool emptied out.
@@ -767,10 +799,9 @@ Return the wrapper JSON only.`;
   }
 
   // ── Both tier axes, applied deterministically at the END ───────────
-  // Gated ONLY on a tier being present, and resolved from each challenge's OWN
-  // mode — difficulty is a STUDENT property, so a blended/mixed session must get
-  // it too (gating on a single pinned mode is the silent no-op this layer exists
-  // to kill). It runs after every structural fixup above, so nothing downstream
+  // A tier is present only when one mode resolves. A blend deliberately stays
+  // untiered because its challenges do not share one structural support surface.
+  // This runs after every structural fixup above, so nothing downstream
   // can re-open a fade the tier just closed. The no-tier path is untouched:
   // every field written here is optional and absent without a tier.
   //
@@ -781,6 +812,16 @@ Return the wrapper JSON only.`;
     let saturatedExemplars = 0;
     for (const ch of challenges) {
       ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
+
+      // The object drawing owns its own canonical outline. Shape-rotation and
+      // exemplar levers belong to abstract figures and must not distort a door,
+      // clock, or sign into a less defensible object.
+      if (ch.challengeType === 'name_real_object') {
+        ch.rotationDeg = 0;
+        ch.scalePct = 100;
+        delete ch.exemplar;
+        continue;
+      }
 
       const shape = resolveProblemShape(ch.challengeType, supportTier);
 
@@ -820,9 +861,7 @@ Return the wrapper JSON only.`;
 
     const shape = resolveProblemShape(challenges[0]?.challengeType ?? 'name_shape', supportTier);
     console.log(
-      `[DiShapes] Tier "${supportTier}" applied per-challenge (${
-        modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'
-      }) — support: ${resolveSupportStructure(challenges[0]?.challengeType ?? 'name_shape', supportTier).describe}`
+      `[DiShapes] Tier "${supportTier}" applied to single mode ${modeTypes[0]} — support: ${resolveSupportStructure(challenges[0]?.challengeType ?? 'name_shape', supportTier).describe}`
       + `; structure: ${shape.describe}`
       + `; confusable adjacencies ${countConfusableAdjacencies(challenges)}/${challenges.length - 1}`
       + (saturatedExemplars > 0

@@ -67,11 +67,9 @@
 /** The pack's task identities. L0 shipped `name_shape` alone; L1 adds the
  *  cumulative naming review and the two attribute-counting skills (the "how
  *  many sides does it have" half of the founding modality call). */
-export type DiShapesChallengeType =
-  | 'name_shape'
-  | 'shape_review'
-  | 'count_sides'
-  | 'count_corners';
+import type { DiActionContract } from '../../../hooks/judgedScriptContract';
+import { diShapesModePlan, type DiShapesChallengeType } from './diShapesModes';
+export type { DiShapesChallengeType } from './diShapesModes';
 
 /**
  * The within-mode SUPPORT tier (L3, 2026-08-07). Second field of the two-field
@@ -95,7 +93,7 @@ export type DiShapesChallengeType =
  * spoken. di-letter-sounds had to keep speaking the stimulus word at `hard`
  * (an onset ask has no printed grapheme), so its fade needed a per-mode
  * inversion guard. Here the stimulus is already on screen at every tier, and
- * `ask()` is answer-free by construction under all four identities — so `hard`
+ * `ask()` is answer-free by construction under all five identities — so `hard`
  * reduces to exactly `testLine(it)` with no carve-out on any mode.
  *
  * NEVER withdrawn at any tier:
@@ -181,7 +179,15 @@ export interface DiShapesChallenge {
   /** Names the judge must ALSO accept as correct (e.g. "diamond" for a
    *  rhombus — the K word for it). Naming modes only; a count has no synonym. */
   spokenAlternates?: string[];
+  /** Real-object mode only: stable code-drawn object and answer-free label. */
+  realObjectId?: import('../shared/realWorldShapeObjects').RealWorldShapeObjectId;
+  realObjectLabel?: string;
 }
+
+export type ActionableDiShapesChallenge = DiShapesChallenge & {
+  answerKind: 'voice';
+  actionContract: DiActionContract;
+};
 
 /** True for the two attribute-counting identities (spoken number-word answer). */
 export const isCountingType = (type: DiShapesChallengeType): boolean =>
@@ -200,13 +206,17 @@ export const answerWordFor = (it: DiShapesChallenge): string =>
 /** The MODELLED statement — the sentence the tutor asserts about the drawing.
  *  "this shape is a triangle" / "this shape has three sides". */
 const statement = (it: DiShapesChallenge): string =>
-  isCountingType(it.challengeType)
+  it.challengeType === 'name_real_object' && it.realObjectLabel
+    ? `the shape in this ${it.realObjectLabel} is ${it.article} ${it.shapeWord}`
+    : isCountingType(it.challengeType)
     ? `this shape has ${it.countWord} ${countNoun(it.challengeType)}`
     : `this shape is ${it.article} ${it.shapeWord}`;
 
 /** The ASK — the one sentence spoken WITHOUT the answer in it. */
 const ask = (it: DiShapesChallenge): string =>
-  isCountingType(it.challengeType)
+  it.challengeType === 'name_real_object' && it.realObjectLabel
+    ? `What shape do you see in this ${it.realObjectLabel}?`
+    : isCountingType(it.challengeType)
     ? `How many ${countNoun(it.challengeType)} does this shape have?`
     : `What shape is this?`;
 
@@ -221,7 +231,15 @@ export const guideLine = (it: DiShapesChallenge) =>
 
 /** TEST: the learner answers alone. */
 export const testLine = (it: DiShapesChallenge) =>
-  `Your turn. ${ask(it)}`;
+  diShapesModePlan(it).answerStep.actionContract.instruction;
+
+export const withShapesAction = (
+  item: DiShapesChallenge,
+): ActionableDiShapesChallenge => {
+  const actionContract = diShapesModePlan(item).answerStep.actionContract;
+  if (actionContract.answerKind !== 'voice') throw new Error('Shape practice must use voice');
+  return { ...item, answerKind: 'voice', actionContract };
+};
 
 /** Affirmation branch. MUST begin with "Yes" — the engine scans that sentinel. */
 export const verifyLine = (it: DiShapesChallenge) =>
@@ -230,8 +248,23 @@ export const verifyLine = (it: DiShapesChallenge) =>
 /** Correction branch — FALLBACK for a non-answer (silence, or anything that
  *  was neither a shape name nor a number). MUST begin with "My turn". Standing
  *  gate 3: every correction re-models the answer then re-elicits. */
+const outlineTraceLine = (it: DiShapesChallenge): string => {
+  if (it.challengeType !== 'name_real_object' || !it.realObjectLabel) return '';
+  if (it.sides == null) {
+    return `Trace the curved outline of the ${it.realObjectLabel} with me; it has no corners. `;
+  }
+  const numberWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six'];
+  const count = numberWords[it.sides]
+    ?? String(it.sides);
+  const countTogether = Array.from(
+    { length: it.sides },
+    (_, index) => numberWords[index + 1] ?? String(index + 1),
+  ).join(', ');
+  return `Trace the ${it.realObjectLabel}'s outline with me: ${countTogether}. That makes ${count} straight sides and ${count} corners. `;
+};
+
 export const correctionLine = (it: DiShapesChallenge) =>
-  `My turn: ${statement(it)}. Your turn. ${ask(it)}`;
+  `My turn: ${outlineTraceLine(it)}${statement(it)}. Your turn. ${ask(it)}`;
 
 /** Correction branch — CONTRASTIVE (preferred whenever the learner produced an
  *  answer of the right KIND — a shape name under a naming mode, a number under
@@ -242,7 +275,7 @@ export const correctionLine = (it: DiShapesChallenge) =>
  *  spoken. The opener stays "My turn" byte-for-byte (the engine matches
  *  OPENERS only). */
 export const contrastCorrectionLine = (it: DiShapesChallenge) =>
-  `My turn: not ⟨what they said⟩ — ${statement(it)}. Your turn. ${ask(it)}`;
+  `My turn: not ⟨what they said⟩ — ${outlineTraceLine(it)}${statement(it)}. Your turn. ${ask(it)}`;
 
 /** The judge must also accept these names for this item, stated explicitly so
  *  permissiveness is per-item and auditable, never a judge improvisation. */

@@ -61,6 +61,17 @@ const CORNERS = challenge({
 });
 /** A review item is the NAMING act over a wide draw — same lines as name_shape. */
 const REVIEW = challenge({ id: 'dish-6-square', challengeType: 'shape_review', shape: 'square', shapeWord: 'square', sides: 4, corners: 4 });
+const REAL_OBJECT = challenge({
+  id: 'dish-7-door',
+  challengeType: 'name_real_object',
+  shape: 'rectangle',
+  shapeWord: 'rectangle',
+  sides: 4,
+  corners: 4,
+  rotationDeg: 0,
+  realObjectId: 'door',
+  realObjectLabel: 'door',
+});
 
 describe('diShapesScript — cue lines', () => {
   it('composes the DISTAR sequence with the right article', () => {
@@ -92,11 +103,20 @@ describe('diShapesScript — cue lines', () => {
     // The test line is the one sentence spoken WITHOUT the answer in it.
     expect(testLine(challenge())).not.toContain('triangle');
   });
+
+  it('asks from the object label and traces/counts its outline after a wrong name', () => {
+    expect(testLine(REAL_OBJECT)).toBe('Your turn. What shape do you see in this door?');
+    expect(testLine(REAL_OBJECT)).not.toContain('rectangle');
+    expect(correctionLine(REAL_OBJECT)).toContain("Trace the door's outline with me: one, two, three, four. That makes four straight sides and four corners.");
+    expect(contrastCorrectionLine(REAL_OBJECT)).toContain("Trace the door's outline with me: one, two, three, four. That makes four straight sides and four corners.");
+    expect(correctionLine(REAL_OBJECT)).toContain('the shape in this door is a rectangle');
+  });
 });
 
 describe('diShapesScript — L1 counting identities', () => {
-  it('classifies the four identities and their answer nouns', () => {
+  it('classifies the five identities and their answer nouns', () => {
     expect(isCountingType('name_shape')).toBe(false);
+    expect(isCountingType('name_real_object')).toBe(false);
     expect(isCountingType('shape_review')).toBe(false);
     expect(isCountingType('count_sides')).toBe(true);
     expect(isCountingType('count_corners')).toBe(true);
@@ -155,7 +175,7 @@ describe('diShapesScript — sentinel collision scan (engine DI_SENTINELS)', () 
   it('no cue sentence outside the verdict branches opens with a sentinel', () => {
     // Every challenge type the pack can emit — the L1 counting contract is a
     // whole second body of prose and gets the same scan.
-    for (const it_ of [challenge(), OVAL, RHOMBUS, SIDES, CORNERS, REVIEW]) {
+    for (const it_ of [challenge(), OVAL, RHOMBUS, SIDES, CORNERS, REVIEW, REAL_OBJECT]) {
       // Everything the pack sends as CUES (the tutor speaks these verbatim).
       // The judging contract QUOTES the verdict lines — strip them, then scan
       // the rest sentence by sentence exactly as the engine would.

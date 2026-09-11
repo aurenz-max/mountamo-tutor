@@ -3571,10 +3571,10 @@ export interface DiMathFactsMetrics extends BasePrimitiveMetrics {
 export interface DiShapesMetrics extends BasePrimitiveMetrics {
   type: 'di-shapes';
   // L1 task identities (2026-08-07) — naming a drawn 2D shape, the cumulative
-  // naming review, and the two attribute-counting skills. On a BLENDED session
+  // naming review, real-object naming, and the two attribute-counting skills. On a BLENDED session
   // this is the representative (first item's) identity; the per-item identity
   // lives on each challenge.
-  challengeType: 'name_shape' | 'shape_review' | 'count_sides' | 'count_corners';
+  challengeType: 'name_shape' | 'name_real_object' | 'shape_review' | 'count_sides' | 'count_corners';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts across all shapes (corrections + 1 each)

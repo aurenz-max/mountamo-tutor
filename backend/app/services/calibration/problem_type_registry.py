@@ -652,6 +652,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "di-shapes": {
         "name_shape":    PriorConfig(1.5, "Production: name a drawn 2D shape aloud, at any rotation"),
         "shape_review":  PriorConfig(2.5, "Review: name shapes drawn from a wide cumulative mix rather than one focused set"),
+        "find_real_object": PriorConfig(3.0, "Pictorial production: say the 2D shape in a familiar object's outline"),
         "count_sides":   PriorConfig(3.0, "Attribute: say how many sides a drawn 2D shape has, as a number word"),
         "count_corners": PriorConfig(3.5, "Attribute: say how many corners (vertices) a drawn 2D shape has, as a number word"),
     },

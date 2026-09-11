@@ -80,6 +80,7 @@ import {
   isCountingType,
   itemCue,
   moveOnCue,
+  withShapesAction,
   type DiShapesChallenge,
   type DiShapesChallengeType,
   type DiShapeName,
@@ -95,7 +96,9 @@ import {
 import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
-import LiveMicListener from '../../../components/LiveMicListener';
+import DiActionPanel from '../../../components/DiActionPanel';
+import RealWorldShapeObject from '../shared/RealWorldShapeObject';
+import type { RealWorldShapeObjectId } from '../shared/realWorldShapeObjects';
 
 export type {
   DiShapesChallenge,
@@ -154,7 +157,10 @@ const scoreForCorrections = (corrections: number): number =>
  *  classes are named distinctly so a diagnosis can never generalise a counting
  *  error into a naming claim, or the reverse. */
 const challengeSummaryFor = (item: DiShapesChallenge): string =>
-  isCountingType(item.challengeType)
+  item.challengeType === 'name_real_object'
+    ? `Direct Instruction real-world shape naming — a code-drawn ${item.realObjectLabel ?? 'familiar object'} was shown and the learner was asked to say the 2D shape in its outline. `
+      + 'The object label did not contain the shape answer; the tutor judged the spoken name.'
+    : isCountingType(item.challengeType)
     ? `Direct Instruction shape attributes — a flat 2D shape was DRAWN on screen `
       + `(${item.shape}, rotated ${item.rotationDeg}°) and the tutor asked how many `
       + `${countNoun(item.challengeType)} it has. `
@@ -257,7 +263,9 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     getChallengeId: (ch) => ch.id,
   });
 
-  const currentChallenge = data.challenges[currentIndex] ?? null;
+  const currentChallenge = data.challenges[currentIndex]
+    ? withShapesAction(data.challenges[currentIndex])
+    : null;
 
   const evaluation = usePrimitiveEvaluation<DiShapesMetrics>({
     primitiveType: 'di-shapes',
@@ -284,6 +292,7 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     rotationDeg: number;
     exemplar?: ShapeExemplar;
     scalePct?: number;
+    realObjectId?: RealWorldShapeObjectId;
     label: string;
   } | null>(null);
 
@@ -499,6 +508,7 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
         rotationDeg: item.rotationDeg,
         exemplar: item.exemplar,
         scalePct: item.scalePct,
+        realObjectId: item.realObjectId,
         label: rewardLabelFor(item),
       });
       const next = data.challenges[idxRef.current + 1] ?? null;
@@ -736,6 +746,15 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     : ctx.isListening
       ? 'armed'
       : 'idle';
+  const actionStage = phase === 'idle'
+    ? 'idle'
+    : phase === 'judging'
+      ? 'judging'
+      : phase === 'affirmed'
+        ? 'affirmed'
+        : phase === 'done'
+          ? 'done'
+          : 'asking';
 
   return (
     <LuminaCard surface="elevated" className="max-w-3xl mx-auto">
@@ -772,29 +791,34 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
                 key={`solved-${reward.shape}`}
                 className={`flex flex-col items-center rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-6 py-3 ${motion.pop}`}
               >
-                <ShapeStage
-                  shape={reward.shape}
-                  rotationDeg={reward.rotationDeg}
-                  exemplar={reward.exemplar}
-                  scalePct={reward.scalePct}
-                />
+                {reward.realObjectId ? (
+                  <RealWorldShapeObject objectId={reward.realObjectId} />
+                ) : (
+                  <ShapeStage
+                    shape={reward.shape}
+                    rotationDeg={reward.rotationDeg}
+                    exemplar={reward.exemplar}
+                    scalePct={reward.scalePct}
+                  />
+                )}
                 <div className="mt-1 text-3xl font-bold tracking-wide text-emerald-300">
                   {reward.label}
                 </div>
               </div>
             ) : (
               <div key={`shape-${currentChallenge.id}`} className={motion.reveal}>
-                <ShapeStage
-                  shape={currentChallenge.shape}
-                  rotationDeg={currentChallenge.rotationDeg}
-                  exemplar={currentChallenge.exemplar}
-                  scalePct={currentChallenge.scalePct}
-                />
+                {currentChallenge.realObjectId ? (
+                  <RealWorldShapeObject objectId={currentChallenge.realObjectId} />
+                ) : (
+                  <ShapeStage
+                    shape={currentChallenge.shape}
+                    rotationDeg={currentChallenge.rotationDeg}
+                    exemplar={currentChallenge.exemplar}
+                    scalePct={currentChallenge.scalePct}
+                  />
+                )}
               </div>
             )}
-            <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
-              {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? askLabelFor(currentChallenge) : 'get ready'}
-            </div>
           </div>
         )}
 
@@ -816,14 +840,22 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
                     {/* The recap replays each item AS IT WAS DRAWN — same
                         variant, rotation and size — so a child looking back
                         recognises the shape they actually met. */}
-                    <ShapeStage
-                      shape={ch.shape}
-                      rotationDeg={ch.rotationDeg}
-                      exemplar={ch.exemplar}
-                      scalePct={ch.scalePct}
-                      className="h-14 w-14"
-                      strokeWidth={8}
-                    />
+                    {ch.realObjectId ? (
+                      <RealWorldShapeObject
+                        objectId={ch.realObjectId}
+                        className="h-14 w-14"
+                        showLabel={false}
+                      />
+                    ) : (
+                      <ShapeStage
+                        shape={ch.shape}
+                        rotationDeg={ch.rotationDeg}
+                        exemplar={ch.exemplar}
+                        scalePct={ch.scalePct}
+                        className="h-14 w-14"
+                        strokeWidth={8}
+                      />
+                    )}
                     {ok && <span className="text-sm font-semibold text-white">{rewardLabelFor(ch)}</span>}
                     <span className="text-lg" aria-hidden="true">{ok ? '✅' : '🔁'}</span>
                   </div>
@@ -835,19 +867,18 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
 
         {/* Voice control: the whole interaction runs through the mic. */}
         {!isComplete && (
-          <div className="flex flex-col items-center gap-3">
-            <LiveMicListener
-              state={micState}
-              isSupported={isSupported}
-              onStart={() => void prepareLive()}
-              onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
-              size="lg"
-              idleLabel="Tap to start"
-              openingLabel="Getting ready…"
-              listeningLabel="I’m listening"
-            />
-            <p className="text-sm text-slate-300">{statusLine}</p>
-          </div>
+          <DiActionPanel
+            running={running}
+            stage={actionStage}
+            currentItem={currentChallenge}
+            steps={currentChallenge ? [currentChallenge] : []}
+            micState={micState}
+            statusLine={statusLine}
+            onStart={() => void prepareLive()}
+            onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
+            isSupported={isSupported}
+            startInstruction="Start the lesson, look at the shape, then answer out loud."
+          />
         )}
       </LuminaCardContent>
     </LuminaCard>

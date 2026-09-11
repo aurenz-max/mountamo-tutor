@@ -30,6 +30,11 @@ import {
   hasVariantDrawing,
   SAFE_ROTATION_DEG,
 } from '../../primitives/visual-primitives/direct-instruction/diShapesGeometry';
+import {
+  REAL_WORLD_SHAPE_OBJECTS,
+  objectLabelLeaksShape,
+  realWorldShapeObjectById,
+} from '../../primitives/visual-primitives/shared/realWorldShapeObjects';
 
 describe('parseNamedShapes — objective text wins', () => {
   it('reads singular, plural, and the K "diamond" word', () => {
@@ -109,6 +114,25 @@ describe('generateDiShapes — L1 eval modes', () => {
       // Session identity mirrors what was actually built.
       expect(data.challengeType).toBe(mode);
     }
+  });
+
+  it('real-object naming derives one defensible answer from code and never leaks it in the label', async () => {
+    const data = await generateDiShapes('find shapes in everyday objects', 'first grade', {
+      targetEvalMode: 'find_real_object',
+      challengeCount: 6,
+    });
+    expect(data.challenges).toHaveLength(6);
+    expect(new Set(data.challenges.map((challenge) => challenge.realObjectId)).size).toBe(6);
+    for (const challenge of data.challenges) {
+      expect(challenge.challengeType).toBe('name_real_object');
+      const object = realWorldShapeObjectById(challenge.realObjectId);
+      expect(object).toBeDefined();
+      expect(challenge.realObjectLabel).toBe(object?.label);
+      expect(objectLabelLeaksShape(challenge.realObjectLabel ?? '')).toBe(false);
+      expect(challenge.shape).toBe(object?.shape === 'diamond' ? 'rhombus' : object?.shape);
+      expect(challenge.rotationDeg).toBe(0);
+    }
+    expect(REAL_WORLD_SHAPE_OBJECTS).toHaveLength(6);
   });
 
   it('counting items carry the count derived from the menu, as a number word', async () => {
@@ -233,7 +257,7 @@ describe('generateDiShapes — L1 eval modes', () => {
     expect(Array.from(types).sort()).toEqual(['count_sides', 'name_shape']);
   });
 
-  it('SP-21 — the MIXED path spreads across all four identities, not one', async () => {
+  it('SP-21 — the MIXED path spreads across all five identities, not one', async () => {
     // No pin and no resolvable intent → mixed. A Fork A pack must build the
     // spread itself; "mixed" that emits one identity is a lie in the label.
     const data = await generateDiShapes('shapes', 'first grade', {
@@ -242,7 +266,7 @@ describe('generateDiShapes — L1 eval modes', () => {
     });
     const types = new Set(data.challenges.map((c) => c.challengeType));
     expect(Array.from(types).sort()).toEqual([
-      'count_corners', 'count_sides', 'name_shape', 'shape_review',
+      'count_corners', 'count_sides', 'name_real_object', 'name_shape', 'shape_review',
     ]);
   });
 
@@ -272,16 +296,14 @@ describe('generateDiShapes — L3 support tier', () => {
     }
   });
 
-  it('a BLENDED session gets the tier too — difficulty is a STUDENT property', async () => {
-    // The no-op this layer exists to kill: gating application on a single
-    // pinned mode silently drops difficulty for every blended/mixed session.
+  it('a BLENDED session does not borrow a support shape from one mode', async () => {
     const data = await generateDiShapes('shapes', 'first grade', {
       targetEvalMode: 'mixed',
       challengeCount: 6,
       difficulty: 'hard',
     });
     expect(new Set(data.challenges.map((c) => c.challengeType)).size).toBeGreaterThan(1);
-    for (const c of data.challenges) expect(c.supportTier).toBe('hard');
+    for (const c of data.challenges) expect(c.supportTier).toBeUndefined();
   });
 
   it('an absent or unknown difficulty applies NO tier (the L0/L1 shape stands)', async () => {

@@ -36,6 +36,7 @@ import { DI_DICE_ROLL_EVAL_MODES } from '../../../primitives/visual-primitives/d
 import { DI_LETTER_SOUNDS_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diLetterSoundsModes';
 import { DI_MATH_FACTS_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diMathFactsModes';
 import { DI_SENTENCE_READING_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diSentenceReadingModes';
+import { DI_SHAPES_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diShapesModes';
 import { DI_SPOKEN_PRACTICE_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPracticeModes';
 import { DI_WORD_READING_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diWordReadingModes';
 import { DI_WORKED_PROCEDURE_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diWorkedProcedureModes';
@@ -500,40 +501,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // size, color, or orientation" (0.795); counting → G1 GEOM001-01-b "Count
     // the number of sides and vertices of various 2D shapes" (0.785) and
     // K GEOM001-02-A "…based on their attributes (sides and vertices)" (0.786).
-    evalModes: [
-      {
-        evalMode: 'name_shape',
-        label: 'Name the Shape',
-        beta: 1.5,
-        scaffoldingMode: 1,
-        challengeTypes: ['name_shape'],
-        description: 'See one drawn 2D shape at any rotation, say its name aloud — modeled and practiced together first, then answered alone.',
-      },
-      {
-        evalMode: 'shape_review',
-        label: 'Shape Review (Mixed Set)',
-        beta: 2.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['shape_review'],
-        description: 'Cumulative / spaced review of shape naming — the same act, but the shapes are drawn as a WIDE mix across everything taught at this grade rather than the objective\'s one focused set.',
-      },
-      {
-        evalMode: 'count_sides',
-        label: 'How Many Sides',
-        beta: 3.0,
-        scaffoldingMode: 3,
-        challengeTypes: ['count_sides'],
-        description: 'See one drawn 2D shape, say how many SIDES it has as a number word. An attribute skill rather than a naming one; counting aloud and landing on the right number is a correct route. Straight-sided shapes only.',
-      },
-      {
-        evalMode: 'count_corners',
-        label: 'How Many Corners',
-        beta: 3.5,
-        scaffoldingMode: 3,
-        challengeTypes: ['count_corners'],
-        description: 'See one drawn 2D shape, say how many CORNERS (vertices) it has as a number word. Harder than sides — a corner is a point, easier to skip or double-count than a whole edge. Straight-sided shapes only.',
-      },
-    ],
+    evalModes: DI_SHAPES_EVAL_MODES,
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
