@@ -27,8 +27,9 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
-import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
+import { resolveEvalModes } from '../evalMode';
 import { normalizeObjectiveGrade } from '../generation/resolveGenerationContext';
+import { supportForSingleDiMode } from '../../hooks/diModeContract';
 import {
   clampShape,
   drawProblems,
@@ -39,9 +40,13 @@ import {
 import type {
   DiWorkedProcedureData,
   WorkedProblemSpec,
-  WorkedProcedureChallengeType,
-  WorkedProcedureSupportTier,
 } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureScript';
+import {
+  DI_WORKED_PROCEDURE_CHALLENGE_TYPES,
+  DI_WORKED_PROCEDURE_TYPE_DOCS,
+  type WorkedProcedureChallengeType,
+  type WorkedProcedureSupportTier,
+} from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureModes';
 
 const DEFAULT_PROBLEM_COUNT = 3;
 const MIN_PROBLEM_COUNT = 2;
@@ -55,23 +60,8 @@ const normalizeSupportTier = (raw?: unknown): WorkedProcedureSupportTier | undef
 
 // ── Eval-mode routing (code stamps the mode; no schema enum exists) ──────────
 
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  subtract_no_regroup: {
-    promptDoc:
-      '"subtract_no_regroup": a multi-digit subtraction where every column subtracts cleanly; the child '
-      + 'says each column aloud ("four minus two is two") and must decide NOT to regroup.',
-    schemaDescription: "'subtract_no_regroup' (talk through a subtraction with no regrouping)",
-  },
-  subtract_regroup: {
-    promptDoc:
-      '"subtract_regroup": a multi-digit subtraction where at least one column must regroup (borrow); '
-      + 'the child says the move aloud ("I can\'t take eight from two, so I regroup: four tens, twelve '
-      + 'ones") and then each difference.',
-    schemaDescription: "'subtract_regroup' (talk through a subtraction with regrouping)",
-  },
-};
-
-const ALL_TYPES: WorkedProcedureChallengeType[] = ['subtract_regroup', 'subtract_no_regroup'];
+export const CHALLENGE_TYPE_DOCS = DI_WORKED_PROCEDURE_TYPE_DOCS;
+const ALL_TYPES: readonly WorkedProcedureChallengeType[] = DI_WORKED_PROCEDURE_CHALLENGE_TYPES;
 
 // ── Scope from text (code-enforced over the model) ──────────────────────────
 
@@ -177,7 +167,7 @@ export const generateDiWorkedProcedure = async (
     MAX_PROBLEM_COUNT,
     Math.max(MIN_PROBLEM_COUNT, ctx.challengeCount ?? DEFAULT_PROBLEM_COUNT),
   );
-  const supportTier = normalizeSupportTier(ctx.supportTier) ?? normalizeSupportTier(ctx.difficulty);
+  const requestedSupportTier = normalizeSupportTier(ctx.supportTier) ?? normalizeSupportTier(ctx.difficulty);
   const grade = normalizeObjectiveGrade(ctx.grade) ?? normalizeObjectiveGrade(gradeLevel);
 
   const scopeText = `${intent ?? ''} ${ctx.objectiveText ?? ''} ${topic}`;
@@ -190,6 +180,7 @@ export const generateDiWorkedProcedure = async (
     { targetEvalMode: ctx.targetEvalMode, intent, objectiveText: ctx.objectiveText },
     CHALLENGE_TYPE_DOCS,
   );
+  const supportTier = supportForSingleDiMode(resolution, requestedSupportTier);
   let modeTypes: WorkedProcedureChallengeType[] =
     (resolution?.allowedTypes as WorkedProcedureChallengeType[] | undefined) ?? [];
   if (modeTypes.length === 0) {
@@ -197,7 +188,7 @@ export const generateDiWorkedProcedure = async (
       ? ['subtract_no_regroup']
       : textScope.regrouping === 'with'
         ? ['subtract_regroup']
-        : ALL_TYPES;
+        : [...ALL_TYPES];
   }
 
   let title = DEFAULT_TITLE;

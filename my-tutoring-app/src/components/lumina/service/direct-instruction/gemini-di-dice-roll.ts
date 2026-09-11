@@ -19,8 +19,12 @@ import { ai } from '../geminiClient';
 import {
   buildModeConstraintSection,
   resolveEvalModes,
-  type ChallengeTypeDoc,
 } from '../evalMode';
+import {
+  DI_DICE_ROLL_CHALLENGE_TYPES,
+  DI_DICE_ROLL_TYPE_DOCS,
+} from '../../primitives/visual-primitives/direct-instruction/diDiceRollModes';
+import { supportForSingleDiMode } from '../../hooks/diModeContract';
 
 const DEFAULT_INSTANCE_COUNT = 5;
 const MIN_INSTANCE_COUNT = 3;
@@ -30,11 +34,7 @@ const DEFAULT_TITLE = 'Dice Time';
 const DEFAULT_DESCRIPTION = 'Roll, look at the dots, and answer out loud!';
 
 const DIE_VALUES: readonly DieValue[] = [1, 2, 3, 4, 5, 6];
-const ALL_TYPES: readonly DiDiceRollChallengeType[] = [
-  'count_pips',
-  'compare_dice',
-  'sum_two_dice',
-];
+const ALL_TYPES: readonly DiDiceRollChallengeType[] = DI_DICE_ROLL_CHALLENGE_TYPES;
 
 const NUMBER_WORDS: Record<number, string> = {
   1: 'one',
@@ -51,23 +51,7 @@ const NUMBER_WORDS: Record<number, string> = {
   12: 'twelve',
 };
 
-export const DI_DICE_ROLL_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  count_pips: {
-    promptDoc:
-      '"count_pips": roll one six-sided die, inspect its pip pattern, and say the quantity as a number word.',
-    schemaDescription: "'count_pips' (say one die's pip quantity)",
-  },
-  compare_dice: {
-    promptDoc:
-      '"compare_dice": roll two dice, compare their pip quantities, and say left, right, or same.',
-    schemaDescription: "'compare_dice' (say which die has more)",
-  },
-  sum_two_dice: {
-    promptDoc:
-      '"sum_two_dice": roll two dice, combine both visible pip sets, and say the total as a number word.',
-    schemaDescription: "'sum_two_dice' (say the total of two dice)",
-  },
-};
+export { DI_DICE_ROLL_TYPE_DOCS } from '../../primitives/visual-primitives/direct-instruction/diDiceRollModes';
 
 type SupportTier = DiDiceRollSupportTier;
 const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
@@ -535,7 +519,12 @@ export const generateDiDiceRoll = async (
   );
   const modeTypes = ALL_TYPES.filter((type) => allowed.has(type));
   const selectedTypes = modeTypes.length > 0 ? modeTypes : [...ALL_TYPES];
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  // A blend/mixed run has no single support surface. Structural support is
+  // only meaningful when one mode has been resolved or explicitly pinned.
+  const supportTier = supportForSingleDiMode(
+    resolution,
+    normalizeSupportTier(config?.difficulty) ?? undefined,
+  );
   const seed = typeof config?.seed === 'number' && Number.isFinite(config.seed)
     ? config.seed
     : undefined;
@@ -557,8 +546,7 @@ export const generateDiDiceRoll = async (
     : baseBlueprints;
   const challenges = blueprints.map(buildChallenge);
 
-  // Difficulty is a student property, so stamp every challenge in a blended
-  // run from its own mode. With no valid tier, the old payload stays untouched.
+  // With no single resolved mode (blend/mixed), leave the payload untouched.
   if (supportTier) {
     for (const challenge of challenges) {
       challenge.supportTier = resolveSupportStructure(
@@ -581,7 +569,7 @@ export const generateDiDiceRoll = async (
   let title = DEFAULT_TITLE;
   let description = DEFAULT_DESCRIPTION;
   const modeSection = buildModeConstraintSection(resolution, DI_DICE_ROLL_TYPE_DOCS);
-  const tierSection = buildTierPromptSection(selectedTypes, supportTier);
+  const tierSection = buildTierPromptSection(selectedTypes, supportTier ?? null);
 
   const prompt = `Write answer-free session chrome for a brisk early-math dice-dot activity.
 

@@ -43,7 +43,12 @@
  * thirteen the page never showed.
  */
 
-import type { JudgedCueOptions, JudgedCueSurface, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
+import type {
+  DiActionContract,
+  JudgedCueOptions,
+  JudgedCueSurface,
+  JudgedScriptItem,
+} from '../../../hooks/judgedScriptContract';
 import {
   numberWord,
   planSubtraction,
@@ -53,13 +58,24 @@ import {
   type SubtractionColumn,
   type SubtractionPlan,
 } from './diWorkedProcedurePlan';
+import {
+  WORKED_PROCEDURE_HOW_TO_PLAY,
+  diWorkedProcedureModePlan,
+  workedProcedureColumnPhrase,
+  type WorkedProcedureChallengeType,
+  type WorkedProcedureSupportTier,
+  type WorkedStepKind,
+} from './diWorkedProcedureModes';
 
-export type WorkedProcedureChallengeType = 'subtract_no_regroup' | 'subtract_regroup';
+export type {
+  WorkedProcedureChallengeType,
+  WorkedProcedureSupportTier,
+  WorkedStepKind,
+} from './diWorkedProcedureModes';
+
 /** L3 lever: at `easy` the ask STATES the column's digits (reading the page is
  *  handed over); otherwise the child reads the column. `medium` and `hard` are
  *  identical in this pilot — a later /add-support-tiers pass owns the split. */
-export type WorkedProcedureSupportTier = 'easy' | 'medium' | 'hard';
-export type WorkedStepKind = 'decide' | 'subtract';
 
 /** What the generator emits per problem. The step chain is built HERE from the
  *  two numbers; a spec that fails the plan gates is dropped, never backfilled. */
@@ -101,6 +117,10 @@ export interface WorkedProcedureItem extends JudgedScriptItem {
   /** The canonical utterance, for evidence and the harness. */
   answerSpoken: string;
 }
+
+export type ActionableWorkedProcedureItem = WorkedProcedureItem & {
+  actionContract: DiActionContract;
+};
 
 export interface DiWorkedProcedureData {
   title: string;
@@ -170,9 +190,9 @@ const stepsForPlan = (
           + `${w(newAbove)} ${placeAbove}, ${w(column.effectiveTop)} ${column.place}`
         : `no regrouping, ${w(column.topAfterLend)} minus ${w(column.bottom)} is ${w(column.difference)}`,
     };
-    items.push(decide);
+    items.push(withWorkedProcedureAction(decide));
     if (column.regroup) {
-      items.push({
+      items.push(withWorkedProcedureAction({
         ...base,
         id: `${spec.id}-c${columnIndex}-subtract`,
         kind: 'subtract',
@@ -187,7 +207,7 @@ const stepsForPlan = (
         newAbove: -1,
         placeAbove: null,
         answerSpoken: w(column.difference),
-      });
+      }));
     }
   });
   return items;
@@ -228,28 +248,27 @@ const statesDigits = (item: WorkedProcedureItem): boolean => item.supportTier ==
 
 /** The column phrase at `easy` — the ONE place the ask says the digits. */
 export const columnPhrase = (item: WorkedProcedureItem): string =>
-  item.kind === 'subtract'
-    ? `${w(item.column.effectiveTop)} minus ${w(item.column.bottom)}`
-    : `${w(item.column.topAfterLend)} minus ${w(item.column.bottom)}`;
+  workedProcedureColumnPhrase(item);
+
+/** The exact current move shown on screen and included in the spoken ask. */
+export const withWorkedProcedureAction = (
+  item: WorkedProcedureItem,
+): ActionableWorkedProcedureItem => {
+  const actionContract = diWorkedProcedureModePlan(item).answerStep.actionContract;
+  return { ...item, answerKind: actionContract.answerKind, actionContract };
+};
 
 /** The ask for one step — what the child hears right before their turn. */
 export const askLine = (item: WorkedProcedureItem): string => {
-  const digits = statesDigits(item) ? `: ${columnPhrase(item)}` : '';
-  if (item.kind === 'subtract') return `Now subtract the ${item.place}${digits}.`;
-  if (item.isFirstStep) {
-    return `${cap(item.problemSpoken)}. Start in the ${item.place} column${digits}. Tell me what you do.`;
-  }
-  return `Now the ${item.place} column${digits}. Tell me what you do.`;
+  const instruction = withWorkedProcedureAction(item).actionContract.instruction;
+  return item.isFirstStep ? `${cap(item.problemSpoken)}. ${instruction}` : instruction;
 };
 
 /** The short re-ask every correction ends on. Never restates the problem. */
 const reAsk = (item: WorkedProcedureItem): string =>
-  item.kind === 'subtract'
-    ? `Your turn. Subtract the ${item.place}.`
-    : `Your turn. The ${item.place} column. Tell me what you do.`;
+  `Your turn. ${withWorkedProcedureAction(item).actionContract.instruction}`;
 
-const HOW_TO_PLAY =
-  'We are going to work subtraction out loud, one column at a time. I ask, and you tell me what you do. ';
+const HOW_TO_PLAY = WORKED_PROCEDURE_HOW_TO_PLAY;
 
 /** The resolved column as a statement — the affirmation's body and the
  *  move-on's carry line. For the last step it closes the whole problem. */

@@ -65,11 +65,11 @@ describe('di-letter-sounds L3 support tier (config.difficulty)', () => {
     expect(hard.challenges.every((c) => c.supportTier === 'hard')).toBe(true);
   });
 
-  it('mixed + medium tiers ALL THREE identities (gate on tier presence, never a pinned mode)', async () => {
+  it('mixed + medium preserves all identities without applying one mode\'s support shape', async () => {
     const data = await genTiered('mixed', 'medium');
     const types = new Set(data.challenges.map((c) => c.challengeType));
     expect(types.size).toBe(3);
-    expect(data.challenges.every((c) => c.supportTier === 'medium')).toBe(true);
+    expect(data.challenges.every((c) => c.supportTier === undefined)).toBe(true);
   });
 
   it('no difficulty param → no supportTier field at all (pre-L3 byte-compatible)', async () => {

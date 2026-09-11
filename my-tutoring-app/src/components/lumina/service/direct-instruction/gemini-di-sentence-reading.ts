@@ -54,7 +54,13 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import { resolveEvalModes, type ChallengeTypeDoc } from "../evalMode";
+import { resolveEvalModes } from "../evalMode";
+import { supportForSingleDiMode } from '../../hooks/diModeContract';
+import {
+  DI_SENTENCE_READING_CHALLENGE_TYPES,
+  DI_SENTENCE_READING_TYPE_DOCS,
+  type DiSentenceReadingChallengeType,
+} from '../../primitives/visual-primitives/direct-instruction/diSentenceReadingModes';
 import type {
   DiSentenceReadingData,
   DiSentenceReadingChallenge,
@@ -62,7 +68,6 @@ import type {
 import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
-  type DiSentenceReadingChallengeType,
   type DiSentenceReadingSupportTier,
 } from "../../primitives/visual-primitives/direct-instruction/diSentenceReadingScript";
 
@@ -339,9 +344,7 @@ const SIGHT_IDS = MENU_IDS.filter((id) => SENTENCE_MENU[id].sightHeavy);
 const DECODABLE_IDS = MENU_IDS.filter((id) => SENTENCE_MENU[id].decodable);
 
 /** Every identity this pack can build, easiest → hardest (the mixed spread). */
-const ALL_TYPES: DiSentenceReadingChallengeType[] = [
-  'decodable_sentence', 'read_sentence', 'sentence_review', 'sight_phrase_sentence',
-];
+const ALL_TYPES: readonly DiSentenceReadingChallengeType[] = DI_SENTENCE_READING_CHALLENGE_TYPES;
 
 // Misconception remediation: deterministic sentence-menu emphasis.
 export type DiSentenceReadingRemediationMove =
@@ -491,28 +494,7 @@ const DEFAULT_INSTANCE_COUNT = 4;
 const MAX_INSTANCE_COUNT = 6;
 
 /** Skill docs for the intent→mode router (Fork A — no schema to constrain). */
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  decodable_sentence: {
-    promptDoc:
-      `"decodable_sentence": the child reads a printed short sentence in which EVERY content word is a sound-it-out CVC word ("The pig can dig."). The skill is blending carried from single words into connected text — phonics transfer, not sight recall.`,
-    schemaDescription: "'decodable_sentence' (read a fully sound-it-out sentence)",
-  },
-  read_sentence: {
-    promptDoc:
-      `"read_sentence": the child sees ONE printed short sentence (3-8 words) and reads it aloud, every word in order. The tutor judges reading ACCURACY from the audio. The base connected-text skill, one rung above single-word reading.`,
-    schemaDescription: "'read_sentence' (read the printed sentence aloud)",
-  },
-  sentence_review: {
-    promptDoc:
-      `"sentence_review": cumulative / spaced review — the child re-reads sentences of the kind already taught, drawn as a WIDE mix across every vowel pattern and word type rather than one focused set. The skill is retention and flexible retrieval, not first-time decoding.`,
-    schemaDescription: "'sentence_review' (mixed cumulative review)",
-  },
-  sight_phrase_sentence: {
-    promptDoc:
-      `"sight_phrase_sentence": the child reads a printed short sentence carrying several IRREGULAR high-frequency words ("You can see my dog.") — words that cannot be sounded out and must be recognised whole. The skill is instant sight-word recall inside connected text.`,
-    schemaDescription: "'sight_phrase_sentence' (read a sight-word-dense sentence)",
-  },
-};
+const CHALLENGE_TYPE_DOCS = DI_SENTENCE_READING_TYPE_DOCS;
 
 /**
  * The pool ONE skill draws from, given the objective's resolved scope.
@@ -771,11 +753,22 @@ export const generateDiSentenceReading = async (
   const sightScoped = resolveSightScope(scopeText);
   const wordCeiling = resolveWordCeiling(gradeLevel, scopeText);
 
+  const resolution = await resolveEvalModes(
+    'di-sentence-reading',
+    { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const modeTypes: DiSentenceReadingChallengeType[] =
+    (resolution?.allowedTypes as DiSentenceReadingChallengeType[] | undefined) ?? [...ALL_TYPES];
+
   // Resolved BEFORE the prompt: L4 needs the tier in two places — one advisory
   // line the model sees, one enforcement pass the code owns (one key, two
   // places; the shape is mode-agnostic today, so the session line uses the
   // base mode's — buildFor re-resolves per challenge type regardless).
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  const supportTier = supportForSingleDiMode(
+    resolution,
+    normalizeSupportTier(config?.difficulty) ?? undefined,
+  ) ?? null;
   const remediationFocus = config?.remediationFocus;
   const sessionShape = supportTier
     ? resolveProblemShape('read_sentence', supportTier, wordCeiling)
@@ -823,16 +816,6 @@ RULES:
 - Write a warm, short kid title and a one-sentence description. NEVER quote, paraphrase, or hint at any target sentence — the child must read the sentences, not hear them first.
 
 Return the wrapper JSON only.`;
-
-  // Resolve which eval-mode SKILL(s) this objective calls for. Fork A: the
-  // resolution drives which challenge types we BUILD (no schema enum exists).
-  const resolution = await resolveEvalModes(
-    'di-sentence-reading',
-    { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
-    CHALLENGE_TYPE_DOCS,
-  );
-  const modeTypes: DiSentenceReadingChallengeType[] =
-    (resolution?.allowedTypes as DiSentenceReadingChallengeType[] | undefined) ?? ALL_TYPES; // mixed = all four
 
   let picked: string[] = [];
   let title = 'Sentence Reading';
@@ -1049,10 +1032,9 @@ Return the wrapper JSON only.`;
   challenges = challenges.filter((ch) => ch.wordCount <= MAX_SENTENCE_WORDS);
 
   // ── Support tier, applied deterministically at the END ─────────────
-  // Gated ONLY on a tier being present, and resolved from each challenge's OWN
-  // mode — difficulty is a STUDENT property, so a blended/mixed session must get
-  // it too (gating on a single pinned mode is the silent no-op this layer exists
-  // to kill). Code owns the support structure; the LLM only steered topically.
+  // A tier is present only when one mode resolves. A blend deliberately stays
+  // untiered because it has no single structural support surface. Code owns the
+  // support structure; the LLM only steered topically.
   //
   // L4 note (2026-08-03): the L3 ruling here used to be "never inject the tier
   // into the prompt — it could only nudge sentence choice". Structural
@@ -1069,7 +1051,7 @@ Return the wrapper JSON only.`;
       ? challenges.filter((ch) => bandDistance(ch.wordCount, sessionShape.band) === 0).length
       : 0;
     console.log(
-      `[DiSentenceReading] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'read_sentence', supportTier).describe}; length band ${sessionShape?.band[0]}-${sessionShape?.band[1]} (ceiling ${wordCeiling}), in-band ${inBand}/${challenges.length}`,
+      `[DiSentenceReading] Support tier "${supportTier}" applied to single mode ${modeTypes[0]} — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'read_sentence', supportTier).describe}; length band ${sessionShape?.band[0]}-${sessionShape?.band[1]} (ceiling ${wordCeiling}), in-band ${inBand}/${challenges.length}`,
     );
   }
 

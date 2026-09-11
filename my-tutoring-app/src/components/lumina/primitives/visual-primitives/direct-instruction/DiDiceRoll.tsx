@@ -32,7 +32,7 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import DiActionPanel from '../../../components/DiActionPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -44,10 +44,13 @@ import {
   moveOnCue,
   retryPrompt,
   studentPrompt,
+  withDiceRollAction,
+  type ActionableDiDiceRollChallenge,
   type DiDiceRollChallenge,
   type DiDiceRollChallengeType,
   type DieValue,
 } from './diDiceRollScript';
+import { diDiceRollModePlan } from './diDiceRollModes';
 
 export type {
   DiDiceRollChallenge,
@@ -170,7 +173,10 @@ const ROLL_START_DELAY_MS = 60;
 const ROLL_FRAME_MS = 90;
 
 export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({ data }) => {
-  const items = data.challenges;
+  const items = useMemo(
+    () => (data.challenges ?? []).map(withDiceRollAction),
+    [data.challenges],
+  );
   const [displayedValues, setDisplayedValues] = useState<DieValue[] | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   const [reward, setReward] = useState<DiDiceRollChallenge | null>(null);
@@ -201,7 +207,7 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
       onSubmit: data.onEvaluationSubmit,
     });
 
-  const pack = useMemo<JudgedScriptPack<DiDiceRollChallenge>>(() => ({
+  const pack = useMemo<JudgedScriptPack<ActionableDiDiceRollChallenge>>(() => ({
     primitiveType: 'di-dice-roll',
     activityLine: 'live direct instruction dice counting, comparing, and adding',
     items,
@@ -271,7 +277,7 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
     setIsRolling(false);
   }, [clearRollTimers]);
 
-  const runner = useJudgedScriptRunner<DiDiceRollChallenge>({
+  const runner = useJudgedScriptRunner<ActionableDiDiceRollChallenge>({
     pack,
     instanceId: resolvedInstanceId,
     gradeLevel: data.gradeLevel || 'kindergarten',
@@ -281,7 +287,9 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
     onAffirmed: setReward,
   });
 
-  const item = runner.currentItem;
+  // Normalize again at the component boundary because stored payloads and
+  // runner test doubles may predate the shared action contract.
+  const item = runner.currentItem ? withDiceRollAction(runner.currentItem) : null;
 
   const handleRoll = useCallback(() => {
     if (!item || !runner.canAttempt || isRolling || displayedValues != null) return;
@@ -367,17 +375,14 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
         ? `${reward.value} + ${reward.secondValue} = ${reward.total}`
         : `${reward.value} dots · ${reward.secondValue} dots`
     : '';
-  const stageWord = isRolling
-    ? 'rolling…'
-    : valuesToRender == null
-      ? runner.running ? usesTwoDice ? 'tap both dice' : 'tap the die' : 'start the tutor'
-      : runner.stage === 'judging'
-        ? 'listening'
-        : reveal
-          ? `yes — ${rewardHeadline}`
-          : visualItem?.challengeType === 'compare_dice'
-            ? 'say left, right, or same'
-            : 'say your number';
+  const actionPlan = item ? diDiceRollModePlan(item) : null;
+  const actionSteps = actionPlan?.steps ?? [];
+  const rollStep = actionSteps[0] ?? null;
+  const answerStep = actionPlan?.answerStep ?? null;
+  const currentActionStep = valuesToRender == null ? rollStep : answerStep;
+  const completedActionIds = valuesToRender != null && rollStep
+    ? new Set([rollStep.id])
+    : new Set<string>();
 
   return (
     <LuminaCard surface="elevated" className="mx-auto max-w-3xl">
@@ -458,15 +463,17 @@ export const DiDiceRoll: React.FC<{ data: DiDiceRollData; index?: number }> = ({
                 </div>
               )}
 
-              <div
-                aria-live="polite"
-                className="mt-5 text-xs uppercase tracking-[0.25em] text-violet-300"
-              >
-                {stageWord}
-              </div>
             </LuminaPanel>
 
-            <JudgedMicPanel run={runner} />
+            <DiActionPanel
+              run={runner}
+              running={runner.running}
+              stage={runner.stage}
+              currentItem={currentActionStep}
+              steps={actionSteps}
+              completedIds={completedActionIds}
+              startInstruction="Start the lesson, then roll the dice and answer out loud."
+            />
           </>
         )}
 

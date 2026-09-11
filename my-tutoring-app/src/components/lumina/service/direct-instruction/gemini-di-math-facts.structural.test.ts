@@ -160,20 +160,12 @@ describe('mode floors, capacity, and scope precedence', () => {
 });
 
 describe('mixed spine, prompt/code alignment, and no-tier guardrail', () => {
-  it('mixed hard retains every identity and enforces each legal boundary', async () => {
+  it('mixed hard retains every identity without borrowing a single-mode hard shape', async () => {
     const data = await gen('mixed', 'hard');
     expect(new Set(data.challenges.map((c) => c.challengeType))).toEqual(new Set(MODES));
     for (const c of data.challenges) {
-      const boundary = c.challengeType === 'fact_review' ? 5 : 10;
-      if (!NO_OPERAND_AXIS.includes(c.challengeType)) {
-        expect(crossesOperandBoundary(c.challengeType, pairOf(c), boundary)).toBe(true);
-      }
-      expect(c.supportTier).toBe('hard');
+      expect(c.supportTier).toBeUndefined();
     }
-    expect(data.challenges.some((c) =>
-      c.challengeType === 'counting_next'
-      && crossesOperandBoundary(c.challengeType, pairOf(c), 10),
-    )).toBe(true);
     expectAnswersRecomputed(data.challenges);
   });
 

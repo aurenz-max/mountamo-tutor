@@ -7,14 +7,16 @@
  */
 
 import type {
+  DiActionContract,
   JudgedCueOptions,
   JudgedScriptItem,
 } from '../../../hooks/judgedScriptContract';
+import {
+  diDiceRollModePlan,
+  type DiDiceRollMode,
+} from './diDiceRollModes';
 
-export type DiDiceRollChallengeType =
-  | 'count_pips'
-  | 'compare_dice'
-  | 'sum_two_dice';
+export type DiDiceRollChallengeType = DiDiceRollMode;
 
 /**
  * One within-mode difficulty key controls two independent axes: how much
@@ -78,6 +80,10 @@ export type DiDiceRollChallenge =
   | CompareDiceChallenge
   | SumTwoDiceChallenge;
 
+export type ActionableDiDiceRollChallenge = DiDiceRollChallenge & {
+  actionContract: DiActionContract;
+};
+
 export const isTwoDiceChallenge = (
   item: DiDiceRollChallenge,
 ): item is CompareDiceChallenge | SumTwoDiceChallenge =>
@@ -89,16 +95,29 @@ export const diceValuesFor = (
   ? [item.value, item.secondValue]
   : [item.value];
 
-export const studentPrompt = (item: DiDiceRollChallenge): string => {
-  switch (item.challengeType) {
-    case 'compare_dice':
-      return 'Roll both dice. Which has more: left, right, or same?';
-    case 'sum_two_dice':
-      return 'Roll both dice. How many dots are there altogether?';
-    default:
-      return 'Roll the die. Say how many dots you see.';
+export const diceRollGestureAction = (
+  item: DiDiceRollChallenge,
+): DiActionContract => diDiceRollModePlan(item).steps[0].actionContract;
+
+export const withDiceRollAction = (
+  item: DiDiceRollChallenge,
+): ActionableDiDiceRollChallenge => {
+  const plan = diDiceRollModePlan(item);
+  if (plan.answerStep.answerKind !== 'voice') {
+    throw new Error(`Dice mode ${plan.evalMode} must end with a voice answer`);
   }
+  if (item.responseClass !== plan.responseClass || item.action !== plan.groupingKey) {
+    throw new Error(`Dice item ${item.id} disagrees with mode ${plan.evalMode}`);
+  }
+  return {
+    ...item,
+    answerKind: 'voice',
+    actionContract: plan.answerStep.actionContract,
+  };
 };
+
+export const studentPrompt = (item: DiDiceRollChallenge): string =>
+  diDiceRollModePlan(item).steps.map((step) => step.actionContract.instruction).join(' ');
 
 /** Visible retry scaffold. It mirrors the exact spoken correction without
  * exposing the current quantity, total, or relation in application chrome. */
@@ -123,26 +142,10 @@ export const retryPrompt = (item: DiDiceRollChallenge): string => {
 };
 
 const openingAsk = (item: DiDiceRollChallenge): string => {
-  switch (item.challengeType) {
-    case 'compare_dice':
-      return 'Tap both dice to roll them. Then tell me which has more: left, right, or same?';
-    case 'sum_two_dice':
-      return 'Tap both dice to roll them. Then tell me how many dots there are altogether.';
-    default:
-      return 'Tap the die to roll it. Then tell me how many dots you see.';
-  }
+  return studentPrompt(item);
 };
 
-const steadyAsk = (item: DiDiceRollChallenge): string => {
-  switch (item.challengeType) {
-    case 'compare_dice':
-      return 'Roll both dice. Which has more: left, right, or same?';
-    case 'sum_two_dice':
-      return 'Roll both dice. How many dots altogether?';
-    default:
-      return 'Roll it. How many dots?';
-  }
-};
+const steadyAsk = (item: DiDiceRollChallenge): string => studentPrompt(item);
 
 const compareStatement = (item: CompareDiceChallenge): string =>
   item.comparison === 'same'

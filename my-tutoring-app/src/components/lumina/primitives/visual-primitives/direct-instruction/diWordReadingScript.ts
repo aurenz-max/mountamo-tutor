@@ -33,11 +33,9 @@
  */
 
 /** The L1 task identities: decodable, base mixed, sight-word, and review. */
-export type DiWordReadingChallengeType =
-  | 'cvc_reading'
-  | 'read_word'
-  | 'sight_word'
-  | 'word_reading_review';
+import type { DiActionContract } from '../../../hooks/judgedScriptContract';
+import { diWordReadingModePlan, type DiWordReadingChallengeType } from './diWordReadingModes';
+export type { DiWordReadingChallengeType } from './diWordReadingModes';
 
 /** One printed word the tutor drills. Mirrors the generator output shape. */
 export interface DiWordReadingChallenge {
@@ -57,6 +55,11 @@ export interface DiWordReadingChallenge {
    *  Near-neighbour homophones (son/sun) live here for reporting. */
   asrAliases?: string[];
 }
+
+export type ActionableDiWordReadingChallenge = DiWordReadingChallenge & {
+  answerKind: 'voice';
+  actionContract: DiActionContract;
+};
 
 const sentenceCase = (value: string | undefined) =>
   value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
@@ -92,8 +95,16 @@ export const guideLine = (it: DiWordReadingChallenge) =>
     : `Together: ${it.word}.`;
 
 /** TEST: the learner reads it alone. Same ask for both branches. */
-export const testLine = (_it: DiWordReadingChallenge) =>
-  'Your turn. What word?';
+export const testLine = (it: DiWordReadingChallenge) =>
+  diWordReadingModePlan(it).answerStep.actionContract.instruction;
+
+export const withWordReadingAction = (
+  item: DiWordReadingChallenge,
+): ActionableDiWordReadingChallenge => {
+  const actionContract = diWordReadingModePlan(item).answerStep.actionContract;
+  if (actionContract.answerKind !== 'voice') throw new Error('Word reading must use voice');
+  return { ...item, answerKind: 'voice', actionContract };
+};
 
 /** Affirmation branch. MUST begin with "Yes" — the engine scans that sentinel. */
 export const verifyLine = (it: DiWordReadingChallenge) =>

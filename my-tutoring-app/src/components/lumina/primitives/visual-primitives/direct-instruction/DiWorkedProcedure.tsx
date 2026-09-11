@@ -48,11 +48,13 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import DiActionPanel from '../../../components/DiActionPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   diWorkedProcedurePackBase,
   itemsFromProblems,
+  withWorkedProcedureAction,
+  type ActionableWorkedProcedureItem,
   type DiWorkedProcedureData,
   type WorkedProcedureChallengeType,
   type WorkedProcedureItem,
@@ -73,13 +75,6 @@ const TASK_PHRASE: Record<WorkedProcedureChallengeType, string> = {
   subtract_regroup: 'talking through a multi-digit subtraction WITH regrouping, one column at a time',
 };
 
-const stepLabel = (it: WorkedProcedureItem): string =>
-  it.kind === 'subtract'
-    ? `${it.place}: subtract after regrouping`
-    : it.regroup
-      ? `${it.place}: regroup`
-      : `${it.place}: subtract`;
-
 /** PLATFORM PROP CONTRACT: registry primitives mount as
  *  `<Component data={…} index={…} />` — generated data arrives as ONE `data`
  *  prop with the evaluation props merged in, never spread. */
@@ -91,7 +86,10 @@ export const DiWorkedProcedure: React.FC<{
 }> = ({ data }) => {
   // The SAME builder the drive harness calls, so what drops here drops there.
   const built = useMemo(() => itemsFromProblems(data.problems ?? []), [data.problems]);
-  const items = built.items;
+  const items = useMemo(
+    () => built.items.map(withWorkedProcedureAction),
+    [built.items],
+  );
 
   const resolvedInstanceId = useMemo(
     () => data.instanceId || `di-worked-procedure-${Math.round(performance.now())}`,
@@ -149,8 +147,8 @@ export const DiWorkedProcedure: React.FC<{
   const pack = useMemo<JudgedScriptPack<WorkedProcedureItem>>(() => ({
     ...diWorkedProcedurePackBase(items),
     statusLines: {
-      ready: () => 'Listen, then tell me what you do.',
-      retry: () => 'Have another go at this column.',
+      ready: (item) => withWorkedProcedureAction(item).actionContract.instruction,
+      retry: (item) => `Have another go. ${withWorkedProcedureAction(item).actionContract.instruction}`,
       noVerdict: () => 'One more time — what do you do?',
       affirmedNext: 'Yes! On to the next column.',
       affirmedLast: 'You worked every column!',
@@ -215,6 +213,9 @@ export const DiWorkedProcedure: React.FC<{
   });
 
   const current = runner.currentItem;
+  const currentAction: ActionableWorkedProcedureItem | null = current
+    ? withWorkedProcedureAction(current)
+    : null;
 
   // The reveal hold (18b): a just-finished problem stays up while the tutor is
   // still saying its closing line; the next problem appears when her next cue
@@ -230,8 +231,8 @@ export const DiWorkedProcedure: React.FC<{
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!hasSubmitted) return [];
     return phaseResultsFromSummary(items, runner.summary, (it) => ({
-      label: `${it.problemDisplay} · ${stepLabel(it)}`,
-      icon: it.kind === 'decide' && it.regroup ? '🔁' : '➖',
+      label: `${it.problemDisplay} · ${it.actionContract.label}`,
+      icon: it.actionContract.icon,
     }));
   }, [hasSubmitted, runner.summary, items]);
 
@@ -254,13 +255,15 @@ export const DiWorkedProcedure: React.FC<{
       const answerItem = subtract ?? (decide && !decide.regroup ? decide : undefined);
       const answerMark = answerItem ? marked(answerItem.id) : null;
       return {
-        top, bottom, lentMark, regroupMark, answerMark,
+        columnIndex: c, top, bottom, lentMark, regroupMark, answerMark,
         answerDigit: answerItem?.column.difference ?? null,
       };
     }).reverse(); // render hundreds → ones
 
     const tone = (mark: 'child' | 'tutor' | null) =>
       mark === 'child' ? 'text-emerald-300' : 'text-amber-200/70';
+    const activeColumn = (columnIndex: number): boolean =>
+      current?.problemId === shownProblemId && current.columnIndex === columnIndex;
 
     return (
       <div
@@ -275,7 +278,11 @@ export const DiWorkedProcedure: React.FC<{
         {/* Minuend row — with strike + small digit above where a column lent. */}
         <span />
         {columns.map((col, i) => (
-          <span key={`top-${i}`} className="relative text-right">
+          <span
+            key={`top-${i}`}
+            className={`relative rounded-sm text-right ${activeColumn(col.columnIndex) ? 'bg-cyan-400/10 ring-1 ring-cyan-300/40' : ''}`}
+            aria-label={activeColumn(col.columnIndex) ? `Current ${current?.place} column, top digit` : undefined}
+          >
             {col.lentMark && (
               <span className={`absolute -top-6 right-0 text-2xl ${tone(col.lentMark)}`}>{col.top - 1}</span>
             )}
@@ -290,28 +297,30 @@ export const DiWorkedProcedure: React.FC<{
         {/* Subtrahend row. */}
         <span className="text-slate-400">−</span>
         {columns.map((col, i) => (
-          <span key={`bot-${i}`} className="text-right">{col.bottom}</span>
+          <span
+            key={`bot-${i}`}
+            className={`rounded-sm text-right ${activeColumn(col.columnIndex) ? 'bg-cyan-400/10 ring-1 ring-cyan-300/40' : ''}`}
+            aria-label={activeColumn(col.columnIndex) ? `Current ${current?.place} column, bottom digit` : undefined}
+          >
+            {col.bottom}
+          </span>
         ))}
         {/* The rule. */}
         <span className="col-span-full my-1 border-t-4 border-slate-200" />
         {/* Answer row — only what has been written. */}
         <span />
         {columns.map((col, i) => (
-          <span key={`ans-${i}`} className={`text-right ${tone(col.answerMark)}`}>
+          <span
+            key={`ans-${i}`}
+            className={`rounded-sm text-right ${tone(col.answerMark)} ${activeColumn(col.columnIndex) ? 'bg-cyan-400/10 ring-1 ring-cyan-300/40' : ''}`}
+            aria-label={activeColumn(col.columnIndex) ? `Current ${current?.place} column, answer digit` : undefined}
+          >
             {col.answerMark ? col.answerDigit : <span className="text-slate-700">·</span>}
           </span>
         ))}
       </div>
     );
   };
-
-  const stageWord = runner.stage === 'affirmed'
-    ? 'yes!'
-    : runner.stage === 'asking'
-      ? current ? `${current.place} column — your turn` : 'your turn'
-      : runner.stage === 'judging'
-        ? 'listening'
-        : 'get ready';
 
   if (items.length === 0) {
     return (
@@ -366,12 +375,16 @@ export const DiWorkedProcedure: React.FC<{
               </LuminaButton>
             </div>
 
-            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">
-              {stageWord}
-            </div>
-
-            {/* Every step in this pack is answered out loud. */}
-            <JudgedMicPanel run={runner} />
+            <DiActionPanel
+              run={runner}
+              running={runner.running}
+              stage={runner.stage}
+              currentItem={currentAction}
+              steps={shownSteps}
+              completedIds={committed}
+              carriedIds={carried}
+              startInstruction="Start the lesson, listen to the problem, then work one highlighted column at a time."
+            />
           </>
         )}
 

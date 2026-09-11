@@ -35,6 +35,7 @@ describe('visual naming reaches the displayed stimulus and affordances', () => {
   it('prints the exact symbol, hides its answer, and offers no pronunciation shortcut', () => {
     mount(naming);
     expect(screen.getByText('=')).toBeTruthy();
+    expect(screen.getByText('What is this called?')).toBeTruthy();
     expect(screen.queryByText('equal sign')).toBeNull();
     expect(screen.queryByRole('button', { name: /Hear it/ })).toBeNull();
   });

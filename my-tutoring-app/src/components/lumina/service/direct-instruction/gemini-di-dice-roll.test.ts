@@ -123,7 +123,7 @@ describe('generateDiDiceRoll', () => {
     }
   });
 
-  it('applies support tiers to mixed runs and ignores unknown difficulty values', async () => {
+  it('leaves mixed runs un-tiered and ignores unknown single-mode difficulty values', async () => {
     const mixed = await generateDiDiceRoll('dice practice', 'first grade', {
       targetEvalMode: 'mixed',
       challengeCount: 6,
@@ -139,7 +139,7 @@ describe('generateDiDiceRoll', () => {
     expect(new Set(mixed.challenges.map((challenge) => challenge.challengeType))).toEqual(
       new Set(['count_pips', 'compare_dice', 'sum_two_dice']),
     );
-    expect(mixed.challenges.every((challenge) => challenge.supportTier === 'medium')).toBe(true);
+    expect(mixed.challenges.every((challenge) => challenge.supportTier === undefined)).toBe(true);
     expect(unknown.challenges.every((challenge) => challenge.supportTier === undefined)).toBe(true);
   });
 

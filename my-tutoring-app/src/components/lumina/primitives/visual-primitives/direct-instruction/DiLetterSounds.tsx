@@ -47,6 +47,7 @@ import {
   completeCue,
   itemCue,
   moveOnCue,
+  withLetterSoundAction,
   type DiLetterSoundChallenge,
   type DiLetterSoundChallengeType,
 } from './diLetterSoundsScript';
@@ -59,7 +60,7 @@ import {
 import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
-import LiveMicListener from '../../../components/LiveMicListener';
+import DiActionPanel from '../../../components/DiActionPanel';
 
 export type { DiLetterSoundChallenge, DiLetterSoundChallengeType, DiLetterSoundsSupportTier } from './diLetterSoundsScript';
 
@@ -156,7 +157,9 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
     getChallengeId: (ch) => ch.id,
   });
 
-  const currentChallenge = data.challenges[currentIndex] ?? null;
+  const currentChallenge = data.challenges[currentIndex]
+    ? withLetterSoundAction(data.challenges[currentIndex])
+    : null;
 
   const evaluation = usePrimitiveEvaluation<DiLetterSoundsMetrics>({
     primitiveType: 'di-letter-sounds',
@@ -602,6 +605,15 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
     : ctx.isListening
       ? 'armed'
       : 'idle';
+  const actionStage = phase === 'idle'
+    ? 'idle'
+    : phase === 'judging'
+      ? 'judging'
+      : phase === 'affirmed'
+        ? 'affirmed'
+        : phase === 'done'
+          ? 'done'
+          : 'asking';
 
   return (
     <LuminaCard surface="elevated" className="max-w-3xl mx-auto">
@@ -644,9 +656,6 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
                 {currentChallenge.letter}
               </div>
             )}
-            <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
-              {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? (currentChallenge.challengeType === 'first_sound_in_word' ? 'first sound?' : 'your turn') : 'get ready'}
-            </div>
           </div>
         )}
 
@@ -674,19 +683,18 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
 
         {/* Voice control: the whole interaction runs through the mic. */}
         {!isComplete && (
-          <div className="flex flex-col items-center gap-3">
-            <LiveMicListener
-              state={micState}
-              isSupported={isSupported}
-              onStart={() => void prepareLive()}
-              onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
-              size="lg"
-              idleLabel="Tap to start"
-              openingLabel="Getting ready…"
-              listeningLabel="I’m listening"
-            />
-            <p className="text-sm text-slate-300">{statusLine}</p>
-          </div>
+          <DiActionPanel
+            running={running}
+            stage={actionStage}
+            currentItem={currentChallenge}
+            steps={currentChallenge ? [currentChallenge] : []}
+            micState={micState}
+            statusLine={statusLine}
+            onStart={() => void prepareLive()}
+            onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
+            isSupported={isSupported}
+            startInstruction="Start the lesson, look or listen, then say the sound out loud."
+          />
         )}
       </LuminaCardContent>
     </LuminaCard>

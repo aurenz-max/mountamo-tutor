@@ -46,12 +46,13 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import DiActionPanel from '../../../components/DiActionPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   diSpokenPracticePackBase,
   pronounceCue,
-  MODE_SHAPE,
+  withSpokenPracticeAction,
+  type ActionableSpokenPracticeItem,
   type SpokenPracticeItem,
   type SpokenPracticeMode,
 } from './diSpokenPracticeScript';
@@ -80,14 +81,6 @@ export interface DiSpokenPracticeData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DiSpokenPracticeMetrics>) => void;
 }
 
-const MODE_ICON: Record<SpokenPracticeMode, string> = {
-  say_answer: '💬',
-  read_aloud: '📖',
-  count_and_say: '🔢',
-  compare_choice: '⚖️',
-  explain_concept: '💡',
-};
-
 /** Misconception Loop S1 — the task identity, named so a distilled sentence
  *  stays self-limiting under this pack's primitive-scoped key. */
 const TASK_PHRASE: Record<SpokenPracticeMode, string> = {
@@ -104,7 +97,10 @@ const TASK_PHRASE: Record<SpokenPracticeMode, string> = {
  *  `<Component data={…} index={…} />` — generated data arrives as ONE `data`
  *  prop with the evaluation props merged in, never spread. */
 export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: number }> = ({ data }) => {
-  const items = data.items ?? [];
+  const items = useMemo(
+    () => (data.items ?? []).map(withSpokenPracticeAction),
+    [data.items],
+  );
 
   const resolvedInstanceId = useMemo(
     () => data.instanceId || `di-spoken-practice-${Math.round(performance.now())}`,
@@ -133,7 +129,8 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
     ...diSpokenPracticePackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
-      retry: () => 'Have another go — say your answer.',
+      ready: (current) => withSpokenPracticeAction(current).actionContract.instruction,
+      retry: (current) => `Have another go. ${withSpokenPracticeAction(current).actionContract.instruction}`,
       affirmedNext: 'Yes! You said it.',
       done: 'Great talking today!',
     },
@@ -173,14 +170,17 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
   });
 
   const item = runner.currentItem;
+  const actionItem: ActionableSpokenPracticeItem | null = item
+    ? withSpokenPracticeAction(item)
+    : null;
   const canHear = !!item && pronounceCue(item) !== '';
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!hasSubmitted) return [];
     return phaseResultsFromSummary(items, runner.summary, (it) => ({
-      label: `${MODE_SHAPE[it.mode].label} — ${it.stimulusText2
+      label: `${it.actionContract.label} — ${it.stimulusText2
         ? `${it.stimulusText} / ${it.stimulusText2}` : it.stimulusText}`,
-      icon: MODE_ICON[it.mode],
+      icon: it.actionContract.icon,
     }));
   }, [hasSubmitted, runner.summary, items]);
 
@@ -240,14 +240,6 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
     }
   };
 
-  const stageWord = runner.stage === 'affirmed'
-    ? 'yes!'
-    : runner.stage === 'asking'
-      ? 'your turn'
-      : runner.stage === 'judging'
-        ? 'listening'
-        : 'get ready';
-
   if (items.length === 0) {
     return (
       <LuminaCard>
@@ -300,12 +292,14 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
               </div>
             )}
 
-            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">
-              {stageWord}
-            </div>
-
-            {/* Every item in this pack is answered out loud. */}
-            <JudgedMicPanel run={runner} />
+            <DiActionPanel
+              run={runner}
+              running={runner.running}
+              stage={runner.stage}
+              currentItem={actionItem}
+              steps={actionItem ? [actionItem] : []}
+              startInstruction="Start the lesson, look or listen, then answer out loud."
+            />
           </>
         )}
 

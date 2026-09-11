@@ -26,6 +26,7 @@ import {
   itemsFromRules,
   moveOnCue,
   verifyLine,
+  withDeductionAction,
   type DeductionItem,
   type DeductionRuleSpec,
   type DeductionSupportTier,
@@ -84,6 +85,7 @@ describe('a rule becomes cases', () => {
       'ddb-fish-c0-conclude', 'ddb-fish-c1-deny', 'ddb-fish-c2-cannot_tell',
     ]);
     expect(items.every((i) => i.answerKind === 'voice' && i.responseClass === 'deduction' && i.action === 'deduce')).toBe(true);
+    expect(items.every((i) => i.answerKind === i.actionContract?.answerKind)).toBe(true);
     expect(items[0].isFirstCase).toBe(true);
     expect(items[1].isLastCase).toBe(true);
   });
@@ -99,12 +101,15 @@ describe('a rule becomes cases', () => {
   });
 });
 
-describe('the ask never states what the child must say', () => {
+describe('the ask gives a complete response format without revealing the conclusion', () => {
   it('reads the rule on the first case only, then says "Same rule."', () => {
     const { items } = build([SESSION[1]]);
-    expect(askLine(items[0])).toBe('Here is the rule: All birds lay eggs. A robin is a bird. So what does the rule tell you about a robin?');
-    expect(askLine(items[1])).toBe('Same rule. A dog does not lay eggs. Is a dog a bird? How do you know?');
-    expect(askLine(items[2])).toBe('Same rule. This animal lays eggs. Is this animal a bird? How do you know?');
+    expect(askLine(items[0])).toBe('Here is the rule: All birds lay eggs. A robin is a bird. Say what the rule tells you about a robin.');
+    expect(askLine(items[1])).toBe("Same rule. A dog does not lay eggs. Is a dog a bird? Say yes, no, or can't tell—then explain using the rule.");
+    expect(askLine(items[2])).toBe("Same rule. This animal lays eggs. Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.");
+    for (const item of items) {
+      expect(askLine(item)).toContain(withDeductionAction(item).actionContract.instruction);
+    }
   });
 
   it('never carries the case\'s answer in the spoken ask (medium/hard), the rule sentence exempt', () => {
@@ -122,16 +127,16 @@ describe('the ask never states what the child must say', () => {
 
   it('at easy every ask re-reads the rule', () => {
     const { items } = build([SESSION[1]], 'easy');
-    expect(askLine(items[1])).toBe('The rule: All birds lay eggs. A dog does not lay eggs. Is a dog a bird? How do you know?');
+    expect(askLine(items[1])).toBe("The rule: All birds lay eggs. A dog does not lay eggs. Is a dog a bird? Say yes, no, or can't tell—then explain using the rule.");
   });
 
-  it('names "can\'t tell" in the how-to-play ONLY, inside the opening line', () => {
+  it('keeps the complete verdict menu visible and spoken on verdict cases', () => {
     const { items, pack } = build();
     expect(HOW_TO_PLAY).toMatch(/can't tell/);
     expect(spokenSpanOf(pack.itemCue(items[0], { opening: true, howToPlay: true }))).toMatch(/^We are going to use rules/);
     const later = spokenSpanOf(pack.itemCue(items[4], { opening: false, howToPlay: false }));
     expect(later).toMatch(/^Same rule\./);
-    expect(later).not.toMatch(/can't tell/);
+    expect(later).toContain("Say yes, no, or can't tell—then explain using the rule.");
   });
 });
 
@@ -143,7 +148,7 @@ describe('a conclude case is judged on the conclusion', () => {
     const lines = correctionLines(beetle);
     expect(lines.contrast).toBe(
       'My turn: not ⟨what they said⟩ — The rule says all insects have six legs. A beetle is an insect, so a beetle has six legs. '
-      + 'Your turn. So what does the rule tell you about a beetle?',
+      + 'Your turn. Say what the rule tells you about a beetle.',
     );
     expect(lines.fallback).toMatch(/^My turn: The rule says all insects have six legs\./);
     const cue = itemCue(beetle, { opening: false, howToPlay: false });
@@ -160,7 +165,7 @@ describe('a deny case is judged on the VERDICT and the REASON', () => {
     const lines = correctionLines(spider);
     expect(lines.noReason).toBe(
       'My turn: how do you know? The rule says all insects have six legs. A spider does not have six legs, so a spider is not an insect. '
-      + 'Your turn. Is a spider an insect? How do you know?',
+      + "Your turn. Is a spider an insect? Say yes, no, or can't tell—then explain using the rule.",
     );
     const cue = itemCue(spider, { opening: false, howToPlay: false });
     expect(cue).toContain('The short form counts');
@@ -200,7 +205,7 @@ describe('a move-on carries the conclusion', () => {
   it('states the conclusion before the next ask, so the page can write it', () => {
     const { items, pack } = build([SESSION[1]]);
     const spoken = spokenSpanOf(pack.moveOnCue(items[0], items[1], { opening: false, howToPlay: false }));
-    expect(spoken).toBe('Good try. A robin is a bird, so a robin lays eggs. Same rule. A dog does not lay eggs. Is a dog a bird? How do you know?');
+    expect(spoken).toBe("Good try. A robin is a bird, so a robin lays eggs. Same rule. A dog does not lay eggs. Is a dog a bird? Say yes, no, or can't tell—then explain using the rule.");
   });
 
   it('states a can\'t-tell with its counterexample, then opens the next rule', () => {
@@ -209,7 +214,7 @@ describe('a move-on carries the conclusion', () => {
     const next = byId(items, 'ddb-fish-c0-conclude');
     expect(spokenSpanOf(moveOnCue(egg, next, { opening: false, howToPlay: false }))).toBe(
       "Good try. You can't tell. All birds lay eggs, but the rule does not say only birds lay eggs — a turtle lays eggs too, and a turtle is not a bird. "
-      + 'Here is the rule: All fish live in water. A shark is a fish. So what does the rule tell you about a shark?',
+      + 'Here is the rule: All fish live in water. A shark is a fish. Say what the rule tells you about a shark.',
     );
   });
 

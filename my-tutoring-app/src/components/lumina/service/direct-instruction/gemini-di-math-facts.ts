@@ -40,13 +40,18 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import { resolveEvalModes, type ChallengeTypeDoc } from "../evalMode";
+import { resolveEvalModes } from "../evalMode";
+import { supportForSingleDiMode } from '../../hooks/diModeContract';
 import type { DiMathFactsData } from "../../primitives/visual-primitives/direct-instruction/DiMathFacts";
 import type {
   DiMathFactsChallenge,
-  DiMathFactsChallengeType,
   DiMathFactsSupportTier,
 } from "../../primitives/visual-primitives/direct-instruction/diMathFactsScript";
+import {
+  DI_MATH_FACTS_CHALLENGE_TYPES,
+  DI_MATH_FACTS_TYPE_DOCS,
+  type DiMathFactsChallengeType,
+} from '../../primitives/visual-primitives/direct-instruction/diMathFactsModes';
 
 // ── Support tier harness (L3) ───────────────────────────────────────
 
@@ -877,38 +882,10 @@ const distribute = (count: number, k: number): number[] => {
 // ── Gemini wrapper (title/description/scope hint ONLY — Fork A) ─────
 
 /** Skill docs for the intent→mode router (Fork A — no schema to constrain). */
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  name_numeral: {
-    promptDoc:
-      `"name_numeral": the child sees ONE printed numeral ("7") and says its name aloud ("seven"). Pure numeral recognition and production — no computation, no sequence. Pick this for objectives about RECOGNIZING or NAMING written numbers.`,
-    schemaDescription: "'name_numeral' (say the printed numeral's name)",
-  },
-  counting_next: {
-    promptDoc:
-      `"counting_next": the child sees a number ("5 →") and says the number that comes NEXT ("six"). Rote counting sequence — the skill underneath counting on.`,
-    schemaDescription: "'counting_next' (say the number after)",
-  },
-  answer_fact: {
-    promptDoc:
-      `"answer_fact": the child sees ONE printed addition fact ("2 + 1") and speaks the answer number word ("three"). The base skill, drilled as the objective's focused set.`,
-    schemaDescription: "'answer_fact' (say the answer to the printed fact)",
-  },
-  fact_review: {
-    promptDoc:
-      `"fact_review": cumulative / spaced review — the child answers facts already taught, drawn as a WIDE mix across the whole grade range rather than one focused set.`,
-    schemaDescription: "'fact_review' (mixed cumulative review)",
-  },
-  subtraction_fact: {
-    promptDoc:
-      `"subtraction_fact": the child sees ONE printed subtraction fact ("3 - 1") and speaks the answer number word ("two"). Take-away facts within the same range.`,
-    schemaDescription: "'subtraction_fact' (say the answer to a take-away fact)",
-  },
-};
+export const CHALLENGE_TYPE_DOCS = DI_MATH_FACTS_TYPE_DOCS;
 
 /** Every identity this pack can build, easiest → hardest (the mixed spread). */
-const ALL_TYPES: DiMathFactsChallengeType[] = [
-  'name_numeral', 'counting_next', 'answer_fact', 'fact_review', 'subtraction_fact',
-];
+const ALL_TYPES: readonly DiMathFactsChallengeType[] = DI_MATH_FACTS_CHALLENGE_TYPES;
 
 const FACT_SCOPES = ['within_5', 'within_10', 'make_10', 'doubles'];
 
@@ -972,13 +949,22 @@ export const generateDiMathFacts = async (
     MAX_INSTANCE_COUNT,
     Math.max(3, config?.challengeCount ?? DEFAULT_INSTANCE_COUNT),
   );
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  const requestedSupportTier = normalizeSupportTier(config?.difficulty) ?? undefined;
   const remediationFocus = config?.remediationFocus;
 
   // The objective's fact scope, resolved from ALL the text we have and
   // code-enforced below (topic/objective beats whatever the model picks).
   const scopeText = `${intent ?? ''} ${config?.objectiveText ?? ''} ${topic}`;
   const textScope = resolveTextScope(scopeText);
+
+  const resolution = await resolveEvalModes(
+    'di-math-facts',
+    { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const supportTier = supportForSingleDiMode(resolution, requestedSupportTier) ?? null;
+  const modeTypes: DiMathFactsChallengeType[] =
+    (resolution?.allowedTypes as DiMathFactsChallengeType[] | undefined) ?? [...ALL_TYPES];
 
   const prompt = `Scope a brisk Direct Instruction math-facts practice (printed problems, spoken number-word answers) for a young learner.
 
@@ -990,16 +976,6 @@ RULES:
 - Write a warm, short kid title and a one-sentence description. They MUST NOT contain any digits or number words — the child must produce the answers, never hear or see them first.
 
 Return the wrapper JSON only.`;
-
-  // Resolve which eval-mode SKILL(s) this objective calls for. Fork A: the
-  // resolution drives which challenge types we BUILD (no schema enum exists).
-  const resolution = await resolveEvalModes(
-    'di-math-facts',
-    { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
-    CHALLENGE_TYPE_DOCS,
-  );
-  const modeTypes: DiMathFactsChallengeType[] =
-    (resolution?.allowedTypes as DiMathFactsChallengeType[] | undefined) ?? ALL_TYPES; // mixed = every identity
 
   let title = DEFAULT_TITLE;
   let description = DEFAULT_DESCRIPTION;
@@ -1172,10 +1148,9 @@ Return the wrapper JSON only.`;
   }
 
   // ── Support tier, applied deterministically at the END ─────────────
-  // Gated ONLY on a tier being present, and resolved from each challenge's OWN
-  // mode — difficulty is a STUDENT property, so a blended/mixed session must get
-  // it too (gating on a single pinned mode is the silent no-op this layer exists
-  // to kill). Code owns the support structure; the LLM only scoped the wrapper.
+  // A tier is present only when one mode resolves. A blend deliberately stays
+  // untiered because it has no single structural support surface. Code owns the
+  // support structure; the LLM only scoped the wrapper.
   //
   // Deliberately NOT injected into the Gemini prompt, unlike the math
   // references (same departure as di-sentence-reading L3). Fork A here means
@@ -1191,7 +1166,7 @@ Return the wrapper JSON only.`;
       ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
     }
     console.log(
-      `[DiMathFacts] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'answer_fact', supportTier).describe}`,
+      `[DiMathFacts] Support tier "${supportTier}" applied to single mode ${modeTypes[0]} — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'answer_fact', supportTier).describe}`,
     );
     console.log('[DiMathFacts] Structural tier results:', challenges.map((ch) => {
       // Mirrors the buildFor guard: the operand axis is not defined above the

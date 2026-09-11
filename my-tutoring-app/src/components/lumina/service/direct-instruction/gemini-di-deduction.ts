@@ -30,7 +30,8 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
-import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
+import { resolveEvalModes } from '../evalMode';
+import { supportForSingleDiMode } from '../../hooks/diModeContract';
 import {
   DEDUCTION_SHAPES,
   MAX_ENTITIES_PER_LIST,
@@ -43,10 +44,14 @@ import {
 } from '../../primitives/visual-primitives/direct-instruction/diDeductionPlan';
 import {
   itemsFromRules,
-  type DeductionChallengeType,
   type DeductionSupportTier,
   type DiDeductionData,
 } from '../../primitives/visual-primitives/direct-instruction/diDeductionScript';
+import {
+  DI_DEDUCTION_CHALLENGE_TYPES,
+  DI_DEDUCTION_TYPE_DOCS,
+  type DeductionChallengeType,
+} from '../../primitives/visual-primitives/direct-instruction/diDeductionModes';
 
 const DEFAULT_CASE_COUNT = 6;
 const MIN_CASE_COUNT = 3;
@@ -61,29 +66,8 @@ const normalizeSupportTier = (raw?: unknown): DeductionSupportTier | undefined =
 
 // ── Eval-mode routing (code stamps the mode; no schema enum exists) ──────────
 
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  conclude: {
-    promptDoc:
-      '"conclude": the case names a MEMBER of the rule\'s category ("A beetle is an insect") and the child '
-      + 'says what the rule tells them about it ("so a beetle has six legs").',
-    schemaDescription: "'conclude' (apply a rule to a named member)",
-  },
-  deny: {
-    promptDoc:
-      '"deny": the case names a thing that LACKS the property ("A spider does not have six legs") and the '
-      + 'child rules it out with a reason ("no, not an insect, because all insects have six legs").',
-    schemaDescription: "'deny' (rule a thing out because it lacks what every member has)",
-  },
-  cannot_tell: {
-    promptDoc:
-      '"cannot_tell": the case names only the property of an unnamed thing ("This animal has six legs") '
-      + 'and the child must say the rule cannot tell whether it is a member, and why (other things have '
-      + 'six legs too) — the reasoning standard where "yes, because it has six legs" is the error.',
-    schemaDescription: "'cannot_tell' (recognize that having the property does not make it a member)",
-  },
-};
-
-const ALL_TYPES: DeductionChallengeType[] = ['conclude', 'deny', 'cannot_tell'];
+export const CHALLENGE_TYPE_DOCS = DI_DEDUCTION_TYPE_DOCS;
+const ALL_TYPES: readonly DeductionChallengeType[] = DI_DEDUCTION_CHALLENGE_TYPES;
 
 // ── What Gemini writes ───────────────────────────────────────────────────────
 
@@ -304,7 +288,7 @@ export const generateDiDeduction = async (
     MAX_CASE_COUNT,
     Math.max(MIN_CASE_COUNT, config?.challengeCount ?? DEFAULT_CASE_COUNT),
   );
-  const supportTier = normalizeSupportTier(config?.supportTier) ?? normalizeSupportTier(config?.difficulty);
+  const requestedSupportTier = normalizeSupportTier(config?.supportTier) ?? normalizeSupportTier(config?.difficulty);
 
   // Which shape(s)? An explicit pin wins; then the resolver over the objective;
   // mixed = every rule through all three, in the DI order.
@@ -313,9 +297,10 @@ export const generateDiDeduction = async (
     { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
     CHALLENGE_TYPE_DOCS,
   );
+  const supportTier = supportForSingleDiMode(resolution, requestedSupportTier);
   let modeTypes: DeductionChallengeType[] =
     (resolution?.allowedTypes as DeductionChallengeType[] | undefined)?.filter((t) => ALL_TYPES.includes(t)) ?? [];
-  if (modeTypes.length === 0) modeTypes = ALL_TYPES;
+  if (modeTypes.length === 0) modeTypes = [...ALL_TYPES];
   const shapes = shapesFor(modeTypes);
   const needsLookalikes = shapes.includes('cannot_tell');
 

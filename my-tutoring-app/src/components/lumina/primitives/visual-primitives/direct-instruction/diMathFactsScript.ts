@@ -75,12 +75,9 @@
  * which is this pack's whole response class. Simpler than `counting_next` —
  * no successor to compute, the shown numeral IS the answer.
  */
-export type DiMathFactsChallengeType =
-  | 'counting_next'
-  | 'answer_fact'
-  | 'fact_review'
-  | 'subtraction_fact'
-  | 'name_numeral';
+import type { DiActionContract } from '../../../hooks/judgedScriptContract';
+import { diMathFactsModePlan, type DiMathFactsChallengeType } from './diMathFactsModes';
+export type { DiMathFactsChallengeType } from './diMathFactsModes';
 
 /**
  * The within-mode SUPPORT tier (L3, 2026-08-01). Second field of the two-field
@@ -151,6 +148,11 @@ export interface DiMathFactsChallenge {
   asrAliases?: string[];
 }
 
+export type ActionableDiMathFactsChallenge = DiMathFactsChallenge & {
+  answerKind: 'voice';
+  actionContract: DiActionContract;
+};
+
 /** MODEL: the tutor states the whole fact once. Single repetition — brisk
  *  pacing is the product at this age (bench run-2 timing ruling). */
 export const modelLine = (it: DiMathFactsChallenge) =>
@@ -162,7 +164,15 @@ export const guideLine = (it: DiMathFactsChallenge) =>
 
 /** TEST: the learner answers alone. */
 export const testLine = (it: DiMathFactsChallenge) =>
-  `Your turn. What is ${it.problem}?`;
+  diMathFactsModePlan(it).answerStep.actionContract.instruction;
+
+export const withMathFactsAction = (
+  item: DiMathFactsChallenge,
+): ActionableDiMathFactsChallenge => {
+  const actionContract = diMathFactsModePlan(item).answerStep.actionContract;
+  if (actionContract.answerKind !== 'voice') throw new Error('Math facts must use voice');
+  return { ...item, answerKind: 'voice', actionContract };
+};
 
 /** Affirmation branch. MUST begin with "Yes" — the engine scans that sentinel. */
 export const verifyLine = (it: DiMathFactsChallenge) =>

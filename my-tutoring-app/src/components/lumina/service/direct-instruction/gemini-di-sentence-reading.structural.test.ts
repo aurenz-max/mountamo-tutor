@@ -195,16 +195,16 @@ describe('pool identity survives the band — the tier never overrides an eval m
   });
 });
 
-describe('mixed sessions tier structurally too (SP-21 — no silent single-mode no-op)', () => {
-  it('mixed + medium: all four identities present, every item tiered AND in band', async () => {
+describe('mixed sessions keep task identity separate from single-mode support', () => {
+  it('mixed + medium: all four identities are present and no single-mode tier is applied', async () => {
     const data = await gen({ mode: 'mixed', difficulty: 'medium' });
     const types = new Set(data.challenges.map((c) => c.challengeType));
     expect(types).toEqual(
       new Set(['decodable_sentence', 'read_sentence', 'sentence_review', 'sight_phrase_sentence']),
     );
-    expect(data.challenges.every((c) => c.supportTier === 'medium')).toBe(true);
-    for (const wc of wordCounts(data)) expect(wc).toBeGreaterThanOrEqual(5);
-    for (const wc of wordCounts(data)) expect(wc).toBeLessThanOrEqual(6);
+    expect(data.challenges.every((c) => c.supportTier === undefined)).toBe(true);
+    for (const wc of wordCounts(data)) expect(wc).toBeGreaterThanOrEqual(3);
+    for (const wc of wordCounts(data)) expect(wc).toBeLessThanOrEqual(8);
   });
 });
 

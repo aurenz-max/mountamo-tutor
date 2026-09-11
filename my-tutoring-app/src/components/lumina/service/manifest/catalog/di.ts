@@ -31,6 +31,14 @@
  * a misconception genuinely does transfer.
  */
 import { ComponentDefinition } from '../../../types';
+import { DI_DEDUCTION_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diDeductionModes';
+import { DI_DICE_ROLL_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diDiceRollModes';
+import { DI_LETTER_SOUNDS_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diLetterSoundsModes';
+import { DI_MATH_FACTS_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diMathFactsModes';
+import { DI_SENTENCE_READING_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diSentenceReadingModes';
+import { DI_SPOKEN_PRACTICE_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPracticeModes';
+import { DI_WORD_READING_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diWordReadingModes';
+import { DI_WORKED_PROCEDURE_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diWorkedProcedureModes';
 
 export const DI_CATALOG: ComponentDefinition[] = [
   {
@@ -41,32 +49,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // L1 eval modes — task identities, all within the benched continuant response
     // class (the produced audio is a held sound in every mode). β mirrors backend
     // problem_type_registry.py → "di-letter-sounds". Ordered easiest → hardest.
-    evalModes: [
-      {
-        evalMode: 'letter_sound',
-        label: 'Letter Sound (Isolated)',
-        beta: 1.5,
-        scaffoldingMode: 1,
-        challengeTypes: ['letter_sound'],
-        description: 'See a letter, say its continuous sound (grapheme→phoneme). The base skill, taught as a focused cluster.',
-      },
-      {
-        evalMode: 'letter_sound_review',
-        label: 'Sound Review (Mixed Set)',
-        beta: 2.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['letter_sound_review'],
-        description: 'Cumulative / spaced review — re-produce already-taught sounds drawn as a wide mix across many letters, not one set.',
-      },
-      {
-        evalMode: 'first_sound_in_word',
-        label: 'First Sound in a Word',
-        beta: 3.5,
-        scaffoldingMode: 3,
-        challengeTypes: ['first_sound_in_word'],
-        description: 'Onset isolation (phonemic awareness): hear a whole word and say its first sound. Continuant onsets only.',
-      },
-    ],
+    evalModes: DI_LETTER_SOUNDS_EVAL_MODES,
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
@@ -161,40 +144,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // L1 eval modes (2026-08-04): same spoken single-word response class;
     // modes differ by code-owned word pool and review identity.
     // β mirrors backend problem_type_registry.py → "di-word-reading".
-    evalModes: [
-      {
-        evalMode: 'cvc_reading',
-        label: 'Read a CVC Word',
-        beta: 2.0,
-        scaffoldingMode: 1,
-        challengeTypes: ['cvc_reading'],
-        description: 'Blend and read one decodable short-vowel CVC word; a named vowel pattern binds the whole set.',
-      },
-      {
-        evalMode: 'read_word',
-        label: 'Read a Word',
-        beta: 2.5,
-        scaffoldingMode: 1,
-        challengeTypes: ['read_word'],
-        description: 'See one printed word, read it aloud — blend-and-read for decodable CVC words, whole-word recall for sight words.',
-      },
-      {
-        evalMode: 'sight_word',
-        label: 'Read a Sight Word',
-        beta: 3.0,
-        scaffoldingMode: 2,
-        challengeTypes: ['sight_word'],
-        description: 'Recall and read one irregular high-frequency word as a whole, without sounding it out.',
-      },
-      {
-        evalMode: 'word_reading_review',
-        label: 'Word Reading Review',
-        beta: 3.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['word_reading_review'],
-        description: 'Cumulative spaced review across taught short-vowel CVC families and irregular sight words.',
-      },
-    ],
+    evalModes: DI_WORD_READING_EVAL_MODES,
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
@@ -318,53 +268,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // problem_type_registry.py → "di-math-facts". Ordered easiest → hardest.
     // Deferred: G3 `multiplication_fact` (pack is curriculum-fit at K/G1 only —
     // needs its own fit probe + grade gate) and missing-addend (queued at L4).
-    evalModes: [
-      {
-        // The ladder's floor (2026-09-05, lesson-bench item 20): pure
-        // perceptual recognition + production, no computation and no
-        // sequence. β mirrors the di-shapes `name_shape` precedent — the same
-        // "see one thing, name it" act. Tied with `counting_next` on purpose:
-        // both are floor tasks, and nothing in the evidence orders them yet.
-        evalMode: 'name_numeral',
-        label: 'Name the Number',
-        beta: 1.5,
-        scaffoldingMode: 1,
-        challengeTypes: ['name_numeral'],
-        description: 'See one printed numeral, say its name aloud — recognition and production, no computation.',
-      },
-      {
-        evalMode: 'counting_next',
-        label: 'The Number After',
-        beta: 1.5,
-        scaffoldingMode: 1,
-        challengeTypes: ['counting_next'],
-        description: 'See a number, say the number that comes next — the rote counting sequence underneath counting on.',
-      },
-      {
-        evalMode: 'answer_fact',
-        label: 'Answer a Fact',
-        beta: 2.0,
-        scaffoldingMode: 1,
-        challengeTypes: ['answer_fact'],
-        description: 'See one printed addition fact, say the answer as a number word — modeled and guided first, then answered alone.',
-      },
-      {
-        evalMode: 'fact_review',
-        label: 'Fact Review (Mixed Set)',
-        beta: 2.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['fact_review'],
-        description: 'Cumulative / spaced review — answer already-taught facts drawn as a wide mix across the whole grade range, not one focused set.',
-      },
-      {
-        evalMode: 'subtraction_fact',
-        label: 'Take-Away Fact',
-        beta: 3.0,
-        scaffoldingMode: 3,
-        challengeTypes: ['subtraction_fact'],
-        description: 'See one printed subtraction fact, say the difference as a number word. Same range as the addition facts; counting back is a legitimate route.',
-      },
-    ],
+    evalModes: DI_MATH_FACTS_EVAL_MODES,
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
@@ -492,35 +396,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // short_spoken_word for left/right/same. β mirrors the backend registry.
     // Count is one concrete quantity; compare adds relational attention across
     // two sets; sum composes both sets and may produce totals through twelve.
-    evalModes: [
-      {
-        evalMode: 'count_pips',
-        label: 'Count the Pips',
-        beta: 1.5,
-        discrimination: 1.6,
-        scaffoldingMode: 1,
-        challengeTypes: ['count_pips'],
-        description: 'Roll one six-sided die and say its visible pip quantity as a number word.',
-      },
-      {
-        evalMode: 'compare_dice',
-        label: 'Compare Two Dice',
-        beta: 2.5,
-        discrimination: 1.6,
-        scaffoldingMode: 2,
-        challengeTypes: ['compare_dice'],
-        description: 'Roll two dice, compare their pip quantities, and say left, right, or same.',
-      },
-      {
-        evalMode: 'sum_two_dice',
-        label: 'Add Two Dice',
-        beta: 3.5,
-        discrimination: 1.6,
-        scaffoldingMode: 3,
-        challengeTypes: ['sum_two_dice'],
-        description: 'Roll two dice, combine both visible pip sets, and say the total from two through twelve.',
-      },
-    ],
+    evalModes: DI_DICE_ROLL_EVAL_MODES,
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
@@ -791,40 +667,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // Deferred by design: a LONGER-text rung (leaves the benched scope — needs
     // its own bench sitting) and a pace/expression rung (read-aloud-studio's
     // territory, and the L0 judging contract explicitly refuses to judge speed).
-    evalModes: [
-      {
-        evalMode: 'decodable_sentence',
-        label: 'Sound-It-Out Sentence',
-        beta: 2.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['decodable_sentence'],
-        description: 'Read a sentence in which every content word is a sound-it-out CVC word — blending carried from single words into connected text. Phonics transfer, no irregular words to recall.',
-      },
-      {
-        evalMode: 'read_sentence',
-        label: 'Read a Sentence',
-        beta: 3.0,
-        scaffoldingMode: 3,
-        challengeTypes: ['read_sentence'],
-        description: 'See one printed short sentence, read it aloud — every word, in order. Modeled and read together first, then read alone and judged for accuracy. The base skill over mixed vocabulary.',
-      },
-      {
-        evalMode: 'sentence_review',
-        label: 'Sentence Review (Mixed Set)',
-        beta: 3.5,
-        scaffoldingMode: 3,
-        challengeTypes: ['sentence_review'],
-        description: 'Cumulative / spaced review — re-read sentences of the kind already taught, drawn as a wide mix across every vowel pattern and word type rather than one focused set.',
-      },
-      {
-        evalMode: 'sight_phrase_sentence',
-        label: 'Sight-Word Sentence',
-        beta: 4.0,
-        scaffoldingMode: 4,
-        challengeTypes: ['sight_phrase_sentence'],
-        description: 'Read a sentence carrying several irregular high-frequency words ("You can see my dog.") — words that cannot be sounded out and must be recognised whole inside connected text.',
-      },
-    ],
+    evalModes: DI_SENTENCE_READING_EVAL_MODES,
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
@@ -957,54 +800,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // the CONTENT is generated per objective rather than fixed by the pack.
     // β mirrors backend problem_type_registry.py → "di-spoken-practice".
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
-    evalModes: [
-      {
-        evalMode: 'count_and_say',
-        label: 'Count and Say',
-        beta: 1.5,
-        scaffoldingMode: 1,
-        challengeTypes: ['count_and_say'],
-        description: 'A group of pictures is on screen; the child counts them and says how many. No numeral is ever printed.',
-      },
-      {
-        evalMode: 'read_aloud',
-        label: 'Read It Aloud',
-        beta: 2.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['read_aloud'],
-        description: 'Decode printed words or numerals aloud. Naming a displayed symbol or picture is recall: use say_answer. The printed text itself is the utterance.',
-      },
-      {
-        // The objective supplies the menu, so the act is production over a
-        // closed set — harder than counting, easier than unaided recall,
-        // because the words are heard on every ask (`closed_set_choice`).
-        evalMode: 'compare_choice',
-        label: 'Which Word?',
-        beta: 2.0,
-        scaffoldingMode: 2,
-        challengeTypes: ['compare_choice'],
-        description: 'Two things are shown side by side and the child SAYS which word from a set the objective names (longer/shorter, heavier/lighter, more/fewer) describes them. Use when the objective enumerates the comparison words the child must produce. The tutor reads the whole word menu on every item.',
-      },
-      {
-        evalMode: 'say_answer',
-        label: 'Say the Answer',
-        beta: 3.0,
-        scaffoldingMode: 3,
-        challengeTypes: ['say_answer'],
-        description: 'Name a displayed symbol or picture, or answer a spoken problem. Recall, not decoding. Show visual naming targets without speaking their names or printing answers.',
-      },
-      {
-        // The hardest act in the pack: unaided production of a PROPOSITION,
-        // judged on meaning (`concept_statement`, benched 2026-09-07 — qa/di
-        // item 36). The ask never states the concept; the affirmation does.
-        evalMode: 'explain_concept',
-        label: 'Say Why',
-        beta: 4.0,
-        scaffoldingMode: 4,
-        challengeTypes: ['explain_concept'],
-        description: 'The child sees one instance (an equation on a balance, a pattern, a ten rod) and says in their own words what it means or what rule it follows. Use for explain / describe / tell-why objectives whose answer is a short idea with many correct wordings. Judged on meaning; the ask never states the concept.',
-      },
-    ],
+    evalModes: DI_SPOKEN_PRACTICE_EVAL_MODES,
     supportsEvaluation: true,
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
@@ -1114,24 +910,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // L1 eval modes — both are the same ACT (read a column, say the move and
     // the difference); the regroup mode adds the decision that carries the
     // skill's signature errors. β mirrors backend problem_type_registry.py.
-    evalModes: [
-      {
-        evalMode: 'subtract_no_regroup',
-        label: 'No Regrouping',
-        beta: 2.0,
-        scaffoldingMode: 1,
-        challengeTypes: ['subtract_no_regroup'],
-        description: 'Every column subtracts cleanly; the child says each column aloud and must decide NOT to regroup.',
-      },
-      {
-        evalMode: 'subtract_regroup',
-        label: 'With Regrouping',
-        beta: 3.5,
-        scaffoldingMode: 3,
-        challengeTypes: ['subtract_regroup'],
-        description: 'At least one column must regroup; the child says the move (borrow / trade / regroup and both new numbers), then each difference.',
-      },
-    ],
+    evalModes: DI_WORKED_PROCEDURE_EVAL_MODES,
     supportsEvaluation: true,
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },
@@ -1241,32 +1020,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // L1 eval modes — the three case SHAPES. Same act (read a rule and a case,
     // say what follows and why); the shapes are ordered by the logic they
     // demand. β mirrors backend problem_type_registry.py.
-    evalModes: [
-      {
-        evalMode: 'conclude',
-        label: 'What Follows',
-        beta: 2.5,
-        scaffoldingMode: 1,
-        challengeTypes: ['conclude'],
-        description: 'The case names a member of the rule\'s category; the child says what the rule tells them about it (affirm the antecedent).',
-      },
-      {
-        evalMode: 'deny',
-        label: 'Rule It Out',
-        beta: 3.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['deny'],
-        description: 'The case names a thing that lacks the property; the child rules it out and says why (deny the consequent).',
-      },
-      {
-        evalMode: 'cannot_tell',
-        label: "Can't Tell",
-        beta: 4.5,
-        scaffoldingMode: 3,
-        challengeTypes: ['cannot_tell'],
-        description: 'The case names only the property of an unnamed thing; the child says the rule cannot tell whether it is a member, and why — the confident yes is the signature error.',
-      },
-    ],
+    evalModes: DI_DEDUCTION_EVAL_MODES,
     supportsEvaluation: true,
     misconceptionScope: 'primitive',
     audioInput: { manual_activity: true },

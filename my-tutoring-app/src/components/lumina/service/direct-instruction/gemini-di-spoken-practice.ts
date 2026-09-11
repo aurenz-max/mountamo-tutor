@@ -39,7 +39,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
-import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
+import { resolveEvalModes } from '../evalMode';
 import { createDiscretePool } from '../math/numberPoolService';
 import {
   planSpokenPractice, modeForSpokenPlan, buildPlannedSpokenItems, hasPlannedCoverage,
@@ -59,6 +59,7 @@ import {
   type SpokenPracticeItem,
   type SpokenPracticeMode,
 } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
+import { DI_SPOKEN_PRACTICE_TYPE_DOCS } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeModes';
 
 /** Task interpretation and review are semantic judgments (spokenPracticePlan's
  *  ruling); the explain review below is the same authority one layer down. */
@@ -70,43 +71,7 @@ const MIN_ITEM_COUNT = 3;
 
 // ── Eval-mode routing (Fork A discipline: code stamps the mode) ──────────────
 
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  say_answer: {
-    promptDoc:
-      '"say_answer": the child meets a stimulus (a printed fact, a word said aloud, a picture) '
-      + 'and SAYS an answer they were not shown. Includes naming a displayed symbol/picture: '
-      + 'the visual is the question and its name must NOT be spoken before the child answers.',
-    schemaDescription: "'say_answer' (produce a spoken answer)",
-  },
-  read_aloud: {
-    promptDoc:
-      '"read_aloud": the printed stimulus IS the utterance — the child reads it aloud. '
-      + 'Decoding, not recall; the thing on screen is the task, not a leak.',
-    schemaDescription: "'read_aloud' (read the printed stimulus aloud)",
-  },
-  count_and_say: {
-    promptDoc:
-      '"count_and_say": a group of identical pictures is on screen and the child says HOW MANY. '
-      + 'The numeral is never printed.',
-    schemaDescription: "'count_and_say' (say how many)",
-  },
-  compare_choice: {
-    promptDoc:
-      '"compare_choice": TWO things are on screen and the child says which word from a fixed, '
-      + 'stated set describes them (longer/shorter, heavier/lighter). The tutor reads the WHOLE '
-      + 'word menu on every item, so the menu is not a hint — knowing which word fits the pair is '
-      + 'the skill. Use it when the objective names the words the child must produce.',
-    schemaDescription: "'compare_choice' (say which word describes a pair)",
-  },
-  explain_concept: {
-    promptDoc:
-      '"explain_concept": the child sees ONE instance (an equation, a pattern, a ten rod) and says '
-      + 'IN THEIR OWN WORDS what it means, why it is so, or what rule governs it. The answer is an '
-      + 'IDEA with many correct wordings, judged on meaning; the ask never states the concept. Use it '
-      + 'for explain / describe / tell-why objectives whose answer is a short proposition.',
-    schemaDescription: "'explain_concept' (say in your own words what it means or what the rule is)",
-  },
-};
+export const CHALLENGE_TYPE_DOCS = DI_SPOKEN_PRACTICE_TYPE_DOCS;
 
 // ── Schema — one bounded array of flat items ────────────────────────────────
 

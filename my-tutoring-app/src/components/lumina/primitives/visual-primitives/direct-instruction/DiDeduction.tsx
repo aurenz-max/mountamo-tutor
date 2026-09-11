@@ -49,11 +49,13 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import DiActionPanel from '../../../components/DiActionPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   diDeductionPackBase,
   itemsFromRules,
+  withDeductionAction,
+  type ActionableDeductionItem,
   type DeductionChallengeType,
   type DeductionItem,
   type DiDeductionData,
@@ -73,12 +75,6 @@ const TASK_PHRASE: Record<DeductionChallengeType, string> = {
   conclude: 'concluding what a rule says about a named member (affirming the antecedent)',
   deny: 'ruling a thing OUT because it lacks what the rule says every member has (denying the consequent)',
   cannot_tell: 'recognizing that having the property does not make a thing a member — the rule cannot tell (affirming the consequent is the error)',
-};
-
-const SHAPE_LABEL: Record<DeductionChallengeType, string> = {
-  conclude: 'what follows',
-  deny: 'rule it out',
-  cannot_tell: "can't tell",
 };
 
 const VERDICT_PILLS: Array<{ key: 'yes' | 'no' | 'cannot_tell'; label: string }> = [
@@ -101,7 +97,10 @@ export const DiDeduction: React.FC<{
     () => itemsFromRules(data.rules ?? [], data.supportTier),
     [data.rules, data.supportTier],
   );
-  const items = built.items;
+  const items = useMemo(
+    () => built.items.map(withDeductionAction),
+    [built.items],
+  );
 
   const resolvedInstanceId = useMemo(
     () => data.instanceId || `di-deduction-${Math.round(performance.now())}`,
@@ -159,8 +158,8 @@ export const DiDeduction: React.FC<{
   const pack = useMemo<JudgedScriptPack<DeductionItem>>(() => ({
     ...diDeductionPackBase(items),
     statusLines: {
-      ready: () => 'Listen, then tell me what the rule says.',
-      retry: () => 'Have another go at this one.',
+      ready: (item) => withDeductionAction(item).actionContract.instruction,
+      retry: (item) => `Have another go. ${withDeductionAction(item).actionContract.instruction}`,
       noVerdict: () => 'One more time — what does the rule tell you?',
       affirmedNext: 'Yes! On to the next case.',
       affirmedLast: 'You used every rule!',
@@ -225,7 +224,14 @@ export const DiDeduction: React.FC<{
   // still saying its closing line; the next case appears when her next cue is
   // SENT.
   const shown = runner.revealHeld && lastAffirmed ? lastAffirmed : current;
+  const shownAction: ActionableDeductionItem | null = shown
+    ? withDeductionAction(shown)
+    : null;
   const shownRuleId = shown?.ruleId ?? null;
+  const shownSteps = useMemo(
+    () => items.filter((it) => it.ruleId === shownRuleId),
+    [items, shownRuleId],
+  );
   const ledger = useMemo(
     () => items.filter((it) => it.ruleId === shownRuleId && (committed.has(it.id) || carried.has(it.id))),
     [items, shownRuleId, committed, carried],
@@ -234,8 +240,8 @@ export const DiDeduction: React.FC<{
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!hasSubmitted) return [];
     return phaseResultsFromSummary(items, runner.summary, (it) => ({
-      label: `${it.case.caseText} · ${SHAPE_LABEL[it.shape]}`,
-      icon: it.shape === 'cannot_tell' ? '🤔' : it.shape === 'deny' ? '🚫' : '➡️',
+      label: `${it.case.caseText} · ${it.actionContract.label}`,
+      icon: it.actionContract.icon,
     }));
   }, [hasSubmitted, runner.summary, items]);
 
@@ -262,27 +268,32 @@ export const DiDeduction: React.FC<{
         </div>
 
         {isVerdictShape && (
-          <div className="flex justify-center gap-2" aria-label="verdict">
-            {VERDICT_PILLS.map((pill) => {
-              const lit = litVerdict === pill.key;
-              return (
-                <span
-                  key={pill.key}
-                  data-verdict={pill.key}
-                  data-lit={lit ? 'true' : 'false'}
-                  className={
-                    'rounded-full border px-4 py-1 text-sm uppercase tracking-widest transition-colors '
-                    + (lit
-                      ? shownMark === 'child'
-                        ? 'border-emerald-300 bg-emerald-400/20 text-emerald-200'
-                        : 'border-amber-200/60 bg-amber-300/10 text-amber-200/80'
-                      : 'border-white/10 text-slate-600')
-                  }
-                >
-                  {pill.label}
-                </span>
-              );
-            })}
+          <div className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-3" aria-label="Spoken verdict choices">
+            <p className="mb-2 text-center text-xs font-medium text-slate-300">
+              Say one, then explain using the rule
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {VERDICT_PILLS.map((pill) => {
+                const lit = litVerdict === pill.key;
+                return (
+                  <span
+                    key={pill.key}
+                    data-verdict={pill.key}
+                    data-lit={lit ? 'true' : 'false'}
+                    className={
+                      'rounded-full border px-4 py-1 text-sm uppercase tracking-widest transition-colors '
+                      + (lit
+                        ? shownMark === 'child'
+                          ? 'border-emerald-300 bg-emerald-400/20 text-emerald-200'
+                          : 'border-amber-200/60 bg-amber-300/10 text-amber-200/80'
+                        : 'border-cyan-300/20 bg-cyan-400/5 text-slate-300')
+                    }
+                  >
+                    {pill.label}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -299,14 +310,6 @@ export const DiDeduction: React.FC<{
       </div>
     );
   };
-
-  const stageWord = runner.stage === 'affirmed'
-    ? 'yes!'
-    : runner.stage === 'asking'
-      ? current ? `${SHAPE_LABEL[current.shape]} — your turn` : 'your turn'
-      : runner.stage === 'judging'
-        ? 'listening'
-        : 'get ready';
 
   if (items.length === 0) {
     return (
@@ -359,12 +362,16 @@ export const DiDeduction: React.FC<{
               </LuminaButton>
             </div>
 
-            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">
-              {stageWord}
-            </div>
-
-            {/* Every case in this pack is answered out loud. */}
-            <JudgedMicPanel run={runner} />
+            <DiActionPanel
+              run={runner}
+              running={runner.running}
+              stage={runner.stage}
+              currentItem={shownAction}
+              steps={shownSteps}
+              completedIds={committed}
+              carriedIds={carried}
+              startInstruction="Start the lesson, listen to the rule and case, then answer from the rule only."
+            />
           </>
         )}
 

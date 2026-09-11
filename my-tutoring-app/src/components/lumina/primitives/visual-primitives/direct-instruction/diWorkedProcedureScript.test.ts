@@ -23,6 +23,7 @@ import {
   itemsFromProblems,
   moveOnCue,
   verifyLine,
+  withWorkedProcedureAction,
   type WorkedProblemSpec,
   type WorkedProcedureItem,
 } from './diWorkedProcedureScript';
@@ -77,6 +78,7 @@ describe('the step chain becomes items', () => {
       'procedure_step', 'number_word_to_20', 'procedure_step',
     ]);
     expect(items.every((i) => i.answerKind === 'voice' && i.action === 'talk_through')).toBe(true);
+    expect(items.every((i) => i.answerKind === i.actionContract?.answerKind)).toBe(true);
     expect(items[0].isFirstStep).toBe(true);
     expect(items[2].isLastStep).toBe(true);
   });
@@ -95,9 +97,12 @@ describe('the step chain becomes items', () => {
 describe('the ask never states what the child must say', () => {
   it('states the problem on the first step only, then names the column', () => {
     const { items } = build([SESSION[0]]);
-    expect(askLine(items[0])).toBe('Fifty-two minus twenty-eight. Start in the ones column. Tell me what you do.');
-    expect(askLine(items[1])).toBe('Now subtract the ones.');
-    expect(askLine(items[2])).toBe('Now the tens column. Tell me what you do.');
+    expect(askLine(items[0])).toBe('Fifty-two minus twenty-eight. Look at the ones column. Say why you need to regroup and what the digits become.');
+    expect(askLine(items[1])).toBe('Subtract the ones column, then say the result.');
+    expect(askLine(items[2])).toBe('Look at the tens column. Say that you do not regroup, then subtract and say the result.');
+    for (const item of items) {
+      expect(askLine(item)).toContain(withWorkedProcedureAction(item).actionContract.instruction);
+    }
   });
 
   it('never carries the step\'s answer in the spoken ask (medium/hard)', () => {
@@ -115,9 +120,9 @@ describe('the ask never states what the child must say', () => {
 
   it('at easy the ask reads the column digits — the decremented digit included', () => {
     const { items } = build([{ ...SESSION[0], supportTier: 'easy' }]);
-    expect(askLine(items[0])).toBe('Fifty-two minus twenty-eight. Start in the ones column: two minus eight. Tell me what you do.');
-    expect(askLine(items[1])).toBe('Now subtract the ones: twelve minus eight.');
-    expect(askLine(items[2])).toBe('Now the tens column: four minus two. Tell me what you do.');
+    expect(askLine(items[0])).toBe('Fifty-two minus twenty-eight. Look at the ones column: two minus eight. Say why you need to regroup and what the digits become.');
+    expect(askLine(items[1])).toBe('Subtract the ones column: twelve minus eight, then say the result.');
+    expect(askLine(items[2])).toBe('Look at the tens column: four minus two. Say that you do not regroup, then subtract and say the result.');
   });
 
   it('the how-to-play rides inside the opening line only', () => {
@@ -135,7 +140,7 @@ describe('a regroup is judged on the MOVE and both numbers', () => {
     const lines = correctionLines(regroup);
     expect(lines.forgotDecrement).toBe(
       'My turn: when you regroup, the tens change too. Five tens becomes four: four tens, twelve ones. '
-      + 'Your turn. The ones column. Tell me what you do.',
+      + 'Your turn. Look at the ones column. Say why you need to regroup and what the digits become.',
     );
     expect(lines.contrast).toMatch(/^My turn: not ⟨what they said⟩ — two minus eight, I can't take eight from two, so I regroup\. One ten becomes ten ones: four tens, twelve ones\. Your turn\./);
     expect(lines.fallback).toMatch(/^My turn: two minus eight\. I can't take eight from two, so I regroup\./);
@@ -190,7 +195,7 @@ describe('after a regroup, the subtract step is a benched number word', () => {
     const sub = byId(items, 'p1-c0-subtract');
     expect(sub.responseClass).toBe('number_word_to_20');
     expect(verifyLine(sub)).toBe('Yes, twelve minus eight is four.');
-    expect(correctionLines(sub).contrast).toBe('My turn: not ⟨what they said⟩ — twelve minus eight is four. Your turn. Subtract the ones.');
+    expect(correctionLines(sub).contrast).toBe('My turn: not ⟨what they said⟩ — twelve minus eight is four. Your turn. Subtract the ones column, then say the result.');
   });
 });
 
@@ -198,7 +203,7 @@ describe('a move-on carries the step', () => {
   it('states the regroup before the next ask, so the page can write it', () => {
     const { items, pack } = build([SESSION[0]]);
     const spoken = spokenSpanOf(pack.moveOnCue(items[0], items[1], { opening: false, howToPlay: false }));
-    expect(spoken).toBe('Good try. We regroup: four tens, twelve ones. Now subtract the ones.');
+    expect(spoken).toBe('Good try. We regroup: four tens, twelve ones. Subtract the ones column, then say the result.');
   });
 
   it('closes a problem with its whole result before the next problem\'s ask', () => {
@@ -207,7 +212,7 @@ describe('a move-on carries the step', () => {
     const next = byId(items, 'p2-c0-decide');
     expect(spokenSpanOf(moveOnCue(last, next, { opening: false, howToPlay: false }))).toBe(
       'Good try. No regrouping: four minus two is two. Fifty-two minus twenty-eight is twenty-four. '
-      + 'Three hundred forty-two minus one hundred sixty-eight. Start in the ones column. Tell me what you do.',
+      + 'Three hundred forty-two minus one hundred sixty-eight. Look at the ones column. Say why you need to regroup and what the digits become.',
     );
   });
 

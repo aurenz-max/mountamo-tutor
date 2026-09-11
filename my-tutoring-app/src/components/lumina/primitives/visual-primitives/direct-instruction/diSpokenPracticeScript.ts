@@ -50,11 +50,22 @@
 
 import {
   opensWithSentinel,
+  type DiActionContract,
   type JudgedCueOptions,
   type JudgedCueSurface,
   type JudgedScriptItem,
   type ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
+import {
+  HOW_TO_PLAY,
+  MODE_SHAPE,
+  diSpokenPracticeModePlan,
+  type AnswerSource,
+  type SpokenPracticeMode,
+  type StimulusKind,
+} from './diSpokenPracticeModes';
+
+export type { AnswerSource, SpokenPracticeMode, StimulusKind } from './diSpokenPracticeModes';
 
 // ── Modes ────────────────────────────────────────────────────────────────────
 
@@ -79,33 +90,15 @@ import {
  * `concept_statement` — see `findConceptDefects` for what code can check and
  * the generator's review call for what it cannot.
  */
-export type SpokenPracticeMode =
-  | 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice' | 'explain_concept';
-
 /** How the stimulus APPEARS. `none` still carries stimulusText — the tutor
  *  says it ("Listen: cat…"), nothing is printed. `pair` draws TWO pictures side
  *  by side and prints neither label (the tutor names both aloud). */
-export type StimulusKind = 'text' | 'emoji' | 'objects' | 'none' | 'pair';
-
 /**
  * Where the answer comes from — and therefore whether the printed stimulus is
  * a leak or the task. `decode` is di-word-reading's shape: the word on screen
  * IS the answer and reading it aloud is the skill. `recall` is everything
  * else, and there the stimulus may never contain the answer.
  */
-export type AnswerSource = 'recall' | 'decode';
-
-export const MODE_SHAPE: Record<
-  SpokenPracticeMode,
-  { stimulusKind: StimulusKind; answerSource: AnswerSource; label: string }
-> = {
-  say_answer: { stimulusKind: 'text', answerSource: 'recall', label: 'Say the Answer' },
-  read_aloud: { stimulusKind: 'text', answerSource: 'decode', label: 'Read It Aloud' },
-  count_and_say: { stimulusKind: 'objects', answerSource: 'recall', label: 'Count and Say' },
-  compare_choice: { stimulusKind: 'pair', answerSource: 'recall', label: 'Which Word?' },
-  explain_concept: { stimulusKind: 'text', answerSource: 'recall', label: 'Say Why' },
-};
-
 /**
  * How-to-play is CODE-OWNED, one line per mode — the model does not write it.
  *
@@ -119,13 +112,7 @@ export const MODE_SHAPE: Record<
  * exists because that pack has a manipulative. This pack has none, so "what to
  * do" is a property of the MODE and nothing else. Three lines cover it.
  */
-export const HOW_TO_PLAY: Record<SpokenPracticeMode, string> = {
-  say_answer: 'I will ask, and you say the answer out loud.',
-  read_aloud: 'I will show you a word, and you read it out loud.',
-  count_and_say: 'Count the pictures, then say how many out loud.',
-  compare_choice: 'I will show you two things and say the words, and you say the one that fits.',
-  explain_concept: 'I will show you something, and you tell me what it means in your own words.',
-};
+export { HOW_TO_PLAY, MODE_SHAPE } from './diSpokenPracticeModes';
 
 // ── The item ─────────────────────────────────────────────────────────────────
 
@@ -182,6 +169,23 @@ export interface SpokenPracticeItem extends JudgedScriptItem {
    *  or end a correction on the answer. Generated. */
   correctionBody: string;
 }
+
+export type ActionableSpokenPracticeItem = SpokenPracticeItem & {
+  actionContract: DiActionContract;
+};
+
+/** Upgrade generated, stored, or hand-authored items into the shared DI action
+ * contract. The generated ask is the exact sentence shown and spoken. */
+export const withSpokenPracticeAction = (
+  item: SpokenPracticeItem,
+): ActionableSpokenPracticeItem => {
+  const actionContract = diSpokenPracticeModePlan(item).answerStep.actionContract;
+  return {
+    ...item,
+    answerKind: actionContract.answerKind,
+    actionContract,
+  };
+};
 
 // ── Response classes — standing gate 1 at the generation boundary ────────────
 
@@ -895,7 +899,7 @@ export const buildSpokenItem = (
   const pair = mode === 'compare_choice';
   const explain = mode === 'explain_concept';
 
-  return {
+  return withSpokenPracticeAction({
     id: `dsp-${index + 1}`,
     mode,
     action: mode,
@@ -916,7 +920,7 @@ export const buildSpokenItem = (
     acceptRule: str(raw.acceptRule),
     signatureError: str(raw.signatureError),
     correctionBody: str(raw.correctionBody) || `The answer is ${expectedAnswer}.`,
-  };
+  });
 };
 
 /** Drop every item that leaks its own answer, prints a count, asks a
@@ -994,7 +998,7 @@ const judgingContract = (item: SpokenPracticeItem): string => {
     WAIT_FACT
     + `${menu}The correct answer is "${item.expectedAnswer}". ${accept}${rule}${miss}`
     + `If the answer is right, say exactly: "Yes, ${item.expectedAnswer}." `
-    + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${item.ask}"`
+    + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${withSpokenPracticeAction(item).actionContract.instruction}"`
   );
 };
 
@@ -1044,15 +1048,15 @@ const explainJudgingContract = (item: SpokenPracticeItem, rule: string, miss: st
     + 'bare number or the name of what is on screen. A turn with no idea in it, or "I don\'t '
     + 'know", is wrong — run the correction. '
     + `If the idea is right, say exactly: "Yes, ${conceptAffirmForm(concept)}" `
-    + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${item.ask}"`
+    + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${withSpokenPracticeAction(item).actionContract.instruction}"`
   );
 };
 
 /** One item's ask. ONE job: speak this — the how-to-play lives inside the
  *  quoted line, never as a second directive on the same turn (SWAP-1). */
 export const itemCue = (item: SpokenPracticeItem, opts: JudgedCueOptions): string => {
-  const how = opts.opening || opts.howToPlay ? `${item.howToPlay} ` : '';
-  const spoken = `${how}${item.ask}`;
+  const how = opts.opening || opts.howToPlay ? `${HOW_TO_PLAY[item.mode]} ` : '';
+  const spoken = `${how}${withSpokenPracticeAction(item).actionContract.instruction}`;
   return `[SAY_ITEM] Say exactly: "${spoken}" ${judgingContract(item)}`;
 };
 
@@ -1068,9 +1072,9 @@ export const moveOnCue = (
       + 'another day." Then stop.'
     );
   }
-  const how = opts.howToPlay ? `${next.howToPlay} ` : '';
+  const how = opts.howToPlay ? `${HOW_TO_PLAY[next.mode]} ` : '';
   return (
-    `[SAY_MOVE] Say exactly: "Good try! Here comes the next one. ${how}${next.ask}" `
+    `[SAY_MOVE] Say exactly: "Good try! Here comes the next one. ${how}${withSpokenPracticeAction(next).actionContract.instruction}" `
     + `${judgingContract(next)}`
   );
 };

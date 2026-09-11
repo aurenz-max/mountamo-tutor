@@ -97,30 +97,24 @@ describe('onset identity cap and honest saturation', () => {
 });
 
 describe('mixed-mode variance window', () => {
-  it('easy composition survives per-mode focus rotation', async () => {
+  it('does not apply a single-mode easy shape to a mixed session', async () => {
     const data = await gen('mixed', 'easy');
-    const xs = letters(data);
     expect(new Set(data.challenges.map((c) => c.challengeType)).size).toBe(3);
-    expect(new Set(xs).size).toBe(xs.length);
-    expect(vowelCount(xs)).toBe(0);
-    expect(pairCount(xs)).toBe(0);
+    expect(data.challenges.every((c) => c.supportTier === undefined)).toBe(true);
   });
 
-  it('medium composition survives rotation and tiers every identity', async () => {
+  it('does not apply a single-mode medium shape to a mixed session', async () => {
     const data = await gen('mixed', 'medium');
-    const xs = letters(data);
-    expect(vowelCount(xs)).toBeGreaterThanOrEqual(1);
-    expect(pairCount(xs)).toBe(0);
-    expect(data.challenges.every((c) => c.supportTier === 'medium')).toBe(true);
+    expect(new Set(data.challenges.map((c) => c.challengeType)).size).toBe(3);
+    expect(data.challenges.every((c) => c.supportTier === undefined)).toBe(true);
   });
 
-  it('hard pair window survives rotation while every eval-mode slot stays intact', async () => {
+  it('does not apply a single-mode hard shape while keeping every mixed slot', async () => {
     const data = await gen('mixed', 'hard');
-    const xs = letters(data);
-    expect(pairCount(xs)).toBe(2);
     expect(new Set(data.challenges.map((c) => c.challengeType))).toEqual(
       new Set(['letter_sound', 'letter_sound_review', 'first_sound_in_word']),
     );
+    expect(data.challenges.every((c) => c.supportTier === undefined)).toBe(true);
   });
 });
 
@@ -131,6 +125,12 @@ describe('capacity stress and no-tier guardrail', () => {
         for (let count = 3; count <= 6; count++) {
           const data = await gen(mode, tier, count);
           const xs = letters(data);
+          if (mode === 'mixed') {
+            expect(xs).toHaveLength(count);
+            expect(new Set(data.challenges.map((c) => c.challengeType)).size).toBe(3);
+            expect(data.challenges.every((c) => c.supportTier === undefined)).toBe(true);
+            continue;
+          }
           const shape = resolveProblemShape(mode, tier, count);
           expect(xs).toHaveLength(count);
           expect(new Set(xs).size).toBe(count);
@@ -159,6 +159,12 @@ describe('capacity stress and no-tier guardrail', () => {
       ).join(' ');
       const data = await gen(mode, tier, count, `letter sounds ${focus}`);
       const xs = letters(data);
+      if (mode === 'mixed') {
+        expect(xs).toHaveLength(count);
+        expect(new Set(data.challenges.map((c) => c.challengeType)).size).toBe(3);
+        expect(data.challenges.every((c) => c.supportTier === undefined)).toBe(true);
+        continue;
+      }
       const shape = resolveProblemShape(mode, tier, count);
 
       expect(xs).toHaveLength(count);

@@ -84,11 +84,9 @@
  * guide, test, affirm, and correction are all phrased around `it.text`, so the
  * ladder ships with ZERO new spoken copy and nothing re-enters the unproven.
  */
-export type DiSentenceReadingChallengeType =
-  | 'decodable_sentence'
-  | 'read_sentence'
-  | 'sentence_review'
-  | 'sight_phrase_sentence';
+import type { DiActionContract } from '../../../hooks/judgedScriptContract';
+import { diSentenceReadingModePlan, type DiSentenceReadingChallengeType } from './diSentenceReadingModes';
+export type { DiSentenceReadingChallengeType } from './diSentenceReadingModes';
 
 /**
  * The benched scope ceiling. The sitting laddered 3 → 8 words and found NO
@@ -156,6 +154,11 @@ export interface DiSentenceReadingChallenge {
   asrAliases?: string[];
 }
 
+export type ActionableDiSentenceReadingChallenge = DiSentenceReadingChallenge & {
+  answerKind: 'voice';
+  actionContract: DiActionContract;
+};
+
 /** The printed text as it should be READ. Trailing whitespace only — the
  *  sentence carries its own terminal punctuation, and every spoken line below
  *  depends on that (no line appends a period of its own). */
@@ -172,8 +175,16 @@ export const guideLine = (it: DiSentenceReadingChallenge) =>
   `Together: ${sentenceText(it)}`;
 
 /** TEST: the learner reads it alone. */
-export const testLine = (_it: DiSentenceReadingChallenge) =>
-  'Your turn. Read it.';
+export const testLine = (it: DiSentenceReadingChallenge) =>
+  diSentenceReadingModePlan(it).answerStep.actionContract.instruction;
+
+export const withSentenceReadingAction = (
+  item: DiSentenceReadingChallenge,
+): ActionableDiSentenceReadingChallenge => {
+  const actionContract = diSentenceReadingModePlan(item).answerStep.actionContract;
+  if (actionContract.answerKind !== 'voice') throw new Error('Sentence reading must use voice');
+  return { ...item, answerKind: 'voice', actionContract };
+};
 
 /** Affirmation branch. MUST begin with "Yes" — the engine scans that sentinel.
  *  Restates the whole sentence (sitting question (c): kept). */

@@ -33,10 +33,9 @@
  *                            onset distorts for a K child). Letter NAMES stay
  *                            BLOCKED; blends/digraphs/stops bench first.
  */
-export type DiLetterSoundChallengeType =
-  | 'letter_sound'
-  | 'letter_sound_review'
-  | 'first_sound_in_word';
+import type { DiActionContract } from '../../../hooks/judgedScriptContract';
+import { diLetterSoundModePlan, type DiLetterSoundChallengeType } from './diLetterSoundsModes';
+export type { DiLetterSoundChallengeType } from './diLetterSoundsModes';
 
 /**
  * The within-mode SUPPORT tier (L3, 2026-08-01). Second field of the two-field
@@ -119,6 +118,11 @@ export interface DiLetterSoundChallenge {
   asrAliases?: string[];
 }
 
+export type ActionableDiLetterSoundChallenge = DiLetterSoundChallenge & {
+  answerKind: 'voice';
+  actionContract: DiActionContract;
+};
+
 const sentenceCase = (value: string | undefined) =>
   value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
 
@@ -148,11 +152,15 @@ export const guideLine = (it: DiLetterSoundChallenge) =>
 
 /** TEST: the learner produces it alone ("your turn"). */
 export const testLine = (it: DiLetterSoundChallenge) =>
-  isOnset(it)
-    ? `Your turn. What is the first sound in ${it.keyword}?`
-    : it.elicitation === 'keyword'
-      ? `Your turn. Say ${it.keyword}.`
-      : 'Your turn. What sound?';
+  diLetterSoundModePlan(it).answerStep.actionContract.instruction;
+
+export const withLetterSoundAction = (
+  item: DiLetterSoundChallenge,
+): ActionableDiLetterSoundChallenge => {
+  const actionContract = diLetterSoundModePlan(item).answerStep.actionContract;
+  if (actionContract.answerKind !== 'voice') throw new Error('Letter sounds must use voice');
+  return { ...item, answerKind: 'voice', actionContract };
+};
 
 /** Affirmation branch. MUST begin with "Yes" — the engine scans that sentinel. */
 export const verifyLine = (it: DiLetterSoundChallenge) =>

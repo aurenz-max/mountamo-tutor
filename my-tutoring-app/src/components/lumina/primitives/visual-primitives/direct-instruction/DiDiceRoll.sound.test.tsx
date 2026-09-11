@@ -47,7 +47,7 @@ vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
 }));
 
 vi.mock('../../../components/JudgedMicPanel', () => ({
-  default: () => null,
+  default: () => <div data-testid="mic-panel" />,
 }));
 
 import { SoundManager } from '../../../utils/SoundManager';
@@ -117,5 +117,21 @@ describe('DiDiceRoll sound choreography', () => {
 
     expect(SoundManager.tap).toHaveBeenCalledTimes(1);
     expect(SoundManager.snap).toHaveBeenCalledTimes(1);
+  });
+
+  it('moves from a hands-only roll step to a visible voice-answer step', () => {
+    setReducedMotion(true);
+    render(<DiDiceRoll data={data} />);
+
+    expect(screen.getByText('Tap the die to roll it.')).toBeTruthy();
+    expect(screen.queryByTestId('mic-panel')).toBeNull();
+    expect(screen.getByText('Roll the die').closest('li')?.getAttribute('aria-current')).toBe('step');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Roll the die' }));
+
+    expect(screen.getByText('Say how many dots you see.')).toBeTruthy();
+    expect(screen.getByTestId('mic-panel')).toBeTruthy();
+    expect(screen.getByText('Roll the die').closest('li')?.getAttribute('data-state')).toBe('complete');
+    expect(screen.getByText('Count the dots').closest('li')?.getAttribute('aria-current')).toBe('step');
   });
 });

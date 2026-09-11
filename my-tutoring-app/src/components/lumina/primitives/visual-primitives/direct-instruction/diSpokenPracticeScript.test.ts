@@ -27,6 +27,7 @@ import {
   normalizeSpokenAnswer,
   pronounceCue,
   reconcileConceptAnchors,
+  withSpokenPracticeAction,
   type SpokenPracticeItem,
 } from './diSpokenPracticeScript';
 
@@ -49,6 +50,32 @@ const item = (over: Partial<SpokenPracticeItem> = {}): SpokenPracticeItem => ({
   signatureError: 'The number in the question said back is NOT the answer.',
   correctionBody: 'Two and one more makes three.',
   ...over,
+});
+
+describe('the shared DI action contract', () => {
+  it('upgrades a legacy item with the exact generated ask and voice modality', () => {
+    const upgraded = withSpokenPracticeAction(item());
+    expect(upgraded.actionContract.instruction).toBe(upgraded.ask);
+    expect(upgraded.actionContract.label).toBe('Say the Answer');
+    expect(upgraded.answerKind).toBe(upgraded.actionContract.answerKind);
+  });
+
+  it('is attached at the generation boundary for every new item', () => {
+    const built = buildSpokenItem({
+      stimulusText: 'bears',
+      stimulusEmoji: 'bear',
+      stimulusCount: 3,
+      ask: 'Count the bears. How many bears?',
+      expectedAnswer: 'ignored',
+      correctionBody: 'There are three bears.',
+    }, 0, 'count_and_say');
+    expect(built?.actionContract).toMatchObject({
+      id: 'count_and_say',
+      label: 'Count and Say',
+      answerKind: 'voice',
+      instruction: 'Count the bears. How many bears?',
+    });
+  });
 });
 
 describe('standing gate 1 — the benched response class, at the generation boundary', () => {

@@ -31,7 +31,8 @@
  * on a `conclude` case the property is the answer BY DESIGN (the story-talk
  * precedent: `leakExemptSpansFor` subtracts the rule sentence). "Can't tell"
  * is named ONCE, in the how-to-play, because a child who has never heard the
- * verdict cannot produce it; it is never in a per-case ask.
+ * verdict cannot produce it. Verdict cases repeat the complete yes / no /
+ * can't-tell menu, so naming one option never reveals which option is right.
  *
  * THE SCREEN ONLY FOLLOWS. The conclusion is written under the cards on the
  * affirmation, and the verdict pill lights then — never before. The cases
@@ -49,7 +50,12 @@
  * under the rule would have a hole where a case was closed.
  */
 
-import type { JudgedCueOptions, JudgedCueSurface, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
+import type {
+  DiActionContract,
+  JudgedCueOptions,
+  JudgedCueSurface,
+  JudgedScriptItem,
+} from '../../../hooks/judgedScriptContract';
 import {
   capitalize,
   planCases,
@@ -60,11 +66,17 @@ import {
   type DeductionRuleSpec,
   type DeductionShape,
 } from './diDeductionPlan';
+import {
+  DEDUCTION_HOW_TO_PLAY,
+  VERDICT_MENU,
+  diDeductionModePlan,
+  type DeductionChallengeType,
+} from './diDeductionModes';
 
 export type { DeductionRuleSpec, DeductionShape, DeductionCase } from './diDeductionPlan';
+export type { DeductionChallengeType } from './diDeductionModes';
 
 /** The eval modes ARE the case shapes. */
-export type DeductionChallengeType = DeductionShape;
 /** L3 lever: at `easy` every ask re-reads the rule; otherwise only the first
  *  case of a rule does. `medium` and `hard` are identical in this pilot — a
  *  later /add-support-tiers pass owns the split. */
@@ -91,6 +103,10 @@ export interface DeductionItem extends JudgedScriptItem {
   /** The canonical utterance, for evidence and the harness. */
   answerSpoken: string;
 }
+
+export type ActionableDeductionItem = DeductionItem & {
+  actionContract: DiActionContract;
+};
 
 export interface DiDeductionData {
   title: string;
@@ -125,7 +141,7 @@ const itemsForRule = (
       : c.shape === 'deny'
         ? `no, ${c.subject} is not ${cat}, because all ${rule.categoryPlural} ${rule.propertyPlural} and ${c.subject} ${rule.propertyNegated}`
         : `can't tell, because the rule does not say only ${rule.categoryPlural} ${rule.propertyPlural}`;
-    return {
+    return withDeductionAction({
       id: `${rule.id}-c${caseIndex}-${c.shape}`,
       action: 'deduce' as const,
       answerKind: 'voice' as const,
@@ -142,7 +158,7 @@ const itemsForRule = (
       ruleText,
       case: c,
       answerSpoken,
-    };
+    });
   });
 };
 
@@ -182,10 +198,20 @@ const readsRule = (item: DeductionItem): boolean => item.isFirstCase || item.sup
 export const ruleReadAloud = (item: DeductionItem): string =>
   `${item.isFirstCase ? 'Here is the rule' : 'The rule'}: ${item.ruleText}`;
 
+export { VERDICT_MENU } from './diDeductionModes';
+
+/** Upgrade a case into the shared action contract. The action sentence is the
+ * exact core used by both the visible panel and the spoken ask. */
+export const withDeductionAction = (item: DeductionItem): ActionableDeductionItem => {
+  const actionContract = diDeductionModePlan(item).answerStep.actionContract;
+  if (actionContract.answerKind !== 'voice') {
+    throw new Error(`Deduction mode ${item.challengeType} must use a voice answer`);
+  }
+  return { ...item, answerKind: 'voice', actionContract };
+};
+
 const question = (item: DeductionItem): string =>
-  item.shape === 'conclude'
-    ? `So what does the rule tell you about ${item.case.subject}?`
-    : `Is ${item.case.subject} ${withArticle(item.rule.category)}? How do you know?`;
+  withDeductionAction(item).actionContract.instruction;
 
 /** The ask for one case — what the child hears right before their turn. */
 export const askLine = (item: DeductionItem): string => {
@@ -196,13 +222,9 @@ export const askLine = (item: DeductionItem): string => {
 /** The short re-ask every correction ends on. Never restates the rule. */
 const reAsk = (item: DeductionItem): string => `Your turn. ${question(item)}`;
 
-/** Spoken ONCE, on the opening turn (and on an action change, which this
- *  single-action pack never has). It is where "can't tell" is taught, so the
- *  verdict exists for the child before any case can need it. */
-export const HOW_TO_PLAY =
-  'We are going to use rules. I read a rule and a fact, and you tell me what the rule says about it, '
-  + 'and how you know. Use only the rule, not what you already know. Sometimes the rule cannot tell you; '
-  + 'then you say can\'t tell. ';
+/** Spoken on the opening turn. It introduces using rules and the can't-tell
+ * verdict before the first case; verdict cases then repeat the complete menu. */
+export const HOW_TO_PLAY = DEDUCTION_HOW_TO_PLAY;
 
 /** The resolved case as a statement — the affirmation's body and the
  *  move-on's carry line. */
@@ -434,6 +456,7 @@ export const leakTokensFor = (item: DeductionItem): string[] => {
 export const leakExemptSpansFor = (item: DeductionItem): string[] => [
   HOW_TO_PLAY.trim(),
   ruleReadAloud(item),
+  VERDICT_MENU,
 ];
 
 // ── The cue surface — exported once, spread by the component and the harness ─

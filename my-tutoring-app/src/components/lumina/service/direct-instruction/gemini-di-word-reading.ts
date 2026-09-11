@@ -25,13 +25,16 @@ import { ai } from "../geminiClient";
 import {
   buildModeConstraintSection,
   resolveEvalModes,
-  type ChallengeTypeDoc,
 } from "../evalMode";
 import type {
   DiWordReadingData,
   DiWordReadingChallenge,
 } from "../../primitives/visual-primitives/direct-instruction/DiWordReading";
-import type { DiWordReadingChallengeType } from "../../primitives/visual-primitives/direct-instruction/diWordReadingScript";
+import {
+  DI_WORD_READING_CHALLENGE_TYPES,
+  DI_WORD_READING_TYPE_DOCS,
+  type DiWordReadingChallengeType,
+} from '../../primitives/visual-primitives/direct-instruction/diWordReadingModes';
 
 type ShortVowel = 'a' | 'e' | 'i' | 'o' | 'u';
 
@@ -140,32 +143,8 @@ const DEFAULT_WORDS = ['sam', 'pig', 'sun', 'the'];
 
 /** Skill docs for the intent→mode router (Fork A — no schema to constrain).
  *  One identity at birth; /add-eval-modes widens this record later. */
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  cvc_reading: {
-    promptDoc:
-      `"cvc_reading": the child blends and reads ONE decodable short-vowel CVC word. Every item is CVC; a named short-vowel scope remains binding.`,
-    schemaDescription: "'cvc_reading' (blend and read a decodable CVC word)",
-  },
-  read_word: {
-    promptDoc:
-      `"read_word": the child sees ONE printed word and reads it aloud — blend-and-read for a decodable CVC word, whole-word recall for a sight word. The base skill.`,
-    schemaDescription: "'read_word' (read the printed word aloud)",
-  },
-  sight_word: {
-    promptDoc:
-      `"sight_word": the child recalls and reads ONE irregular high-frequency word as a whole. Never sound it out; every item comes from the sight-word set.`,
-    schemaDescription: "'sight_word' (recall an irregular high-frequency word)",
-  },
-  word_reading_review: {
-    promptDoc:
-      `"word_reading_review": cumulative spaced review across taught CVC vowel families and sight words, anchored on the objective focus but never collapsed to one narrow set.`,
-    schemaDescription: "'word_reading_review' (mixed cumulative word review)",
-  },
-};
-
-const ALL_TYPES: DiWordReadingChallengeType[] = [
-  'cvc_reading', 'read_word', 'sight_word', 'word_reading_review',
-];
+export const CHALLENGE_TYPE_DOCS = DI_WORD_READING_TYPE_DOCS;
+const ALL_TYPES: readonly DiWordReadingChallengeType[] = DI_WORD_READING_CHALLENGE_TYPES;
 // Sight + distinct vowel families first: after up to two lesson anchors, even
 // the default four-item review still crosses decoding and whole-word recall.
 const REVIEW_SPREAD = ['the', 'red', 'pig', 'dog', 'sun', 'sam'];
@@ -426,7 +405,7 @@ export const generateDiWordReading = async (
     CHALLENGE_TYPE_DOCS,
   );
   const modeTypes: DiWordReadingChallengeType[] =
-    (resolution?.allowedTypes as DiWordReadingChallengeType[] | undefined) ?? ALL_TYPES;
+    (resolution?.allowedTypes as DiWordReadingChallengeType[] | undefined) ?? [...ALL_TYPES];
   const modeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
 
   const prompt = `Pick the target WORDS for a brisk Direct Instruction word-reading practice (beginning reader).

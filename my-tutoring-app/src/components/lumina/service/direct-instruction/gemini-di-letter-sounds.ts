@@ -39,7 +39,12 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import { resolveEvalModes, type ChallengeTypeDoc } from "../evalMode";
+import { resolveEvalModes } from "../evalMode";
+import { supportForSingleDiMode } from '../../hooks/diModeContract';
+import {
+  DI_LETTER_SOUNDS_CHALLENGE_TYPES,
+  DI_LETTER_SOUNDS_TYPE_DOCS,
+} from '../../primitives/visual-primitives/direct-instruction/diLetterSoundsModes';
 import { asksIndependentProduction, lettersNamedIn } from "../literacy/letterGroups";
 import type {
   DiLetterSoundsData,
@@ -380,23 +385,7 @@ const enforceProblemShape = (
 };
 
 /** Skill docs for the intent→mode router (there is no schema to constrain — Fork A). */
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  letter_sound: {
-    promptDoc:
-      `"letter_sound": the child sees a letter and says its continuous SOUND (grapheme→phoneme). The base skill.`,
-    schemaDescription: "'letter_sound' (say the letter's sound)",
-  },
-  letter_sound_review: {
-    promptDoc:
-      `"letter_sound_review": cumulative / spaced review — the child re-produces sounds already taught, drawn as a WIDE mix across many letters rather than one focused set.`,
-    schemaDescription: "'letter_sound_review' (mixed spaced review)",
-  },
-  first_sound_in_word: {
-    promptDoc:
-      `"first_sound_in_word": phonemic awareness — the child hears a whole WORD (e.g. "moon") and says its FIRST sound. Continuant onsets only.`,
-    schemaDescription: "'first_sound_in_word' (onset isolation)",
-  },
-};
+export const CHALLENGE_TYPE_DOCS = DI_LETTER_SOUNDS_TYPE_DOCS;
 
 /** Gemini emits ONLY the wrapper — never the per-item content (Fork A). */
 const wrapperSchema: Schema = {
@@ -600,13 +589,16 @@ export const generateDiLetterSounds = async (
     CHALLENGE_TYPE_DOCS,
   );
   const modeTypes: DiLetterSoundChallengeType[] = (resolution?.allowedTypes as DiLetterSoundChallengeType[] | undefined)
-    ?? ['letter_sound', 'letter_sound_review', 'first_sound_in_word']; // mixed = all three
+    ?? [...DI_LETTER_SOUNDS_CHALLENGE_TYPES]; // mixed = all three
   const requestedTier = normalizeSupportTier(config?.difficulty);
   // "Assess without first saying its sound" — the objective withdraws the model
   // line whatever the manifest's student-property tier says.
   const coldAsk = asksIndependentProduction(objectiveText);
-  const supportTier: SupportTier | null = coldAsk ? 'hard' : requestedTier;
-  if (coldAsk && requestedTier !== 'hard') {
+  const supportTier: SupportTier | undefined = supportForSingleDiMode(
+    resolution,
+    coldAsk ? 'hard' : requestedTier ?? undefined,
+  );
+  if (supportTier === 'hard' && coldAsk && requestedTier !== 'hard') {
     console.log(`[DiLetterSounds] objective asks for independent production — support tier ${requestedTier ?? 'unset'} → hard`);
   }
   const shapeMode: ShapeMode = modeTypes.length === 1 ? modeTypes[0] : 'mixed';
@@ -744,10 +736,9 @@ Return the wrapper JSON only.`;
   }
 
   // ── Tier axes, applied deterministically at the END ────────────────
-  // Gated ONLY on a tier being present, and resolved from each challenge's OWN
-  // mode — difficulty is a STUDENT property, so a blended/mixed session must get
-  // it too (gating on a single pinned mode is the silent no-op this layer exists
-  // to kill). L4 now deliberately sends that same tier to TWO places: the
+  // A tier is present only when one mode resolved. A blend has no single
+  // structural support surface and deliberately stays untiered. L4 sends the
+  // selected mode's tier to TWO places: the
   // prompt describes the composition preference, then enforceProblemShape is
   // authoritative after objective selection + mixed-mode rotation. The tier
   // may change composition, but never count, menu, or eval-mode slot.
@@ -775,7 +766,7 @@ Return the wrapper JSON only.`;
     }
     const letters = challenges.map((ch) => ch.letter);
     console.log(
-      `[DiLetterSounds] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'letter_sound', supportTier).describe}; composition vowels ${letters.filter((l) => SHORT_VOWELS.includes(l)).length} (min ${sessionShape!.minimumShortVowels}, max ${sessionShape!.maximumShortVowels}), confusable pairs ${countConfusablePairs(letters)}/${sessionShape!.confusablePairTarget}${sessionShape!.saturated ? ' (honest saturation)' : ''}`,
+      `[DiLetterSounds] Support tier "${supportTier}" applied to single mode ${modeTypes[0]} — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'letter_sound', supportTier).describe}; composition vowels ${letters.filter((l) => SHORT_VOWELS.includes(l)).length} (min ${sessionShape!.minimumShortVowels}, max ${sessionShape!.maximumShortVowels}), confusable pairs ${countConfusablePairs(letters)}/${sessionShape!.confusablePairTarget}${sessionShape!.saturated ? ' (honest saturation)' : ''}`,
     );
   }
 
