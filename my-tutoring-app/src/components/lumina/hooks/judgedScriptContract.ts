@@ -62,7 +62,8 @@ export type ResponseClassId =
   | 'tense_controlled_account'
   | 'story_experience_connection'
   | 'procedure_step'
-  | 'deduction';
+  | 'deduction'
+  | 'equation_statement';
 
 export type ResponseClassStatus =
   /** Bench sitting (or equivalent live-run evidence) exists. */
@@ -391,6 +392,35 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
       + 'refuse; the named lookalike moves to the firm-up. Truth in the world is a generator REVIEW gate '
       + '(gemini-flash-latest), never a contract clause.',
   },
+  equation_statement: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'BUILD-AHEAD on the item-37 precedent (qa/di/BACKLOG.md item 39, 2026-09-10; handoff '
+      + 'qa/HANDOFF-di-word-problem-setup-2026-09-07.md, from the "DI for Older Learners" brief concept 4): '
+      + 'the third sequence class — the child SAYS a number family with a slot ("twelve plus box equals '
+      + 'twenty"), judged on the right numbers in the right slots. First caller di-word-problem-setup '
+      + '(the family step). The bench fixture ships with the pack (service/qa/di/wordProblemBench.ts, '
+      + '`/tutor-test di-word-problem-setup --di-bench`); the sitting is owed, and the mic row is on '
+      + 'HUMAN-CHECKS.',
+    notes:
+      'A spoken NUMBER SENTENCE WITH A SLOT: 5-7 tokens from a closed vocabulary — number words, '
+      + 'plus / and, equals / is / makes, and box / blank / something / what for the unknown. What the '
+      + 'judge scores is the RIGHT NUMBERS IN THE RIGHT SLOTS, never the tokens: "eight and twelve makes '
+      + 'something" is the canonical family for 12 + 8 = box. Sits beside procedure_step (a move with '
+      + 'no sentence) and closed_set_choice (a choice, not a construction). Four things a pack must do '
+      + 'that the class cannot:\n'
+      + '(1) THE BIG NUMBER BELONGS AT THE END. "Twenty plus twelve equals box" has every right number '
+      + 'and is the signature error ("the biggest number I see" carried into the family); bucket '
+      + '`big-number-misplaced`, zero-false-affirm.\n'
+      + '(2) THE SUBTRACTION FORM IS NOT A FAMILY. "Twenty minus twelve equals box" is correct arithmetic '
+      + 'and skips the decision the step exists to make; bucket `operation-not-family`, its own branch.\n'
+      + '(3) BOTH SMALL NUMBERS MUST BE PRESENT (one may be the box); bucket `family-incomplete`.\n'
+      + '(4) THE CORRECTION CAP IS LOAD-BEARING exactly as the open classes record; never raise it. A '
+      + 'move-on must STATE the family so the page can draw it.\n'
+      + 'CONTENT: the two printed numbers are distinct and neither equals the answer, and the answer word '
+      + 'never appears in the story (plan gates) — so no wrong family can land on the right numbers by '
+      + 'accident.',
+  },
 };
 
 // ============================================================================
@@ -418,6 +448,33 @@ export interface JudgedCueOptions {
   howToPlay: boolean;
 }
 
+/**
+ * The child-facing action for one Direct Instruction step.
+ *
+ * `instruction` is deliberately shared by the screen and the spoken ask. A
+ * port must not maintain a visual paraphrase beside a different voice prompt:
+ * that is how a child ends up seeing a microphone while being asked to drag,
+ * or hearing "find the big number" beside an unexplained three-slot board.
+ *
+ * This contract is optional on the family base while ports migrate. A port
+ * adopting it should make the field required on its narrower item type and
+ * derive the item's `answerKind` from `actionContract.answerKind`.
+ */
+export interface DiActionContract {
+  /** Stable step identity within the primitive, for progress UI and analytics. */
+  id: string;
+  /** Short verb-led name shown in the step sequence. */
+  label: string;
+  /** Compact symbol used by summaries and narrow progress displays. */
+  icon: string;
+  /** Whether the learner answers on the page or with their voice. */
+  answerKind: 'voice' | 'gesture';
+  /** The exact child-directed sentence shown on screen and spoken by the tutor. */
+  instruction: string;
+  /** Honest in-progress copy while this action is being judged. */
+  checkingInstruction: string;
+}
+
 export interface JudgedScriptItem {
   id: string;
   /** What the answer is MADE of — the only per-primitive modality question
@@ -432,6 +489,8 @@ export interface JudgedScriptItem {
    *  answer is 'gesture' — honest page-work, never a workaround for a judge
    *  that finds the spoken answer hard. Full fork: add-di-loop Step 1. */
   answerKind: 'voice' | 'gesture';
+  /** Shared action UI contract. Optional only to allow incremental migration. */
+  actionContract?: DiActionContract;
   /** Standing gate 1: the benched class this item's answer belongs to. */
   responseClass: ResponseClassId;
   /** Task identity for the how-to-play re-speak policy: when consecutive

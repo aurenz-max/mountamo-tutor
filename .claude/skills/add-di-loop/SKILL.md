@@ -18,20 +18,24 @@ This skill converts a click-to-advance or timer-advanced primitive to the **Dire
 
 Say it that way round every time. Voice and hands are not two equal options — **speaking is the modality, and a tap is the exception you have to earn.** A DI session where the child never says anything is a tutor talking at a child who operates a UI, and it does not matter how correct the loop wiring is. If you find yourself writing a pack whose every answer is a tap, you have not built a DI port; stop and re-read Step 1.
 
+That does **not** mean every problem has only one spoken step. The strongest newer DI shape is an honest sequence in which the student first does page-work with their hands and then explains or answers aloud: for example, `build (gesture) → read the family (voice) → choose the operation (voice) → solve (voice)`. The mode definition owns that entire story. The UI shows all steps, highlights one, and changes interaction state with the current step; it never makes the learner infer the sequence from disconnected surfaces.
+
 User verdict on the shipped ports, for calibration: *"an incredibly strong modality from a learning standpoint."* The user has driven the runner template on multiple surfaces with deliberate wrong answers, and the judge refused them — you are extending a proven pattern, not experimenting.
 
 ## What you write vs. what already exists
 
-A port costs **a script + a stage** — nothing else. The mechanics live in code and you must NOT re-roll them:
+A port costs **a mode definition + a script + a stage**. The mechanics live in code and you must NOT re-roll them:
 
+- `hooks/diModeContract.ts` — `defineDiMode` / `defineDiModes`, catalog and generator projections, ordered action plans, per-step modality/response-class validation, and `supportForSingleDiMode`. Every new or migrated DI primitive uses this even when it has only one step.
 - `hooks/judgedScriptContract.ts` — the pack contract + the standing gates AS CODE: the benched response-class registry, the sentinel-collision validator, `validateJudgedScriptPack`, `spokenSpanOf` (the ONE spoken-line parser — never write a local regex), `opensWithSentinel` (per-sentence; the string-START form is the weaker fork that shipped), `findPerformedStageDirections` + `findRepeatedConsecutiveAsks` (the two defect classes only live drives used to catch), and `JUDGED_AUDIO_INPUT`.
 - `hooks/judgedScriptContract.testkit.ts` — `checkPackGates` + `checkDiCatalogEntry`: the di-script test plumbing, once (Step 6). Your test asserts both return `[]`.
 - `hooks/useJudgedScriptRunner.ts` — the component half every port repeated: connect (`owns_opening`) → mic → opening cue → arm; affirm advances; corrections cap (2) then move on; gesture rules; resync; tap-to-hear; Tier-A diagnosis; context sync.
+- `components/DiActionPanel.tsx` — the standard learner-facing state machine: lesson-start control before running; instruction-only hands state with no listening orb; microphone on voice steps; and the complete ordered step sequence with the current step highlighted.
 - `primitives/.../literacy/phonemeVoice.ts` — written phoneme → sayable form. Every phoneme in a spoken line goes through it (plus the bare-vowel rule below).
 
-**You hand-author:** `<primitive>Script.ts` (every cue, every judging contract — the exact wording IS the pedagogy, DISTAR discipline), the component's stage render, the generator's answer fields + gates, the catalog's DI block, and the tests. **The runner carries NO cue template deliberately** — the shipped ports produced different cue shapes, and a template carrying any one of them would ship the answer inside the ask on the others.
+**You hand-author:** `<primitive>Modes.ts` (task identities and the learner's ordered action story), `<primitive>Script.ts` (every judging contract — the exact wording IS the pedagogy, DISTAR discipline), the component's stage render, the generator's answer fields + gates, the catalog's DI tutoring block, and the tests. The catalog eval-mode array, generator challenge docs, action instructions, answer kinds, and response classes are **projections**, not independently authored copies. **The runner carries NO cue template deliberately** — the shipped ports produced different cue shapes, and a template carrying any one of them would ship the answer inside the ask on the others.
 
-**Worked examples, freshest first:** `letterSpotterScript.ts` (a spoken mode beside two honestly-unsayable tap modes — and the conversion that got it there, including what a deleted menu costs), `tenFrameScript.ts` (the first MATH port: spoken counts beside two placements, a fork that splits by BAND, and the two content gates a number answer needs), `phonemeExplorerScript.ts` (4 spoken modes incl. a count answer), `pictureVocabularyScript.ts` (spoken + tap modes side by side), `letterSoundLinkScript.ts` (a sound answer + the content gates), `countingBoardScript.ts` (gesture anchor). Read the one closest to your primitive's shape before writing a line.
+**Worked examples, freshest first:** `diWordProblemModes.ts` + `DiWordProblemSetup.tsx` (the reference multi-step hands→voice story: build, read, choose, solve); `diSpokenPracticeModes.ts` (several distinct spoken/open-response identities); `diWorkedProcedureModes.ts` (a code-planned procedure); `diDeductionModes.ts` (verdict + reason); `diDiceRollModes.ts` (the compact one/two-step reference); then `letterSpotterScript.ts`, `tenFrameScript.ts`, `phonemeExplorerScript.ts`, `pictureVocabularyScript.ts`, `letterSoundLinkScript.ts`, and `countingBoardScript.ts` for the older conversion lessons. Read the one closest to your primitive's shape before writing a line.
 
 **Outside literacy, read the contract before you call anything a costume.** The costume test is about the ACTION, and in math the manipulative is frequently the skill itself — placing five counters IS building five, so ten-frame's steppers were costumes and its frame was not. Twice now `/primitive-contract <id> --check` has returned a requirement that had already deleted the button you were about to delete, for a better reason than yours; re-base those onto what they protected instead of forking around them.
 
@@ -159,6 +163,71 @@ consecutive items have different actions by construction. Fix is one constant in
 (group each facet into RUNS of ~2), and the tell is in the drive transcript, never in a
 test — read consecutive asks of the same MODE and count how many open with the protocol.
 
+## Step 0 — declare the mode and action plan
+
+Create a colocated `<primitive>Modes.ts` beside the primitive's script before editing the script or JSX (the dedicated DI family keeps these under `visual-primitives/direct-instruction/`). Read `my-tutoring-app/src/components/lumina/docs/ADDING_EVAL_MODES.md` for resolver mechanics. One `defineDiMode` declaration owns every fact that used to drift across the catalog, generator, script, and component:
+
+Migrate the primitive's existing task identities first. Do **not** invent a new mode merely to create variety or a longer ladder: a mode is warranted only when the student performs a genuinely different learning act. Number range, amount of help, visual typicality, and prompt withdrawal belong to within-mode difficulty/support.
+
+- identity: `evalMode`, label, β, scaffolding mode, description, and owned `challengeTypes`;
+- generator contract: `challengeDocs.promptDoc` and `schemaDescription`;
+- assessment contract: the final `responseClass` and `answerStepId`;
+- learner story: ordered `steps`, each with its stable key, label, icon, `answerKind`, optional per-step `responseClass`, visible/spoken `instruction`, and `checkingInstruction`;
+- optional `groupingKey` and primitive-specific metadata such as the how-to-play introduction.
+
+```ts
+const mode = defineDiMode<MyModePlanItem, MyModeMetadata>();
+
+export const DI_MY_PRIMITIVE_MODES = defineDiModes<MyModePlanItem, MyModeMetadata>(
+  mode({
+    evalMode: 'build_then_say',
+    label: 'Build, Then Say',
+    beta: 3.5,
+    scaffoldingMode: 2,
+    challengeTypes: ['build_then_say'],
+    description: 'Build the relationship, then explain it aloud.',
+    challengeDocs: {
+      build_then_say: {
+        promptDoc: '"build_then_say": the child builds the relationship, then explains it aloud.',
+        schemaDescription: "'build_then_say' (build, then explain)",
+      },
+    },
+    responseClass: 'concept_statement',
+    answerStepId: 'explain',
+    steps: [
+      {
+        id: 'build', label: 'Build it', icon: '🧩',
+        answerKind: 'gesture', responseClass: 'manipulation',
+        instruction: 'Drag every card into the relationship.',
+        checkingInstruction: 'Checking what you built.',
+      },
+      {
+        id: 'explain', label: 'Explain it', icon: '🎙️',
+        answerKind: 'voice',
+        instruction: 'Explain what your model shows.',
+        checkingInstruction: 'Listening to your explanation.',
+      },
+    ],
+    metadata: { howToPlay: 'First build it. Then explain what it shows. ' },
+  }),
+);
+```
+
+Export these projections from the same file:
+
+```ts
+export const DI_MY_PRIMITIVE_EVAL_MODES =
+  evalModeDefinitionsFromDiModes(DI_MY_PRIMITIVE_MODES);
+export const DI_MY_PRIMITIVE_TYPE_DOCS =
+  challengeTypeDocsFromDiModes(DI_MY_PRIMITIVE_MODES);
+export const diMyPrimitiveModePlan = (item: MyModePlanItem) =>
+  buildDiModePlan(DI_MY_PRIMITIVE_MODES, item);
+```
+
+`buildDiModePlan` validates that the answer step exists and is final and that judged gesture steps use `manipulation` while voice steps do not. Treat a failure as a design error, never cast around it.
+
+**One instruction, every surface.** `plan.steps[n].actionContract.instruction` is the learner's visible instruction and the exact ask used by the spoken cue/re-ask. Do not paraphrase it in JSX, duplicate it in a script switch, or ask Gemini to invent it. If the words drift, the child experiences two different tasks.
+
 ## Step 1 — the answer-material fork (the creative core)
 
 **The whole fork is one picture (user ruling, 2026-08-13): a teacher sitting at a table with ONE student, and the primitive mirrors whatever the student would naturally do at that table.** If the student would answer OUT LOUD, the mode is spoken — the mic is the student's voice, and the screen never impersonates it with buttons. If the student would do the work ON THE PAGE — arrange the counters, write the letters in the boxes, point to the one they mean — **the screen IS that page**, and a gesture mode is honest work, not a concession the judge extracted. The screen plays the page; it never plays the voice, and it never grows apparatus the table doesn't have (menus, checkers, Next buttons). Both of this skill's historical failure modes are this picture violated from opposite sides: tiles added because the JUDGE was weak put a menu on a table that has none (letter-spotter), and reading "spoken is the modality" as a reason to take away the page would have deleted ten-frame's frame along with its steppers — the contract check is what kept the student's paper on the table (R6).
@@ -177,18 +246,32 @@ For **each eval mode**, decide what the answer is MADE of. Two questions, and th
 
 Anything else that arrived as a tap is a conversion, not a mode.
 
-**Then** run the response-class arithmetic against `RESPONSE_CLASSES` in `judgedScriptContract.ts` to find what you owe the class:
+**Then** run the response-class arithmetic against `RESPONSE_CLASSES` in `judgedScriptContract.ts` to find what you owe the class. That code registry is the **only** source for status, evidence, and constraints—never copy those fields into this skill. This table only routes answer material to a likely class:
 
-| The child's answer is… | class | status | precedent |
-|---|---|---|---|
-| one short word from a closed per-item set | `short_spoken_word` | benched | sound-swap, word-flip, naming/opposite, blend |
-| a count (say how many; 1–20, never zero) | `number_word_to_20` | benched | counting-board; phoneme-explorer segment |
-| a HELD continuous sound (`s n m f l r v z` + short vowels) | `continuant_sound` | benched, held sounds ONLY | letter-sound-link see-hear |
-| a committed manipulation (tap/build) | `manipulation` | benched | cvc spell_word, receptive taps |
-| a letter NAME (or its sound) | `letter_name` | accepted-build-ahead | letter-spotter name-it |
-| which of N choices ON SCREEN — a whole proposition, named aloud | `closed_set_choice` | accepted-build-ahead | decodable-reader sequence/inference/main_idea |
-| open-set production (any of countless right answers) | `open_set_word` | **BLOCKED** | why association TAPS |
-| an isolated STOP sound produced by the child | — | **unbenched** | why isolate elicits a word |
+| The child's answer is… | class | precedent |
+|---|---|---|
+| one short word from a closed per-item set | `short_spoken_word` | sound-swap, word-flip, naming/opposite, blend |
+| a spoken yes/no verdict and natural variants | `yes_no` | rhyme-studio |
+| a count (say how many; 1–20, never zero) | `number_word_to_20` | counting-board; phoneme-explorer segment |
+| a number word through 120 | `number_word_to_120` | math-facts counting |
+| one digit/decade plus a place word | `place_value_word` | place-value chart |
+| one ordinal word | `ordinal_word` | common first–tenth words |
+| a HELD continuous sound (`s n m f l r v z` + short vowels) | `continuant_sound` | letter-sound-link see-hear |
+| a printed short sentence read aloud | `sentence_read_aloud` | di-sentence-reading |
+| the name of a drawn shape | `shape_name` | di-shapes |
+| a committed manipulation (tap/build) | `manipulation` | cvc spell_word, receptive taps |
+| a letter NAME (or its sound) | `letter_name` | letter-spotter name-it |
+| which of N choices ON SCREEN—a whole proposition, named aloud | `closed_set_choice` | decodable-reader sequence/inference/main_idea |
+| one open-set word with one item-specific target family | `open_set_word` | rime/open-set bench |
+| a short explanation of an idea | `concept_statement` | di-spoken-practice explain_concept |
+| a sentence using target vocabulary | `vocabulary_sentence` | spoken vocabulary production |
+| a connected retell/account | `connected_account` | connected spoken response |
+| a tense-controlled account | `tense_controlled_account` | grammar-controlled spoken response |
+| an experience connection to a story | `story_experience_connection` | story connection response |
+| one stated move in a procedure | `procedure_step` | di-worked-procedure |
+| a verdict plus a rule-based reason | `deduction` | di-deduction |
+| a number family with an unknown slot | `equation_statement` | di-word-problem-setup |
+| an isolated STOP sound produced by the child | no registered class yet | reframe or obtain a ruling |
 
 ### A blocked class is not a licence to add buttons
 
@@ -209,6 +292,8 @@ A menu of options is never step 1. Count what it costs before you write one: it 
 
 ## Step 2 — write the script (`<primitive>Script.ts`)
 
+Import the mode-plan builder and materialize every judged item from it. The item's `answerKind`, `responseClass`, and `actionContract` come from the matching plan step. For a multi-step challenge, expand one generated problem into one judged item per plan step in plan order; **one generated challenge is not necessarily one judged item**. Do not keep a second `STEPS_FOR_MODE`, `HOW_TO_PLAY`, `classFor`, or `actionContractFor` switch in the script—project those from `<primitive>Modes.ts`. A compatibility wrapper may remain only if it delegates straight to the mode plan.
+
 Answer these per mode — the answers vary and that variance is the pedagogy:
 
 - **Is the model the answer?** If modeling would say the answer (naming, counting), model NOTHING before the ask — the answer is earned in the correction. If the RULE can be modeled on content the session never asks about, pick that content IN CODE (`pickModelNoun` / `pickModelOppositePair` pattern).
@@ -223,9 +308,18 @@ Answer these per mode — the answers vary and that variance is the pedagogy:
 - **Tap-to-hear speaks question-side audio only** — the stimulus word, one sound, or the whole question again. Never a hint ladder (cvc's `[ISOLATE_VOWEL]` was an answer leak on demand).
 - `stimulusFor(item)` is the single builder for the context channel, **answer-free by construction** (a mode whose stimulus IS the answer pushes a placeholder or nothing).
 
-## Step 3 — the component (whole-file rewrite)
+## Step 3 — the component (stage + shared action surface)
 
 Build the pack (`JudgedScriptPack`) in a `useMemo` over items from `itemsFromChallenges`, hand it to `useJudgedScriptRunner`, and render the stage. Reveal-on-affirm only (`onAffirmed` → the first moment the answer may appear on screen). Gesture modes call `runner.submitGestureAttempt(<verdictCue>)` with the match CODE-COMPUTED.
+
+Render `DiActionPanel` as the one learner-facing action surface. Pass the current problem's complete ordered item list as `steps`, not only the active item. It guarantees the house states:
+
+1. **Before starting:** one lesson-start control and a clear start instruction.
+2. **Hands step:** manipulation surface visible, current direction visible, listening orb hidden.
+3. **Voice step:** current direction visible and microphone shown.
+4. **Multi-step problem:** the complete sequence stays visible, with current/completed/carried/upcoming states distinguished.
+
+The stage owns only the subject-specific paper—the cards, counters, drawing, equation, text, or other material the student acts on. It does not duplicate the current instruction, render a second microphone, or invent its own progress tracker. `currentItem.actionContract.instruction` drives both `DiActionPanel` and the script's spoken ask/re-ask.
 
 ### A hands turn needs a CLOSE — and most primitives don't have one
 
@@ -259,6 +353,20 @@ If your stage PRESENTS something the ask refers to — a flash, a reveal, an ani
 
 Answers become FIELDS (`word`, `resultWord`, `segments`), not a correct flag in a choices array. Validation is **KEEP-OR-DROP, never backfill** — a placeholder item in a judged loop becomes a spoken ask the tutor must judge. Run the same leak gates generator-side that the script runs build-side (belt and suspenders on both sides of the wire) — and **IMPORT them from the script module, never copy them**: export the gates (and their constants) from `<primitive>Script.ts` and have the generator consume those exports, the decodable-reader/letter-spotter pattern. Hand-synced copies drift — letter-spotter's two sides of the wire disagreed live on what a sayable sentence was (90 vs 100 chars) until the copies were deleted. And **writing the spoken ask audits the content**: a relation a tap never had to justify may be false when said aloud (`x` anchored to "box" for months — /ks/ never begins an English word). Re-check every code-owned pool.
 
+Import `DI_<NAME>_TYPE_DOCS` and the projected challenge-type list from `<primitive>Modes.ts`; never maintain a local `ChallengeTypeDoc` registry or `ALL_TYPES` copy. Resolve with all three routing signals:
+
+```ts
+const resolution = await resolveEvalModes(
+  '<primitive-id>',
+  { targetEvalMode: config?.targetEvalMode, intent: config?.intent, objectiveText: config?.objectiveText },
+  DI_MY_PRIMITIVE_TYPE_DOCS,
+);
+```
+
+Fork-A generators must make all three outcomes real in the emitted items: a single resolution emits only that identity; a curated blend interleaves exactly the selected identities; `null`/mixed explicitly covers every supported identity. If the requested item count is smaller than the number of mixed identities, expand it to the smallest count that can cover them (within the primitive's safe maximum) rather than silently dropping modes.
+
+Support tiers are structural surfaces for **one resolved skill**. Gate them with `supportForSingleDiMode(resolution, normalizedTier)`. A blend or mixed run stays untiered; never borrow one mode's scaffold, problem shape, or withdrawal ladder and stamp it across different task identities.
+
 ## Step 5 — the catalog entry
 
 - `audioInput: { manual_activity: true }` (bench ruling — Gemini's VAD is unusable for short answers). The canonical value is `JUDGED_AUDIO_INPUT` in `judgedScriptContract.ts`; `checkDiCatalogEntry` pins the entry against it.
@@ -266,11 +374,23 @@ Answers become FIELDS (`word`, `resultWord`, `segments`), not a correct flag in 
 - Rewrite `description`/`constraints` — they are manifest steering; "tap the tiles" prose routes the primitive wrong forever. Note the mic requirement.
 - The `tutoring` block is the session frame (the freshest ports are the template): LIVE-JUDGED DI (tags + sentinel rule), THE OPENING LINE ALREADY TEACHES THE GAME, WHAT COUNTS AS AN ANSWER (+ the never-say-the-answer LAW), WAIT (the silence is theirs), X-ON-DEMAND (`[*_HEAR]`). In a MIXED pack, WHAT COUNTS AS AN ANSWER says so per direction rather than declaring one answer surface for the whole primitive — letter-spotter's block claimed "every answer is a touch" while one of its modes is spoken, and `taskDescription` interpolates `{{challengeType}}` precisely so the tutor knows which it is on. `commonStruggles` responses must be PERFORMABLE script moves — meta-commentary in that field gets recited verbatim to a child (proven live).
 - Sentinel-check every catalog sentence; your di-script test runs `findSentinelCollisions` over the prose.
-- Eval modes keep their identities and βs — change a β only when the STRUCTURE changed (a 1-of-2 tap becoming unaided production), with the rationale in the description.
+- Set `evalModes: DI_<NAME>_EVAL_MODES`, projected from `<primitive>Modes.ts`; never paste an inline mode array into the catalog. Eval modes keep their identities and βs — change a β only when the STRUCTURE changed (a 1-of-2 tap becoming unaided production), with the rationale in the mode definition's description and matching backend calibration update.
+- The registry wrapper spreads raw config **and explicitly passes** `intent`, `objectiveText`, and `targetEvalMode`; pass the canonical support/difficulty field too when the generator consumes it. Do not assume those values survived inside `raw`.
 
 ## Step 6 — tests
 
 One pure `__tests__/<Primitive>.di-script.test.ts`. **The plumbing is one import now — do not re-type it** (12 files hand-copied it and grew three divergent spoken-line parsers before `hooks/judgedScriptContract.testkit.ts` existed): `expect(checkPackGates(pack)).toEqual([])` (= `validateJudgedScriptPack` PLUS the performed-stage-direction scan and the byte-identical-consecutive-ask gate — the two defects only live drives used to catch) and `expect(checkDiCatalogEntry(entry, pack, sampleItem)).toEqual([])` (audio mode, contextKeys, template keys, catalog sentinel scan, `commonStruggles` included). Parse spoken lines with `spokenSpanOf` from the contract, never a local regex — the naive single-anchor form reads the wrong span on dual-anchor cues, and the shared one knows all four anchors the family ships (`Say exactly:` / `Speak exactly:` / `then wait:` / `Say ONLY this …:`).
+
+Add a focused `<primitive>Modes.test.ts` (or the shared migration suite while sweeping existing packs) that pins:
+
+- every challenge type has one owner and projected catalog/docs are complete;
+- the answer step is final;
+- every judged gesture/voice step agrees with its response class;
+- ordered step keys, labels, and modalities match the intended learner story;
+- the visible `actionContract.instruction` is byte-identical to the script's ask/re-ask source;
+- a single generator run emits only the selected identity, a curated blend emits exactly its selected identities, and mixed covers all identities;
+- blends/mixed runs have no single-mode support tier;
+- frontend β values match `backend/app/services/calibration/problem_type_registry.py`, and omitted discrimination resolves to the backend default.
 
 ⚠️ **BUILD A SECOND PACK IN THE REAL SESSION SHAPE, or the repeat-ask gate is on and asleep.** `findRepeatedConsecutiveAsks` compares consecutive items of the SAME action, and the fixture pack you will naturally write — one item per mode, to cover the fork — is the one shape that can never trigger it. All 12 ports had exactly that shape, so the gate was a no-op on every suite until the 19a sweep added a `[X, X']` pack per port. A real session runs several items of one mode back to back; that is the pack this gate is for. (Length matters, not sameness: the gate flags a repeated ask over 12 words — recitation — and passes a short invariant DI signal like *"Your turn. Read it."*, which is the method, not a defect.)
 
@@ -284,10 +404,10 @@ One pure `__tests__/<Primitive>.di-script.test.ts`. **The plumbing is one import
 
 ## Step 7 — gates (all of them, every port)
 
-1. `npm run typecheck:lumina` → **0**; full project-local `tsc --noEmit` → zero NEW vs. baseline.
-2. §1 census greps on the component → 0 hits — **comments count**, don't name the deleted hooks or `AUTO_ADVANCE` in prose:
-   `grep -cE "useSpokenWordCapture|useVoiceAnswer|useVoiceChoice|useVoiceCapture|useJudgedSpeechLoop" <Primitive>.tsx`
-   `grep -cE 'setTimeout\(\(\) =>[^;]*(ext|dvance)|AUTO_ADVANCE' <Primitive>.tsx`
+1. `npm run typecheck:lumina` → **0**; run the focused mode-definition, script, `DiActionPanel`, generator single/blend/mixed, and backend calibration-parity tests; full project-local `tsc --noEmit` → zero NEW vs. baseline.
+2. §1 census searches on the component → 0 hits — **comments count**, don't name the deleted hooks or `AUTO_ADVANCE` in prose:
+   `rg -c "useSpokenWordCapture|useVoiceAnswer|useVoiceChoice|useVoiceCapture|useJudgedSpeechLoop" <Primitive>.tsx`
+   `rg -c 'setTimeout\(\(\) =>[^;]*(ext|dvance)|AUTO_ADVANCE' <Primitive>.tsx`
 3. **Live real-pipeline probes, one per eval mode**: a TEMPORARY vitest file that calls the real generator (`GEMINI_API_KEY` from `.env.local`), builds items via `itemsFromChallenges`, asserts drops are rare, and runs `validateJudgedScriptPack` over packs built from LIVE content — the sentinel scan over generated words is the point. Probe both BANDS and both frame/scope sizes where the primitive forks, not just one of each. **Delete the probe file after the run**; record the drawn words in the queue block.
    *Two harness facts that cost a run:* `vitest.setup.ts` stamps a dummy `GEMINI_API_KEY` before any test module loads, and ES imports HOIST above your `.env.local` read — so read the key at the top of the file and `await import()` the generator **inside** the test. (`server-only` is already aliased away in `vitest.config.ts`.)
    *Registering a drive adapter (next gate) gives you this for free:* the plan endpoint runs `checkPackGates` over a pack built from live content and reports it, so the sentinel scan re-runs on every drive instead of once behind a deleted file.
@@ -298,7 +418,7 @@ One pure `__tests__/<Primitive>.di-script.test.ts`. **The plumbing is one import
    python run_tutor_live.py --component <id> --di --di-cap    # past the corrections cap
    ```
    It answers every spoken item WRONG on purpose, then right, as TEXT — so it tests the judge's semantics without TTS. **It does not test acoustics, the mic, or VAD, so it does not close your mic row**; it closes the half of that row a machine can hold, which is why #82–#98 accumulated. Read the judgment matrix in `qa/tutor-reports/<id>-live-di-*.md`, then the transcript — the oracles are tripwires, the transcript is the evidence. Full oracle table in `/tutor-test`.
-5. Full vitest — expect concurrent-port noise in this lane; own only your suites.
+5. Full relevant vitest suites (DI primitive/UI and DI generator directories) plus the backend calibration test — expect concurrent-port noise in this lane; own only your suites.
 
 ## Step 8 — close the slice (PM discipline)
 

@@ -41,6 +41,7 @@ import {
   findSentinelCollisions,
   findUnresolvedTemplateKeys,
   JUDGED_AUDIO_INPUT,
+  spokenSpanOf,
   validateJudgedScriptPack,
   type JudgedScriptItem,
   type JudgedScriptPack,
@@ -90,6 +91,47 @@ export const catalogProseCues = (
 ];
 
 /**
+ * Migration gate for the shared DI action house style. Legacy packs with no
+ * action contracts remain valid; once any item adopts the contract, every item
+ * in that pack must adopt it and keep modality, visible instruction, and the
+ * spoken ask in lockstep.
+ */
+export function checkDiActionContracts<Item extends JudgedScriptItem>(
+  pack: JudgedScriptPack<Item>,
+): string[] {
+  if (!pack.items.some((item) => item.actionContract)) return [];
+  const issues: string[] = [];
+  for (const item of pack.items) {
+    const action = item.actionContract;
+    if (!action) {
+      issues.push(`${item.id}: missing actionContract after this pack adopted the DI action house style`);
+      continue;
+    }
+    if (item.answerKind !== action.answerKind) {
+      issues.push(`${item.id}: answerKind ${item.answerKind} disagrees with actionContract ${action.answerKind}`);
+    }
+    for (const [field, value] of Object.entries({
+      id: action.id,
+      label: action.label,
+      icon: action.icon,
+      instruction: action.instruction,
+      checkingInstruction: action.checkingInstruction,
+    })) {
+      if (!value.trim()) issues.push(`${item.id}: actionContract.${field} must not be empty`);
+    }
+    try {
+      const spoken = spokenSpanOf(pack.itemCue(item, { opening: false, howToPlay: false }));
+      if (!spoken.includes(action.instruction)) {
+        issues.push(`${item.id}: spoken ask does not contain actionContract.instruction exactly`);
+      }
+    } catch {
+      // The existing pack validator reports a throwing cue builder.
+    }
+  }
+  return issues;
+}
+
+/**
  * The pack's structural gates: `validateJudgedScriptPack` plus the two gates
  * that exist because a live drive found the defect after every machine gate
  * passed (performed stage directions; byte-identical consecutive asks).
@@ -117,6 +159,7 @@ export function checkPackGates<Item extends JudgedScriptItem>(
       `performed stage direction in ${finding.cueLabel}: "${finding.match}" sits outside the spoken span — state the wait as a fact about the turn, never an order`,
     );
   }
+  issues.push(...checkDiActionContracts(pack));
   issues.push(...findRepeatedConsecutiveAsks(pack));
   return issues;
 }

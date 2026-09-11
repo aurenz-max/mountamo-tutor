@@ -75,6 +75,24 @@ Skip eval modes for:
 
 No new files needed — the shared utilities in `service/evalMode/index.ts` already exist.
 
+### Direct Instruction: use a mode definition, not three parallel registries
+
+DI primitives are the exception to the “no new files” shortcut because their task identity also controls the learner-facing action and the live judge. Define each mode once in `primitives/visual-primitives/direct-instruction/di<Name>Modes.ts` with `defineDiMode` / `defineDiModes`.
+
+One definition owns:
+
+- catalog identity (`evalMode`, label, β, scaffolding mode, description);
+- generator identity (`challengeTypes` and prompt/schema docs);
+- the ordered learner story (`steps`, including gesture versus voice);
+- each step's visible/spoken instruction and optional response class;
+- the final assessed response class and answer step.
+
+Project that definition with `evalModeDefinitionsFromDiModes` for the catalog, `challengeTypeDocsFromDiModes` for the generator, and `buildDiModePlan` for the component/script. The visible `DiActionPanel` and the tutor cue must both consume the plan's `actionContract.instruction`; do not rewrite the ask in JSX or prompt prose.
+
+For a hands-to-voice task, define the whole sequence. For example, `build_family` owns `big_number (gesture/manipulation) → family (voice/equation_statement) → operation (voice/closed_set_choice) → solve (voice/number_word_to_20)`. This lets the runtime show the complete story, highlight the current step, hide listening controls during manipulation, and restore them for voice without primitive-specific state rules.
+
+Contract tests should prove that every challenge type has exactly one owner, the answer step is final, modality agrees with response class, projected catalog/docs stay complete, and the visible instruction is the same instruction used in the spoken ask.
+
 ---
 
 ## Step 1: Add `evalModes` to the Catalog Entry
@@ -304,9 +322,12 @@ CHALLENGE TYPES (mixed session — vary across all of these):
 
 ```typescript
   const pinnedType = allowedTypes?.[0] as ChallengeType | undefined;
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  const supportTier = supportForSingleDiMode(
+    resolution,
+    normalizeSupportTier(config?.difficulty) ?? undefined,
+  );
   const tierScaffold =
-    resolution && resolution.modes.length === 1 && pinnedType && supportTier
+    pinnedType && supportTier
       ? resolveSupportStructure(pinnedType, supportTier)   // primitive-defined
       : null;
 ```
