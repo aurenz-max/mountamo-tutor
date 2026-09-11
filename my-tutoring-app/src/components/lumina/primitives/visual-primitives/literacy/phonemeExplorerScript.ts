@@ -5,7 +5,7 @@
  * stays generator-scoped. This module owns only the cue shapes and the in-band
  * judging contracts.
  *
- * ALL FOUR MODES GO VERBAL — the 4-choice grid was a costume on every one:
+ * ALL SIX MODES GO VERBAL — the 4-choice grid was a costume on every one:
  *  - blend: hearing /k/ /a/ /t/ and TAPPING "cat" among four printed words is
  *    word recognition; SAYING the word is blending. The tiles stay (stimulus,
  *    tap-to-hear); the choices die.
@@ -25,8 +25,11 @@
  *    same reason one step further in: a child who can read "cat" and "hat" can
  *    match the letter `a` on sight and never hear a vowel. The picture (+ tap-
  *    to-hear) carries it, and only the four cards are print.
+ *  - ending: the target and four menu words are heard; every spelling stays
+ *    hidden until feedback. The learner says the picture-card word with the
+ *    same final phoneme, and the correction emphasizes that final sound.
  *
- * RESPONSE CLASSES (standing gate 1): isolate/medial/blend/manipulate answers
+ * RESPONSE CLASSES (standing gate 1): isolate/ending/medial/blend/manipulate answers
  * are one short spoken word from a closed per-item set (`short_spoken_word`,
  * benched). segment's answer is a count 2-6 (`number_word_to_20`, benched).
  * Nothing here asks the child to PRODUCE an isolated sound — that class is
@@ -51,7 +54,7 @@ import type {
 } from '../../../hooks/judgedScriptContract';
 import { isSpeakablePhoneme, speakablePhoneme } from './phonemeVoice';
 
-export type PhonemeItemKind = 'isolate' | 'medial' | 'blend' | 'segment' | 'manipulate';
+export type PhonemeItemKind = 'isolate' | 'ending' | 'medial' | 'blend' | 'segment' | 'manipulate';
 
 export interface PhonemeMenuCard {
   word: string;
@@ -63,14 +66,14 @@ export interface PhonemeExplorerItem extends JudgedScriptItem {
   /** The spoken answer: menu word (isolate, medial), blended word (blend),
    *  count WORD (segment — "three"), or result word (manipulate). */
   answer: string;
-  /** Emoji revealed at affirm (isolate/medial/blend/manipulate). */
+  /** Emoji revealed at affirm (isolate/ending/medial/blend/manipulate). */
   answerEmoji?: string;
   // -- isolate --
   phoneme?: string;
   phonemeSound?: string;
   exampleWord?: string;
   exampleEmoji?: string;
-  // -- isolate + medial (both are closed-set menus answered aloud) --
+  // -- isolate + ending + medial (closed-set menus answered aloud) --
   menu?: PhonemeMenuCard[];
   /** readOptionsAloud: false ⇒ the ask does not enumerate the menu (hard tier
    *  readers read the cards). */
@@ -82,6 +85,9 @@ export interface PhonemeExplorerItem extends JudgedScriptItem {
    *  in the ask would turn "same middle sound as cat?" into "which has aaa?",
    *  handing over the extraction step that IS the skill. */
   vowelSpoken?: string;
+  // -- ending --
+  /** The final phoneme as the tutor says it ("/p/"). Correction/affirmation only. */
+  finalPhonemeSpoken?: string;
   // -- blend --
   phonemeSequence?: string[];
   /** The spoken walk, pre-rendered ("/k/ … aaa … /t/"). Always present on blend. */
@@ -106,7 +112,7 @@ export const responseClassFor = (kind: PhonemeItemKind): ResponseClassId =>
 
 /** The kinds whose answer is CHOSEN from an on-screen menu of four cards. */
 const isMenuKind = (kind: PhonemeItemKind): boolean =>
-  kind === 'isolate' || kind === 'medial';
+  kind === 'isolate' || kind === 'ending' || kind === 'medial';
 
 // ── Speakable helpers ───────────────────────────────────────────────────────
 
@@ -185,6 +191,8 @@ export interface PhonemeChallengeLike {
   targetEmoji?: string;
   /** medial — the SHORT vowel letter in the middle of targetWord ('a'…'u'). */
   vowel?: string;
+  /** ending — the single final consonant phoneme in targetWord. */
+  finalPhoneme?: string;
   segments?: string[];
   originalWord?: string;
   originalEmoji?: string;
@@ -236,6 +244,26 @@ export const itemFromChallenge = (ch: PhonemeChallengeLike): PhonemeExplorerItem
     if (correct.length !== 1 || !isSayableAnswer(correct[0].word)) return null;
     if (new Set(words).size !== words.length) return null;
     if (words.some((w) => !isSayableAnswer(w))) return null;
+
+    if (ch.mode === 'ending') {
+      const finalPhonemeSpoken = spokenPhonemeToken(ch.finalPhoneme ?? '');
+      if (!finalPhonemeSpoken || !isSayableAnswer(ch.targetWord)) return null;
+      // The tutor speaks the target; including it as a card would allow the
+      // child to echo the target rather than compare final phonemes.
+      if (words.includes(ch.targetWord!.trim().toLowerCase())) return null;
+      return {
+        ...base,
+        answer: correct[0].word.trim(),
+        answerEmoji: correct[0].emoji,
+        targetWord: ch.targetWord!.trim(),
+        targetEmoji: ch.targetEmoji,
+        finalPhonemeSpoken,
+        menu,
+        // Ending words are intentionally hidden on screen before the attempt;
+        // the spoken menu is stimulus access and is never tier-withdrawn.
+        enumerateMenu: true,
+      };
+    }
 
     if (ch.mode === 'medial') {
       // The middle vowel is CORRECTION-ONLY furniture, but the correction is
@@ -339,6 +367,11 @@ const spokenWordsOf = (item: PhonemeExplorerItem): string[] => {
         ...(item.menu ?? []).map((c) => c.word),
         ...(item.exampleWord ? [item.exampleWord] : []),
       ];
+    case 'ending':
+      return [
+        ...(item.menu ?? []).map((c) => c.word),
+        ...(item.targetWord ? [item.targetWord] : []),
+      ];
     case 'medial':
       // Same as isolate for the cards, PLUS the stimulus: unlike isolate's
       // phoneme tile, medial's stimulus is a whole word the tutor speaks.
@@ -367,7 +400,7 @@ const answerWordOf = (item: PhonemeExplorerItem): string | null =>
  * of sounds, manipulate builds it out of a change. There, a word the session
  * already spoke turns production into recall.
  *
- * The two MENU kinds (`isolate`, `medial`) are exempt as recipients, and the
+ * The three MENU kinds (`isolate`, `ending`, `medial`) are exempt as recipients, and the
  * distinction is the whole reason this is not a flat rule: their answer is
  * SELECTED from four cards visible at the moment of the ask, so having met the
  * word before tells the child nothing about which card starts with /d/ or
@@ -440,6 +473,8 @@ export const howToPlayFor = (item: PhonemeExplorerItem): string => {
   switch (item.kind) {
     case 'isolate':
       return 'I say a sound and some words. You say the word that starts with my sound! ';
+    case 'ending':
+      return 'I say a word and some picture words. You say the one with the same sound at the end! ';
     case 'medial':
       return 'I say a word. You say the card word with the same sound in the middle! ';
     case 'blend':
@@ -472,6 +507,10 @@ const askFor = (item: PhonemeExplorerItem): string => {
       }
       return `Listen: ${sound}${example}. ${menuSpanFor(item)} Your turn. Which word starts with ${sound}?`;
     }
+    case 'ending':
+      // The final sound is deliberately unnamed until feedback. Extracting it
+      // from the target word is the skill, just as in the medial mode.
+      return `Listen: ${item.targetWord}. ${menuSpanFor(item)} Your turn. Which word has the same ending sound as ${item.targetWord}?`;
     case 'medial': {
       // The ask NEVER names the vowel. "Which word has aaa in the middle?"
       // hands over the extraction step — pulling the middle sound out of a
@@ -500,6 +539,8 @@ const correctionFor = (item: PhonemeExplorerItem): string => {
       const sound = spokenSound(item.phonemeSound);
       return `My turn: ${item.answer} starts with ${sound}. ${cap(item.answer)}. Your turn. Which word starts with ${sound}?`;
     }
+    case 'ending':
+      return `My turn: ${item.targetWord} ends with ${item.finalPhonemeSpoken}. ${cap(item.answer)} ends with ${item.finalPhonemeSpoken} too. ${cap(item.answer)}. Your turn. Which word has the same ending sound as ${item.targetWord}?`;
     case 'medial':
       // DISTAR re-model: name the vowel in BOTH words, so the match the child
       // missed is demonstrated rather than asserted, then re-elicit unchanged.
@@ -537,6 +578,9 @@ const wrongClauseFor = (item: PhonemeExplorerItem): string => {
         : '';
       return `Saying the sound ${sound} back alone is not yet an answer — wait for a word. ${example}A card word with a different first sound is wrong. `;
     }
+    case 'ending':
+      return `The word "${item.targetWord}" said back is NOT the answer — it is my word, not one of the picture cards. `
+        + `A card word with a DIFFERENT final sound is wrong, even if it starts the same or sounds similar. `;
     case 'medial':
       // The stimulus is the trap here, exactly as the example word is isolate's:
       // it genuinely HAS the target middle sound and the tutor said it seconds
@@ -553,7 +597,11 @@ const wrongClauseFor = (item: PhonemeExplorerItem): string => {
 };
 
 const affirmLineFor = (item: PhonemeExplorerItem): string =>
-  item.kind === 'segment' ? `Yes, ${item.answer} sounds.` : `Yes, ${item.answer}.`;
+  item.kind === 'segment'
+    ? `Yes, ${item.answer} sounds.`
+    : item.kind === 'ending'
+      ? `Yes, ${item.answer}. ${cap(item.targetWord ?? '')} and ${item.answer} end with ${item.finalPhonemeSpoken}.`
+      : `Yes, ${item.answer}.`;
 
 /**
  * 18d. Consumed from `wordWorkoutScript`'s `TWO_BRANCH_LAW` (picture-vocabulary's
@@ -653,6 +701,9 @@ export const stimulusFor = (item: PhonemeExplorerItem): string => {
   switch (item.kind) {
     case 'isolate':
       return `${spokenSound(item.phonemeSound)} — cards: ${(item.menu ?? []).map((c) => c.word).join(', ')}`;
+    case 'ending':
+      // The final phoneme is withheld from context as well as from the ask.
+      return `${item.targetWord} — picture cards: ${(item.menu ?? []).map((c) => c.word).join(', ')}`;
     case 'medial':
       // The stimulus word, never the vowel: naming the vowel here would put in
       // the tutor's context exactly what the ask deliberately withholds.
@@ -696,7 +747,7 @@ export const phonemeExplorerPackBase = (
 /**
  * The span of the ask inside which the answer legitimately appears.
  *
- * ONLY the enumerating tiers of the MENU kinds (`isolate`, `medial`) have one,
+ * ONLY the enumerating tiers of the MENU kinds (`isolate`, `ending`, `medial`) have one,
  * and it is exactly the menu clause: the four cards ARE the question there,
  * unmarked, so reading them aloud is the ask and not a leak. Every other ask is
  * answer-free by construction — blend speaks sounds and never the word,
@@ -783,6 +834,19 @@ export const phonemeExplorerHarnessAnswers = (
               text: sound,
               why: 'the sound said back bare — fluent, on-target, and named by the contract as not yet an answer',
             },
+      };
+    }
+    case 'ending': {
+      const cards = (item.menu ?? []).map((c) => c.word);
+      return {
+        ...base,
+        correct: item.answer,
+        plainWrong: cards.find((w) => w.toLowerCase() !== item.answer.toLowerCase())
+          ?? decoy([item.answer.toLowerCase()]),
+        signatureWrong: {
+          text: item.targetWord ?? '',
+          why: 'the tutor\'s own stimulus word said straight back — it carries the final sound but is not one of the picture-card choices',
+        },
       };
     }
     case 'medial': {

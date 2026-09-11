@@ -13,8 +13,8 @@ import { buildRemediationPrompt } from '../generation/remediationPrompt';
 // Architecture
 // ---------------------------------------------------------------------------
 //
-// PhonemeExplorer has five structurally-distinct challenge modes (isolate,
-// medial, blend, segment, manipulate), each with its own field set. A SINGLE
+// PhonemeExplorer has six structurally-distinct challenge modes (isolate,
+// ending, medial, blend, segment, manipulate), each with its own field set. A SINGLE
 // Gemini call juggling all of them in one mode-multiplexed schema (~15 conditional
 // fields, only id+mode required) is unreliable: flash-lite degenerates to
 // emitting empty {id, mode} shells that the validator backfills with "word"
@@ -32,7 +32,7 @@ import { buildRemediationPrompt } from '../generation/remediationPrompt';
 // ---------------------------------------------------------------------------
 
 // DI MODALITY (2026-08-11): every mode is answered ALOUD and judged by the
-// live tutor in-band. Only the MENU modes (`isolate`, `medial`) carry 4 choices
+// live tutor in-band. Only the MENU modes (`isolate`, `ending`, `medial`) carry 4 choices
 // — they are the on-screen MENU (the question side, unmarked); the other three
 // modes emit the ANSWER as a field and no choices at all.
 // `phonemeExplorerScript.ts` owns the leak/sayability gates that drop an item
@@ -46,6 +46,15 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `distractors starting with clearly DIFFERENT sounds). The exampleWord must NOT be one of the 4 `
       + `choices. This mode is BEGINNING-sound only. K: single consonants. Grade 1: blends/digraphs as onsets.`,
     schemaDescription: "'isolate' (say the menu word with the target initial sound)",
+  },
+  ending: {
+    promptDoc:
+      `"ending": The tutor SAYS one CVC word (never printed) and a 4-word menu; the student SAYS `
+      + `which menu word ends with the same FINAL phoneme. The item is built entirely from a curated `
+      + `contrast bank in code: one correct card shares only the final phoneme, while each distractor has `
+      + `a different final phoneme. Printed words stay hidden until after the attempt, so spelling and rhyme `
+      + `cannot answer the item. This is ending-sound IDENTIFICATION, never isolated-sound production.`,
+    schemaDescription: "'ending' (say the heard menu word with the same final phoneme)",
   },
   // Added 2026-09-05 (lesson-bench BACKLOG item 23). The supply gap it closes:
   // two independent K "Decoding CVC words with short a" draws produced an
@@ -122,7 +131,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // so a blended plan runs easy→hard. medial sits between isolate (β 1.5) and
 // blend (β 2.5) at β 2.0 — the same closed-set act, one step further into the
 // word.
-const ALL_MODES = ['isolate', 'medial', 'blend', 'segment', 'manipulate'] as const;
+const ALL_MODES = ['isolate', 'ending', 'medial', 'blend', 'segment', 'manipulate'] as const;
 type PhonemeMode = typeof ALL_MODES[number];
 export type PhonemeRemediationMove = 'contrast_phoneme' | 'blend_through' | 'segment_boundary' | 'isolate_operation';
 
@@ -133,7 +142,7 @@ export function phonemeRemediationMoveFor(
   if (!remediationFocus?.trim()) return undefined;
   // medial IS a phoneme contrast — a wrong card differs from the answer in
   // exactly the sound under test, which is what contrast_phoneme remediates.
-  if (mode === 'isolate' || mode === 'medial') return 'contrast_phoneme';
+  if (mode === 'isolate' || mode === 'ending' || mode === 'medial') return 'contrast_phoneme';
   if (mode === 'blend') return 'blend_through';
   if (mode === 'segment') return 'segment_boundary';
   return 'isolate_operation';
@@ -218,6 +227,11 @@ export function resolvePhonemeSupportScaffold(
     case 'isolate':
       scaffold.showExampleWord = !hard;
       scaffold.showExampleHint = tier === 'easy';
+      break;
+    case 'ending':
+      // The words are intentionally never printed before the attempt. Hearing
+      // the spoken menu is therefore stimulus access, not optional support.
+      scaffold.readOptionsAloud = true;
       break;
     case 'blend':
       scaffold.showBlendCue = !hard;
@@ -311,6 +325,148 @@ const menuSeedFor = (targetWord: string): number => {
   return h;
 };
 
+// ---------------------------------------------------------------------------
+// ending — controlled FINAL-phoneme contrasts, built in code.
+//
+// The target and its closest distractor share onset+nucleus and differ only at
+// the last phoneme (cap/cat, pig/pin, map/mat). The correct card shares the
+// final phoneme but neither the onset nor the rime (cap/mop), and the remaining
+// distractors vary both. First-sound, picture-category and whole-word rhyme
+// strategies are therefore non-predictive; only the ending sound is stable.
+// ---------------------------------------------------------------------------
+
+interface EndingWord {
+  word: string;
+  emoji: string;
+  finalPhoneme: string;
+}
+
+interface EndingContrast {
+  target: EndingWord;
+  correct: EndingWord;
+  distractors: [EndingWord, EndingWord, EndingWord];
+}
+
+const ENDING_SOUND_CONTRASTS: EndingContrast[] = [
+  {
+    target: { word: 'cap', emoji: '🧢', finalPhoneme: 'p' },
+    correct: { word: 'mop', emoji: '🧹', finalPhoneme: 'p' },
+    distractors: [
+      { word: 'cat', emoji: '🐱', finalPhoneme: 't' },
+      { word: 'sun', emoji: '☀️', finalPhoneme: 'n' },
+      { word: 'dog', emoji: '🐶', finalPhoneme: 'g' },
+    ],
+  },
+  {
+    target: { word: 'cat', emoji: '🐱', finalPhoneme: 't' },
+    correct: { word: 'jet', emoji: '✈️', finalPhoneme: 't' },
+    distractors: [
+      { word: 'cap', emoji: '🧢', finalPhoneme: 'p' },
+      { word: 'sun', emoji: '☀️', finalPhoneme: 'n' },
+      { word: 'dog', emoji: '🐶', finalPhoneme: 'g' },
+    ],
+  },
+  {
+    target: { word: 'can', emoji: '🥫', finalPhoneme: 'n' },
+    correct: { word: 'sun', emoji: '☀️', finalPhoneme: 'n' },
+    distractors: [
+      { word: 'cap', emoji: '🧢', finalPhoneme: 'p' },
+      { word: 'cat', emoji: '🐱', finalPhoneme: 't' },
+      { word: 'dog', emoji: '🐶', finalPhoneme: 'g' },
+    ],
+  },
+  {
+    target: { word: 'pig', emoji: '🐷', finalPhoneme: 'g' },
+    correct: { word: 'dog', emoji: '🐶', finalPhoneme: 'g' },
+    distractors: [
+      { word: 'pin', emoji: '📌', finalPhoneme: 'n' },
+      { word: 'cat', emoji: '🐱', finalPhoneme: 't' },
+      { word: 'cup', emoji: '🥤', finalPhoneme: 'p' },
+    ],
+  },
+  {
+    target: { word: 'pin', emoji: '📌', finalPhoneme: 'n' },
+    correct: { word: 'sun', emoji: '☀️', finalPhoneme: 'n' },
+    distractors: [
+      { word: 'pig', emoji: '🐷', finalPhoneme: 'g' },
+      { word: 'cat', emoji: '🐱', finalPhoneme: 't' },
+      { word: 'cup', emoji: '🥤', finalPhoneme: 'p' },
+    ],
+  },
+  {
+    target: { word: 'pit', emoji: '🕳️', finalPhoneme: 't' },
+    correct: { word: 'cat', emoji: '🐱', finalPhoneme: 't' },
+    distractors: [
+      { word: 'pig', emoji: '🐷', finalPhoneme: 'g' },
+      { word: 'sun', emoji: '☀️', finalPhoneme: 'n' },
+      { word: 'cup', emoji: '🥤', finalPhoneme: 'p' },
+    ],
+  },
+  {
+    target: { word: 'map', emoji: '🗺️', finalPhoneme: 'p' },
+    correct: { word: 'cup', emoji: '🥤', finalPhoneme: 'p' },
+    distractors: [
+      { word: 'mat', emoji: '🧘', finalPhoneme: 't' },
+      { word: 'sun', emoji: '☀️', finalPhoneme: 'n' },
+      { word: 'dog', emoji: '🐶', finalPhoneme: 'g' },
+    ],
+  },
+  {
+    target: { word: 'mat', emoji: '🧘', finalPhoneme: 't' },
+    correct: { word: 'jet', emoji: '✈️', finalPhoneme: 't' },
+    distractors: [
+      { word: 'map', emoji: '🗺️', finalPhoneme: 'p' },
+      { word: 'sun', emoji: '☀️', finalPhoneme: 'n' },
+      { word: 'dog', emoji: '🐶', finalPhoneme: 'g' },
+    ],
+  },
+  {
+    target: { word: 'man', emoji: '👨', finalPhoneme: 'n' },
+    correct: { word: 'sun', emoji: '☀️', finalPhoneme: 'n' },
+    distractors: [
+      { word: 'map', emoji: '🗺️', finalPhoneme: 'p' },
+      { word: 'mat', emoji: '🧘', finalPhoneme: 't' },
+      { word: 'dog', emoji: '🐶', finalPhoneme: 'g' },
+    ],
+  },
+];
+
+const ENDING_SOUND_BY_WORD = new Map<string, string>();
+for (const set of ENDING_SOUND_CONTRASTS) {
+  for (const entry of [set.target, set.correct, ...set.distractors]) {
+    ENDING_SOUND_BY_WORD.set(entry.word, entry.finalPhoneme);
+  }
+}
+
+/** Exported for the contract test: the final sound represented by a bank word. */
+export const endingSoundForWord = (word: string): string | undefined =>
+  ENDING_SOUND_BY_WORD.get(word.trim().toLowerCase());
+
+/**
+ * Build a deterministic session of auditory ending-sound matches. The answer's
+ * card position rotates, while each target appears at most once per five-item
+ * session. No language-model output can weaken the final-phoneme contrast.
+ */
+export function buildEndingSoundChallenges(count: number, seedText = ''): RawChallenge[] {
+  const start = menuSeedFor(seedText) % ENDING_SOUND_CONTRASTS.length;
+  return Array.from({ length: Math.min(count, ENDING_SOUND_CONTRASTS.length) }, (_, index) => {
+    const set = ENDING_SOUND_CONTRASTS[(start + index) % ENDING_SOUND_CONTRASTS.length];
+    const cards = [
+      { word: set.correct.word, emoji: set.correct.emoji, correct: true },
+      ...set.distractors.map((word) => ({ word: word.word, emoji: word.emoji, correct: false })),
+    ];
+    const answerAt = (start + index) % cards.length;
+    const [answer] = cards.splice(0, 1);
+    cards.splice(answerAt, 0, answer);
+    return {
+      targetWord: set.target.word,
+      targetEmoji: set.target.emoji,
+      finalPhoneme: set.target.finalPhoneme,
+      choices: cards,
+    };
+  });
+}
+
 /** The part of a word after its middle vowel — "cat" → "t". Used to prefer a
  *  menu that varies ONLY the vowel, the sharpest form of the ask. */
 const codaAfterVowel = (word: string, vowel: string): string => {
@@ -391,6 +547,7 @@ const gradeGuidelines: Record<string, string> = {
 - Use different phonemes across challenges (don't repeat the same letter)
 - All words must be concrete, picturable objects a child can recognize
 - For isolate: initial sounds ONLY
+- For ending: single final consonant phonemes in CVC words; identification only
 - For medial: SHORT vowels in 3-letter CVC words ONLY (cat, pig, bed, hop, sun) — never long vowels, silent-e or r-controlled words
 - For blend: 3-phoneme CVC words ONLY
 - For segment: 3-phoneme CVC words ONLY
@@ -400,7 +557,8 @@ const gradeGuidelines: Record<string, string> = {
 - Use a wider vocabulary but keep words concrete and picturable
 - Words can be up to 5 letters
 - Include a mix of consonant and vowel sounds
-- For isolate: initial/beginning sounds ONLY (isolate cannot present final or medial sounds — middle sounds have their own "medial" mode, and there is no ending-sound mode here at all)
+- For isolate: initial/beginning sounds ONLY
+- For ending: single final consonant phonemes; keep words concrete and easy to hear
 - For medial: SHORT vowels; CVC or simple CVCC words (fast, jump) — never long vowels, silent-e or r-controlled words
 - For blend: 3-4 phoneme words
 - For segment: 3-4 phoneme words
@@ -410,7 +568,8 @@ const gradeGuidelines: Record<string, string> = {
 - Can include less common consonant sounds and digraphs
 - Words can be up to 6 letters but must still be concrete and picturable
 - Use grade-appropriate vocabulary
-- For isolate: initial/beginning sounds ONLY (isolate cannot present final or medial sounds — middle sounds have their own "medial" mode, and there is no ending-sound mode here at all)
+- For isolate: initial/beginning sounds ONLY
+- For ending: single final consonant phonemes; keep contrasts clean and unambiguous
 - For medial: SHORT vowels still, but a wider word shape (CVC, CVCC, CCVC — stamp, brush, clock)
 - For blend: 4-5 phoneme words
 - For segment: 4-5 phoneme words
@@ -482,6 +641,20 @@ function modeItemSchema(mode: PhonemeMode): Schema {
           },
         },
         required: ["targetWord", "targetEmoji", "vowel"],
+      };
+    case 'ending':
+      // Built from ENDING_SOUND_CONTRASTS in code. This schema branch keeps the
+      // discriminated contract exhaustive; ending generation skips Gemini.
+      return {
+        type: Type.OBJECT,
+        properties: {
+          remediationMove,
+          targetWord: { type: Type.STRING, description: "Curated spoken CVC stimulus word" },
+          targetEmoji: { type: Type.STRING, description: "Picture cue for the hidden spoken stimulus" },
+          finalPhoneme: { type: Type.STRING, description: "Single final consonant phoneme, correction-only" },
+          choices: choicesSchema,
+        },
+        required: ["targetWord", "targetEmoji", "finalPhoneme", "choices"],
       };
     case 'blend':
       return {
@@ -555,7 +728,7 @@ function modeSchema(mode: PhonemeMode, count: number): Schema {
 // ---------------------------------------------------------------------------
 
 /** Distribute `total` challenges across the allowed modes, easy→hard, round-robin. */
-function buildModePlan(allowed: string[], total: number): PhonemeMode[] {
+export function buildModePlan(allowed: string[], total: number): PhonemeMode[] {
   const order = ALL_MODES.filter((m) => allowed.includes(m));
   const modes: PhonemeMode[] = order.length ? order : ['isolate'];
   const plan: PhonemeMode[] = [];
@@ -603,6 +776,17 @@ async function generateModeAttempt(
   intent: string | undefined,
   remediationFocus: string | undefined,
 ): Promise<RawChallenge[]> {
+  if (mode === 'ending') {
+    const remediationMove = phonemeRemediationMoveFor(mode, remediationFocus);
+    return buildEndingSoundChallenges(count, `${topic}|${gradeKey}`)
+      .map((challenge) => ({
+        ...challenge,
+        mode,
+        ...(remediationMove ? { remediationMove } : {}),
+      }))
+      .filter((challenge) => validateModeChallenge(challenge, mode));
+  }
+
   const doc = CHALLENGE_TYPE_DOCS[mode]?.promptDoc ?? '';
   const remediationSection = buildRemediationPrompt(remediationFocus);
   const remediationMove = phonemeRemediationMoveFor(mode, remediationFocus);
@@ -746,7 +930,10 @@ export const generatePhonemeExplorer = async (
   );
 
   const allowed = resolution?.allowedTypes ?? [...ALL_MODES];
-  const plan = buildModePlan(allowed, TOTAL_CHALLENGES);
+  // Mixed now has six distinct skills. Give it one slot per skill so adding
+  // ending identification cannot silently evict manipulate from every broad
+  // session; pinned and curated modes retain the five-item session length.
+  const plan = buildModePlan(allowed, Math.max(TOTAL_CHALLENGES, allowed.length));
   const distinctModes = Array.from(new Set(plan));
 
   try {
@@ -876,6 +1063,24 @@ function validateModeChallenge(ch: RawChallenge, mode: PhonemeMode): boolean {
       if (!(ch.targetWord as string).toLowerCase().includes(ch.vowel.trim().toLowerCase())) return false;
       return true;
     }
+    case 'ending': {
+      if (!isWord(ch.targetWord) || !isNonEmptyString(ch.targetEmoji)) return false;
+      if (!isNonEmptyString(ch.finalPhoneme)) return false;
+      const targetSound = endingSoundForWord(ch.targetWord);
+      if (!targetSound || targetSound !== ch.finalPhoneme.trim().toLowerCase()) return false;
+      const choices = ch.choices;
+      if (!Array.isArray(choices) || choices.length !== 4) return false;
+      const typed = choices as { word?: unknown; emoji?: unknown; correct?: unknown }[];
+      if (!typed.every((c) => isWord(c.word) && isNonEmptyString(c.emoji))) return false;
+      if (typed.filter((c) => c.correct === true).length !== 1) return false;
+      const words = typed.map((c) => (c.word as string).trim().toLowerCase());
+      if (new Set(words).size !== words.length) return false;
+      if (words.includes((ch.targetWord as string).trim().toLowerCase())) return false;
+      return typed.every((choice) => {
+        const sound = endingSoundForWord(choice.word as string);
+        return choice.correct === true ? sound === targetSound : sound !== targetSound;
+      });
+    }
     case 'blend': {
       const seq = ch.phonemeSequence;
       return Array.isArray(seq) && seq.length >= 2 && seq.length <= 5
@@ -903,8 +1108,10 @@ function validateModeChallenge(ch: RawChallenge, mode: PhonemeMode): boolean {
 }
 
 function buildFallbackChallenge(allowed: string[]): RawChallenge {
+  if (allowed.includes('ending')) {
+    return { ...buildEndingSoundChallenges(1, 'fallback')[0], mode: 'ending' };
+  }
   // Only used if every parallel call failed — a minimal valid isolate item.
-  void allowed;
   return {
     id: 'c1',
     mode: 'isolate',

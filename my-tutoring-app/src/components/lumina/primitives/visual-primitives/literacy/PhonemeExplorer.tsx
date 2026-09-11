@@ -8,7 +8,7 @@
  * There is no advance timer, no answer buttons, no Next button and no
  * push-to-talk mic anywhere in this file.
  *
- * ALL FIVE MODES ARE VERBAL — the old 4-choice grid was a costume on each:
+ * ALL SIX MODES ARE VERBAL — the old 4-choice grid was a costume on each:
  *  - isolate: the four cards STAY as the on-screen MENU (the question side,
  *    unmarked — print is not a leak here) but the answer is SAID, not tapped.
  *    Tapping a card speaks that word (tap-to-hear, never a commit).
@@ -18,6 +18,9 @@
  *    a child who can read "cat" and "hat" matches the letter `a` on sight and
  *    never hears a vowel. Ruled a CHOICE, not "say the middle sound": producing
  *    a bare vowel is an unbenched response class.
+ *  - ending: the tutor says a CVC target and four picture-card words; the child
+ *    SAYS the card word with the same final phoneme. Target and card spellings
+ *    stay hidden until feedback, so this remains an auditory identification.
  *  - blend: the phoneme tiles stay (stimulus; tap one to hear that sound) and
  *    the child SAYS the blended word. Picking "cat" among four printed words
  *    was word recognition, not blending.
@@ -89,17 +92,19 @@ interface PhonemeChoice {
 
 interface PhonemeChallenge {
   id: string;
-  mode: 'isolate' | 'medial' | 'blend' | 'segment' | 'manipulate';
+  mode: 'isolate' | 'ending' | 'medial' | 'blend' | 'segment' | 'manipulate';
   // -- isolate fields --
   phoneme?: string;
   phonemeSound?: string;
   exampleWord?: string;
   exampleEmoji?: string;
-  /** isolate + medial: the 4-card menu (1 correct, unmarked on screen). */
+  /** isolate + ending + medial: the 4-card menu (1 correct, unmarked on screen). */
   choices?: PhonemeChoice[];
   // -- medial fields (targetWord/targetEmoji are shared with segment) --
   /** medial: the SHORT vowel letter in the middle of targetWord. Correction-only. */
   vowel?: string;
+  /** ending: the target word's single final consonant phoneme. */
+  finalPhoneme?: string;
   // -- blend fields --
   phonemeSequence?: string[];
   /** blend: the ANSWER — the word the sounds make. Never printed pre-affirm. */
@@ -134,7 +139,7 @@ interface PhonemeChallenge {
   showBlendCue?: boolean;
   /** manipulate — render the authored operationDescription (vs a neutral line). Default: shown. */
   showOperationDetail?: boolean;
-  /** ask — enumerate the isolate/medial menu aloud. Default: enumerate. */
+  /** ask — enumerate the isolate/ending/medial menu aloud. Default: enumerate. */
   readOptionsAloud?: boolean;
 }
 
@@ -165,6 +170,7 @@ interface PhonemeExplorerProps {
 
 const MODE_META: Record<string, { badge: string; icon: string; prompt: string; accent: LuminaAccent }> = {
   isolate: { badge: 'Sound Match', icon: '🔊', prompt: 'Which word begins with my sound? Say it!', accent: 'blue' },
+  ending: { badge: 'Ending Sound', icon: '👂', prompt: 'Which heard word has the same ending sound? Say it!', accent: 'cyan' },
   medial: { badge: 'Middle Sound', icon: '🎯', prompt: 'Which word has the same middle sound? Say it!', accent: 'rose' },
   blend: { badge: 'Sound Blend', icon: '🧩', prompt: 'Say the sounds fast — what word?', accent: 'purple' },
   segment: { badge: 'Sound Count', icon: '✂️', prompt: 'How many sounds? Say the number!', accent: 'emerald' },
@@ -264,6 +270,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     diagnosisObservation: (item, { lastHeard }) => ({
       challenge: item.kind === 'isolate'
         ? `Say which word starts with the ${item.phonemeSound ?? item.phoneme} sound.`
+        : item.kind === 'ending'
+        ? `Say which heard word has the same final phoneme as "${item.targetWord}".`
         : item.kind === 'medial'
         ? `Say which word has the same middle sound as "${item.targetWord}".`
         : item.kind === 'blend'
@@ -328,7 +336,11 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
    * SPOKEN, never tapped. The reveal highlight lands only after the tutor's
    * affirmation, so the correct card is not marked while the child is thinking.
    */
-  const renderMenu = (item: PhonemeExplorerItem, ch: PhonemeChallenge | undefined) => (
+  const renderMenu = (
+    item: PhonemeExplorerItem,
+    ch: PhonemeChallenge | undefined,
+    hidePrintedWords = false,
+  ) => (
     <>
       <div className="grid grid-cols-2 gap-3">
         {(item.menu ?? []).map((card, idx) => {
@@ -346,7 +358,11 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
               `}
             >
               {(ch?.showChoiceEmoji !== false) && <span className="text-3xl">{card.emoji}</span>}
-              <span className="text-lg font-bold">{card.word}</span>
+              {(!hidePrintedWords || revealed) ? (
+                <span className="text-lg font-bold">{card.word}</span>
+              ) : (
+                <span className="text-xs font-semibold text-slate-400">Tap to hear</span>
+              )}
             </button>
           );
         })}
@@ -392,6 +408,41 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       </p>
 
       {renderMenu(item, ch)}
+    </div>
+  );
+
+  /**
+   * ending — target and menu words are heard, never printed pre-attempt. The
+   * pictures locate the replay buttons but carry no letter or ending cue.
+   */
+  const renderEnding = (item: PhonemeExplorerItem, ch: PhonemeChallenge | undefined) => (
+    <div className="space-y-5">
+      <div className="flex flex-col items-center gap-3">
+        <button
+          onClick={() => hearWord(item.targetWord)}
+          className="rounded-2xl bg-cyan-500/15 border-2 border-cyan-500/30 px-10 py-6 text-center cursor-pointer"
+        >
+          <span className="text-5xl">
+            {(ch?.showChoiceEmoji !== false) ? item.targetEmoji : '🔊'}
+          </span>
+          <p className="text-xs text-cyan-300/70 mt-2">Tap to hear my word</p>
+        </button>
+      </div>
+
+      <p className="text-center text-base text-slate-300 font-medium">{MODE_META.ending.prompt}</p>
+
+      {renderMenu(item, ch, true)}
+
+      {revealed && (
+        <LuminaPanel className="p-3 text-center">
+          <span className="text-emerald-300 text-xl font-black">
+            {item.targetWord} &amp; {item.answer}
+          </span>
+          <p className="text-slate-300 text-sm mt-1">
+            both end with <span className="font-mono text-emerald-300">{item.finalPhonemeSpoken}</span>
+          </p>
+        </LuminaPanel>
+      )}
     </div>
   );
 
@@ -580,6 +631,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
             </div>
 
             {currentItem && currentItem.kind === 'isolate' && renderIsolate(currentItem, currentChallenge)}
+            {currentItem && currentItem.kind === 'ending' && renderEnding(currentItem, currentChallenge)}
             {currentItem && currentItem.kind === 'medial' && renderMedial(currentItem, currentChallenge)}
             {currentItem && currentItem.kind === 'blend' && renderBlend(currentItem, currentChallenge)}
             {currentItem && currentItem.kind === 'segment' && renderSegment(currentItem, currentChallenge)}

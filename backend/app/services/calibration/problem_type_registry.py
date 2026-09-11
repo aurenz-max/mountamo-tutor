@@ -724,6 +724,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         # is now "say how many sounds" (the word is never printed, so letters
         # cannot be counted). βs unchanged.
         "isolate":    PriorConfig(1.5, "Recognition: hear a sound + 4-word menu, SAY the word with that initial sound"),
+        # Auditory closed-set recognition at the word edge. Slightly above
+        # initial isolation because the learner must hold the whole CVC word;
+        # below medial extraction because the target remains at an edge.
+        "ending":     PriorConfig(1.75, "Recognition: hear a CVC word + picture-only spoken menu, SAY the word with the same FINAL phoneme"),
         # 2026-09-05 supply fix (lesson-bench item 23): no mode tested the MIDDLE
         # vowel, so K "identify the short a sound in spoken words" objectives had
         # nowhere to land. Same closed-set act as isolate, one step further into

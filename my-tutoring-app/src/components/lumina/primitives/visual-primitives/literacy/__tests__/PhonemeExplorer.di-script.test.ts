@@ -59,6 +59,15 @@ const ISOLATE = itemFromChallenge({
     { word: 'cake', emoji: '🍰', correct: false },
   ],
 })!;
+const ENDING = itemFromChallenge({
+  id: 'c1e', mode: 'ending', targetWord: 'cap', targetEmoji: '🧢', finalPhoneme: 'p',
+  choices: [
+    { word: 'mop', emoji: '🧹', correct: true },
+    { word: 'cat', emoji: '🐱', correct: false },
+    { word: 'sun', emoji: '☀️', correct: false },
+    { word: 'dog', emoji: '🐶', correct: false },
+  ],
+})!;
 const MEDIAL = itemFromChallenge({
   id: 'c1m', mode: 'medial', targetWord: 'pig', targetEmoji: '🐷', vowel: 'i',
   choices: [
@@ -80,7 +89,7 @@ const MANIPULATE = itemFromChallenge({
   resultWord: 'bat', resultEmoji: '🦇',
 })!;
 
-const ITEMS: PhonemeExplorerItem[] = [ISOLATE, MEDIAL, BLEND, SEGMENT, MANIPULATE];
+const ITEMS: PhonemeExplorerItem[] = [ISOLATE, ENDING, MEDIAL, BLEND, SEGMENT, MANIPULATE];
 
 /**
  * The pack exactly as the component assembles it, from the EXPORTED surface —
@@ -120,6 +129,7 @@ describe('phoneme-explorer pack · structural gates', () => {
     for (const item of ITEMS) expect(item.answerKind).toBe('voice');
     expect(responseClassFor('segment')).toBe('number_word_to_20');
     expect(responseClassFor('isolate')).toBe('short_spoken_word');
+    expect(responseClassFor('ending')).toBe('short_spoken_word');
     expect(responseClassFor('medial')).toBe('short_spoken_word');
     expect(responseClassFor('blend')).toBe('short_spoken_word');
     expect(responseClassFor('manipulate')).toBe('short_spoken_word');
@@ -476,6 +486,48 @@ describe('phoneme-explorer · DI harness surface', () => {
         { word: 'cake', emoji: '🍰', correct: false },
       ],
     })).toBeNull();
+  });
+});
+
+// ── ending — auditory final-phoneme identification ─────────────────────────
+
+describe('phoneme-explorer pack · ending-sound match', () => {
+  it('withholds the final phoneme until post-attempt feedback', () => {
+    const ask = spokenLine(itemCue(ENDING));
+    expect(ask).toContain('same ending sound as cap');
+    expect(ask).not.toContain('/p/');
+    // Both branches replay and emphasize the final sound after an attempt.
+    expect(itemCue(ENDING)).toContain('Cap and mop end with /p/');
+    expect(itemCue(ENDING)).toContain('cap ends with /p/');
+  });
+
+  it('keeps the target off the picture-card menu and rejects an unsayable final glyph', () => {
+    expect(itemFromChallenge({
+      id: 'x', mode: 'ending', targetWord: 'cap', targetEmoji: '🧢', finalPhoneme: 'p',
+      choices: [
+        { word: 'mop', emoji: '🧹', correct: true },
+        { word: 'cap', emoji: '🧢', correct: false },
+        { word: 'sun', emoji: '☀️', correct: false },
+        { word: 'dog', emoji: '🐶', correct: false },
+      ],
+    })).toBeNull();
+    expect(itemFromChallenge({
+      id: 'x', mode: 'ending', targetWord: 'cap', targetEmoji: '🧢', finalPhoneme: 'x',
+      choices: [
+        { word: 'mop', emoji: '🧹', correct: true },
+        { word: 'cat', emoji: '🐱', correct: false },
+        { word: 'sun', emoji: '☀️', correct: false },
+        { word: 'dog', emoji: '🐶', correct: false },
+      ],
+    })).toBeNull();
+  });
+
+  it('always enumerates the hidden-word menu and keeps the final sound out of tutor context', () => {
+    expect(ENDING.enumerateMenu).toBe(true);
+    expect(leakExemptSpanFor(ENDING)).toContain('mop');
+    expect(stimulusFor(ENDING)).toBe('cap — picture cards: mop, cat, sun, dog');
+    expect(stimulusFor(ENDING)).not.toContain('/p/');
+    expect(phonemeExplorerHarnessAnswers(ENDING).signatureWrong?.text).toBe('cap');
   });
 });
 

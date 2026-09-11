@@ -92,6 +92,16 @@ const ISOLATE: Challenge = {
   ],
 };
 
+const ENDING: Challenge = {
+  id: 'c1e', mode: 'ending', targetWord: 'cap', targetEmoji: '🧢', finalPhoneme: 'p',
+  choices: [
+    { word: 'mop', emoji: '🧹', correct: true },
+    { word: 'cat', emoji: '🐱', correct: false },
+    { word: 'sun', emoji: '☀️', correct: false },
+    { word: 'dog', emoji: '🐶', correct: false },
+  ],
+};
+
 const BLEND: Challenge = {
   id: 'c2', mode: 'blend', phonemeSequence: ['k', 'a', 't'], word: 'cat', emoji: '🐱',
 };
@@ -201,6 +211,15 @@ describe('PhonemeExplorer support tiers — medium thins the worked example', ()
 // ── DI leak rules — these hold at EVERY tier ────────────────────────────────
 
 describe('PhonemeExplorer DI modality — answers never printed pre-affirm', () => {
+  it('ending mode hides the target and every printed card word before feedback', () => {
+    renderWith(ENDING);
+    for (const word of ['cap', 'mop', 'cat', 'sun', 'dog']) {
+      expect(screen.queryByText(word)).toBeNull();
+    }
+    expect(screen.getByText('🧢')).toBeTruthy();
+    expect(screen.getAllByText('Tap to hear')).toHaveLength(4);
+  });
+
   it('blend never prints the word before the affirmation', () => {
     renderWith(BLEND);
     expect(screen.queryByText(/cat/)).toBeNull();
