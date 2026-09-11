@@ -4,9 +4,9 @@ import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
 import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
 import {
-  selectMixedRampChallenges,
   selectRampChallenges,
   type RampChallenge,
+  type InvestigationVariable,
 } from '../../primitives/visual-primitives/engineering/rampChallenges';
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
@@ -19,6 +19,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"find_threshold": the student runs controlled trials to find the smallest 0.5 N slider setting that moves a fixed load; maximum-force brute force is not success.`,
     schemaDescription: "'find_threshold' (measure least sufficient push)",
+  },
+  plan_fair_test: {
+    promptDoc: '"plan_fair_test": Grades 3-5. Plan a controlled investigation by editing setup B to change only the requested ramp angle, surface, or box mass. Commit the plan, predict, then run both trials. Code judges the plan separately from the prediction.',
+    schemaDescription: "'plan_fair_test' (isolate one variable)",
+  },
+  explain_from_trials: {
+    promptDoc: '"explain_from_trials": Grades 3-5. Predict and run two fixed controlled trials, then explain aloud how the changed condition affected the measured push, using both records. Requires microphone and live tutor. No conclusion or model explanation before the attempt.',
+    schemaDescription: "'explain_from_trials' (spoken evidence-based comparison)",
   },
   design_with_budget: {
     promptDoc:
@@ -56,6 +64,8 @@ export interface RampLabData {
   customLoadLabel?: string;     // Custom label for load
   challenges?: RampChallenge[]; // Code-owned, physics-checked task sequence
   freeExplore?: boolean;        // Curator escape hatch that preserves the original sandbox
+  gradeLevel?: string;
+  supportTier?: 'easy' | 'medium' | 'hard';
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -69,6 +79,11 @@ export interface RampLabData {
 const rampLabSchema: Schema = {
   type: Type.OBJECT,
   properties: {
+    investigationVariable: {
+      type: Type.STRING,
+      enum: ['angle', 'surface', 'mass', 'mixed'],
+      description: 'The variable explicitly requested by the objective: angle for steepness/slope, surface for friction/roughness, mass for weight of the box. Use mixed only when no one variable is requested.',
+    },
     title: {
       type: Type.STRING,
       description: "Engaging title for the ramp lab activity (e.g., 'Loading Dock Challenge!', 'Help the Truck Unload!')"
@@ -143,7 +158,7 @@ const rampLabSchema: Schema = {
       nullable: true
     }
   },
-  required: ["title", "description", "rampLength", "rampAngle", "adjustableAngle", "loadWeight", "loadType", "showMeasurements", "frictionLevel", "theme"]
+  required: ["investigationVariable", "title", "description", "rampLength", "rampAngle", "adjustableAngle", "loadWeight", "loadType", "showMeasurements", "frictionLevel", "theme"]
 };
 
 /**
@@ -176,6 +191,12 @@ export const generateRampLab = async (
     },
     CHALLENGE_TYPE_DOCS,
   );
+  const gradeKey = String(ctx.grade ?? ctx.gradeLevel).toLowerCase();
+  const younger = ['k', 'kindergarten', '1', '2', 'grade 1', 'grade 2'].includes(gradeKey);
+  const inquiryMode = (mode: string) => mode === 'plan_fair_test' || mode === 'explain_from_trials';
+  if (younger && resolution?.allowedTypes.some(inquiryMode)) {
+    throw new Error('Ramp investigation modes require Grade 3 or above; use comparison or exploration for younger learners.');
+  }
   const modeSection = resolution
     ? `\nTHIS RAMP LAB RUNS THESE TASK IDENTITIES:\n${resolution.modes
         .map((mode) => CHALLENGE_TYPE_DOCS[mode.evalMode]?.promptDoc ?? mode.evalMode)
@@ -196,6 +217,8 @@ export const generateRampLab = async (
 Create an educational Ramp Lab (Inclined Plane) visualization for teaching "${topic}"
 ${scopeSection} to ${gradeLevel} students.
 ${modeSection}
+OBJECTIVE: ${ctx.objective?.text ?? ctx.intent ?? topic}
+Honor the objective's requested investigation variable in investigationVariable. Do not broaden a surface-friction investigation to angle or mass.
 
 RANDOMIZATION: Use these values for variety: angle ${randomScenario.angle}°, weight ${randomScenario.weight}, friction ${randomScenario.friction}, load type ${randomScenario.load}.
 
@@ -406,9 +429,12 @@ Return a complete Ramp Lab configuration appropriate for the grade level.
   // the exact same force model. An explicit curator challenge list wins, and
   // freeExplore preserves the original open sandbox when deliberately asked.
   if (!config.freeExplore && (!config.challenges || config.challenges.length === 0)) {
+    const requestedCount = Number(ctx.raw.challengeCount);
+    const count = Number.isFinite(requestedCount) && requestedCount > 0 ? Math.max(3, Math.min(6, Math.floor(requestedCount))) : resolution ? 4 : 6;
+    const variable = (['angle', 'surface', 'mass'].includes(data.investigationVariable) ? data.investigationVariable : undefined) as InvestigationVariable | undefined;
     data.challenges = resolution
-      ? selectRampChallenges(resolution.allowedTypes, 4)
-      : selectMixedRampChallenges(6);
+      ? selectRampChallenges(resolution.allowedTypes, count, variable)
+      : younger ? selectRampChallenges(['compare_conditions', 'find_threshold', 'design_with_budget'], count) : selectRampChallenges(['compare_conditions', 'find_threshold', 'plan_fair_test', 'design_with_budget', 'explain_from_trials'], count, variable);
   } else if (config.challenges?.length) {
     data.challenges = config.challenges;
   }
@@ -418,6 +444,14 @@ Return a complete Ramp Lab configuration appropriate for the grade level.
   if (data.showMA === undefined) data.showMA = false;
   if (data.allowPush === undefined) data.allowPush = true;
   if (data.pushForce === undefined) data.pushForce = 0;
+  data.gradeLevel = ctx.grade ?? ctx.gradeLevel;
+  data.supportTier = resolution?.modes.length === 1 ? ctx.supportTier : undefined;
+  // Task copy is code-owned on investigation runs. The generative wrapper's
+  // physics primer must never pre-teach the explanation being assessed.
+  if (data.challenges?.some((ch: RampChallenge) => ch.mode === 'plan_fair_test' || ch.mode === 'explain_from_trials')) {
+    data.title = 'Ramp Investigation';
+    data.description = 'Plan, predict, and collect evidence about how a box moves up a ramp.';
+  }
 
   console.log(
     `[RampLab] modes: ${

@@ -1,0 +1,256 @@
+{
+  "status": "pass",
+  "runs": [
+    {
+      "mode": "plan_fair_test",
+      "challenges": 4,
+      "evaluation": {
+        "primitiveType": "ramp-lab",
+        "instanceId": "ramp-lab-1789066134206",
+        "attemptId": "1d78eef4-c37c-4410-a8d6-d9129aa71206",
+        "startedAt": "2026-09-10T18:48:54.207Z",
+        "completedAt": "2026-09-10T18:49:13.271Z",
+        "durationMs": 19064,
+        "success": true,
+        "score": 95,
+        "metrics": {
+          "type": "ramp-lab",
+          "evalMode": "plan_fair_test",
+          "rampAngle": 15,
+          "objectMass": 6,
+          "frictionCoefficient": 0.5,
+          "predictedAcceleration": 0,
+          "actualAcceleration": 0,
+          "predictionAccuracy": 25,
+          "experimentCount": 8,
+          "variablesExplored": [
+            "surface"
+          ],
+          "challengesSolved": 4,
+          "challengesTotal": 4,
+          "checksMade": 5,
+          "firstTryCorrect": 3
+        },
+        "lessonContext": {
+          "primitiveType": "ramp-lab",
+          "idSource": "free-form"
+        },
+        "studentWork": {
+          "solvedChallengeIds": [
+            "plan_fair_test-surface-0",
+            "plan_fair_test-surface-1",
+            "plan_fair_test-surface-2",
+            "plan_fair_test-surface-9"
+          ],
+          "modes": [
+            "plan_fair_test"
+          ],
+          "checksMade": 5,
+          "investigations": [
+            {
+              "challengeId": "plan_fair_test-surface-0",
+              "mode": "plan_fair_test",
+              "solved": true,
+              "firstTryCorrect": false,
+              "planAttempts": [
+                {
+                  "setup": {
+                    "label": "Setup B",
+                    "angle": 35,
+                    "loadWeight": 4,
+                    "loadType": "box",
+                    "frictionLevel": "high"
+                  },
+                  "fair": false
+                },
+                {
+                  "setup": {
+                    "label": "Setup B",
+                    "angle": 25,
+                    "loadWeight": 4,
+                    "loadType": "box",
+                    "frictionLevel": "high"
+                  },
+                  "fair": true
+                }
+              ],
+              "prediction": "b",
+              "predictionCorrect": false,
+              "trials": [
+                {
+                  "side": "a",
+                  "scenario": {
+                    "label": "Setup A",
+                    "angle": 25,
+                    "loadWeight": 4,
+                    "loadType": "box",
+                    "frictionLevel": "low"
+                  },
+                  "firstMovingForce": 20.5,
+                  "lastStillForce": 20
+                },
+                {
+                  "side": "b",
+                  "scenario": {
+                    "label": "Setup B",
+                    "angle": 25,
+                    "loadWeight": 4,
+                    "loadType": "box",
+                    "frictionLevel": "high"
+                  },
+                  "firstMovingForce": 34.5,
+                  "lastStillForce": 34
+                }
+              ]
+            },
+            {
+              "challengeId": "plan_fair_test-surface-1",
+              "mode": "plan_fair_test",
+              "solved": true,
+              "firstTryCorrect": true,
+              "planAttempts": [
+                {
+                  "setup": {
+                    "label": "Setup B",
+                    "angle": 25,
+                    "loadWeight": 2,
+                    "loadType": "box",
+                    "frictionLevel": "high"
+                  },
+                  "fair": true
+                }
+              ],
+              "prediction": "b",
+              "predictionCorrect": false,
+              "trials": [
+                {
+                  "side": "a",
+                  "scenario": {
+                    "label": "Setup A",
+                    "angle": 25,
+                    "loadWeight": 2,
+                    "loadType": "box",
+                    "frictionLevel": "low"
+                  },
+                  "firstMovingForce": 10.5,
+                  "lastStillForce": 10
+                },
+                {
+                  "side": "b",
+                  "scenario": {
+                    "label": "Setup B",
+                    "angle": 25,
+                    "loadWeight": 2,
+                    "loadType": "box",
+                    "frictionLevel": "high"
+                  },
+                  "firstMovingForce": 17.5,
+                  "lastStillForce": 17
+                }
+              ]
+            },
+            {
+              "challengeId": "plan_fair_test-surface-2",
+              "mode": "plan_fair_test",
+              "solved": true,
+              "firstTryCorrect": true,
+              "planAttempts": [
+                {
+                  "setup": {
+                    "label": "Setup B",
+                    "angle": 35,
+                    "loadWeight": 4,
+                    "loadType": "box",
+                    "frictionLevel": "high"
+                  },
+                  "fair": true
+                }
+              ],
+              "prediction": "b",
+              "predictionCorrect": false,
+              "trials": [
+                {
+                  "side": "a",
+                  "scenario": {
+                    "label": "Setup A",
+                    "angle": 35,
+                    "loadWeight": 4,
+                    "loadType": "box",
+                    "frictionLevel": "low"
+                  },
+                  "firstMovingForce": 26,
+                  "lastStillForce": 25.5
+                },
+                {
+                  "side": "b",
+                  "scenario": {
+                    "label": "Setup B",
+                    "angle": 35,
+                    "loadWeight": 4,
+                    "loadType": "box",
+                    "frictionLevel": "high"
+                  },
+                  "firstMovingForce": 39,
+                  "lastStillForce": 38.5
+                }
+              ]
+            },
+            {
+              "challengeId": "plan_fair_test-surface-9",
+              "mode": "plan_fair_test",
+              "solved": true,
+              "firstTryCorrect": true,
+              "planAttempts": [
+                {
+                  "setup": {
+                    "label": "Setup B",
+                    "angle": 15,
+                    "loadWeight": 6,
+                    "loadType": "box",
+                    "frictionLevel": "low"
+                  },
+                  "fair": true
+                }
+              ],
+              "prediction": "b",
+              "predictionCorrect": true,
+              "trials": [
+                {
+                  "side": "a",
+                  "scenario": {
+                    "label": "Setup A",
+                    "angle": 15,
+                    "loadWeight": 6,
+                    "loadType": "box",
+                    "frictionLevel": "high"
+                  },
+                  "firstMovingForce": 44,
+                  "lastStillForce": 43.5
+                },
+                {
+                  "side": "b",
+                  "scenario": {
+                    "label": "Setup B",
+                    "angle": 15,
+                    "loadWeight": 6,
+                    "loadType": "box",
+                    "frictionLevel": "low"
+                  },
+                  "firstMovingForce": 21,
+                  "lastStillForce": 20.5
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "mode": "explain_from_trials",
+      "generated": 4,
+      "browser": "both trials recorded; spoken panel reached",
+      "microphone": "not exercised"
+    }
+  ],
+  "errors": []
+}

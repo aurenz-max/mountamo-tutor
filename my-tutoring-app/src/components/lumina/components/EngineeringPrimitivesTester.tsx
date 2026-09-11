@@ -132,7 +132,7 @@ const PrimitiveRenderer: React.FC<{
     case 'pulley-system-builder':
       return <PulleySystemBuilder data={data as Parameters<typeof PulleySystemBuilder>[0]['data']} />;
     case 'ramp-lab':
-      return <RampLab data={data as Parameters<typeof RampLab>[0]['data']} />;
+      return <RampLab data={{ ...(data as Parameters<typeof RampLab>[0]['data']), onEvaluationSubmit }} />;
     case 'wheel-axle-explorer':
       return <WheelAxleExplorer data={data as Parameters<typeof WheelAxleExplorer>[0]['data']} />;
     case 'gear-train-builder':
@@ -800,6 +800,7 @@ const AITutorPanel: React.FC<{
 const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterProps> = ({ onBack }) => {
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('tower-stacker');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('elementary');
+  const [rampMode, setRampMode] = useState('mixed');
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
@@ -830,7 +831,7 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
             componentId: selectedPrimitive,
             topic: currentTopic,
             gradeLevel: selectedGrade,
-            config: {},
+            config: selectedPrimitive === 'ramp-lab' ? { targetEvalMode: rampMode } : {},
           },
         }),
       });
@@ -962,6 +963,14 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
             </div>
 
             {/* Topic Input */}
+            {selectedPrimitive === 'ramp-lab' && <div>
+              <label htmlFor="ramp-task" className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-400">Ramp task</label>
+              <select id="ramp-task" value={rampMode} onChange={event => setRampMode(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white">
+                <option value="mixed">Mixed investigation</option>
+                {getComponentById('ramp-lab')?.evalModes?.map(mode => <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>)}
+              </select>
+              <p className="mt-2 text-xs text-slate-400">Investigation tasks: Grades 3–5. Explain from Trials uses the microphone and live tutor.</p>
+            </div>}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
                 Topic (optional)

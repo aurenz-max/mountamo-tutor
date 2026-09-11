@@ -37,6 +37,7 @@
  * contract they mirror.
  */
 
+import { rampLabAdapter } from './rampLabAdapter';
 import {
   spokenSpansOf,
   type JudgedCueSurface,
@@ -2122,6 +2123,7 @@ const diWordProblemSetupAdapter: DiPortAdapter<WordProblemItem> = {
 };
 
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
+  'ramp-lab': rampLabAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'di-word-problem-setup': diWordProblemSetupAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'di-deduction': diDeductionAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'di-worked-procedure': diWorkedProcedureAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

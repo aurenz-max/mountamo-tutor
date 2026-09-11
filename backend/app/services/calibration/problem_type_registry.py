@@ -823,7 +823,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "ramp-lab": {
         "compare_conditions": PriorConfig(-1.0, "Compare matched ramp conditions one variable at a time"),
         "find_threshold":     PriorConfig(0.0, "Measure the least push that moves a fixed load"),
+        "plan_fair_test":     PriorConfig(0.75, "Plan a controlled ramp test isolating one requested variable"),
         "design_with_budget": PriorConfig(1.5, "Design the steepest feasible ramp under a force budget"),
+        "explain_from_trials": PriorConfig(2.5, "Explain a changed ramp condition using two recorded trial results"),
     },
     "hydraulics-lab": {
         "predict": PriorConfig(-1.0, "Predict hydraulic outcomes before testing"),

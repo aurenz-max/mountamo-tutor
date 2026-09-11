@@ -5,6 +5,7 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 
 export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   {
@@ -23,9 +24,10 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'ramp-lab',
-    description: 'Interactive inclined plane (ramp) simulation for teaching simple machines. Students explore how ramps reduce the force needed to lift objects by trading distance for effort. Adjust angle, friction, and push force to see how steeper ramps require more force. Shows real-world connections: loading docks, wheelchair ramps (ADA), dump trucks, skateboard ramps. Features multiple themes (loading_dock, dump_truck, skateboard, generic) and load types (box, barrel, wheel). Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching inclined planes and force trade-offs.',
+    description: 'Interactive inclined-plane simulation and controlled-investigation bench. Students compare ramp conditions, measure the least push that moves a load, and design within a force budget. Grades 3-5 can plan a fair test by changing only ramp angle, surface, or box mass while holding other conditions constant; record a prediction; run two trials; and explain aloud how the changed condition affected measured push using both trial records. Code owns the physics and observations; the live tutor judges spoken evidence-based comparisons. Earlier comparison and design modes support K-5 simple machines learning.',
     constraints: 'Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects, fair tests, and constraint-based engineering design. compare_conditions isolates angle, surface, or rolling/sliding in matched setups. find_threshold measures the least sufficient push. design_with_budget holds platform height fixed while students find the steepest feasible ramp. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.',
-    affordances: { representation: 'concrete', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 6 },
+    affordances: { representation: 'concrete', answers: ['manipulate', 'tap', 'spoken'], role: ['visualize', 'apply'], minutes: 8 },
+    audioInput: JUDGED_AUDIO_INPUT,
     evalModes: [
       {
         evalMode: 'compare_conditions',
@@ -44,6 +46,14 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         description: 'Use controlled trials to find the smallest push setting that makes a fixed load climb.',
       },
       {
+        evalMode: 'plan_fair_test',
+        label: 'Plan a Fair Test',
+        beta: 0.75,
+        scaffoldingMode: 3,
+        challengeTypes: ['plan_fair_test'],
+        description: 'Grades 3-5: edit a second setup to isolate one requested variable; commit the plan, predict, and collect both trials. Plan correctness is separate from prediction.',
+      },
+      {
         evalMode: 'design_with_budget',
         label: 'Design with a Force Budget',
         beta: 1.5,
@@ -51,8 +61,33 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['design_with_budget'],
         description: 'Hold the platform height fixed and design the steepest whole-degree ramp that stays within a force budget.',
       },
+      {
+        evalMode: 'explain_from_trials',
+        label: 'Explain from Trials',
+        beta: 2.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['explain_from_trials'],
+        description: 'Grades 3-5: predict, run two controlled trials, then explain the changed condition and measured push using both records. Spoken response; microphone and live tutor required.',
+      },
     ],
     supportsEvaluation: true,
+    tutoring: {
+      taskDescription: 'Ramp investigation: {{evalMode}}. Current phase: {{phase}}. Question: {{question}}. Recorded trials: {{trialCount}}. Support: {{supportTier}}. Latest feedback: {{feedback}}. During explanation the active RAMP_EVIDENCE_ITEM contract owns every spoken line and verdict. During planning, guide comparison of settings without choosing them for the learner.',
+      contextKeys: ['evalMode', 'phase', 'question', 'trialCount', 'supportTier', 'feedback'],
+      scaffoldingLevels: {
+        level1: 'What is your investigation trying to find out?',
+        level2: 'Compare the settings in A and B. Which conditions stayed the same?',
+        level3: 'A fair comparison changes one condition. After both trials, connect that condition to the two recorded results.',
+      },
+      commonStruggles: [
+        { pattern: 'The plan changes more than one condition', response: 'Ask the learner to compare every setting with the reference setup. Do not name the setting to change.' },
+        { pattern: 'A prediction disagrees with the trial results', response: 'Explain that predictions can change with evidence. Do not treat a wrong prediction as a failed fair-test plan.' },
+        { pattern: 'The learner gives a fluent explanation without using the trials', response: 'During the spoken loop follow only the active judging contract. Outside it, ask what the two records show.' },
+      ],
+      aiDirectives: [
+        { title: 'Investigation evidence boundaries', instruction: 'Never state which setup needs less push or supply force thresholds before trials. Never choose a fair setup for the learner. RAMP_PLAN_RETRY supplies a line to speak. During RAMP_EVIDENCE_ITEM use only its scripted ask and two verdict branches; judge the audio on meaning against the recorded trials. Every learner answer, including repeated answers and off-task talk, must receive a verdict beginning exactly Yes, or My turn:. Do not omit that opening or switch to general conversation. A true qualitative comparison of A with B uses both records; do not require spoken numbers. Never speak private metadata. RAMP_EVIDENCE_HEAR repeats only the question. The verdict owns completion; do not invent another question.' },
+      ],
+    },
   },
   {
     id: 'wheel-axle-explorer',

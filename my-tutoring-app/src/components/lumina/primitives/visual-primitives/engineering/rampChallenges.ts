@@ -9,6 +9,8 @@
 export type RampChallengeMode =
   | 'compare_conditions'
   | 'find_threshold'
+  | 'plan_fair_test'
+  | 'explain_from_trials'
   | 'design_with_budget';
 
 export type RampLoadType = 'box' | 'barrel' | 'wheel' | 'custom';
@@ -54,7 +56,50 @@ export interface DesignWithBudgetChallenge extends RampChallengeBase {
 export type RampChallenge =
   | CompareConditionsChallenge
   | FindThresholdChallenge
+  | RampInvestigationChallenge
   | DesignWithBudgetChallenge;
+
+export type InvestigationVariable = 'angle' | 'surface' | 'mass';
+export interface RampInvestigationChallenge extends RampChallengeBase {
+  mode: 'plan_fair_test' | 'explain_from_trials';
+  variable: InvestigationVariable;
+  scenarios: { a: RampScenario; b: RampScenario };
+}
+
+export interface RampTrial {
+  side: 'a' | 'b';
+  scenario: RampScenario;
+  firstMovingForce: number;
+  lastStillForce: number;
+}
+
+/** Record the actual setup tested; later edits cannot rewrite evidence. */
+export function measureRampTrial(side: 'a' | 'b', setup: RampScenario): RampTrial {
+  const firstMovingForce = minimumPushSetting(setup);
+  return { side, scenario: { ...setup }, firstMovingForce, lastStillForce: firstMovingForce - 0.5 };
+}
+
+export function changedRampVariables(a: RampScenario, b: RampScenario): string[] {
+  return (['angle', 'loadWeight', 'frictionLevel', 'loadType'] as const).filter(key => a[key] !== b[key]);
+}
+
+export function isFairRampTest(variable: InvestigationVariable, a: RampScenario, b: RampScenario): boolean {
+  const expected = { angle: 'angle', surface: 'frictionLevel', mass: 'loadWeight' }[variable];
+  const changed = changedRampVariables(a, b);
+  return changed.length === 1 && changed[0] === expected;
+}
+
+export interface RampInvestigationResult {
+  challengeId: string;
+  mode: 'plan_fair_test' | 'explain_from_trials';
+  solved: boolean;
+  firstTryCorrect: boolean;
+  planAttempts: Array<{ setup: RampScenario; fair: boolean }>;
+  prediction: 'a' | 'b' | 'same';
+  predictionCorrect: boolean;
+  trials: RampTrial[];
+  explanation?: { solved: boolean; corrections: number; score: number };
+}
 
 export const RAMP_FRICTION_COEFFICIENTS: Record<RampFrictionLevel, number> = {
   none: 0,
@@ -146,6 +191,7 @@ const designChallenge = (
 };
 
 const CHALLENGE_POOL: RampChallenge[] = [
+  ...buildRampInvestigations(),
   // compare_conditions: matched pairs change exactly one causal variable.
   {
     id: 'compare-wheel-box',
@@ -296,10 +342,22 @@ const CHALLENGE_POOL: RampChallenge[] = [
 export const selectRampChallenges = (
   modes: readonly string[],
   count = 4,
+  variable?: InvestigationVariable,
 ): RampChallenge[] => {
   const wanted = new Set(modes);
-  const selected = CHALLENGE_POOL.filter((challenge) => wanted.has(challenge.mode));
-  return (selected.length > 0 ? selected : CHALLENGE_POOL).slice(0, count);
+  const selected = CHALLENGE_POOL.filter((challenge) => wanted.has(challenge.mode)
+    && (!variable || !('variable' in challenge) || challenge.variable === variable));
+  // Round-robin a blend; taking the first N pool entries starves later modes.
+  const buckets = Array.from(wanted).map(mode => selected.filter(ch => ch.mode === mode));
+  const result: RampChallenge[] = [];
+  for (let i = 0; result.length < count; i += 1) {
+    let added = false;
+    for (const bucket of buckets) {
+      if (bucket[i] && result.length < count) { result.push(bucket[i]); added = true; }
+    }
+    if (!added) break;
+  }
+  return result;
 };
 
 /** Mixed sessions rotate task identities before repeating any one mode. */
@@ -307,7 +365,9 @@ export const selectMixedRampChallenges = (count = 6): RampChallenge[] => {
   const order: RampChallengeMode[] = [
     'compare_conditions',
     'find_threshold',
+    'plan_fair_test',
     'design_with_budget',
+    'explain_from_trials',
   ];
   const buckets = order.map((mode) => CHALLENGE_POOL.filter((challenge) => challenge.mode === mode));
   const selected: RampChallenge[] = [];
@@ -324,4 +384,31 @@ export const selectMixedRampChallenges = (count = 6): RampChallenge[] => {
   return selected;
 };
 
-export const DEFAULT_RAMP_CHALLENGES = selectMixedRampChallenges(6);
+export const DEFAULT_RAMP_CHALLENGES = selectRampChallenges(
+  ['compare_conditions', 'find_threshold', 'design_with_budget'], 6,
+);
+
+function buildRampInvestigations(): RampInvestigationChallenge[] {
+  const cases: Array<{ variable: InvestigationVariable; a: RampScenario; b: RampScenario }> = [
+    { variable: 'surface', a: scenario('Setup A', 25, 4, 'box', 'low'), b: scenario('Setup B', 25, 4, 'box', 'high') },
+    { variable: 'angle', a: scenario('Setup A', 35, 4, 'box', 'medium'), b: scenario('Setup B', 15, 4, 'box', 'medium') },
+    { variable: 'mass', a: scenario('Setup A', 25, 2, 'box', 'medium'), b: scenario('Setup B', 25, 6, 'box', 'medium') },
+    { variable: 'surface', a: scenario('Setup A', 15, 6, 'box', 'high'), b: scenario('Setup B', 15, 6, 'box', 'low') },
+    { variable: 'angle', a: scenario('Setup A', 15, 2, 'box', 'low'), b: scenario('Setup B', 35, 2, 'box', 'low') },
+    { variable: 'mass', a: scenario('Setup A', 35, 6, 'box', 'low'), b: scenario('Setup B', 35, 2, 'box', 'low') },
+  ];
+  const expanded = cases.flatMap(entry => [entry, ...[1, 2].map(variation => {
+    const tweak = variation === 1
+      ? entry.variable === 'mass' ? { angle: entry.a.angle === 25 ? 35 : 25 } : { loadWeight: entry.a.loadWeight === 4 ? 2 : 4 }
+      : entry.variable === 'surface' ? { angle: entry.a.angle === 25 ? 35 : 25 } : { frictionLevel: (entry.a.frictionLevel === 'low' ? 'medium' : 'low') as RampFrictionLevel };
+    return { ...entry, a: { ...entry.a, ...tweak }, b: { ...entry.b, ...tweak } };
+  })]);
+  return (['plan_fair_test', 'explain_from_trials'] as const).flatMap(mode => expanded.map(({ variable, a, b }, i) => ({
+    id: `${mode}-${variable}-${i}`, mode, variable,
+    title: mode === 'plan_fair_test' ? 'Plan your investigation' : 'What does your evidence show?',
+    brief: `Investigate how ${variable === 'mass' ? 'the mass of the box' : variable === 'angle' ? 'the ramp angle' : 'the ramp surface'} affects the push needed to start the box moving uphill.`,
+    hint: mode === 'plan_fair_test' ? 'A fair test changes one thing. Compare every setting before committing.' : 'Use both trial records. Tell what changed and compare the measured push.',
+    explainOnSolve: 'A controlled comparison connects a change in one condition to the measured result.',
+    scenarios: { a, b: mode === 'plan_fair_test' ? { ...a, label: 'Setup B' } : b },
+  })));
+}

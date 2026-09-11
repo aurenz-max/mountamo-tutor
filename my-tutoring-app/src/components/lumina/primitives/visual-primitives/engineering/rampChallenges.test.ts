@@ -14,7 +14,9 @@ import {
 const ALL_MODES: RampChallengeMode[] = [
   'compare_conditions',
   'find_threshold',
+  'plan_fair_test',
   'design_with_budget',
+  'explain_from_trials',
 ];
 
 describe('ramp challenge pool -- structure', () => {
@@ -34,7 +36,7 @@ describe('ramp challenge pool -- structure', () => {
   it('covers all modes before repeating on the mixed path', () => {
     const mixed = selectMixedRampChallenges(6);
     expect(mixed).toHaveLength(6);
-    expect(new Set(mixed.slice(0, 3).map((challenge) => challenge.mode))).toEqual(new Set(ALL_MODES));
+    expect(new Set(mixed.slice(0, 5).map((challenge) => challenge.mode))).toEqual(new Set(ALL_MODES));
     expect(new Set(mixed.map((challenge) => challenge.id)).size).toBe(mixed.length);
   });
 });

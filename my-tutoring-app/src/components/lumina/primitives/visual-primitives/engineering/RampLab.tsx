@@ -7,6 +7,7 @@ import {
   type RampLabMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import RampInvestigation from './RampInvestigation';
 import {
   LuminaButton,
   LuminaCard,
@@ -28,6 +29,7 @@ import {
   type RampFrictionLevel,
   type RampLoadType,
   type RampScenario,
+  type RampInvestigationResult,
 } from './rampChallenges';
 
 export { selectMixedRampChallenges, selectRampChallenges } from './rampChallenges';
@@ -56,6 +58,8 @@ export interface RampLabData {
   customLoadLabel?: string;
   challenges?: RampChallenge[];
   freeExplore?: boolean;
+  gradeLevel?: string;
+  supportTier?: 'easy' | 'medium' | 'hard';
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -74,6 +78,8 @@ type Feedback = { correct: boolean; message: string };
 const modeLabel: Record<RampChallengeMode, string> = {
   compare_conditions: 'FAIR TEST',
   find_threshold: 'MEASURE THE THRESHOLD',
+  plan_fair_test: 'PLAN A FAIR TEST',
+  explain_from_trials: 'EXPLAIN YOUR EVIDENCE',
   design_with_budget: 'ENGINEERING DESIGN',
 };
 
@@ -98,7 +104,7 @@ const scenarioForChallenge = (
   fallback: RampScenario,
 ): RampScenario => {
   if (!challenge) return fallback;
-  if (challenge.mode === 'compare_conditions') return challenge.scenarios[compareSide];
+  if ('scenarios' in challenge) return challenge.scenarios[compareSide];
   return challenge.scenario;
 };
 
@@ -162,6 +168,8 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [hintVisible, setHintVisible] = useState(false);
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const investigationsRef = useRef<RampInvestigationResult[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const totalChecksRef = useRef(0);
@@ -279,6 +287,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
   }, [isAnimating, canMoveUp, canSlideDown, netForce]);
 
   const markSolved = (challenge: RampChallenge) => {
+    setCompletedIds(previous => new Set(previous).add(challenge.id));
     if (!solvedIds.has(challenge.id)) {
       if (!wrongChallengeIdsRef.current.has(challenge.id)) firstTryCorrectRef.current += 1;
       setSolvedIds((previous) => new Set(previous).add(challenge.id));
@@ -293,6 +302,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
 
   const handleCheck = () => {
     if (!currentChallenge) return;
+    if (currentChallenge.mode === 'plan_fair_test' || currentChallenge.mode === 'explain_from_trials') return;
     totalChecksRef.current += 1;
     experimentCountRef.current += 1;
     if (currentChallenge.mode === 'compare_conditions') {
@@ -325,6 +335,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
       }
       return;
     }
+    if (currentChallenge.mode !== 'design_with_budget') return;
     variablesExploredRef.current.add('angle');
     variablesExploredRef.current.add('ramp_length');
     const answer = maxWorkableAngle(currentChallenge.scenario, currentChallenge.forceBudget, currentChallenge.angleRange);
@@ -364,7 +375,9 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
       frictionCoefficient,
       predictedAcceleration: 0,
       actualAcceleration: canMoveUp ? netForce / loadWeight : 0,
-      predictionAccuracy: Math.round((firstTryCorrectRef.current / Math.max(challenges.length, 1)) * 100),
+      predictionAccuracy: investigationsRef.current.length
+        ? Math.round(100 * investigationsRef.current.filter(result => result.predictionCorrect).length / investigationsRef.current.length)
+        : Math.round((firstTryCorrectRef.current / Math.max(challenges.length, 1)) * 100),
       experimentCount: experimentCountRef.current,
       variablesExplored: Array.from(variablesExploredRef.current),
       challengesSolved: solved,
@@ -376,6 +389,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
       solvedChallengeIds: Array.from(solvedIds),
       modes: sessionModes,
       checksMade: totalChecksRef.current,
+      investigations: investigationsRef.current,
     });
     SoundManager.playStreak();
   };
@@ -393,7 +407,19 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
   const diagnosticsRevealed = !isChallengeSession || feedback?.correct === true
     || currentChallenge?.mode === 'compare_conditions' && feedback !== null;
   const currentSolved = !!currentChallenge && solvedIds.has(currentChallenge.id);
-  const allSolved = isChallengeSession && solvedIds.size === challenges.length;
+  const allCompleted = isChallengeSession && completedIds.size === challenges.length;
+  const isInvestigation = currentChallenge?.mode === 'plan_fair_test' || currentChallenge?.mode === 'explain_from_trials';
+  const recordInvestigation = (result: RampInvestigationResult) => {
+    if (investigationsRef.current.some(r => r.challengeId === result.challengeId)) return;
+    investigationsRef.current.push(result);
+    totalChecksRef.current += result.mode === 'plan_fair_test' ? result.planAttempts.length
+      : (result.explanation?.corrections ?? 0) + (result.explanation?.solved ? 1 : 0);
+    experimentCountRef.current += result.trials.length;
+    if (result.firstTryCorrect) firstTryCorrectRef.current += 1;
+    if (result.solved) setSolvedIds(previous => new Set(previous).add(result.challengeId));
+    setCompletedIds(previous => new Set(previous).add(result.challengeId));
+    if (currentChallenge && 'variable' in currentChallenge) variablesExploredRef.current.add(currentChallenge.variable);
+  };
 
   return (
     <div className={`mx-auto my-12 w-full max-w-5xl animate-fade-in ${className || ''}`}>
@@ -451,6 +477,16 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
             </LuminaPanel>
           )}
 
+          {isInvestigation && <>
+            <RampInvestigation key={currentChallenge.id} challenge={currentChallenge}
+              instanceId={instanceId || fallbackInstanceIdRef.current} exhibitId={exhibitId}
+              gradeLevel={data.gradeLevel} supportTier={data.supportTier} onFinished={recordInvestigation} />
+            <div className="flex gap-3">
+              {completedIds.has(currentChallenge.id) && challengeIndex < challenges.length - 1 && <LuminaButton tone="primary" onClick={handleNext}>Next Challenge</LuminaButton>}
+              {allCompleted && <LuminaButton tone="primary" onClick={handleFinish} disabled={hasSubmitted}>{hasSubmitted ? 'Session Submitted' : 'Finish Session'}</LuminaButton>}
+            </div>
+          </>}
+          {!isInvestigation && <>
           <div className="relative overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-950/60">
             <div className={`absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full border px-4 py-2 font-mono text-xs ${
               diagnosticsRevealed
@@ -581,7 +617,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
                 <LuminaButton tone="ghost" onClick={() => setHintVisible((visible) => !visible)}>{hintVisible ? 'Hide Hint' : 'Hint'}</LuminaButton>
                 <LuminaButton tone="subtle" onClick={() => resetInteraction(currentChallenge)}>Reset Challenge</LuminaButton>
                 {currentSolved && challengeIndex < challenges.length - 1 && <LuminaButton tone="primary" onClick={handleNext}>Next Challenge</LuminaButton>}
-                {allSolved && <LuminaButton tone="primary" onClick={handleFinish} disabled={hasSubmitted}>{hasSubmitted ? 'Session Submitted' : 'Finish Session'}</LuminaButton>}
+                {allCompleted && <LuminaButton tone="primary" onClick={handleFinish} disabled={hasSubmitted}>{hasSubmitted ? 'Session Submitted' : 'Finish Session'}</LuminaButton>}
               </>
             ) : (
               <>
@@ -601,6 +637,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
               </p>
             </LuminaPanel>
           )}
+          </>}
         </LuminaCardContent>
       </LuminaCard>
     </div>
