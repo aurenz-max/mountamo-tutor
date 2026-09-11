@@ -431,6 +431,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "describe":          PriorConfig(3.0, "Select position word for shown arrangement"),
         "place_between":     PriorConfig(3.5, "Place an object between two reference objects"),
         "follow_directions": PriorConfig(4.0, "Multi-step spatial placement"),
+        "describe_scene":    PriorConfig(4.5, "Describe a fixed-perspective spatial relation aloud"),
     },
     "shape-composer": {
         "free-create":     PriorConfig(-1.0, "Open-ended shape composition exploration"),

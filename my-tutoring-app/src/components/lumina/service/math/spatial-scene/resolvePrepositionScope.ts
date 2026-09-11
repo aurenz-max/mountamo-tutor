@@ -36,9 +36,8 @@
  * - Returns null on any parse/validation failure, so a resolver outage degrades to
  *   exactly today's behavior → no regression.
  * - `unsupported` is honest saturation, not silent truncation: words the lesson asked
- *   for that a 3×3 static grid cannot express (viewer-relative "in front of"/"behind"
- *   and the path class "through"/"around"/"across") are reported back so the caller can
- *   LOG the gap rather than pretend it was served. Queued in qa/la-k2-grammar/BACKLOG.md.
+ *   for that this primitive cannot express (the path class "through"/"around"/"across")
+ *   are reported back so the caller can LOG the gap rather than pretend it was served.
  *
  * 2026-08-05 (item 1) — containment `in` and two-reference `between` moved OUT of
  * `unsupported` and into their own eval modes (`place_in`, `place_between`). They are
@@ -46,6 +45,9 @@
  * which is why it forks into a new mode rather than editing `place`) and `between`
  * needs a SECOND reference the single-reference checker cannot take. So they never join
  * the relative window the legacy modes use — see RELATIVE_POSITIONS below.
+ * 2026-09-09 — viewer-relative `in_front_of`/`behind` moved into the fixed-perspective
+ * spoken `describe_scene` mode. Path words remain outside this primitive and route to
+ * `spatial-path` at the catalog level.
  */
 
 import { Type, Schema } from "@google/genai";
@@ -76,7 +78,7 @@ export type RelativePosition = (typeof RELATIVE_POSITIONS)[number];
  * - `between` — needs TWO reference objects; `positionHolds` takes one. Served by eval
  *   mode `place_between`, which judges the cell, not a word.
  */
-export const MODE_POSITIONS = ["in", "between"] as const;
+export const MODE_POSITIONS = ["in", "between", "in_front_of", "behind"] as const;
 
 export type ModePosition = (typeof MODE_POSITIONS)[number];
 
@@ -94,6 +96,8 @@ export type SupportedPosition = RelativePosition | ModePosition;
 export const MODE_FOR_POSITION: Record<ModePosition, string> = {
   in: "place_in",
   between: "place_between",
+  in_front_of: "describe_scene",
+  behind: "describe_scene",
 };
 
 /** Upper sanity bound (house rule: bound ALL schema arrays). */
@@ -118,28 +122,30 @@ export const SUPPORTED_POSITION_SEMANTICS: Record<SupportedPosition, string> = {
   under: '"under" = directly BENEATH and TOUCHING the reference: target row = reference row + 1, SAME column (rows must be adjacent). Use "under" only when the objects touch; if there is a gap, the word is "below".',
   in: '"in" = INSIDE the container: the object goes in the SAME cell the container occupies, drawn nested inside it. Not near it, not on top of it — inside it.',
   between: '"between" = in a cell with one reference object on EACH side: all three share the same row (or the same column) and the target sits in the empty cell separating the two references.',
+  in_front_of: '"in_front_of" = target is nearer the fixed YOU viewpoint than the reference object in a perspective scene.',
+  behind: '"behind" = target is farther from the fixed YOU viewpoint than the reference object in a perspective scene.',
 };
 
 export interface PrepositionScope {
   /** Supported position words the lesson explicitly asked for. Empty = no request. */
   requested: SupportedPosition[];
-  /** Position words the lesson asked for that this grid cannot express (logged, not served). */
+  /** Position words the lesson asked for that this primitive cannot express (logged, not served). */
   unsupported: string[];
 }
 
 /**
  * The extra eval modes a lesson's request implies.
  *
- * `in` and `between` are NOT relative-window words (see MODE_POSITIONS), so a lesson
- * asking for them is asking for a challenge TYPE, not a vocabulary widening. In a
+ * These are NOT relative-window words (see MODE_POSITIONS), so a lesson asking for one
+ * is asking for a challenge TYPE, not a vocabulary widening. In a
  * blended session (no pinned mode) this is what turns the old "we cannot express that"
  * log line into served content.
  */
 export function resolveRequestedModes(resolved: PrepositionScope | null): string[] {
   if (!resolved) return [];
-  return MODE_POSITIONS
+  return Array.from(new Set(MODE_POSITIONS
     .filter((p) => (resolved.requested as readonly string[]).includes(p))
-    .map((p) => MODE_FOR_POSITION[p]);
+    .map((p) => MODE_FOR_POSITION[p])));
 }
 
 // ---------------------------------------------------------------------------
@@ -373,7 +379,7 @@ const prepositionScopeSchema: Schema = {
       maxItems: String(MAX_UNSUPPORTED),
       description:
         "Position/preposition words the text asks for that are NOT in the supported list "
-        + "(for example: in front of, behind, through, around, across). "
+        + "(for example: through, around, across). "
         + "Empty array if there are none.",
       items: { type: Type.STRING, description: "One requested word not in the supported list." },
     },
@@ -404,8 +410,8 @@ ${scope.objectiveText ? `LEARNING OBJECTIVE: "${scope.objectiveText}"\n` : ''}${
 
 Report ONLY the position words the text above actually names. Do not infer, do not fill in a sensible default, do not add words that merely relate to the topic.
 
-- requested: which of these supported words the text asks the student to practise — ${SUPPORTED_POSITIONS.join(", ")}. Map natural phrasings onto this list ("on top of" -> on, "underneath"/"beneath" -> under, "next to"/"nextto" -> next_to, "to the left of" -> left_of, "inside"/"into" -> in, "in the middle of"/"in between" -> between). If the text names NO particular position words, return an empty array.
-- unsupported: any other position or preposition words the text asks for that are not in that supported list (for example: in front of, behind, through, around, across). Empty array if there are none.`;
+- requested: which of these supported words the text asks the student to practise — ${SUPPORTED_POSITIONS.join(", ")}. Map natural phrasings onto this list ("on top of" -> on, "underneath"/"beneath" -> under, "next to"/"nextto" -> next_to, "to the left of" -> left_of, "inside"/"into" -> in, "in the middle of"/"in between" -> between, "in front of" -> in_front_of). If the text names NO particular position words, return an empty array.
+- unsupported: any other position or preposition words the text asks for that are not in that supported list (for example: through, around, across). Empty array if there are none.`;
 
     const result = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",

@@ -8,8 +8,7 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from "../scopeContext";
 import {
-  resolveEvalModeConstraint,
-  logEvalModeResolution,
+  resolveEvalModes,
   type ChallengeTypeDoc,
 } from "../evalMode";
 import {
@@ -48,6 +47,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Provide correctPosition + 3 distractors in options.`,
     schemaDescription: "'describe' (select position word for arrangement)",
   },
+  describe_scene: {
+    promptDoc:
+      `"describe_scene": Spoken production from a fixed viewer perspective. `
+      + `The scene stays visible, the relation label stays hidden until an attempt, and the child `
+      + `must name both the spatial relation and reference object aloud.`,
+    schemaDescription: "'describe_scene' (say a scene relation aloud)",
+  },
   follow_directions: {
     promptDoc:
       `"follow_directions": Multi-step placement: 'Put red ball above box AND blue ball beside tree'. `
@@ -75,8 +81,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // ---------------------------------------------------------------------------
 
 type ChallengeType =
-  | "identify" | "place" | "describe" | "follow_directions"
+  | "identify" | "place" | "describe" | "describe_scene" | "follow_directions"
   | "place_in" | "place_between";
+
+const ALL_CHALLENGE_TYPES = Object.keys(CHALLENGE_TYPE_DOCS) as ChallengeType[];
 
 /** The four modes that shipped before the containment/two-reference fork. */
 const RELATIVE_CHALLENGE_TYPES: ChallengeType[] = [
@@ -146,6 +154,15 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
           : tier === "hard"
             ? "Hints must NOT name the position word; ask the student to compare the two objects' rows/columns themselves and justify the relationship."
             : "Hints point to which two objects to compare without naming the position word.",
+      );
+      break;
+    case "describe_scene":
+      promptLines.push(
+        tier === "easy"
+          ? "Keep the YOU viewpoint marker and all object names visible; invite a short relation phrase naming the reference object."
+          : tier === "hard"
+            ? "Keep only the fixed YOU viewpoint and object identities; do not provide sentence frames or relation labels before the attempt."
+            : "Keep the fixed YOU viewpoint and object names visible, but provide no relation-word choices.",
       );
       break;
     case "place":
@@ -1021,6 +1038,94 @@ CHALLENGE TYPE: follow_directions — multi-step placement.
   });
 }
 
+const PERSPECTIVE_RELATIONS = ["left_of", "right_of", "in_front_of", "behind"] as const;
+type PerspectiveRelation = (typeof PERSPECTIVE_RELATIONS)[number];
+
+export function perspectiveRelationHolds(
+  relation: PerspectiveRelation,
+  target: { row: number; col: number },
+  reference: { row: number; col: number },
+): boolean {
+  switch (relation) {
+    case "in_front_of": return target.row > reference.row && target.col === reference.col;
+    case "behind": return target.row < reference.row && target.col === reference.col;
+    case "left_of": return target.col < reference.col && target.row === reference.row;
+    case "right_of": return target.col > reference.col && target.row === reference.row;
+  }
+}
+
+const PERSPECTIVE_PAIRS: Array<{
+  target: [string, string];
+  reference: [string, string];
+  backdrop: [[string, string], [string, string]];
+}> = [
+  { target: ["cat", "\u{1F431}"], reference: ["tree", "\u{1F333}"], backdrop: [["bench", "\u{1FA91}"], ["flower", "\u{1F338}"]] },
+  { target: ["ball", "\u{26BD}"], reference: ["box", "\u{1F4E6}"], backdrop: [["house", "\u{1F3E0}"], ["star", "\u{2B50}"]] },
+  { target: ["dog", "\u{1F415}"], reference: ["car", "\u{1F697}"], backdrop: [["tree", "\u{1F333}"], ["flower", "\u{1F338}"]] },
+  { target: ["star", "\u{2B50}"], reference: ["house", "\u{1F3E0}"], backdrop: [["cat", "\u{1F431}"], ["tree", "\u{1F333}"]] },
+];
+
+function perspectivePositions(relation: PerspectiveRelation): {
+  target: { row: number; col: number };
+  reference: { row: number; col: number };
+} {
+  switch (relation) {
+    case "in_front_of": return { target: { row: 2, col: 1 }, reference: { row: 0, col: 1 } };
+    case "behind": return { target: { row: 0, col: 1 }, reference: { row: 2, col: 1 } };
+    case "left_of": return { target: { row: 1, col: 0 }, reference: { row: 1, col: 2 } };
+    case "right_of": return { target: { row: 1, col: 2 }, reference: { row: 1, col: 0 } };
+  }
+}
+
+/** Code-owned perspective scenes: the visible geometry and judged relation cannot drift. */
+export function buildPerspectiveDescriptionChallenges(
+  requested: readonly string[] = [],
+  count = 4,
+): SpatialSceneChallenge[] {
+  const scoped = PERSPECTIVE_RELATIONS.filter((relation) => requested.includes(relation));
+  const relations = scoped.length > 0 ? scoped : [...PERSPECTIVE_RELATIONS];
+  return Array.from({ length: count }, (_, index) => {
+    const relation = relations[index % relations.length];
+    const pair = PERSPECTIVE_PAIRS[index % PERSPECTIVE_PAIRS.length];
+    const positions = perspectivePositions(relation);
+    const targetObject: SceneObject = {
+      name: pair.target[0], image: pair.target[1], position: positions.target,
+    };
+    const referenceObject: SceneObject = {
+      name: pair.reference[0], image: pair.reference[1], position: positions.reference,
+    };
+    const occupied = new Set([
+      `${positions.target.row},${positions.target.col}`,
+      `${positions.reference.row},${positions.reference.col}`,
+    ]);
+    const backdropCells = [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 2 }]
+      .filter((cell) => !occupied.has(`${cell.row},${cell.col}`))
+      .slice(0, 2);
+    const sceneObjects = [
+      targetObject,
+      referenceObject,
+      ...pair.backdrop.map(([name, image], backdropIndex) => ({
+        name,
+        image,
+        position: backdropCells[backdropIndex] ?? { row: backdropIndex, col: backdropIndex * 2 },
+      })),
+    ];
+    const spokenRelation = relation.replaceAll("_", " ");
+    return {
+      id: `perspective-${index + 1}`,
+      type: "describe_scene",
+      instruction: `Look from the YOU arrow. Describe where the ${targetObject.name} is compared with the ${referenceObject.name}.`,
+      hint: "Name the relation and the object you are comparing with.",
+      sceneObjects,
+      targetObject,
+      correctPosition: relation,
+      referenceObjectName: referenceObject.name,
+      scenePerspective: "viewer_depth",
+      modelDescription: `The ${targetObject.name} is ${spokenRelation} the ${referenceObject.name}.`,
+    };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Fallbacks (used if all LLM calls fail)
 // ---------------------------------------------------------------------------
@@ -1073,6 +1178,7 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
     // deliberately absent. Answer is not slot 0.
     options: ["beside", "next_to", "above", "below"],
   },
+  describe_scene: buildPerspectiveDescriptionChallenges([], 1)[0],
   place_in: {
     id: "c1", type: "place_in",
     instruction: "Put the ball in the box!",
@@ -1125,6 +1231,8 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
 
 type SpatialSceneConfig = Partial<{
     targetEvalMode?: string;
+    intent?: string;
+    objectiveText?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
      * Second axis of the two-field contract: targetEvalMode = which skill/relation,
@@ -1141,28 +1249,23 @@ export const generateSpatialScene = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SpatialSceneConfig;
   // -- Resolve eval mode --
-  // The pin may be a BLEND ("place_in|place|place_between") — resolveLessonEvalModes
-  // emits that syntax and the published LA004-01-F objective measurably produces it.
-  // `resolveEvalModeConstraint` matches ONE key exactly, so a blend pin used to fall
-  // through to "generate every mode"; with six modes that is a 17-challenge session
-  // instead of the three the curator chose. Parsed here rather than in the shared
-  // helper, which ~60 other generators depend on.
-  const pin = config?.targetEvalMode?.trim();
-  const pinKeys = pin && pin !== "mixed" ? pin.split("|").map((k) => k.trim()).filter(Boolean) : [];
-  const pinConstraints = pinKeys
-    .map((k) => resolveEvalModeConstraint("spatial-scene", k, CHALLENGE_TYPE_DOCS))
-    .filter((c): c is NonNullable<typeof c> => c !== null);
-  const evalConstraint = pinConstraints.length === 1 ? pinConstraints[0] : null;
-  logEvalModeResolution("SpatialScene", pin, evalConstraint);
-  const pinnedTypes = pinConstraints.length
-    ? Array.from(new Set(pinConstraints.flatMap((c) => c.allowedTypes)))
-    : null;
-  if (pinConstraints.length > 1) {
-    console.log(
-      `[SpatialScene] evalMode blend: [${pinConstraints.map((c) => c.definition.evalMode).join(" + ")}] `
-      + `→ types [${pinnedTypes!.join(", ")}]`,
-    );
-  }
+  // The shared resolver owns explicit single/blend pins and intent routing. This
+  // generator already uses one schema per challenge family, so dispatching only the
+  // resolved sub-generators is the schema constraint (there is no shared type enum).
+  const requestedEvalMode = ctx.targetEvalMode ?? config.targetEvalMode;
+  const resolution = await resolveEvalModes(
+    "spatial-scene",
+    {
+      targetEvalMode: requestedEvalMode,
+      intent: ctx.intent ?? config.intent,
+      objectiveText: ctx.objective.text ?? config.objectiveText,
+    },
+    CHALLENGE_TYPE_DOCS,
+  );
+  console.log(
+    `[SpatialScene] modes: ${resolution ? `${resolution.modes.map((mode) => mode.evalMode).join("+")} (${resolution.source})` : "mixed"} `
+    + `→ types [${(resolution?.allowedTypes ?? ["all"]).join(", ")}]`,
+  );
 
   // -- Determine gradeBand (needed BEFORE dispatch: it seeds the position window) --
   const gl = gradeLevel.toLowerCase();
@@ -1195,17 +1298,18 @@ export const generateSpatialScene = async (
   // In a BLENDED session (nothing pinned) a lesson that named them gets that mode; a
   // lesson that did not — every math K.G.1 lesson — keeps exactly the four it had.
   const requestedModes = resolveRequestedModes(prepositionScope);
-  const allowedTypes = pinnedTypes ?? [...RELATIVE_CHALLENGE_TYPES, ...requestedModes];
-  if (!pinnedTypes && requestedModes.length) {
+  const explicitMixed = requestedEvalMode?.trim() === "mixed";
+  const allowedTypes = resolution?.allowedTypes
+    ?? (explicitMixed ? ALL_CHALLENGE_TYPES : [...RELATIVE_CHALLENGE_TYPES, ...requestedModes]);
+  if (!resolution && requestedModes.length) {
     console.log(`[SpatialScene] Lesson request adds mode(s) [${requestedModes.join(", ")}] to the blend`);
   }
 
   // -- Resolve support tier (drives application; pinnedType only shapes prompt tone) --
-  const supportTier = normalizeSupportTier(config?.difficulty);
-  const pinnedType =
-    evalConstraint?.allowedTypes.length === 1
-      ? (evalConstraint.allowedTypes[0] as ChallengeType)
-      : undefined;
+  const supportTier = normalizeSupportTier(ctx.supportTier ?? config?.difficulty);
+  const pinnedType = resolution?.modes.length === 1 && resolution.allowedTypes.length === 1
+    ? (resolution.allowedTypes[0] as ChallengeType)
+    : undefined;
   const tierScaffold =
     pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
   // Authoritative scope (topic + objective + intent) folded into the threaded
@@ -1234,6 +1338,11 @@ export const generateSpatialScene = async (
       generateIdentifyDescribe(topic, gradeLevel, theme, "describe", tierSection, sharedContext, positionWindow)
         .catch((e) => { console.error("[SpatialScene] describe failed:", e); return []; }),
     );
+  }
+  if (allowedTypes.includes("describe_scene")) {
+    generators.push(Promise.resolve(
+      buildPerspectiveDescriptionChallenges(prepositionScope?.requested ?? [], 4),
+    ));
   }
   if (allowedTypes.includes("place")) {
     generators.push(
@@ -1279,7 +1388,7 @@ export const generateSpatialScene = async (
   // STRUCTURE; the LLM only chose the scene/numbers. The checker reads
   // correctPosition/correctCell only — never these show* flags — so withdrawing
   // a scaffold can never leak or invalidate the answer.
-  if (supportTier) {
+  if (supportTier && pinnedType) {
     challenges = challenges.map((ch) => {
       const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
       return {
@@ -1292,7 +1401,7 @@ export const generateSpatialScene = async (
     });
     console.log(
       `[SpatialScene] Support tier "${supportTier}" applied per-challenge `
-      + `(${pinnedType ? `single-mode ${pinnedType}` : "blended"}) → `
+      + `(single-mode ${pinnedType}) → `
       + `grid=${supportTier !== "hard"}, labels=${supportTier !== "hard"}, positionHints=${supportTier === "easy"}`,
     );
   }

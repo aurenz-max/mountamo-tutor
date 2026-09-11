@@ -9,6 +9,7 @@ import {
   LuminaCardContent,
   LuminaBadge,
   LuminaActionButton,
+  LuminaPanel,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -20,6 +21,13 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useJudgedScriptRunner } from '../../../hooks/useJudgedScriptRunner';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import {
+  buildSpatialDescriptionItems,
+  modelSpatialDescription,
+  spatialSceneDescriptionPack,
+} from './spatialSceneDescriptionScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -37,7 +45,7 @@ export interface SceneObject {
 
 export interface SpatialSceneChallenge {
   id: string;
-  type: 'identify' | 'place' | 'describe' | 'follow_directions' | 'place_in' | 'place_between';
+  type: 'identify' | 'place' | 'describe' | 'describe_scene' | 'follow_directions' | 'place_in' | 'place_between';
   instruction: string;
 
   // Scene layout
@@ -61,6 +69,11 @@ export interface SpatialSceneChallenge {
 
   /** Second reference object — `place_between` only (the checker is still cell-based). */
   referenceObjectName2?: string;
+
+  // describe_scene: row 0 is farthest from the fixed YOU viewpoint; larger
+  // rows are nearer the viewer. The relation/model stay hidden until an attempt.
+  scenePerspective?: 'viewer_depth';
+  modelDescription?: string;
 
   // describe — select the right position word for the shown arrangement
   // (reuses correctPosition + options)
@@ -114,6 +127,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   place: { label: 'Place', icon: '📍', accentColor: 'purple' },
   describe: { label: 'Describe', icon: '💬', accentColor: 'emerald' },
   place_between: { label: 'Between', icon: '↔️', accentColor: 'pink' },
+  describe_scene: { label: 'Say the Relation', icon: '🎙️', accentColor: 'cyan' },
   follow_directions: { label: 'Directions', icon: '🗺️', accentColor: 'orange' },
 };
 
@@ -133,6 +147,96 @@ const POSITION_LABELS: Record<PositionWord, string> = {
   in_front_of: 'In front of',
   behind: 'Behind',
   in: 'In',
+};
+
+interface PerspectiveSceneProps {
+  challenge: SpatialSceneChallenge;
+  revealRelation?: boolean;
+}
+
+/** Fixed viewer-relative scene: row 0 is far, row 2 is nearest the YOU marker. */
+const PerspectiveScene: React.FC<PerspectiveSceneProps> = ({ challenge, revealRelation = false }) => {
+  const targetName = challenge.targetObject.name;
+  const referenceName = challenge.referenceObjectName;
+  return (
+    <div className="relative mx-auto h-72 w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-sky-950/50 via-emerald-950/25 to-slate-950/80 p-4">
+      <div className="absolute inset-x-8 top-12 h-px bg-white/10" />
+      <div className="absolute inset-x-5 top-32 h-px bg-white/10" />
+      <div className="absolute inset-x-2 top-52 h-px bg-white/10" />
+      <span className="absolute left-3 top-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300">Farther away</span>
+      {challenge.sceneObjects.map((object) => {
+        const nearScale = 0.72 + object.position.row * 0.16;
+        const highlighted = revealRelation && (object.name === targetName || object.name === referenceName);
+        return (
+          <div
+            key={`${object.name}-${object.position.row}-${object.position.col}`}
+            className={`absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-2xl px-3 py-2 transition-all ${highlighted ? 'ring-4 ring-cyan-300 bg-cyan-300/15 shadow-lg shadow-cyan-400/20' : ''}`}
+            style={{
+              left: `${18 + object.position.col * 32}%`,
+              top: `${24 + object.position.row * 27}%`,
+              transform: `translate(-50%, -50%) scale(${nearScale})`,
+              zIndex: object.position.row + 1,
+            }}
+          >
+            <span className="text-4xl drop-shadow-lg" role="img" aria-label={object.name}>{object.image}</span>
+            <span className="mt-1 rounded-full bg-slate-950/75 px-2 py-0.5 text-xs text-slate-100">{object.name}</span>
+          </div>
+        );
+      })}
+      <div className="absolute inset-x-0 bottom-2 flex flex-col items-center text-cyan-200" aria-label="Viewer position">
+        <span className="text-xl">↑</span>
+        <span className="rounded-full border border-cyan-300/40 bg-cyan-950/80 px-3 py-1 text-xs font-bold tracking-wide">YOU — LOOK THIS WAY</span>
+      </div>
+    </div>
+  );
+};
+
+const SpokenDescriptionBeat: React.FC<{
+  challenge: SpatialSceneChallenge;
+  instanceId: string;
+  gradeLevel: string;
+  onFinished: (correct: boolean, attempts: number) => void;
+}> = ({ challenge, instanceId, gradeLevel, onFinished }) => {
+  const [revealRelation, setRevealRelation] = useState(false);
+  const submittedRef = useRef(false);
+  const items = useMemo(() => buildSpatialDescriptionItems([challenge]), [challenge]);
+  const pack = useMemo(() => spatialSceneDescriptionPack(items), [items]);
+  const run = useJudgedScriptRunner({
+    pack,
+    instanceId: `${instanceId}-${challenge.id}`,
+    gradeLevel,
+    silenceCloseMs: 1200,
+    onAffirmed: () => setRevealRelation(true),
+    onCorrectionRetry: () => setRevealRelation(true),
+    onFinished: (summary) => {
+      setRevealRelation(true);
+      if (submittedRef.current) return;
+      submittedRef.current = true;
+      onFinished(summary.solvedCount === 1, summary.attemptsCount);
+    },
+  });
+
+  const revealed = revealRelation || run.revealHeld || !!run.summary;
+  return (
+    <div className="space-y-4">
+      <PerspectiveScene challenge={challenge} revealRelation={revealed} />
+      {revealed ? (
+        <LuminaPanel accent="cyan">
+          <p className="text-center text-sm font-medium text-cyan-100">{challenge.modelDescription ?? modelSpatialDescription(challenge)}</p>
+        </LuminaPanel>
+      ) : (
+        <p className="text-center text-sm text-slate-300">Say the relation and the object you are comparing with.</p>
+      )}
+      {!run.summary && <JudgedMicPanel run={run} voiceLabel="Describe the scene" idleLabel="Start describing" />}
+      {run.running && !run.summary && (
+        <div className="text-center">
+          <button type="button" className="text-xs text-slate-400 underline underline-offset-4" onClick={run.hearStimulus}>
+            Hear the question again
+          </button>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // ============================================================================
@@ -360,6 +464,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     correctPosition: currentChallenge?.correctPosition,
     referenceObjectName: currentChallenge?.referenceObjectName,
     referenceObjectName2: currentChallenge?.referenceObjectName2,
+    scenePerspective: currentChallenge?.scenePerspective,
     targetObjectName: currentChallenge?.targetObject?.name,
     attemptNumber: currentAttempts + 1,
     supportTier: currentChallenge?.supportTier,
@@ -376,6 +481,9 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
+    // The judged spoken runner owns its complete opening/question turn. A second
+    // generic activity message here can make the tutor speak over that contract.
+    if (currentChallenge?.type === 'describe_scene') return;
     sendText(
       `[ACTIVITY_START] Spatial Scene for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
       + `${challenges.length} challenges about position words (above, below, beside, etc.). `
@@ -574,6 +682,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       case 'place_in':
       case 'place_between': correct = handleCheckPlace(); break;
       case 'describe': correct = handleCheckDescribe(); break;
+      case 'describe_scene': return; // judged spoken runner owns this response
       case 'follow_directions': return; // handled step-by-step
     }
 
@@ -627,11 +736,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
 
     resetDomainState();
     const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read it to the student.`,
-      { silent: true },
-    );
+    if (nextChallenge.type !== 'describe_scene') {
+      sendText(
+        `[NEXT_ITEM] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
+        + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read it to the student.`,
+        { silent: true },
+      );
+    }
   }, [
     advanceProgress, phaseResults, challengeResults, challenges, sendText,
     hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex,
@@ -650,6 +761,9 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
   const isCurrentChallengeCorrect = challengeResults.some(
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
+  const isCurrentChallengeDone = challengeResults.some(
+    (r) => r.challengeId === currentChallenge?.id,
+  );
 
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;
@@ -662,6 +776,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     if (!currentChallenge) return false;
     switch (currentChallenge.type) {
       case 'identify': case 'describe': return !!selectedOption;
+      case 'describe_scene': return false;
       case 'place': case 'place_in': case 'place_between': return !!selectedCell;
       case 'follow_directions': return false; // step-by-step
       default: return false;
@@ -944,6 +1059,23 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
             </div>
 
             {(currentChallenge.type === 'identify' || currentChallenge.type === 'describe') && renderIdentifyOrDescribe()}
+            {currentChallenge.type === 'describe_scene' && (
+              <SpokenDescriptionBeat
+                key={currentChallenge.id}
+                challenge={currentChallenge}
+                instanceId={resolvedInstanceId}
+                gradeLevel={gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
+                onFinished={(correct, attempts) => {
+                  recordResult({
+                    challengeId: currentChallenge.id,
+                    correct,
+                    attempts: Math.max(1, attempts),
+                    relation: currentChallenge.correctPosition,
+                    referenceObjectName: currentChallenge.referenceObjectName,
+                  });
+                }}
+              />
+            )}
             {CELL_JUDGED_TYPES.has(currentChallenge.type) && renderPlace()}
             {currentChallenge.type === 'follow_directions' && renderFollowDirections()}
 
@@ -962,7 +1094,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
 
             {/* Action buttons */}
             <div className="flex items-center justify-center gap-3">
-              {currentChallenge.type !== 'follow_directions' && (
+              {currentChallenge.type !== 'follow_directions' && currentChallenge.type !== 'describe_scene' && (
                 !isCurrentChallengeCorrect ? (
                   <LuminaActionButton
                     action="check"
@@ -977,6 +1109,11 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
                     {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
                   </LuminaActionButton>
                 )
+              )}
+              {currentChallenge.type === 'describe_scene' && isCurrentChallengeDone && (
+                <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
+                  {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
+                </LuminaActionButton>
               )}
               {currentChallenge.type === 'follow_directions' && isCurrentChallengeCorrect && (
                 <LuminaActionButton

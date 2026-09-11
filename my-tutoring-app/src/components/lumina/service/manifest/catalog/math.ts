@@ -6,6 +6,7 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 
 export const MATH_CATALOG: ComponentDefinition[] = [
   {
@@ -4857,17 +4858,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'spatial-scene',
-    description: 'Grid-based positional language and prepositions. Students identify, place, and describe object positions using spatial words (above, below, beside, next to, on, under, left of, right of) — tapping the grid to ENACT an instruction like "Put the ball under the box". Also serves containment ("Put the ball IN the box" — tap the container itself) and two-reference placement ("Put the ball BETWEEN the box and the tree"). Serves both K.G.1 math positional vocabulary and Kindergarten Language Arts preposition skills. Supports multiple challenge types from simple identification to multi-step direction following. ESSENTIAL for K-1 geometry and K-2 grammar prepositions.',
-    constraints: 'Requires a grid layout with placed objects. Challenges array drives interactivity. Grade band K-1. The position-word vocabulary follows whatever words the lesson objective/intent names, widening the grade-band default — so name the target prepositions in the intent. Containment "in/inside" and two-reference "between" are served by their own challenge types (place_in, place_between). NOT supported (do not route these here): viewer-relative "in front of/behind" and path words "through/around/across" — a 3x3 top-down static grid cannot express them.',
+    description: 'Positional language and prepositions in grid and fixed-perspective scenes. Students identify, place, and describe object positions using spatial words (above, below, beside, next to, on, under, left of, right of, in front of, behind) — tapping the grid to ENACT an instruction or describing a visible relation ALOUD. Also serves containment ("Put the ball IN the box" — tap the container itself) and two-reference placement ("Put the ball BETWEEN the box and the tree"). Serves both K.G.1 math positional vocabulary and Kindergarten Language Arts preposition skills. ESSENTIAL for K-1 geometry and K-2 grammar prepositions.',
+    constraints: 'Grade band K-1. Existing place/place_in/place_between/follow_directions modes retain the 3x3 grid contract. Spoken describe_scene uses a separate fixed YOU viewpoint with depth lanes so left/right and in-front-of/behind are visually unambiguous; its relation label/model sentence stay hidden until an attempt. The position-word vocabulary follows whatever words the lesson objective/intent names, widening the grade-band default. NOT supported here: path words through/around/across; route geometry belongs to spatial-path.',
     // docs/contracts/spatial-scene.md: R5 populates the grid with pictorial scene objects (icons,
     // not photos or bare symbols); identify/describe alone carry a text options row (R7/R12), which
     // the child must read to disambiguate — the place/place_in/place_between/follow_directions
     // family is pure tap-to-enact with no text answer surface, so 'none' is the primitive default
     // and identify/describe are overridden to 'emerging' below. No formal reader-fit PRE verdict.
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
-      taskDescription: 'Student identifies, places, or describes positions of objects on a grid using spatial vocabulary (above, below, beside, in, between).',
-      contextKeys: ['instruction', 'sceneObjects', 'targetObject', 'correctPosition', 'referenceObjectName', 'referenceObjectName2', 'options', 'steps', 'gradeBand'],
+      taskDescription: 'Student identifies, places, or describes positions of objects using spatial vocabulary (above, below, beside, in, between, in front of, behind). Spoken describe_scene answers are judged for both relation and reference object from a fixed YOU viewpoint.',
+      contextKeys: ['instruction', 'sceneObjects', 'targetObject', 'correctPosition', 'referenceObjectName', 'referenceObjectName2', 'scenePerspective', 'options', 'steps', 'gradeBand'],
       scaffoldingLevels: {
         level1: '"Look at the picture. Can you point to the {{targetObject.name}}?"',
         level2: '"The {{targetObject.name}} is higher up than the {{referenceObjectName}}. What position word means \'higher up\'?"',
@@ -4935,7 +4936,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['follow_directions'],
         description: 'Multi-step spatial placement',
       },
+      {
+        evalMode: 'describe_scene',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'] },
+        label: 'Describe Scene Aloud (Scaffold 4)',
+        beta: 4.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['describe_scene'],
+        description: 'Describe a shown left/right or front/behind relation aloud from a fixed YOU viewpoint; the judge requires the relation and reference object.',
+      },
     ],
+    audioInput: JUDGED_AUDIO_INPUT,
   },
   {
     id: 'shape-composer',

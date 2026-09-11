@@ -4,8 +4,8 @@
 - **Component:** `primitives/visual-primitives/math/SpatialScene.tsx` ·
   **Generator:** `service/math/gemini-spatial-scene.ts` ·
   **Catalog:** `service/manifest/catalog/math.ts:3743`
-- **Status:** ACTIVE (C1 + C3 RESOLVED 2026-08-05; C2 PARTIALLY resolved — `in`/`between`
-  served, `in_front_of`/`behind` + path words still open)
+- **Status:** ACTIVE (C1/C2/C3 RESOLVED; fixed-perspective spoken descriptions added
+  2026-09-09; path relations intentionally forked to `spatial-path`)
 
 ## Consumers (blast radius)
 
@@ -190,6 +190,19 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
 - **Probe:** a containment-only request must leave `composePositionWindow('K', …)` equal
   to `bandDefaultPositions('K')`.
 
+### R16 — `describe_scene` fixes the viewpoint and judges spoken relation + reference · OBSERVED
+- **Property:** `describe_scene` uses a fixed viewer-depth scene with a visible YOU marker.
+  Left/right use screen columns; row 0 is farther and row 2 is nearer, so `in_front_of`
+  and `behind` cannot collapse into above/below. The relation label/model stays hidden
+  until the child speaks. The judged script accepts only an answer containing both the
+  required relation and the named reference object.
+- **Demanded by:** LA004-01-F, LA004-05-C, LA004-05-E, LA004-05-F, LA004-05-I.
+- **Evidence:** `buildPerspectiveDescriptionChallenges` owns the geometry;
+  `spatialSceneDescriptionPack` owns the spoken contract; focused suites verify all four
+  perspective relations, answer-safe prompts, and relation/reference criteria.
+- **Probe:** generate `targetEvalMode=describe_scene`; recompute the relation from the
+  two object coordinates and inspect the spoken cue before and after one judged attempt.
+
 ## Conflicts
 
 ### C1 — R1 vs the LA preposition consumer — **RESOLVED 2026-08-05 via rung 3 (config axis)**
@@ -210,7 +223,7 @@ rejected: the task identity is unchanged (still place/identify/describe), and th
 is not the grade band — a Grade-1 math lesson and a Grade-1 LA lesson want different
 windows at the *same* band.
 
-### C2 — a 3×3 static grid cannot express part of the LA demand — **PARTIALLY RESOLVED 2026-08-05 (late) via rung 1 (eval-mode split)**
+### C2 — a 3×3 static grid cannot express part of the LA demand — **RESOLVED 2026-09-09 via explicit contract forks**
 
 `in` (containment — same cell, nested render), `between` (two reference objects),
 `in_front_of`/`behind` (viewer-relative; ambiguous with above/below in a top-down view),
@@ -218,7 +231,7 @@ and `through`/`around`/`across` (path, not position) are all named by the publis
 curriculum. Originally none were expressible; the resolver reported them as `unsupported`
 and the generator logged the gap rather than pretending it was served.
 
-**`in` and `between` are now served** — each as its OWN eval mode (`place_in` R13,
+**`in` and `between` are served** — each as its OWN eval mode (`place_in` R13,
 `place_between` R14), not by widening the relative window. That distinction is the
 resolution: containment inverts R11 and `between` needs a second reference, so both break
 an assumption the relative modes rely on. Rung 1 of the ladder (eval-mode split) rather
@@ -229,10 +242,15 @@ construction, so a lesson asking only for containment leaves R1 byte-for-byte in
 (R15). Measured: 27/27 real-Gemini challenges clean, math control unchanged, and the
 curator routes LA004-05-B → `place_in` unprompted.
 
-**STILL OPEN — `in_front_of` / `behind` and the path class.** The viewer-relative pair
-needs a design ruling before code (side-elevation view? depth cue?) — it was deliberately
-left out of the 08-05 slice, not forgotten. Path words are a different primitive
-(BACKLOG item 3). Both remain honestly reported as `unsupported`.
+**The viewer-relative pair is now served by `describe_scene` (R16).** It deliberately
+uses a fixed YOU viewpoint and a depth-lane projection instead of changing grid semantics.
+The child describes the visible relation aloud; this is a distinct response identity from
+the existing multiple-choice `describe` mode.
+
+**The path class is served by a different primitive, `spatial-path`.** Through/around/
+across are movement trajectories, not placements. Keeping them here would make endpoint
+cells masquerade as route evidence. The fork preserves every existing grid contract while
+`spatial-path` scores route identity/geometry with shared endpoints.
 
 ### C3 — `above`/`on` are not mutually exclusive — **RESOLVED 2026-08-05 (evening) → R12**
 
@@ -274,7 +292,14 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
 
 ## Changelog
 
-- **2026-08-05 (latest)** — **C2 PARTIALLY RESOLVED → R13/R14/R15.** Containment (`in`)
+- **2026-09-09 (latest)** — **C2 RESOLVED → R16 + `spatial-path` fork.** Added
+  `describe_scene` (β 4.5) through shared `resolveEvalModes`, a fixed YOU viewpoint,
+  code-owned left/right/front/behind geometry, and a judged spoken script that requires
+  both the relation and reference object. Existing `identify`, `place`, `describe`,
+  `place_in`, `place_between`, and `follow_directions` remain intact. Movement paths were
+  not forced into this component: `spatial-path` now owns animated over/under/through/
+  around/across routes and scores route geometry with identical endpoints.
+- **2026-08-05 (previous)** — **C2 PARTIALLY RESOLVED → R13/R14/R15.** Containment (`in`)
   and two-reference (`between`) ship as eval modes **`place_in`** (β 1.5) and
   **`place_between`** (β 3.5). The flagged R11 edit was taken as a **fork, not an edit**:
   `place` is untouched and R11 is now explicitly scoped, with the component enforcing the

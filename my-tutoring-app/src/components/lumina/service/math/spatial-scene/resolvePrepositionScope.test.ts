@@ -23,7 +23,11 @@ vi.mock('../../geminiClient', () => ({
 }));
 
 import { ai } from '../../geminiClient';
-import { generateSpatialScene } from '../gemini-spatial-scene';
+import {
+  buildPerspectiveDescriptionChallenges,
+  generateSpatialScene,
+  perspectiveRelationHolds,
+} from '../gemini-spatial-scene';
 import {
   resolvePrepositionScope,
   composePositionWindow,
@@ -687,6 +691,72 @@ describe('blended session — the new modes join only when the lesson asked', ()
     }));
     for (const c of data.challenges) {
       expect(['identify', 'place', 'describe', 'follow_directions']).toContain(c.type);
+    }
+  });
+});
+
+describe('spoken perspective scene routing', () => {
+  it('honors a direct describe_scene pin without generating legacy modes', async () => {
+    resolverPayload = { requested: [], unsupported: [] };
+    const data = await generateSpatialScene(ctx({
+      raw: { targetEvalMode: 'describe_scene' },
+    }));
+    expect(data.challenges).toHaveLength(4);
+    expect(data.challenges.every((challenge) => challenge.type === 'describe_scene')).toBe(true);
+  });
+
+  it('honors a curated describe_scene + place blend', async () => {
+    resolverPayload = { requested: [], unsupported: [] };
+    const data = await generateSpatialScene(ctx({
+      raw: { targetEvalMode: 'describe_scene|place' },
+    }));
+    const types = new Set(data.challenges.map((challenge) => challenge.type));
+    expect(types).toEqual(new Set(['describe_scene', 'place']));
+  });
+
+  it('keeps an explicit mixed pin genuinely mixed across every registered mode', async () => {
+    resolverPayload = { requested: [], unsupported: [] };
+    const data = await generateSpatialScene(ctx({
+      raw: { targetEvalMode: 'mixed' },
+    }));
+    expect(new Set(data.challenges.map((challenge) => challenge.type))).toEqual(new Set([
+      'identify', 'place', 'describe', 'describe_scene', 'follow_directions',
+      'place_in', 'place_between',
+    ]));
+  });
+
+  it('routes in-front/behind requests to the dedicated spoken mode', async () => {
+    resolverPayload = { requested: ['in_front_of', 'behind'], unsupported: [] };
+    const data = await generateSpatialScene(ctx({
+      scope: {
+        topic: 'Where things are',
+        objectiveText: 'Describe which object is in front of or behind another object',
+      },
+    }));
+    const perspective = data.challenges.filter((challenge) => challenge.type === 'describe_scene');
+    expect(perspective).toHaveLength(4);
+    expect(new Set(perspective.map((challenge) => challenge.correctPosition)))
+      .toEqual(new Set(['in_front_of', 'behind']));
+  });
+
+  it('makes left/right and front/behind true from one fixed viewpoint', () => {
+    const challenges = buildPerspectiveDescriptionChallenges([], 4);
+    expect(challenges.map((challenge) => challenge.correctPosition))
+      .toEqual(['left_of', 'right_of', 'in_front_of', 'behind']);
+    for (const challenge of challenges) {
+      const reference = challenge.sceneObjects.find(
+        (object) => object.name === challenge.referenceObjectName,
+      );
+      expect(reference).toBeDefined();
+      expect(challenge.scenePerspective).toBe('viewer_depth');
+      expect(perspectiveRelationHolds(
+        challenge.correctPosition as 'left_of' | 'right_of' | 'in_front_of' | 'behind',
+        challenge.targetObject.position,
+        reference!.position,
+      )).toBe(true);
+      expect(challenge.instruction.toLowerCase()).not.toContain(
+        challenge.correctPosition.replaceAll('_', ' '),
+      );
     }
   });
 });
