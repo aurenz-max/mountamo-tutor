@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { ReadAloudStudioData } from "../../primitives/visual-primitives/literacy/ReadAloudStudio";
+import { phraseGroupsFor } from '../../primitives/visual-primitives/literacy/readAloudPhrasing';
 import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
@@ -80,12 +81,19 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   expression: {
     promptDoc:
-      `"expression": Phrasing and stress. Every line must be a natural PHRASE UNIT that sounds `
-      + `complete when read as one smooth breath — split at commas and clause boundaries, never `
-      + `mid-phrase. Set stressWord on EVERY line to the one content word a good reader leans on `
+      `"expression": Mark phrases, first read, hear a model, then reread. Each line is a short `
+      + `complete sentence with one or two meaningful groups. Include a mix of one-group lines `
+      + `and lines with a natural COMMA boundary, such as After the rain, / the birds sang. `
+      + `Set phraseGroups on EVERY line to an array of the exact consecutive text chunks. `
+      + `Joined with single spaces they MUST reproduce the whole line exactly, including punctuation. `
+      + `Keep determiners with nouns, auxiliaries with verbs, verbs with their objects, and prepositions with their objects. `
+      + `Every internal model boundary MUST follow a comma, semicolon, or colon already in text. `
+      + `A line with no internal punctuation MUST have exactly ONE group. `
+      + `Never split words or insert slash characters into text. Groups are one suggested reading, `
+      + `not a unique correct answer. Set stressWord on EVERY line to one content word a good reader leans on `
       + `(a noun, verb, adjective or adverb THAT APPEARS IN THAT LINE — never "the", "and", "of", `
       + `"is"). Do NOT set speaker. Grades 2-5.`,
-    schemaDescription: "'expression' (phrasing and stress, modelled then imitated)",
+    schemaDescription: "'expression' (mark phrases, read, hear a model, reread; word accuracy only)",
   },
   dialogue: {
     promptDoc:
@@ -135,6 +143,13 @@ const readAloudStudioSchema: Schema = {
             description:
               "expression mode ONLY: one content word FROM THIS LINE that a good reader leans on. Omit otherwise.",
           },
+          phraseGroups: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            minItems: '1',
+            maxItems: '3',
+            description: 'expression ONLY: exact consecutive meaning groups. Internal boundaries only AFTER commas/semicolons/colons. No internal punctuation means exactly ONE group. Join with single spaces to reproduce text exactly.',
+          },
         },
         required: ["text"],
       },
@@ -153,6 +168,7 @@ interface RawLine {
   text?: string;
   speaker?: string;
   stressWord?: string;
+  phraseGroups?: string[];
 }
 
 export const generateReadAloudStudio = async (
@@ -226,6 +242,15 @@ ${gradeNotes[gradeLevelKey] || gradeNotes['3']}
 
 ${challengeTypeSection}
 
+${mode === 'expression' ? `EXPRESSION PASSAGE SHAPE: Alternate whole-line and comma-grouped sentences.
+Lines 1, 3, 5, 7: one short complete sentence with NO internal punctuation; phraseGroups contains the entire line as ONE string.
+Lines 2, 4, 6, 8: a short introductory phrase followed by a COMMA and the rest of the sentence; phraseGroups contains TWO strings, the first ending with that comma.
+Examples of SHAPE only (write your own connected passage):
+{"text":"The rain stopped.","phraseGroups":["The rain stopped."]}
+{"text":"By the pond, we saw ducks.","phraseGroups":["By the pond,","we saw ducks."]}
+Do not insert pauses between a subject and verb or between a verb and its object. The variation teaches when words stay together.
+The examples show grouping ONLY: every line must still meet the grade ${gradeLevelKey} word-count guidance above, including the one-group lines.` : ''}
+
 A LIVE TUTOR SPEAKS THESE LINES AND JUDGES THE CHILD READING THEM BACK, WORD BY WORD. Rules:
 1. Every line must be ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words. A line outside that window is thrown away, so stay inside it.
 2. The lines, read in order, must form ONE connected passage — not a list of unrelated sentences.
@@ -258,7 +283,7 @@ A LIVE TUTOR SPEAKS THESE LINES AND JUDGES THE CHILD READING THEM BACK, WORD BY 
       lines?: RawLine[];
     };
 
-    const focus: ReadAloudMode = result.fluencyFocus ?? mode;
+    const focus: ReadAloudMode = evalConstraint ? mode : result.fluencyFocus ?? mode;
 
     // ── KEEP-OR-DROP, on the generator's side of the wire too ──────────
     // The component runs exactly this gate; running it here as well means a
@@ -268,7 +293,13 @@ A LIVE TUTOR SPEAKS THESE LINES AND JUDGES THE CHILD READING THEM BACK, WORD BY 
       text: line.text ?? '',
       speaker: line.speaker,
       stressWord: line.stressWord,
+      phraseGroups: line.phraseGroups,
     }));
+    if (focus === 'expression' && rawLines.some((line) =>
+      !Array.isArray(line.phraseGroups) || line.phraseGroups.length === 0
+      || JSON.stringify(phraseGroupsFor(line)) !== JSON.stringify(line.phraseGroups))) {
+      throw new Error('Expression lines require phraseGroups bound exactly to the printed text.');
+    }
     const keptLines = rawLines.filter((line, index) => itemFromLine(line, focus, index) !== null);
 
     if (keptLines.length < rawLines.length) {
@@ -287,12 +318,12 @@ A LIVE TUTOR SPEAKS THESE LINES AND JUDGES THE CHILD READING THEM BACK, WORD BY 
     void _unused;
 
     const finalData: ReadAloudStudioData = {
+      ...configRest,
       title: result.title || 'Read It Out Loud',
       gradeLevel: result.gradeLevel || gradeLevelKey,
       fluencyFocus: focus,
       lexileLevel: result.lexileLevel || '',
       lines: keptLines,
-      ...configRest,
     };
 
     console.log('Read Aloud Studio Generated:', {

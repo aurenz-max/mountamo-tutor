@@ -1,0 +1,171 @@
+{
+  "generatedAt": "2026-09-11T20:26:50.462Z",
+  "data": {
+    "title": "The Park After the Rain",
+    "gradeLevel": "5",
+    "fluencyFocus": "expression",
+    "lexileLevel": "850L",
+    "lines": [
+      {
+        "text": "Cool raindrops soaked the green park.",
+        "stressWord": "raindrops",
+        "phraseGroups": [
+          "Cool raindrops soaked the green park."
+        ]
+      },
+      {
+        "text": "Along the path, puddles shimmered brightly.",
+        "stressWord": "shimmered",
+        "phraseGroups": [
+          "Along the path,",
+          "puddles shimmered brightly."
+        ]
+      },
+      {
+        "text": "Fresh moisture covered every oak tree.",
+        "stressWord": "moisture",
+        "phraseGroups": [
+          "Fresh moisture covered every oak tree."
+        ]
+      },
+      {
+        "text": "Without warning, robins began singing loudly.",
+        "stressWord": "singing",
+        "phraseGroups": [
+          "Without warning,",
+          "robins began singing loudly."
+        ]
+      },
+      {
+        "text": "Damp earth released a earthy scent.",
+        "stressWord": "scent",
+        "phraseGroups": [
+          "Damp earth released a earthy scent."
+        ]
+      },
+      {
+        "text": "Beneath the branches, earthworms crawled slowly.",
+        "stressWord": "crawled",
+        "phraseGroups": [
+          "Beneath the branches,",
+          "earthworms crawled slowly."
+        ]
+      },
+      {
+        "text": "Bright sunlight broke through the clouds.",
+        "stressWord": "sunlight",
+        "phraseGroups": [
+          "Bright sunlight broke through the clouds."
+        ]
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "line-1-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-1-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-1-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-2-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-2-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-2-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-3-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-3-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-3-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-4-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-4-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-4-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-5-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-5-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-5-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-6-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-6-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-6-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-7-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-7-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-7-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    }
+  ],
+  "issues": []
+}

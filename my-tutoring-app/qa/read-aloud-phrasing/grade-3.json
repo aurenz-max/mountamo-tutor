@@ -1,0 +1,149 @@
+{
+  "generatedAt": "2026-09-11T20:26:48.522Z",
+  "data": {
+    "title": "The Park After Rain",
+    "gradeLevel": "3",
+    "fluencyFocus": "expression",
+    "lexileLevel": "520L",
+    "lines": [
+      {
+        "text": "Dark clouds cleared from the sky.",
+        "stressWord": "cleared",
+        "phraseGroups": [
+          "Dark clouds cleared from the sky."
+        ]
+      },
+      {
+        "text": "Along the path, puddles shimmered brightly.",
+        "stressWord": "puddles",
+        "phraseGroups": [
+          "Along the path,",
+          "puddles shimmered brightly."
+        ]
+      },
+      {
+        "text": "Cool wind rustled green leaves.",
+        "stressWord": "rustled",
+        "phraseGroups": [
+          "Cool wind rustled green leaves."
+        ]
+      },
+      {
+        "text": "Near the bench, earthworms appeared.",
+        "stressWord": "earthworms",
+        "phraseGroups": [
+          "Near the bench,",
+          "earthworms appeared."
+        ]
+      },
+      {
+        "text": "Bright flowers drank fresh water.",
+        "stressWord": "flowers",
+        "phraseGroups": [
+          "Bright flowers drank fresh water."
+        ]
+      },
+      {
+        "text": "Above the trees, birds sang melodies.",
+        "stressWord": "melodies",
+        "phraseGroups": [
+          "Above the trees,",
+          "birds sang melodies."
+        ]
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "line-1-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-1-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-1-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-2-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-2-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-2-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-3-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-3-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-3-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-4-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-4-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-4-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-5-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-5-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-5-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-6-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-6-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-6-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    }
+  ],
+  "issues": []
+}

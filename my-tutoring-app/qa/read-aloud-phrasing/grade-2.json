@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-09-11T20:26:46.893Z",
+  "data": {
+    "title": "The Park After Rain",
+    "gradeLevel": "2",
+    "fluencyFocus": "expression",
+    "lexileLevel": "400L",
+    "lines": [
+      {
+        "text": "Dark clouds cleared away.",
+        "stressWord": "cleared",
+        "phraseGroups": [
+          "Dark clouds cleared away."
+        ]
+      },
+      {
+        "text": "On the wet grass, water sparkled.",
+        "stressWord": "sparkled",
+        "phraseGroups": [
+          "On the wet grass,",
+          "water sparkled."
+        ]
+      },
+      {
+        "text": "Robins searched for worms.",
+        "stressWord": "worms",
+        "phraseGroups": [
+          "Robins searched for worms."
+        ]
+      },
+      {
+        "text": "Beneath tall trees, children played.",
+        "stressWord": "played",
+        "phraseGroups": [
+          "Beneath tall trees,",
+          "children played."
+        ]
+      },
+      {
+        "text": "Fresh air felt wonderful.",
+        "stressWord": "wonderful",
+        "phraseGroups": [
+          "Fresh air felt wonderful."
+        ]
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "line-1-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-1-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-1-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-2-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-2-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-2-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-3-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-3-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-3-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-4-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-4-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-4-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    },
+    {
+      "id": "line-5-mark",
+      "answerKind": "gesture",
+      "step": "mark"
+    },
+    {
+      "id": "line-5-first_read",
+      "answerKind": "voice",
+      "step": "first_read"
+    },
+    {
+      "id": "line-5-reread",
+      "answerKind": "voice",
+      "step": "reread"
+    }
+  ],
+  "issues": []
+}

@@ -100,6 +100,8 @@ export interface ReadAloudLineLike {
   text: string;
   speaker?: string;
   stressWord?: string;
+  /** Suggested meaning groups for expression practice; never an answer key. */
+  phraseGroups?: string[];
 }
 
 /**
