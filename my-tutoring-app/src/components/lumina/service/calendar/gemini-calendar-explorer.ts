@@ -7,8 +7,7 @@ import { ai } from "../geminiClient";
 import type { GenerationContext, SupportTier } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
 import {
-  resolveEvalModeConstraint,
-  logEvalModeResolution,
+  resolveEvalModes,
   type ChallengeTypeDoc,
 } from "../evalMode";
 
@@ -38,15 +37,228 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `correctAnswer is a day name or date string. options are string choices.`,
     schemaDescription: "'pattern' (identify date patterns)",
   },
+  day_sequence: {
+    promptDoc:
+      `"day_sequence": Hear one day name and SAY the next day in a continuing spoken chain. `
+      + `The screen shows no printed week strip; code computes every successor and the live tutor judges each turn.`,
+    schemaDescription: "'day_sequence' (say the next day in order)",
+  },
+  mark_events: {
+    promptDoc:
+      `"mark_events": Place a named event marker on its requested calendar date. `
+      + `Code owns the month, date, and answer key; the student taps the matching calendar cell.`,
+    schemaDescription: "'mark_events' (mark a named event date)",
+  },
+  day_offset: {
+    promptDoc:
+      `"day_offset": Count forward 1-7 days from a named weekday and choose the landing day. `
+      + `Code owns the cyclic weekday arithmetic and answer key.`,
+    schemaDescription: "'day_offset' (count forward from a weekday)",
+  },
+  interval_count: {
+    promptDoc:
+      `"interval_count": Count days between two visibly marked dates, with the counting convention stated explicitly. `
+      + `Code owns both endpoints and the answer key.`,
+    schemaDescription: "'interval_count' (count an interval between marked dates)",
+  },
+  month_sequence: {
+    promptDoc:
+      `"month_sequence": Hear one month name and SAY the next month in a continuing spoken chain. `
+      + `The screen shows no printed month strip; code computes every successor and the live tutor judges each turn.`,
+    schemaDescription: "'month_sequence' (say the next month in order)",
+  },
 };
 
 // ---------------------------------------------------------------------------
 // Calendar math helpers
 // ---------------------------------------------------------------------------
 
-const DAYS_OF_WEEK = [
+export const DAYS_OF_WEEK = [
   "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 ] as const;
+
+export const DAY_SEQUENCE_TURN_COUNT = 5;
+export const MONTH_SEQUENCE_TURN_COUNT = 5;
+
+export const MONTHS_OF_YEAR = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+] as const;
+
+/**
+ * Build an answer-key-safe spoken chain. The first stimulus is random in
+ * production; tests may inject a start index. Every later stimulus is the
+ * previous answer, so the child must hold and continue one genuine sequence.
+ */
+export function buildDaySequenceChallenges(
+  startIndex = Math.floor(Math.random() * DAYS_OF_WEEK.length),
+  turnCount = DAY_SEQUENCE_TURN_COUNT,
+): CalendarExplorerChallenge[] {
+  const safeStart = ((startIndex % DAYS_OF_WEEK.length) + DAYS_OF_WEEK.length) % DAYS_OF_WEEK.length;
+  const safeCount = Math.max(DAY_SEQUENCE_TURN_COUNT, Math.floor(turnCount));
+
+  return Array.from({ length: safeCount }, (_, index) => {
+    const currentDay = DAYS_OF_WEEK[(safeStart + index) % DAYS_OF_WEEK.length];
+    const expectedDay = DAYS_OF_WEEK[(safeStart + index + 1) % DAYS_OF_WEEK.length];
+    return {
+      id: `day-sequence-${index + 1}`,
+      type: "day_sequence",
+      question: "Listen to the tutor, then say the day that comes next.",
+      month: 1,
+      year: 2026,
+      correctAnswer: expectedDay,
+      options: [],
+      hint: "Say the week together from Sunday, then try this day again.",
+      narration: `Continue the spoken day chain from ${currentDay}.`,
+      currentDay,
+      expectedDay,
+      chainPosition: index + 1,
+    };
+  });
+}
+
+/** Build a code-owned spoken month chain, including December -> January. */
+export function buildMonthSequenceChallenges(
+  startIndex = Math.floor(Math.random() * MONTHS_OF_YEAR.length),
+  turnCount = MONTH_SEQUENCE_TURN_COUNT,
+): CalendarExplorerChallenge[] {
+  const safeStart = ((startIndex % MONTHS_OF_YEAR.length) + MONTHS_OF_YEAR.length) % MONTHS_OF_YEAR.length;
+  const safeCount = Math.max(MONTH_SEQUENCE_TURN_COUNT, Math.floor(turnCount));
+
+  return Array.from({ length: safeCount }, (_, index) => {
+    const currentMonth = MONTHS_OF_YEAR[(safeStart + index) % MONTHS_OF_YEAR.length];
+    const expectedMonth = MONTHS_OF_YEAR[(safeStart + index + 1) % MONTHS_OF_YEAR.length];
+    return {
+      id: `month-sequence-${index + 1}`,
+      type: "month_sequence",
+      question: "Listen to the tutor, then say the month that comes next.",
+      month: 1,
+      year: 2026,
+      correctAnswer: expectedMonth,
+      options: [],
+      hint: "Say the months together from January, then try this month again.",
+      narration: `Continue the spoken month chain from ${currentMonth}.`,
+      currentMonth,
+      expectedMonth,
+      chainPosition: index + 1,
+    };
+  });
+}
+
+const DAY_OFFSETS = [1, 2, 3, 5, 7] as const;
+
+/** Count forward from changing weekday starts; all cyclic arithmetic is code-owned. */
+export function buildDayOffsetChallenges(
+  startIndex = Math.floor(Math.random() * DAYS_OF_WEEK.length),
+  turnCount = 5,
+): CalendarExplorerChallenge[] {
+  const safeStart = ((startIndex % DAYS_OF_WEEK.length) + DAYS_OF_WEEK.length) % DAYS_OF_WEEK.length;
+  const safeCount = Math.max(1, Math.floor(turnCount));
+
+  return Array.from({ length: safeCount }, (_, index) => {
+    const currentIndex = (safeStart + index * 2) % DAYS_OF_WEEK.length;
+    const offsetDays = DAY_OFFSETS[index % DAY_OFFSETS.length];
+    const startDay = DAYS_OF_WEEK[currentIndex];
+    const landingDay = DAYS_OF_WEEK[(currentIndex + offsetDays) % DAYS_OF_WEEK.length];
+    return {
+      id: `day-offset-${index + 1}`,
+      type: "day_offset",
+      question: `Start on ${startDay}. Count forward ${offsetDays} ${offsetDays === 1 ? "day" : "days"}. What day do you land on?`,
+      month: 1,
+      year: 2026,
+      correctAnswer: landingDay,
+      options: [...DAYS_OF_WEEK],
+      hint: `Begin after ${startDay} and count one day for each step.`,
+      narration: `Let's count ${offsetDays} ${offsetDays === 1 ? "day" : "days"} forward from ${startDay}.`,
+      startDay,
+      offsetDays,
+    };
+  });
+}
+
+const EVENT_LABELS = [
+  "Library Day", "Field Trip", "Birthday Party", "School Concert", "Family Picnic",
+] as const;
+
+/** Build a cumulative event-marking session on one stable monthly calendar. */
+export function buildMarkEventChallenges(
+  month = randomMonth(),
+  year = randomYear(),
+  startDate = 4 + Math.floor(Math.random() * 4),
+  turnCount = 5,
+): CalendarExplorerChallenge[] {
+  const daysInMonth = getDaysInMonth(month, year);
+  const safeCount = Math.max(1, Math.floor(turnCount));
+  const usableSpan = Math.max(1, daysInMonth - 2);
+  const dates = Array.from({ length: safeCount }, (_, index) =>
+    2 + ((Math.max(2, startDate) - 2 + index * 5) % usableSpan));
+
+  return dates.map((eventDate, index) => ({
+    id: `mark-event-${index + 1}`,
+    type: "mark_events",
+    question: `Mark ${EVENT_LABELS[index % EVENT_LABELS.length]} on ${MONTHS_OF_YEAR[month - 1]} ${eventDate}.`,
+    month,
+    year,
+    correctAnswer: String(eventDate),
+    options: [],
+    hint: `Find ${eventDate} in the calendar, then place the marker there.`,
+    narration: `Put the ${EVENT_LABELS[index % EVENT_LABELS.length]} marker on its date.`,
+    highlightDates: [eventDate],
+    markedDates: dates.slice(0, index),
+    eventLabel: EVENT_LABELS[index % EVENT_LABELS.length],
+  }));
+}
+
+function buildIntervalOptions(answer: number): string[] {
+  const values = new Set<number>([answer]);
+  for (const delta of [-2, -1, 1, 2, 3]) {
+    if (answer + delta >= 0) values.add(answer + delta);
+    if (values.size === 4) break;
+  }
+  return Array.from(values).sort((a, b) => a - b).slice(0, 4).map(String);
+}
+
+/** Build marked-endpoint interval questions with the convention stated in every prompt. */
+export function buildIntervalCountChallenges(
+  month = randomMonth(),
+  year = randomYear(),
+  startDate = 3 + Math.floor(Math.random() * 4),
+  turnCount = 5,
+): CalendarExplorerChallenge[] {
+  const daysInMonth = getDaysInMonth(month, year);
+  const safeCount = Math.max(1, Math.floor(turnCount));
+
+  return Array.from({ length: safeCount }, (_, index) => {
+    const span = 2 + (index % 6);
+    const maxStart = Math.max(1, daysInMonth - span);
+    const intervalStartDate = 1 + ((Math.max(1, startDate) - 1 + index * 4) % maxStart);
+    const intervalEndDate = intervalStartDate + span;
+    const countConvention = index % 2 === 0 ? "between" as const : "inclusive" as const;
+    const answer = countConvention === "between" ? span - 1 : span + 1;
+    const monthName = MONTHS_OF_YEAR[month - 1];
+    const question = countConvention === "between"
+      ? `How many days are between ${monthName} ${intervalStartDate} and ${monthName} ${intervalEndDate}? Do not count the two marked days.`
+      : `How many calendar days are there from ${monthName} ${intervalStartDate} through ${monthName} ${intervalEndDate}? Count both marked days.`;
+
+    return {
+      id: `interval-count-${index + 1}`,
+      type: "interval_count",
+      question,
+      month,
+      year,
+      correctAnswer: String(answer),
+      options: buildIntervalOptions(answer),
+      hint: countConvention === "between"
+        ? "Count only the calendar boxes inside the two markers."
+        : "Count every calendar box from the first marker through the second marker.",
+      narration: "Use the two event markers to count the interval.",
+      markedDates: [intervalStartDate, intervalEndDate],
+      intervalStartDate,
+      intervalEndDate,
+      countConvention,
+    };
+  });
+}
 
 function getDaysInMonth(month: number, year: number): number {
   return new Date(year, month, 0).getDate();
@@ -117,10 +329,7 @@ function randomYear(): number {
   return 2024 + Math.floor(Math.random() * 3); // 2024-2026
 }
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const MONTH_NAMES = MONTHS_OF_YEAR;
 
 // ===========================================================================
 // Within-mode support tier (ctx.supportTier) — SCAFFOLD WITHDRAWAL, not numbers
@@ -1008,6 +1217,76 @@ export const FALLBACKS: Record<string, CalendarExplorerChallenge> = {
     hint: "March 10 is exactly one week after March 3. What stays the same?",
     narration: "Let's discover a weekly pattern!",
   },
+  day_sequence: {
+    id: "fallback-day-sequence",
+    type: "day_sequence",
+    question: "Listen to the tutor, then say the day that comes next.",
+    month: 1,
+    year: 2026,
+    correctAnswer: "Tuesday",
+    options: [],
+    hint: "Say the week together from Sunday, then try this day again.",
+    narration: "Continue the spoken day chain from Monday.",
+    currentDay: "Monday",
+    expectedDay: "Tuesday",
+    chainPosition: 1,
+  },
+  month_sequence: {
+    id: "fallback-month-sequence",
+    type: "month_sequence",
+    question: "Listen to the tutor, then say the month that comes next.",
+    month: 1,
+    year: 2026,
+    correctAnswer: "February",
+    options: [],
+    hint: "Say the months together from January, then try this month again.",
+    narration: "Continue the spoken month chain from January.",
+    currentMonth: "January",
+    expectedMonth: "February",
+    chainPosition: 1,
+  },
+  day_offset: {
+    id: "fallback-day-offset",
+    type: "day_offset",
+    question: "Start on Tuesday. Count forward 3 days. What day do you land on?",
+    month: 1,
+    year: 2026,
+    correctAnswer: "Friday",
+    options: [...DAYS_OF_WEEK],
+    hint: "Begin after Tuesday and count one day for each step.",
+    narration: "Let's count three days forward from Tuesday.",
+    startDay: "Tuesday",
+    offsetDays: 3,
+  },
+  mark_events: {
+    id: "fallback-mark-events",
+    type: "mark_events",
+    question: "Mark Library Day on March 11.",
+    month: 3,
+    year: 2025,
+    correctAnswer: "11",
+    options: [],
+    hint: "Find 11 in the calendar, then place the marker there.",
+    narration: "Put the Library Day marker on its date.",
+    highlightDates: [11],
+    markedDates: [],
+    eventLabel: "Library Day",
+  },
+  interval_count: {
+    id: "fallback-interval-count",
+    type: "interval_count",
+    question: "How many days are between March 4 and March 9? Do not count the two marked days.",
+    month: 3,
+    year: 2025,
+    correctAnswer: "4",
+    options: ["3", "4", "5", "6"],
+    hint: "Count only the calendar boxes inside the two markers.",
+    narration: "Use the two event markers to count the interval.",
+    markedDates: [4, 9],
+    intervalStartDate: 4,
+    intervalEndDate: 9,
+    countConvention: "between",
+  },
 };
 
 // ===========================================================================
@@ -1025,17 +1304,38 @@ export const generateCalendarExplorer = async (
   // Axis 3 — normalized once upstream in resolveGenerationContext. Never re-parse
   // config.difficulty here.
   const supportTier = ctx.supportTier;
-  // ── Resolve eval mode ──
-  const evalConstraint = resolveEvalModeConstraint(
+  // ── Resolve the task identity from an explicit pin or this component's intent. ──
+  const resolution = await resolveEvalModes(
     "calendar-explorer",
-    ctx.targetEvalMode,
+    {
+      targetEvalMode: ctx.targetEvalMode,
+      intent: ctx.intent,
+      objectiveText: ctx.objective.text,
+    },
     CHALLENGE_TYPE_DOCS,
   );
-  logEvalModeResolution("CalendarExplorer", ctx.targetEvalMode, evalConstraint);
 
   // Canonical objective grade wins; the prose parser is only the fallback.
   const gradeBand = calendarGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
-  const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
+  // Broad mixed practice preserves the existing visual session. A spoken chain
+  // is a different response channel and is therefore selected only as a resolved
+  // task identity, never slipped into a tap session. If a curator requests an
+  // incompatible cross-modality blend, the spoken chain wins as the safer,
+  // assessable contract instead of rendering a dead half-voice/half-tap run.
+  const visualTypes = ["identify", "count", "pattern"];
+  const spokenTypes = ["day_sequence", "month_sequence"];
+  let allowedTypes = resolution?.allowedTypes ?? visualTypes;
+  const resolvedSpokenTypes = allowedTypes.filter((type) => spokenTypes.includes(type));
+  if (resolvedSpokenTypes.length > 0 && resolvedSpokenTypes.length < allowedTypes.length) {
+    console.warn(
+      `[CalendarExplorer] Cross-modality blend [${allowedTypes.join(", ")}] collapsed to spoken sequence mode(s)`,
+    );
+    allowedTypes = resolvedSpokenTypes;
+  }
+  console.log(
+    `[CalendarExplorer] modes: ${resolution ? `${resolution.modes.map(m => m.evalMode).join("+")} (${resolution.source})` : "mixed visual"}`
+    + ` -> types [${allowedTypes.join(", ")}]`,
+  );
 
   // Determine challenge count per type
   const isSingleType = allowedTypes.length === 1;
@@ -1062,6 +1362,23 @@ export const generateCalendarExplorer = async (
         break;
       case "pattern":
         generators.push(generatePatternChallenges(topic, scopeSection, gradeLevel, countPerType));
+        break;
+      case "day_sequence":
+        // The seven-day cycle is closed, stable content. Code — not Gemini —
+        // owns the random start, successor truth, and five-turn minimum.
+        generators.push(Promise.resolve(buildDaySequenceChallenges()));
+        break;
+      case "month_sequence":
+        generators.push(Promise.resolve(buildMonthSequenceChallenges()));
+        break;
+      case "day_offset":
+        generators.push(Promise.resolve(buildDayOffsetChallenges(undefined, countPerType)));
+        break;
+      case "mark_events":
+        generators.push(Promise.resolve(buildMarkEventChallenges(undefined, undefined, undefined, countPerType)));
+        break;
+      case "interval_count":
+        generators.push(Promise.resolve(buildIntervalCountChallenges(undefined, undefined, undefined, countPerType)));
         break;
     }
   }
@@ -1098,6 +1415,11 @@ export const generateCalendarExplorer = async (
     identify: "Date Finding",
     count: "Day Counting",
     pattern: "Calendar Patterns",
+    day_sequence: "Days in Order",
+    month_sequence: "Months in Order",
+    day_offset: "Days Forward",
+    mark_events: "Mark Events",
+    interval_count: "Days Between Events",
   };
   let title = `Calendar Explorer: ${topic}`;
   let description = "Explore the calendar to find dates, count days, and discover patterns!";
@@ -1109,12 +1431,17 @@ export const generateCalendarExplorer = async (
 
   // ── Within-mode support tier: withdraw on-screen / instructional scaffolding.
   //    Applied LAST so fallback challenges are tiered too, in CODE so the tier
-  //    never reached a prompt, and per challenge so a blended session is tiered
-  //    as well (the tier is a student property, not a single-mode one). Gated
-  //    ONLY on supportTier being present. ──
+  //    never reaches a prompt. A curated blend has no single support surface,
+  //    and spoken day_sequence has its own correction scaffold, so only one
+  //    resolved visual mode receives this visual-calendar tier. ──
   const preReader = isCalendarPreReader(ctx);
-  challenges = applyCalendarSupportTier(challenges, supportTier, preReader);
-  if (supportTier) {
+  const tierApplies = resolution?.modes.length === 1 && !spokenTypes.includes(allowedTypes[0]);
+  challenges = applyCalendarSupportTier(
+    challenges,
+    tierApplies ? supportTier : undefined,
+    preReader,
+  );
+  if (supportTier && tierApplies) {
     console.log(
       `[CalendarExplorer] Support tier "${supportTier}" applied to ${challenges.length} challenge(s)`
       + (preReader ? " (K band floor: orientation scaffolds held)" : ""),

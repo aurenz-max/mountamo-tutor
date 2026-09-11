@@ -5,12 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation } from '../../../evaluation';
-import type { CalendarExplorerMetrics } from '../../../evaluation/types';
+import type { CalendarExplorerMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  calendarExplorerSequencePackBase,
+  type CalendarDaySequenceItem,
+  type CalendarSequenceItem,
+} from './calendarExplorerScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -18,7 +29,15 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface CalendarExplorerChallenge {
   id: string;
-  type: 'identify' | 'count' | 'pattern';
+  type:
+    | 'identify'
+    | 'count'
+    | 'pattern'
+    | 'day_sequence'
+    | 'month_sequence'
+    | 'day_offset'
+    | 'mark_events'
+    | 'interval_count';
   question: string;
   /** The month to display (1-12) */
   month: number;
@@ -45,6 +64,30 @@ export interface CalendarExplorerChallenge {
   todayDate?: number;
   /** For count: which day of week to count (e.g., "Tuesday") */
   targetDayOfWeek?: string;
+  /** Spoken day_sequence only: the day the tutor says. Never printed. */
+  currentDay?: string;
+  /** Spoken day_sequence only: the successor the live tutor judges. */
+  expectedDay?: string;
+  /** Spoken day_sequence only: 1-based position in the continuing chain. */
+  chainPosition?: number;
+  /** Spoken month_sequence only: the month the tutor says. Never printed. */
+  currentMonth?: string;
+  /** Spoken month_sequence only: the successor the live tutor judges. */
+  expectedMonth?: string;
+  /** day_offset only: weekday from which the student counts. */
+  startDay?: string;
+  /** day_offset only: number of days to count forward (1-7). */
+  offsetDays?: number;
+  /** mark_events only: name of the marker the student is placing. */
+  eventLabel?: string;
+  /** Dates visibly marked before the attempt (prior events or interval endpoints). */
+  markedDates?: number[];
+  /** interval_count only: first marked endpoint. */
+  intervalStartDate?: number;
+  /** interval_count only: second marked endpoint. */
+  intervalEndDate?: number;
+  /** interval_count only: whether endpoints are excluded or included. */
+  countConvention?: 'between' | 'inclusive';
 
   // ── Within-mode support-tier scaffolds (stamped by the generator from
   //    ctx.supportTier, in code, post-parse). DISPLAY / INSTRUCTION ONLY — they
@@ -73,7 +116,9 @@ export interface CalendarExplorerData {
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
-  onEvaluationSubmit?: (result: unknown) => void;
+  componentIntent?: string;
+  objectiveText?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<CalendarExplorerMetrics>) => void;
 }
 
 // ============================================================================
@@ -91,6 +136,9 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   identify: { label: 'Identify', icon: '📅', accentColor: 'blue' },
   count:    { label: 'Count',    icon: '🔢', accentColor: 'emerald' },
   pattern:  { label: 'Pattern',  icon: '🔍', accentColor: 'purple' },
+  day_offset: { label: 'Days Forward', icon: '↪️', accentColor: 'cyan' },
+  mark_events: { label: 'Mark Events', icon: '📌', accentColor: 'amber' },
+  interval_count: { label: 'Days Between', icon: '↔️', accentColor: 'emerald' },
 };
 
 // ============================================================================
@@ -121,7 +169,8 @@ function getDayOfWeek(day: number, month: number, year: number): string {
  * (the grid stays live for locating the date, it just isn't the answer channel).
  */
 export function isGridAnswerChallenge(challenge: CalendarExplorerChallenge): boolean {
-  return challenge.type === 'identify' && /^\d+$/.test((challenge.correctAnswer ?? '').trim());
+  return (challenge.type === 'identify' || challenge.type === 'mark_events')
+    && /^\d+$/.test((challenge.correctAnswer ?? '').trim());
 }
 
 /**
@@ -161,7 +210,7 @@ export function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
 /** PLATFORM PROP CONTRACT: registry primitives mount as
  *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
  *  prop (evaluation props merged in), never spread across props. */
-const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }> = ({ data }) => {
+const CalendarGridExplorer: React.FC<{ data: CalendarExplorerData; index?: number }> = ({ data }) => {
   const {
     title,
     description,
@@ -173,6 +222,9 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
     subskillId,
     objectiveId,
     exhibitId,
+    componentIntent,
+    objectiveText,
+    onEvaluationSubmit,
   } = data;
 
   // ── Evaluation ──────────────────────────────────────────────────
@@ -186,6 +238,9 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
     subskillId,
     objectiveId,
     exhibitId,
+    componentIntent,
+    objectiveText,
+    onSubmit: onEvaluationSubmit,
   });
 
   // ── Challenge Progress ──────────────────────────────────────────
@@ -437,15 +492,40 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
               </p>
               {/* Month caption — an orientation scaffold; withdrawn at medium/hard,
                   where the question text already names the month. */}
-              {showMonthLabel && (
+              {showMonthLabel && currentChallenge.type !== 'day_offset' && (
                 <p className="text-xs text-slate-500" data-testid="month-label">
                   {MONTH_NAMES[currentChallenge.month - 1]} {currentChallenge.year}
                 </p>
               )}
             </div>
 
+            {currentChallenge.type === 'day_offset' && (
+              <div
+                data-testid="day-offset-surface"
+                className="mb-6 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-6 text-center"
+              >
+                <p className="text-xs uppercase tracking-[0.25em] text-cyan-300/70">Start day</p>
+                <p className="mt-2 text-3xl font-light text-cyan-100">{currentChallenge.startDay}</p>
+                <div className="my-5 flex items-center justify-center gap-2" aria-label={`${currentChallenge.offsetDays} steps forward`}>
+                  {Array.from({ length: currentChallenge.offsetDays ?? 0 }, (_, index) => (
+                    <span
+                      key={index}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
+                      aria-hidden="true"
+                    >
+                      →
+                    </span>
+                  ))}
+                </div>
+                <p className="text-sm text-slate-300">
+                  Count forward {currentChallenge.offsetDays} {currentChallenge.offsetDays === 1 ? 'day' : 'days'}.
+                </p>
+              </div>
+            )}
+
             {/* Calendar Grid */}
-            <div className="mb-6">
+            {currentChallenge.type !== 'day_offset' && (
+            <div className="mb-6" data-testid="calendar-grid">
               <div className="grid grid-cols-7 gap-1 max-w-md mx-auto">
                 {/* Day headers — orientation scaffold, withdrawn at hard */}
                 {showDayHeaders && DAY_HEADERS.map((day) => (
@@ -467,6 +547,7 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
                   const isHighlighted = highlightedDates.has(day);
                   const isClicked = clickedDate === day;
                   const isSelected = answerFromGrid && selectedAnswer === String(day);
+                  const isMarked = currentChallenge.markedDates?.includes(day) ?? false;
 
                   // Determine day-of-week for count-type highlighting. The purple
                   // pre-marking does the counting task for the student, so it is
@@ -491,6 +572,7 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
                       data-testid={`date-${day}`}
                       data-target-day={isTargetDay ? 'true' : undefined}
                       data-today={isToday ? 'true' : undefined}
+                      data-marked={isMarked ? 'true' : undefined}
                       className={`
                         relative h-10 rounded-lg text-sm font-mono transition-all duration-150
                         ${isToday ? 'ring-2 ring-amber-400/80 font-bold' : ''}
@@ -502,6 +584,8 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
                               ? 'bg-white/15 text-white border border-white/30'
                               : isTargetDay
                                 ? 'bg-purple-500/15 text-purple-300 border border-purple-500/20'
+                                : isMarked
+                                  ? 'bg-amber-500/20 text-amber-200 border border-amber-400/50 ring-1 ring-amber-400/30'
                                 : isWeekend
                                   ? 'bg-white/3 text-slate-500 border border-white/5 hover:bg-white/10'
                                   : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 hover:text-white'
@@ -516,6 +600,22 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
                           className="absolute -top-1 -right-1 text-[10px] leading-none"
                         >
                           ⭐
+                        </span>
+                      )}
+                      {isMarked && !isToday && (
+                        <span
+                          aria-label="marked event"
+                          className="absolute -top-1 -right-1 text-[10px] leading-none"
+                        >
+                          📌
+                        </span>
+                      )}
+                      {currentChallenge.type === 'mark_events' && isSelected && (
+                        <span
+                          aria-label={`${currentChallenge.eventLabel ?? 'event'} marker placed`}
+                          className="absolute -top-1 -right-1 text-[10px] leading-none"
+                        >
+                          📍
                         </span>
                       )}
                     </button>
@@ -534,7 +634,13 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
                   ⭐ = today
                 </p>
               )}
+              {currentChallenge.type === 'interval_count' && (
+                <p className="mt-2 text-center text-xs text-amber-300/80">
+                  📌 = marked date
+                </p>
+              )}
             </div>
+            )}
 
             {/* Answer Options — every challenge that is NOT answered by clicking a
                 date in the grid (count, pattern, and day-name identify). */}
@@ -564,10 +670,11 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
               </div>
             )}
 
-            {/* For date-answer identify — show the selected date */}
+            {/* For grid-answer modes — show the selected date / placed marker. */}
             {answerFromGrid && selectedAnswer && !feedback && (
               <div className="mb-4 text-sm text-slate-300">
-                Selected: <span className="text-blue-300 font-medium">{selectedAnswer}</span>
+                {currentChallenge.type === 'mark_events' ? 'Marker placed on: ' : 'Selected: '}
+                <span className="text-blue-300 font-medium">{selectedAnswer}</span>
               </div>
             )}
 
@@ -626,6 +733,212 @@ const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }>
       )}
     </div>
   );
+};
+
+export function daySequenceItemsFromChallenges(
+  challenges: CalendarExplorerChallenge[],
+): CalendarDaySequenceItem[] {
+  return calendarSequenceItemsFromChallenges(challenges).filter(
+    (item): item is CalendarDaySequenceItem => item.type === 'day_sequence',
+  );
+}
+
+export function calendarSequenceItemsFromChallenges(
+  challenges: CalendarExplorerChallenge[],
+): CalendarSequenceItem[] {
+  return challenges.flatMap((challenge, index): CalendarSequenceItem[] => {
+    if (
+      challenge.type === 'day_sequence'
+      && challenge.currentDay
+      && challenge.expectedDay
+    ) {
+      return [{
+        id: challenge.id,
+        type: 'day_sequence',
+        answerKind: 'voice',
+        responseClass: 'short_spoken_word',
+        action: 'day_sequence',
+        currentDay: challenge.currentDay,
+        expectedDay: challenge.expectedDay,
+        chainPosition: challenge.chainPosition ?? index + 1,
+      }];
+    }
+    if (
+      challenge.type === 'month_sequence'
+      && challenge.currentMonth
+      && challenge.expectedMonth
+    ) {
+      return [{
+        id: challenge.id,
+        type: 'month_sequence',
+        answerKind: 'voice',
+        responseClass: 'short_spoken_word',
+        action: 'month_sequence',
+        currentMonth: challenge.currentMonth,
+        expectedMonth: challenge.expectedMonth,
+        chainPosition: challenge.chainPosition ?? index + 1,
+      }];
+    }
+    return [];
+  });
+}
+
+/** Spoken mode is isolated from the calendar grid so each response channel has
+ * one honest lifecycle: the tutor owns progression here; taps own it above. */
+const CalendarSequenceExplorer: React.FC<{ data: CalendarExplorerData }> = ({ data }) => {
+  const items = useMemo(
+    () => calendarSequenceItemsFromChallenges(data.challenges ?? []),
+    [data.challenges],
+  );
+  const dayOnly = items.length > 0 && items.every((item) => item.type === 'day_sequence');
+  const monthOnly = items.length > 0 && items.every((item) => item.type === 'month_sequence');
+  const unit = monthOnly ? 'month' : dayOnly ? 'day' : 'calendar item';
+  const resolvedInstanceId = data.instanceId || 'calendar-sequence-standalone';
+  const evaluation = usePrimitiveEvaluation<CalendarExplorerMetrics>({
+    primitiveType: 'calendar-explorer',
+    instanceId: resolvedInstanceId,
+    skillId: data.skillId,
+    subskillId: data.subskillId,
+    objectiveId: data.objectiveId,
+    exhibitId: data.exhibitId,
+    componentIntent: data.componentIntent,
+    objectiveText: data.objectiveText,
+    onSubmit: data.onEvaluationSubmit,
+  });
+
+  const pack = useMemo<JudgedScriptPack<CalendarSequenceItem>>(() => ({
+    ...calendarExplorerSequencePackBase(items, {
+      title: data.title,
+      gradeBand: data.gradeBand ?? 'K',
+      supportTier: data.supportTier,
+    }),
+    statusLines: {
+      ready: () => `Listen for the ${unit}, then say what comes next.`,
+      retry: () => `Say the next ${unit} again.`,
+      affirmedNext: 'That keeps the chain going!',
+      done: `You finished the ${unit} chain!`,
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      const current = item.type === 'day_sequence' ? item.currentDay : item.currentMonth;
+      const expected = item.type === 'day_sequence' ? item.expectedDay : item.expectedMonth;
+      const itemUnit = item.type === 'day_sequence' ? 'day' : 'month';
+      return {
+        challenge: `Say the ${itemUnit} that comes after ${current}.`,
+        expected,
+        observed: lastHeard
+          ? `Heard "${lastHeard}".`
+          : `The tutor judged the spoken ${itemUnit} wrong from the audio.`,
+      };
+    },
+  }), [data.gradeBand, data.supportTier, data.title, items, unit]);
+
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const metrics: CalendarExplorerMetrics = {
+      type: 'calendar-explorer',
+      questionsCorrect: summary.solvedCount,
+      questionsTotal: summary.outcomes.length,
+      accuracy: summary.accuracy,
+      attemptsCount: summary.attemptsCount,
+    };
+    evaluation.submitResult(summary.passed, summary.accuracy, metrics);
+  }, [evaluation.submitResult]);
+
+  const runner = useJudgedScriptRunner<CalendarSequenceItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel: data.gradeBand ?? 'K',
+    exhibitId: data.exhibitId,
+    onFinished: handleFinished,
+  });
+
+  const phaseResults = useMemo(
+    () => phaseResultsFromSummary(items, runner.summary, (item) => ({
+      label: `${item.type === 'day_sequence' ? 'Day' : 'Month'} turn ${item.chainPosition}`,
+      icon: item.type === 'day_sequence' ? '📅' : '🗓️',
+      accentColor: 'cyan',
+    })),
+    [items, runner.summary],
+  );
+
+  if (items.length === 0) {
+    return (
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <CardContent className="p-8 text-center text-slate-400">
+          No spoken day chain is available.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6" data-testid={monthOnly ? 'calendar-month-sequence' : 'calendar-day-sequence'}>
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-xl font-light text-slate-100">{data.title}</CardTitle>
+              <p className="text-sm text-slate-400 mt-1">
+                Listen, then say the {unit} that comes next. Keep the chain going!
+              </p>
+            </div>
+            <Badge className="bg-cyan-500/10 border border-cyan-400/30 text-cyan-200 text-xs">
+              Say it out loud
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 space-y-5">
+          {!evaluation.hasSubmitted && (
+            <>
+              <div className="flex justify-center">
+                <Badge className="bg-white/5 border border-white/20 text-slate-300 text-xs">
+                  {Math.min(runner.currentIndex + 1, items.length)} / {items.length}
+                </Badge>
+              </div>
+
+              {/* Intentionally no printed sequence names or strip. The tutor's
+                  voice is the stimulus and the child's voice is the answer. */}
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-10 text-center">
+                <div className="text-6xl" aria-hidden="true">📅</div>
+                <p className="mt-4 text-sm uppercase tracking-[0.3em] text-slate-500">
+                  listen · think · say
+                </p>
+              </div>
+
+              <JudgedMicPanel run={runner} voiceLabel={`Say the next ${unit}`}>
+                <Button
+                  variant="ghost"
+                  onClick={runner.hearStimulus}
+                  disabled={!runner.running}
+                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 text-xs"
+                >
+                  🔊 Hear the question again
+                </Button>
+              </JudgedMicPanel>
+            </>
+          )}
+
+          {evaluation.hasSubmitted && phaseResults.length > 0 && (
+            <PhaseSummaryPanel
+              phases={phaseResults}
+              overallScore={evaluation.submittedResult?.score ?? 0}
+              durationMs={evaluation.elapsedMs}
+              heading={`${monthOnly ? 'Month' : dayOnly ? 'Day' : 'Calendar'} Chain Complete!`}
+              celebrationMessage={`You kept the ${monthOnly ? 'months' : dayOnly ? 'days' : 'calendar sequences'} moving in order with your voice!`}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }> = (props) => {
+  const spokenOnly = props.data.challenges.length > 0
+    && props.data.challenges.every((challenge) =>
+      challenge.type === 'day_sequence' || challenge.type === 'month_sequence');
+  return spokenOnly
+    ? <CalendarSequenceExplorer data={props.data} />
+    : <CalendarGridExplorer {...props} />;
 };
 
 export default CalendarExplorer;

@@ -1105,7 +1105,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     "calendar-explorer": {
         "identify": PriorConfig(-1.5, "Find specific dates on calendar"),
+        "mark_events": PriorConfig(-1.0, "Place a named event marker on its requested calendar date"),
+        "day_sequence": PriorConfig(-0.5, "Say successive days in a live-judged spoken chain"),
         "count":    PriorConfig(0.0, "Count specific days or days between dates"),
+        "month_sequence": PriorConfig(0.5, "Say successive months in a live-judged spoken chain"),
+        "day_offset": PriorConfig(1.0, "Count forward up to seven days from a named weekday"),
+        "interval_count": PriorConfig(1.25, "Count an explicit interval between two marked dates"),
         "pattern":  PriorConfig(1.5, "Discover and apply calendar patterns"),
     },
     "timeline-builder": {

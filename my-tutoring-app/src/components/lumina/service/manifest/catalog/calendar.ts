@@ -12,13 +12,20 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
     id: 'calendar-explorer',
     description:
       'Interactive monthly calendar where students click days, navigate months, identify patterns, count days, and answer date questions. '
-      + 'Supports identify (find specific dates), count (count days or days between dates), and pattern (discover calendar patterns) challenge types. '
+      + 'Supports finding dates, marking events, counting occurrences and intervals, counting forward by weekdays, '
+      + 'discovering patterns, and live-judged spoken day/month successor chains. '
       + 'Grade range K-5.',
-    constraints: 'Requires a month/year context and challenge array. Grade band determines complexity.',
-    affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 5 },
+    constraints:
+      'Visual calendar modes require valid month/year context and code-verified keys for date arithmetic. '
+      + 'Spoken sequence modes require at least five code-built successor turns, a random start, no printed sequence strip, '
+      + 'and live tutor judgment.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },
+    audioInput: { manual_activity: true },
     tutoring: {
       taskDescription:
-        'Student is exploring a calendar for {{month}} {{year}}, answering questions about dates, counting days, and finding patterns. This is question {{challengeNumber}} of {{totalChallenges}} ({{challengeType}}).',
+        'Student is doing calendar practice ({{challengeType}}), question {{challengeNumber}} of {{totalChallenges}}. '
+        + 'Current prompt: {{currentChallenge}}. Calendar context when used: {{month}} {{year}}. '
+        + 'In day_sequence and month_sequence modes, speak only the exact scripted application cue and judge the child\'s spoken successor.',
       contextKeys: [
         'title', 'gradeBand', 'currentChallenge', 'challengeNumber', 'totalChallenges',
         'challengeType', 'month', 'year', 'supportTier',
@@ -43,6 +50,16 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
           response:
             'Remember, the number in each box is the date, and the column tells you the day of the week.',
         },
+        {
+          pattern: 'Student says the wrong successor during the spoken day chain',
+          response:
+            'Follow the scripted correction: say the full week together from Sunday, model the current successor, and ask the same turn again.',
+        },
+        {
+          pattern: 'Student says the wrong successor during the spoken month chain',
+          response:
+            'Follow the scripted correction: say all months together from January, model the current successor, and ask the same turn again.',
+        },
       ],
       aiDirectives: [
         {
@@ -65,23 +82,71 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'identify',
-        label: 'Identify Dates (Easy)',
+        affordances: { answers: ['tap'] },
+        label: 'Identify Dates',
         beta: -1.5,
         scaffoldingMode: 2,
         challengeTypes: ['identify'],
         description: 'Find specific dates on calendar',
       },
       {
+        evalMode: 'mark_events',
+        affordances: { answers: ['tap'] },
+        label: 'Mark Events',
+        beta: -1.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['mark_events'],
+        description: 'Place a named event marker on its requested date in a monthly calendar',
+      },
+      {
+        evalMode: 'day_sequence',
+        label: 'Days in Order',
+        beta: -0.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['day_sequence'],
+        description: 'Hear one day and say each successor in a live-judged chain of at least five turns',
+        affordances: { representation: 'symbolic', answers: ['spoken'] },
+      },
+      {
         evalMode: 'count',
-        label: 'Count Days (Medium)',
+        affordances: { answers: ['tap'] },
+        label: 'Count Days',
         beta: 0.0,
         scaffoldingMode: 3,
         challengeTypes: ['count'],
-        description: 'Count specific days or days between dates',
+        description: 'Count occurrences of a weekday in a monthly calendar',
+      },
+      {
+        evalMode: 'month_sequence',
+        label: 'Months in Order',
+        beta: 0.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['month_sequence'],
+        description: 'Hear one month and say each successor in a live-judged chain of at least five turns',
+        affordances: { representation: 'symbolic', answers: ['spoken'] },
+      },
+      {
+        evalMode: 'day_offset',
+        affordances: { answers: ['tap'] },
+        label: 'Count Days Forward',
+        beta: 1.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['day_offset'],
+        description: 'Count forward one to seven days from any named weekday and choose the landing day',
+      },
+      {
+        evalMode: 'interval_count',
+        affordances: { answers: ['tap'] },
+        label: 'Days Between Events',
+        beta: 1.25,
+        scaffoldingMode: 4,
+        challengeTypes: ['interval_count'],
+        description: 'Count an explicitly defined interval between two visibly marked calendar dates',
       },
       {
         evalMode: 'pattern',
-        label: 'Calendar Patterns (Hard)',
+        affordances: { answers: ['tap'] },
+        label: 'Calendar Patterns',
         beta: 1.5,
         scaffoldingMode: 5,
         challengeTypes: ['pattern'],
