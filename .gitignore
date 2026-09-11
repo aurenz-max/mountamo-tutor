@@ -57,3 +57,9 @@ my-tutoring-app/qa/lesson-planner/open-topic/
 my-tutoring-app/qa/lesson-planner/staged-ab/
 my-tutoring-app/qa/lesson-planner/staged-full-catalog/
 my-tutoring-app/qa/lesson-planner/literacy-exemplars/
+
+# Raw tsc before/after dumps from manual verification steps — scratch, never a
+# committed artifact class (the dated .md/.json reports under qa/eval-reports/
+# and qa/curriculum-fit/ are the durable evidence).
+my-tutoring-app/qa/*-tsc-before.txt
+my-tutoring-app/qa/*-tsc-after.txt

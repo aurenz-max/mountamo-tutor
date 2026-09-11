@@ -1,0 +1,7230 @@
+{
+  "asOf": "2026-09-10",
+  "basis": "Working-tree catalog evaluated with TypeScript transpilation; registration fields are literal text checks, not runtime certification.",
+  "totals": {
+    "primitives": 210,
+    "modes": 652
+  },
+  "domains": [
+    {
+      "domain": "core",
+      "primitives": 19,
+      "modes": 26,
+      "withModes": 8,
+      "evaluation": 10
+    },
+    {
+      "domain": "math",
+      "primitives": 63,
+      "modes": 313,
+      "withModes": 63,
+      "evaluation": 63
+    },
+    {
+      "domain": "engineering",
+      "primitives": 24,
+      "modes": 25,
+      "withModes": 8,
+      "evaluation": 23
+    },
+    {
+      "domain": "science",
+      "primitives": 0,
+      "modes": 0,
+      "withModes": 0,
+      "evaluation": 0
+    },
+    {
+      "domain": "chemistry",
+      "primitives": 14,
+      "modes": 43,
+      "withModes": 14,
+      "evaluation": 14
+    },
+    {
+      "domain": "biology",
+      "primitives": 17,
+      "modes": 9,
+      "withModes": 2,
+      "evaluation": 14
+    },
+    {
+      "domain": "astronomy",
+      "primitives": 11,
+      "modes": 17,
+      "withModes": 4,
+      "evaluation": 10
+    },
+    {
+      "domain": "physics",
+      "primitives": 5,
+      "modes": 18,
+      "withModes": 4,
+      "evaluation": 5
+    },
+    {
+      "domain": "literacy",
+      "primitives": 38,
+      "modes": 142,
+      "withModes": 36,
+      "evaluation": 38
+    },
+    {
+      "domain": "media",
+      "primitives": 4,
+      "modes": 3,
+      "withModes": 1,
+      "evaluation": 2
+    },
+    {
+      "domain": "assessment",
+      "primitives": 2,
+      "modes": 4,
+      "withModes": 1,
+      "evaluation": 1
+    },
+    {
+      "domain": "calendar",
+      "primitives": 2,
+      "modes": 11,
+      "withModes": 2,
+      "evaluation": 2
+    },
+    {
+      "domain": "di",
+      "primitives": 9,
+      "modes": 34,
+      "withModes": 9,
+      "evaluation": 9
+    },
+    {
+      "domain": "history",
+      "primitives": 2,
+      "modes": 7,
+      "withModes": 2,
+      "evaluation": 2
+    }
+  ],
+  "primitives": [
+    {
+      "domain": "core",
+      "id": "curator-brief",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "role": "introduce",
+        "minutes": 2,
+        "maxPerLesson": 1
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "concept-card-grid",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": "introduce",
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "comparison-panel",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "introduce",
+          "visualize"
+        ],
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "generative-table",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "role": "visualize",
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "custom-visual",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "role": "visualize",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "formula-card",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "role": "introduce",
+        "minutes": 2
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "feature-exhibit",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "role": "introduce",
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "annotated-example",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "role": "introduce",
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "take-home-activity",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "audience": "caregiver",
+        "representation": "concrete",
+        "answers": [
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 10,
+        "maxPerLesson": 1
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "graph-board",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "role": "visualize",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "foundation-explorer",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": "introduce",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "fast-fact",
+      "modes": [
+        {
+          "id": "recognize",
+          "beta": 2.5
+        },
+        {
+          "id": "recall",
+          "beta": 3.5
+        },
+        {
+          "id": "apply",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "apply",
+          "assess"
+        ],
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "fact-file",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": 1.5
+        },
+        {
+          "id": "recall",
+          "beta": 3.5
+        },
+        {
+          "id": "apply",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "introduce",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "how-it-works",
+      "modes": [
+        {
+          "id": "guided",
+          "beta": 1.5
+        },
+        {
+          "id": "sequence",
+          "beta": 3.5
+        },
+        {
+          "id": "predict",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "developing",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "introduce",
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "timeline-explorer",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": 1.5
+        },
+        {
+          "id": "order",
+          "beta": 3.5
+        },
+        {
+          "id": "connect",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "introduce",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "vocabulary-explorer",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": 1.5
+        },
+        {
+          "id": "recall",
+          "beta": 3.5
+        },
+        {
+          "id": "apply",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "introduce",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "digital-skills-sim",
+      "modes": [
+        {
+          "id": "click",
+          "beta": -1.5
+        },
+        {
+          "id": "drag",
+          "beta": -1
+        },
+        {
+          "id": "type",
+          "beta": -0.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "answers": [
+          "tap",
+          "manipulate",
+          "type"
+        ],
+        "role": [
+          "introduce",
+          "apply"
+        ],
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "deep-dive",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": -1.5
+        },
+        {
+          "id": "recall",
+          "beta": -0.5
+        },
+        {
+          "id": "apply",
+          "beta": 0.5
+        },
+        {
+          "id": "analyze",
+          "beta": 1.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "introduce",
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "core",
+      "id": "passage-studio",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": -1.5
+        },
+        {
+          "id": "recall",
+          "beta": -0.5
+        },
+        {
+          "id": "apply",
+          "beta": 0.5
+        },
+        {
+          "id": "analyze",
+          "beta": 1.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "introduce",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "bar-model",
+      "modes": [
+        {
+          "id": "read_one_to_one",
+          "beta": 1.2
+        },
+        {
+          "id": "most_least",
+          "beta": 1.4
+        },
+        {
+          "id": "compare_bars",
+          "beta": 1.5
+        },
+        {
+          "id": "match_to_bar",
+          "beta": 1.6
+        },
+        {
+          "id": "build_one_to_one",
+          "beta": 1.8
+        },
+        {
+          "id": "say_what_it_shows",
+          "beta": 2
+        },
+        {
+          "id": "compare_two_graphs",
+          "beta": 2.2
+        },
+        {
+          "id": "read_scale",
+          "beta": 2.5
+        },
+        {
+          "id": "picture_graph",
+          "beta": 3
+        },
+        {
+          "id": "scaled_bar_graph",
+          "beta": 3.5
+        },
+        {
+          "id": "graph_word_problem",
+          "beta": 4.5
+        },
+        {
+          "id": "build_graph",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap",
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "number-line",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 0.5
+        },
+        {
+          "id": "plot",
+          "beta": 1.5
+        },
+        {
+          "id": "jump",
+          "beta": 2.5
+        },
+        {
+          "id": "order",
+          "beta": 3.5
+        },
+        {
+          "id": "between",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "base-ten-blocks",
+      "modes": [
+        {
+          "id": "build_number",
+          "beta": 1.5
+        },
+        {
+          "id": "read_blocks",
+          "beta": 2.5
+        },
+        {
+          "id": "regroup",
+          "beta": 3.5
+        },
+        {
+          "id": "operate",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "build",
+          "manipulate",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "fraction-circles",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 1.5
+        },
+        {
+          "id": "build",
+          "beta": 2.5
+        },
+        {
+          "id": "compare",
+          "beta": 3.5
+        },
+        {
+          "id": "equivalent",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "answers": [
+          "type",
+          "tap",
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "fraction-bar",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 1.5
+        },
+        {
+          "id": "build",
+          "beta": 2.5
+        },
+        {
+          "id": "compare",
+          "beta": 3.5
+        },
+        {
+          "id": "add_subtract",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap",
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "place-value-chart",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 2
+        },
+        {
+          "id": "build",
+          "beta": 3
+        },
+        {
+          "id": "compare",
+          "beta": 4
+        },
+        {
+          "id": "expanded_form",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "spoken",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "practice-problem",
+      "modes": [
+        {
+          "id": "derive_easy",
+          "beta": -0.5
+        },
+        {
+          "id": "derive_medium",
+          "beta": 0
+        },
+        {
+          "id": "derive_hard",
+          "beta": 0.7
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 10
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "area-model",
+      "modes": [
+        {
+          "id": "build_model",
+          "beta": 1.5
+        },
+        {
+          "id": "find_area",
+          "beta": 2.5
+        },
+        {
+          "id": "perimeter",
+          "beta": 3
+        },
+        {
+          "id": "multiply",
+          "beta": 3.5
+        },
+        {
+          "id": "factor",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "array-grid",
+      "modes": [
+        {
+          "id": "build_array",
+          "beta": 1.5
+        },
+        {
+          "id": "count_array",
+          "beta": 2.5
+        },
+        {
+          "id": "multiply_array",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "answers": [
+          "build",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "double-number-line",
+      "modes": [
+        {
+          "id": "equivalent_ratios",
+          "beta": 2.5
+        },
+        {
+          "id": "find_missing",
+          "beta": 3.5
+        },
+        {
+          "id": "unit_rate",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "tape-diagram",
+      "modes": [
+        {
+          "id": "represent",
+          "beta": 1.5
+        },
+        {
+          "id": "solve_part_whole",
+          "beta": 2.5
+        },
+        {
+          "id": "solve_comparison",
+          "beta": 3.5
+        },
+        {
+          "id": "multi_step",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "factor-tree",
+      "modes": [
+        {
+          "id": "guided_small",
+          "beta": 1.5
+        },
+        {
+          "id": "guided_medium",
+          "beta": 2.5
+        },
+        {
+          "id": "unguided",
+          "beta": 3.5
+        },
+        {
+          "id": "unguided_large",
+          "beta": 4.5
+        },
+        {
+          "id": "assessment_intro",
+          "beta": 5.5
+        },
+        {
+          "id": "assessment",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "ratio-table",
+      "modes": [
+        {
+          "id": "build_ratio",
+          "beta": 2.5
+        },
+        {
+          "id": "missing_value",
+          "beta": 3.5
+        },
+        {
+          "id": "find_multiplier",
+          "beta": 4.5
+        },
+        {
+          "id": "unit_rate",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "percent-bar",
+      "modes": [
+        {
+          "id": "identify_percent",
+          "beta": 2.5
+        },
+        {
+          "id": "find_part",
+          "beta": 3.5
+        },
+        {
+          "id": "find_whole",
+          "beta": 4.5
+        },
+        {
+          "id": "convert",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "balance-scale",
+      "modes": [
+        {
+          "id": "equality",
+          "beta": 1.5
+        },
+        {
+          "id": "equality_hard",
+          "beta": 2.5
+        },
+        {
+          "id": "one_step",
+          "beta": 3.5
+        },
+        {
+          "id": "one_step_hard",
+          "beta": 4.5
+        },
+        {
+          "id": "two_step_intro",
+          "beta": 5.5
+        },
+        {
+          "id": "two_step",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "function-machine",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": 2.5
+        },
+        {
+          "id": "predict",
+          "beta": 3
+        },
+        {
+          "id": "discover_rule",
+          "beta": 3.5
+        },
+        {
+          "id": "create_rule",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "coordinate-graph",
+      "modes": [
+        {
+          "id": "plot_point",
+          "beta": -1
+        },
+        {
+          "id": "read_point",
+          "beta": -0.5
+        },
+        {
+          "id": "find_slope",
+          "beta": 0.5
+        },
+        {
+          "id": "find_intercept",
+          "beta": 1
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "slope-triangle",
+      "modes": [
+        {
+          "id": "identify_slope",
+          "beta": 3.5
+        },
+        {
+          "id": "calculate",
+          "beta": 5
+        },
+        {
+          "id": "draw_triangle",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "systems-equations-visualizer",
+      "modes": [
+        {
+          "id": "graph",
+          "beta": 3.5
+        },
+        {
+          "id": "substitution",
+          "beta": 5
+        },
+        {
+          "id": "elimination",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "polygon-area-builder",
+      "modes": [
+        {
+          "id": "decompose",
+          "beta": 1.5
+        },
+        {
+          "id": "find_area_triangle_parallelogram",
+          "beta": 2.5
+        },
+        {
+          "id": "find_area_trapezoid",
+          "beta": 3.5
+        },
+        {
+          "id": "composite_area",
+          "beta": 4.5
+        },
+        {
+          "id": "coordinate_polygon",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "circle-explorer",
+      "modes": [
+        {
+          "id": "discover_pi",
+          "beta": 2
+        },
+        {
+          "id": "circumference",
+          "beta": 3
+        },
+        {
+          "id": "area",
+          "beta": 4
+        },
+        {
+          "id": "reverse",
+          "beta": 5
+        },
+        {
+          "id": "composite",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "angle-workshop",
+      "modes": [
+        {
+          "id": "measure",
+          "beta": 1.5
+        },
+        {
+          "id": "classify_pairs",
+          "beta": 2.5
+        },
+        {
+          "id": "solve_unknown",
+          "beta": 3.5
+        },
+        {
+          "id": "solve_algebraic",
+          "beta": 4.5
+        },
+        {
+          "id": "transversal",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "transformation-lab",
+      "modes": [
+        {
+          "id": "apply_translation_reflection",
+          "beta": 2.5
+        },
+        {
+          "id": "apply_rotation",
+          "beta": 3.5
+        },
+        {
+          "id": "identify_transformation",
+          "beta": 4
+        },
+        {
+          "id": "compose_sequence",
+          "beta": 5
+        },
+        {
+          "id": "dilation_similarity",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "matrix-display",
+      "modes": [
+        {
+          "id": "transpose",
+          "beta": 2.5
+        },
+        {
+          "id": "add_subtract",
+          "beta": 3.5
+        },
+        {
+          "id": "multiply",
+          "beta": 4.5
+        },
+        {
+          "id": "determinant_inverse",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "dot-plot",
+      "modes": [
+        {
+          "id": "whole_number_plot",
+          "beta": 1.5
+        },
+        {
+          "id": "measure_and_plot",
+          "beta": 2.5
+        },
+        {
+          "id": "read_frequency",
+          "beta": 3
+        },
+        {
+          "id": "fractional_units",
+          "beta": 3.5
+        },
+        {
+          "id": "compute_stats",
+          "beta": 4.5
+        },
+        {
+          "id": "compare_datasets",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "histogram",
+      "modes": [
+        {
+          "id": "identify_shape",
+          "beta": 1.5
+        },
+        {
+          "id": "find_modal_bin",
+          "beta": 2.5
+        },
+        {
+          "id": "read_frequency",
+          "beta": 3
+        },
+        {
+          "id": "estimate_center",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "two-way-table",
+      "modes": [
+        {
+          "id": "joint_probability",
+          "beta": 4
+        },
+        {
+          "id": "marginal_distribution",
+          "beta": 4.5
+        },
+        {
+          "id": "conditional_probability",
+          "beta": 5
+        },
+        {
+          "id": "independence_test",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "ten-frame",
+      "modes": [
+        {
+          "id": "build",
+          "beta": 1.5
+        },
+        {
+          "id": "decompose",
+          "beta": 2
+        },
+        {
+          "id": "build_teen",
+          "beta": 2
+        },
+        {
+          "id": "subitize",
+          "beta": 2.5
+        },
+        {
+          "id": "decompose_teen",
+          "beta": 3
+        },
+        {
+          "id": "make_ten",
+          "beta": 3.5
+        },
+        {
+          "id": "operate",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "concrete",
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "build"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "counting-board",
+      "modes": [
+        {
+          "id": "subitize_perceptual",
+          "beta": 0.5
+        },
+        {
+          "id": "count",
+          "beta": 1
+        },
+        {
+          "id": "give_me_n",
+          "beta": 1.5
+        },
+        {
+          "id": "recount_moved",
+          "beta": 1.8
+        },
+        {
+          "id": "subitize",
+          "beta": 2
+        },
+        {
+          "id": "group",
+          "beta": 2
+        },
+        {
+          "id": "add_more",
+          "beta": 2.2
+        },
+        {
+          "id": "take_away",
+          "beta": 2.4
+        },
+        {
+          "id": "count_on",
+          "beta": 2.5
+        },
+        {
+          "id": "compare",
+          "beta": 2.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "concrete",
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "comparison-builder",
+      "modes": [
+        {
+          "id": "compare_groups",
+          "beta": 1.5
+        },
+        {
+          "id": "one_more_less",
+          "beta": 2.5
+        },
+        {
+          "id": "compare_numbers",
+          "beta": 3.5
+        },
+        {
+          "id": "order",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "pattern-builder",
+      "modes": [
+        {
+          "id": "extend",
+          "beta": 1.5
+        },
+        {
+          "id": "identify_core",
+          "beta": 2.5
+        },
+        {
+          "id": "translate",
+          "beta": 3.5
+        },
+        {
+          "id": "create",
+          "beta": 4.5
+        },
+        {
+          "id": "find_rule",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "skip-counting-runner",
+      "modes": [
+        {
+          "id": "count_along",
+          "beta": 1.5
+        },
+        {
+          "id": "predict",
+          "beta": 2.5
+        },
+        {
+          "id": "fill_missing",
+          "beta": 3.5
+        },
+        {
+          "id": "find_skip_value",
+          "beta": 4.5
+        },
+        {
+          "id": "connect_multiplication",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "hundreds-chart",
+      "modes": [
+        {
+          "id": "highlight_sequence",
+          "beta": 1.5
+        },
+        {
+          "id": "complete_sequence",
+          "beta": 2.5
+        },
+        {
+          "id": "identify_pattern",
+          "beta": 3.5
+        },
+        {
+          "id": "find_skip_value",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "regrouping-workbench",
+      "modes": [
+        {
+          "id": "add_no_regroup",
+          "beta": 1.5
+        },
+        {
+          "id": "subtract_no_regroup",
+          "beta": 2.5
+        },
+        {
+          "id": "add_regroup",
+          "beta": 3.5
+        },
+        {
+          "id": "subtract_regroup",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "symbolic"
+        ],
+        "answers": [
+          "manipulate",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "multiplication-explorer",
+      "modes": [
+        {
+          "id": "build",
+          "beta": 1.5
+        },
+        {
+          "id": "connect",
+          "beta": 2.5
+        },
+        {
+          "id": "commutative",
+          "beta": 3.5
+        },
+        {
+          "id": "distributive",
+          "beta": 4.5
+        },
+        {
+          "id": "missing_factor",
+          "beta": 5.5
+        },
+        {
+          "id": "fluency",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "measure-lab",
+      "modes": [
+        {
+          "id": "balance_predict",
+          "beta": 1.2
+        },
+        {
+          "id": "capacity_predict",
+          "beta": 1.6
+        },
+        {
+          "id": "pour_count",
+          "beta": 2
+        },
+        {
+          "id": "order_capacity",
+          "beta": 2.2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "measurement-tools",
+      "modes": [
+        {
+          "id": "measure",
+          "beta": 1.5
+        },
+        {
+          "id": "compare",
+          "beta": 2.5
+        },
+        {
+          "id": "estimate",
+          "beta": 3.5
+        },
+        {
+          "id": "convert",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "shape-builder",
+      "modes": [
+        {
+          "id": "build",
+          "beta": 1.5
+        },
+        {
+          "id": "measure",
+          "beta": 2.5
+        },
+        {
+          "id": "classify_by_lines",
+          "beta": 3
+        },
+        {
+          "id": "classify",
+          "beta": 3.5
+        },
+        {
+          "id": "compose",
+          "beta": 4.5
+        },
+        {
+          "id": "find_symmetry",
+          "beta": 5.5
+        },
+        {
+          "id": "coordinate_shape",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "number-sequencer",
+      "modes": [
+        {
+          "id": "count_from",
+          "beta": 1.5
+        },
+        {
+          "id": "before_after",
+          "beta": 2.5
+        },
+        {
+          "id": "spot_error",
+          "beta": 3.5
+        },
+        {
+          "id": "order_cards",
+          "beta": 3.5
+        },
+        {
+          "id": "fill_missing",
+          "beta": 4.5
+        },
+        {
+          "id": "decade_fill",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "type",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "number-bond",
+      "modes": [
+        {
+          "id": "decompose",
+          "beta": 1.5
+        },
+        {
+          "id": "ten_and_ones",
+          "beta": 2
+        },
+        {
+          "id": "missing_part",
+          "beta": 2.5
+        },
+        {
+          "id": "related_fact",
+          "beta": 3
+        },
+        {
+          "id": "fact_family",
+          "beta": 3.5
+        },
+        {
+          "id": "build_equation",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "build",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "addition-subtraction-scene",
+      "modes": [
+        {
+          "id": "act_out",
+          "beta": 1.5
+        },
+        {
+          "id": "build_equation",
+          "beta": 2.5
+        },
+        {
+          "id": "solve_story",
+          "beta": 3.5
+        },
+        {
+          "id": "create_story",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "concrete",
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "manipulate",
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "ordinal-line",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 1.5
+        },
+        {
+          "id": "match",
+          "beta": 3
+        },
+        {
+          "id": "relative_position",
+          "beta": 4
+        },
+        {
+          "id": "sequence_story",
+          "beta": 4.5
+        },
+        {
+          "id": "build_sequence",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "sorting-station",
+      "modes": [
+        {
+          "id": "sort_one",
+          "beta": 1.5
+        },
+        {
+          "id": "sort_attribute",
+          "beta": 2.5
+        },
+        {
+          "id": "sort_variety",
+          "beta": 3
+        },
+        {
+          "id": "count_compare",
+          "beta": 3.5
+        },
+        {
+          "id": "odd_one_out",
+          "beta": 4
+        },
+        {
+          "id": "two_attributes",
+          "beta": 5
+        },
+        {
+          "id": "tally_record",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "shape-sorter",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 2
+        },
+        {
+          "id": "find_real_object",
+          "beta": 3
+        },
+        {
+          "id": "count",
+          "beta": 3
+        },
+        {
+          "id": "sort",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "3d-shape-explorer",
+      "modes": [
+        {
+          "id": "identify_3d",
+          "beta": 2
+        },
+        {
+          "id": "match_real_world",
+          "beta": 3
+        },
+        {
+          "id": "2d_vs_3d",
+          "beta": 3.5
+        },
+        {
+          "id": "faces_properties",
+          "beta": 4.5
+        },
+        {
+          "id": "shape_riddle",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "shape-tracer",
+      "modes": [
+        {
+          "id": "trace",
+          "beta": 1.5
+        },
+        {
+          "id": "connect_dots",
+          "beta": 2.5
+        },
+        {
+          "id": "complete",
+          "beta": 3.5
+        },
+        {
+          "id": "draw_from_description",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "math-fact-fluency",
+      "modes": [
+        {
+          "id": "visual_fact",
+          "beta": 1.5
+        },
+        {
+          "id": "match",
+          "beta": 2.5
+        },
+        {
+          "id": "equation_solve",
+          "beta": 3.5
+        },
+        {
+          "id": "missing_number",
+          "beta": 4.5
+        },
+        {
+          "id": "speed_round",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "strategy-picker",
+      "modes": [
+        {
+          "id": "guided",
+          "beta": 1.5
+        },
+        {
+          "id": "match",
+          "beta": 2.5
+        },
+        {
+          "id": "try_another",
+          "beta": 3.5
+        },
+        {
+          "id": "compare",
+          "beta": 4.5
+        },
+        {
+          "id": "choose",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "number-tracer",
+      "modes": [
+        {
+          "id": "trace",
+          "beta": 1
+        },
+        {
+          "id": "copy",
+          "beta": 2
+        },
+        {
+          "id": "write",
+          "beta": 3
+        },
+        {
+          "id": "sequence",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "length-lab",
+      "modes": [
+        {
+          "id": "compare",
+          "beta": 1.5
+        },
+        {
+          "id": "estimate_then_tile",
+          "beta": 2
+        },
+        {
+          "id": "two_unit_compare",
+          "beta": 3
+        },
+        {
+          "id": "tile_and_count",
+          "beta": 2.5
+        },
+        {
+          "id": "order",
+          "beta": 3.5
+        },
+        {
+          "id": "indirect",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "analog-clock",
+      "modes": [
+        {
+          "id": "hand_name",
+          "beta": 0.8
+        },
+        {
+          "id": "count_face",
+          "beta": 1
+        },
+        {
+          "id": "hear_time",
+          "beta": 1.3
+        },
+        {
+          "id": "read",
+          "beta": 1.5
+        },
+        {
+          "id": "set_time",
+          "beta": 2.5
+        },
+        {
+          "id": "match",
+          "beta": 3.5
+        },
+        {
+          "id": "elapsed",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "coin-counter",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 1
+        },
+        {
+          "id": "count-like",
+          "beta": 1.5
+        },
+        {
+          "id": "count-mixed",
+          "beta": 2.5
+        },
+        {
+          "id": "compare",
+          "beta": 3
+        },
+        {
+          "id": "make-amount",
+          "beta": 3.5
+        },
+        {
+          "id": "make-change",
+          "beta": 4.5
+        },
+        {
+          "id": "fewest-coins",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "tap",
+          "manipulate",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "time-sequencer",
+      "modes": [
+        {
+          "id": "sequence-3",
+          "beta": 1
+        },
+        {
+          "id": "time-of-day",
+          "beta": 1.5
+        },
+        {
+          "id": "sequence-5",
+          "beta": 2
+        },
+        {
+          "id": "before-after",
+          "beta": 2.5
+        },
+        {
+          "id": "duration-compare",
+          "beta": 3
+        },
+        {
+          "id": "clock-sequence",
+          "beta": 3.5
+        },
+        {
+          "id": "read-schedule",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "spatial-scene",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 1
+        },
+        {
+          "id": "place_in",
+          "beta": 1.5
+        },
+        {
+          "id": "place",
+          "beta": 2
+        },
+        {
+          "id": "describe",
+          "beta": 3
+        },
+        {
+          "id": "place_between",
+          "beta": 3.5
+        },
+        {
+          "id": "follow_directions",
+          "beta": 4
+        },
+        {
+          "id": "describe_scene",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate",
+          "spoken"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "shape-composer",
+      "modes": [
+        {
+          "id": "free-create",
+          "beta": -1
+        },
+        {
+          "id": "compose-match",
+          "beta": -0.5
+        },
+        {
+          "id": "compose-picture",
+          "beta": 0
+        },
+        {
+          "id": "decompose",
+          "beta": 0.5
+        },
+        {
+          "id": "how-many-ways",
+          "beta": 1
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "concrete",
+        "reader": "none",
+        "answers": [
+          "build"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "net-folder",
+      "modes": [
+        {
+          "id": "count_faces_edges_vertices",
+          "beta": -0.8
+        },
+        {
+          "id": "identify_solid",
+          "beta": -0.3
+        },
+        {
+          "id": "match_faces",
+          "beta": 0.2
+        },
+        {
+          "id": "valid_net",
+          "beta": 0.7
+        },
+        {
+          "id": "surface_area",
+          "beta": 1.2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "manipulate",
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "equation-builder",
+      "modes": [
+        {
+          "id": "build-simple",
+          "beta": 1
+        },
+        {
+          "id": "missing-result",
+          "beta": 1.5
+        },
+        {
+          "id": "true-false",
+          "beta": 2
+        },
+        {
+          "id": "missing-operand",
+          "beta": 2.5
+        },
+        {
+          "id": "balance-both-sides",
+          "beta": 3.5
+        },
+        {
+          "id": "rewrite",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "developing",
+        "answers": [
+          "build",
+          "type",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "compare-objects",
+      "modes": [
+        {
+          "id": "identify_attribute",
+          "beta": 1
+        },
+        {
+          "id": "compare_two",
+          "beta": 1.5
+        },
+        {
+          "id": "order_three",
+          "beta": 2.5
+        },
+        {
+          "id": "non_standard",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "formula-lab",
+      "modes": [
+        {
+          "id": "free-explore",
+          "beta": 1.5
+        },
+        {
+          "id": "predict-direction",
+          "beta": 2.5
+        },
+        {
+          "id": "predict-magnitude",
+          "beta": 3.5
+        },
+        {
+          "id": "construct-formula",
+          "beta": 5
+        },
+        {
+          "id": "transfer-apply",
+          "beta": 8
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "parameter-explorer",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": 1
+        },
+        {
+          "id": "predict-direction",
+          "beta": 2
+        },
+        {
+          "id": "identify-relationship",
+          "beta": 3
+        },
+        {
+          "id": "predict-value",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "equation-workspace",
+      "modes": [
+        {
+          "id": "guided-solve",
+          "beta": 1.5
+        },
+        {
+          "id": "identify-operation",
+          "beta": 2.5
+        },
+        {
+          "id": "solve",
+          "beta": 3
+        },
+        {
+          "id": "multi-step",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "function-sketch",
+      "modes": [
+        {
+          "id": "classify-shape",
+          "beta": 1.5
+        },
+        {
+          "id": "identify-features",
+          "beta": 2
+        },
+        {
+          "id": "compare-functions",
+          "beta": 2.5
+        },
+        {
+          "id": "sketch-match",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "math",
+      "id": "distribution-explorer",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": 1
+        },
+        {
+          "id": "identify",
+          "beta": 3
+        },
+        {
+          "id": "compute_basic",
+          "beta": 4.5
+        },
+        {
+          "id": "compute_advanced",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "lever-lab",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "pulley-system-builder",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "build",
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "ramp-lab",
+      "modes": [
+        {
+          "id": "compare_conditions",
+          "beta": -1
+        },
+        {
+          "id": "find_threshold",
+          "beta": 0
+        },
+        {
+          "id": "design_with_budget",
+          "beta": 1.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "wheel-axle-explorer",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "gear-train-builder",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "build",
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "bridge-builder",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "build"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "tower-stacker",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "build"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "shape-strength-tester",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "tap",
+          "build"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "foundation-builder",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "excavator-arm-simulator",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "concrete",
+        "reader": "developing",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "dump-truck-loader",
+      "modes": [
+        {
+          "id": "load",
+          "beta": -1
+        },
+        {
+          "id": "predict",
+          "beta": 0
+        },
+        {
+          "id": "plan_trips",
+          "beta": 1.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "concrete",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "construction-sequence-planner",
+      "modes": [
+        {
+          "id": "sequence",
+          "beta": -1
+        },
+        {
+          "id": "dependency_chain",
+          "beta": 0
+        },
+        {
+          "id": "parallel",
+          "beta": 1
+        },
+        {
+          "id": "critical_path",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "developing",
+        "answers": [
+          "build"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "blueprint-canvas",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "machine-profile",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "role": "introduce",
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "flight-forces-explorer",
+      "modes": [
+        {
+          "id": "predict",
+          "beta": -1
+        },
+        {
+          "id": "observe",
+          "beta": 0
+        },
+        {
+          "id": "adjust",
+          "beta": 1
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "developing",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "airfoil-lab",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "reader": "developing",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "vehicle-comparison-lab",
+      "modes": [
+        {
+          "id": "metric_leader",
+          "beta": 2.5
+        },
+        {
+          "id": "evidence_choice",
+          "beta": 3
+        },
+        {
+          "id": "constraint_tradeoff",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "developing",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "propulsion-lab",
+      "modes": [
+        {
+          "id": "predict",
+          "beta": -1
+        },
+        {
+          "id": "observe",
+          "beta": 0
+        },
+        {
+          "id": "experiment",
+          "beta": 1
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "developing",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "propulsion-timeline",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "developing",
+        "answers": [
+          "tap",
+          "build"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "paper-airplane-designer",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "symbolic"
+        ],
+        "reader": "developing",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "engine-explorer",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "developing",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "hydraulics-lab",
+      "modes": [
+        {
+          "id": "predict",
+          "beta": -1
+        },
+        {
+          "id": "observe",
+          "beta": 0
+        },
+        {
+          "id": "adjust",
+          "beta": 1
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "reader": "developing",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "vehicle-design-studio",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "developing",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "engineering",
+      "id": "transport-challenge",
+      "modes": [
+        {
+          "id": "single_constraint",
+          "beta": -1.5
+        },
+        {
+          "id": "multi_constraint",
+          "beta": 0
+        },
+        {
+          "id": "full_optimization",
+          "beta": 1.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "developing",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "molecule-viewer",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": -1
+        },
+        {
+          "id": "identify",
+          "beta": 0.5
+        },
+        {
+          "id": "analyze",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "periodic-table",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": -1
+        },
+        {
+          "id": "identify",
+          "beta": 0.5
+        },
+        {
+          "id": "trend",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "spoken"
+        ],
+        "role": [
+          "introduce",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "matter-explorer",
+      "modes": [
+        {
+          "id": "sort",
+          "beta": -1
+        },
+        {
+          "id": "property",
+          "beta": 0.5
+        },
+        {
+          "id": "change",
+          "beta": 1.2
+        },
+        {
+          "id": "mystery",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "reaction-lab",
+      "modes": [
+        {
+          "id": "predict",
+          "beta": -1
+        },
+        {
+          "id": "observe",
+          "beta": 0.5
+        },
+        {
+          "id": "explain",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "equation-balancer",
+      "modes": [
+        {
+          "id": "simple",
+          "beta": -0.5
+        },
+        {
+          "id": "guided",
+          "beta": 1
+        },
+        {
+          "id": "complex",
+          "beta": 2.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "energy-of-reactions",
+      "modes": [
+        {
+          "id": "classify",
+          "beta": -0.5
+        },
+        {
+          "id": "diagram",
+          "beta": 1
+        },
+        {
+          "id": "bond_energy",
+          "beta": 2.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "states-of-matter",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": -1
+        },
+        {
+          "id": "predict",
+          "beta": 0.5
+        },
+        {
+          "id": "compare",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "spoken"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "mixing-and-dissolving",
+      "modes": [
+        {
+          "id": "dissolve",
+          "beta": -1
+        },
+        {
+          "id": "classify",
+          "beta": 0.5
+        },
+        {
+          "id": "separate",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "manipulate",
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "atom-builder",
+      "modes": [
+        {
+          "id": "build",
+          "beta": -1
+        },
+        {
+          "id": "identify",
+          "beta": 0.5
+        },
+        {
+          "id": "ion_isotope",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "answers": [
+          "build",
+          "manipulate",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "molecule-constructor",
+      "modes": [
+        {
+          "id": "build",
+          "beta": -0.5
+        },
+        {
+          "id": "identify",
+          "beta": 1
+        },
+        {
+          "id": "predict",
+          "beta": 2.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "symbolic"
+        ],
+        "answers": [
+          "build",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "ph-explorer",
+      "modes": [
+        {
+          "id": "test",
+          "beta": -1
+        },
+        {
+          "id": "indicator",
+          "beta": 0.5
+        },
+        {
+          "id": "neutralize",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "manipulate",
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "safety-lab",
+      "modes": [
+        {
+          "id": "hazard",
+          "beta": -1
+        },
+        {
+          "id": "ppe",
+          "beta": 0.5
+        },
+        {
+          "id": "emergency",
+          "beta": 2
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "introduce",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "stoichiometry-lab",
+      "modes": [
+        {
+          "id": "convert",
+          "beta": -0.5
+        },
+        {
+          "id": "limiting",
+          "beta": 1
+        },
+        {
+          "id": "yield",
+          "beta": 2.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 9
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "chemistry",
+      "id": "gas-laws-simulator",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": -1
+        },
+        {
+          "id": "predict",
+          "beta": 0.5
+        },
+        {
+          "id": "calculate",
+          "beta": 2.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "organism-card",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": "introduce",
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "species-profile",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": "introduce",
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "classification-sorter",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "life-cycle-sequencer",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "body-system-explorer",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap"
+        ],
+        "role": "visualize",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "habitat-diorama",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": 2.5
+        },
+        {
+          "id": "connect",
+          "beta": 3.5
+        },
+        {
+          "id": "predict",
+          "beta": 5
+        },
+        {
+          "id": "restore",
+          "beta": 6.5
+        },
+        {
+          "id": "defend",
+          "beta": 8
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "tap",
+          "build"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "bio-compare-contrast",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "bio-process-animator",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "microscope-viewer",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "food-web-builder",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "adaptation-investigator",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "cell-builder",
+      "modes": [
+        {
+          "id": "cell_inventory",
+          "beta": 2.5
+        },
+        {
+          "id": "organelle_placement",
+          "beta": 3.5
+        },
+        {
+          "id": "structure_function",
+          "beta": 5
+        },
+        {
+          "id": "cell_specialization",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap",
+          "build",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "inheritance-lab",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "dna-explorer",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "protein-folder",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "energy-cycle-engine",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 7
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "biology",
+      "id": "evolution-timeline",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap"
+        ],
+        "role": "visualize",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "solar-system-explorer",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": 1.5
+        },
+        {
+          "id": "order_from_sun",
+          "beta": 2.5
+        },
+        {
+          "id": "classify",
+          "beta": 3.5
+        },
+        {
+          "id": "compare_attribute",
+          "beta": 5
+        },
+        {
+          "id": "orbital_reasoning",
+          "beta": 8
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "scale-comparator",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": "visualize",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "day-night-seasons",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": "visualize",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "moon-phases-lab",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": "visualize",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "rocket-builder",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "build"
+        ],
+        "role": "visualize",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "orbit-mechanics-lab",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "visualize",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "mission-planner",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": "visualize",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "telescope-simulator",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "developing",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "visualize",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "light-shadow-lab",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": 1.5
+        },
+        {
+          "id": "predict",
+          "beta": 3
+        },
+        {
+          "id": "measure",
+          "beta": 4.5
+        },
+        {
+          "id": "apply",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "manipulate",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "constellation-builder",
+      "modes": [
+        {
+          "id": "guided_trace",
+          "beta": 1.5
+        },
+        {
+          "id": "free_connect",
+          "beta": 3
+        },
+        {
+          "id": "identify",
+          "beta": 4.5
+        },
+        {
+          "id": "seasonal",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "astronomy",
+      "id": "planetary-explorer",
+      "modes": [
+        {
+          "id": "explore",
+          "beta": 1.5
+        },
+        {
+          "id": "identify",
+          "beta": 3
+        },
+        {
+          "id": "compare",
+          "beta": 4.5
+        },
+        {
+          "id": "apply",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "physics",
+      "id": "motion-diagram",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "role": "visualize",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "physics",
+      "id": "sound-wave-explorer",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": 1.5
+        },
+        {
+          "id": "predict",
+          "beta": 3
+        },
+        {
+          "id": "classify",
+          "beta": 4.5
+        },
+        {
+          "id": "apply",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "physics",
+      "id": "push-pull-arena",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": 1.5
+        },
+        {
+          "id": "predict",
+          "beta": 3
+        },
+        {
+          "id": "compare",
+          "beta": 4.5
+        },
+        {
+          "id": "design",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "physics",
+      "id": "race-track-lab",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": 1.5
+        },
+        {
+          "id": "predict",
+          "beta": 3
+        },
+        {
+          "id": "measure",
+          "beta": 4.5
+        },
+        {
+          "id": "calculate",
+          "beta": 6
+        },
+        {
+          "id": "graph",
+          "beta": 7.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "physics",
+      "id": "gravity-drop-tower",
+      "modes": [
+        {
+          "id": "observe",
+          "beta": 1.5
+        },
+        {
+          "id": "predict",
+          "beta": 3
+        },
+        {
+          "id": "compare",
+          "beta": 4.5
+        },
+        {
+          "id": "measure",
+          "beta": 6
+        },
+        {
+          "id": "calculate",
+          "beta": 7.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "spatial-path",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "tap",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "you-and-me",
+      "modes": [
+        {
+          "id": "describe_action",
+          "beta": 2.5
+        },
+        {
+          "id": "describe_independent_action",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "story-bridge",
+      "modes": [
+        {
+          "id": "match_character",
+          "beta": 2
+        },
+        {
+          "id": "match_setting",
+          "beta": 2
+        },
+        {
+          "id": "venn_place",
+          "beta": 2.5
+        },
+        {
+          "id": "say_alike",
+          "beta": 3
+        },
+        {
+          "id": "sequence_two",
+          "beta": 3
+        },
+        {
+          "id": "say_different",
+          "beta": 3.5
+        },
+        {
+          "id": "main_idea_compare",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "tap",
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "story-ribbon",
+      "modes": [
+        {
+          "id": "tell_connected_account",
+          "beta": 2.5
+        },
+        {
+          "id": "tell_present_account",
+          "beta": 3
+        },
+        {
+          "id": "tell_future_account",
+          "beta": 3.5
+        },
+        {
+          "id": "tell_past_account",
+          "beta": 3.5
+        },
+        {
+          "id": "story_to_experience",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "answers": [
+          "spoken",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "letter-workshop",
+      "modes": [
+        {
+          "id": "trace",
+          "beta": 1.5
+        },
+        {
+          "id": "copy",
+          "beta": 3.5
+        },
+        {
+          "id": "write",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "sentence-analyzer",
+      "modes": [
+        {
+          "id": "identify_pos",
+          "beta": 2
+        },
+        {
+          "id": "identify_role",
+          "beta": 3.5
+        },
+        {
+          "id": "label_all",
+          "beta": 5.5
+        },
+        {
+          "id": "parse_structure",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "word-builder",
+      "modes": [
+        {
+          "id": "simple_affix",
+          "beta": 2
+        },
+        {
+          "id": "compound_affix",
+          "beta": 3.5
+        },
+        {
+          "id": "greek_latin",
+          "beta": 5.5
+        },
+        {
+          "id": "multi_morpheme",
+          "beta": 7.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "phonics-blender",
+      "modes": [
+        {
+          "id": "cvc",
+          "beta": 1.5
+        },
+        {
+          "id": "cvce_blend",
+          "beta": 2.5
+        },
+        {
+          "id": "digraph",
+          "beta": 3.5
+        },
+        {
+          "id": "advanced",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "decodable-reader",
+      "modes": [
+        {
+          "id": "read_along",
+          "beta": 1
+        },
+        {
+          "id": "literal",
+          "beta": 3
+        },
+        {
+          "id": "sequence",
+          "beta": 4
+        },
+        {
+          "id": "inference",
+          "beta": 5
+        },
+        {
+          "id": "main_idea",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "emerging",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "interactive-book",
+      "modes": [
+        {
+          "id": "find-feature",
+          "beta": 1.5
+        },
+        {
+          "id": "read-focus-word",
+          "beta": 2.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "spoken",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "rhyme-studio",
+      "modes": [
+        {
+          "id": "recognition",
+          "beta": 1.5
+        },
+        {
+          "id": "identification",
+          "beta": 2.5
+        },
+        {
+          "id": "production",
+          "beta": 5
+        },
+        {
+          "id": "collection",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "syllable-clapper",
+      "modes": [
+        {
+          "id": "easy",
+          "beta": 2
+        },
+        {
+          "id": "medium",
+          "beta": 3
+        },
+        {
+          "id": "hard",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "phoneme-explorer",
+      "modes": [
+        {
+          "id": "isolate",
+          "beta": 1.5
+        },
+        {
+          "id": "ending",
+          "beta": 1.75
+        },
+        {
+          "id": "medial",
+          "beta": 2
+        },
+        {
+          "id": "blend",
+          "beta": 2.5
+        },
+        {
+          "id": "segment",
+          "beta": 3.5
+        },
+        {
+          "id": "manipulate",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "sound-swap",
+      "modes": [
+        {
+          "id": "addition",
+          "beta": 2
+        },
+        {
+          "id": "deletion",
+          "beta": 3
+        },
+        {
+          "id": "substitution",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "letter-spotter",
+      "modes": [
+        {
+          "id": "name_it",
+          "beta": 2
+        },
+        {
+          "id": "find_it",
+          "beta": 2.5
+        },
+        {
+          "id": "match_it",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "spoken",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "letter-sound-link",
+      "modes": [
+        {
+          "id": "see_hear",
+          "beta": 3
+        },
+        {
+          "id": "hear_see",
+          "beta": 2.5
+        },
+        {
+          "id": "keyword_match",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "oral-sentence-studio",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "picture-vocabulary",
+      "modes": [
+        {
+          "id": "receptive_match",
+          "beta": 1.5
+        },
+        {
+          "id": "naming",
+          "beta": 2.5
+        },
+        {
+          "id": "association",
+          "beta": 3
+        },
+        {
+          "id": "opposite",
+          "beta": 3.5
+        },
+        {
+          "id": "sentence_frame",
+          "beta": 5
+        },
+        {
+          "id": "gradable_scale",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "cvc-speller",
+      "modes": [
+        {
+          "id": "fill_vowel",
+          "beta": 1.5
+        },
+        {
+          "id": "spell_word",
+          "beta": 2.5
+        },
+        {
+          "id": "word_sort",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "word-workout",
+      "modes": [
+        {
+          "id": "real_vs_nonsense",
+          "beta": 2.5
+        },
+        {
+          "id": "picture_match",
+          "beta": 2.5
+        },
+        {
+          "id": "word_chains",
+          "beta": 4
+        },
+        {
+          "id": "read_inflected",
+          "beta": 4.5
+        },
+        {
+          "id": "read_compound",
+          "beta": 4.5
+        },
+        {
+          "id": "choose_in_context",
+          "beta": 5
+        },
+        {
+          "id": "sentence_reading",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "story-map",
+      "modes": [
+        {
+          "id": "bme",
+          "beta": 1.5
+        },
+        {
+          "id": "story_mountain",
+          "beta": 3
+        },
+        {
+          "id": "plot_diagram",
+          "beta": 5
+        },
+        {
+          "id": "heros_journey",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "story-talk",
+      "modes": [
+        {
+          "id": "who_what_where",
+          "beta": 2.5
+        },
+        {
+          "id": "feeling_check",
+          "beta": 3.5
+        },
+        {
+          "id": "why_because",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "word-flip",
+      "modes": [
+        {
+          "id": "plural_s",
+          "beta": 1.5
+        },
+        {
+          "id": "plural_es",
+          "beta": 3
+        },
+        {
+          "id": "past_ed",
+          "beta": 3.5
+        },
+        {
+          "id": "plural_y",
+          "beta": 4
+        },
+        {
+          "id": "irregulars",
+          "beta": 5
+        },
+        {
+          "id": "past_irregular",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "character-web",
+      "modes": [
+        {
+          "id": "trait_id",
+          "beta": 1.5
+        },
+        {
+          "id": "trait_evidence",
+          "beta": 2.5
+        },
+        {
+          "id": "relationship_map",
+          "beta": 3.5
+        },
+        {
+          "id": "character_change",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "poetry-lab",
+      "modes": [
+        {
+          "id": "rhyme_hunt",
+          "beta": 1.5
+        },
+        {
+          "id": "analysis",
+          "beta": 3.5
+        },
+        {
+          "id": "composition",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "genre-explorer",
+      "modes": [
+        {
+          "id": "identify_basic",
+          "beta": 2
+        },
+        {
+          "id": "classify_genre",
+          "beta": 3
+        },
+        {
+          "id": "compare_genres",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "text-structure-analyzer",
+      "modes": [
+        {
+          "id": "chronological_description",
+          "beta": 2.5
+        },
+        {
+          "id": "cause_effect",
+          "beta": 3
+        },
+        {
+          "id": "compare_contrast",
+          "beta": 3.5
+        },
+        {
+          "id": "problem_solution",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "evidence-finder",
+      "modes": [
+        {
+          "id": "locate_evidence",
+          "beta": 2.5
+        },
+        {
+          "id": "match_evidence_to_claim",
+          "beta": 3.5
+        },
+        {
+          "id": "evaluate_evidence_strength",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "paragraph-architect",
+      "modes": [
+        {
+          "id": "informational",
+          "beta": 2.5
+        },
+        {
+          "id": "narrative",
+          "beta": 3.5
+        },
+        {
+          "id": "opinion",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type",
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 9
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "story-planner",
+      "modes": [
+        {
+          "id": "story_structure",
+          "beta": 2
+        },
+        {
+          "id": "character_setting",
+          "beta": 3
+        },
+        {
+          "id": "conflict_resolution",
+          "beta": 3.5
+        },
+        {
+          "id": "theme_craft",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 9
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "opinion-builder",
+      "modes": [
+        {
+          "id": "oreo",
+          "beta": 3
+        },
+        {
+          "id": "cer",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "revision-workshop",
+      "modes": [
+        {
+          "id": "add_details",
+          "beta": 2
+        },
+        {
+          "id": "word_choice",
+          "beta": 3
+        },
+        {
+          "id": "combine_sentences",
+          "beta": 3.5
+        },
+        {
+          "id": "transitions",
+          "beta": 4.5
+        },
+        {
+          "id": "reorganize",
+          "beta": 5.5
+        },
+        {
+          "id": "concision",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type",
+          "manipulate"
+        ],
+        "role": "apply",
+        "minutes": 9
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "read-aloud-studio",
+      "modes": [
+        {
+          "id": "accuracy",
+          "beta": 3
+        },
+        {
+          "id": "expression",
+          "beta": 4.5
+        },
+        {
+          "id": "dialogue",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "sentence-builder",
+      "modes": [
+        {
+          "id": "simple",
+          "beta": 1.5
+        },
+        {
+          "id": "compound",
+          "beta": 3
+        },
+        {
+          "id": "complex",
+          "beta": 5
+        },
+        {
+          "id": "compound_complex",
+          "beta": 7
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "context-clues-detective",
+      "modes": [
+        {
+          "id": "definition",
+          "beta": 1.5
+        },
+        {
+          "id": "synonym_antonym",
+          "beta": 2.5
+        },
+        {
+          "id": "example",
+          "beta": 3.5
+        },
+        {
+          "id": "inference",
+          "beta": 5.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "figurative-language-finder",
+      "modes": [
+        {
+          "id": "sound_devices",
+          "beta": 2
+        },
+        {
+          "id": "comparison",
+          "beta": 3
+        },
+        {
+          "id": "advanced",
+          "beta": 4.5
+        },
+        {
+          "id": "idiom",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "type"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "spelling-pattern-explorer",
+      "modes": [
+        {
+          "id": "short_vowel",
+          "beta": 1.5
+        },
+        {
+          "id": "long_vowel",
+          "beta": 2.5
+        },
+        {
+          "id": "r_controlled",
+          "beta": 3.5
+        },
+        {
+          "id": "silent_letter",
+          "beta": 4
+        },
+        {
+          "id": "morphological",
+          "beta": 5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "type"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "literacy",
+      "id": "word-sorter",
+      "modes": [
+        {
+          "id": "binary_sort",
+          "beta": 1.5
+        },
+        {
+          "id": "ternary_sort",
+          "beta": 2.5
+        },
+        {
+          "id": "match_pairs",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "media",
+      "id": "media-player",
+      "modes": [
+        {
+          "id": "listen_and_look",
+          "beta": -1.5
+        },
+        {
+          "id": "listen_for_details",
+          "beta": -0.5
+        },
+        {
+          "id": "story_analysis",
+          "beta": 0.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "media",
+      "id": "flashcard-deck",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "tap"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "media",
+      "id": "image-comparison",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "role": "visualize",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "media",
+      "id": "image-panel",
+      "modes": [],
+      "supportsEvaluation": true,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": "pictorial",
+        "role": "introduce",
+        "minutes": 2
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "assessment",
+      "id": "knowledge-check",
+      "modes": [
+        {
+          "id": "recall",
+          "beta": 1.5
+        },
+        {
+          "id": "apply",
+          "beta": 3
+        },
+        {
+          "id": "analyze",
+          "beta": 4.5
+        },
+        {
+          "id": "evaluate",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "tap"
+        ],
+        "role": "assess",
+        "minutes": 4,
+        "maxPerLesson": 1
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "assessment",
+      "id": "scale-spectrum",
+      "modes": [],
+      "supportsEvaluation": false,
+      "tutoringDeclared": false,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "role": "introduce",
+        "minutes": 3
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "calendar",
+      "id": "calendar-explorer",
+      "modes": [
+        {
+          "id": "identify",
+          "beta": -1.5
+        },
+        {
+          "id": "mark_events",
+          "beta": -1
+        },
+        {
+          "id": "day_sequence",
+          "beta": -0.5
+        },
+        {
+          "id": "count",
+          "beta": 0
+        },
+        {
+          "id": "month_sequence",
+          "beta": 0.5
+        },
+        {
+          "id": "day_offset",
+          "beta": 1
+        },
+        {
+          "id": "interval_count",
+          "beta": 1.25
+        },
+        {
+          "id": "pattern",
+          "beta": 1.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "answers": [
+          "tap",
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "calendar",
+      "id": "timeline-builder",
+      "modes": [
+        {
+          "id": "sequence-daily",
+          "beta": -1.5
+        },
+        {
+          "id": "sequence-yearly",
+          "beta": 0
+        },
+        {
+          "id": "place-historical",
+          "beta": 1.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "answers": [
+          "manipulate"
+        ],
+        "role": [
+          "visualize",
+          "apply"
+        ],
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-letter-sounds",
+      "modes": [
+        {
+          "id": "letter_sound",
+          "beta": 1.5
+        },
+        {
+          "id": "letter_sound_review",
+          "beta": 2.5
+        },
+        {
+          "id": "first_sound_in_word",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-word-reading",
+      "modes": [
+        {
+          "id": "cvc_reading",
+          "beta": 2
+        },
+        {
+          "id": "read_word",
+          "beta": 2.5
+        },
+        {
+          "id": "sight_word",
+          "beta": 3
+        },
+        {
+          "id": "word_reading_review",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-math-facts",
+      "modes": [
+        {
+          "id": "name_numeral",
+          "beta": 1.5
+        },
+        {
+          "id": "counting_next",
+          "beta": 1.5
+        },
+        {
+          "id": "answer_fact",
+          "beta": 2
+        },
+        {
+          "id": "fact_review",
+          "beta": 2.5
+        },
+        {
+          "id": "subtraction_fact",
+          "beta": 3
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 4
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-dice-roll",
+      "modes": [
+        {
+          "id": "count_pips",
+          "beta": 1.5
+        },
+        {
+          "id": "compare_dice",
+          "beta": 2.5
+        },
+        {
+          "id": "sum_two_dice",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "concrete",
+          "pictorial"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-shapes",
+      "modes": [
+        {
+          "id": "name_shape",
+          "beta": 1.5
+        },
+        {
+          "id": "shape_review",
+          "beta": 2.5
+        },
+        {
+          "id": "find_real_object",
+          "beta": 3
+        },
+        {
+          "id": "count_sides",
+          "beta": 3
+        },
+        {
+          "id": "count_corners",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-sentence-reading",
+      "modes": [
+        {
+          "id": "decodable_sentence",
+          "beta": 2.5
+        },
+        {
+          "id": "read_sentence",
+          "beta": 3
+        },
+        {
+          "id": "sentence_review",
+          "beta": 3.5
+        },
+        {
+          "id": "sight_phrase_sentence",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-spoken-practice",
+      "modes": [
+        {
+          "id": "count_and_say",
+          "beta": 1.5
+        },
+        {
+          "id": "read_aloud",
+          "beta": 2.5
+        },
+        {
+          "id": "compare_choice",
+          "beta": 2
+        },
+        {
+          "id": "say_answer",
+          "beta": 3
+        },
+        {
+          "id": "explain_concept",
+          "beta": 4
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": [
+          "pictorial",
+          "symbolic"
+        ],
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 5
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-worked-procedure",
+      "modes": [
+        {
+          "id": "subtract_no_regroup",
+          "beta": 2
+        },
+        {
+          "id": "subtract_regroup",
+          "beta": 3.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "di",
+      "id": "di-deduction",
+      "modes": [
+        {
+          "id": "conclude",
+          "beta": 2.5
+        },
+        {
+          "id": "deny",
+          "beta": 3.5
+        },
+        {
+          "id": "cannot_tell",
+          "beta": 4.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "symbolic",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "history",
+      "id": "cause-effect-chain",
+      "modes": [
+        {
+          "id": "identify_cause",
+          "beta": 2
+        },
+        {
+          "id": "build_chain",
+          "beta": 3.5
+        },
+        {
+          "id": "root_vs_proximate",
+          "beta": 6
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken",
+          "build"
+        ],
+        "role": "apply",
+        "minutes": 8
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    },
+    {
+      "domain": "history",
+      "id": "era-explorer",
+      "modes": [
+        {
+          "id": "lens_id",
+          "beta": 2
+        },
+        {
+          "id": "era_sort",
+          "beta": 3.5
+        },
+        {
+          "id": "era_compare",
+          "beta": 5
+        },
+        {
+          "id": "cause_of_change",
+          "beta": 6.5
+        }
+      ],
+      "supportsEvaluation": true,
+      "tutoringDeclared": true,
+      "affordances": {
+        "representation": "pictorial",
+        "reader": "none",
+        "answers": [
+          "spoken"
+        ],
+        "role": "apply",
+        "minutes": 6
+      },
+      "registryTextMatch": true,
+      "generatorRegistryTextMatch": true
+    }
+  ],
+  "recentDevelopment": {
+    "baseline": "e1ba04bd6ecae0a15948bc6204210e20f431c08a",
+    "head": "d8ca29cf32bbd3710ff20839d864021805d59f48",
+    "commitsInWindow": "37",
+    "before": {
+      "primitives": 206,
+      "modes": 602
+    },
+    "committed": {
+      "primitives": 209,
+      "modes": 638
+    },
+    "committedChanges": [
+      {
+        "id": "bar-model",
+        "newPrimitive": false,
+        "addedModes": [
+          "read_one_to_one",
+          "most_least",
+          "match_to_bar",
+          "build_one_to_one",
+          "say_what_it_shows",
+          "compare_two_graphs"
+        ]
+      },
+      {
+        "id": "ten-frame",
+        "newPrimitive": false,
+        "addedModes": [
+          "build_teen",
+          "decompose_teen"
+        ]
+      },
+      {
+        "id": "counting-board",
+        "newPrimitive": false,
+        "addedModes": [
+          "give_me_n",
+          "recount_moved",
+          "add_more",
+          "take_away"
+        ]
+      },
+      {
+        "id": "measure-lab",
+        "newPrimitive": true,
+        "addedModes": [
+          "balance_predict",
+          "capacity_predict",
+          "pour_count",
+          "order_capacity"
+        ]
+      },
+      {
+        "id": "number-bond",
+        "newPrimitive": false,
+        "addedModes": [
+          "ten_and_ones",
+          "related_fact"
+        ]
+      },
+      {
+        "id": "length-lab",
+        "newPrimitive": false,
+        "addedModes": [
+          "estimate_then_tile",
+          "two_unit_compare"
+        ]
+      },
+      {
+        "id": "analog-clock",
+        "newPrimitive": false,
+        "addedModes": [
+          "hand_name",
+          "count_face",
+          "hear_time"
+        ]
+      },
+      {
+        "id": "time-sequencer",
+        "newPrimitive": false,
+        "addedModes": [
+          "clock-sequence"
+        ]
+      },
+      {
+        "id": "story-bridge",
+        "newPrimitive": false,
+        "addedModes": [
+          "match_character",
+          "match_setting",
+          "venn_place",
+          "say_alike",
+          "sequence_two",
+          "say_different",
+          "main_idea_compare"
+        ]
+      },
+      {
+        "id": "story-ribbon",
+        "newPrimitive": true,
+        "addedModes": [
+          "tell_connected_account",
+          "tell_present_account",
+          "tell_future_account",
+          "tell_past_account",
+          "story_to_experience"
+        ]
+      },
+      {
+        "id": "oral-sentence-studio",
+        "newPrimitive": true,
+        "addedModes": []
+      }
+    ],
+    "workingChanges": [
+      {
+        "id": "number-sequencer",
+        "newPrimitive": false,
+        "addedModes": [
+          "spot_error"
+        ]
+      },
+      {
+        "id": "shape-sorter",
+        "newPrimitive": false,
+        "addedModes": [
+          "find_real_object"
+        ]
+      },
+      {
+        "id": "spatial-scene",
+        "newPrimitive": false,
+        "addedModes": [
+          "describe_scene"
+        ]
+      },
+      {
+        "id": "spatial-path",
+        "newPrimitive": true,
+        "addedModes": []
+      },
+      {
+        "id": "rhyme-studio",
+        "newPrimitive": false,
+        "addedModes": [
+          "collection"
+        ]
+      },
+      {
+        "id": "phoneme-explorer",
+        "newPrimitive": false,
+        "addedModes": [
+          "ending"
+        ]
+      },
+      {
+        "id": "word-workout",
+        "newPrimitive": false,
+        "addedModes": [
+          "read_inflected",
+          "read_compound",
+          "choose_in_context"
+        ]
+      },
+      {
+        "id": "calendar-explorer",
+        "newPrimitive": false,
+        "addedModes": [
+          "mark_events",
+          "day_sequence",
+          "month_sequence",
+          "day_offset",
+          "interval_count"
+        ]
+      },
+      {
+        "id": "di-shapes",
+        "newPrimitive": false,
+        "addedModes": [
+          "find_real_object"
+        ]
+      }
+    ]
+  }
+}
