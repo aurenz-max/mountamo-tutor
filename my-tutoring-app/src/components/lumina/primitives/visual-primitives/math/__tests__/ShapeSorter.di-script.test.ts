@@ -52,6 +52,10 @@ import {
   type ShapeSorterChallengeLike,
   type ShapeSorterItem,
 } from '../shapeSorterScript';
+import {
+  REAL_WORLD_SHAPE_OBJECTS,
+  objectLabelLeaksShape,
+} from '../../shared/realWorldShapeObjects';
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -193,6 +197,53 @@ describe('the answer-material fork', () => {
 });
 
 // ── The three content gates the spoken ask exposed ──────────────────────────
+
+describe('real-world object naming', () => {
+  const objectChallenge: ShapeSorterChallengeLike = {
+    id: 'objects',
+    type: 'identify-real-object',
+    ruleAttribute: 'shape',
+    shapes: REAL_WORLD_SHAPE_OBJECTS.slice(0, 4).map((object) => ({
+      shape: object.shape,
+      color: 'blue',
+      size: 'large',
+      rotation: 0,
+      realObject: object.label,
+      realObjectId: object.id,
+    })),
+  };
+
+  it('keeps only code-owned object/shape pairs with answer-free labels', () => {
+    const items = itemsFromChallenge(objectChallenge);
+    expect(items).toHaveLength(4);
+    for (const item of items) {
+      const object = REAL_WORLD_SHAPE_OBJECTS.find((entry) => entry.id === item.realObjectId);
+      expect(object).toBeDefined();
+      expect(item.shape).toBe(object?.shape);
+      expect(item.realObject).toBe(object?.label);
+      expect(objectLabelLeaksShape(item.realObject ?? '')).toBe(false);
+      expect(stimulusFor(item)).not.toContain(item.answer);
+    }
+  });
+
+  it('drops a mismatched object/shape pair instead of trusting payload truth', () => {
+    const door = REAL_WORLD_SHAPE_OBJECTS.find((object) => object.id === 'door')!;
+    expect(itemsFromChallenge({
+      ...objectChallenge,
+      shapes: [{
+        shape: 'triangle', color: 'blue', size: 'large', rotation: 0,
+        realObject: door.label, realObjectId: door.id,
+      }],
+    })).toEqual([]);
+  });
+
+  it('traces and counts the outline in the post-error correction', () => {
+    const door = itemsFromChallenge(objectChallenge)
+      .find((item) => item.realObjectId === 'door')!;
+    expect(correctionFor(door)).toContain("Trace the door's outline with me: one, two, three, four. That makes four straight sides and four corners.");
+    expect(correctionFor(door)).toContain('the shape in this door is a rectangle');
+  });
+});
 
 describe('content gate: a counting ask needs a POLYGON', () => {
   it('a circle and an oval have no defensible side count', () => {

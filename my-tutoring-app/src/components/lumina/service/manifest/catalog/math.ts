@@ -4117,6 +4117,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Say the name of a 2D shape out loud from its drawing.',
       },
       {
+        evalMode: 'find_real_object',
+        label: 'Find Shape in an Object',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['identify-real-object'],
+        description: 'Look at one familiar code-drawn object and SAY the 2D shape of its outline. The object label never contains the answer.',
+      },
+      {
         evalMode: 'count',
         label: 'Count (Pictorial)',
         // β 2.5 → 3.0. STRUCTURAL, and not merely stepper-to-mouth (ten-frame

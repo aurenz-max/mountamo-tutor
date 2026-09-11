@@ -151,6 +151,11 @@ import {
   type ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
 import { numberWordFor } from './countingBoardScript';
+import {
+  objectLabelLeaksShape,
+  realWorldShapeObjectById,
+  type RealWorldShapeObjectId,
+} from '../shared/realWorldShapeObjects';
 
 // Re-exported so the generator imports its build gates and its geometry from
 // ONE address — both sides of the wire must agree on what is askable, and the
@@ -318,6 +323,7 @@ export const isSortable = (shape: string, rule: ShapeSortRule): boolean => {
 // ============================================================================
 
 export type ShapeSorterMode = 'identify' | 'count' | 'sort';
+export type ShapeSorterChallengeType = ShapeSorterMode | 'identify-real-object';
 export type ShapeSorterTier = 'easy' | 'medium' | 'hard';
 
 export interface ShapeSorterItem extends JudgedScriptItem {
@@ -348,6 +354,8 @@ export interface ShapeSorterItem extends JudgedScriptItem {
    * in the stimulus. Absent = the plain geometric drawing.
    */
   realObject?: string;
+  /** Stable key for the code-drawn object. The table owns its label and shape. */
+  realObjectId?: RealWorldShapeObjectId;
   /** count only — the numeral behind `answer`, for the code side and the tests. */
   countNumeral?: number;
   /** count only — which feature this item asks about. */
@@ -477,12 +485,13 @@ export interface ShapeSorterShapeLike {
   rotation?: number;
   /** The everyday thing this shape is drawn as (see ShapeSorterItem.realObject). */
   realObject?: string;
+  realObjectId?: RealWorldShapeObjectId;
   emoji?: string;
 }
 
 export interface ShapeSorterChallengeLike {
   id: string;
-  type: ShapeSorterMode;
+  type: ShapeSorterChallengeType;
   ruleAttribute?: string;
   targetValue?: string;
   shapes?: ShapeSorterShapeLike[];
@@ -578,23 +587,38 @@ export const itemsFromChallenge = (
       color: sanitize(s.color).toLowerCase(),
       rotation: typeof s.rotation === 'number' ? s.rotation : 0,
       realObject: s.realObject ? sanitize(s.realObject).toLowerCase() : undefined,
+      realObjectId: s.realObjectId,
     }))
     .filter((s) => !!SHAPE_PROPERTIES[s.shape]);
   if (pool.length === 0) return [];
 
-  if (ch.type === 'identify') {
+  if (ch.type === 'identify' || ch.type === 'identify-real-object') {
     // Keyed on the DRAWING, not the word: diamond and rhombus are one figure,
     // so naming either spends both (see `nameClassOf`).
     const seen = new Set<string>();
-    const kept: Array<{ index: number; shape: string; realObject?: string }> = [];
+    const kept: Array<{
+      index: number;
+      shape: string;
+      realObject?: string;
+      realObjectId?: RealWorldShapeObjectId;
+    }> = [];
     pool.forEach((s, index) => {
       if (!isNameable(s.shape, s.rotation)) return;
+      if (ch.type === 'identify-real-object') {
+        const object = realWorldShapeObjectById(s.realObjectId);
+        if (!object || object.shape !== s.shape || object.label !== s.realObject) return;
+      }
       const key = nameClassOf(s.shape);
       if (seen.has(key) || named.has(key)) return;
       seen.add(key);
-      kept.push({ index, shape: s.shape, realObject: s.realObject });
+      kept.push({
+        index,
+        shape: s.shape,
+        realObject: s.realObject,
+        realObjectId: s.realObjectId,
+      });
     });
-    return kept.slice(0, MAX_ITEMS_PER_CHALLENGE).map(({ index, shape, realObject }) => ({
+    return kept.slice(0, MAX_ITEMS_PER_CHALLENGE).map(({ index, shape, realObject, realObjectId }) => ({
       id: `${ch.id}::name-${index}`,
       mode: 'identify' as const,
       answerKind: 'voice' as const,
@@ -610,8 +634,10 @@ export const itemsFromChallenge = (
       // the stimulus, so it is dropped back to the plain drawing rather than
       // shipped. (The generator's table never produces one; this is the gate.)
       realObject: realObject && !VALID_SHAPES.some((sh) => realObject.includes(sh))
+        && !objectLabelLeaksShape(realObject)
         ? realObject
         : undefined,
+      realObjectId,
       choices: [],
       namesChoices: false,
       showCornerHints,
@@ -769,6 +795,9 @@ const countNounOf = (item: ShapeSorterItem): ShapeCountNoun => item.countNoun ??
 // ============================================================================
 
 export const howToPlayFor = (item: ShapeSorterItem): string => {
+  if (item.mode === 'identify' && item.realObject) {
+    return 'I will show you an everyday thing; you tell me the shape you see in it. ';
+  }
   switch (item.mode) {
     case 'identify':
       return 'I will point to a shape — you tell me its name out loud. ';
@@ -796,6 +825,9 @@ export const howToPlayFor = (item: ShapeSorterItem): string => {
 // 2026-08-13 rulings struck, and it does not change when the item changes.
 
 const modelLine = (item: ShapeSorterItem): string => {
+  if (item.mode === 'identify' && item.realObject) {
+    return 'Look at the outside edge of the object before you name its shape.';
+  }
   switch (item.mode) {
     case 'identify':
       return 'Look at the whole shape before you name it.';
@@ -808,6 +840,9 @@ const modelLine = (item: ShapeSorterItem): string => {
 };
 
 const guideLine = (item: ShapeSorterItem): string => {
+  if (item.mode === 'identify' && item.realObject) {
+    return "Trace the object's outline with your eyes.";
+  }
   switch (item.mode) {
     case 'identify':
       return 'A shape keeps its name even when it is turned around.';
@@ -845,6 +880,9 @@ const leadInFor = (item: ShapeSorterItem): string => {
 // frame it struck.
 
 export const askFor = (item: ShapeSorterItem): string => {
+  if (item.mode === 'identify' && item.realObject) {
+    return `Your turn. What shape do you see in this ${item.realObject}?`;
+  }
   switch (item.mode) {
     case 'identify':
       return 'Your turn. What shape is this?';
@@ -868,6 +906,9 @@ export const askFor = (item: ShapeSorterItem): string => {
 /** The sentence the tutor ASSERTS about the drawing. Never spoken before the
  *  child answers — it is the answer. */
 const statementFor = (item: ShapeSorterItem): string => {
+  if (item.mode === 'identify' && item.realObject) {
+    return `the shape in this ${item.realObject} is ${articleFor(item.answer)} ${item.answer}`;
+  }
   switch (item.mode) {
     case 'identify':
       return `this shape is ${articleFor(item.answer)} ${item.answer}`;
@@ -893,8 +934,22 @@ export const affirmFor = (item: ShapeSorterItem): string => `Yes, ${statementFor
  * The measurement stays honest because the runner scores a corrected item at 67
  * or 33, never at 100.
  */
+const outlineTraceFor = (item: ShapeSorterItem): string => {
+  const properties = SHAPE_PROPERTIES[item.shape];
+  if (!properties || !item.realObject) return '';
+  if (properties.curved) {
+    return `Trace the curved outline of the ${item.realObject} with me; it has no corners. `;
+  }
+  const count = numberWordFor(properties.sides);
+  const countTogether = Array.from(
+    { length: properties.sides },
+    (_, index) => numberWordFor(index + 1),
+  ).join(', ');
+  return `Trace the ${item.realObject}'s outline with me: ${countTogether}. That makes ${count} straight sides and ${count} corners. `;
+};
+
 export const correctionFor = (item: ShapeSorterItem): string =>
-  `My turn: ${statementFor(item)}. ${askFor(item)}`;
+  `My turn: ${outlineTraceFor(item)}${statementFor(item)}. ${askFor(item)}`;
 
 // ============================================================================
 // The 18d law and the item-21 tail (family wording, grep-able)
@@ -1116,6 +1171,9 @@ export const pronounceCue = (item: ShapeSorterItem): string => {
  * tutor a set it could volunteer.
  */
 export const stimulusFor = (item: ShapeSorterItem): string => {
+  if (item.mode === 'identify' && item.realObject) {
+    return `one code-drawn ${item.realObject} on the screen; its label does not name its shape`;
+  }
   switch (item.mode) {
     case 'identify':
       // The object is public — it is what the child is LOOKING at. Its shape is

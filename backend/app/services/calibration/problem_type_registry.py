@@ -296,6 +296,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "shape-sorter": {
         "identify":  PriorConfig(1.5, "Concrete: name 2D shapes by recognition"),
+        "find_real_object": PriorConfig(3.0, "Pictorial: say the 2D shape in a familiar object's outline"),
         "count":     PriorConfig(2.5, "Pictorial: count sides and corners"),
         "sort":      PriorConfig(3.5, "Pictorial: classify by geometric property"),
     },

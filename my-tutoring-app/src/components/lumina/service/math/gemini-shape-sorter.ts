@@ -23,12 +23,15 @@ import {
   optionsEarSeparable,
 } from "../../primitives/visual-primitives/math/shapeSorterScript";
 import {
-  resolveEvalModeConstraint,
+  resolveEvalModes,
   constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
-  logEvalModeResolution,
+  buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import {
+  REAL_WORLD_SHAPE_OBJECTS,
+  type RealWorldShapeObjectId,
+} from "../../primitives/visual-primitives/shared/realWorldShapeObjects";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -53,6 +56,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `K: circle, square, triangle, rectangle. Grade 1: add hexagon, pentagon, diamond, oval.`,
     schemaDescription: "'identify' (say the shape's name aloud)",
   },
+  'identify-real-object': {
+    promptDoc:
+      `"identify-real-object": The child sees ONE familiar everyday object at a time and SAYS the 2D shape of its outline. `
+      + `Set ruleAttribute to "shape". Code replaces every generated shape with a familiar object and derives the answer `
+      + `from a trusted object-to-shape table, so do not invent an object, label, or answer.`,
+    schemaDescription: "'identify-real-object' (say the 2D shape seen in a familiar object)",
+  },
   count: {
     promptDoc:
       `"count": The student SAYS OUT LOUD how many sides (or corners) one shape has. `
@@ -75,7 +85,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
-type ChallengeType = 'identify' | 'count' | 'sort';
+type ChallengeType = 'identify' | 'identify-real-object' | 'count' | 'sort';
 
 // ---------------------------------------------------------------------------
 // Within-mode support tiers (config.difficulty) — scaffolding + structural axis
@@ -156,7 +166,8 @@ function resolveSupportStructure(mode: ChallengeType, tier: SupportTier): Suppor
         : 'No corner dots are pre-shown — the student finds the sides and corners unaided.');
       return { showCornerHints, promptLines: lines };
     }
-    case 'identify': {
+    case 'identify':
+    case 'identify-real-object': {
       lines.push(tier === 'easy'
         ? 'Use clearly different shape kinds so each name is easy to retrieve.'
         : 'Mix in shape kinds that look alike so the student must look carefully before naming.');
@@ -180,7 +191,8 @@ interface ProblemShape {
 function resolveProblemShape(mode: ChallengeType, tier: SupportTier): ProblemShape {
   const lines: string[] = [];
   switch (mode) {
-    case 'identify': {
+    case 'identify':
+    case 'identify-real-object': {
       const distractorTightness =
         tier === 'easy' ? 'far' : tier === 'medium' ? 'moderate' : 'near';
       lines.push(
@@ -226,8 +238,8 @@ const shapeSorterSchema: Schema = {
           id: { type: Type.STRING, description: "Unique ID (e.g., 'c1', 'c2')" },
           type: {
             type: Type.STRING,
-            enum: ['identify', 'count', 'sort'],
-            description: "Challenge type: 'identify' (find matching shapes), 'count' (count sides/corners), 'sort' (classify by attribute)",
+            enum: ['identify', 'identify-real-object', 'count', 'sort'],
+            description: "Challenge type: 'identify' (name a drawn shape), 'identify-real-object' (name the shape in a familiar object), 'count' (count sides/corners), 'sort' (classify by attribute)",
           },
           instruction: {
             type: Type.STRING,
@@ -287,28 +299,7 @@ const shapeSorterSchema: Schema = {
 // sides of the wire.
 const VALID_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
 const VALID_SIZES = ['small', 'medium', 'large'];
-const VALID_TYPES = ['identify', 'count', 'sort'];
-
-/**
- * Everyday things whose shape is not in dispute, with the shape held in CODE.
- * A model asked "which shape is a clock?" answers correctly most of the time,
- * and the exceptions reach a five-year-old as a wrong answer marked right — so
- * the pairing is a table, exactly as 3d-shape-explorer holds its own.
- * No object NAME contains a shape word: the name would otherwise answer the
- * question the picture is asking.
- */
-const REAL_WORLD_OBJECTS: Array<{ object: string; emoji: string; shape: string }> = [
-  { object: 'clock face', emoji: '🕐', shape: 'circle' },
-  { object: 'plate', emoji: '🍽️', shape: 'circle' },
-  { object: 'door', emoji: '🚪', shape: 'rectangle' },
-  { object: 'book', emoji: '📕', shape: 'rectangle' },
-  { object: 'window', emoji: '🪟', shape: 'square' },
-  { object: 'dice', emoji: '🎲', shape: 'square' },
-  { object: 'pizza slice', emoji: '🍕', shape: 'triangle' },
-  { object: 'party hat', emoji: '🎉', shape: 'triangle' },
-  { object: 'kite', emoji: '🪁', shape: 'diamond' },
-  { object: 'egg', emoji: '🥚', shape: 'oval' },
-];
+const VALID_TYPES = ['identify', 'identify-real-object', 'count', 'sort'];
 
 function shuffleObjects<T>(arr: readonly T[]): T[] {
   const out = [...arr];
@@ -329,6 +320,10 @@ const VALID_RULES = ['shape', 'color', 'sides', 'curved'];
 type ShapeSorterConfig = Partial<ShapeSorterData> & {
   /** Target eval mode from the IRT calibration system. */
   targetEvalMode?: string;
+  /** Component intent used by the unpinned eval-mode resolver. */
+  intent?: string;
+  /** Parent objective text used as the resolver's secondary routing signal. */
+  objectiveText?: string;
   /**
    * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
    * Second axis of the two-field contract: targetEvalMode = which skill,
@@ -347,34 +342,38 @@ export const generateShapeSorter = async (
   // Does this lesson want shapes as they appear in the world? Read from the
   // objective in CODE — the pool it selects is code-owned, so a prompt-only
   // read would leave the stimulus to chance.
-  const wantsRealObjects = namesRealWorld(
-    `${topic} ${ctx.intent ?? ''} ${(config as { objectiveText?: string })?.objectiveText ?? ''}`,
-  );
+  const objectiveText = ctx.objective.text ?? config.objectiveText;
+  const targetEvalMode = ctx.targetEvalMode ?? config.targetEvalMode;
+  const scopeText = `${topic} ${ctx.intent ?? ''} ${objectiveText ?? ''}`;
   // ── Resolve eval mode from the catalog (single source of truth) ──
-  const evalConstraint = resolveEvalModeConstraint(
+  const resolution = await resolveEvalModes(
     'shape-sorter',
-    config?.targetEvalMode,
+    {
+      targetEvalMode,
+      intent: ctx.intent,
+      objectiveText,
+    },
     CHALLENGE_TYPE_DOCS,
   );
 
   // ── Support tier (within-mode difficulty) ──
-  const supportTier = normalizeSupportTier(config?.difficulty); // STUDENT's tier — DRIVES application (single OR blend)
+  const supportTier = ctx.supportTier ?? normalizeSupportTier(config?.difficulty); // STUDENT's tier — DRIVES application (single OR blend)
   // pinnedType is ONLY for the prompt tone / log; when a single mode is pinned we
   // can describe its tier inline. Blends get a per-challenge scaffold at the end.
-  const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
-    ? evalConstraint.allowedTypes[0] as ChallengeType
+  const pinnedType = resolution && resolution.allowedTypes.length === 1
+    ? resolution.allowedTypes[0] as ChallengeType
     : undefined;
   const tierSection = pinnedType && supportTier
     ? buildTierPromptSection(pinnedType, supportTier)
     : '';
 
   // ── Build mode-constrained schema ──
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(shapeSorterSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+  const activeSchema = resolution
+    ? constrainChallengeTypeEnum(shapeSorterSchema, resolution.allowedTypes, CHALLENGE_TYPE_DOCS)
     : shapeSorterSchema;
 
   // ── Build prompt ──
-  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  const challengeTypeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
   // Authoritative scope (topic + objective + intent). The LLM authors the shape set,
   // so this binds the intent's focus (e.g. "triangles and hexagons") to the shapes
   // shown — scope-context-contract wire. Correctness is unaffected (the checker reads
@@ -396,8 +395,9 @@ ANSWERS OUT LOUD — they say a shape's name, a number, or a group's name. Nothi
 the screen is tapped or dragged, so never write an instruction telling the student to
 tap, click, drag or press anything.
 
-${!evalConstraint ? `
+${!resolution ? `
 CHALLENGE PROGRESSION (generate 4-5 challenges):
+Include "identify-real-object" when the lesson asks for shapes in familiar or everyday objects.
 1. "identify" with ruleAttribute "shape" — a pool the student names one shape at a time (targetValue: "triangle")
 2. "identify" with ruleAttribute "color" — a differently-composed pool (targetValue: "blue")
 3. "count" with ruleAttribute "shape" — ONE polygon whose sides the student counts aloud (targetValue: e.g. "hexagon")
@@ -422,7 +422,11 @@ RULES:
 ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
 `;
 
-  logEvalModeResolution('ShapeSorter', config?.targetEvalMode, evalConstraint);
+  console.log(
+    `[ShapeSorter] modes: ${resolution
+      ? `${resolution.modes.map((mode) => mode.evalMode).join('+')} (${resolution.source})`
+      : 'mixed'} -> types [${(resolution?.allowedTypes ?? ['all']).join(', ')}]`,
+  );
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
@@ -507,7 +511,7 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
       continue;
     }
 
-    if (ch.type === 'identify') {
+    if (ch.type === 'identify' || ch.type === 'identify-real-object') {
       // A NAMING ASK NEEDS ONE DEFENSIBLE NAME: a square rotated toward 45° is
       // a diamond to a young child, so it is dropped from the pool rather than
       // straightened (straightening would silently discard the shape-constancy
@@ -575,7 +579,7 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
    * polygon, and the sort reaches exactly two groups with two shapes in each.
    */
   if (data.challenges.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'identify';
+    const fallbackType = resolution?.allowedTypes[0] ?? 'identify';
     const fallbacks: Record<string, ShapeSorterChallengeDraft> = {
       identify: {
         id: 'c1',
@@ -588,6 +592,16 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
           { shape: 'square', color: 'blue', size: 'medium', rotation: 0 },
           { shape: 'triangle', color: 'yellow', size: 'large', rotation: 45 },
           { shape: 'rectangle', color: 'purple', size: 'large', rotation: 0 },
+        ],
+      },
+      'identify-real-object': {
+        id: 'c1',
+        type: 'identify-real-object',
+        instruction: 'Look at each thing and listen for the question.',
+        ruleAttribute: 'shape',
+        targetValue: 'circle',
+        shapes: [
+          { shape: 'circle', color: 'blue', size: 'large', rotation: 0 },
         ],
       },
       count: {
@@ -643,13 +657,14 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
   // rebuilt from a code-owned table: a clock face is a circle whatever the model
   // thinks, and an object called "round plate" would answer the question in the
   // picture. The model is not asked for either half.
-  if (wantsRealObjects) {
+  const legacyRealObjectIntent = !resolution && namesRealWorld(scopeText);
+  let realObjectChallenges = 0;
+  if (legacyRealObjectIntent || data.challenges.some(
+    (challenge: ShapeSorterChallengeDraft) => challenge.type === 'identify-real-object',
+  )) {
     for (const ch of data.challenges as ShapeSorterChallengeWithTier[]) {
-      if (ch.type !== 'identify') continue;
-      const pool = shuffleObjects(REAL_WORLD_OBJECTS)
-        // One object per shape KIND: the identify walk asks each kind once, so a
-        // second circle in the pool is a shape the child never gets asked about.
-        .filter((o, i, arr) => arr.findIndex((x) => x.shape === o.shape) === i)
+      if (ch.type !== 'identify-real-object' && !(legacyRealObjectIntent && ch.type === 'identify')) continue;
+      const pool = shuffleObjects(REAL_WORLD_SHAPE_OBJECTS)
         .slice(0, 4);
       if (pool.length < 2) continue;
       (ch as unknown as { shapes: ShapeDraft[] }).shapes = pool.map((o, i) => ({
@@ -657,13 +672,14 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
         color: ['blue', 'green', 'purple', 'orange'][i % 4],
         size: 'large',
         rotation: 0,
-        realObject: o.object,
-        emoji: o.emoji,
+        realObject: o.label,
+        realObjectId: o.id,
       }));
       (ch as unknown as { instruction: string }).instruction =
         'Look at each thing. What shape do you see in it?';
+      realObjectChallenges += 1;
     }
-    console.log(`[ShapeSorter] Real-world stimulus pools applied (objective names everyday objects)`);
+    console.log(`[ShapeSorter] Applied ${realObjectChallenges} code-owned real-object stimulus pool(s).`);
   }
 
   if (supportTier) {
@@ -682,7 +698,8 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
 /** A challenge as it arrives from the model and is narrowed in place. */
 type ShapeDraft = {
   shape: string; color: string; size: string; rotation: number;
-  realObject?: string; emoji?: string;
+  realObject?: string;
+  realObjectId?: RealWorldShapeObjectId;
 };
 type ShapeSorterChallengeDraft = {
   id: string;

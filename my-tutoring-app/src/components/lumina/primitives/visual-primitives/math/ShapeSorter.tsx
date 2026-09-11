@@ -77,9 +77,12 @@ import {
   itemsFromChallenges,
   shapeSorterPackBase,
   type ShapeSorterItem,
+  type ShapeSorterChallengeType,
   type ShapeSorterMode,
   type ShapeSorterTier,
 } from './shapeSorterScript';
+import RealWorldShapeObject from '../shared/RealWorldShapeObject';
+import type { RealWorldShapeObjectId } from '../shared/realWorldShapeObjects';
 
 // Re-exported: the geometry table used to live here and the generator kept a
 // hand-synced copy of it. It has one home now (the script module, which is not
@@ -100,12 +103,13 @@ export interface ShapeSorterShape {
    *  asks the child to find shapes in real objects (K.G.A.2 / K.G.B.4). The
    *  name never contains a shape word — that is what is being asked for. */
   realObject?: string;
+  realObjectId?: RealWorldShapeObjectId;
   emoji?: string;
 }
 
 export interface ShapeSorterChallenge {
   id: string;
-  type: ShapeSorterMode;
+  type: ShapeSorterChallengeType;
   instruction: string;
   /** The attribute being tested: shape name, color, side count, or curved.
    *  Under the judged loop this is the SORT dimension (sort) or the pool
@@ -540,6 +544,13 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
     </div>
   );
 
+  /** One familiar object at a time. Its label names the object, never the shape. */
+  const renderRealObjectStage = (item: ShapeSorterItem) => item.realObjectId ? (
+    <div className="flex justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-5">
+      <RealWorldShapeObject objectId={item.realObjectId} className="h-48 w-48" />
+    </div>
+  ) : null;
+
   /**
    * The mats — printed, LABELLED AT EVERY TIER, and nothing here is clickable:
    * the child says the group out loud. The click era blanked these labels at
@@ -626,7 +637,9 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
               <>
                 {currentItem.mode === 'count' && countShape
                   ? renderCountStage(currentItem, countShape)
-                  : renderPool(currentItem, poolShapes)}
+                  : currentItem.realObjectId
+                    ? renderRealObjectStage(currentItem)
+                    : renderPool(currentItem, poolShapes)}
 
                 <div className="flex justify-center">
                   <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
