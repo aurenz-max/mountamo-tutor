@@ -177,6 +177,9 @@ export const DiWorkedProcedure: React.FC<{
     const metrics: DiWorkedProcedureMetrics = {
       type: 'di-worked-procedure',
       challengeType: data.challengeType,
+      // Without this the submission carries `eval_mode: 'default'` and the mode
+      // β priors are never reached (/curriculum-fit di-word-problem-setup, 2026-09-10).
+      evalMode: data.challengeType,
       totalChallenges: summary.outcomes.length,
       problemCount: new Set(items.map((it) => it.problemId)).size,
       correctCount: summary.solvedCount,

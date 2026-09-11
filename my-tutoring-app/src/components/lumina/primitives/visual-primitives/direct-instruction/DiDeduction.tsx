@@ -183,6 +183,9 @@ export const DiDeduction: React.FC<{
     const metrics: DiDeductionMetrics = {
       type: 'di-deduction',
       challengeType: data.challengeType,
+      // Without this the submission carries `eval_mode: 'default'` and the mode
+      // β priors are never reached (/curriculum-fit di-word-problem-setup, 2026-09-10).
+      evalMode: data.challengeType,
       totalChallenges: summary.outcomes.length,
       ruleCount: new Set(items.map((it) => it.ruleId)).size,
       correctCount: summary.solvedCount,
