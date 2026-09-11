@@ -3128,7 +3128,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'answer from the audio in-band, and its own affirmation moves the lesson on. THE PRINT IS DECODED COLD AND '
       + 'MOST ANSWERS ARE SPOKEN: the child READS two printed words and SAYS the real one (Real or Silly?), reads '
       + 'each word of a one-letter-change chain OUT LOUD (Word Chain), and READS a decodable sentence ALOUD before '
-      + 'SAYING the answer to a question about it (Read It). Picture Match is the one hands mode — the word is '
+      + 'SAYING the answer to a question about it (Read It). It also extends decoding beyond isolated CVC: the '
+      + 'child cold-reads code-bounded words with -s, -ing, or -ed, reads familiar two-part compounds, and reads '
+      + 'both words in a near-spelled pair before using sentence context to say which one fits. A meaning question '
+      + 'is a separate judged turn only when the objective asks for comprehension, so decoding and meaning never '
+      + 'share one score. Picture Match is the one hands mode — the word is '
       + 'printed, the child decodes it silently and taps the picture it means, which is what shows they know what '
       + 'the word MEANS rather than only how it sounds. Nothing on screen marks the answer before the tutor '
       + 'affirms, there is nothing to click to advance, and the tutor never reads the print for the child. '
@@ -3143,7 +3147,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'their real partner (the child says one aloud and the tutor judges it by ear, so a pair differing only in '
       + 'its last sound cannot be scored). Word Chains must follow the one-letter-change rule. Sentences use only '
       + 'mastered CVC words + approved sight words and must fit the benched 3-8 word read-aloud window; the '
-      + 'comprehension answer must be a word IN the sentence and must NOT appear in the question.',
+      + 'comprehension answer must be a word IN the sentence and must NOT appear in the question. Inflected and '
+      + 'compound modes select only from the code-owned Kindergarten early-decoding pool; Gemini cannot invent a '
+      + 'harder word, its decoding parts, or its meaning key. Context trials likewise use only code-owned CVC '
+      + 'near-word pairs with exactly one sentence fit. All printed targets stay visible; tutor pronunciation and '
+      + 'answer-identifying pictures stay withheld before the cold read. The tutor models word parts only after '
+      + 'an attempt, then the next word checks independent transfer.',
     // reader: 'none' base — READY @ PRE for real_vs_nonsense/picture_match/
     // word_chains (qa/reader-fit/word-workout-word-flip-PRE-2026-07-15.md);
     // sentence_reading overridden 'emerging' — floored Grade 1+, the
@@ -3216,6 +3225,42 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         description: 'READ ALOUD every word of a one-letter-change chain; each word is judged on its own. β raised because the reading was previously unmeasured.',
       },
       {
+        evalMode: 'read_inflected',
+        affordances: { representation: 'symbolic', answers: ['spoken'] },
+        label: 'Read Common Endings',
+        beta: 4.5,
+        discrimination: 1.6,
+        scaffoldingMode: 4,
+        challengeTypes: ['inflected-word'],
+        description:
+          'Cold-read code-bounded early words with -s, -ing, and -ed. After the attempt the tutor models base + ending; '
+          + 'a new word checks transfer. A separate meaning turn appears only for an explicit comprehension objective.',
+      },
+      {
+        evalMode: 'read_compound',
+        affordances: { representation: 'symbolic', answers: ['spoken'] },
+        label: 'Read Compound Words',
+        beta: 4.5,
+        discrimination: 1.6,
+        scaffoldingMode: 4,
+        challengeTypes: ['compound-word'],
+        description:
+          'Cold-read a code-bounded compound made from two familiar decodable words. After the attempt the tutor '
+          + 'models the two parts; a new word checks transfer. Meaning is a separate turn when comprehension is named.',
+      },
+      {
+        evalMode: 'choose_in_context',
+        affordances: { representation: 'symbolic', answers: ['spoken'] },
+        label: 'Choose a Near Word in Context',
+        beta: 5.0,
+        discrimination: 1.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['context-discrimination'],
+        description:
+          'Read both words in a one-letter-different CVC pair aloud, then use a short sentence to SAY which word fits. '
+          + 'The two cold reads and the later context decision are retained as separate evidence.',
+      },
+      {
         evalMode: 'sentence_reading',
         affordances: { representation: 'symbolic', reader: 'emerging', answers: ['spoken'] },
         label: 'Sentence Reading (Tier 4)',
@@ -3230,7 +3275,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     ],
     tutoring: {
       taskDescription:
-        'Live-judged Direct Instruction CVC reading for a young child. Right now the turn is "{{challengeType}}" '
+        'Live-judged Direct Instruction early word reading for a young child. Right now the turn is "{{challengeType}}" '
         + 'and what the child is working from is {{stimulus}}. You speak the exact scripted lines from each '
         + 'bracketed application message, and you judge each attempt from the audio you heard using only the '
         + 'allowed reply branches. Decoding the print is the whole skill being practiced, so the child reads it — '
@@ -3263,6 +3308,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         {
           pattern: 'Swaps a small word while reading a sentence — "a" for "the", "then" for "and"',
           response: 'It sounds fluent and it is still wrong. Use the contrast branch, naming just the words that came out wrong.',
+        },
+        {
+          pattern: 'Reads only the base or first half — says "cat" for "cats" or "sun" for "sunset"',
+          response: 'The ending or second word is part of the read. Use the scripted post-attempt chunk model, then hand the whole word back and wait.',
+        },
+        {
+          pattern: 'Reads both near words correctly but chooses the one that does not fit the sentence',
+          response: 'Keep the decoding credit. Run only the scripted context-choice correction; the separate meaning evidence is the part that missed.',
         },
         {
           pattern: 'Answers a comprehension question with a word lifted out of the sentence that does not answer it',
@@ -4480,10 +4533,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'split into single-breath lines and the child reads them ONE AT A TIME, out loud, into an open '
       + 'microphone; the tutor judges each read from the audio WORD BY WORD — a skipped, added or swapped word '
       + 'is corrected, not waved through — and its own affirmation moves the lesson to the next line. Three '
-      + 'fluency identities: Read It (the child decodes the printed line COLD, with nothing spoken first), Say '
-      + 'It Back (the tutor models the line as one smooth phrase and the child reads it back), and Character '
+      + 'fluency identities: Read It (the child decodes the printed line COLD, with nothing spoken first), Phrase '
+      + 'and Read (the child marks phrase breaks, reads once, hears a suggested grouping and rereads), and Character '
       + 'Voice (the tutor models one character\'s line in that character\'s voice and the child reads it back '
-      + 'their way). There are no recording buttons, no self-rating, and nothing to click to advance. Requires '
+      + 'their way). Phrase planning is unscored page work; the tutor acknowledges the committed plan and owns progression. Requires '
       + 'a microphone. Perfect for grades 1-6 oral reading fluency.',
     constraints:
       'Best for grades 1-6. Requires the live tutor and a microphone. Judged lines are 3-8 words — the benched '
@@ -4491,7 +4544,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'and Lexile, never on longer utterances. The passage must READ AS ONE CONNECTED TEXT across its lines; '
       + 'use di-sentence-reading instead for K-2 practice on ISOLATED decodable or sight-word sentences. '
       + 'The tutor judges WORDS, never how the reading sounded: prosody is taught by model-and-imitate and is '
-      + 'not graded. No comprehension questions — this primitive measures oral reading, not understanding.',
+      + 'not graded. Expression scores only word accuracy on the modeled reread; its first reading and phrase '
+      + 'plan are separate practice evidence. Phrase groups are suggestions, not a unique correct answer. '
+      + 'No comprehension questions — this primitive measures oral reading, not understanding.',
     // reader omitted, not 'none' — the child DECODES the printed line themselves
     // (accuracy mode is explicitly cold-read); the tutor models the line first
     // only in expression/dialogue mode, it never reads for the child. No
@@ -4529,14 +4584,15 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // (3.0) — the same act on the same benched utterance window — and the
       // other two keep their spacing above it.
       { evalMode: 'accuracy', label: 'Read It (Tier 2)', beta: 3.0, scaffoldingMode: 1, challengeTypes: ['accuracy'], description: 'Decode the printed line COLD and read it aloud, every word in order. Nothing speaks it first.' },
-      { evalMode: 'expression', label: 'Say It Back (Tier 3)', beta: 4.5, scaffoldingMode: 3, challengeTypes: ['expression'], description: 'The tutor models the line as one smooth phrase; the child reads it back. Phrasing is taught, the words are judged.' },
+      { evalMode: 'expression', label: 'Phrase and Read (Tier 3)', beta: 4.5, scaffoldingMode: 3, challengeTypes: ['expression'], affordances: { answers: ['manipulate', 'spoken'] }, description: 'Mark phrase breaks, read the line, hear a suggested phrasing model, and reread. Planning and expression receive coaching; only modeled reread word accuracy is scored.' },
       { evalMode: 'dialogue', label: 'Character Voice (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['dialogue'], description: 'The tutor models one character\'s line in that character\'s voice; the child reads it back their way.' },
     ],
     supportsEvaluation: true,
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction read-aloud practice. A short passage is on the child\'s screen ONE LINE '
-        + 'AT A TIME, and reading that printed line aloud accurately is the entire skill. Right now the mode is '
+        + 'AT A TIME. Word accuracy is scored. Expression includes an unscored phrase plan, a first read, '
+        + 'then a modeled reread; the current application cue owns the step and its response channel. Right now the mode is '
         + '"{{challengeType}}" and the line in front of them is "{{stimulus}}". You speak the exact scripted '
         + 'lines from each bracketed application message and nothing else, then you judge the audio you heard '
         + 'against the printed words. The application decides which line comes next; never introduce one '
@@ -4600,7 +4656,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         {
           title: 'LIVE-JUDGED DIRECT INSTRUCTION',
           instruction:
-            'Messages tagged [RA_ITEM], [RA_MOVE], [RA_COMPLETE] or [RA_HEAR] contain the only lesson words you '
+            'Messages tagged [RA_ITEM], [RA_PLAN], [RA_MOVE], [RA_COMPLETE] or [RA_HEAR] contain the only lesson words you '
             + 'may speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. '
             + 'Each carries a judging rule: affirmations must begin with "Yes" and corrections must begin with '
             + '"My turn", using the exact quoted lines. Never begin any other sentence with those words. Judge '
@@ -4620,8 +4676,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             'In the "accuracy" mode the child is decoding the printed line cold, and that is the whole '
             + 'measurement. Do NOT read that line, or any part of it, before they do — not to help, not to '
             + 'check, not as an example, and not because a scaffolding instruction seems to invite it. In the '
-            + 'other two modes the cue quotes a "Listen:" model for you to read FIRST; those are the only '
-            + 'lines you may ever say before the child says them, and only when the cue quotes them. Never '
+            + 'expression mode, wait through phrase planning and the first reading before the modeled reread. '
+            + 'During planning do not judge microphone speech or phrase correctness; acknowledge only an explicit '
+            + '[RA_PLAN] commit. The first-read cue also forbids an early model. In dialogue mode the cue quotes '
+            + 'a model first. Speak a model only when the current cue explicitly quotes it. Never '
             + 'read a line further down the passage than the one the application has put in front of them.',
         },
         {

@@ -107,7 +107,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'letter-spotter', label: 'Letter Spotter', icon: '🔎', topic: 'Letter recognition', strand: 'RF', wave: 2 },
   { value: 'letter-sound-link', label: 'Letter-Sound Link', icon: '🔊', topic: 'Letter sounds', strand: 'RF', wave: 2 },
   { value: 'cvc-speller', label: 'CVC Speller', icon: '✏️', topic: 'CVC word spelling', strand: 'RF', wave: 2 },
-  { value: 'word-workout', label: 'Word Workout', icon: '💪', topic: 'CVC word application activities', strand: 'RF', wave: 2 },
+  { value: 'word-workout', label: 'Word Workout', icon: '💪', topic: 'Early word decoding and context', strand: 'RF', wave: 2 },
   // ===== RL: Reading Literature =====
   { value: 'story-map', label: 'Story Map', icon: '🗺️', topic: 'Plot structure of a short story', strand: 'RL', wave: 1 },
   { value: 'character-web', label: 'Character Web', icon: '🕸️', topic: 'Character analysis and relationships', strand: 'RL', wave: 3 },

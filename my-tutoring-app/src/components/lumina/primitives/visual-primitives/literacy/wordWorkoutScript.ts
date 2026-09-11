@@ -8,10 +8,10 @@
  *
  * ── THE ANSWER-MATERIAL FORK (skill step 1 — the table picture) ─────────────
  *
- * Word-workout is a CVC DECODING primitive, so the table picture is a teacher
- * with a card in front of one child saying "read it". FOUR OF FIVE ITEM KINDS
- * ARE SPOKEN; one is a tap, and it is a tap because the answer has no spoken
- * form, not because the judge found it hard:
+ * Word-workout is an EARLY DECODING primitive, so the table picture is a
+ * teacher with a card in front of one child saying "read it". Every item kind
+ * is spoken except picture_tap; that one is a tap because the answer has no
+ * spoken form, not because the judge found it hard:
  *
  *   real_word        two printed words, one real and one a pseudoword. The
  *                    child decodes BOTH and SAYS the real one →
@@ -40,6 +40,15 @@
  *                    who_what_where: the answer is inside the stimulus, which
  *                    is the comprehension task rather than a leak, and the
  *                    harness subtracts the stimulus with `leakExemptSpan`.
+ *   read_extended_word
+ *                    one code-bounded inflected or compound word, cold-read
+ *                    before the tutor models its base+ending or two roots.
+ *   answer_word_meaning
+ *                    a separate comprehension turn, included only when the
+ *                    objective names comprehension.
+ *   read_context_word / choose_context_word
+ *                    two near-spelled words are read cold one at a time; only
+ *                    then does the sentence appear for a separately scored fit.
  *
  * ONE CHALLENGE IS NOT ONE ITEM. A chain of five words is five judged reads and
  * a sentence is a read PLUS a question (decodable-reader's split, second use).
@@ -93,6 +102,11 @@ import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
 } from '../direct-instruction/diSentenceReadingScript';
+import {
+  earlyContextTrialFor,
+  earlyExtendedWordFor,
+  type EarlyExtendedWordMode,
+} from './wordWorkoutEarlyDecoding';
 
 /** The benched judged-utterance window, re-exported so the component, the
  *  generator and the tests read the SAME numbers the bench sitting set. */
@@ -104,7 +118,10 @@ export type WordWorkoutMode =
   | 'real-vs-nonsense'
   | 'picture-match'
   | 'word-chains'
-  | 'sentence-reading';
+  | 'sentence-reading'
+  | 'inflected-word'
+  | 'compound-word'
+  | 'context-discrimination';
 
 /** What ONE judged elicitation asks for. A mode expands to one or more. */
 export type WordWorkoutItemKind =
@@ -112,7 +129,11 @@ export type WordWorkoutItemKind =
   | 'picture_tap'
   | 'chain_word'
   | 'read_sentence'
-  | 'answer_question';
+  | 'answer_question'
+  | 'read_extended_word'
+  | 'answer_word_meaning'
+  | 'read_context_word'
+  | 'choose_context_word';
 
 export type ChainCueLevel = 'full' | 'highlight-only' | 'none';
 
@@ -157,6 +178,16 @@ export interface WordWorkoutItem extends JudgedScriptItem {
   cvcWords?: string[];
   question?: string;
   answerWord?: string;
+
+  // inflected-word + compound-word
+  wordMode?: EarlyExtendedWordMode;
+  decodingParts?: string[];
+  meaningSentence?: string;
+  acceptedAnswers?: string[];
+
+  // context-discrimination
+  contextWords?: [string, string];
+  contextSentence?: string;
 }
 
 /**
@@ -176,6 +207,9 @@ export const responseClassFor = (kind: WordWorkoutItemKind): ResponseClassId => 
       return 'manipulation';
     case 'read_sentence':
       return 'sentence_read_aloud';
+    case 'answer_word_meaning':
+    case 'choose_context_word':
+      return 'closed_set_choice';
     default:
       return 'short_spoken_word';
   }
@@ -201,6 +235,10 @@ export interface WordWorkoutChallengeLike {
   sightWords?: string[];
   comprehensionQuestion?: string;
   comprehensionAnswer?: string;
+  // Early decoding beyond isolated CVC. Content is hydrated from the
+  // code-owned pool; Gemini supplies only one of these keys.
+  includeMeaning?: boolean;
+  contextTrialId?: string;
 }
 
 /** The question is spoken in one breath and printed beside the sentence. */
@@ -366,6 +404,16 @@ const oneLetterApart = (a: string, b: string): number | null => {
   return index < 0 ? null : index;
 };
 
+const SIMPLE_CVC_SOUNDS: Readonly<Record<string, string>> = {
+  a: '/a/', b: '/b/', c: '/k/', d: '/d/', e: '/e/', f: '/f/', g: '/g/',
+  h: '/h/', i: '/i/', j: '/j/', k: '/k/', l: '/l/', m: '/m/', n: '/n/',
+  o: '/o/', p: '/p/', r: '/r/', s: '/s/', t: '/t/', u: '/u/', v: '/v/',
+  w: '/w/', y: '/y/', z: '/z/',
+};
+
+const simpleCvcModel = (word: string): string[] =>
+  word.split('').map((letter) => SIMPLE_CVC_SOUNDS[letter] ?? `/${letter}/`);
+
 /**
  * One challenge → zero or more judged items. Nothing here backfills: a
  * placeholder in a judged loop becomes a spoken ask the tutor must stand
@@ -461,6 +509,68 @@ export const itemsFromChallenge = (ch: WordWorkoutChallengeLike): WordWorkoutIte
       }));
     }
 
+    case 'inflected-word':
+    case 'compound-word': {
+      const entry = earlyExtendedWordFor(ch.targetWord ?? '', ch.mode);
+      if (!entry || opensWithSentinel(entry.word)) return [];
+      const read: WordWorkoutItem = {
+        ...base,
+        id: `${ch.id}-read`,
+        kind: 'read_extended_word',
+        answerKind: answerKindFor('read_extended_word'),
+        responseClass: responseClassFor('read_extended_word'),
+        action: 'read_extended_word',
+        targetWord: entry.word,
+        wordMode: entry.mode,
+        decodingParts: [...entry.decodingParts],
+      };
+      if (!ch.includeMeaning) return [read];
+      return [read, {
+        ...base,
+        id: `${ch.id}-meaning`,
+        kind: 'answer_word_meaning',
+        answerKind: answerKindFor('answer_word_meaning'),
+        responseClass: responseClassFor('answer_word_meaning'),
+        action: 'answer_word_meaning',
+        targetWord: entry.word,
+        wordMode: entry.mode,
+        meaningSentence: entry.meaningSentence,
+        question: entry.meaningQuestion,
+        answerWord: entry.meaningAnswer,
+        acceptedAnswers: [...entry.acceptedMeaningAnswers],
+      }];
+    }
+
+    case 'context-discrimination': {
+      const trial = earlyContextTrialFor(ch.contextTrialId ?? '');
+      if (!trial || trial.words.some((word) => opensWithSentinel(word))) return [];
+      const contextWords: [string, string] = [trial.words[0], trial.words[1]];
+      const reads = contextWords.map((word, index): WordWorkoutItem => ({
+        ...base,
+        id: `${ch.id}-read-${index + 1}`,
+        kind: 'read_context_word',
+        answerKind: answerKindFor('read_context_word'),
+        responseClass: responseClassFor('read_context_word'),
+        action: 'read_context_word',
+        targetWord: word,
+        decodingParts: simpleCvcModel(word),
+        contextWords,
+      }));
+      return [...reads, {
+        ...base,
+        id: `${ch.id}-context`,
+        kind: 'choose_context_word',
+        answerKind: answerKindFor('choose_context_word'),
+        responseClass: responseClassFor('choose_context_word'),
+        action: 'choose_context_word',
+        targetWord: trial.answer,
+        answerWord: trial.answer,
+        acceptedAnswers: [trial.answer],
+        contextWords,
+        contextSentence: trial.sentence,
+      }];
+    }
+
     case 'sentence-reading': {
       const sentence = sanitize(ch.sentence ?? '');
       if (!isSpeakable(sentence) || opensWithSentinel(sentence)) return [];
@@ -520,9 +630,17 @@ export const itemsFromChallenge = (ch: WordWorkoutChallengeLike): WordWorkoutIte
   }
 };
 
-/** Build the session, dropping what cannot be asked. */
-export const itemsFromChallenges = (challenges: WordWorkoutChallengeLike[]): WordWorkoutItem[] =>
-  (challenges ?? []).flatMap((ch) => itemsFromChallenge(ch));
+/** Build the session, dropping what cannot be asked. Inflected/compound meaning
+ *  checks are deferred until every new word has been cold-read: after the tutor
+ *  models one attempted word, the next word is therefore an independent
+ *  transfer check rather than an immediate recall of the model. */
+export const itemsFromChallenges = (challenges: WordWorkoutChallengeLike[]): WordWorkoutItem[] => {
+  const expanded = (challenges ?? []).flatMap((ch) => itemsFromChallenge(ch));
+  return [
+    ...expanded.filter((item) => item.kind !== 'answer_word_meaning'),
+    ...expanded.filter((item) => item.kind === 'answer_word_meaning'),
+  ];
+};
 
 /** The generator's side of the same gate — one address, both sides of the wire. */
 export const challengeAskable = (ch: WordWorkoutChallengeLike): boolean =>
@@ -544,6 +662,13 @@ const positionLabel = (index: number | undefined, length: number): string => {
   return 'middle';
 };
 
+/** A post-attempt decoding model. The chunks never appear in an opening cue. */
+export const decodingModelFor = (item: WordWorkoutItem): string => {
+  const word = item.targetWord ?? '';
+  const parts = item.decodingParts ?? [];
+  return parts.length > 0 ? `${parts.join(' ... ')} ... ${word}` : word;
+};
+
 // ── How-to-play — inside the quoted line (SWAP-1), re-spoken on action change ─
 //
 // It names WHAT TO DO for this kind of turn, which is the only thing that
@@ -563,6 +688,16 @@ export const howToPlayFor = (item: WordWorkoutItem): string => {
       return 'I show you a little sentence. You read it out loud, all by yourself! ';
     case 'answer_question':
       return 'Now I ask you about the sentence, and you tell me out loud! ';
+    case 'read_extended_word':
+      return item.wordMode === 'compound-word'
+        ? 'I show you a word made from two small words. You read the whole word out loud before I help! '
+        : 'I show you a word with an ending. You read the whole word out loud before I help! ';
+    case 'answer_word_meaning':
+      return 'Now use that word in a little sentence and tell what it means! ';
+    case 'read_context_word':
+      return 'I show you two almost-the-same words. Read each word out loud before you use the sentence! ';
+    case 'choose_context_word':
+      return 'Now use the sentence to tell which word fits! ';
   }
 };
 
@@ -585,6 +720,13 @@ export const askFor = (item: WordWorkoutItem): string => {
       return 'Your turn. Read the sentence.';
     case 'answer_question':
       return `Your turn. ${item.question}`;
+    case 'read_extended_word':
+    case 'read_context_word':
+      return 'Your turn. Read this word.';
+    case 'answer_word_meaning':
+      return `Listen: ${ensureStop(item.meaningSentence ?? '')} Your turn. ${item.question}`;
+    case 'choose_context_word':
+      return `Listen: ${(item.contextSentence ?? '').replace('___', 'blank')} Which word fits the blank?`;
   }
 };
 
@@ -612,6 +754,12 @@ const coldReadGuard = (item: WordWorkoutItem): string => {
       return ' The sentence is printed in front of the learner and is read cold on purpose: do not read it, or any part of it, before they do.';
     case 'answer_question':
       return '';
+    case 'read_extended_word':
+    case 'read_context_word':
+      return ' The word is printed in front of the learner and is read cold on purpose: do not say it, its parts, or any sound in it before they do.';
+    case 'answer_word_meaning':
+    case 'choose_context_word':
+      return '';
   }
 };
 
@@ -632,6 +780,13 @@ export const affirmFor = (item: WordWorkoutItem): string => {
       return `Yes, that says ${ensureStop(item.sentence ?? '')}`;
     case 'answer_question':
       return `Yes, ${item.answerWord}.`;
+    case 'read_extended_word':
+    case 'read_context_word':
+      return `Yes. Listen: ${decodingModelFor(item)}.`;
+    case 'answer_word_meaning':
+      return `Yes, ${item.answerWord}.`;
+    case 'choose_context_word':
+      return `Yes, ${item.answerWord} fits the sentence.`;
   }
 };
 
@@ -668,6 +823,13 @@ export const correctionFor = (item: WordWorkoutItem): string => {
       return `My turn: ${ensureStop(item.sentence ?? '')} Your turn. Read it again.`;
     case 'answer_question':
       return `My turn: ${ensureStop(item.sentence ?? '')} ${cap(item.answerWord ?? '')}. Your turn. ${item.question}`;
+    case 'read_extended_word':
+    case 'read_context_word':
+      return `My turn: ${decodingModelFor(item)}. Your turn. Read the word.`;
+    case 'answer_word_meaning':
+      return `My turn: ${ensureStop(item.meaningSentence ?? '')} That tells us ${item.answerWord}. Your turn. ${item.question}`;
+    case 'choose_context_word':
+      return `My turn: ${(item.contextSentence ?? '').replace('___', item.answerWord ?? '')} ${cap(item.answerWord ?? '')} fits. Your turn. Which word fits?`;
   }
 };
 
@@ -746,6 +908,32 @@ const chainWordContract = (item: WordWorkoutItem): string => {
     + CLOSING_DISCIPLINE;
 };
 
+const extendedWordReadContract = (item: WordWorkoutItem): string =>
+  `The quoted line is the ONLY thing you say on this turn; then stay silent while the learner decodes the printed word. `
+  + `The correct word is "${item.targetWord}". A slow sound-out that ends in the whole word is CORRECT; accuracy, not speed, is scored. `
+  + `Do not say the word, its chunks, or any of its sounds before the learner attempts it. `
+  + `${TWO_BRANCH_LAW}If they read it right, say exactly: "${affirmFor(item)}" `
+  + `If they read a different word or cannot produce the word, say exactly: "${correctionFor(item)}" and stop. `
+  + `Both branches model the decoding only AFTER the attempt; the next printed word is the independent transfer check. `
+  + CLOSING_DISCIPLINE;
+
+const wordMeaningContract = (item: WordWorkoutItem): string =>
+  `The quoted line is the ONLY thing you say on this turn; then stay silent while the learner answers the separate meaning question. `
+  + `This is NOT another reading score. The accepted meanings are: ${(item.acceptedAnswers ?? [item.answerWord]).map((answer) => `"${answer}"`).join(', ')}. `
+  + `Accept a short phrase or sentence that clearly gives one of those meanings. Do not count merely reading "${item.targetWord}" again as comprehension. `
+  + `${TWO_BRANCH_LAW}If the meaning is right, say exactly: "${affirmFor(item)}" `
+  + `If it is wrong, say exactly: "${correctionFor(item)}" and stop. `
+  + CLOSING_DISCIPLINE;
+
+const contextChoiceContract = (item: WordWorkoutItem): string =>
+  `The quoted line is the ONLY thing you say on this turn; then stay silent while the learner uses the sentence. `
+  + `The two printed choices are "${item.contextWords?.[0]}" and "${item.contextWords?.[1]}". The word that fits is "${item.answerWord}". `
+  + `This context choice is scored separately from the two cold word reads that came before it. `
+  + `Accept the word alone or inside a phrase. Reading both choices without choosing one is not an answer. `
+  + `${TWO_BRANCH_LAW}If they choose the fitting word, say exactly: "${affirmFor(item)}" `
+  + `If they choose the other word, say exactly: "${correctionFor(item)}" and stop. `
+  + CLOSING_DISCIPLINE;
+
 const readSentenceContract = (item: WordWorkoutItem): string =>
   `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner reads, and their think time is unbounded — decoding takes time. `
   + `Judge the audio you heard against the printed sentence "${item.sentence}" read aloud, every word in order.\n`
@@ -795,6 +983,13 @@ const contractFor = (item: WordWorkoutItem): string => {
       return readSentenceContract(item);
     case 'answer_question':
       return answerQuestionContract(item);
+    case 'read_extended_word':
+    case 'read_context_word':
+      return extendedWordReadContract(item);
+    case 'answer_word_meaning':
+      return wordMeaningContract(item);
+    case 'choose_context_word':
+      return contextChoiceContract(item);
   }
 };
 
@@ -840,6 +1035,13 @@ export const moveOnCue = (
         return 'We will read that one again another day. ';
       case 'answer_question':
         return `The answer was ${item.answerWord}. `;
+      case 'read_extended_word':
+      case 'read_context_word':
+        return `That word says ${item.targetWord}. `;
+      case 'answer_word_meaning':
+        return `That meaning was ${item.answerWord}. `;
+      case 'choose_context_word':
+        return `${item.answerWord} fits the sentence. `;
     }
   })();
   if (!next) {
@@ -919,6 +1121,14 @@ export const stimulusFor = (item: WordWorkoutItem): string => {
       return 'the printed sentence';
     case 'answer_question':
       return item.question ?? '';
+    case 'read_extended_word':
+      return 'one printed word with a common ending or two familiar word parts';
+    case 'answer_word_meaning':
+      return item.question ?? '';
+    case 'read_context_word':
+      return 'one of two similarly spelled printed words';
+    case 'choose_context_word':
+      return (item.contextSentence ?? '').replace('___', 'blank');
   }
 };
 
@@ -928,7 +1138,7 @@ export const wordWorkoutPackBase = (
   items: WordWorkoutItem[],
 ): JudgedCueSurface<WordWorkoutItem> => ({
   primitiveType: 'word-workout',
-  activityLine: 'live direct instruction CVC word reading practice',
+  activityLine: 'live direct instruction early word reading practice',
   items,
   itemCue,
   moveOnCue,
@@ -1047,6 +1257,53 @@ export const wordWorkoutHarnessAnswers = (item: WordWorkoutItem): WordWorkoutHar
         // The sentence is PRINTED, not spoken: the tutor never reads it before
         // the verdict, so nothing is exempt here. (Unlike story-talk, whose
         // stimulus is a read-aloud.)
+      };
+    }
+
+    case 'read_extended_word':
+    case 'read_context_word': {
+      const word = item.targetWord ?? '';
+      const neighbour = item.contextWords?.find((candidate) => candidate !== word);
+      return {
+        correct: word,
+        plainWrong: plainWrongFor(`${word} ${neighbour ?? ''}`, word),
+        signatureWrong: neighbour
+          ? {
+              text: neighbour,
+              why: 'the similarly spelled neighbour read fluently instead of the active printed word',
+            }
+          : undefined,
+        leakTokens: [word, ...(item.decodingParts ?? [])].filter(Boolean),
+      };
+    }
+
+    case 'answer_word_meaning': {
+      const accepted = item.acceptedAnswers ?? [item.answerWord ?? ''];
+      return {
+        correct: item.answerWord ?? '',
+        plainWrong: plainWrongFor(`${item.meaningSentence} ${accepted.join(' ')}`, item.answerWord ?? ''),
+        signatureWrong: item.targetWord
+          ? {
+              text: item.targetWord,
+              why: 'the printed word read back without answering the separate meaning question',
+            }
+          : undefined,
+        leakTokens: [item.answerWord ?? ''].filter(Boolean),
+      };
+    }
+
+    case 'choose_context_word': {
+      const wrong = item.contextWords?.find((candidate) => candidate !== item.answerWord) ?? '';
+      return {
+        correct: item.answerWord ?? '',
+        plainWrong: plainWrongFor(`${item.contextSentence} ${(item.contextWords ?? []).join(' ')}`, item.answerWord ?? ''),
+        signatureWrong: wrong
+          ? {
+              text: wrong,
+              why: 'the near-spelled word that does not fit the sentence',
+            }
+          : undefined,
+        leakTokens: [item.answerWord ?? ''].filter(Boolean),
       };
     }
   }

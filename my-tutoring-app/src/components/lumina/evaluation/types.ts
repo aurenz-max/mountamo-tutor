@@ -2585,13 +2585,27 @@ export interface StoryRibbonMetrics extends BasePrimitiveMetrics {
 
 export interface WordWorkoutMetrics extends BasePrimitiveMetrics {
   type: 'word-workout';
-  mode: 'real-vs-nonsense' | 'picture-match' | 'word-chains' | 'sentence-reading';
+  mode:
+    | 'real-vs-nonsense'
+    | 'picture-match'
+    | 'word-chains'
+    | 'sentence-reading'
+    | 'inflected-word'
+    | 'compound-word'
+    | 'context-discrimination';
   challengesCorrect: number;
   challengesTotal: number;
   realVsNonsenseAccuracy: number;
   pictureMatchAccuracy: number;
   wordChainFluency: number;
   sentenceComprehensionCorrect: boolean;
+  /** Reading evidence only; excludes every meaning/context-answer turn. */
+  decodingAccuracy: number;
+  /** Meaning/context evidence only; excludes every cold-read turn. */
+  wordMeaningAccuracy: number;
+  inflectedWordAccuracy: number;
+  compoundWordAccuracy: number;
+  contextDiscriminationAccuracy: number;
   wordsReadIndependently: number;
   wordsTotal: number;
   attemptsCount: number;

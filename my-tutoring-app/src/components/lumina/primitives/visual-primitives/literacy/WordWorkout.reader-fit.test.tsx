@@ -29,7 +29,7 @@ import React from 'react';
 import { render, screen, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-const runnerState = vi.hoisted(() => ({ index: 0, packs: [] as Array<{ items: unknown[]; itemCue: (item: unknown, opts: unknown) => string }> }));
+const runnerState = vi.hoisted(() => ({ index: 0, solved: false, packs: [] as Array<{ items: unknown[]; itemCue: (item: unknown, opts: unknown) => string }> }));
 
 vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
   useJudgedScriptRunner: (opts: { pack: { items: unknown[]; itemCue: (item: unknown, opts: unknown) => string } }) => {
@@ -42,7 +42,7 @@ vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
       currentIndex: runnerState.index,
       currentItem: opts.pack.items[runnerState.index] ?? null,
       solvedIds: new Set<string>(),
-      currentSolved: false,
+      currentSolved: runnerState.solved,
       canAttempt: true,
       summary: null,
       micState: 'idle' as const,
@@ -107,6 +107,22 @@ const wordChainsData = (gradeLevel: string): WordWorkoutData => ({
   challenges: [{ id: 'c1', mode: 'word-chains', chain: ['cat', 'bat', 'bad'], changedPositions: [0, 2] }],
 });
 
+const inflectedData = (): WordWorkoutData => ({
+  title: 'Read Common Endings',
+  mode: 'inflected-word',
+  masteredVowels: ['a'],
+  gradeLevel: 'K',
+  challenges: [{ id: 'c1', mode: 'inflected-word', targetWord: 'cats', includeMeaning: true }],
+});
+
+const contextData = (): WordWorkoutData => ({
+  title: 'Near Words in Context',
+  mode: 'context-discrimination',
+  masteredVowels: ['a'],
+  gradeLevel: 'K',
+  challenges: [{ id: 'c1', mode: 'context-discrimination', contextTrialId: 'cat-cap' }],
+});
+
 const lastPack = () => runnerState.packs[runnerState.packs.length - 1];
 const openingLine = () => {
   const pack = lastPack();
@@ -116,7 +132,43 @@ const openingLine = () => {
 afterEach(() => {
   cleanup();
   runnerState.index = 0;
+  runnerState.solved = false;
   runnerState.packs = [];
+});
+
+describe('WordWorkout extended-decoding mask and reveal', () => {
+  it('shows only the inflected word before the cold read, then reveals its decoding chunks', () => {
+    runnerState.solved = false;
+    const { rerender } = render(<WordWorkout data={inflectedData()} />);
+    expect(screen.getByText('cats')).toBeTruthy();
+    expect(screen.queryByText('/s/')).toBeNull();
+    expect(screen.queryByText('The cats nap.')).toBeNull();
+
+    runnerState.solved = true;
+    rerender(<WordWorkout data={inflectedData()} />);
+    expect(screen.getByText('/s/')).toBeTruthy();
+  });
+
+  it('withholds sentence context during both cold reads, then shows it for the separate choice', () => {
+    runnerState.index = 0;
+    const first = render(<WordWorkout data={contextData()} />);
+    expect(screen.getByText('cat')).toBeTruthy();
+    expect(screen.getByText('cap')).toBeTruthy();
+    expect(screen.queryByText('The ___ sat on the mat.')).toBeNull();
+    first.unmount();
+
+    runnerState.index = 2;
+    render(<WordWorkout data={contextData()} />);
+    expect(screen.getByText('The ___ sat on the mat.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /cat|cap/i })).toBeNull();
+  });
+
+  it('shows the meaning sentence only on the separately scored comprehension item', () => {
+    runnerState.index = 1;
+    render(<WordWorkout data={inflectedData()} />);
+    expect(screen.getByText('The cats nap.')).toBeTruthy();
+    expect(screen.getByText('What does cats tell you about how many cats there are?')).toBeTruthy();
+  });
 });
 
 describe.each(['K', '1'])('WordWorkout DI stage @ grade %s', (grade) => {

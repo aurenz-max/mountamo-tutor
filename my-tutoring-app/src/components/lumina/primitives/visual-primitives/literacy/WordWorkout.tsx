@@ -43,6 +43,13 @@
  *
  * Cue lines, judging contracts and build gates live in `wordWorkoutScript.ts`
  * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ *
+ * EXTENDED DECODING (2026-09-09): inflected and compound modes keep one word
+ * visible for a cold spoken read, reveal/model its chunks only after the
+ * attempt, and defer optional meaning questions until the new-word transfer
+ * reads are complete. Context discrimination similarly judges both near words
+ * before revealing the sentence that selects between them. Those read and
+ * meaning outcomes are retained in separate metrics.
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -107,6 +114,11 @@ export interface WordWorkoutChallenge {
   sightWords?: string[];
   comprehensionQuestion?: string;
   comprehensionAnswer?: string;
+  // Inflected / compound reading. targetWord is a key into the code-owned
+  // early-decoding pool; includeMeaning adds a separately scored question.
+  includeMeaning?: boolean;
+  // Context discrimination. The trial id hydrates a bounded CVC pair + frame.
+  contextTrialId?: string;
 
   /**
    * The surviving support-tier lever (stamped by the generator from
@@ -169,6 +181,10 @@ const KIND_META: Record<
   chain_word: { label: 'Word Chain', icon: '🔗', accent: 'emerald' },
   read_sentence: { label: 'Read It', icon: '📖', accent: 'amber' },
   answer_question: { label: 'What Happened?', icon: '💭', accent: 'pink' },
+  read_extended_word: { label: 'Read the Whole Word', icon: '🔤', accent: 'blue' },
+  answer_word_meaning: { label: 'What Does It Mean?', icon: '💭', accent: 'pink' },
+  read_context_word: { label: 'Read the Near Word', icon: '🔎', accent: 'blue' },
+  choose_context_word: { label: 'Which Word Fits?', icon: '🧩', accent: 'purple' },
 };
 
 // ============================================================================
@@ -236,19 +252,46 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
     // Every word here is read INDEPENDENTLY — the click era's "tap any word to
     // hear it" channel is gone, so there is no assisted read to subtract.
-    const readItems = [...chainItems, ...kindItems('read_sentence')];
+    const readItems = [
+      ...chainItems,
+      ...kindItems('read_sentence'),
+      ...kindItems('read_extended_word'),
+      ...kindItems('read_context_word'),
+    ];
     const wordsTotal = readItems.reduce(
-      (sum, i) => sum + (i.kind === 'chain_word' ? 1 : (i.sentence ?? '').split(/\s+/).length),
+      (sum, i) => sum + (i.kind === 'read_sentence'
+        ? (i.sentence ?? '').split(/\s+/).length
+        : 1),
       0,
     );
     const wordsReadIndependently = readItems
       .filter((i) => outcomeOf(i)?.solved && (outcomeOf(i)?.corrections ?? 0) === 0)
       .reduce(
-        (sum, i) => sum + (i.kind === 'chain_word' ? 1 : (i.sentence ?? '').split(/\s+/).length),
+        (sum, i) => sum + (i.kind === 'read_sentence'
+          ? (i.sentence ?? '').split(/\s+/).length
+          : 1),
         0,
       );
 
     const comprehension = kindItems('answer_question');
+    const decodingKinds: WordWorkoutItemKind[] = [
+      'real_word', 'chain_word', 'read_sentence', 'read_extended_word', 'read_context_word',
+    ];
+    const meaningKinds: WordWorkoutItemKind[] = [
+      'picture_tap', 'answer_question', 'answer_word_meaning', 'choose_context_word',
+    ];
+    const accuracyAcross = (kinds: WordWorkoutItemKind[]) => {
+      const group = items.filter((item) => kinds.includes(item.kind));
+      if (group.length === 0) return 0;
+      return Math.round((group.filter((item) => outcomeOf(item)?.solved).length / group.length) * 100);
+    };
+    const compoundReads = kindItems('read_extended_word')
+      .filter((item) => item.wordMode === 'compound-word');
+    const inflectedReads = kindItems('read_extended_word')
+      .filter((item) => item.wordMode === 'inflected-word');
+    const accuracyForItems = (group: WordWorkoutItem[]) => group.length > 0
+      ? Math.round((group.filter((item) => outcomeOf(item)?.solved).length / group.length) * 100)
+      : 0;
 
     const metrics: WordWorkoutMetrics = {
       type: 'word-workout',
@@ -260,6 +303,11 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       wordChainFluency,
       sentenceComprehensionCorrect:
         comprehension.length > 0 && comprehension.every((i) => outcomeOf(i)?.solved),
+      decodingAccuracy: accuracyAcross(decodingKinds),
+      wordMeaningAccuracy: accuracyAcross(meaningKinds),
+      inflectedWordAccuracy: accuracyForItems(inflectedReads),
+      compoundWordAccuracy: accuracyForItems(compoundReads),
+      contextDiscriminationAccuracy: accuracyOf('choose_context_word'),
       wordsReadIndependently,
       wordsTotal,
       attemptsCount: summary.attemptsCount,
@@ -280,12 +328,16 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     ...wordWorkoutPackBase(items),
     statusLines: {
       idle: 'Tap the microphone to start your word workout.',
-      ready: (item) => (item.answerKind === 'gesture'
+      ready: (item) => item.answerKind === 'gesture'
         ? 'Read the word, then tap its picture.'
-        : 'Read it out loud when you are ready.'),
-      retry: (item) => (item.answerKind === 'gesture'
+        : item.kind === 'answer_question' || item.kind === 'answer_word_meaning' || item.kind === 'choose_context_word'
+          ? 'Say your answer when you are ready.'
+          : 'Read it out loud when you are ready.',
+      retry: (item) => item.answerKind === 'gesture'
         ? 'Look again — then tap a picture.'
-        : 'Have another go — read it out loud.'),
+        : item.kind === 'answer_question' || item.kind === 'answer_word_meaning' || item.kind === 'choose_context_word'
+          ? 'Have another go — say your answer.'
+          : 'Have another go — read it out loud.',
       noVerdict: () => 'One more time — say it out loud.',
       done: 'Great word work today!',
     },
@@ -322,6 +374,25 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
             challenge: `Read "${item.sentence}" and answer: ${item.question}`,
             expected: `"${item.answerWord}" said out loud.`,
             observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+          };
+        case 'read_extended_word':
+        case 'read_context_word':
+          return {
+            challenge: `Read the printed word "${item.targetWord}" aloud.`,
+            expected: `"${item.targetWord}" read aloud.`,
+            observed: lastHeard ? `Read "${lastHeard}".` : 'The tutor judged the reading wrong from the audio.',
+          };
+        case 'answer_word_meaning':
+          return {
+            challenge: `Use the sentence and answer: ${item.question}`,
+            expected: `A meaning equivalent to "${item.answerWord}".`,
+            observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the meaning answer wrong from the audio.',
+          };
+        case 'choose_context_word':
+          return {
+            challenge: `Choose the near-spelled word that fits: ${item.contextSentence}`,
+            expected: `"${item.answerWord}".`,
+            observed: lastHeard ? `Said "${lastHeard}".` : 'The tutor judged the context choice wrong from the audio.',
           };
       }
     },
@@ -560,6 +631,70 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     );
   };
 
+  /** A single inflected/compound word is the entire cold-read surface. Its
+   *  chunks appear only after the tutor has judged the attempt. */
+  const renderExtendedWord = (item: WordWorkoutItem) => (
+    <div className="space-y-4 text-center">
+      <div className="inline-flex px-10 py-6 rounded-2xl bg-white/5 border-2 border-white/15">
+        <span className="text-4xl font-bold tracking-wide text-slate-100">{item.targetWord}</span>
+      </div>
+      {item.kind === 'read_extended_word' && revealed && (
+        <div className="flex items-center justify-center gap-2 text-emerald-200">
+          {(item.decodingParts ?? []).map((part, index) => (
+            <React.Fragment key={`${part}-${index}`}>
+              {index > 0 && <span className="text-slate-500">+</span>}
+              <span className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 font-semibold">
+                {part}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+      {item.kind === 'answer_word_meaning' && (
+        <div className="space-y-3">
+          <p className="text-xl text-slate-200">{item.meaningSentence}</p>
+          <p className="text-lg font-semibold text-slate-100">{item.question}</p>
+        </div>
+      )}
+    </div>
+  );
+
+  /** Near words are decoded without context first. The sentence appears only
+   *  for the later, separately scored context decision. */
+  const renderContextWords = (item: WordWorkoutItem) => (
+    <div className="space-y-5">
+      {item.kind === 'choose_context_word' && (
+        <p className="rounded-xl border border-white/10 bg-white/5 p-5 text-center text-2xl font-semibold text-slate-100">
+          {item.contextSentence}
+        </p>
+      )}
+      <div className="grid grid-cols-2 gap-4">
+        {(item.contextWords ?? []).map((word) => {
+          const active = item.kind === 'read_context_word' && word === item.targetWord;
+          const correct = item.kind === 'choose_context_word' && revealed && word === item.answerWord;
+          return (
+            <div
+              key={`${item.id}-${word}`}
+              className={`rounded-2xl border-2 px-6 py-6 text-center text-3xl font-bold tracking-wide
+                ${correct
+                  ? answerStateClass('correct')
+                  : active
+                    ? 'border-blue-400/50 bg-blue-500/15 text-blue-100'
+                    : 'border-white/15 bg-white/5 text-slate-300'}`}
+            >
+              {word}
+            </div>
+          );
+        })}
+      </div>
+      {item.kind === 'read_context_word' && revealed && (
+        <p className="text-center text-emerald-200 font-semibold">
+          {(item.decodingParts ?? []).join(' · ')} → {item.targetWord}
+        </p>
+      )}
+    </div>
+  );
+
   const renderStage = (item: WordWorkoutItem) => {
     switch (item.kind) {
       case 'real_word':
@@ -571,6 +706,12 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       case 'read_sentence':
       case 'answer_question':
         return renderSentence(item);
+      case 'read_extended_word':
+      case 'answer_word_meaning':
+        return renderExtendedWord(item);
+      case 'read_context_word':
+      case 'choose_context_word':
+        return renderContextWords(item);
     }
   };
 

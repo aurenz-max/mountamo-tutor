@@ -128,6 +128,11 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "irregulars": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
         "past_irregular": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
     },
+    "word-workout": {
+        "read_inflected":    PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6, c=0
+        "read_compound":     PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6, c=0
+        "choose_in_context": PATTERN_TRUE_FALSE,             # a=1.0, c=0.50
+    },
     # --- Single-mode / multi-mode math primitives ---
     "balance-scale": {
         "equality":  PATTERN_DIRECT_MANIPULATION,

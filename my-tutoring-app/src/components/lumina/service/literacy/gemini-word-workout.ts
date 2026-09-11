@@ -7,8 +7,7 @@ import type {
   WordWorkoutChallenge,
 } from "../../primitives/visual-primitives/literacy/WordWorkout";
 import {
-  resolveEvalModeConstraint,
-  logEvalModeResolution,
+  resolveEvalModes,
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildScopePromptSection, type PedagogicalScope } from "../scopeContext";
@@ -17,6 +16,15 @@ import {
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
 } from "../../primitives/visual-primitives/literacy/wordWorkoutScript";
+import {
+  EARLY_CONTEXT_TRIALS,
+  EARLY_EXTENDED_WORDS,
+  earlyContextMatchesVowelScope,
+  earlyContextTrialFor,
+  earlyExtendedWordFor,
+  earlyWordMatchesVowelScope,
+  objectiveRequiresWordMeaning,
+} from '../../primitives/visual-primitives/literacy/wordWorkoutEarlyDecoding';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -51,6 +59,26 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"sentence-reading": Student READS ALOUD a decodable sentence made from CVC + sight words, `
       + `then SAYS the answer to a comprehension question. Tests word-in-context fluency.`,
     schemaDescription: "'sentence-reading' (read decodable sentence aloud)",
+  },
+  'inflected-word': {
+    promptDoc:
+      `"inflected-word": Student READS ALOUD a code-bounded early word with -s, -ing, or -ed. `
+      + `The tutor withholds pronunciation until after the cold attempt, models base + ending, then checks a new word. `
+      + `When the objective asks for comprehension, a separate spoken meaning item follows the read.`,
+    schemaDescription: "'inflected-word' (read a common ending)",
+  },
+  'compound-word': {
+    promptDoc:
+      `"compound-word": Student READS ALOUD a code-bounded compound made from two familiar decodable words. `
+      + `The tutor withholds pronunciation until after the cold attempt, models the two parts, then checks a new word. `
+      + `When the objective asks for comprehension, a separate spoken meaning item follows the read.`,
+    schemaDescription: "'compound-word' (read a familiar compound)",
+  },
+  'context-discrimination': {
+    promptDoc:
+      `"context-discrimination": Student READS ALOUD both words in a code-bounded near-spelled CVC pair, `
+      + `then uses a short sentence to SAY which word fits. Word reading and context choice are scored separately.`,
+    schemaDescription: "'context-discrimination' (choose a near word in context)",
   },
 };
 
@@ -145,6 +173,17 @@ function sanitizeVowelScope(
       return challenges.filter(
         (ch) => (ch.cvcWords ?? []).length >= 3 && (ch.cvcWords ?? []).every((w) => inVowelScope(w, scoped)),
       );
+    case 'inflected-word':
+    case 'compound-word':
+      return challenges.filter((ch) => {
+        const entry = earlyExtendedWordFor(ch.targetWord ?? '', mode);
+        return !!entry && earlyWordMatchesVowelScope(entry, scoped);
+      });
+    case 'context-discrimination':
+      return challenges.filter((ch) => {
+        const trial = earlyContextTrialFor(ch.contextTrialId ?? '');
+        return !!trial && earlyContextMatchesVowelScope(trial, scoped);
+      });
   }
 }
 
@@ -197,12 +236,38 @@ function getScopedFallback(mode: WordWorkoutMode, count: number, vowel: string):
       const s = SCOPED_SENTENCE[v]!;
       return [{ id: 'fb1', mode, ...s }].slice(0, count);
     }
+    case 'inflected-word':
+    case 'compound-word':
+    case 'context-discrimination':
+      return [];
   }
 }
 
 /** Fallback dispatcher — scoped when the objective named a vowel, else the
  *  original mixed-vowel default. */
-function fallbackFor(mode: WordWorkoutMode, count: number, scoped: string[] | null): WordWorkoutChallenge[] {
+function fallbackFor(
+  mode: WordWorkoutMode,
+  count: number,
+  scoped: string[] | null,
+  includeMeaning = false,
+): WordWorkoutChallenge[] {
+  if (mode === 'inflected-word' || mode === 'compound-word') {
+    return EARLY_EXTENDED_WORDS
+      .filter((entry) => entry.mode === mode && earlyWordMatchesVowelScope(entry, scoped))
+      .slice(0, count)
+      .map((entry, index) => ({
+        id: `fb${index + 1}`,
+        mode,
+        targetWord: entry.word,
+        ...(includeMeaning ? { includeMeaning: true } : {}),
+      }));
+  }
+  if (mode === 'context-discrimination') {
+    return EARLY_CONTEXT_TRIALS
+      .filter((trial) => earlyContextMatchesVowelScope(trial, scoped))
+      .slice(0, count)
+      .map((trial, index) => ({ id: `fb${index + 1}`, mode, contextTrialId: trial.id }));
+  }
   return scoped && scoped.length > 0 ? getScopedFallback(mode, count, scoped[0]!) : getFallbackChallenges(mode, count);
 }
 
@@ -335,11 +400,58 @@ const sentenceReadingSchema: Schema = {
   required: ["challenges"],
 };
 
+const earlyWordSelectionSchema = (mode: 'inflected-word' | 'compound-word'): Schema => ({
+  type: Type.OBJECT,
+  properties: {
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          targetWord: {
+            type: Type.STRING,
+            enum: EARLY_EXTENDED_WORDS.filter((entry) => entry.mode === mode).map((entry) => entry.word),
+            description: 'Select one exact word from the code-owned early-decoding scope.',
+          },
+        },
+        required: ['id', 'targetWord'],
+      },
+    },
+  },
+  required: ['challenges'],
+});
+
+const contextDiscriminationSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          contextTrialId: {
+            type: Type.STRING,
+            enum: EARLY_CONTEXT_TRIALS.map((trial) => trial.id),
+            description: 'Select one exact near-word trial from the code-owned Kindergarten scope.',
+          },
+        },
+        required: ['id', 'contextTrialId'],
+      },
+    },
+  },
+  required: ['challenges'],
+};
+
 const MODE_SCHEMAS: Record<WordWorkoutMode, Schema> = {
   "real-vs-nonsense": realVsNonsenseSchema,
   "picture-match": pictureMatchSchema,
   "word-chains": wordChainsSchema,
   "sentence-reading": sentenceReadingSchema,
+  "inflected-word": earlyWordSelectionSchema('inflected-word'),
+  "compound-word": earlyWordSelectionSchema('compound-word'),
+  "context-discrimination": contextDiscriminationSchema,
 };
 
 // ============================================================================
@@ -357,7 +469,8 @@ function getModePrompt(
   count: number,
   intent?: string,
   scopeSection = '',
-  scopedVowels: string[] | null = null
+  scopedVowels: string[] | null = null,
+  includeMeaning = false,
 ): string {
   const vowelStr = masteredVowels.join(", ");
   const focusLine = intent
@@ -424,6 +537,43 @@ RULES:
 - Comprehension questions should be simple who/what/where questions, and must only mention things the sentence ACTUALLY says. For "The cat sat on the mat", ask "What sat on the mat?" — never "What sat on the rug?", because the child is looking at the sentence and there is no rug in it
 - NEVER use the word "yes" as a word, and never begin a sentence with "Yes"`
       );
+
+    case 'inflected-word': {
+      const choices = EARLY_EXTENDED_WORDS
+        .filter((entry) => entry.mode === mode && earlyWordMatchesVowelScope(entry, scopedVowels))
+        .map((entry) => entry.word);
+      return base
+        + `MODE: Inflected Word Cold Reading\n`
+        + `Choose ${count} DIFFERENT targetWord values from this exact list: ${choices.join(', ')}.\n`
+        + `Return only id and targetWord. Code owns the word parts, pronunciation model, context, and answer key.\n`
+        + `The student reads each whole word before hearing it. ${includeMeaning
+          ? 'The objective asks for comprehension, so code will add a separate meaning question after each read.'
+          : 'The objective asks for decoding only, so no sentence context or meaning question will be shown.'}`;
+    }
+
+    case 'compound-word': {
+      const choices = EARLY_EXTENDED_WORDS
+        .filter((entry) => entry.mode === mode && earlyWordMatchesVowelScope(entry, scopedVowels))
+        .map((entry) => entry.word);
+      return base
+        + `MODE: Compound Word Cold Reading\n`
+        + `Choose ${count} DIFFERENT targetWord values from this exact list: ${choices.join(', ')}.\n`
+        + `Return only id and targetWord. Code owns the two word parts, pronunciation model, context, and answer key.\n`
+        + `The student reads each whole word before hearing it. ${includeMeaning
+          ? 'The objective asks for comprehension, so code will add a separate meaning question after each read.'
+          : 'The objective asks for decoding only, so no sentence context or meaning question will be shown.'}`;
+    }
+
+    case 'context-discrimination': {
+      const choices = EARLY_CONTEXT_TRIALS
+        .filter((trial) => earlyContextMatchesVowelScope(trial, scopedVowels))
+        .map((trial) => trial.id);
+      return base
+        + `MODE: Near Words in Context\n`
+        + `Choose ${count} DIFFERENT contextTrialId values from this exact list: ${choices.join(', ')}.\n`
+        + `Return only id and contextTrialId. Code owns both near-spelled words, their sentence, and the answer key.\n`
+        + `The student first reads BOTH words aloud without context. Only afterward does the sentence appear for a separate spoken choice.`;
+    }
   }
 }
 
@@ -482,6 +632,10 @@ function getFallbackChallenges(
         comprehensionAnswer: "mat",
       },
     ],
+    // These three modes are hydrated by fallbackFor from code-owned pools.
+    "inflected-word": [],
+    "compound-word": [],
+    "context-discrimination": [],
   };
 
   return fallbacks[mode].slice(0, count);
@@ -531,6 +685,38 @@ function validateWordChain(
   }
 
   return { ...ch, chain: deduped, changedPositions: positions };
+}
+
+/** Hydrate only from the code-owned scope and remove duplicate selections. */
+function hydrateEarlyDecodingChallenges(
+  mode: WordWorkoutMode,
+  challenges: WordWorkoutChallenge[],
+  scopedVowels: string[] | null,
+  includeMeaning: boolean,
+): WordWorkoutChallenge[] {
+  const seen = new Set<string>();
+  if (mode === 'inflected-word' || mode === 'compound-word') {
+    return challenges.flatMap((challenge, index) => {
+      const entry = earlyExtendedWordFor(challenge.targetWord ?? '', mode);
+      if (!entry || !earlyWordMatchesVowelScope(entry, scopedVowels) || seen.has(entry.word)) return [];
+      seen.add(entry.word);
+      return [{
+        id: challenge.id || `c${index + 1}`,
+        mode,
+        targetWord: entry.word,
+        ...(includeMeaning ? { includeMeaning: true } : {}),
+      }];
+    });
+  }
+  if (mode === 'context-discrimination') {
+    return challenges.flatMap((challenge, index) => {
+      const trial = earlyContextTrialFor(challenge.contextTrialId ?? '');
+      if (!trial || !earlyContextMatchesVowelScope(trial, scopedVowels) || seen.has(trial.id)) return [];
+      seen.add(trial.id);
+      return [{ id: challenge.id || `c${index + 1}`, mode, contextTrialId: trial.id }];
+    });
+  }
+  return challenges;
 }
 
 // ============================================================================
@@ -609,10 +795,13 @@ async function generateModeChallenges(
   intent?: string,
   scopeSection = '',
   scopedVowels: string[] | null = null,
-  supportTier?: SupportTier
+  supportTier?: SupportTier,
+  includeMeaning = false,
 ): Promise<WordWorkoutChallenge[]> {
   try {
-    const prompt = getModePrompt(mode, topic, gradeLevel, masteredVowels, count, intent, scopeSection, scopedVowels);
+    const prompt = getModePrompt(
+      mode, topic, gradeLevel, masteredVowels, count, intent, scopeSection, scopedVowels, includeMeaning,
+    );
 
     const response = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
@@ -621,8 +810,8 @@ async function generateModeChallenges(
         responseMimeType: "application/json",
         responseSchema: MODE_SCHEMAS[mode],
         systemInstruction:
-          "You are an expert K-2 reading specialist creating CVC word workout activities. " +
-          "All CVC words must be true consonant-vowel-consonant patterns with short vowel sounds.",
+          "You are an expert K-2 reading specialist creating tightly scoped word-reading activities. " +
+          "Obey the active mode's exact allowlist and return only the requested fields.",
       },
     });
 
@@ -637,6 +826,8 @@ async function generateModeChallenges(
         mode,
       })
     );
+
+    challenges = hydrateEarlyDecodingChallenges(mode, challenges, scopedVowels, includeMeaning);
 
     // Post-process: validate word chains, derive changedPositions
     if (mode === 'word-chains') {
@@ -689,14 +880,19 @@ async function generateModeChallenges(
       }
     }
 
-    if (challenges.length === 0) return fallbackFor(mode, count, scopedVowels);
+    const minimumForTransfer = mode === 'inflected-word' || mode === 'compound-word'
+      ? Math.min(2, count)
+      : 1;
+    if (challenges.length < minimumForTransfer) {
+      return fallbackFor(mode, count, scopedVowels, includeMeaning);
+    }
 
     // Support tier LAST — after every content filter, so scaffold withdrawal can
     // never influence which challenges survive. Fallbacks bypass this on purpose.
     return applySupportTier(mode, challenges, supportTier);
   } catch (error) {
     console.warn(`[word-workout] ${mode} generation failed, using fallback:`, error);
-    return fallbackFor(mode, count, scopedVowels);
+    return fallbackFor(mode, count, scopedVowels, includeMeaning);
   }
 }
 
@@ -704,7 +900,7 @@ async function generateModeChallenges(
 // Main Generator (public API)
 //
 // Architecture (follows ordinal-line orchestrator pattern):
-//   - No config.mode and no targetEvalMode → multi-mode: 4 parallel calls
+//   - No config.mode and no targetEvalMode → mixed session across all modes
 //   - With config.mode or targetEvalMode → single/filtered-mode generation
 // ============================================================================
 
@@ -721,15 +917,26 @@ const MAX_CHALLENGES_PER_MODE: Record<WordWorkoutMode, number> = {
   'picture-match': 6,
   'word-chains': 2,
   'sentence-reading': 3,
+  'inflected-word': 4,
+  'compound-word': 4,
+  'context-discrimination': 3,
 };
 
 type WordWorkoutConfig = Partial<{
   mode: WordWorkoutMode;
   challengeCount: number;
   masteredVowels: string[];
-  /** Target eval mode from the IRT calibration system. */
-  targetEvalMode: string;
 }>;
+
+const EVAL_MODE_FOR_CHALLENGE: Record<WordWorkoutMode, string> = {
+  'real-vs-nonsense': 'real_vs_nonsense',
+  'picture-match': 'picture_match',
+  'word-chains': 'word_chains',
+  'sentence-reading': 'sentence_reading',
+  'inflected-word': 'read_inflected',
+  'compound-word': 'read_compound',
+  'context-discrimination': 'choose_in_context',
+};
 
 export const generateWordWorkout = async (
   ctx: GenerationContext,
@@ -738,13 +945,20 @@ export const generateWordWorkout = async (
   const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as WordWorkoutConfig;
+  const explicitMode = config?.mode;
   // ── Eval mode resolution ────────────────────────────────────────────
-  const evalConstraint = resolveEvalModeConstraint(
+  const resolution = await resolveEvalModes(
     'word-workout',
-    config?.targetEvalMode,
+    {
+      targetEvalMode: ctx.targetEvalMode ?? (explicitMode ? EVAL_MODE_FOR_CHALLENGE[explicitMode] : undefined),
+      intent,
+      objectiveText: ctx.objective?.text,
+    },
     CHALLENGE_TYPE_DOCS,
   );
-  logEvalModeResolution('WordWorkout', config?.targetEvalMode, evalConstraint);
+  console.log(
+    `[WordWorkout] modes: ${resolution ? `${resolution.modes.map((mode) => mode.evalMode).join('+')} (${resolution.source})` : 'mixed'} → types [${(resolution?.allowedTypes ?? ['all']).join(', ')}]`,
+  );
 
   // ── Vowel-scope binding ─────────────────────────────────────────────
   // When the objective names a short vowel ("short a"), bind EVERY word to it;
@@ -763,18 +977,29 @@ export const generateWordWorkout = async (
   // Already normalized upstream by resolveGenerationContext; NEVER re-parsed from
   // config.difficulty here, and never mentioned in any prompt.
   const supportTier = ctx.supportTier;
+  const includeMeaning = objectiveRequiresWordMeaning(
+    topic,
+    intent,
+    ctx.objective?.text,
+    ctx.scope.objectiveText,
+  );
 
   // Determine which modes to generate
-  const explicitMode = config?.mode;
-  const evalModes = evalConstraint?.allowedTypes as WordWorkoutMode[] | undefined;
+  const evalModes = resolution?.allowedTypes as WordWorkoutMode[] | undefined;
+  const singleModeSupportTier = explicitMode || resolution?.modes.length === 1
+    ? supportTier
+    : undefined;
 
   // ── Single mode (explicit request OR eval mode targeting single mode) ──
   if (explicitMode || (evalModes && evalModes.length === 1)) {
     const targetMode = explicitMode || evalModes![0];
-    const count = Math.min(
+    const cappedCount = Math.min(
       config?.challengeCount || 5,
       MAX_CHALLENGES_PER_MODE[targetMode],
     );
+    const count = targetMode === 'inflected-word' || targetMode === 'compound-word'
+      ? Math.max(2, cappedCount)
+      : cappedCount;
     const challenges = await generateModeChallenges(
       targetMode,
       topic,
@@ -784,7 +1009,8 @@ export const generateWordWorkout = async (
       intent,
       scopeSection,
       scopedVowels,
-      supportTier
+      singleModeSupportTier,
+      includeMeaning,
     );
 
     // Re-assign sequential IDs
@@ -794,16 +1020,16 @@ export const generateWordWorkout = async (
     }));
 
     console.log(`[word-workout] Single-mode (${targetMode}): ${finalChallenges.length} challenges`
-      + (supportTier ? `; support tier "${supportTier}"` : ''));
+      + (singleModeSupportTier ? `; support tier "${singleModeSupportTier}"` : ''));
 
     return {
-      title: `CVC Word Workout: ${topic}`,
+      title: `Word Workout: ${topic}`,
       mode: targetMode,
       masteredVowels,
       gradeLevel: gradeKey,
       // Tell the live tutor the support level whenever a tier is present, so its
       // reveal latitude matches what is (or is not) on screen.
-      ...(supportTier ? { supportTier } : {}),
+      ...(singleModeSupportTier ? { supportTier: singleModeSupportTier } : {}),
       challenges: finalChallenges,
     };
   }
@@ -814,6 +1040,9 @@ export const generateWordWorkout = async (
     "picture-match",
     "word-chains",
     "sentence-reading",
+    "inflected-word",
+    "compound-word",
+    "context-discrimination",
   ];
 
   // Distribute challenge count roughly evenly across modes
@@ -821,11 +1050,16 @@ export const generateWordWorkout = async (
 
   const results = await Promise.all(
     modesToGenerate.map(mode => generateModeChallenges(mode, topic, gradeLevel, masteredVowels,
-      mode === 'word-chains' || mode === 'sentence-reading' ? 1 : countPerMode,
+      mode === 'inflected-word' || mode === 'compound-word'
+        ? Math.max(2, countPerMode)
+        : mode === 'word-chains' || mode === 'sentence-reading'
+          ? 1
+          : countPerMode,
       intent,
       scopeSection,
       scopedVowels,
-      supportTier
+      singleModeSupportTier,
+      includeMeaning,
     ))
   );
 
@@ -838,15 +1072,15 @@ export const generateWordWorkout = async (
   console.log("[word-workout] Multi-mode generated:", {
     total: allChallenges.length,
     modes: modesToGenerate,
-    supportTier: supportTier ?? '(none)',
+    supportTier: singleModeSupportTier ?? '(none)',
   });
 
   return {
-    title: `CVC Word Workout: ${topic}`,
+    title: `Word Workout: ${topic}`,
     mode: modesToGenerate[0],
     masteredVowels,
     gradeLevel: gradeKey,
-    ...(supportTier ? { supportTier } : {}),
+    ...(singleModeSupportTier ? { supportTier: singleModeSupportTier } : {}),
     challenges: allChallenges,
   };
 };

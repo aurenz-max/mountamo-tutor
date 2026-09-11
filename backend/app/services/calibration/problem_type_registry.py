@@ -740,10 +740,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "manipulate": PriorConfig(5.0, "Production: hear a word and one sound change, SAY the new word"),
     },
     "word-workout": {
-        "real_vs_nonsense": PriorConfig(1.5, "Recognition: real vs nonsense word"),
+        "real_vs_nonsense": PriorConfig(2.5, "Spoken production: read and say the real word"),
         "picture_match":    PriorConfig(2.5, "Guided: match decoded word to picture"),
-        "word_chains":      PriorConfig(3.5, "Application: read one-letter-change chains"),
-        "sentence_reading": PriorConfig(5.0, "Production: read word in sentence context"),
+        "word_chains":      PriorConfig(4.0, "Spoken production: read each word in a one-letter-change chain"),
+        "read_inflected":   PriorConfig(4.5, "Spoken production: cold-read common -s, -ing, and -ed endings"),
+        "read_compound":    PriorConfig(4.5, "Spoken production: cold-read familiar two-part compounds"),
+        "choose_in_context": PriorConfig(5.0, "Two-stage application: read near words, then choose the sentence fit"),
+        "sentence_reading": PriorConfig(5.5, "Spoken production: read a sentence and answer separately"),
     },
     "word-sorter": {
         "binary_sort":  PriorConfig(1.5, "Sort word cards into 2 labeled buckets"),
