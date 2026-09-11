@@ -195,6 +195,17 @@ import {
   type DeductionSupportTier,
 } from '@/components/lumina/primitives/visual-primitives/direct-instruction/diDeductionScript';
 import {
+  WORD_PROBLEM_BENCH_PROBLEMS,
+  wordProblemHarnessAnswers,
+} from './wordProblemBench';
+import {
+  bigNumberVerdictCue,
+  diWordProblemSetupPackBase,
+  itemsFromProblems as wordProblemItems,
+  type WordProblemItem,
+  type WordProblemProblemSpec,
+} from '@/components/lumina/primitives/visual-primitives/direct-instruction/diWordProblemScript';
+import {
   buildSpokenItem,
   diSpokenPracticePackBase,
   gateSpokenItems,
@@ -2086,7 +2097,32 @@ const diDeductionAdapter: DiPortAdapter<DeductionItem> = {
   answersFor: deductionHarnessAnswers,
 };
 
+/**
+ * di-word-problem-setup (the third "DI for Older Learners" pack, brief
+ * 2026-09-07 concept 4, and the family's first hands+voice math pack). `build`
+ * runs the SAME `itemsFromProblems` the stage runs, so a story the plan gates
+ * refuse drops here exactly as it drops there. The big-number step is a
+ * GESTURE whose commit carries the placed quantity ID (`tapped`), and its
+ * verdict is computed in code (`bigNumberVerdictCue`). `benchBuild` answers the
+ * hand-authored `wordProblemBench.ts` key for the new `equation_statement`
+ * class — probes attach by ITEM id only.
+ */
+const diWordProblemSetupAdapter: DiPortAdapter<WordProblemItem> = {
+  build: (data) => {
+    const problems = (data.problems ?? []) as WordProblemProblemSpec[];
+    const { items, dropped } = wordProblemItems(problems);
+    return { items, dropped, surface: diWordProblemSetupPackBase(items) };
+  },
+  benchBuild: () => {
+    const { items } = wordProblemItems(WORD_PROBLEM_BENCH_PROBLEMS);
+    return { items, surface: diWordProblemSetupPackBase(items) };
+  },
+  answersFor: wordProblemHarnessAnswers,
+  gestureVerdictCue: (item, gesture) => bigNumberVerdictCue(item, String(gesture)),
+};
+
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
+  'di-word-problem-setup': diWordProblemSetupAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'di-deduction': diDeductionAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'di-worked-procedure': diWorkedProcedureAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'di-spoken-practice': diSpokenPracticeAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

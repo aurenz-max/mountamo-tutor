@@ -1,0 +1,2388 @@
+{
+ "primitive": "di-word-problem-setup",
+ "date": "2026-09-10",
+ "regimes": {
+  "omnibus-live": "CLI probe, --domain di (no _PRIMITIVE_TO_SUBJECT override) -> LANGUAGE_ARTS; verbatim catalog description; FALLBACK query regime",
+  "omnibus-math": "CLI probe, --domain math workaround -> MATHEMATICS; verbatim catalog description; FALLBACK query regime",
+  "P": "FOCUSED, catalog eval-mode description only, no lesson context (what this pack's submission carries: metrics.challengeType -> evalMode -> evalModeDescription; no challengeText/instructions)",
+  "S": "FOCUSED, eval-mode description + one real drawn story as challenge_text (hypothetical: the component does not send challengeText)",
+  "R": "FOCUSED, HYPOTHETICAL reworded eval-mode description (wording-defect diagnostic; not a source edit)",
+  "K-omnibus/K-P": "Kindergarten MATHEMATICS, outside the stated G1-G3 scope"
+ },
+ "omnibus_live_language_arts": {
+  "primitive": "di-word-problem-setup",
+  "domain": "di",
+  "subject": "LANGUAGE_ARTS",
+  "query_text": "Live-judged Direct Instruction WORD-PROBLEM SETUP (Connecting Math Concepts number families): a short addition or subtraction story is printed and read aloud; the child PUTS the big number at the end of the family arrow with their finger, then SAYS the number family out loud (\"twelve plus box equals twenty\"), says add or subtract, and works it \u2014 each step judged where it happens. Comparison, change, and part-whole stories with one unknown. Use for objectives about solving addition and subtraction word problems, representing a word problem with an equation or number sentence with an unknown, finding the whole or a part, or deciding whether to add or subtract. ESSENTIAL for G1-G4 word problems where the objective wants the SETUP \u2014 which number is the whole, which operation and why \u2014 not just the answer.",
+  "grades_probed": [
+   "1",
+   "2",
+   "3"
+  ],
+  "results": [
+   {
+    "subject": "LANGUAGE_ARTS",
+    "grade": [
+     "1"
+    ],
+    "grade_requested": "1",
+    "n_candidates": 65,
+    "best_cosine": 0.7087,
+    "coherent": 1,
+    "top_k": [
+     {
+      "rank": 1,
+      "cosine": 0.7087,
+      "skill_id": "LA007-04",
+      "skill_description": "Following Directions",
+      "subskill_id": "LA007-04-a",
+      "subskill_description": "Listen to 2-3 step instructions given by the AI and demonstrate comprehension by selecting or dragging items in the correct order to complete the task. Focus: Processing multi-step oral directions. Examples: First tap the circle then the square, Put the blue block on the red block, Drag the star to the box then the heart to the circle, Click the cat then the dog then the bird, Start with the smallest item, Move the cloud up then move the sun down, Pick the green apple then the yellow pear, Do it in order. Constraints: Begin with 2-step sequences; progress to 3-step sequences; use clear sequencing markers (first, next, then).",
+      "grade": "1"
+     },
+     {
+      "rank": 2,
+      "cosine": 0.7036,
+      "skill_id": "LA003-01",
+      "skill_description": "Oral Reading Accuracy",
+      "subskill_id": "LA003-01-b",
+      "subskill_description": "Self-correct reading miscues by re-reading sentences when the initial reading does not make sense or violates phonics rules. Focus: Monitoring for meaning and phonological accuracy during oral reading. Examples: re-reading to fix 'The bit sat' to 'The cat sat', 'He rip the map' to 'He ran the map', 'The fog dug' to 'The dog dug'. Constraints: Pause after a sentence containing an error and prompt the student to self-assess meaning.",
+      "grade": "1"
+     },
+     {
+      "rank": 3,
+      "cosine": 0.7019,
+      "skill_id": "LA004-01",
+      "skill_description": "Nouns",
+      "subskill_id": "LA004-01-a",
+      "subskill_description": "Students identify whether a word in a sentence represents a person, place, or thing by choosing the correct category for highlighted nouns. Focus: Identifying common nouns in sentences. Examples: teacher, school, cat, ball, doctor, park, desk, sister. Constraints: Use simple, decodable sentences. Provide visual clues for person, place, and thing.",
+      "grade": "1"
+     },
+     {
+      "rank": 4,
+      "cosine": 0.7008,
+      "skill_id": "LA004-02",
+      "skill_description": "Verbs",
+      "subskill_id": "LA004-02-a",
+      "subskill_description": "Students analyze a given sentence to isolate and click on the word that describes an action being performed. Focus: Identifying the action word in a sentence. Examples: The dog runs, She jumps high, We eat lunch, He sits down, Birds fly, They play ball, I sing loud, The car stops. Constraints: Keep sentences to 3-5 words initially. Focus on concrete actions.",
+      "grade": "1"
+     },
+     {
+      "rank": 5,
+      "cosine": 0.6985,
+      "skill_id": "LA005-04",
+      "skill_description": "Word Categories",
+      "subskill_id": "LA005-04-a",
+      "subskill_description": "Students sort various vocabulary words into their correct semantic categories. Focus: Categorizing words by topic. Examples: dog/cat/bird, apple/pear/banana, shirt/pants/socks, red/blue/green, car/truck/bus, table/chair/bed. Constraints: Use 3-4 distinct categories per exercise with 3 items each.",
+      "grade": "1"
+     }
+    ],
+    "verdict": "abstain",
+    "abstain_reason": "diffuse",
+    "tau": 0.6,
+    "min_coherent": 3,
+    "per_grade": [
+     {
+      "grade": "1",
+      "best_cosine": 0.7087,
+      "coherent": 1,
+      "coherent_skill": 1,
+      "reason": "diffuse"
+     }
+    ],
+    "coherent_skill": 1
+   },
+   {
+    "subject": "LANGUAGE_ARTS",
+    "grade": [
+     "2"
+    ],
+    "grade_requested": "2",
+    "n_candidates": 62,
+    "best_cosine": 0.7145,
+    "coherent": 1,
+    "top_k": [
+     {
+      "rank": 1,
+      "cosine": 0.7145,
+      "skill_id": "LA001-02",
+      "skill_description": "Digraphs and Blends",
+      "subskill_id": "LA001-02-b",
+      "subskill_description": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.",
+      "grade": "2"
+     },
+     {
+      "rank": 2,
+      "cosine": 0.7141,
+      "skill_id": "LA004-03",
+      "skill_description": "Adjectives and Adverbs",
+      "subskill_id": "LA004-03-a",
+      "subskill_description": "Analyze sentences to highlight adjectives and the nouns they modify or adverbs and the verbs they describe. Focus: Identifying the function of adjectives and adverbs. Examples: The big dog, walked quickly, soft bed, jumped high, blue sky, sang loudly, sweet apple, ran fast. Constraints: Use sentence-analyzer to have the student click on a target word then the word it describes.",
+      "grade": "2"
+     },
+     {
+      "rank": 3,
+      "cosine": 0.7115,
+      "skill_id": "LA005-04",
+      "skill_description": "Word Relationships",
+      "subskill_id": "LA005-04-b",
+      "subskill_description": "Distinguish subtle shades of meaning among groups of related verbs and adjectives. Focus: Ordering words by intensity or frequency. Examples: drizzle/rain/downpour, warm/hot/scalding, whisper/talk/shout, giggle/laugh/cackle, big/huge/gigantic, fast/speedy/lightning, cold/chilly/freezing, sad/upset/miserable. Constraints: Provide a word sorter primitive where the student arranges the words on a spectrum of intensity or strength.",
+      "grade": "2"
+     },
+     {
+      "rank": 4,
+      "cosine": 0.71,
+      "skill_id": "LA007-03",
+      "skill_description": "Connection of Ideas",
+      "subskill_id": "LA007-03-a",
+      "subskill_description": "Students map the relationship between steps in a process or ideas in a text, explaining how one leads to the next. Focus: Describing connections between events or technical steps. Examples: The sequence of a water cycle, the stages of a butterfly's life, the process of a plant growing from a seed, the steps to building a birdhouse, how rain causes erosion, how inventions changed transportation, the steps of a science experiment, how temperature affects weather patterns. Constraints: The text-structure-analyzer provides a graphical flow chart where the student orders the steps or events correctly.",
+      "grade": "2"
+     },
+     {
+      "rank": 5,
+      "cosine": 0.7089,
+      "skill_id": "LA005-02",
+      "skill_description": "Word Parts",
+      "subskill_id": "LA005-02-b",
+      "subskill_description": "Use common prefixes such as un-, re-, and pre- to modify the meaning of base words. Focus: Applying knowledge of prefixes to change word meaning. Examples: unhappy, undo, redo, rewrite, preheat, prepay, rebuild, unlock. Constraints: Provide a base word and a list of prefixes; student drags the prefix to the base word and selects the correct updated definition.",
+      "grade": "2"
+     }
+    ],
+    "verdict": "abstain",
+    "abstain_reason": "diffuse",
+    "tau": 0.6,
+    "min_coherent": 3,
+    "per_grade": [
+     {
+      "grade": "2",
+      "best_cosine": 0.7145,
+      "coherent": 1,
+      "coherent_skill": 1,
+      "reason": "diffuse"
+     }
+    ],
+    "coherent_skill": 1
+   },
+   {
+    "subject": "LANGUAGE_ARTS",
+    "grade": [
+     "3"
+    ],
+    "grade_requested": "3",
+    "n_candidates": 64,
+    "best_cosine": 0.7077,
+    "coherent": 3,
+    "top_k": [
+     {
+      "rank": 1,
+      "cosine": 0.7077,
+      "skill_id": "LA001-02",
+      "skill_description": "Character Analysis",
+      "subskill_id": "LA001-02-b",
+      "subskill_description": "Students link characters together on a web while noting what motivates their actions toward one another. Focus: Understanding character relationships and motivations. Examples: Protagonist seeking help, Antagonist trying to stop the hero, Friend providing support, Family member giving advice, Mentor teaching a skill, A rival competing for a prize, An enemy changing into a friend, A sidekick helping the main character. Constraints: Use stories with clear character roles; focus on the 'why' behind the connection.",
+      "grade": "3"
+     },
+     {
+      "rank": 2,
+      "cosine": 0.6965,
+      "skill_id": "LA005-02",
+      "skill_description": "Verb Tenses and Agreement",
+      "subskill_id": "LA005-02-a",
+      "subskill_description": "Students construct sentences by arranging verb tiles to demonstrate the correct usage of regular and irregular action words. Focus: Selecting the appropriate verb form to complete a thought. Examples: jump/jumped, run/ran, eat/ate, write/wrote, play/played, sing/sang, walk/walked, sit/sat, swim/swam, sleep/slept. Constraints: Provide a mix of present and past contexts; require users to identify the correct tense before placing the tile.",
+      "grade": "3"
+     },
+     {
+      "rank": 3,
+      "cosine": 0.692,
+      "skill_id": "LA002-02",
+      "skill_description": "Text Structure",
+      "subskill_id": "LA002-02-c",
+      "subskill_description": "Students compare two similar topics and sort facts into a Venn diagram format to identify similarities and differences. Focus: Identifying compare-and-contrast structures. Examples: Comparing apples and oranges, frogs and toads, deserts and rainforests, cars and trains, cats and dogs, libraries and bookstores, sun and moon, books and e-readers. Constraints: Present 8-10 facts per pair; force students to categorize facts as 'Only A', 'Only B', or 'Both'.",
+      "grade": "3"
+     },
+     {
+      "rank": 4,
+      "cosine": 0.691,
+      "skill_id": "LA001-03",
+      "skill_description": "Story Structure",
+      "subskill_id": "LA001-03-a",
+      "subskill_description": "Students drag narrative event cards into the correct order on a story arc template. Focus: Mapping events to the beginning, middle, and end. Examples: Introduction of character, The inciting incident, The first struggle, The middle turning point, A moment of rising tension, The climax, The falling action, The resolution. Constraints: Use stories with distinct structural phases; provide clear event summaries on cards.",
+      "grade": "3"
+     },
+     {
+      "rank": 5,
+      "cosine": 0.6875,
+      "skill_id": "LA001-03",
+      "skill_description": "Story Structure",
+      "subskill_id": "LA001-03-b",
+      "subskill_description": "Students identify how specific chapters or scenes contribute to the development of the overall story arc. Focus: Explaining how story parts build on one another. Examples: Chapter 1 introduces the setting, Chapter 2 creates a problem, Chapter 3 adds a complication, Scene 1 sets the mood, Scene 2 shows a character change, The beginning establishes the conflict, The middle raises the stakes, The ending resolves the tension. Constraints: Use texts with clear chapter or scene breaks; guide students to link these to the overall plot development.",
+      "grade": "3"
+     }
+    ],
+    "verdict": "match",
+    "abstain_reason": null,
+    "tau": 0.6,
+    "min_coherent": 3,
+    "per_grade": [
+     {
+      "grade": "3",
+      "best_cosine": 0.7077,
+      "coherent": 3,
+      "coherent_skill": 2,
+      "reason": null
+     }
+    ],
+    "coherent_skill": 2
+   }
+  ]
+ },
+ "omnibus_math_workaround": {
+  "primitive": "di-word-problem-setup",
+  "domain": "math",
+  "subject": "MATHEMATICS",
+  "query_text": "Live-judged Direct Instruction WORD-PROBLEM SETUP (Connecting Math Concepts number families): a short addition or subtraction story is printed and read aloud; the child PUTS the big number at the end of the family arrow with their finger, then SAYS the number family out loud (\"twelve plus box equals twenty\"), says add or subtract, and works it \u2014 each step judged where it happens. Comparison, change, and part-whole stories with one unknown. Use for objectives about solving addition and subtraction word problems, representing a word problem with an equation or number sentence with an unknown, finding the whole or a part, or deciding whether to add or subtract. ESSENTIAL for G1-G4 word problems where the objective wants the SETUP \u2014 which number is the whole, which operation and why \u2014 not just the answer.",
+  "grades_probed": [
+   "1",
+   "2",
+   "3",
+   "4"
+  ],
+  "results": [
+   {
+    "subject": "MATHEMATICS",
+    "grade": [
+     "1"
+    ],
+    "grade_requested": "1",
+    "n_candidates": 111,
+    "best_cosine": 0.8183,
+    "coherent": 5,
+    "top_k": [
+     {
+      "rank": 1,
+      "cosine": 0.8183,
+      "skill_id": "OPS001-07",
+      "skill_description": "Compare Problems",
+      "subskill_id": "OPS001-07-b",
+      "subskill_description": "Solve for the larger value given one value and the comparison amount. Focus: Constructing a larger total from a comparative description. Examples: Kim has 5, Jan has 3 more; Kim has 4, Jan has 6 more. Constraints: Use number bond visualization to show the difference as a separate part.",
+      "grade": "1"
+     },
+     {
+      "rank": 2,
+      "cosine": 0.8049,
+      "skill_id": "OPS001-05",
+      "skill_description": "Add-To/Take-From Problems",
+      "subskill_id": "OPS001-05-b",
+      "subskill_description": "Identify the missing change in add-to problems where the starting and final amounts are given. Focus: Solving for the change unknown. Examples: Jan had 5 apples, got some more, now has 8; Tom had 4 cars, got some more, now has 7. Constraints: Use number bonds to represent the total, start, and unknown parts.",
+      "grade": "1"
+     },
+     {
+      "rank": 3,
+      "cosine": 0.8035,
+      "skill_id": "OPS001-07",
+      "skill_description": "Compare Problems",
+      "subskill_id": "OPS001-07-a",
+      "subskill_description": "Determine the difference between two quantities by comparing two groups side-by-side. Focus: Finding 'how many more' or 'how many fewer'. Examples: Jan has 8, Kim has 5; 7 red hats vs 4 blue hats; 9 dogs vs 6 cats. Constraints: Use a balance-scale primitive to visualize the difference between two sides.",
+      "grade": "1"
+     },
+     {
+      "rank": 4,
+      "cosine": 0.7994,
+      "skill_id": "OPS001-07",
+      "skill_description": "Compare Problems",
+      "subskill_id": "OPS001-07-c",
+      "subskill_description": "Solve for the smaller value given the larger value and the comparative difference. Focus: Identifying the lesser quantity in a comparison. Examples: Jan has 8, Kim has 3 fewer; Jan has 10, Kim has 4 fewer. Constraints: Provide balance-scale scaffolding to align the larger and smaller quantities.",
+      "grade": "1"
+     },
+     {
+      "rank": 5,
+      "cosine": 0.7946,
+      "skill_id": "OPS001-06",
+      "skill_description": "Put-Together/Take-Apart Problems",
+      "subskill_id": "OPS001-06-b",
+      "subskill_description": "Find an unknown addend when the total and one group are provided. Focus: Partitioning a known total. Examples: 7 total, 3 are red, how many are blue?; 8 total, 5 are big, how many are small?. Constraints: Use number bonds to isolate the missing component.",
+      "grade": "1"
+     }
+    ],
+    "verdict": "match",
+    "abstain_reason": null,
+    "tau": 0.6,
+    "min_coherent": 3,
+    "per_grade": [
+     {
+      "grade": "1",
+      "best_cosine": 0.8183,
+      "coherent": 5,
+      "coherent_skill": 3,
+      "reason": null
+     }
+    ],
+    "coherent_skill": 3
+   },
+   {
+    "subject": "MATHEMATICS",
+    "grade": [
+     "2"
+    ],
+    "grade_requested": "2",
+    "n_candidates": 61,
+    "best_cosine": 0.7771,
+    "coherent": 3,
+    "top_k": [
+     {
+      "rank": 1,
+      "cosine": 0.7771,
+      "skill_id": "OPS002-03",
+      "skill_description": "Two-Step Problems",
+      "subskill_id": "OPS002-03-c",
+      "subskill_description": "Solve two-step compare problems with an unknown quantity by using tape diagrams to relate quantities. Focus: Finding the missing part in a two-step comparison context. Examples: (10+10)-x=5, (20+5)-x=10, (40+10)-x=25, (30+20)-x=15, (50+5)-x=30, (25+25)-x=20, (60+10)-x=40, (15+15)-x=5. Constraints: Use tape-diagram, allow the unknown to be in different parts of the diagram.",
+      "grade": "2"
+     },
+     {
+      "rank": 2,
+      "cosine": 0.7751,
+      "skill_id": "OPS002-03",
+      "skill_description": "Two-Step Problems",
+      "subskill_id": "OPS002-03-b",
+      "subskill_description": "Model and solve two-step word problems that combine addition and subtraction. Focus: Determining when to add and when to subtract based on the context of the story. Examples: 50+20-10, 40-10+5, 30+30-20, 60-20+5, 75+10-5, 45+15-10, 80-30+20, 90+5-15. Constraints: Use tape-diagram, ensure visual progression follows the flow of the narrative.",
+      "grade": "2"
+     },
+     {
+      "rank": 3,
+      "cosine": 0.7736,
+      "skill_id": "OPS002-03",
+      "skill_description": "Two-Step Problems",
+      "subskill_id": "OPS002-03-a",
+      "subskill_description": "Model and solve two-step word problems involving only addition by using tape diagrams. Focus: Visualizing the total as a combination of two distinct parts plus a second increase. Examples: 10+5+8, 20+10+5, 12+12+4, 15+5+10, 25+10+5, 30+10+10, 22+8+5, 14+6+10. Constraints: Values up to 100, use tape-diagram, step-by-step logic input.",
+      "grade": "2"
+     },
+     {
+      "rank": 4,
+      "cosine": 0.7568,
+      "skill_id": "MEAS002-03",
+      "skill_description": "Length Problems and Number Line",
+      "subskill_id": "MEAS002-03-b",
+      "subskill_description": "Students represent whole numbers and lengths on a number line to visualize numerical distance. Focus: Mapping lengths onto a linear number line representation. Examples: 0 to 10, 0 to 20, 10 to 50, 0 to 100 by tens, 5 to 15, 20 to 30. Constraints: Provide tick marks for clarity; focus on placing objects or lengths accurately based on numerical endpoints.",
+      "grade": "2"
+     },
+     {
+      "rank": 5,
+      "cosine": 0.7556,
+      "skill_id": "MEAS002-03",
+      "skill_description": "Length Problems and Number Line",
+      "subskill_id": "MEAS002-03-a",
+      "subskill_description": "Students solve addition and subtraction word problems involving lengths using tape diagrams as a visual support. Focus: Representing length problems with tape diagrams. Examples: total length of two ropes, distance remaining after cutting, cumulative length of two tracks, difference between two shelf sizes, total path distance. Constraints: Focus on lengths within 100; ensure simple addition and subtraction operations.",
+      "grade": "2"
+     }
+    ],
+    "verdict": "match",
+    "abstain_reason": null,
+    "tau": 0.6,
+    "min_coherent": 3,
+    "per_grade": [
+     {
+      "grade": "2",
+      "best_cosine": 0.7771,
+      "coherent": 3,
+      "coherent_skill": 3,
+      "reason": null
+     }
+    ],
+    "coherent_skill": 3
+   },
+   {
+    "subject": "MATHEMATICS",
+    "grade": [
+     "3"
+    ],
+    "grade_requested": "3",
+    "n_candidates": 142,
+    "best_cosine": 0.7379,
+    "coherent": 2,
+    "top_k": [
+     {
+      "rank": 1,
+      "cosine": 0.7379,
+      "skill_id": "NBT003-03",
+      "skill_description": "Addition Within 1000",
+      "subskill_id": "NBT003-03-e",
+      "subskill_description": "Students solve real-world word problems requiring the addition of two three-digit numbers. Focus: Applying addition to story context. Examples: School library book counts, sports game scores, grocery item costs, distance traveled, weight of objects. Constraints: Single-step problems only.",
+      "grade": "3"
+     },
+     {
+      "rank": 2,
+      "cosine": 0.7375,
+      "skill_id": "NBT003-04",
+      "skill_description": "Subtraction Within 1000",
+      "subskill_id": "NBT003-04-e",
+      "subskill_description": "Students solve real-world word problems requiring the subtraction of three-digit numbers. Focus: Applying subtraction to story context. Examples: Counting remaining items, difference in distances, weight loss, price differences, score differences. Constraints: Single-step, within 1000.",
+      "grade": "3"
+     },
+     {
+      "rank": 3,
+      "cosine": 0.737,
+      "skill_id": "MEAS003-02",
+      "skill_description": "Elapsed Time",
+      "subskill_id": "MEAS003-02-d",
+      "subskill_description": "Map word problem steps onto a number line to find unknown time intervals. Focus: Solving elapsed time word problems. Examples: A movie starts at 2:15 and ends at 3:05; A bus ride takes 45 minutes ending at 4:30; A study session started at 5:10 and lasted 40 minutes; Calculate time from 8:05 to 9:15. Constraints: Use linear representations for visualization.",
+      "grade": "3"
+     },
+     {
+      "rank": 4,
+      "cosine": 0.7354,
+      "skill_id": "OPS003-02",
+      "skill_description": "Arrays and Area Model",
+      "subskill_id": "OPS003-02-d",
+      "subskill_description": "Connect array structures to word problems involving groups of items. Focus: Modeling real-world multiplication. Examples: Tables with chairs, trays of cookies, tiles on a floor, parking spots, garden rows, theater seating, library books, egg cartons. Constraints: Keep factors within single digits.",
+      "grade": "3"
+     },
+     {
+      "rank": 5,
+      "cosine": 0.7345,
+      "skill_id": "OPS003-03",
+      "skill_description": "Division as Sharing and Grouping",
+      "subskill_id": "OPS003-03-c",
+      "subskill_description": "Create a division equation corresponding to a specific fair-sharing story. Focus: Representing division with notation. Examples: 12/3=4, 20/5=4, 18/2=9, 24/4=6, 15/3=5, 30/6=5, 21/7=3, 32/8=4. Constraints: Use symbols to build equations.",
+      "grade": "3"
+     }
+    ],
+    "verdict": "abstain",
+    "abstain_reason": "diffuse",
+    "tau": 0.6,
+    "min_coherent": 3,
+    "per_grade": [
+     {
+      "grade": "3",
+      "best_cosine": 0.7379,
+      "coherent": 2,
+      "coherent_skill": 1,
+      "reason": "diffuse"
+     }
+    ],
+    "coherent_skill": 1
+   },
+   {
+    "subject": "MATHEMATICS",
+    "grade": [
+     "4"
+    ],
+    "grade_requested": "4",
+    "n_candidates": 128,
+    "best_cosine": 0.7779,
+    "coherent": 3,
+    "top_k": [
+     {
+      "rank": 1,
+      "cosine": 0.7779,
+      "skill_id": "OPS004-01",
+      "skill_description": "Multiplicative Comparison",
+      "subskill_id": "OPS004-01-d",
+      "subskill_description": "Distinguish between 'times as many' situations requiring multiplication and 'more than' situations requiring addition. Focus: Conceptual discrimination between multiplicative and additive comparisons. Examples: '5 times as many as 3', '5 more than 3', '8 times as many as 2', '8 more than 2'. Constraints: Limit values to single-digit integers to emphasize operator logic.",
+      "grade": "4"
+     },
+     {
+      "rank": 2,
+      "cosine": 0.7515,
+      "skill_id": "OPS004-02",
+      "skill_description": "Multi-Step Word Problems",
+      "subskill_id": "OPS004-02-a",
+      "subskill_description": "Solve two-step word problems involving only addition and subtraction of whole numbers. Focus: Sequencing additive operations correctly. Examples: 50+20-15, 100-30+40, 15+25-10, 200-50+75. Constraints: Keep sums within 1000.",
+      "grade": "4"
+     },
+     {
+      "rank": 3,
+      "cosine": 0.7506,
+      "skill_id": "MEAS004-03",
+      "skill_description": "Measurement Word Problems",
+      "subskill_id": "MEAS004-03-c",
+      "subskill_description": "Solve real-world money word problems by creating bar models that represent individual transactions and totals. Focus: Addition and subtraction of monetary values. Examples: $5.50 + $2.25, $10.00 - $3.75, $4.10 + $5.90, $20.00 - $12.50, $3.25 + $4.50, $8.00 - $2.40, $6.75 + $1.25, $15.00 - $9.20. Constraints: Values up to $100; keep decimals to two places.",
+      "grade": "4"
+     },
+     {
+      "rank": 4,
+      "cosine": 0.7444,
+      "skill_id": "NF002-03",
+      "skill_description": "Add and Subtract Fractions",
+      "subskill_id": "NF002-03-f",
+      "subskill_description": "Students translate word problems into fraction expressions to add or subtract quantities with like denominators. Focus: Solving applied problems with fractions. Examples: 1/4 cup plus 2/4 cup, 3/8 mile minus 1/8 mile, 2/5 kg added to 1/5 kg, 5/6 liter minus 3/6 liter, 1 1/4 hr plus 2 2/4 hr, 4 3/8 ft minus 1 1/8 ft, 2/10 meter plus 5/10 meter, 7/12 pizza minus 3/12 pizza. Constraints: Contextual settings involve measurement or food sharing.",
+      "grade": "4"
+     },
+     {
+      "rank": 5,
+      "cosine": 0.7372,
+      "skill_id": "OPS004-02",
+      "skill_description": "Multi-Step Word Problems",
+      "subskill_id": "OPS004-02-c",
+      "subskill_description": "Solve two-step word problems that mix addition, subtraction, multiplication, or division. Focus: Choosing correct order of operations in multi-step scenarios. Examples: (5 x 10) + 12, (20 / 4) + 15, (40 - 10) / 5. Constraints: No nested parentheses initially.",
+      "grade": "4"
+     }
+    ],
+    "verdict": "match",
+    "abstain_reason": null,
+    "tau": 0.6,
+    "min_coherent": 3,
+    "per_grade": [
+     {
+      "grade": "4",
+      "best_cosine": 0.7779,
+      "coherent": 3,
+      "coherent_skill": 2,
+      "reason": null
+     }
+    ],
+    "coherent_skill": 2
+   }
+  ]
+ },
+ "per_mode_mathematics": [
+  {
+   "subject": "MATHEMATICS",
+   "mode": "find_big_number",
+   "regime": "P",
+   "grade": "1",
+   "query": "The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.7677,
+   "coherent": 5,
+   "coherent_skill": 2,
+   "n": 111,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7677,
+     "skill_id": "OPS001-06",
+     "skill": "Put-Together/Take-Apart Problems",
+     "subskill_id": "OPS001-06-b",
+     "subskill": "Find an unknown addend when the total and one group are provided. Focus: Partitioning a known total. Examples: 7 total, 3 are red, how many are blue?; 8 total, 5 are big, how many are small?. Constraints: Use number bonds to isolate the missing component."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7553,
+     "skill_id": "OPS001-07",
+     "skill": "Compare Problems",
+     "subskill_id": "OPS001-07-b",
+     "subskill": "Solve for the larger value given one value and the comparison amount. Focus: Constructing a larger total from a comparative description. Examples: Kim has 5, Jan has 3 more; Kim has 4, Jan has 6 more. Constraints: Use number bond visualization to show the difference as a separate part."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7426,
+     "skill_id": "OPS001-03",
+     "skill": "Addition Strategies",
+     "subskill_id": "OPS001-03-a",
+     "subskill": "Add two numbers within 20 by counting on from the larger addend on a number line. Focus: Understanding the count-on strategy for addition. Examples: 8+3, 12+2, 9+4, 15+3, 11+5, 7+4, 13+2, 6+5. Constraints: Visual cues show the starting position on the number line."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7423,
+     "skill_id": "OPS001-05",
+     "skill": "Add-To/Take-From Problems",
+     "subskill_id": "OPS001-05-b",
+     "subskill": "Identify the missing change in add-to problems where the starting and final amounts are given. Focus: Solving for the change unknown. Examples: Jan had 5 apples, got some more, now has 8; Tom had 4 cars, got some more, now has 7. Constraints: Use number bonds to represent the total, start, and unknown parts."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7398,
+     "skill_id": "OPS001-07",
+     "skill": "Compare Problems",
+     "subskill_id": "OPS001-07-c",
+     "subskill": "Solve for the smaller value given the larger value and the comparative difference. Focus: Identifying the lesser quantity in a comparison. Examples: Jan has 8, Kim has 3 fewer; Jan has 10, Kim has 4 fewer. Constraints: Provide balance-scale scaffolding to align the larger and smaller quantities."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "find_big_number",
+   "regime": "P",
+   "grade": "2",
+   "query": "The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.7474,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 61,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7474,
+     "skill_id": "MEAS002-03",
+     "skill": "Length Problems and Number Line",
+     "subskill_id": "MEAS002-03-b",
+     "subskill": "Students represent whole numbers and lengths on a number line to visualize numerical distance. Focus: Mapping lengths onto a linear number line representation. Examples: 0 to 10, 0 to 20, 10 to 50, 0 to 100 by tens, 5 to 15, 20 to 30. Constraints: Provide tick marks for clarity; focus on placing objects or lengths accurately based on numerical endpoints."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7394,
+     "skill_id": "NBT002-06",
+     "skill": "Mental Math 10 and 100",
+     "subskill_id": "NBT002-06-c",
+     "subskill": "Represent jumps of 10 and 100 on an open number line. Focus: Visualizing jumps of 10 and 100 as operations. Examples: 450 + 100, 820 - 10, 360 + 20. Constraints: Use number-line primitive; use arrows to indicate direction and jump value."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7173,
+     "skill_id": "NBT002-01",
+     "skill": "Three-Digit Place Value",
+     "subskill_id": "NBT002-01-b",
+     "subskill": "Identify the value of a specific digit within a three-digit number by placing it into the correct column. Focus: Recognizing that digits represent hundreds, tens, or ones. Examples: 423 (the 4 is 400), 108 (the 0 is 0 tens), 555 (the middle 5 is 50), 912 (the 1 is 10). Constraints: Use place-value-chart primitive; include numbers with zeros as placeholders."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7164,
+     "skill_id": "NBT002-04",
+     "skill": "Compare Three-Digit Numbers",
+     "subskill_id": "NBT002-04-c",
+     "subskill": "Arrange three or more numbers in order from least to greatest. Focus: Ordering collections of numbers based on place value. Examples: 245, 129, 301; 876, 890, 854. Constraints: Use comparison-builder primitive; items must be distinct three-digit numbers."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7152,
+     "skill_id": "NBT002-02",
+     "skill": "Read and Write to 1000",
+     "subskill_id": "NBT002-02-c",
+     "subskill": "Decompose three-digit numbers into hundreds, tens, and ones as an expression of expanded form. Focus: Breaking numbers down by place value. Examples: 782 = 700 + 80 + 2, 403 = 400 + 0 + 3. Constraints: Use place-value-chart primitive; highlight the importance of zero in placeholders."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "find_big_number",
+   "regime": "S",
+   "grade": "1",
+   "query": "Sam had 2 marbles. Then Sam bought 8 more. How many marbles does Sam have now? The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.8029,
+   "coherent": 5,
+   "coherent_skill": 2,
+   "n": 111,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.8029,
+     "skill_id": "OPS001-07",
+     "skill": "Compare Problems",
+     "subskill_id": "OPS001-07-b",
+     "subskill": "Solve for the larger value given one value and the comparison amount. Focus: Constructing a larger total from a comparative description. Examples: Kim has 5, Jan has 3 more; Kim has 4, Jan has 6 more. Constraints: Use number bond visualization to show the difference as a separate part."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7915,
+     "skill_id": "OPS001-05",
+     "skill": "Add-To/Take-From Problems",
+     "subskill_id": "OPS001-05-a",
+     "subskill": "Calculate the result of add-to problems where the total is unknown. Focus: Solving basic addition word problems. Examples: Jan has 5 apples, gets 3 more; Tom has 4 cars, gets 2 more; Mia has 6 dolls, gets 1 more; etc. Constraints: Scene-based interface showing the accumulation of items."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7884,
+     "skill_id": "OPS001-05",
+     "skill": "Add-To/Take-From Problems",
+     "subskill_id": "OPS001-05-b",
+     "subskill": "Identify the missing change in add-to problems where the starting and final amounts are given. Focus: Solving for the change unknown. Examples: Jan had 5 apples, got some more, now has 8; Tom had 4 cars, got some more, now has 7. Constraints: Use number bonds to represent the total, start, and unknown parts."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7875,
+     "skill_id": "OPS001-06",
+     "skill": "Put-Together/Take-Apart Problems",
+     "subskill_id": "OPS001-06-b",
+     "subskill": "Find an unknown addend when the total and one group are provided. Focus: Partitioning a known total. Examples: 7 total, 3 are red, how many are blue?; 8 total, 5 are big, how many are small?. Constraints: Use number bonds to isolate the missing component."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7829,
+     "skill_id": "OPS001-03",
+     "skill": "Addition Strategies",
+     "subskill_id": "OPS001-03-a",
+     "subskill": "Add two numbers within 20 by counting on from the larger addend on a number line. Focus: Understanding the count-on strategy for addition. Examples: 8+3, 12+2, 9+4, 15+3, 11+5, 7+4, 13+2, 6+5. Constraints: Visual cues show the starting position on the number line."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "find_big_number",
+   "regime": "S",
+   "grade": "2",
+   "query": "Sam had 2 marbles. Then Sam bought 8 more. How many marbles does Sam have now? The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.7607,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 61,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7607,
+     "skill_id": "NBT002-06",
+     "skill": "Mental Math 10 and 100",
+     "subskill_id": "NBT002-06-c",
+     "subskill": "Represent jumps of 10 and 100 on an open number line. Focus: Visualizing jumps of 10 and 100 as operations. Examples: 450 + 100, 820 - 10, 360 + 20. Constraints: Use number-line primitive; use arrows to indicate direction and jump value."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7547,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-a",
+     "subskill": "Model and solve two-step word problems involving only addition by using tape diagrams. Focus: Visualizing the total as a combination of two distinct parts plus a second increase. Examples: 10+5+8, 20+10+5, 12+12+4, 15+5+10, 25+10+5, 30+10+10, 22+8+5, 14+6+10. Constraints: Values up to 100, use tape-diagram, step-by-step logic input."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7422,
+     "skill_id": "MEAS002-03",
+     "skill": "Length Problems and Number Line",
+     "subskill_id": "MEAS002-03-b",
+     "subskill": "Students represent whole numbers and lengths on a number line to visualize numerical distance. Focus: Mapping lengths onto a linear number line representation. Examples: 0 to 10, 0 to 20, 10 to 50, 0 to 100 by tens, 5 to 15, 20 to 30. Constraints: Provide tick marks for clarity; focus on placing objects or lengths accurately based on numerical endpoints."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7325,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-b",
+     "subskill": "Model and solve two-step word problems that combine addition and subtraction. Focus: Determining when to add and when to subtract based on the context of the story. Examples: 50+20-10, 40-10+5, 30+30-20, 60-20+5, 75+10-5, 45+15-10, 80-30+20, 90+5-15. Constraints: Use tape-diagram, ensure visual progression follows the flow of the narrative."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7273,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-c",
+     "subskill": "Solve two-step compare problems with an unknown quantity by using tape diagrams to relate quantities. Focus: Finding the missing part in a two-step comparison context. Examples: (10+10)-x=5, (20+5)-x=10, (40+10)-x=25, (30+20)-x=15, (50+5)-x=30, (25+25)-x=20, (60+10)-x=40, (15+15)-x=5. Constraints: Use tape-diagram, allow the unknown to be in different parts of the diagram."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "build_family",
+   "regime": "P",
+   "grade": "2",
+   "query": "Place the big number, say the family with a box for the unknown, say add or subtract, then work it. Skill focus: build_family",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.7377,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 61,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7377,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-c",
+     "subskill": "Solve two-step compare problems with an unknown quantity by using tape diagrams to relate quantities. Focus: Finding the missing part in a two-step comparison context. Examples: (10+10)-x=5, (20+5)-x=10, (40+10)-x=25, (30+20)-x=15, (50+5)-x=30, (25+25)-x=20, (60+10)-x=40, (15+15)-x=5. Constraints: Use tape-diagram, allow the unknown to be in different parts of the diagram."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7293,
+     "skill_id": "NBT002-02",
+     "skill": "Read and Write to 1000",
+     "subskill_id": "NBT002-02-c",
+     "subskill": "Decompose three-digit numbers into hundreds, tens, and ones as an expression of expanded form. Focus: Breaking numbers down by place value. Examples: 782 = 700 + 80 + 2, 403 = 400 + 0 + 3. Constraints: Use place-value-chart primitive; highlight the importance of zero in placeholders."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7292,
+     "skill_id": "NBT002-06",
+     "skill": "Mental Math 10 and 100",
+     "subskill_id": "NBT002-06-c",
+     "subskill": "Represent jumps of 10 and 100 on an open number line. Focus: Visualizing jumps of 10 and 100 as operations. Examples: 450 + 100, 820 - 10, 360 + 20. Constraints: Use number-line primitive; use arrows to indicate direction and jump value."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7284,
+     "skill_id": "NBT002-04",
+     "skill": "Compare Three-Digit Numbers",
+     "subskill_id": "NBT002-04-c",
+     "subskill": "Arrange three or more numbers in order from least to greatest. Focus: Ordering collections of numbers based on place value. Examples: 245, 129, 301; 876, 890, 854. Constraints: Use comparison-builder primitive; items must be distinct three-digit numbers."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7276,
+     "skill_id": "NBT002-06",
+     "skill": "Mental Math 10 and 100",
+     "subskill_id": "NBT002-06-a",
+     "subskill": "Determine the number that is 10 more or 10 less than any given three-digit number. Focus: Developing mental agility with the tens place. Examples: 10 more than 345, 10 less than 890, 10 more than 502. Constraints: Use hundreds-chart primitive; encourage mental calculation over counting."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "build_family",
+   "regime": "P",
+   "grade": "3",
+   "query": "Place the big number, say the family with a box for the unknown, say add or subtract, then work it. Skill focus: build_family",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.7545,
+   "coherent": 4,
+   "coherent_skill": 4,
+   "n": 142,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7545,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-a",
+     "subskill": "Construct all four related facts in a fact family for a set of three numbers. Focus: Understanding fact families. Examples: (3, 4, 12), (5, 6, 30), (2, 8, 16), (4, 7, 28), (5, 9, 45), (6, 7, 42), (8, 9, 72), (6, 8, 48). Constraints: Use number bonds to link parts and wholes."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7482,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-c",
+     "subskill": "Find an unknown dividend in division equations (e.g., ? / 3 = 6). Focus: Using multiplication to find division unknowns. Examples: ?/4=5, ?/6=3, ?/7=8, ?/9=4, ?/5=7, ?/2=9, ?/8=6, ?/3=7. Constraints: Use inverse operations as a tool."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7476,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-b",
+     "subskill": "Determine the unknown factor in multiplication expressions (e.g., 4 x ? = 24). Focus: Finding unknown factors. Examples: 3x?=12, ?x5=20, 6x?=36, ?x8=40, 7x?=49, 9x?=81, ?x4=32, 6x?=42. Constraints: Build equations where the missing value is the target."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7317,
+     "skill_id": "MEAS003-07",
+     "skill": "Perimeter vs Area",
+     "subskill_id": "MEAS003-07-b",
+     "subskill": "Determine an unknown side length of a shape when the perimeter is known. Focus: Missing side lengths. Examples: Rectangle with perimeter 20 and one side 4; Triangle with perimeter 15 and two sides 5 and 6. Constraints: Use additive logic to solve."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7306,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-e",
+     "subskill": "Identify unknown values in various equation positions across all operations. Focus: Solving for unknown variables. Examples: 7x?=56, 64/?=8, ?x9=54, 48/?=6, 5x?=45, ?/4=9, ?x7=42, 36/?=4. Constraints: Randomize equation types."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "build_family",
+   "regime": "S",
+   "grade": "2",
+   "query": "There are 72 striped stickers and 27 spotted stickers. How many stickers are there in all? Place the big number, say the family with a box for the unknown, say add or subtract, then work it. Skill focus: build_family",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.7567,
+   "coherent": 5,
+   "coherent_skill": 3,
+   "n": 61,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7567,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-c",
+     "subskill": "Solve two-step compare problems with an unknown quantity by using tape diagrams to relate quantities. Focus: Finding the missing part in a two-step comparison context. Examples: (10+10)-x=5, (20+5)-x=10, (40+10)-x=25, (30+20)-x=15, (50+5)-x=30, (25+25)-x=20, (60+10)-x=40, (15+15)-x=5. Constraints: Use tape-diagram, allow the unknown to be in different parts of the diagram."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7541,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-b",
+     "subskill": "Model and solve two-step word problems that combine addition and subtraction. Focus: Determining when to add and when to subtract based on the context of the story. Examples: 50+20-10, 40-10+5, 30+30-20, 60-20+5, 75+10-5, 45+15-10, 80-30+20, 90+5-15. Constraints: Use tape-diagram, ensure visual progression follows the flow of the narrative."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7447,
+     "skill_id": "OPS002-01",
+     "skill": "Add Within 100",
+     "subskill_id": "OPS002-01-c",
+     "subskill": "Solve one-step addition word problems within 100 by selecting the correct operation and calculating the total. Focus: Translating real-world scenarios into addition equations. Examples: 25+12, 40+35, 18+22, 55+15, 33+28, 47+14, 61+19, 26+37. Constraints: Use addition-subtraction-scene, include real-world themes like apples or books."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7422,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-a",
+     "subskill": "Model and solve two-step word problems involving only addition by using tape diagrams. Focus: Visualizing the total as a combination of two distinct parts plus a second increase. Examples: 10+5+8, 20+10+5, 12+12+4, 15+5+10, 25+10+5, 30+10+10, 22+8+5, 14+6+10. Constraints: Values up to 100, use tape-diagram, step-by-step logic input."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7371,
+     "skill_id": "OPS002-01",
+     "skill": "Add Within 100",
+     "subskill_id": "OPS002-01-b",
+     "subskill": "Add two two-digit numbers and perform regrouping by composing a ten from ten ones. Focus: Developing fluency in carrying a ten when the ones sum exceeds 9. Examples: 28+15, 36+47, 59+24, 45+38, 77+16, 64+29, 39+39, 48+48. Constraints: Sums within 100, force interaction with the ten-frame component in the regrouping-workbench."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "build_family",
+   "regime": "S",
+   "grade": "3",
+   "query": "There are 72 striped stickers and 27 spotted stickers. How many stickers are there in all? Place the big number, say the family with a box for the unknown, say add or subtract, then work it. Skill focus: build_family",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.7417,
+   "coherent": 2,
+   "coherent_skill": 1,
+   "n": 142,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7417,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-a",
+     "subskill": "Construct all four related facts in a fact family for a set of three numbers. Focus: Understanding fact families. Examples: (3, 4, 12), (5, 6, 30), (2, 8, 16), (4, 7, 28), (5, 9, 45), (6, 7, 42), (8, 9, 72), (6, 8, 48). Constraints: Use number bonds to link parts and wholes."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7408,
+     "skill_id": "MEAS003-07",
+     "skill": "Perimeter vs Area",
+     "subskill_id": "MEAS003-07-b",
+     "subskill": "Determine an unknown side length of a shape when the perimeter is known. Focus: Missing side lengths. Examples: Rectangle with perimeter 20 and one side 4; Triangle with perimeter 15 and two sides 5 and 6. Constraints: Use additive logic to solve."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7403,
+     "skill_id": "OPS003-07",
+     "skill": "Two-Step Word Problems",
+     "subskill_id": "OPS003-07-a",
+     "subskill": "Solve multi-step word problems involving multiplication followed by addition. Focus: Combining operations. Examples: Buying 3 packs of 4 pens plus 2 single pens, Saving 5 dollars for 4 weeks then adding 10 dollars, Baking 3 trays of 6 cookies then adding 5 more, Buying 4 bags of 8 marbles then adding 3, Having 6 sets of 3 toys and buying 4 more, Buying 7 packs of 2 stickers and finding 5, Saving 8 coins in 3 jars then adding 7, Getting 4 baskets of 5 apples then adding 2 more. Constraints: Limit steps to two."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7392,
+     "skill_id": "NBT003-03",
+     "skill": "Addition Within 1000",
+     "subskill_id": "NBT003-03-e",
+     "subskill": "Students solve real-world word problems requiring the addition of two three-digit numbers. Focus: Applying addition to story context. Examples: School library book counts, sports game scores, grocery item costs, distance traveled, weight of objects. Constraints: Single-step problems only."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7343,
+     "skill_id": "NBT003-03",
+     "skill": "Addition Within 1000",
+     "subskill_id": "NBT003-03-d",
+     "subskill": "Students add three-digit numbers requiring regrouping in both the ones and tens places. Focus: Multiple-place regrouping. Examples: 175+286, 397+158, 489+345, 278+694, 567+377, 658+279, 399+499, 188+788. Constraints: Require full workflow for regrouping."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "classify_and_build",
+   "regime": "P",
+   "grade": "3",
+   "query": "Name the story kind (comparison, change, part-whole) first, then build the family and work it. Skill focus: classify_and_build",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.7484,
+   "coherent": 2,
+   "coherent_skill": 1,
+   "n": 142,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7484,
+     "skill_id": "MEAS003-04",
+     "skill": "Scaled Graphs",
+     "subskill_id": "MEAS003-04-c",
+     "subskill": "Solve comparison questions about categorical data represented in a scaled graph. Focus: Answering 'how many more' or 'how many fewer'. Examples: Compare cat vs dog owners, favorite fruits, types of weather. Constraints: Use data sets that require adding before subtracting."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7422,
+     "skill_id": "OPS003-03",
+     "skill": "Division as Sharing and Grouping",
+     "subskill_id": "OPS003-03-c",
+     "subskill": "Create a division equation corresponding to a specific fair-sharing story. Focus: Representing division with notation. Examples: 12/3=4, 20/5=4, 18/2=9, 24/4=6, 15/3=5, 30/6=5, 21/7=3, 32/8=4. Constraints: Use symbols to build equations."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.731,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-a",
+     "subskill": "Construct all four related facts in a fact family for a set of three numbers. Focus: Understanding fact families. Examples: (3, 4, 12), (5, 6, 30), (2, 8, 16), (4, 7, 28), (5, 9, 45), (6, 7, 42), (8, 9, 72), (6, 8, 48). Constraints: Use number bonds to link parts and wholes."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7303,
+     "skill_id": "MEAS003-02",
+     "skill": "Elapsed Time",
+     "subskill_id": "MEAS003-02-d",
+     "subskill": "Map word problem steps onto a number line to find unknown time intervals. Focus: Solving elapsed time word problems. Examples: A movie starts at 2:15 and ends at 3:05; A bus ride takes 45 minutes ending at 4:30; A study session started at 5:10 and lasted 40 minutes; Calculate time from 8:05 to 9:15. Constraints: Use linear representations for visualization."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7165,
+     "skill_id": "OPS003-02",
+     "skill": "Arrays and Area Model",
+     "subskill_id": "OPS003-02-d",
+     "subskill": "Connect array structures to word problems involving groups of items. Focus: Modeling real-world multiplication. Examples: Tables with chairs, trays of cookies, tiles on a floor, parking spots, garden rows, theater seating, library books, egg cartons. Constraints: Keep factors within single digits."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "classify_and_build",
+   "regime": "P",
+   "grade": "4",
+   "query": "Name the story kind (comparison, change, part-whole) first, then build the family and work it. Skill focus: classify_and_build",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.7707,
+   "coherent": 3,
+   "coherent_skill": 2,
+   "n": 128,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7707,
+     "skill_id": "OPS004-01",
+     "skill": "Multiplicative Comparison",
+     "subskill_id": "OPS004-01-d",
+     "subskill": "Distinguish between 'times as many' situations requiring multiplication and 'more than' situations requiring addition. Focus: Conceptual discrimination between multiplicative and additive comparisons. Examples: '5 times as many as 3', '5 more than 3', '8 times as many as 2', '8 more than 2'. Constraints: Limit values to single-digit integers to emphasize operator logic."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.736,
+     "skill_id": "MEAS004-03",
+     "skill": "Measurement Word Problems",
+     "subskill_id": "MEAS004-03-b",
+     "subskill": "Analyze liquid volume and mass word problems using tape diagrams to visualize the proportional parts. Focus: Comparing and totaling masses or volumes. Examples: 2L plus 3L, 5kg minus 2kg, 400mL plus 600mL, 10kg split into 2, 3L added to 500mL, 8kg compare to 3kg, 900mL minus 400mL, 2kg plus 1500g. Constraints: Maintain consistent units; use tape diagrams for all operations."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7325,
+     "skill_id": "OPS004-02",
+     "skill": "Multi-Step Word Problems",
+     "subskill_id": "OPS004-02-a",
+     "subskill": "Solve two-step word problems involving only addition and subtraction of whole numbers. Focus: Sequencing additive operations correctly. Examples: 50+20-15, 100-30+40, 15+25-10, 200-50+75. Constraints: Keep sums within 1000."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7317,
+     "skill_id": "MEAS004-03",
+     "skill": "Measurement Word Problems",
+     "subskill_id": "MEAS004-03-a",
+     "subskill": "Solve multi-step word problems involving distance and elapsed time using bar models to organize information. Focus: Calculating intervals and total distances. Examples: travel 5km then 3km, start at 2:00 end at 4:30, walk 200m then 400m, swim 30min plus 45min, bike 12km subtract 5km, flight duration 3hr 20min, race 100m then 50m, start 8:15 plus 45min. Constraints: Focus on additive/subtractive relationships; use bar models to isolate components."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7304,
+     "skill_id": "OPS004-01",
+     "skill": "Multiplicative Comparison",
+     "subskill_id": "OPS004-01-b",
+     "subskill": "Model situations where one value is 'n times as many' as another using tape diagrams and algebraic variables. Focus: Visual representation of multiplicative comparison using bars. Examples: s = 4 x 3, 5 x n = 20, y = 3 x 7, 6 x k = 42, 2 x p = 16, 9 x m = 81, 7 x x = 49, 4 x b = 36. Constraints: Unknowns must be represented by letters or symbols."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "classify_and_build",
+   "regime": "S",
+   "grade": "3",
+   "query": "Ben had 72 shells. Then Ben dropped some of them. Now Ben has 65 shells. How many shells did Ben drop? Name the story kind (comparison, change, part-whole) first, then build the family and work it. Skill focus: classify_and_build",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.7511,
+   "coherent": 3,
+   "coherent_skill": 2,
+   "n": 142,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7511,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-a",
+     "subskill": "Construct all four related facts in a fact family for a set of three numbers. Focus: Understanding fact families. Examples: (3, 4, 12), (5, 6, 30), (2, 8, 16), (4, 7, 28), (5, 9, 45), (6, 7, 42), (8, 9, 72), (6, 8, 48). Constraints: Use number bonds to link parts and wholes."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7508,
+     "skill_id": "NBT003-04",
+     "skill": "Subtraction Within 1000",
+     "subskill_id": "NBT003-04-e",
+     "subskill": "Students solve real-world word problems requiring the subtraction of three-digit numbers. Focus: Applying subtraction to story context. Examples: Counting remaining items, difference in distances, weight loss, price differences, score differences. Constraints: Single-step, within 1000."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7473,
+     "skill_id": "OPS003-03",
+     "skill": "Division as Sharing and Grouping",
+     "subskill_id": "OPS003-03-c",
+     "subskill": "Create a division equation corresponding to a specific fair-sharing story. Focus: Representing division with notation. Examples: 12/3=4, 20/5=4, 18/2=9, 24/4=6, 15/3=5, 30/6=5, 21/7=3, 32/8=4. Constraints: Use symbols to build equations."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.745,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-c",
+     "subskill": "Find an unknown dividend in division equations (e.g., ? / 3 = 6). Focus: Using multiplication to find division unknowns. Examples: ?/4=5, ?/6=3, ?/7=8, ?/9=4, ?/5=7, ?/2=9, ?/8=6, ?/3=7. Constraints: Use inverse operations as a tool."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7403,
+     "skill_id": "MEAS003-04",
+     "skill": "Scaled Graphs",
+     "subskill_id": "MEAS003-04-c",
+     "subskill": "Solve comparison questions about categorical data represented in a scaled graph. Focus: Answering 'how many more' or 'how many fewer'. Examples: Compare cat vs dog owners, favorite fruits, types of weather. Constraints: Use data sets that require adding before subtracting."
+    }
+   ]
+  },
+  {
+   "subject": "MATHEMATICS",
+   "mode": "classify_and_build",
+   "regime": "S",
+   "grade": "4",
+   "query": "Ben had 72 shells. Then Ben dropped some of them. Now Ben has 65 shells. How many shells did Ben drop? Name the story kind (comparison, change, part-whole) first, then build the family and work it. Skill focus: classify_and_build",
+   "verdict": "abstain",
+   "abstain_reason": "scattered",
+   "best": 0.749,
+   "coherent": 3,
+   "coherent_skill": 1,
+   "n": 128,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.749,
+     "skill_id": "OPS004-02",
+     "skill": "Multi-Step Word Problems",
+     "subskill_id": "OPS004-02-a",
+     "subskill": "Solve two-step word problems involving only addition and subtraction of whole numbers. Focus: Sequencing additive operations correctly. Examples: 50+20-15, 100-30+40, 15+25-10, 200-50+75. Constraints: Keep sums within 1000."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7475,
+     "skill_id": "OPS004-01",
+     "skill": "Multiplicative Comparison",
+     "subskill_id": "OPS004-01-d",
+     "subskill": "Distinguish between 'times as many' situations requiring multiplication and 'more than' situations requiring addition. Focus: Conceptual discrimination between multiplicative and additive comparisons. Examples: '5 times as many as 3', '5 more than 3', '8 times as many as 2', '8 more than 2'. Constraints: Limit values to single-digit integers to emphasize operator logic."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7394,
+     "skill_id": "MEAS004-03",
+     "skill": "Measurement Word Problems",
+     "subskill_id": "MEAS004-03-c",
+     "subskill": "Solve real-world money word problems by creating bar models that represent individual transactions and totals. Focus: Addition and subtraction of monetary values. Examples: $5.50 + $2.25, $10.00 - $3.75, $4.10 + $5.90, $20.00 - $12.50, $3.25 + $4.50, $8.00 - $2.40, $6.75 + $1.25, $15.00 - $9.20. Constraints: Values up to $100; keep decimals to two places."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7383,
+     "skill_id": "OPS004-06",
+     "skill": "Number and Shape Patterns",
+     "subskill_id": "OPS004-06-d",
+     "subskill": "Extend shrinking number patterns by identifying the subtraction or division rule. Focus: Reversing operations for pattern completion. Examples: 100, 90, 80...; 81, 27, 9...; 64, 32, 16.... Constraints: Ensure steps are consistent integers."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7316,
+     "skill_id": "NBT004-05",
+     "skill": "Addition and Subtraction",
+     "subskill_id": "NBT004-05-e",
+     "subskill": "Solve addition and subtraction word problems by translating text to mathematical operations. Focus: Applying arithmetic to context-based scenarios. Examples: Population growth, budget differences, distance travel totals, library book counts, store inventory changes, charity collection sums, elevation differences, school attendance totals. Constraints: Include multi-step problems."
+    }
+   ]
+  }
+ ],
+ "per_mode_language_arts_live_scoping": [
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "find_big_number",
+   "regime": "P",
+   "grade": "1",
+   "query": "The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6662,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 65,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6662,
+     "skill_id": "LA002-01",
+     "skill": "Pre-Writing and Drawing",
+     "subskill_id": "LA002-01-b",
+     "subskill": "Add labels or letter strings to a drawing to identify key parts. Focus: Connecting drawing and early writing through labels and captions. Examples: Drawing of a dog labeled D or DOG, drawing of a house labeled HOS. Constraints: Accept invented spelling; reward any letter that represents the target word sound."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6619,
+     "skill_id": "LA004-01",
+     "skill": "Nouns",
+     "subskill_id": "LA004-01-b",
+     "subskill": "Learners drag and drop words into two buckets to distinguish between common and proper nouns. Focus: Sorting words into common versus proper nouns. Examples: boy, Sam, city, London, dog, Rover, school, Lincoln School. Constraints: Start with names of people, then progress to specific places and days of the week."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6535,
+     "skill_id": "LA006-08",
+     "skill": "Punctuation in Writing",
+     "subskill_id": "LA006-08-a",
+     "subskill": "Apply correct end punctuation and commas to unpunctuated sentences to convey meaning clearly. Focus: Using periods, question marks, and exclamation points accurately. Examples: Where are you? I love dogs! The dog is big. I need eggs, milk, and bread. Constraints: Include a 'punctuation toolbox' for the student to select and drop symbols into highlighted sentence slots."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6529,
+     "skill_id": "LA004-01",
+     "skill": "Nouns",
+     "subskill_id": "LA004-01-a",
+     "subskill": "Students identify whether a word in a sentence represents a person, place, or thing by choosing the correct category for highlighted nouns. Focus: Identifying common nouns in sentences. Examples: teacher, school, cat, ball, doctor, park, desk, sister. Constraints: Use simple, decodable sentences. Provide visual clues for person, place, and thing."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6528,
+     "skill_id": "LA007-04",
+     "skill": "Following Directions",
+     "subskill_id": "LA007-04-a",
+     "subskill": "Listen to 2-3 step instructions given by the AI and demonstrate comprehension by selecting or dragging items in the correct order to complete the task. Focus: Processing multi-step oral directions. Examples: First tap the circle then the square, Put the blue block on the red block, Drag the star to the box then the heart to the circle, Click the cat then the dog then the bird, Start with the smallest item, Move the cloud up then move the sun down, Pick the green apple then the yellow pear, Do it in order. Constraints: Begin with 2-step sequences; progress to 3-step sequences; use clear sequencing markers (first, next, then)."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "find_big_number",
+   "regime": "P",
+   "grade": "2",
+   "query": "The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6587,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 62,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6587,
+     "skill_id": "LA006-01",
+     "skill": "Recounting Stories",
+     "subskill_id": "LA006-01-a",
+     "subskill": "Sequence key events of fables and folktales to identify the beginning, middle, and end of the narrative. Focus: Arranging narrative plot events in chronological order. Examples: introduction of characters, initial conflict, rising action, climax of the challenge, resolution of the problem, final scene, setting description, character actions, plot developments, sequence markers. Constraints: Use the story-map primitive to drag and drop events into the correct chronological buckets; limit stories to short, classic fables."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6507,
+     "skill_id": "LA005-02",
+     "skill": "Word Parts",
+     "subskill_id": "LA005-02-a",
+     "subskill": "Determine the meaning of compound words by breaking them down into their individual component parts. Focus: Combining the meaning of two base words to determine the whole. Examples: sunflower, rainstorm, backpack, homework, pancake, toothpaste, campfire, lighthouse. Constraints: Present the compound word and allow the student to select or identify the two base words and their individual meanings to derive the total meaning."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6482,
+     "skill_id": "LA001-03",
+     "skill": "Multi-Syllable Words",
+     "subskill_id": "LA001-03-a",
+     "subskill": "Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6481,
+     "skill_id": "LA007-02",
+     "skill": "Text Features and Facts",
+     "subskill_id": "LA007-02-a",
+     "subskill": "Students interact with digital snippets of informational pages to identify how captions, bold terms, and index entries help navigate for information. Focus: Utilizing text features to locate specific details efficiently. Examples: Reading a caption under a diagram, clicking a bold word to reveal a glossary definition, finding a page number for a topic in an index, interpreting a sidebar fact, analyzing a photo label, checking a table of contents, identifying a map key, reading a diagram title. Constraints: Use the text-structure-analyzer to highlight specific features and query their purpose."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6454,
+     "skill_id": "LA004-01",
+     "skill": "Collective and Irregular Nouns",
+     "subskill_id": "LA004-01-a",
+     "subskill": "Categorize nouns to identify collective groups by dragging common items into their correct group containers. Focus: Identifying collective nouns that describe groups of people, animals, or things. Examples: team, bunch, flock, herd, pack, swarm, class, army, school. Constraints: Present the student with a noun and three group labels; student sorts the noun into the matching category."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "find_big_number",
+   "regime": "S",
+   "grade": "1",
+   "query": "Sam had 2 marbles. Then Sam bought 8 more. How many marbles does Sam have now? The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6859,
+   "coherent": 2,
+   "coherent_skill": 1,
+   "n": 65,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6859,
+     "skill_id": "LA004-01",
+     "skill": "Nouns",
+     "subskill_id": "LA004-01-b",
+     "subskill": "Learners drag and drop words into two buckets to distinguish between common and proper nouns. Focus: Sorting words into common versus proper nouns. Examples: boy, Sam, city, London, dog, Rover, school, Lincoln School. Constraints: Start with names of people, then progress to specific places and days of the week."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6817,
+     "skill_id": "LA004-09",
+     "skill": "Expand Sentences",
+     "subskill_id": "LA004-09-a",
+     "subskill": "Students select and add adjectives and prepositional phrases to turn simple sentences into descriptive, detailed ones. Focus: Adding adjectives and prepositional phrases to expand a simple sentence. Examples: The dog ran -> The big dog ran in the park. Constraints: Provide draggable sentence components to build the sentence."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6795,
+     "skill_id": "LA007-04",
+     "skill": "Following Directions",
+     "subskill_id": "LA007-04-a",
+     "subskill": "Listen to 2-3 step instructions given by the AI and demonstrate comprehension by selecting or dragging items in the correct order to complete the task. Focus: Processing multi-step oral directions. Examples: First tap the circle then the square, Put the blue block on the red block, Drag the star to the box then the heart to the circle, Click the cat then the dog then the bird, Start with the smallest item, Move the cloud up then move the sun down, Pick the green apple then the yellow pear, Do it in order. Constraints: Begin with 2-step sequences; progress to 3-step sequences; use clear sequencing markers (first, next, then)."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6747,
+     "skill_id": "LA001-01",
+     "skill": "Short and Long Vowel Decoding",
+     "subskill_id": "LA001-01-a",
+     "subskill": "Decode short vowel CVC words by mapping sounds to letters to form the complete word. Focus: Phonic decoding of CVC patterns. Examples: cat, map, tin, dot, bus, bed, pig, hot, sun, leg. Constraints: Only include simple CVC structures; isolate single short vowel sounds before mixing."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6704,
+     "skill_id": "LA006-08",
+     "skill": "Punctuation in Writing",
+     "subskill_id": "LA006-08-a",
+     "subskill": "Apply correct end punctuation and commas to unpunctuated sentences to convey meaning clearly. Focus: Using periods, question marks, and exclamation points accurately. Examples: Where are you? I love dogs! The dog is big. I need eggs, milk, and bread. Constraints: Include a 'punctuation toolbox' for the student to select and drop symbols into highlighted sentence slots."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "find_big_number",
+   "regime": "S",
+   "grade": "2",
+   "query": "Sam had 2 marbles. Then Sam bought 8 more. How many marbles does Sam have now? The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6767,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 62,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6767,
+     "skill_id": "LA006-01",
+     "skill": "Recounting Stories",
+     "subskill_id": "LA006-01-a",
+     "subskill": "Sequence key events of fables and folktales to identify the beginning, middle, and end of the narrative. Focus: Arranging narrative plot events in chronological order. Examples: introduction of characters, initial conflict, rising action, climax of the challenge, resolution of the problem, final scene, setting description, character actions, plot developments, sequence markers. Constraints: Use the story-map primitive to drag and drop events into the correct chronological buckets; limit stories to short, classic fables."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6754,
+     "skill_id": "LA001-02",
+     "skill": "Digraphs and Blends",
+     "subskill_id": "LA001-02-b",
+     "subskill": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6706,
+     "skill_id": "LA002-01",
+     "skill": "Opinion Writing",
+     "subskill_id": "LA002-01-b",
+     "subskill": "Bridge an opinion and a reason by inserting appropriate linking words such as because, also, or another into the sentence structure. Focus: Using transition words to create cohesive relationships between opinions and reasons. Examples: I like dogs because they are playful, Also they are fuzzy, Another reason is they are loyal, I love reading because it is exciting, Also it is educational, Another reason is the stories, I like summer because it is hot, Also I can swim. Constraints: Use drag-and-drop to place linking words into sentence templates."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6682,
+     "skill_id": "LA001-01",
+     "skill": "Vowel Teams",
+     "subskill_id": "LA001-01-a",
+     "subskill": "Students blend and read words containing long vowel team patterns by dragging letters into position and confirming the correct spelling. Focus: Recognizing and decoding words with ai, ay, ee, ea, oa, and ow vowel patterns. Examples: rain, play, keep, seat, boat, slow, train, stay, deep, team. Constraints: Provide audio support for sound blends and allow students to manipulate letter tiles to build words in the phonics-blender."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6668,
+     "skill_id": "LA001-03",
+     "skill": "Multi-Syllable Words",
+     "subskill_id": "LA001-03-a",
+     "subskill": "Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "build_family",
+   "regime": "P",
+   "grade": "2",
+   "query": "Place the big number, say the family with a box for the unknown, say add or subtract, then work it. Skill focus: build_family",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6729,
+   "coherent": 2,
+   "coherent_skill": 1,
+   "n": 62,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6729,
+     "skill_id": "LA005-04",
+     "skill": "Word Relationships",
+     "subskill_id": "LA005-04-b",
+     "subskill": "Distinguish subtle shades of meaning among groups of related verbs and adjectives. Focus: Ordering words by intensity or frequency. Examples: drizzle/rain/downpour, warm/hot/scalding, whisper/talk/shout, giggle/laugh/cackle, big/huge/gigantic, fast/speedy/lightning, cold/chilly/freezing, sad/upset/miserable. Constraints: Provide a word sorter primitive where the student arranges the words on a spectrum of intensity or strength."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6582,
+     "skill_id": "LA006-01",
+     "skill": "Recounting Stories",
+     "subskill_id": "LA006-01-a",
+     "subskill": "Sequence key events of fables and folktales to identify the beginning, middle, and end of the narrative. Focus: Arranging narrative plot events in chronological order. Examples: introduction of characters, initial conflict, rising action, climax of the challenge, resolution of the problem, final scene, setting description, character actions, plot developments, sequence markers. Constraints: Use the story-map primitive to drag and drop events into the correct chronological buckets; limit stories to short, classic fables."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6576,
+     "skill_id": "LA005-02",
+     "skill": "Word Parts",
+     "subskill_id": "LA005-02-a",
+     "subskill": "Determine the meaning of compound words by breaking them down into their individual component parts. Focus: Combining the meaning of two base words to determine the whole. Examples: sunflower, rainstorm, backpack, homework, pancake, toothpaste, campfire, lighthouse. Constraints: Present the compound word and allow the student to select or identify the two base words and their individual meanings to derive the total meaning."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.655,
+     "skill_id": "LA001-03",
+     "skill": "Multi-Syllable Words",
+     "subskill_id": "LA001-03-c",
+     "subskill": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6539,
+     "skill_id": "LA004-03",
+     "skill": "Adjectives and Adverbs",
+     "subskill_id": "LA004-03-a",
+     "subskill": "Analyze sentences to highlight adjectives and the nouns they modify or adverbs and the verbs they describe. Focus: Identifying the function of adjectives and adverbs. Examples: The big dog, walked quickly, soft bed, jumped high, blue sky, sang loudly, sweet apple, ran fast. Constraints: Use sentence-analyzer to have the student click on a target word then the word it describes."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "build_family",
+   "regime": "P",
+   "grade": "3",
+   "query": "Place the big number, say the family with a box for the unknown, say add or subtract, then work it. Skill focus: build_family",
+   "verdict": "abstain",
+   "abstain_reason": "scattered",
+   "best": 0.6496,
+   "coherent": 3,
+   "coherent_skill": 1,
+   "n": 64,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6496,
+     "skill_id": "LA005-05",
+     "skill": "Grammar and Mechanics",
+     "subskill_id": "LA005-05-c",
+     "subskill": "Students manipulate nouns to create and use possessives, including singular and plural forms, in written tasks. Focus: Correct formation of singular and plural possessives. Examples: dog's, dogs', child's, children's, cat's, cats', girl's, girls', teacher's, teachers'. Constraints: Provide clear visual clues to distinguish between a singular owner and a plural group of owners."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6479,
+     "skill_id": "LA005-04",
+     "skill": "Building Sentences with Conjunctions",
+     "subskill_id": "LA005-04-a",
+     "subskill": "Students build compound sentences by selecting the appropriate coordinating conjunctions to join two independent clauses. Focus: Using and, but, or, so to create compound sentences. Examples: I studied so I passed, It is cold but I am warm, I will go or I will stay, She likes cake and he likes pie, The sun set so it got dark, It rained but we played. Constraints: Ensure the two clauses are independent; focus on logical flow using the four specified conjunctions."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6477,
+     "skill_id": "LA006-02",
+     "skill": "Roots and Affixes",
+     "subskill_id": "LA006-02-c",
+     "subskill": "Students connect related words built from the same root word to identify their shared meaning. Focus: Recognizing base roots within varied word forms. Examples: care/careful/careless, play/player/playful, use/useful/useless, joy/joyful/joyless, help/helpful/helpless, teach/teacher/teaching, farm/farmer/farming, color/colorful/colorless. Constraints: Keep the root word spelling consistent to build confidence in morphological recognition."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6458,
+     "skill_id": "LA005-02",
+     "skill": "Verb Tenses and Agreement",
+     "subskill_id": "LA005-02-a",
+     "subskill": "Students construct sentences by arranging verb tiles to demonstrate the correct usage of regular and irregular action words. Focus: Selecting the appropriate verb form to complete a thought. Examples: jump/jumped, run/ran, eat/ate, write/wrote, play/played, sing/sang, walk/walked, sit/sat, swim/swam, sleep/slept. Constraints: Provide a mix of present and past contexts; require users to identify the correct tense before placing the tile."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6458,
+     "skill_id": "LA001-03",
+     "skill": "Story Structure",
+     "subskill_id": "LA001-03-b",
+     "subskill": "Students identify how specific chapters or scenes contribute to the development of the overall story arc. Focus: Explaining how story parts build on one another. Examples: Chapter 1 introduces the setting, Chapter 2 creates a problem, Chapter 3 adds a complication, Scene 1 sets the mood, Scene 2 shows a character change, The beginning establishes the conflict, The middle raises the stakes, The ending resolves the tension. Constraints: Use texts with clear chapter or scene breaks; guide students to link these to the overall plot development."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "build_family",
+   "regime": "S",
+   "grade": "2",
+   "query": "There are 72 striped stickers and 27 spotted stickers. How many stickers are there in all? Place the big number, say the family with a box for the unknown, say add or subtract, then work it. Skill focus: build_family",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6712,
+   "coherent": 2,
+   "coherent_skill": 1,
+   "n": 62,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6712,
+     "skill_id": "LA001-03",
+     "skill": "Multi-Syllable Words",
+     "subskill_id": "LA001-03-c",
+     "subskill": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.669,
+     "skill_id": "LA001-02",
+     "skill": "Digraphs and Blends",
+     "subskill_id": "LA001-02-b",
+     "subskill": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6653,
+     "skill_id": "LA005-02",
+     "skill": "Word Parts",
+     "subskill_id": "LA005-02-a",
+     "subskill": "Determine the meaning of compound words by breaking them down into their individual component parts. Focus: Combining the meaning of two base words to determine the whole. Examples: sunflower, rainstorm, backpack, homework, pancake, toothpaste, campfire, lighthouse. Constraints: Present the compound word and allow the student to select or identify the two base words and their individual meanings to derive the total meaning."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6651,
+     "skill_id": "LA002-01",
+     "skill": "Opinion Writing",
+     "subskill_id": "LA002-01-b",
+     "subskill": "Bridge an opinion and a reason by inserting appropriate linking words such as because, also, or another into the sentence structure. Focus: Using transition words to create cohesive relationships between opinions and reasons. Examples: I like dogs because they are playful, Also they are fuzzy, Another reason is they are loyal, I love reading because it is exciting, Also it is educational, Another reason is the stories, I like summer because it is hot, Also I can swim. Constraints: Use drag-and-drop to place linking words into sentence templates."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6649,
+     "skill_id": "LA005-02",
+     "skill": "Word Parts",
+     "subskill_id": "LA005-02-b",
+     "subskill": "Use common prefixes such as un-, re-, and pre- to modify the meaning of base words. Focus: Applying knowledge of prefixes to change word meaning. Examples: unhappy, undo, redo, rewrite, preheat, prepay, rebuild, unlock. Constraints: Provide a base word and a list of prefixes; student drags the prefix to the base word and selects the correct updated definition."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "build_family",
+   "regime": "S",
+   "grade": "3",
+   "query": "There are 72 striped stickers and 27 spotted stickers. How many stickers are there in all? Place the big number, say the family with a box for the unknown, say add or subtract, then work it. Skill focus: build_family",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6569,
+   "coherent": 2,
+   "coherent_skill": 1,
+   "n": 64,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6569,
+     "skill_id": "LA005-05",
+     "skill": "Grammar and Mechanics",
+     "subskill_id": "LA005-05-c",
+     "subskill": "Students manipulate nouns to create and use possessives, including singular and plural forms, in written tasks. Focus: Correct formation of singular and plural possessives. Examples: dog's, dogs', child's, children's, cat's, cats', girl's, girls', teacher's, teachers'. Constraints: Provide clear visual clues to distinguish between a singular owner and a plural group of owners."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6564,
+     "skill_id": "LA006-02",
+     "skill": "Roots and Affixes",
+     "subskill_id": "LA006-02-c",
+     "subskill": "Students connect related words built from the same root word to identify their shared meaning. Focus: Recognizing base roots within varied word forms. Examples: care/careful/careless, play/player/playful, use/useful/useless, joy/joyful/joyless, help/helpful/helpless, teach/teacher/teaching, farm/farmer/farming, color/colorful/colorless. Constraints: Keep the root word spelling consistent to build confidence in morphological recognition."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6521,
+     "skill_id": "LA003-02",
+     "skill": "Informative Writing",
+     "subskill_id": "LA003-02-c",
+     "subskill": "Students refine their informational paragraphs by inserting linking words and phrases to connect facts within categories. Focus: Increasing logical flow through transitional phrases like 'also', 'another', 'and', 'more', and 'but'. Examples: Also, ants are strong; Another fact is their colony; And they share food; More insects are small; But some are large; Also they build homes; Another type is winged; And they work together. Constraints: Focus on identifying where transitions are needed between existing factual sentences."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6496,
+     "skill_id": "LA005-01",
+     "skill": "Abstract and Plural Nouns",
+     "subskill_id": "LA005-01-b",
+     "subskill": "Students build sentences by selecting and applying the correct plural form of nouns, including irregular patterns. Focus: Correct formation and usage of regular and irregular plural nouns in context. Examples: cats, mice, babies, teeth, boxes, geese, feet, wolves, potatoes, children. Constraints: Include regular nouns with -s/-es endings before transitioning to common irregular noun modifications."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6464,
+     "skill_id": "LA003-02",
+     "skill": "Informative Writing",
+     "subskill_id": "LA003-02-b",
+     "subskill": "Students group related information together to expand their informational paragraphs with facts and clear definitions. Focus: Categorizing information into logical themes. Examples: Insects, habitats, food sources, predator defenses, life cycles, body parts, migration patterns, nocturnal behaviors. Constraints: Use drag-and-drop to sort facts into defined categories before building the paragraph."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "classify_and_build",
+   "regime": "P",
+   "grade": "3",
+   "query": "Name the story kind (comparison, change, part-whole) first, then build the family and work it. Skill focus: classify_and_build",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.6889,
+   "coherent": 3,
+   "coherent_skill": 2,
+   "n": 64,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6889,
+     "skill_id": "LA001-03",
+     "skill": "Story Structure",
+     "subskill_id": "LA001-03-b",
+     "subskill": "Students identify how specific chapters or scenes contribute to the development of the overall story arc. Focus: Explaining how story parts build on one another. Examples: Chapter 1 introduces the setting, Chapter 2 creates a problem, Chapter 3 adds a complication, Scene 1 sets the mood, Scene 2 shows a character change, The beginning establishes the conflict, The middle raises the stakes, The ending resolves the tension. Constraints: Use texts with clear chapter or scene breaks; guide students to link these to the overall plot development."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6733,
+     "skill_id": "LA001-03",
+     "skill": "Story Structure",
+     "subskill_id": "LA001-03-a",
+     "subskill": "Students drag narrative event cards into the correct order on a story arc template. Focus: Mapping events to the beginning, middle, and end. Examples: Introduction of character, The inciting incident, The first struggle, The middle turning point, A moment of rising tension, The climax, The falling action, The resolution. Constraints: Use stories with distinct structural phases; provide clear event summaries on cards."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.671,
+     "skill_id": "LA005-03",
+     "skill": "Adjectives and Adverbs",
+     "subskill_id": "LA005-03-a",
+     "subskill": "Students build sentences using comparative and superlative forms of adjectives and adverbs to compare people, places, or actions. Focus: Applying -er/-est and more/most structures to adjectives and adverbs. Examples: big/bigger/biggest, fast/faster/fastest, happy/happier/happiest, good/better/best, slow/slower/slowest, bad/worse/worst, high/higher/highest, bright/brighter/brightest. Constraints: Start with single-syllable modifiers; progress to irregular and multi-syllable forms."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6702,
+     "skill_id": "LA001-02",
+     "skill": "Character Analysis",
+     "subskill_id": "LA001-02-b",
+     "subskill": "Students link characters together on a web while noting what motivates their actions toward one another. Focus: Understanding character relationships and motivations. Examples: Protagonist seeking help, Antagonist trying to stop the hero, Friend providing support, Family member giving advice, Mentor teaching a skill, A rival competing for a prize, An enemy changing into a friend, A sidekick helping the main character. Constraints: Use stories with clear character roles; focus on the 'why' behind the connection."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6637,
+     "skill_id": "LA006-02",
+     "skill": "Roots and Affixes",
+     "subskill_id": "LA006-02-c",
+     "subskill": "Students connect related words built from the same root word to identify their shared meaning. Focus: Recognizing base roots within varied word forms. Examples: care/careful/careless, play/player/playful, use/useful/useless, joy/joyful/joyless, help/helpful/helpless, teach/teacher/teaching, farm/farmer/farming, color/colorful/colorless. Constraints: Keep the root word spelling consistent to build confidence in morphological recognition."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "classify_and_build",
+   "regime": "P",
+   "grade": "4",
+   "query": "Name the story kind (comparison, change, part-whole) first, then build the family and work it. Skill focus: classify_and_build",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6632,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 56,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6632,
+     "skill_id": "LA003-03",
+     "skill": "Narrative Writing",
+     "subskill_id": "LA003-03-a",
+     "subskill": "Plan a short story by mapping out characters, setting, a sequence of events, and a logical resolution. Focus: Structuring a complete narrative arc. Examples: A lost astronaut, a mysterious forest journey, building a time machine, discovering a secret map, winning a science competition, fixing a broken robot, helping a stray animal, exploring a hidden cave. Constraints: Must include a clear beginning, middle, and end, with identifiable conflict and resolution."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6594,
+     "skill_id": "LA001-02",
+     "skill": "Character and Setting",
+     "subskill_id": "LA001-02-c",
+     "subskill": "Track how events unfold throughout a narrative and how characters adapt to the various challenges they face. Focus: Analyze character response to conflict. Examples: fleeing a predator, solving a puzzle under pressure, dealing with betrayal, adapting to loss, confronting a rival, adjusting to a new environment, negotiating for resources, seeking help from an ally, overcoming fear, learning from failure. Constraints: Focus on sequential logic where the student identifies the causal link between a challenge and the character's subsequent reaction."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.652,
+     "skill_id": "LA002-05",
+     "skill": "Text Structure",
+     "subskill_id": "LA002-05-b",
+     "subskill": "Distinguish between cause and effect relationships and categorize related signal words used to denote these connections. Focus: Sorting text markers based on their function in cause-effect structures. Examples: 'because', 'so', 'as a result', 'consequently', 'due to', 'since', 'therefore', 'caused by'. Constraints: Use a sorting activity. Present sentence pairs and demand the user correctly label the cause and the effect parts."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6511,
+     "skill_id": "LA006-03",
+     "skill": "Similes and Metaphors",
+     "subskill_id": "LA006-03-a",
+     "subskill": "Students identify and interpret figurative expressions that compare two unlike things to reveal deeper meanings in a text. Focus: Distinguishing between similes using like/as and metaphors stating one thing is another. Examples: 'The stars were diamonds in the sky.', 'He is as busy as a bee.', 'The classroom was a zoo.', 'She is as quiet as a mouse.', 'The snow was a white blanket.', 'Time is a thief.', 'He ran like the wind.', 'Her smile is sunshine.' Constraints: Provide context for the comparison so students understand why the figurative language was chosen."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6505,
+     "skill_id": "LA006-05",
+     "skill": "Academic Vocabulary",
+     "subskill_id": "LA006-05-a",
+     "subskill": "Students practice using high-frequency general academic vocabulary that appears across multiple content areas in grade-level texts. Focus: Contextual usage and definition recall for academic terms. Examples: describe, explain, summarize, contrast, demonstrate, identify, interpret, analyze, conclude, organize. Constraints: Use scenarios where the student must choose the correct academic verb to complete an instructional prompt."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "classify_and_build",
+   "regime": "S",
+   "grade": "3",
+   "query": "Ben had 72 shells. Then Ben dropped some of them. Now Ben has 65 shells. How many shells did Ben drop? Name the story kind (comparison, change, part-whole) first, then build the family and work it. Skill focus: classify_and_build",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6702,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 64,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6702,
+     "skill_id": "LA006-02",
+     "skill": "Roots and Affixes",
+     "subskill_id": "LA006-02-c",
+     "subskill": "Students connect related words built from the same root word to identify their shared meaning. Focus: Recognizing base roots within varied word forms. Examples: care/careful/careless, play/player/playful, use/useful/useless, joy/joyful/joyless, help/helpful/helpless, teach/teacher/teaching, farm/farmer/farming, color/colorful/colorless. Constraints: Keep the root word spelling consistent to build confidence in morphological recognition."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.6697,
+     "skill_id": "LA001-05",
+     "skill": "Comparing Texts",
+     "subskill_id": "LA001-05-a",
+     "subskill": "Students compare two stories by the same author using a comparison-explorer to look at settings, plot events, and character traits. Focus: Comparing themes, settings, and plots of stories by the same author. Examples: Two stories about a detective, Two folktales by the same author, Two stories featuring the same animal character, Comparing the setting of two mystery stories, Identifying shared themes in author's works, Comparing how the plot starts in two stories, Listing traits found in both protagonists, Contrasting the outcomes. Constraints: Select sets of stories that share clear stylistic or thematic commonalities."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6694,
+     "skill_id": "LA005-05",
+     "skill": "Grammar and Mechanics",
+     "subskill_id": "LA005-05-c",
+     "subskill": "Students manipulate nouns to create and use possessives, including singular and plural forms, in written tasks. Focus: Correct formation of singular and plural possessives. Examples: dog's, dogs', child's, children's, cat's, cats', girl's, girls', teacher's, teachers'. Constraints: Provide clear visual clues to distinguish between a singular owner and a plural group of owners."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6671,
+     "skill_id": "LA005-02",
+     "skill": "Verb Tenses and Agreement",
+     "subskill_id": "LA005-02-a",
+     "subskill": "Students construct sentences by arranging verb tiles to demonstrate the correct usage of regular and irregular action words. Focus: Selecting the appropriate verb form to complete a thought. Examples: jump/jumped, run/ran, eat/ate, write/wrote, play/played, sing/sang, walk/walked, sit/sat, swim/swam, sleep/slept. Constraints: Provide a mix of present and past contexts; require users to identify the correct tense before placing the tile."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6643,
+     "skill_id": "LA002-02",
+     "skill": "Text Structure",
+     "subskill_id": "LA002-02-c",
+     "subskill": "Students compare two similar topics and sort facts into a Venn diagram format to identify similarities and differences. Focus: Identifying compare-and-contrast structures. Examples: Comparing apples and oranges, frogs and toads, deserts and rainforests, cars and trains, cats and dogs, libraries and bookstores, sun and moon, books and e-readers. Constraints: Present 8-10 facts per pair; force students to categorize facts as 'Only A', 'Only B', or 'Both'."
+    }
+   ]
+  },
+  {
+   "subject": "LANGUAGE_ARTS",
+   "mode": "classify_and_build",
+   "regime": "S",
+   "grade": "4",
+   "query": "Ben had 72 shells. Then Ben dropped some of them. Now Ben has 65 shells. How many shells did Ben drop? Name the story kind (comparison, change, part-whole) first, then build the family and work it. Skill focus: classify_and_build",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.6799,
+   "coherent": 1,
+   "coherent_skill": 1,
+   "n": 56,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.6799,
+     "skill_id": "LA001-02",
+     "skill": "Character and Setting",
+     "subskill_id": "LA001-02-c",
+     "subskill": "Track how events unfold throughout a narrative and how characters adapt to the various challenges they face. Focus: Analyze character response to conflict. Examples: fleeing a predator, solving a puzzle under pressure, dealing with betrayal, adapting to loss, confronting a rival, adjusting to a new environment, negotiating for resources, seeking help from an ally, overcoming fear, learning from failure. Constraints: Focus on sequential logic where the student identifies the causal link between a challenge and the character's subsequent reaction."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.665,
+     "skill_id": "LA006-05",
+     "skill": "Academic Vocabulary",
+     "subskill_id": "LA006-05-a",
+     "subskill": "Students practice using high-frequency general academic vocabulary that appears across multiple content areas in grade-level texts. Focus: Contextual usage and definition recall for academic terms. Examples: describe, explain, summarize, contrast, demonstrate, identify, interpret, analyze, conclude, organize. Constraints: Use scenarios where the student must choose the correct academic verb to complete an instructional prompt."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.6622,
+     "skill_id": "LA003-03",
+     "skill": "Narrative Writing",
+     "subskill_id": "LA003-03-a",
+     "subskill": "Plan a short story by mapping out characters, setting, a sequence of events, and a logical resolution. Focus: Structuring a complete narrative arc. Examples: A lost astronaut, a mysterious forest journey, building a time machine, discovering a secret map, winning a science competition, fixing a broken robot, helping a stray animal, exploring a hidden cave. Constraints: Must include a clear beginning, middle, and end, with identifiable conflict and resolution."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.6597,
+     "skill_id": "LA002-03",
+     "skill": "Firsthand and Secondhand Accounts",
+     "subskill_id": "LA002-03-b",
+     "subskill": "Compare and contrast two accounts of the same event to determine differences in information provided and the author's focus. Focus: Recognizing that different authors emphasize different aspects of the same event. Examples: Comparing a survivor's account of an earthquake with a scientific report, a pioneer's journal vs. a history book account of the Oregon Trail, a pilot's report vs. an aviation magazine article, a witness description vs. police report of an accident, a musician's interview vs. a biography, a letter from a migrant vs. a government report on migration, an artist's reflection vs. an art critic's review, a founder's speech vs. a newspaper account. Constraints: Use texts of equal length. Require categorization of conflicting or supplementary information."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.6595,
+     "skill_id": "LA002-05",
+     "skill": "Text Structure",
+     "subskill_id": "LA002-05-b",
+     "subskill": "Distinguish between cause and effect relationships and categorize related signal words used to denote these connections. Focus: Sorting text markers based on their function in cause-effect structures. Examples: 'because', 'so', 'as a result', 'consequently', 'due to', 'since', 'therefore', 'caused by'. Constraints: Use a sorting activity. Present sentence pairs and demand the user correctly label the cause and the effect parts."
+    }
+   ]
+  }
+ ],
+ "extra_k_and_reworded": [
+  {
+   "regime": "K-omnibus",
+   "mode": "find_big_number",
+   "grade": "Kindergarten",
+   "query": "Live-judged Direct Instruction WORD-PROBLEM SETUP (Connecting Math Concepts number families): a short addition or subtraction story is printed and read aloud; the child PUTS the big number at the end of the family arrow with their finger, then SAYS the number family out loud (\"twelve plus box equals twenty\"), says add or subtract, and works it \u2014 each step judged where it happens. Comparison, change, and part-whole stories with one unknown. Use for objectives about solving addition and subtraction word problems, representing a word problem with an equation or number sentence with an unknown, finding the whole or a part, or deciding whether to add or subtract. ESSENTIAL for G1-G4 word problems where the objective wants the SETUP \u2014 which number is the whole, which operation and why \u2014 not just the answer. Skill focus: find_big_number",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.7647,
+   "coherent": 5,
+   "coherent_skill": 2,
+   "n": 166,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7647,
+     "skill_id": "OPS001-01",
+     "skill": "Understand addition as putting together and adding to",
+     "subskill_id": "OPS001-01-E",
+     "subskill": "Solve addition word problems within 10 using objects, drawings, or equations"
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7642,
+     "skill_id": "OPS001-02",
+     "skill": "Understand subtraction as taking apart and taking from",
+     "subskill_id": "OPS001-02-C",
+     "subskill": "Solve subtraction word problems within 5 using objects, drawings, and equations"
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7599,
+     "skill_id": "OPS001-02",
+     "skill": "Understand subtraction as taking apart and taking from",
+     "subskill_id": "OPS001-02-G",
+     "subskill": "Connect addition and subtraction as inverse operations within 10 using related facts"
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7558,
+     "skill_id": "OPS001-01",
+     "skill": "Understand addition as putting together and adding to",
+     "subskill_id": "OPS001-01-C",
+     "subskill": "Express addition situations within 5 using verbal explanations and written equations"
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7549,
+     "skill_id": "OPS001-03",
+     "skill": "Fluently add and subtract within 5",
+     "subskill_id": "OPS001-03-G",
+     "subskill": "Solve and create word problems involving addition and subtraction within 5"
+    }
+   ]
+  },
+  {
+   "regime": "K-P",
+   "mode": "find_big_number",
+   "grade": "Kindergarten",
+   "query": "The child places the big number (the whole amount) at the end of the arrow, then says how many. Skill focus: find_big_number",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.7443,
+   "coherent": 5,
+   "coherent_skill": 3,
+   "n": 166,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7443,
+     "skill_id": "COUNT001-02",
+     "skill": "Count to tell the number of objects",
+     "subskill_id": "COUNT001-02-G",
+     "subskill": "Count combined visible and hidden objects up to 10, including briefly shown then hidden sets"
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7398,
+     "skill_id": "COUNT001-05",
+     "skill": "Compose and Decompose Numbers 11\u201319",
+     "subskill_id": "COUNT001-05-B",
+     "subskill": "Represent numbers 11-15 as ten ones plus additional ones using manipulatives"
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7335,
+     "skill_id": "COUNT001-02",
+     "skill": "Count to tell the number of objects",
+     "subskill_id": "COUNT001-02-E",
+     "subskill": "Compare quantities between groups and count backwards from 10 using concrete objects"
+    },
+    {
+     "rank": 4,
+     "cosine": 0.733,
+     "skill_id": "COUNT001-05",
+     "skill": "Compose and Decompose Numbers 11\u201319",
+     "subskill_id": "COUNT001-05-C",
+     "subskill": "Represent numbers 16-19 as ten ones plus additional ones using manipulatives"
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7329,
+     "skill_id": "COUNT001-02",
+     "skill": "Count to tell the number of objects",
+     "subskill_id": "COUNT001-02-H",
+     "subskill": "Count backwards from 10 to 0 using concrete objects and number lines, practicing correct descending sequence"
+    }
+   ]
+  },
+  {
+   "regime": "R",
+   "mode": "find_big_number",
+   "grade": "2",
+   "query": "One-step addition or subtraction word problem within 100: the child decides which quantity is the whole (the big number) and places it at the end of the number-family arrow, then works it. Skill focus: find_big_number",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.8056,
+   "coherent": 4,
+   "coherent_skill": 2,
+   "n": 61,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.8056,
+     "skill_id": "OPS002-02",
+     "skill": "Subtract Within 100",
+     "subskill_id": "OPS002-02-c",
+     "subskill": "Solve one-step subtraction word problems within 100 representing take-away or comparison situations. Focus: Identifying the difference between two quantities. Examples: 50-20, 85-30, 42-15, 96-48, 74-29, 68-35, 55-27, 90-45. Constraints: Use addition-subtraction-scene, clearly distinguish between take-away and compare prompts."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.8033,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-b",
+     "subskill": "Model and solve two-step word problems that combine addition and subtraction. Focus: Determining when to add and when to subtract based on the context of the story. Examples: 50+20-10, 40-10+5, 30+30-20, 60-20+5, 75+10-5, 45+15-10, 80-30+20, 90+5-15. Constraints: Use tape-diagram, ensure visual progression follows the flow of the narrative."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7908,
+     "skill_id": "OPS002-01",
+     "skill": "Add Within 100",
+     "subskill_id": "OPS002-01-c",
+     "subskill": "Solve one-step addition word problems within 100 by selecting the correct operation and calculating the total. Focus: Translating real-world scenarios into addition equations. Examples: 25+12, 40+35, 18+22, 55+15, 33+28, 47+14, 61+19, 26+37. Constraints: Use addition-subtraction-scene, include real-world themes like apples or books."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7847,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-c",
+     "subskill": "Solve two-step compare problems with an unknown quantity by using tape diagrams to relate quantities. Focus: Finding the missing part in a two-step comparison context. Examples: (10+10)-x=5, (20+5)-x=10, (40+10)-x=25, (30+20)-x=15, (50+5)-x=30, (25+25)-x=20, (60+10)-x=40, (15+15)-x=5. Constraints: Use tape-diagram, allow the unknown to be in different parts of the diagram."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7823,
+     "skill_id": "NBT002-06",
+     "skill": "Mental Math 10 and 100",
+     "subskill_id": "NBT002-06-c",
+     "subskill": "Represent jumps of 10 and 100 on an open number line. Focus: Visualizing jumps of 10 and 100 as operations. Examples: 450 + 100, 820 - 10, 360 + 20. Constraints: Use number-line primitive; use arrows to indicate direction and jump value."
+    }
+   ]
+  },
+  {
+   "regime": "R",
+   "mode": "build_family",
+   "grade": "2",
+   "query": "One-step addition or subtraction word problem within 100 with one unknown: place the big number, say the number sentence with a box for the unknown, choose add or subtract, then work it. Skill focus: build_family",
+   "verdict": "match",
+   "abstain_reason": null,
+   "best": 0.8004,
+   "coherent": 4,
+   "coherent_skill": 2,
+   "n": 61,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.8004,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-c",
+     "subskill": "Solve two-step compare problems with an unknown quantity by using tape diagrams to relate quantities. Focus: Finding the missing part in a two-step comparison context. Examples: (10+10)-x=5, (20+5)-x=10, (40+10)-x=25, (30+20)-x=15, (50+5)-x=30, (25+25)-x=20, (60+10)-x=40, (15+15)-x=5. Constraints: Use tape-diagram, allow the unknown to be in different parts of the diagram."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.798,
+     "skill_id": "OPS002-03",
+     "skill": "Two-Step Problems",
+     "subskill_id": "OPS002-03-b",
+     "subskill": "Model and solve two-step word problems that combine addition and subtraction. Focus: Determining when to add and when to subtract based on the context of the story. Examples: 50+20-10, 40-10+5, 30+30-20, 60-20+5, 75+10-5, 45+15-10, 80-30+20, 90+5-15. Constraints: Use tape-diagram, ensure visual progression follows the flow of the narrative."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7934,
+     "skill_id": "OPS002-02",
+     "skill": "Subtract Within 100",
+     "subskill_id": "OPS002-02-c",
+     "subskill": "Solve one-step subtraction word problems within 100 representing take-away or comparison situations. Focus: Identifying the difference between two quantities. Examples: 50-20, 85-30, 42-15, 96-48, 74-29, 68-35, 55-27, 90-45. Constraints: Use addition-subtraction-scene, clearly distinguish between take-away and compare prompts."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7761,
+     "skill_id": "OPS002-01",
+     "skill": "Add Within 100",
+     "subskill_id": "OPS002-01-c",
+     "subskill": "Solve one-step addition word problems within 100 by selecting the correct operation and calculating the total. Focus: Translating real-world scenarios into addition equations. Examples: 25+12, 40+35, 18+22, 55+15, 33+28, 47+14, 61+19, 26+37. Constraints: Use addition-subtraction-scene, include real-world themes like apples or books."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.775,
+     "skill_id": "MEAS002-03",
+     "skill": "Length Problems and Number Line",
+     "subskill_id": "MEAS002-03-a",
+     "subskill": "Students solve addition and subtraction word problems involving lengths using tape diagrams as a visual support. Focus: Representing length problems with tape diagrams. Examples: total length of two ropes, distance remaining after cutting, cumulative length of two tracks, difference between two shelf sizes, total path distance. Constraints: Focus on lengths within 100; ensure simple addition and subtraction operations."
+    }
+   ]
+  },
+  {
+   "regime": "R",
+   "mode": "build_family",
+   "grade": "3",
+   "query": "One-step addition or subtraction word problem within 100 with one unknown: place the big number, say the number sentence with a box for the unknown, choose add or subtract, then work it. Skill focus: build_family",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.7794,
+   "coherent": 2,
+   "coherent_skill": 1,
+   "n": 142,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.7794,
+     "skill_id": "NBT003-04",
+     "skill": "Subtraction Within 1000",
+     "subskill_id": "NBT003-04-e",
+     "subskill": "Students solve real-world word problems requiring the subtraction of three-digit numbers. Focus: Applying subtraction to story context. Examples: Counting remaining items, difference in distances, weight loss, price differences, score differences. Constraints: Single-step, within 1000."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.766,
+     "skill_id": "NBT003-03",
+     "skill": "Addition Within 1000",
+     "subskill_id": "NBT003-03-e",
+     "subskill": "Students solve real-world word problems requiring the addition of two three-digit numbers. Focus: Applying addition to story context. Examples: School library book counts, sports game scores, grocery item costs, distance traveled, weight of objects. Constraints: Single-step problems only."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7605,
+     "skill_id": "OPS003-04",
+     "skill": "Multiplication and Division Relationship",
+     "subskill_id": "OPS003-04-c",
+     "subskill": "Find an unknown dividend in division equations (e.g., ? / 3 = 6). Focus: Using multiplication to find division unknowns. Examples: ?/4=5, ?/6=3, ?/7=8, ?/9=4, ?/5=7, ?/2=9, ?/8=6, ?/3=7. Constraints: Use inverse operations as a tool."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7596,
+     "skill_id": "MEAS003-03",
+     "skill": "Liquid Volume and Mass",
+     "subskill_id": "MEAS003-03-d",
+     "subskill": "Apply arithmetic to solve one-step word problems involving capacity or weight. Focus: Solving word problems for mass and volume. Examples: Adding 300g and 450g; subtracting 2L from a 5L jug; finding total mass of three items; calculating remaining volume. Constraints: Use simple addition and subtraction with common measurements."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7585,
+     "skill_id": "MEAS003-07",
+     "skill": "Perimeter vs Area",
+     "subskill_id": "MEAS003-07-b",
+     "subskill": "Determine an unknown side length of a shape when the perimeter is known. Focus: Missing side lengths. Examples: Rectangle with perimeter 20 and one side 4; Triangle with perimeter 15 and two sides 5 and 6. Constraints: Use additive logic to solve."
+    }
+   ]
+  },
+  {
+   "regime": "R",
+   "mode": "classify_and_build",
+   "grade": "3",
+   "query": "One-step addition or subtraction word problem: name the story kind (comparison, change, or part-whole), then write the number sentence with a box for the unknown and decide whether to add or subtract. Skill focus: classify_and_build",
+   "verdict": "abstain",
+   "abstain_reason": "diffuse",
+   "best": 0.79,
+   "coherent": 2,
+   "coherent_skill": 1,
+   "n": 142,
+   "top_k": [
+    {
+     "rank": 1,
+     "cosine": 0.79,
+     "skill_id": "NBT003-03",
+     "skill": "Addition Within 1000",
+     "subskill_id": "NBT003-03-e",
+     "subskill": "Students solve real-world word problems requiring the addition of two three-digit numbers. Focus: Applying addition to story context. Examples: School library book counts, sports game scores, grocery item costs, distance traveled, weight of objects. Constraints: Single-step problems only."
+    },
+    {
+     "rank": 2,
+     "cosine": 0.7888,
+     "skill_id": "NBT003-04",
+     "skill": "Subtraction Within 1000",
+     "subskill_id": "NBT003-04-e",
+     "subskill": "Students solve real-world word problems requiring the subtraction of three-digit numbers. Focus: Applying subtraction to story context. Examples: Counting remaining items, difference in distances, weight loss, price differences, score differences. Constraints: Single-step, within 1000."
+    },
+    {
+     "rank": 3,
+     "cosine": 0.7779,
+     "skill_id": "MEAS003-03",
+     "skill": "Liquid Volume and Mass",
+     "subskill_id": "MEAS003-03-d",
+     "subskill": "Apply arithmetic to solve one-step word problems involving capacity or weight. Focus: Solving word problems for mass and volume. Examples: Adding 300g and 450g; subtracting 2L from a 5L jug; finding total mass of three items; calculating remaining volume. Constraints: Use simple addition and subtraction with common measurements."
+    },
+    {
+     "rank": 4,
+     "cosine": 0.7726,
+     "skill_id": "MEAS003-04",
+     "skill": "Scaled Graphs",
+     "subskill_id": "MEAS003-04-c",
+     "subskill": "Solve comparison questions about categorical data represented in a scaled graph. Focus: Answering 'how many more' or 'how many fewer'. Examples: Compare cat vs dog owners, favorite fruits, types of weather. Constraints: Use data sets that require adding before subtracting."
+    },
+    {
+     "rank": 5,
+     "cosine": 0.7626,
+     "skill_id": "OPS003-07",
+     "skill": "Two-Step Word Problems",
+     "subskill_id": "OPS003-07-c",
+     "subskill": "Translate two-step word problems into algebraic equations using variables for unknowns. Focus: Modeling with equations. Examples: (3x4)+n=15, (20/4)-n=3, (6x5)+n=40, (30/5)-n=2, (7x3)+n=25, (24/8)-n=1, (8x4)+n=40, (48/6)-n=5. Constraints: Use a placeholder for the missing value."
+    }
+   ]
+  }
+ ],
+ "generated_tasks": {
+  "find_big_number": {
+   "grade": "g1",
+   "title": "Set Up the Story",
+   "description": "You will find the big number and say the family out loud before working each fun story.",
+   "challengeType": "find_big_number",
+   "problems": [
+    {
+     "id": "wps-1-change-gain_end",
+     "frameId": "change:gain_end",
+     "shape": "change",
+     "story": "Sam had 2 marbles. Then Sam bought 8 more. How many marbles does Sam have now?",
+     "big": {
+      "label": "what Sam has now",
+      "value": 10,
+      "known": false
+     },
+     "unknown": "what Sam has now",
+     "family": "two plus eight equals box",
+     "operation": "add",
+     "verbCue": "bought -> add",
+     "answer": 10,
+     "maxNumber": 20,
+     "wrongPlacement": "what Sam bought",
+     "misplacedFamily": "two plus box equals eight"
+    },
+    {
+     "id": "wps-2-comparison-difference",
+     "frameId": "comparison:difference",
+     "shape": "comparison",
+     "story": "Max has 16 apples. Lily has 6 apples. How many more apples does Max have than Lily?",
+     "big": {
+      "label": "Max's apples",
+      "value": 16,
+      "known": true
+     },
+     "unknown": "how many more",
+     "family": "six plus box equals sixteen",
+     "operation": "subtract",
+     "verbCue": "more -> add",
+     "answer": 10,
+     "maxNumber": 20,
+     "wrongPlacement": "Lily's apples",
+     "misplacedFamily": "sixteen plus six equals box"
+    },
+    {
+     "id": "wps-3-part_whole-part",
+     "frameId": "part_whole:part",
+     "shape": "part_whole",
+     "story": "There are 20 shells. 5 of them are red. The rest are blue. How many shells are blue?",
+     "big": {
+      "label": "all the shells",
+      "value": 20,
+      "known": true
+     },
+     "unknown": "blue shells",
+     "family": "five plus box equals twenty",
+     "operation": "subtract",
+     "verbCue": "the rest -> subtract",
+     "answer": 15,
+     "maxNumber": 20,
+     "wrongPlacement": "red shells",
+     "misplacedFamily": "twenty plus five equals box"
+    }
+   ]
+  },
+  "build_family": {
+   "grade": "g2",
+   "title": "Set Up the Story",
+   "description": "You will find the big number and say the family out loud before working each story.",
+   "challengeType": "build_family",
+   "problems": [
+    {
+     "id": "wps-1-part_whole-whole",
+     "frameId": "part_whole:whole",
+     "shape": "part_whole",
+     "story": "There are 72 striped stickers and 27 spotted stickers. How many stickers are there in all?",
+     "big": {
+      "label": "all the stickers",
+      "value": 99,
+      "known": false
+     },
+     "unknown": "all the stickers",
+     "family": "seventy-two plus twenty-seven equals box",
+     "operation": "add",
+     "verbCue": "in all -> add",
+     "answer": 99,
+     "maxNumber": 100,
+     "wrongPlacement": "striped stickers",
+     "misplacedFamily": "twenty-seven plus box equals seventy-two"
+    },
+    {
+     "id": "wps-2-change-gain_change",
+     "frameId": "change:gain_change",
+     "shape": "change",
+     "story": "Max had 9 apples. Then Max bought some more. Now Max has 21 apples. How many apples did Max buy?",
+     "big": {
+      "label": "what Max has now",
+      "value": 21,
+      "known": true
+     },
+     "unknown": "what Max bought",
+     "family": "nine plus box equals twenty-one",
+     "operation": "subtract",
+     "verbCue": "bought -> add",
+     "answer": 12,
+     "maxNumber": 100,
+     "wrongPlacement": "what Max started with",
+     "misplacedFamily": "twenty-one plus nine equals box"
+    },
+    {
+     "id": "wps-3-comparison-more_person",
+     "frameId": "comparison:more_person",
+     "shape": "comparison",
+     "story": "Sam has 36 marbles. Zoe has 53 more marbles than Sam. How many marbles does Zoe have?",
+     "big": {
+      "label": "Zoe's marbles",
+      "value": 89,
+      "known": false
+     },
+     "unknown": "Zoe's marbles",
+     "family": "thirty-six plus fifty-three equals box",
+     "operation": "add",
+     "verbCue": "more -> add",
+     "answer": 89,
+     "maxNumber": 100,
+     "wrongPlacement": "how many more",
+     "misplacedFamily": "thirty-six plus box equals fifty-three"
+    }
+   ]
+  },
+  "classify_and_build": {
+   "grade": "g3",
+   "title": "Set Up the Story",
+   "description": "Listen to the story, find the big number, and say the family out loud before you work it out.",
+   "challengeType": "classify_and_build",
+   "problems": [
+    {
+     "id": "wps-1-change-loss_change",
+     "frameId": "change:loss_change",
+     "shape": "change",
+     "story": "Ben had 72 shells. Then Ben dropped some of them. Now Ben has 65 shells. How many shells did Ben drop?",
+     "big": {
+      "label": "what Ben started with",
+      "value": 72,
+      "known": true
+     },
+     "unknown": "what Ben dropped",
+     "family": "sixty-five plus box equals seventy-two",
+     "operation": "subtract",
+     "verbCue": "dropped -> subtract",
+     "answer": 7,
+     "maxNumber": 100,
+     "wrongPlacement": "what Ben has now",
+     "misplacedFamily": "seventy-two plus sixty-five equals box"
+    },
+    {
+     "id": "wps-2-comparison-fewer_person",
+     "frameId": "comparison:fewer_person",
+     "shape": "comparison",
+     "story": "Leo has 14 stickers. Mia has 4 fewer stickers than Leo. How many stickers does Mia have?",
+     "big": {
+      "label": "Leo's stickers",
+      "value": 14,
+      "known": true
+     },
+     "unknown": "Mia's stickers",
+     "family": "four plus box equals fourteen",
+     "operation": "subtract",
+     "verbCue": "fewer -> subtract",
+     "answer": 10,
+     "maxNumber": 100,
+     "wrongPlacement": "how many fewer",
+     "misplacedFamily": "fourteen plus four equals box"
+    },
+    {
+     "id": "wps-3-part_whole-whole",
+     "frameId": "part_whole:whole",
+     "shape": "part_whole",
+     "story": "There are 75 striped apples and 25 spotted apples. How many apples are there in all?",
+     "big": {
+      "label": "all the apples",
+      "value": 100,
+      "known": false
+     },
+     "unknown": "all the apples",
+     "family": "seventy-five plus twenty-five equals box",
+     "operation": "add",
+     "verbCue": "in all -> add",
+     "answer": 100,
+     "maxNumber": 100,
+     "wrongPlacement": "striped apples",
+     "misplacedFamily": "twenty-five plus box equals seventy-five"
+    }
+   ]
+  }
+ },
+ "draw_requests": {
+  "find_big_number": "GET /api/lumina/eval-test?componentId=di-word-problem-setup&evalMode=find_big_number&grade=1",
+  "build_family": "GET /api/lumina/eval-test?componentId=di-word-problem-setup&evalMode=build_family&grade=2",
+  "classify_and_build": "GET /api/lumina/eval-test?componentId=di-word-problem-setup&evalMode=classify_and_build&grade=3"
+ }
+}

@@ -75,6 +75,13 @@ _PRIMITIVE_TO_SUBJECT: Dict[str, str] = {
     "di-dice-roll": "MATHEMATICS",
     "di-math-facts": "MATHEMATICS",
     "di-shapes": "MATHEMATICS",
+    # The "DI for Older Learners" math packs (brief 2026-09-07). Without these
+    # a G3 word-problem session attributed to a LANGUAGE_ARTS subskill
+    # (/curriculum-fit di-word-problem-setup, 2026-09-10: Character Analysis
+    # at 0.708). di-deduction stays on the family default on purpose — it
+    # spans science, social studies and reading inference.
+    "di-worked-procedure": "MATHEMATICS",
+    "di-word-problem-setup": "MATHEMATICS",
 }
 
 # --- Abstain rule (default; calibration sweep deferred, see QA §11 open step) ---

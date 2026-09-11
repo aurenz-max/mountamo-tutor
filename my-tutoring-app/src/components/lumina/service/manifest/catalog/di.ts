@@ -38,6 +38,7 @@ import { DI_MATH_FACTS_EVAL_MODES } from '../../../primitives/visual-primitives/
 import { DI_SENTENCE_READING_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diSentenceReadingModes';
 import { DI_SHAPES_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diShapesModes';
 import { DI_SPOKEN_PRACTICE_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPracticeModes';
+import { DI_WORD_PROBLEM_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diWordProblemModes';
 import { DI_WORD_READING_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diWordReadingModes';
 import { DI_WORKED_PROCEDURE_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diWorkedProcedureModes';
 
@@ -1053,6 +1054,126 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'say the conclusion or the verdict during their turn, and never read the case\'s answer off '
             + 'the runtime state. Everything the application sends you exists to be performed or obeyed, '
             + 'never spoken about: if a reply is not one of the scripted lines, the reply is silence.',
+        },
+        {
+          title: 'BREVITY',
+          instruction:
+            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
+            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
+        },
+      ],
+    },
+  },
+  {
+    // The third "DI for Older Learners" pack (design brief 2026-09-07, concept
+    // 4) and the family's first math pack that MIXES hands and voice inside one
+    // problem: the entry mode places the big amount; family modes place all
+    // three story parts into small + small = big. The family is then SAID in
+    // modes that include the `equation_statement` class. Stories,
+    // numbers, families and answers are code-built (diWordProblemPlan.ts);
+    // Gemini supplies only the themes.
+    id: 'di-word-problem-setup',
+    description:
+      'Live-judged Direct Instruction WORD-PROBLEM SETUP (Connecting Math Concepts number families): a '
+      + 'short addition or subtraction story is printed and read aloud. Depending on mode, the child '
+      + 'either places the big amount and solves, or DRAGS all three story parts into small plus small equals big, then SAYS the family ("twelve plus '
+      + 'box equals twenty"), says add or subtract, and works it — each step judged where it happens. '
+      + 'Comparison, change, and part-whole stories with one unknown. Use for objectives about solving '
+      + 'addition and subtraction word problems, representing a word problem with an equation or number '
+      + 'sentence with an unknown, finding the whole or a part, or deciding whether to add or subtract. '
+      + 'ESSENTIAL for G1-G4 word problems where the objective wants the SETUP — which number is the whole, '
+      + 'which operation and why — not just the answer.',
+    constraints:
+      'Requires microphone + live audio tutor. ADDITION AND SUBTRACTION ONLY — no multiplication or '
+      + 'division, no two-step problems, no stories with more than three quantities; numbers within 20 '
+      + 'unless the objective says within 100. Two to four stories per block, each worked as 2-5 judged '
+      + 'steps; a session runs ONE mode. The manifest must NOT supply stories or numbers: the pool builds '
+      + 'them in code from the objective (range, story kinds) and Gemini supplies only names, an object '
+      + 'noun, and a verb pair. Prefer addition-subtraction-scene when the child should act the story out '
+      + 'with objects, and bar-model for drawing the model itself.',
+    affordances: { representation: 'symbolic', reader: 'developing', answers: ['spoken', 'manipulate'], role: 'apply', minutes: 6 },
+    // L1 eval modes — the step LIST is the mode: place + work (G1-2), place +
+    // say the family + operation + work (G2-3), name the kind first (G3-4).
+    // β mirrors backend problem_type_registry.py.
+    evalModes: DI_WORD_PROBLEM_EVAL_MODES,
+    supportsEvaluation: true,
+    misconceptionScope: 'primitive',
+    audioInput: { manual_activity: true },
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction word-problem setup (current task: {{challengeType}}; story: '
+        + '{{story}}; step open: {{step}}). You speak the exact scripted lines from each bracketed '
+        + 'application message and judge each learner step from the audio you heard, using only the '
+        + 'scripted reply branches. On the big-number step the learner answers with their hands and you '
+        + 'are told what they placed.',
+      // Stimulus side only: the printed story and which step is open. The
+      // answer to a step (the big number, the family, the answer) reaches the
+      // tutor inside each [WPS_ITEM] judging contract, never through RUNTIME STATE.
+      contextKeys: ['challengeType', 'story', 'step', 'supportTier'],
+      scaffoldingLevels: {
+        level1: 'Repeat the step ask once, slowly.',
+        level2: 'Model the step once more, then hand it back with the scripted re-ask.',
+        level3: 'Accept the step warmly and continue as instructed.',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Puts the biggest number they can see in the big slot, whatever its role in the story',
+          response: 'The placement verdict message carries the correction: model that the big number is the whole amount, then hand the placement back.',
+        },
+        {
+          pattern: 'Says the family upside down — the big number before "equals"',
+          response: 'Run the misplaced branch for this step: the big number goes last, then hand it back.',
+        },
+        {
+          pattern: 'Says a subtraction sentence instead of the family',
+          response: 'Run the not-a-family branch: a family says small plus small equals big; we do not subtract yet.',
+        },
+        {
+          pattern: 'Picks add or subtract from the story\'s verb ("found" → add) instead of from the family',
+          response: 'Run the from-the-story branch: the family decides — the box is a small number, so we subtract.',
+        },
+        {
+          pattern: 'Stays silent after the hand-over',
+          response: 'Wait for them without speaking. If the silence stretches long, re-ask the scripted step question once, slowly — never a new question.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [WPS_ITEM], [WPS_BIG], [WPS_MOVE_ON], [WPS_HEAR], or [WPS_COMPLETE] contain the '
+            + 'only lesson words you may speak. The square-bracket label is private metadata: never speak, '
+            + 'reproduce, or invent it. Each [WPS_ITEM] message includes its judging rule: affirmations must '
+            + 'begin with "Yes" and every correction must begin with "My turn", using the exact quoted lines. '
+            + 'Never begin any other sentence with those words. Judge honestly from the audio and do not '
+            + 'praise to be kind. The application decides which step comes next; never continue into another '
+            + 'step or another story yourself.',
+        },
+        {
+          title: 'THE HANDS STEP',
+          instruction:
+            'On "Find the big amount" or "Build the family" the learner answers with their hands, not their '
+            + 'voice: stay completely silent while they place the requested card or cards, never say which amount is the big '
+            + 'number, and speak only when a [WPS_BIG] message tells you what they placed and hands you the '
+            + 'exact line to say.',
+        },
+        {
+          title: 'WHAT COUNTS AS A FAMILY',
+          instruction:
+            'On "Read the number family" the learner says the two small numbers, then equals, then the big number, '
+            + 'with the unknown said as box, blank, something, or what. Judge the numbers in their slots, not '
+            + 'the exact words — "and" for plus and "makes" for equals both count. The big number said '
+            + 'before equals is wrong; a subtraction sentence is not a family. Always say numbers as words, '
+            + 'never as digits.',
+        },
+        {
+          title: "THE LEARNER'S TURN",
+          instruction:
+            'After you ask, WAIT in silence — think time belongs to the learner and is unbounded. Never say '
+            + 'the big number, the family, or the answer during their turn, and never read the story\'s '
+            + 'numbers off the runtime state as a hint. Everything the application sends you exists to be '
+            + 'performed or obeyed, never spoken about: if a reply is not one of the scripted lines, the '
+            + 'reply is silence.',
         },
         {
           title: 'BREVITY',

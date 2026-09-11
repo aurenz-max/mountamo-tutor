@@ -706,6 +706,17 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "deny":        PriorConfig(3.5, "Deduction: rule a thing out because it lacks what every member has, and say why"),
         "cannot_tell": PriorConfig(4.5, "Deduction: recognize that having the property does not make it a member — the rule cannot tell"),
     },
+    # The third "DI for Older Learners" pack (brief 2026-09-07 concept 4): the
+    # Connecting Math Concepts number family. The child PLACES the big number
+    # at the arrowhead by hand, then SAYS the family ("twelve plus box equals
+    # twenty"), then add/subtract, then the answer. The step list is the mode:
+    # place + work (G1-2) < place + say the family + operation + work (G2-3) <
+    # name the story kind first (G3-4).
+    "di-word-problem-setup": {
+        "find_big_number":    PriorConfig(2.5, "Setup: place the big number of an addition/subtraction story, then work it"),
+        "build_family":       PriorConfig(3.5, "Setup: place the big number, say the number family with a box, choose add/subtract, work it"),
+        "classify_and_build": PriorConfig(4.5, "Setup: name the story kind (comparison/change/part-whole), then build the family and work it"),
+    },
     "phoneme-explorer": {
         # DI modality (2026-08-11): every mode is answered ALOUD and judged by
         # the live tutor in-band — the 4-choice grids died as costumes. segment

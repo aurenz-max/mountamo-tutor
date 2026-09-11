@@ -16,6 +16,7 @@ import { generateDiSpokenPractice } from '../../direct-instruction/gemini-di-spo
 import { generateDiDiceRoll } from '../../direct-instruction/gemini-di-dice-roll';
 import { generateDiWorkedProcedure } from '../../direct-instruction/gemini-di-worked-procedure';
 import { generateDiDeduction } from '../../direct-instruction/gemini-di-deduction';
+import { generateDiWordProblemSetup } from '../../direct-instruction/gemini-di-word-problem-setup';
 
 // di-letter-sounds — continuous letter sounds, menu-scoped to the objective.
 registerContextGenerator('di-letter-sounds', async (ctx) => ({
@@ -24,6 +25,9 @@ registerContextGenerator('di-letter-sounds', async (ctx) => ({
   data: await generateDiLetterSounds(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    difficulty: ctx.supportTier ?? (ctx.raw.difficulty as string | undefined),
   }),
 }));
 
@@ -34,6 +38,9 @@ registerContextGenerator('di-word-reading', async (ctx) => ({
   data: await generateDiWordReading(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    difficulty: ctx.supportTier ?? (ctx.raw.difficulty as string | undefined),
   }),
 }));
 
@@ -45,6 +52,9 @@ registerContextGenerator('di-math-facts', async (ctx) => ({
   data: await generateDiMathFacts(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    difficulty: ctx.supportTier ?? (ctx.raw.difficulty as string | undefined),
   }),
 }));
 
@@ -56,6 +66,9 @@ registerContextGenerator('di-shapes', async (ctx) => ({
   data: await generateDiShapes(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
+    objectiveText: ctx.objective.text,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    difficulty: ctx.supportTier ?? (ctx.raw.difficulty as string | undefined),
   }),
 }));
 
@@ -67,6 +80,9 @@ registerContextGenerator('di-sentence-reading', async (ctx) => ({
   data: await generateDiSentenceReading(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    difficulty: ctx.supportTier ?? (ctx.raw.difficulty as string | undefined),
   }),
 }));
 
@@ -79,6 +95,8 @@ registerContextGenerator('di-spoken-practice', async (ctx) => ({
   data: await generateDiSpokenPractice(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
   }),
 }));
 
@@ -90,6 +108,9 @@ registerContextGenerator('di-dice-roll', async (ctx) => ({
   data: await generateDiDiceRoll(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    difficulty: ctx.supportTier ?? (ctx.raw.difficulty as string | undefined),
   }),
 }));
 
@@ -117,6 +138,23 @@ registerContextGenerator('di-deduction', async (ctx) => ({
   type: 'di-deduction',
   instanceId: ctx.instanceId,
   data: await generateDiDeduction(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+    objectiveText: ctx.objective?.text,
+    grade: ctx.grade ?? ctx.gradeLevel,
+    targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
+    supportTier: ctx.supportTier,
+  }),
+}));
+
+// di-word-problem-setup -- name the problem, build the family, the third "DI
+// for Older Learners" pack and the family's first hands+voice math pack. Code
+// owns every story, number, family and answer; Gemini supplies only the
+// themes (names, a noun, a verb pair) and the answer-free wrapper.
+registerContextGenerator('di-word-problem-setup', async (ctx) => ({
+  type: 'di-word-problem-setup',
+  instanceId: ctx.instanceId,
+  data: await generateDiWordProblemSetup(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
     objectiveText: ctx.objective?.text,

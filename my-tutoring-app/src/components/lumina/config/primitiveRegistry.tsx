@@ -187,6 +187,7 @@ import DiSentenceReading from '../primitives/visual-primitives/direct-instructio
 import DiSpokenPractice from '../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
 import DiWorkedProcedure from '../primitives/visual-primitives/direct-instruction/DiWorkedProcedure';
 import DiDeduction from '../primitives/visual-primitives/direct-instruction/DiDeduction';
+import DiWordProblemSetup from '../primitives/visual-primitives/direct-instruction/DiWordProblemSetup';
 import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
 import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
 import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
@@ -2059,6 +2060,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'di-deduction': {
     component: DiDeduction,
     sectionTitle: 'Use the Rule',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'di-word-problem-setup': {
+    component: DiWordProblemSetup,
+    sectionTitle: 'Set Up the Story',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

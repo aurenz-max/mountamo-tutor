@@ -122,6 +122,13 @@ export type OpenSetBucket =
   | 'affirmed-consequent'
   | 'wrong-verdict'
   | 'verdict-no-reason'
+  // ── di-word-problem-setup family steps (`equation_statement`, brief concept 4) ──
+  // A SIXTH group, for a class whose target is a NUMBER SENTENCE WITH A SLOT:
+  // the big number in a small slot, the subtraction form in place of a family,
+  // and a family with a number missing. See wordProblemBench.ts.
+  | 'big-number-misplaced'
+  | 'operation-not-family'
+  | 'family-incomplete'
   // ── shared: properties of the turn, not of the rule ──
   | 'echo'
   | 'nonword'

@@ -3662,6 +3662,34 @@ export interface DiWorkedProcedureMetrics extends BasePrimitiveMetrics {
 }
 
 /**
+ * The word-problem setup pack (the third "DI for Older Learners" pack, brief
+ * 2026-09-07 concept 4, and the family's first hands+voice math pack). A
+ * CHALLENGE is one judged STEP — the big number placed by hand, the family said
+ * aloud, the operation, the answer — and `problemCount` says how many stories
+ * they made up. The big-number and family splits are the pack's diagnostic
+ * signal: a child who works every answer right and places the big number by
+ * size every time is the exact profile this pack exists to find.
+ */
+export interface DiWordProblemSetupMetrics extends BasePrimitiveMetrics {
+  type: 'di-word-problem-setup';
+  challengeType: 'find_big_number' | 'build_family' | 'classify_and_build';
+  totalChallenges: number;        // judged steps
+  problemCount: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;            // hear-the-story taps
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  bigNumberStepsTotal: number;
+  bigNumberStepsCorrect: number;
+  familyStepsTotal: number;
+  familyStepsCorrect: number;
+  /** Silent per-step response time; no timer is ever shown. */
+  meanResponseMs: number | null;
+}
+
+/**
  * The rule-and-case deduction pack (the second "DI for Older Learners" pack,
  * brief 2026-09-07 concept 3). A CHALLENGE is one judged CASE — a conclusion,
  * a rule-out, or a can't-tell — and `ruleCount` says how many rules they were
@@ -3940,6 +3968,7 @@ export type PrimitiveMetrics =
   | DiSpokenPracticeMetrics
   | DiWorkedProcedureMetrics
   | DiDeductionMetrics
+  | DiWordProblemSetupMetrics
   // History
   | CauseEffectChainMetrics
   | EraExplorerMetrics;

@@ -1539,6 +1539,7 @@ export type ComponentId =
   | 'di-spoken-practice'        // Live-judged Direct Instruction, CONTENT-GENERIC: any skill whose answer is one short spoken word; items + judging clauses generated per objective
   | 'di-worked-procedure'       // Live-judged Direct Instruction TALK-THROUGH: multi-digit subtraction said one column at a time, each step judged where it happens (G1-4)
   | 'di-deduction'              // Live-judged Direct Instruction DEDUCTION: a rule and a case, the child says what follows and how they know (G3-5)
+  | 'di-word-problem-setup'     // Live-judged Direct Instruction WORD-PROBLEM SETUP: place the big number by hand, say the number family aloud, then work it (G1-4)
   | 'decodable-reader'          // Controlled-vocabulary reading with per-word TTS and comprehension (K-2)
   | 'story-map'                 // Interactive plot structure diagram (K-6)
   | 'character-web'             // Character analysis and relationship mapping (grades 2-6)
