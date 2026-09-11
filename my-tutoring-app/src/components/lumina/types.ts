@@ -1500,6 +1500,7 @@ export type ComponentId =
   | 'skip-counting-runner' // Rhythmic skip counting with number line jumps, arrays, and multiplication connection (1-3)
   | 'sorting-station'     // Interactive sorting station for categorizing objects into groups
   | 'spatial-scene'        // Interactive spatial scene for math visualization
+  | 'spatial-path'         // Animated route geometry for movement prepositions (K-2)
   | 'strategy-picker'     // Interactive strategy picker for math problem-solving
   | 'regrouping-workbench' // Addition/subtraction with carrying/borrowing using base-ten blocks and written algorithm (1-4)
   | 'multiplication-explorer' // Multi-representation multiplication workspace: equal groups, arrays, repeated addition, number line, area model (2-4)
@@ -2219,6 +2220,7 @@ export type { MeasurementToolsData } from './primitives/visual-primitives/math/M
 export type { ShapeBuilderData } from './primitives/visual-primitives/math/ShapeBuilder';
 export type { ShapeComposerData } from './primitives/visual-primitives/math/ShapeComposer';
 export type { SpatialSceneData } from './primitives/visual-primitives/math/SpatialScene';
+export type { SpatialPathData } from './primitives/visual-primitives/math/SpatialPath';
 export type { NumberLineData, NumberLineOperation, NumberLineChallenge } from './primitives/visual-primitives/math/NumberLine';
 export type { NumberSequencerData } from './primitives/visual-primitives/math/NumberSequencer';
 export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/visual-primitives/math/BaseTenBlocks';

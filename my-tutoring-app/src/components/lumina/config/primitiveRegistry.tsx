@@ -67,6 +67,7 @@ import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import ShapeComposer from '../primitives/visual-primitives/math/ShapeComposer';
 import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
 import SpatialScene from '../primitives/visual-primitives/math/SpatialScene';
+import SpatialPath from '../primitives/visual-primitives/math/SpatialPath';
 import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import NumberTracer from '../primitives/visual-primitives/math/NumberTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
@@ -794,6 +795,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'spatial-scene': {
     component: SpatialScene,
     sectionTitle: 'Spatial Scene',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'spatial-path': {
+    component: SpatialPath,
+    sectionTitle: 'Spatial Path',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

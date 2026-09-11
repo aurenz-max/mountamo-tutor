@@ -57,6 +57,7 @@ import { generateAnalogClock } from '../../math/gemini-analog-clock';
 import { generateCoinCounter } from '../../math/gemini-coin-counter';
 import { generateTimeSequencer } from '../../math/gemini-time-sequencer';
 import { generateSpatialScene } from '../../math/gemini-spatial-scene';
+import { generateSpatialPath } from '../../math/gemini-spatial-path';
 import { generateShapeComposer } from '../../math/gemini-shape-composer';
 import { generateNetFolder } from '../../math/gemini-net-folder';
 import { generateEquationBuilder } from '../../math/gemini-equation-builder';
@@ -414,6 +415,13 @@ registerContextGenerator('spatial-scene', async (ctx) => ({
   type: 'spatial-scene',
   instanceId: ctx.instanceId,
   data: await generateSpatialScene(ctx),
+}));
+
+// Spatial Path (K-2 route geometry: over, under, through, around, across)
+registerContextGenerator('spatial-path', async (ctx) => ({
+  type: 'spatial-path',
+  instanceId: ctx.instanceId,
+  data: await generateSpatialPath(ctx),
 }));
 
 // Shape Composer (K-1 shape composition, decomposition & spatial reasoning)

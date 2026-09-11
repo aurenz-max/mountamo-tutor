@@ -57,6 +57,7 @@ import AnalogClock from '../primitives/visual-primitives/math/AnalogClock';
 import CoinCounter from '../primitives/visual-primitives/math/CoinCounter';
 import TimeSequencer from '../primitives/visual-primitives/math/TimeSequencer';
 import SpatialScene from '../primitives/visual-primitives/math/SpatialScene';
+import SpatialPath from '../primitives/visual-primitives/math/SpatialPath';
 import ShapeComposer from '../primitives/visual-primitives/math/ShapeComposer';
 import NetFolder from '../primitives/visual-primitives/math/NetFolder';
 import EquationBuilder from '../primitives/visual-primitives/math/EquationBuilder';
@@ -81,7 +82,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'measure-lab' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'measure-lab' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'spatial-path' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 type PrimitiveOption = { value: PrimitiveType; label: string; icon: string; topic: string };
@@ -199,6 +200,7 @@ const PRIMITIVE_GROUPS: Array<{ label: string; grade: string; items: PrimitiveOp
       { value: 'shape-builder', label: 'Shape Builder', icon: '📐', topic: 'Identifying quadrilaterals' },
       { value: 'shape-composer', label: 'Shape Composer', icon: '🧩', topic: 'composing and decomposing shapes' },
       { value: 'spatial-scene', label: 'Spatial Scene', icon: '🗺️', topic: 'spatial positions and directions' },
+      { value: 'spatial-path', label: 'Spatial Path', icon: '🛤️', topic: 'movement paths through around and across landmarks' },
     ],
   },
   {
@@ -888,6 +890,20 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'math-spatial',
             subskillId: 'spatial-positions-directions',
             objectiveId: 'understand-spatial-relationships',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'spatial-path':
+      return (
+        <SpatialPath
+          data={{
+            ...(data as Parameters<typeof SpatialPath>[0]['data']),
+            instanceId: `spatial-path-${Date.now()}`,
+            skillId: 'language-spatial',
+            subskillId: 'directional-prepositions',
+            objectiveId: 'follow-directional-preposition-paths',
+            onEvaluationSubmit,
           }}
         />
       );

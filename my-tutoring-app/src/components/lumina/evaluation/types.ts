@@ -3427,6 +3427,18 @@ export interface SpatialSceneMetrics extends BasePrimitiveMetrics {
   challengesTotal: number;
 }
 
+export interface SpatialPathMetrics extends BasePrimitiveMetrics {
+  type: 'spatial-path';
+  challengeType: 'choose_route';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface ShapeComposerMetrics extends BasePrimitiveMetrics {
   type: 'shape-composer';
   accuracy: number;
@@ -3950,6 +3962,7 @@ export type PrimitiveMetrics =
   | CoinCounterMetrics
   | TimeSequencerMetrics
   | SpatialSceneMetrics
+  | SpatialPathMetrics
   | ShapeComposerMetrics
   | NetFolderMetrics
   | DeepDiveMetrics

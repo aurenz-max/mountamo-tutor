@@ -207,6 +207,7 @@ export type {
   CoinCounterMetrics,
   TimeSequencerMetrics,
   SpatialSceneMetrics,
+  SpatialPathMetrics,
   ShapeComposerMetrics,
   NetFolderMetrics,
   DeepDiveMetrics,

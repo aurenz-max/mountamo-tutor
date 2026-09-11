@@ -44,6 +44,7 @@ import WordFlip from '../primitives/visual-primitives/literacy/WordFlip';
 import YouAndMe from '../primitives/visual-primitives/literacy/YouAndMe';
 import StoryBridge from '../primitives/visual-primitives/literacy/StoryBridge';
 import StoryRibbon from '../primitives/visual-primitives/literacy/StoryRibbon';
+import SpatialPath from '../primitives/visual-primitives/math/SpatialPath';
 
 import {
   EvaluationProvider,
@@ -81,7 +82,8 @@ type PrimitiveType =
   | 'word-flip'
   | 'you-and-me'
   | 'story-bridge'
-  | 'story-ribbon';
+  | 'story-ribbon'
+  | 'spatial-path';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -127,6 +129,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'story-talk', label: 'Story Talk', icon: '👂', topic: 'A squirrel hides an acorn', strand: 'SL', wave: 5 },
   { value: 'story-ribbon', label: 'Story Ribbon', icon: '🎗️', topic: 'Tell a connected story from three picture moments', strand: 'SL', wave: 6 },
   // ===== L: Language =====
+  { value: 'spatial-path', label: 'Spatial Path', icon: '🛤️', topic: 'Directional prepositions through around and across', strand: 'L', wave: 6 },
   { value: 'you-and-me', label: 'You & Me', icon: '\uD83D\uDC65', topic: 'Speaker and listener pronouns in familiar routines', strand: 'L', wave: 6 },
   { value: 'sentence-builder', label: 'Sentence Builder', icon: '🧱', topic: 'Building compound sentences', strand: 'L', wave: 1 },
   { value: 'context-clues-detective', label: 'Context Clues', icon: '🕵️', topic: 'Determining word meaning from context', strand: 'L', wave: 2 },
@@ -165,6 +168,17 @@ const PrimitiveRenderer: React.FC<{
   if (!data) return null;
 
   switch (componentId) {
+    case 'spatial-path':
+      return (
+        <SpatialPath data={{
+          ...(data as Parameters<typeof SpatialPath>[0]['data']),
+          instanceId: 'spatial-path-literacy-tester',
+          skillId: 'LA004-05',
+          subskillId: 'LA004-05-H',
+          objectiveId: 'directional-prepositions',
+          onEvaluationSubmit,
+        }} />
+      );
     case 'you-and-me':
       return (
         <YouAndMe data={{

@@ -18,6 +18,13 @@ import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
+    id: 'spatial-path',
+    description: 'Animated route-choice scenes for Kindergarten movement prepositions and directional language. Students choose a visible path that goes over, under, through, around, or across a landmark, then watch the traveler follow the exact selected geometry. The route shape is the scored evidence; the final destination is deliberately identical for every candidate route. Serves Language Arts requirement LA004-05-H for creating and following directions with directional prepositions.',
+    constraints: 'Kindergarten. The generator owns all route geometry and answer keys. Every challenge must expose at least three visually distinct routes with one shared start and one shared finish. Do not score the endpoint. Keep obstacles and candidate routes visible, but do not label or highlight the correct relation until submission. The current L0 contract is choose_route; drawing and multi-step route creation are future evaluation modes. Do not route Grade 1-2 attempts until those grades have an honest directional-preposition curriculum home.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
+    supportsEvaluation: true,
+  },
+  {
     id: 'you-and-me',
     description:
       'Kindergarten Language Arts spoken sentence production with the personal subject pronouns I and you. '
