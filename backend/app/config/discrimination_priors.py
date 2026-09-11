@@ -96,6 +96,9 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "subitize":  PATTERN_DIRECT_MANIPULATION,     # a=1.8
         "count_on":  PATTERN_CONSTRUCTED_RESPONSE,    # a=1.6
     },
+    "number-sequencer": {
+        "spot_error": PATTERN_PATTERN_RECOGNITION,    # a=1.2
+    },
     "pattern-builder": {
         "extend":        PATTERN_DIRECT_MANIPULATION,     # a=1.8
         "identify_core": PATTERN_PATTERN_RECOGNITION,     # a=1.2

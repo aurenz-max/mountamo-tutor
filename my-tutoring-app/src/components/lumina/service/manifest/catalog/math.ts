@@ -3214,8 +3214,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-sequencer',
-    description: 'Interactive number sequencing with 5 challenge types: fill-missing (complete number sequences with blanks), before-after (identify numbers before/after a given number), order-cards (arrange shuffled numbers in order), count-from (continue counting forward/backward from a starting number), and decade-fill (fill missing numbers across decade boundaries in a local number window). Uses a "number train" visual metaphor. Perfect for building sequential number understanding. ESSENTIAL for K-1 math.',
-    constraints: 'K: 1-20 range. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all five.',
+    description: 'Interactive number sequencing with 6 challenge types: fill-missing (complete number sequences with blanks), before-after (identify numbers before/after a given number), order-cards (arrange shuffled numbers in order), count-from (continue counting forward/backward from a starting number), spot-error (identify the one wrong number in a short count), and decade-fill (fill missing numbers across decade boundaries in a local number window). Uses a "number train" visual metaphor. Perfect for building sequential number understanding. ESSENTIAL for K-1 math.',
+    constraints: 'K: 1-20 range by default, widened to 1-100 when the objective explicitly names 100. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Spot-error positions are chosen in code and never visually pre-marked. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all six.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['type', 'tap'], role: 'apply', minutes: 5 },
     evalModes: [
       {
@@ -3235,6 +3235,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['before-after'],
         description: 'Identify numbers immediately before or after a given number.',
+      },
+      {
+        evalMode: 'spot_error',
+        affordances: { answers: ['tap'] },
+        label: 'Spot Error (Tier 3)',
+        beta: 3.5,
+        discrimination: 1.2,
+        scaffoldingMode: 3,
+        challengeTypes: ['spot-error'],
+        description: 'Identify the one wrong number in a short forward count; code owns the wrong position.',
       },
       {
         evalMode: 'order_cards',
@@ -3266,7 +3276,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     ],
     tutoring: {
       taskDescription: 'Student is working on number sequence challenges. Current challenge type is {{challengeType}}: {{instruction}}. The sequence is {{sequence}} and student must provide {{correctAnswers}}. Direction: {{direction}}.',
-      contextKeys: ['challengeType', 'sequence', 'correctAnswers', 'direction', 'attemptNumber', 'startNumber', 'rangeMin', 'rangeMax', 'instruction'],
+      contextKeys: ['challengeType', 'sequence', 'correctAnswers', 'direction', 'wrongIndex', 'attemptNumber', 'startNumber', 'rangeMin', 'rangeMax', 'instruction'],
       scaffoldingLevels: {
         level1: '"Say the numbers in order out loud. What number comes next in the pattern?"',
         level2: '"Count from {{rangeMin}}: what comes after {{startNumber}}? Try saying the numbers: ..., __, ..."',
@@ -3274,6 +3284,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       commonStruggles: [
         { pattern: 'Student skips numbers when counting (e.g., 5, 6, 8)', response: 'Slow down and count with the student. Touch each number as you say it together. "Let\'s count slowly: 5... 6... what comes next?"' },
+        { pattern: 'Student picks a correct number in a spot-error line', response: 'After the attempt, count the entire line aloud together and replace the wrong number with the value in correctAnswers.' },
         { pattern: 'Student reverses number order (e.g., puts 9 before 7)', response: 'Use the number line reference. "Which number is smaller? Smaller numbers go first when we count up."' },
         { pattern: 'Student struggles with decade transitions (e.g., 29 to 30)', response: 'Highlight the pattern: "When we finish counting 21, 22... 29, the next group of ten starts. After twenty-nine comes thirty!"' },
         { pattern: 'Student confuses before and after', response: 'Use physical direction: "Before means the number that comes first when counting. After means the number that comes next. When you count 5, 6, 7 — 6 comes AFTER 5 and BEFORE 7."' },

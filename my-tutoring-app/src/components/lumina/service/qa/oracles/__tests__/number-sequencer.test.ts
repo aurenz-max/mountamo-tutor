@@ -65,6 +65,15 @@ const countClean = {
   ],
 };
 
+const spotErrorClean = {
+  title: 'Spot the Error', gradeBand: 'K', showNumberLine: true, showDotArrays: false,
+  challenges: [
+    { id: 'e1', type: 'spot-error', instruction: '?', sequence: [3, 4, 10, 6, 7], correctAnswers: [5], wrongIndex: 2, rangeMin: 3, rangeMax: 10 },
+    { id: 'e2', type: 'spot-error', instruction: '?', sequence: [13, 19, 15, 16, 17], correctAnswers: [14], wrongIndex: 1, rangeMin: 13, rangeMax: 19 },
+    { id: 'e3', type: 'spot-error', instruction: '?', sequence: [23, 24, 25, 31, 27], correctAnswers: [26], wrongIndex: 3, rangeMin: 23, rangeMax: 31 },
+  ],
+};
+
 // ── decade-fill — real generation ──
 const decadeClean = {
   title: 'Decade Fill', gradeBand: '1', showNumberLine: true, showDotArrays: false,
@@ -90,6 +99,9 @@ describe('number-sequencer oracle', () => {
   });
   it('passes clean count-from', () => {
     expect(numberSequencerOracle.verify(countClean, nsCtx).violations).toEqual([]);
+  });
+  it('passes spot-error lines with one uniquely repairable wrong number', () => {
+    expect(numberSequencerOracle.verify(spotErrorClean, nsCtx).violations).toEqual([]);
   });
   it('passes clean decade-fill', () => {
     expect(numberSequencerOracle.verify(decadeClean, nsCtx).violations).toEqual([]);
@@ -163,6 +175,16 @@ describe('number-sequencer oracle', () => {
     const data = { ...countClean, challenges: countClean.challenges.map((c) => c.id === 'c3' ? { ...c, direction: 'forward' } : c) };
     const v = numberSequencerOracle.verify(data, nsCtx).violations;
     expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'c3')).toBe(true);
+  });
+  it('flags answer-key-desync when a spot-error line has two mismatches', () => {
+    const data = {
+      ...spotErrorClean,
+      challenges: spotErrorClean.challenges.map((c) => c.id === 'e1'
+        ? { ...c, sequence: [3, 9, 10, 6, 7], rangeMax: 10 }
+        : c),
+    };
+    const v = numberSequencerOracle.verify(data, nsCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'e1')).toBe(true);
   });
   it('flags answer-key-desync — decade-fill answer outside the rendered grid', () => {
     const data = { ...decadeClean, challenges: decadeClean.challenges.map((c) => c.id === 'd1' ? { ...c, correctAnswers: [99], sequence: [8, 9, null, 11, 12] } : c) };

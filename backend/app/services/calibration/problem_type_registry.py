@@ -253,6 +253,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "number-sequencer": {
         "count_from":    PriorConfig(1.5, "Concrete: continue counting from value"),
         "before_after":  PriorConfig(2.5, "Pictorial: identify adjacent numbers"),
+        "spot_error":    PriorConfig(3.5, "Pictorial: identify one wrong sequence value"),
         "order_cards":   PriorConfig(3.5, "Pictorial: sequence a set of numbers"),
         "fill_missing":  PriorConfig(4.5, "Transitional: complete pattern gaps"),
         "decade_fill":   PriorConfig(5.5, "Symbolic: cross decade boundaries"),

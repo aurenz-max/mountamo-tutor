@@ -26,6 +26,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Concrete — full guidance, sequential counting.`,
     schemaDescription: "'count-from' (continue counting from value)",
   },
+  'spot-error': {
+    promptDoc:
+      `"spot-error": Student identifies the one wrong number in a short forward count. `
+      + `Provide a correct consecutive sequence of 5-7 numbers with no nulls; code chooses the wrong index and changes that value after generation. `
+      + `Use a position-neutral instruction such as "Which number is wrong?" and do not reveal or visually mark the answer.`,
+    schemaDescription: "'spot-error' (identify one wrong number in a count)",
+  },
   'before-after': {
     promptDoc:
       `"before-after": A short 2-element sequence with one null. `
@@ -64,6 +71,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 
 type ChallengeType =
   | 'count-from'
+  | 'spot-error'
   | 'before-after'
   | 'order-cards'
   | 'fill-missing'
@@ -134,6 +142,13 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
           : tier === 'medium'
             ? `Give EXACTLY ${structuralCount} continuation values in correctAnswers. The instruction states the task only ("Keep counting forward from N") without modelling the steps.`
             : `Give EXACTLY ${structuralCount} continuation values in correctAnswers. Bare instruction ("Continue the count"); for Grade 1 you may count backward to add structural load. Never enlarge the numbers beyond scope.`,
+      );
+      break;
+    case 'spot-error':
+      structuralCount = tier === 'easy' ? 5 : tier === 'medium' ? 6 : 7;
+      promptLines.push(
+        `Provide a correct forward count with EXACTLY ${structuralCount} consecutive numbers. `
+        + `Code will replace one interior value; do not choose, reveal, or style the wrong position yourself.`,
       );
       break;
     case 'before-after':
@@ -214,7 +229,7 @@ const numberSequencerSchema: Schema = {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'fill-missing' (complete pattern gaps), 'before-after' (identify adjacent numbers), 'order-cards' (sequence a set of numbers), 'count-from' (continue counting from value), 'decade-fill' (cross decade boundaries)"
+            description: "Challenge type: 'fill-missing' (complete pattern gaps), 'before-after' (identify adjacent numbers), 'order-cards' (sequence a set of numbers), 'count-from' (continue counting from value), 'spot-error' (identify one wrong number), 'decade-fill' (cross decade boundaries)"
           },
           instruction: {
             type: Type.STRING,
@@ -234,7 +249,7 @@ const numberSequencerSchema: Schema = {
             items: {
               type: Type.NUMBER
             },
-            description: "The correct answers. For fill-missing/before-after/decade-fill: the numbers that go in the blanks. For order-cards: the correctly sorted sequence. For count-from: the expected continuation numbers."
+            description: "The correct answers. For fill-missing/before-after/decade-fill: the numbers that go in the blanks. For order-cards: the correctly sorted sequence. For count-from: the expected continuation numbers. For spot-error: code replaces this with the value that repairs the wrong position."
           },
           startNumber: {
             type: Type.NUMBER,
@@ -359,6 +374,11 @@ Return hasExplicitRange=true ONLY when the lesson content itself names or clearl
     console.warn('[NumberSequencer] topic range resolution failed:', error);
     return null;
   }
+}
+
+/** Kindergarten normally stays within 20, except when this objective explicitly names 100. */
+function kindergartenObjectiveNames100(...signals: Array<string | undefined>): boolean {
+  return signals.some((signal) => /\b(?:100|one[ -]hundred)\b/i.test(signal ?? ''));
 }
 
 // ---------------------------------------------------------------------------
@@ -589,6 +609,52 @@ function placeBlanks(
   return true;
 }
 
+/**
+ * Turn a correct model-authored count into an error-spotting item. Code owns the
+ * wrong position and replacement, so neither can converge in the generation call.
+ * Replacing one interior term with a value outside the correct run leaves exactly
+ * one defensible tap: restoring correctAnswers[0] at wrongIndex makes the whole
+ * line consecutive again.
+ */
+function placeSequenceError(
+  challenge: NumberSequencerChallenge,
+  range: { min: number; max: number },
+  wantedLength: number | null,
+  usage: number[],
+): boolean {
+  const availableWidth = Math.floor(range.max - range.min + 1);
+  const length = Math.min(
+    availableWidth,
+    Math.max(5, Math.min(7, wantedLength ?? (challenge.sequence.length || 5))),
+  );
+  if (length < 5) return false;
+
+  const authoredStart = challenge.sequence.find((value): value is number => Number.isInteger(value));
+  const maxStart = Math.floor(range.max) - length + 1;
+  const start = Math.max(Math.ceil(range.min), Math.min(maxStart, Math.round(authoredStart ?? range.min)));
+  const correctLine = Array.from({ length }, (_, index) => start + index);
+  const candidates = Array.from({ length: length - 2 }, (_, index) => index + 1);
+  const wrongIndex = leastUsed(candidates, usage);
+  usage[wrongIndex] = (usage[wrongIndex] ?? 0) + 1;
+
+  const correctValue = correctLine[wrongIndex];
+  const offset = length;
+  const replacements = [correctValue + offset, correctValue - offset, range.max, range.min]
+    .map((value) => Math.round(value))
+    .filter((value) => value >= range.min && value <= range.max && !correctLine.includes(value));
+  const wrongValue = replacements[0];
+  if (wrongValue === undefined) return false;
+
+  challenge.sequence = [...correctLine];
+  challenge.sequence[wrongIndex] = wrongValue;
+  challenge.correctAnswers = [correctValue];
+  challenge.wrongIndex = wrongIndex;
+  challenge.startNumber = start;
+  challenge.direction = 'forward';
+  challenge.instruction = 'Which number is wrong? Tap it.';
+  return true;
+}
+
 function buildFallbackChallenge(
   type: ChallengeType,
   range: { min: number; max: number },
@@ -612,6 +678,8 @@ function buildFallbackChallenge(
   switch (type) {
     case 'count-from':
       return { id, type, instruction: `Count forward from ${lo}!`, sequence: [lo], correctAnswers: values.slice(1), rangeMin: lo, rangeMax: last, startNumber: lo, direction: 'forward' };
+    case 'spot-error':
+      return { id, type, instruction: 'Which number is wrong? Tap it.', sequence: values, correctAnswers: [], rangeMin: lo, rangeMax: last, startNumber: lo, direction: 'forward' };
     case 'before-after':
       return { id, type, instruction: `What number comes after ${lo}?`, sequence: [lo, null], correctAnswers: [lo + 1], rangeMin: lo, rangeMax: lo + 1 };
     case 'order-cards': {
@@ -723,12 +791,15 @@ export const generateNumberSequencer = async (ctx: GenerationContext): Promise<N
   const gradeLevel = ctx.gradeContext;
   const config: NumberSequencerConfig = { ...(ctx.raw as NumberSequencerConfig), intent: ctx.intent };
   // ── Resolve an explicit single mode / curated blend from the catalog. ──
-  // Deliberately omit intent here: an unpinned session keeps the legacy mixed
-  // behavior, while pins such as "count_from|before_after" are now understood as
-  // a two-mode union instead of falling through as an unknown key (reader-fit 14h).
+  // Explicit pins short-circuit; otherwise intent/objective routes this primitive
+  // to one skill, a curated blend, or a genuinely mixed session.
   const evalResolution = await resolveEvalModes(
     'number-sequencer',
-    { targetEvalMode: config?.targetEvalMode },
+    {
+      targetEvalMode: config?.targetEvalMode,
+      intent: config?.intent,
+      objectiveText: config?.objectiveText ?? ctx.objective.text,
+    },
     CHALLENGE_TYPE_DOCS,
   );
 
@@ -747,12 +818,20 @@ export const generateNumberSequencer = async (ctx: GenerationContext): Promise<N
     ?? canonicalGradeBand
     ?? (gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1');
   const challengeCount = config?.challengeCount || 5;
+  const kObjectiveTo100 = gradeBand === 'K' && kindergartenObjectiveNames100(
+    ctx.objective.text,
+    config?.objectiveText,
+    topic,
+    config?.intent,
+  );
 
   // Structured numeric scope. Grade 1 pays for one tiny resolver call only when
   // the manifest did not already provide a range. Generic/no-bound lessons retain
   // the legacy 1-100 default; an explicit lesson bound may extend through 120.
-  const defaultNumberRange = gradeBand === 'K' ? { min: 1, max: 20 } : { min: 1, max: 100 };
-  const gradeCapabilityMax = gradeBand === 'K' ? 20 : 120;
+  const defaultNumberRange = gradeBand === 'K'
+    ? { min: 1, max: kObjectiveTo100 ? 100 : 20 }
+    : { min: 1, max: 100 };
+  const gradeCapabilityMax = gradeBand === 'K' ? (kObjectiveTo100 ? 100 : 20) : 120;
   let resolvedNumberRange = defaultNumberRange;
   if (config?.numberRange) {
     const min = Math.max(1, Math.round(config.numberRange.min));
@@ -778,7 +857,9 @@ export const generateNumberSequencer = async (ctx: GenerationContext): Promise<N
       ? (evalResolution.allowedTypes[0] as ChallengeType)
       : undefined;
   const tierScaffold =
-    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+    evalResolution?.modes.length === 1 && pinnedType && supportTier
+      ? resolveSupportStructure(pinnedType, supportTier)
+      : null;
   const tierSection = tierScaffold
     ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding + structural level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
@@ -802,7 +883,7 @@ ${tierSection}
 ${!evalResolution ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
-  * Numbers range from 1-20
+  * Numbers range from ${kObjectiveTo100 ? '1-100 because the objective explicitly names 100; include starts above 20' : '1-20'}
   * Simple sequences with 1 blank to fill
   * Before/after with small numbers (1-10 early, up to 20 later)
   * Order 3-4 cards with small numbers
@@ -834,7 +915,7 @@ REQUIREMENTS:
 6. CRITICAL: For count-from, set startNumber and direction fields
 7. rangeMin and rangeMax should reflect the actual number range used in that challenge
 8. Use warm, encouraging instruction text appropriate for young children
-9. For gradeBand "K": do NOT include decade-fill challenges, keep numbers 1-20
+9. For gradeBand "K": do NOT include decade-fill challenges; ${kObjectiveTo100 ? 'the objective explicitly names 100, so use the 1-100 window and include starts above 20' : 'keep numbers 1-20'}
 10. For gradeBand "1": This render's resolved numeric window is ${resolvedNumberRange.min}-${resolvedNumberRange.max}. Default broad practice stays at or below 100; use 101-120 only when the AUTHORITATIVE scope explicitly requires it; never exceed 120. ${evalResolution?.allowedTypes.includes('decade-fill') ? 'Include decade-fill because the active eval-mode set allows it.' : evalResolution ? 'Do NOT introduce decade-fill or any other challenge type outside the active eval-mode set.' : 'In a genuinely mixed session, include at least one decade-fill challenge.'}
 11. Set gradeBand to "${gradeBand}"
 12. Set showNumberLine based on grade level guidance above
@@ -880,7 +961,7 @@ Return the complete number sequencer configuration.
   }
 
   // Validate challenge types (safety net — schema enum handles the eval mode case)
-  const validTypes = ['fill-missing', 'before-after', 'order-cards', 'count-from', 'decade-fill'];
+  const validTypes = ['fill-missing', 'before-after', 'order-cards', 'count-from', 'spot-error', 'decade-fill'];
 
   data.challenges = (data.challenges || []).filter((c: { type: string }) =>
     validTypes.includes(c.type)
@@ -917,12 +998,12 @@ Return the complete number sequencer configuration.
       if (challenge.type === 'decade-fill') {
         challenge.type = 'fill-missing';
       }
-      // Clamp numbers to 1-20
+      // Keep the ordinary K cap at 20; an objective explicitly naming 100 widens it.
       challenge.sequence = challenge.sequence.map((n: number | null) =>
-        n !== null ? Math.min(20, Math.max(1, n)) : null
+        n !== null ? Math.min(resolvedNumberRange.max, Math.max(1, n)) : null
       );
       challenge.correctAnswers = challenge.correctAnswers.map((n: number) =>
-        Math.min(20, Math.max(1, n))
+        Math.min(resolvedNumberRange.max, Math.max(1, n))
       );
     }
 
@@ -1111,6 +1192,28 @@ Return the complete number sequencer configuration.
     data.challenges = [buildFallbackChallenge(fallbackType, resolvedNumberRange)];
   }
 
+  // COUNT001-01-G: a K objective that explicitly says 100 must exercise the
+  // widened window, not merely make 21-100 legal in the prompt. Preserve the
+  // model's other draws and replace one count-from item only when every start
+  // stayed in the old 1-20 band.
+  if (kObjectiveTo100 && resolvedNumberRange.max > 20) {
+    const countFromChallenges = (data.challenges as NumberSequencerChallenge[])
+      .filter((challenge) => challenge.type === 'count-from');
+    const hasStartAbove20 = countFromChallenges.some((challenge) =>
+      typeof challenge.startNumber === 'number' && challenge.startNumber > 20,
+    );
+    if (!hasStartAbove20 && countFromChallenges.length > 0) {
+      const replaceId = countFromChallenges[countFromChallenges.length - 1].id;
+      const replaceIndex = (data.challenges as NumberSequencerChallenge[])
+        .findIndex((challenge) => challenge.id === replaceId);
+      data.challenges[replaceIndex] = buildFallbackChallenge(
+        'count-from',
+        { min: 21, max: resolvedNumberRange.max },
+        replaceIndex,
+      );
+    }
+  }
+
   // ── Distinct-problem gate ──
   // One number window is one problem. K COUNT001-01-H served "1, _, 3, 4" two or
   // three times in a single session: flash-lite converges on a window as hard as it
@@ -1176,6 +1279,17 @@ Return the complete number sequencer configuration.
       : null;
     const want = tierCount ?? challenge.sequence.filter((value) => value === null).length;
     placeBlanks(challenge, want, slotUsage);
+  }
+
+  // Error position is a code-owned draw on every path (model, tier, fallback).
+  // All cards share the same neutral presentation until the student taps one.
+  const errorIndexUsage: number[] = [];
+  for (const challenge of data.challenges as NumberSequencerChallenge[]) {
+    if (challenge.type !== 'spot-error') continue;
+    const wantedLength = supportTier
+      ? resolveSupportStructure('spot-error', supportTier).structuralCount
+      : null;
+    placeSequenceError(challenge, resolvedNumberRange, wantedLength, errorIndexUsage);
   }
 
   // Derive the render/input window from the values the child actually sees or

@@ -77,7 +77,7 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * `instructionLeaksAnswers` (contract number-sequencer.md R9).
  */
 
-const KNOWN_TYPES = new Set(['fill-missing', 'before-after', 'order-cards', 'count-from', 'decade-fill']);
+const KNOWN_TYPES = new Set(['fill-missing', 'before-after', 'order-cards', 'count-from', 'spot-error', 'decade-fill']);
 const NULL_FILL_TYPES = new Set(['fill-missing', 'before-after', 'decade-fill']);
 const DIRECTIONS = new Set(['forward', 'backward']);
 
@@ -266,6 +266,53 @@ export const numberSequencerOracle: ContentOracle = {
 
         varietyValues.push(ans.join(','));
         bump(cardSeen, `${type}|${sequence.map((v) => (v === null ? '_' : v)).join(',')}|${ans.join(',')}`);
+        continue;
+      }
+
+      if (type === 'spot-error') {
+        const wrongIndex = c.wrongIndex;
+        const line = sequence.filter((v): v is number => typeof v === 'number');
+        if (sequence.some((v) => v === null) || line.length < 5) {
+          violations.push({ check: 'schema', where: id, detail: `spot-error needs at least 5 visible numbers and no nulls; got ${JSON.stringify(sequence)}` });
+          continue;
+        }
+        if (!isInt(wrongIndex) || wrongIndex <= 0 || wrongIndex >= line.length - 1) {
+          violations.push({ check: 'schema', where: id, detail: `spot-error wrongIndex must name an interior position; got ${JSON.stringify(wrongIndex)}` });
+          continue;
+        }
+        if (ans.length !== 1) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `spot-error needs exactly one repair value; got ${JSON.stringify(ans)}` });
+          continue;
+        }
+        checked++;
+
+        // The untouched first card anchors a +1 count. Exactly one displayed term
+        // may disagree, and repairing the code-owned index with the keyed value
+        // must restore the whole line. This independently proves a unique pick.
+        const expected = line.map((_, index) => line[0] + index);
+        const mismatches = line
+          .map((value, index) => (value === expected[index] ? -1 : index))
+          .filter((index) => index >= 0);
+        if (mismatches.length !== 1 || mismatches[0] !== wrongIndex) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `spot-error line ${JSON.stringify(line)} must have exactly one defensible wrong position at wrongIndex=${wrongIndex}; mismatches are ${JSON.stringify(mismatches)}`,
+          });
+        }
+        if (ans[0] !== expected[wrongIndex]) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `spot-error repair at index ${wrongIndex} should be ${expected[wrongIndex]}, but correctAnswers[0]=${ans[0]}`,
+          });
+        }
+        if (line[wrongIndex] === ans[0]) {
+          violations.push({ check: 'answer-leak', where: id, detail: 'spot-error displays the repair value unchanged, so there is no error to spot' });
+        }
+
+        varietyValues.push(`${wrongIndex}:${ans[0]}`);
+        bump(cardSeen, `spot|${line.join(',')}|${wrongIndex}|${ans[0]}`);
         continue;
       }
 

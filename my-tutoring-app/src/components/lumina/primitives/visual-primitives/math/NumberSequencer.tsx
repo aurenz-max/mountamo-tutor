@@ -31,12 +31,14 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface NumberSequencerChallenge {
   id: string;
-  type: 'fill-missing' | 'before-after' | 'order-cards' | 'count-from' | 'decade-fill';
+  type: 'fill-missing' | 'before-after' | 'order-cards' | 'count-from' | 'spot-error' | 'decade-fill';
   instruction: string;
   sequence: (number | null)[];
   correctAnswers: number[];
   startNumber?: number;
   direction?: 'forward' | 'backward';
+  /** Code-owned position of the one wrong value in a spot-error line. */
+  wrongIndex?: number;
   rangeMin: number;
   rangeMax: number;
 }
@@ -71,6 +73,7 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'order-cards':  { label: 'Order Cards', icon: '🃏', accentColor: 'amber' },
   'count-from':   { label: 'Count From', icon: '🚀', accentColor: 'emerald' },
   'decade-fill':  { label: 'Decade Fill', icon: '💯', accentColor: 'cyan' },
+  'spot-error':   { label: 'Spot the Error', icon: '🔍', accentColor: 'pink' },
 };
 
 const TRAIN_CAR_COLORS = [
@@ -224,6 +227,8 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
   const [orderedCards, setOrderedCards] = useState<number[]>([]);
   // For count-from: sequential inputs
   const [countInputs, setCountInputs] = useState<string[]>([]);
+  // For spot-error: the student taps the one number that breaks the count.
+  const [selectedErrorIndex, setSelectedErrorIndex] = useState<number | null>(null);
 
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
@@ -276,6 +281,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
     rangeMin: currentChallenge?.rangeMin ?? 0,
     rangeMax: currentChallenge?.rangeMax ?? 20,
     startNumber: currentChallenge?.startNumber,
+    wrongIndex: currentChallenge?.wrongIndex,
     supportTier,
   }), [
     gradeBand, challenges.length, currentChallengeIndex,
@@ -373,6 +379,15 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
         if (correct) setCorrectSlots(new Set(countInputs.map((_, i) => i)));
         break;
       }
+      case 'spot-error': {
+        correct = Number.isInteger(currentChallenge.wrongIndex)
+          && selectedErrorIndex === currentChallenge.wrongIndex;
+        studentAnswerStr = selectedErrorIndex === null
+          ? ''
+          : String(currentChallenge.sequence[selectedErrorIndex]);
+        if (correct && selectedErrorIndex !== null) setCorrectSlots(new Set([selectedErrorIndex]));
+        break;
+      }
     }
 
     // Fire the zone-state flash off the same grading result (visual only —
@@ -383,7 +398,9 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
 
     if (correct) {
       SoundManager.playCorrect();
-      setFeedback('Correct! Great job!');
+      setFeedback(currentChallenge.type === 'spot-error'
+        ? `Correct! ${currentChallenge.sequence[currentChallenge.wrongIndex ?? -1]} should be ${currentChallenge.correctAnswers[0]}.`
+        : 'Correct! Great job!');
       setFeedbackType('success');
       recordResult({
         challengeId: currentChallenge.id,
@@ -391,8 +408,9 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
         attempts: currentAttempts + 1,
       });
       sendText(
-        `[ANSWER_CORRECT] Student correctly completed "${currentChallenge.instruction}". `
-        + `Type: ${currentChallenge.type}. Congratulate briefly and enthusiastically!`,
+        currentChallenge.type === 'spot-error'
+          ? `[ANSWER_CORRECT] The student found the wrong number. Count the repaired line aloud together, replacing ${currentChallenge.sequence[currentChallenge.wrongIndex ?? -1]} with ${currentChallenge.correctAnswers[0]}, then congratulate briefly.`
+          : `[ANSWER_CORRECT] Student correctly completed "${currentChallenge.instruction}". Type: ${currentChallenge.type}. Congratulate briefly and enthusiastically!`,
         { silent: true }
       );
     } else {
@@ -401,16 +419,15 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
       setFeedbackType('error');
       const correctStr = currentChallenge.correctAnswers.join(', ');
       sendText(
-        `[ANSWER_INCORRECT] Student answered "${studentAnswerStr}" but correct is "${correctStr}". `
-        + `Challenge: "${currentChallenge.instruction}" (${currentChallenge.type}). Attempt ${currentAttempts + 1}. `
-        + `Give a hint without revealing the answer.`
-        + tutorRevealPolicy(supportTier, currentChallenge.type),
+        currentChallenge.type === 'spot-error'
+          ? `[ANSWER_INCORRECT] The student picked ${studentAnswerStr}. After this attempt, count the line aloud together and fix it: ${currentChallenge.sequence[currentChallenge.wrongIndex ?? -1]} should be ${correctStr}.`
+          : `[ANSWER_INCORRECT] Student answered "${studentAnswerStr}" but correct is "${correctStr}". Challenge: "${currentChallenge.instruction}" (${currentChallenge.type}). Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.${tutorRevealPolicy(supportTier, currentChallenge.type)}`,
         { silent: true }
       );
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, incrementAttempts, blankIndices,
-    fillAnswers, orderedCards, countInputs, currentAttempts, recordResult, sendText,
+    fillAnswers, orderedCards, countInputs, selectedErrorIndex, currentAttempts, recordResult, sendText,
     supportTier,
   ]);
 
@@ -438,7 +455,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
         const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
 
         const typeAccuracies: Record<string, number | undefined> = {};
-        for (const type of ['fill-missing', 'before-after', 'order-cards', 'count-from', 'decade-fill'] as const) {
+        for (const type of ['fill-missing', 'before-after', 'order-cards', 'count-from', 'spot-error', 'decade-fill'] as const) {
           const typeChallenges = challenges.filter(c => c.type === type);
           if (typeChallenges.length > 0) {
             const typeResults = challengeResults.filter(r =>
@@ -459,6 +476,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
           beforeAfterAccuracy: typeAccuracies['before-after'],
           orderCardsAccuracy: typeAccuracies['order-cards'],
           countFromAccuracy: typeAccuracies['count-from'],
+          spotErrorAccuracy: typeAccuracies['spot-error'],
           decadeFillAccuracy: typeAccuracies['decade-fill'],
         };
 
@@ -476,6 +494,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
     setFillAnswers({});
     setOrderedCards([]);
     setCountInputs([]);
+    setSelectedErrorIndex(null);
     setFeedback('');
     setFeedbackType('');
     setCorrectSlots(new Set());
@@ -528,10 +547,12 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
         return orderedCards.length === currentChallenge.correctAnswers.length;
       case 'count-from':
         return countInputs.every(v => v.trim());
+      case 'spot-error':
+        return selectedErrorIndex !== null;
       default:
         return false;
     }
-  }, [currentChallenge, isCurrentChallengeComplete, blankIndices, fillAnswers, orderedCards, countInputs]);
+  }, [currentChallenge, isCurrentChallengeComplete, blankIndices, fillAnswers, orderedCards, countInputs, selectedErrorIndex]);
 
   // ── Order Cards Handlers ──────────────────────────────────────
 
@@ -817,8 +838,49 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
         })()}
 
         {/* ═══════════════════════════════════════════════════════════
-            Challenge Type: Decade Fill (Hundred Chart)
+            Challenge Type: Spot the Error
            ═══════════════════════════════════════════════════════════ */}
+        {currentChallenge && !allChallengesComplete && currentChallenge.type === 'spot-error' && (
+          <div className="relative">
+            <div className="absolute top-1/2 left-4 right-4 h-1 bg-slate-700/50 rounded-full -translate-y-1/2 z-0" />
+            <div className="flex items-center justify-center gap-2 overflow-x-auto py-4 px-2 relative z-10">
+              {currentChallenge.sequence.map((num, idx) => {
+                const isSelected = selectedErrorIndex === idx;
+                const isCorrect = correctSlots.has(idx);
+                const selectedState: DropZoneState = isSelected
+                  ? (slotFlash ?? (isCorrect ? 'correct' : 'filled'))
+                  : (isCorrect ? 'correct' : 'idle');
+                return (
+                  <button
+                    key={`${num}-${idx}`}
+                    type="button"
+                    aria-label={`Select ${num} as the wrong number`}
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      if (isCurrentChallengeComplete || hasSubmittedEvaluation) return;
+                      SoundManager.snap();
+                      setSelectedErrorIndex(idx);
+                    }}
+                    disabled={isCurrentChallengeComplete || hasSubmittedEvaluation}
+                    className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                  >
+                    <TrainCar
+                      colorClass={isSelected
+                        ? dropZoneStateClass(selectedState)
+                        : 'bg-indigo-500/15 border-indigo-400/30'}
+                      className={isSelected ? flashMotion : ''}
+                    >
+                      <span className="text-lg font-bold text-slate-100">{num}</span>
+                      {showDotArrays && typeof num === 'number' && <DotArray count={num} />}
+                    </TrainCar>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Challenge Type: Decade Fill (Hundred Chart) */}
         {currentChallenge && !allChallengesComplete && currentChallenge.type === 'decade-fill' && (
           <div className="flex justify-center">
             <div className="grid grid-cols-10 gap-1">
