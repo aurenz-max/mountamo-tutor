@@ -162,6 +162,8 @@ import type {
 } from '@/components/lumina/primitives/visual-primitives/literacy/StoryBridge';
 import {
   itemFromChallenge as rhymeItemFromChallenge,
+  itemsFromChallenge as rhymeItemsFromChallenge,
+  isOpenSet as isOpenRhymeSet,
   rhymeStudioHarnessAnswers,
   rhymeStudioPackBase,
   type RhymeChallengeLike,
@@ -1609,10 +1611,10 @@ const rhymeStudioAdapter: DiPortAdapter<RhymeItem> = {
   build: (data) => {
     const challenges = (data.challenges ?? []) as RhymeChallengeLike[];
     const tier = ((data.supportTier as RhymeTier) ?? 'medium') as RhymeTier;
-    const items = challenges.map((ch) => rhymeItemFromChallenge(ch, tier));
+    const items = challenges.flatMap((ch) => rhymeItemsFromChallenge(ch, tier));
     return {
       items,
-      dropped: challenges.length - items.length,
+      dropped: 0,
       surface: rhymeStudioPackBase(items),
     };
   },
@@ -1631,7 +1633,7 @@ const rhymeStudioAdapter: DiPortAdapter<RhymeItem> = {
   },
 
   answersFor: (item) => {
-    if (item.mode !== 'production') return rhymeStudioHarnessAnswers(item);
+    if (!isOpenRhymeSet(item.mode)) return rhymeStudioHarnessAnswers(item);
 
     /**
      * Match the fixture by ITEM ID first (a bench run), then by RIME.

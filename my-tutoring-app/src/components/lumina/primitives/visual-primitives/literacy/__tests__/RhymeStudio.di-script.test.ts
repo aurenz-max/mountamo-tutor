@@ -30,9 +30,12 @@ import {
   isSentinelSafeWord,
   itemCue,
   itemFromChallenge,
+  itemsFromChallenge,
   moveOnCue,
+  normalizeCollectedRhyme,
   pickModelRhymePair,
   pronounceCue,
+  recordCollectedRhyme,
   rimeOf,
   stimulusFor,
   type RhymeChallengeLike,
@@ -77,8 +80,16 @@ const productionCh = (over: Partial<RhymeChallengeLike> = {}): RhymeChallengeLik
   ...over,
 });
 
+const collectionCh = (over: Partial<RhymeChallengeLike> = {}): RhymeChallengeLike => ({
+  id: 'f1',
+  mode: 'collection',
+  targetWord: 'cat',
+  rhymeFamily: '-at',
+  ...over,
+});
+
 const items = (tier: RhymeTier = 'medium'): RhymeItem[] =>
-  [recognitionCh(), identificationCh(), productionCh()].map((c) => itemFromChallenge(c, tier));
+  [recognitionCh(), identificationCh(), productionCh(), collectionCh()].map((c) => itemFromChallenge(c, tier));
 
 const packFor = (list: RhymeItem[]): JudgedScriptPack<RhymeItem> => {
   const modelPair = pickModelRhymePair(list);
@@ -297,6 +308,57 @@ describe('open_production — the rule, and the four guards', () => {
 });
 
 // ── The split ───────────────────────────────────────────────────────────────
+
+describe('collection — three retained, distinct, open rhymes', () => {
+  it('expands one generated challenge into exactly three slots on one family', () => {
+    const family = itemsFromChallenge(collectionCh());
+    expect(family.map((item) => item.id)).toEqual([
+      'f1-slot-1',
+      'f1-slot-2',
+      'f1-slot-3',
+    ]);
+    expect(family.map((item) => item.collectionSlot)).toEqual([1, 2, 3]);
+    expect(family.every((item) => item.collectionId === 'f1')).toBe(true);
+    expect(family.every((item) => item.responseClass === 'open_set_word')).toBe(true);
+  });
+
+  it('retains affirmed transcripts and exposes them to every later slot', () => {
+    const family = itemsFromChallenge(collectionCh());
+    expect(recordCollectedRhyme(family, family[0], 'Hat.')).toEqual(['hat']);
+    expect(recordCollectedRhyme(family, family[1], 'I said gnat')).toEqual(['hat', 'gnat']);
+    expect(family[2].priorAcceptedWords).toEqual(['hat', 'gnat']);
+    expect(normalizeCollectedRhyme('I said GNAT!')).toBe('gnat');
+  });
+
+  it('defensively refuses to store a duplicate twice', () => {
+    const family = itemsFromChallenge(collectionCh());
+    recordCollectedRhyme(family, family[0], 'hat');
+    expect(recordCollectedRhyme(family, family[1], 'Hat!')).toEqual(['hat']);
+  });
+
+  it('judges by rhyme and uniqueness while explicitly accepting unlisted real words', () => {
+    const family = itemsFromChallenge(collectionCh());
+    recordCollectedRhyme(family, family[0], 'hat');
+    const cue = itemCue(family[1]);
+    expect(cue).toContain('Any real word that ends that way is correct, including one you did not think of yourself');
+    expect(cue).toContain('DIFFERENT from the words already accepted: hat');
+    expect(cue).toContain('If the learner repeats any already accepted word (hat)');
+    expect(cue).toContain('My turn: you already used hat. This family needs three different words.');
+    expect(cue).toContain('that does not count as a new rhyme. A rhyme must be a real word with the same ending sound.');
+    expect(cue).not.toMatch(/for example|such as/i);
+  });
+
+  it('never imports generated examples into the collection answer set', () => {
+    const family = itemsFromChallenge(collectionCh({
+      acceptableAnswers: ['hat', 'mat', 'nake'],
+    }));
+    expect(family.every((item) => item.acceptedWords.length === 0)).toBe(true);
+    const cue = itemCue(family[0]).toLowerCase();
+    for (const hidden of ['hat', 'mat', 'nake']) {
+      expect(cue).not.toMatch(new RegExp(`\\b${hidden}\\b`));
+    }
+  });
+});
 
 describe('the split — what the answer is MADE of', () => {
   /**

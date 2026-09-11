@@ -2387,12 +2387,13 @@ export interface PhonicsBlenderMetrics extends BasePrimitiveMetrics {
 
 export interface RhymeStudioMetrics extends BasePrimitiveMetrics {
   type: 'rhyme-studio';
-  challengeMode: 'recognition' | 'identification' | 'production';
+  challengeMode: 'recognition' | 'identification' | 'production' | 'collection';
   challengesCorrect: number;
   challengesTotal: number;
   recognitionAccuracy: number;
   identificationAccuracy: number;
   productionAccuracy: number;
+  collectionAccuracy: number;
   rhymeFamiliesPracticed: string[];
   attemptsCount: number;
 }
@@ -2980,6 +2981,7 @@ export interface NumberSequencerMetrics extends BasePrimitiveMetrics {
   beforeAfterAccuracy?: number;
   orderCardsAccuracy?: number;
   countFromAccuracy?: number;
+  spotErrorAccuracy?: number;
   decadeFillAccuracy?: number;
 }
 

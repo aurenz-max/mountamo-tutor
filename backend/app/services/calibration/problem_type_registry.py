@@ -513,7 +513,8 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "rhyme-studio": {
         "recognition":    PriorConfig(1.5, "Recognition: SAY yes or no — do these words rhyme?"),
         "identification": PriorConfig(2.5, "Guided: SAY the rhyming word from 2-3 spoken choices"),
-        "production":     PriorConfig(5.0, "Constrained production: SAY a rhyming word from the card bank"),
+        "production":     PriorConfig(5.0, "Open production: SAY any real word that rhymes with the target"),
+        "collection":     PriorConfig(6.5, "Open family construction: retain three distinct valid rhymes"),
     },
     # DI port 2026-08-12 — the STRUCTURE changed, so the betas moved with it.
     # Every mode went from an ungraded button press (record, then self-rate 1-5)

@@ -8,10 +8,10 @@
  *
  * WHAT THE CHILD DOES: every mode is answered ALOUD. Nothing here is tappable
  * except the cards, which repeat the question.
- *  - identification / production: say the word that rhymes. The choices stay ON
- *    SCREEN — they are not a scaffold to delete, they are the closed set that
- *    makes a spoken rhyme a benched response class at all (see
- *    rhymeStudioScript.ts).
+ *  - identification: say the word that rhymes from the visible closed set.
+ *  - production: think of any real rhyme with no answer bank.
+ *  - collection: fill three retained slots with distinct open rhymes; only
+ *    learner-produced accepted words appear in those slots.
  *  - recognition: say yes or no. This mode shipped with a 👍/👎 tap for exactly
  *    one day; the user's first drive removed it (*"we should just be able to
  *    say yes to the tutor"*) and the session log showed why it could not have
@@ -35,7 +35,7 @@
  * answer.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -59,8 +59,9 @@ import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   completeCue,
   itemCue,
-  itemFromChallenge,
+  itemsFromChallenge,
   moveOnCue,
+  recordCollectedRhyme,
   pickModelRhymePair,
   pronounceCue,
   stimulusFor,
@@ -152,6 +153,7 @@ const MODE_META: Record<RhymeMode, { badge: string; icon: string; accent: Lumina
   // menu — the prompt must not point at a surface the child cannot answer from,
   // and "Think of" is the honest verb for what the mode now asks.
   production: { badge: 'Think of a Rhyme', icon: '💭', accent: 'emerald', prompt: 'Think of a word that rhymes!' },
+  collection: { badge: 'Build a Rhyme Family', icon: '🧺', accent: 'amber', prompt: 'Fill all three spots with different rhymes!' },
 };
 
 // ============================================================================
@@ -196,10 +198,16 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
 
   // ── Items + the code-owned rule-model pair ────────────────────────────────
   const items = useMemo<RhymeItem[]>(
-    () => challenges.map((ch) => itemFromChallenge(ch, supportTier ?? 'medium')),
+    () => challenges.flatMap((ch) => itemsFromChallenge(ch, supportTier ?? 'medium')),
     [challenges, supportTier],
   );
   const modelPair = useMemo(() => pickModelRhymePair(items), [items]);
+  const lastHeardRef = useRef('');
+  const [collectedFamilies, setCollectedFamilies] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    lastHeardRef.current = '';
+    setCollectedFamilies({});
+  }, [items]);
 
   // ── Per-item stage state ──────────────────────────────────────────────────
   /** Affirmed: the first moment the rime / correct choice may appear on screen. */
@@ -223,24 +231,26 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       recognition: { score: 0, count: 0 },
       identification: { score: 0, count: 0 },
       production: { score: 0, count: 0 },
+      collection: { score: 0, count: 0 },
     };
-    for (const ch of challenges) {
-      const outcome = summary.outcomes.find((o) => o.id === ch.id);
+    for (const item of items) {
+      const outcome = summary.outcomes.find((o) => o.id === item.id);
       if (!outcome) continue;
-      byMode[ch.mode].score += outcome.score;
-      byMode[ch.mode].count += 1;
+      byMode[item.mode].score += outcome.score;
+      byMode[item.mode].count += 1;
     }
     const pct = (mode: RhymeMode) =>
       byMode[mode].count > 0 ? Math.round(byMode[mode].score / byMode[mode].count) : 0;
 
     const metrics: RhymeStudioMetrics = {
       type: 'rhyme-studio',
-      challengeMode: challenges[0]?.mode ?? 'recognition',
+      challengeMode: items[0]?.mode ?? 'recognition',
       challengesCorrect: summary.solvedCount,
-      challengesTotal: challenges.length,
+      challengesTotal: items.length,
       recognitionAccuracy: pct('recognition'),
       identificationAccuracy: pct('identification'),
       productionAccuracy: pct('production'),
+      collectionAccuracy: pct('collection'),
       rhymeFamiliesPracticed: Array.from(new Set(challenges.map((ch) => ch.rhymeFamily))),
       attemptsCount: summary.attemptsCount,
     };
@@ -252,7 +262,13 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       undefined,
       summary.diagnosisEvidence,
     );
-  }, [challenges, evaluation]);
+  }, [challenges, evaluation, items]);
+
+  const handleAffirmed = useCallback((item: RhymeItem) => {
+    if (item.mode !== 'collection' || !item.collectionId) return;
+    const words = recordCollectedRhyme(items, item, lastHeardRef.current);
+    setCollectedFamilies((current) => ({ ...current, [item.collectionId!]: words }));
+  }, [items]);
 
   // ── The pack — wording lives in rhymeStudioScript.ts ──────────────────────
   const pack = useMemo<JudgedScriptPack<RhymeItem>>(() => ({
@@ -289,13 +305,17 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         : {
             challenge: item.mode === 'identification'
               ? `Say the word that rhymes with "${item.targetWord}".`
-              : `Say any word that rhymes with "${item.targetWord}".`,
+              : item.mode === 'collection'
+                ? `Say a new rhyme for "${item.targetWord}" for slot ${item.collectionSlot ?? 1} of 3.`
+                : `Say any word that rhymes with "${item.targetWord}".`,
             // Production names NO example: it has no code-owned answer since the
             // bank was deleted, and `item.answer` is empty there. An "for example
             // ''" string would have shipped straight into the misconception record.
             expected: item.mode === 'identification'
               ? `A word ending in "${item.rime}" — for example "${item.answer}".`
-              : `Any real word ending in "${item.rime}".`,
+              : item.mode === 'collection'
+                ? `Any real word ending in "${item.rime}" that is not already accepted.`
+                : `Any real word ending in "${item.rime}".`,
             observed: lastHeard
               ? `Heard "${lastHeard}".`
               : 'The tutor judged the answer wrong from the audio.',
@@ -308,13 +328,20 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     gradeLevel,
     exhibitId,
     onFinished: handleFinished,
+    onAffirmed: handleAffirmed,
+    onEmission: (emission, item) => {
+      if (emission.kind === 'attempt-open') lastHeardRef.current = '';
+      if (emission.kind === 'attempt-transcript' && item?.mode === 'collection') {
+        lastHeardRef.current = emission.text;
+      }
+    },
   });
 
   const currentItem = runner.currentItem;
   /** Affirmed: the first moment the answer may appear on screen. The runner
    *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
   const revealed = runner.currentSolved;
-  const currentChallenge = challenges[runner.currentIndex];
+  const currentChallenge = challenges.find((challenge) => challenge.id === currentItem?.challengeId);
 
   // ── Support-tier display levers (read with `!== false` so an ABSENT field is
   //    the full-help render). The band support always WINS at PRE. ──
@@ -324,11 +351,11 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
-    return phaseResultsFromSummary(challenges, runner.summary, (ch) => {
-      const meta = MODE_META[ch.mode];
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
+      const meta = MODE_META[item.mode];
       return { label: meta.badge, icon: meta.icon };
     });
-  }, [evaluation.hasSubmitted, runner.summary, challenges]);
+  }, [evaluation.hasSubmitted, runner.summary, items]);
 
   // ============================================================================
   // Render helpers
@@ -431,6 +458,34 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     </div>
   );
 
+  /** Collection shows only learner-produced words. Empty spots are neutral
+   *  placeholders, never example answers that could drain the open set. */
+  const renderCollectionSlots = (item: RhymeItem) => {
+    const collectionId = item.collectionId ?? item.challengeId;
+    const accepted = collectedFamilies[collectionId] ?? item.priorAcceptedWords;
+    const size = item.collectionSize ?? 3;
+    return (
+      <div className="grid grid-cols-3 gap-3" aria-label="Your rhyme family">
+        {Array.from({ length: size }, (_, index) => {
+          const word = accepted[index];
+          return (
+            <div
+              key={`${collectionId}-visible-slot-${index + 1}`}
+              aria-label={word ? `Rhyme ${index + 1}: ${word}` : `Empty rhyme spot ${index + 1}`}
+              className={`min-h-20 rounded-xl border-2 px-3 py-4 flex items-center justify-center text-center transition-all ${
+                word
+                  ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-100'
+                  : 'border-dashed border-white/20 bg-white/[0.03] text-slate-500'
+              }`}
+            >
+              <span className="text-xl font-bold">{word || `Rhyme ${index + 1}`}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderChallenge = (item: RhymeItem) => {
     const meta = MODE_META[item.mode];
     if (item.mode === 'recognition') {
@@ -485,6 +540,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
             `item.choices` is empty there by construction, so this is a guard on
             intent rather than on data. */}
         {item.mode === 'identification' && renderChoiceCards(item)}
+        {item.mode === 'collection' && renderCollectionSlots(item)}
       </div>
     );
   };
@@ -531,8 +587,8 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
             {!isPreReader && (
               <div className="flex justify-center">
                 <LuminaChallengeCounter
-                  current={Math.min(runner.currentIndex + 1, challenges.length)}
-                  total={challenges.length}
+                  current={Math.min(runner.currentIndex + 1, items.length)}
+                  total={items.length}
                   variant="dots"
                 />
               </div>
@@ -551,7 +607,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
             overallScore={evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Rhyme Studio Complete!"
-            celebrationMessage={`You listened for rhymes in ${challenges.length} rounds — with your own ears and your own voice!`}
+            celebrationMessage={`You listened for rhymes in ${items.length} rounds — with your own ears and your own voice!`}
             className="mt-4"
           />
         )}

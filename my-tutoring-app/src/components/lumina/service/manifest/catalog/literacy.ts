@@ -1382,22 +1382,26 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'primitive',
     description:
       'Live Direct Instruction rhyme practice with a spoken tutor. The tutor asks, waits, judges the child’s '
-      + 'answer from the audio in-band, and its own verdict moves the lesson on. ALL THREE MODES ARE ANSWERED '
+      + 'answer from the audio in-band, and its own verdict moves the lesson on. ALL FOUR MODES ARE ANSWERED '
       + 'ALOUD — the child says yes or no to whether two spoken words rhyme (Do They Rhyme?), says the word that '
       + 'rhymes from a small set (Find the Rhyme), or THINKS OF A RHYME with nothing on screen but the target '
-      + 'word (Think of a Rhyme). Only identification shows choices, and they are the closed set the child '
+      + 'word (Think of a Rhyme), or fills three retained slots with three different valid rhymes (Build a Rhyme Family). '
+      + 'Only identification shows choices, and they are the closed set the child '
       + 'speaks from; nothing anywhere is tapped to answer. Tap-to-hear repeats the question. Requires a '
       + 'microphone. ESSENTIAL for K-2 phonological awareness — and Think of a Rhyme is rhyme GENERATION, the '
       + 'Bloom tier above recognising one.',
     constraints:
-      'Requires 8-10 challenges. Recognition needs doesRhyme boolean. Identification needs 2-3 options with one '
+      'Use 8-10 challenges for recognition/identification mixes; collection uses 1-2 base-word challenges because '
+      + 'each expands to three judged responses. Recognition needs doesRhyme boolean. Identification needs 2-3 options with one '
       + 'onset-sharing distractor (cat → cap). PRODUCTION IS OPEN — it needs ONLY a targetWord and its '
       + 'rhymeFamily, and the target must have many common rhymes a young child knows (cat, sun, bed — never '
-      + 'orange or month). Route FREE rhyme generation ("tell me a word that rhymes with cat") HERE: it is what '
-      + 'this mode now is. Every answer is spoken; requires the live tutor and a microphone. '
-      + 'PRE-READER (K): all three modes route at K. Each word in recognition and identification (target, '
+      + 'orange or month). COLLECTION uses the same open rule but retains three learner-produced words, rejects '
+      + 'duplicates, and supplies no example answers. Generate 1-2 collection challenges because each one elicits '
+      + 'three judged responses. Route FREE rhyme generation ("tell me a word that rhymes with cat") HERE. '
+      + 'Every answer is spoken; requires the live tutor and a microphone. '
+      + 'PRE-READER (K): all four modes route at K. Each word in recognition and identification (target, '
       + 'comparison, every option) carries a single depicting emoji so a non-reader can tell the words apart; '
-      + 'production needs no such surface because nothing but the target is on screen.',
+      + 'production needs no answer surface, while collection shows only the child’s accepted words in three slots.',
     // reader: 'none' — READY @ PRE for recognition + identification, live 3/3
     // (qa/reader-fit/rhyme-studio-PRE-2026-07-15.md); production is purely oral
     // with nothing on screen but the target, so it carries no higher demand.
@@ -1473,12 +1477,25 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           + 'a RULE, not a list. This is generation, not recognition — the child supplies the word. Purely oral, '
           + 'so it works at K (K.RF.2.a) as well as any later grade.',
       },
+      {
+        evalMode: 'collection',
+        affordances: { representation: ['pictorial', 'symbolic'] },
+        label: 'Build a Rhyme Family (Tier 5)',
+        beta: 6.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['collection'],
+        description:
+          'OPEN three-word rhyme-family construction — hear one base word, then supply three distinct real rhymes '
+          + 'one at a time. Each accepted response remains visible in its slot and is excluded from later turns. '
+          + 'The tutor validates sound and uniqueness by rule, so an unlisted real rhyme is accepted while a '
+          + 'duplicate, target echo, non-rhyme, or invented word is explained and retried without revealing examples.',
+      },
     ],
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction rhyming practice for a young child. Right now the mode is '
         + '"{{challengeMode}}" and the question side is "{{stimulus}}". The child answers every mode OUT LOUD and '
-        + 'you judge the audio you heard — recognition is answered "yes" or "no", the other two with a word. '
+        + 'you judge the audio you heard — recognition is answered "yes" or "no", the other three with a word. '
         + 'Nothing on screen is tapped to answer, so an answer will always reach you as speech. You speak the '
         + 'exact scripted lines from each bracketed application message and nothing else. Hearing how two words '
         + 'END is the entire skill being practiced, so the child does the listening — you never say which words '
@@ -1522,6 +1539,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           pattern: 'Says the target word back instead of a rhyme',
           response:
             'A word does not rhyme with itself in this game. Ask again for a different word that ends the same way.',
+        },
+        {
+          pattern: 'Repeats a rhyme already accepted in the family',
+          response:
+            'Name the already-filled response, explain that the family needs three different words, and ask for a '
+            + 'new word with the same ending sound. Do not offer an unused example.',
         },
         {
           pattern: 'Silence after the ask',

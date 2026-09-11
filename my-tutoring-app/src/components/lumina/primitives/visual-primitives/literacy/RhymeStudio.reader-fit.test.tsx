@@ -135,6 +135,19 @@ const production = (): RhymeStudioData => ({
   }],
 });
 
+const collection = (): RhymeStudioData => ({
+  title: 'Rhyme Family Builder',
+  gradeLevel: '1',
+  challenges: [{
+    id: 'family-1',
+    mode: 'collection',
+    targetWord: 'cat',
+    targetWordImage: 'a cute cat',
+    rhymeFamily: '-at',
+    acceptableAnswers: ['hat', 'mat', 'bat'],
+  }],
+});
+
 beforeEach(() => {
   sendText.mockClear();
   submitGestureAttempt.mockClear();
@@ -205,6 +218,14 @@ describe('RhymeStudio · the choices are a closed set, not a tap surface', () =>
     }
     // The target IS the question and stays on screen.
     expect(screen.getByText(/sun/i)).toBeTruthy();
+  });
+
+  it('collection starts with three empty slots and hides unused examples', () => {
+    render(<RhymeStudio data={collection()} />);
+    expect(screen.getByLabelText('Empty rhyme spot 1')).toBeTruthy();
+    expect(screen.getByLabelText('Empty rhyme spot 2')).toBeTruthy();
+    expect(screen.getByLabelText('Empty rhyme spot 3')).toBeTruthy();
+    for (const hidden of ['hat', 'mat', 'bat']) expect(screen.queryByText(hidden)).toBeNull();
   });
 });
 

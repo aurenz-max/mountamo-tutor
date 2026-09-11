@@ -53,6 +53,7 @@
  *   recognition     the answer is a JUDGMENT   → VOICE `yes_no`
  *   identification  the answer is a LISTED WORD → VOICE `short_spoken_word`
  *   production      the answer is ANY WORD      → VOICE `open_set_word`
+ *   collection      three DISTINCT ANY-WORD turns → VOICE `open_set_word`
  *
  * ⚠️ RECOGNITION TAPPED FOR ONE DAY AND THE FIRST DRIVE KILLED IT — read this
  * before ever proposing a tap here again. The original split gave recognition a
@@ -151,8 +152,9 @@ import type {
  * would have split one ability estimate into two half-populated ones for no
  * pedagogical gain.
  */
-export type RhymeMode = 'recognition' | 'identification' | 'production';
+export type RhymeMode = 'recognition' | 'identification' | 'production' | 'collection';
 export type RhymeTier = 'easy' | 'medium' | 'hard';
+export const RHYME_COLLECTION_SIZE = 3;
 
 // ── The sentinel-safety filter ──────────────────────────────────────────────
 
@@ -179,6 +181,9 @@ export interface RhymeChoice {
 }
 
 export interface RhymeItem extends JudgedScriptItem {
+  /** Generator challenge that owns this response. Collection challenges expand
+   *  into three runner items while retaining one visible family workspace. */
+  challengeId: string;
   mode: RhymeMode;
   /** The word the whole item is about — the stimulus, never the answer. */
   targetWord: string;
@@ -202,6 +207,13 @@ export interface RhymeItem extends JudgedScriptItem {
   /** Whether the tutor may enumerate the choices aloud (support tier #2;
    *  forced on at the pre-reader band — a non-reader has no other way in). */
   namesChoices: boolean;
+  // -- collection --
+  collectionId?: string;
+  collectionSlot?: number;
+  collectionSize?: number;
+  /** Accepted learner responses from earlier slots. Mutable runtime state that
+   *  is inserted into the next judging contract for duplicate rejection. */
+  priorAcceptedWords: string[];
 }
 
 /** Every mode is answered out loud — there is nothing to tap in this pack. */
@@ -215,12 +227,12 @@ export const answerKindFor = (_mode: RhymeMode): 'voice' | 'gesture' => 'voice';
 export const responseClassFor = (mode: RhymeMode): ResponseClassId =>
   mode === 'recognition'
     ? 'yes_no'
-    : mode === 'production'
+    : mode === 'production' || mode === 'collection'
       ? 'open_set_word'
       : 'short_spoken_word';
 
 /** Does this mode hand the judge a rule instead of an enumerated target? */
-export const isOpenSet = (mode: RhymeMode): boolean => mode === 'production';
+export const isOpenSet = (mode: RhymeMode): boolean => mode === 'production' || mode === 'collection';
 
 /** Structural challenge shape as the generator emits it (duck-typed so this
  *  module never imports the component — the component imports us). */
@@ -319,6 +331,7 @@ export const itemFromChallenge = (
 
   return {
     id: ch.id,
+    challengeId: ch.id,
     mode,
     answerKind: answerKindFor(mode),
     responseClass: responseClassFor(mode),
@@ -339,7 +352,58 @@ export const itemFromChallenge = (
     // Band floor: the generator forces this true at K. The tier may withdraw it
     // only for readers, who can read the choices off the screen instead.
     namesChoices: ch.tutorNamesOptions !== false,
+    priorAcceptedWords: [],
   };
+};
+
+/** One collection challenge is one retained workspace with three independently
+ * judged spoken turns. Other challenge types remain one item each. */
+export const itemsFromChallenge = (
+  ch: RhymeChallengeLike,
+  tier: RhymeTier = 'medium',
+): RhymeItem[] => {
+  const base = itemFromChallenge(ch, tier);
+  if (ch.mode !== 'collection') return [base];
+  return Array.from({ length: RHYME_COLLECTION_SIZE }, (_, index) => ({
+    ...base,
+    id: `${ch.id}-slot-${index + 1}`,
+    collectionId: ch.id,
+    collectionSlot: index + 1,
+    collectionSize: RHYME_COLLECTION_SIZE,
+    priorAcceptedWords: [],
+  }));
+};
+
+/** Extract the answer-bearing word from a short ASR transcript. The tutor asks
+ * for one word, but recognizers may return punctuation or a brief carrier such
+ * as “I said hat”; the final lexical token is the learner's response. */
+export const normalizeCollectedRhyme = (transcript: string): string => {
+  const words = transcript.toLowerCase().match(/[a-z]+(?:['’-][a-z]+)*/g) ?? [];
+  return words[words.length - 1] ?? '';
+};
+
+/** Retain an affirmed collection response and expose it to every later slot.
+ * Duplicate suppression here is a defensive UI guard; the tutor contract is
+ * what prevents a duplicate from being affirmed in the first place. */
+export const recordCollectedRhyme = (
+  items: RhymeItem[],
+  item: RhymeItem,
+  transcript: string,
+): string[] => {
+  if (item.mode !== 'collection' || !item.collectionId) return [];
+  const word = normalizeCollectedRhyme(transcript);
+  const group = items.filter((candidate) => candidate.collectionId === item.collectionId);
+  const existing = group.reduce<string[]>(
+    (longest, candidate) => candidate.priorAcceptedWords.length > longest.length
+      ? candidate.priorAcceptedWords
+      : longest,
+    [],
+  );
+  const next = word && !existing.some((accepted) => normalizeCollectedRhyme(accepted) === word)
+    ? [...existing, word]
+    : [...existing];
+  for (const candidate of group) candidate.priorAcceptedWords = [...next];
+  return next;
 };
 
 // ── The rule-model pair — code-owned, never a session word OR family ────────
@@ -399,6 +463,8 @@ export const howToPlayFor = (item: RhymeItem): string => {
       // No mention of cards, a screen, or choosing: there is nothing to choose
       // from. The protocol IS "think of one and say it".
       return 'I say a word — you think of a word that rhymes with it and say it! ';
+    case 'collection':
+      return 'I say a word — you fill three spots with three different words that rhyme with it! ';
   }
 };
 
@@ -496,6 +562,17 @@ const askFor = (item: RhymeItem): string => {
         `Listen to this word: ${item.targetWord}. `
         + `Your turn. Tell me a word that rhymes with ${item.targetWord}.`
       );
+    case 'collection': {
+      const accepted = item.priorAcceptedWords;
+      const progress = accepted.length > 0
+        ? `You already have ${list(accepted)}. `
+        : '';
+      const slot = item.collectionSlot ?? 1;
+      return (
+        `Listen to this word: ${item.targetWord}. ${progress}`
+        + `Your turn. Say rhyme ${slot} of three — a different word that rhymes with ${item.targetWord}.`
+      );
+    }
   }
 };
 
@@ -546,6 +623,12 @@ const correctionFor = (item: RhymeItem): string => {
         `My turn: listen to the end of ${item.targetWord} — ${item.rime}. `
         + `Your turn. Tell me a word that ends with ${item.rime}.`
       );
+    case 'collection':
+      return (
+        `My turn: that does not count as a new rhyme. A rhyme must be a real word with the same ending sound. `
+        + `Listen to the end of ${item.targetWord} — ${item.rime}. `
+        + `Your turn. Tell me a new real word that ends with ${item.rime}.`
+      );
   }
 };
 
@@ -570,10 +653,19 @@ const correctionFor = (item: RhymeItem): string => {
  *   and refuses a valid rarer word. Saying so explicitly is the difference
  *   between an open set and a closed one the judge happens to be holding.
  */
-const openAcceptClause = (item: RhymeItem): string =>
-  `The learner has to say a REAL word that ends with the same sound as ${item.targetWord} — the ${item.rime} sound. `
-  + `Any real word that ends that way is correct, including one you did not think of yourself. `
-  + `Judge the SOUND you heard, not the spelling, and a small mispronunciation from a five-year-old's mouth still counts. `;
+const openAcceptClause = (item: RhymeItem): string => {
+  const uniqueness = item.mode === 'collection'
+    ? item.priorAcceptedWords.length > 0
+      ? `It must be DIFFERENT from the words already accepted: ${list(item.priorAcceptedWords)}. `
+      : `It must be different from ${item.targetWord}; no example answers are supplied. `
+    : '';
+  return (
+    `The learner has to say a REAL word that ends with the same sound as ${item.targetWord} — the ${item.rime} sound. `
+    + `Any real word that ends that way is correct, including one you did not think of yourself. `
+    + uniqueness
+    + `Judge the SOUND you heard, not the spelling, and a small mispronunciation from a five-year-old's mouth still counts. `
+  );
+};
 
 /**
  * ⭐ THE FOUR GUARDS. The honest risk of this class is FALSE AFFIRMATION, and
@@ -613,12 +705,15 @@ const openWrongClause = (item: RhymeItem): string =>
   // misconception, and the one a "sounds similar to ${item.targetWord}" judge
   // waves through.
   + `A word that only STARTS like ${item.targetWord} is NOT correct — the ENDING is the part that has to match. `
+  + (item.mode === 'collection' && item.priorAcceptedWords.length > 0
+    ? `Repeating any already accepted word is NOT correct because this family needs three distinct words. `
+    : '')
   // OFF-TASK — the turn that is not an answer at all. Without this the judge
   // has no scripted branch for "I don't know" and improvises one.
   + `If you did not hear a word, or the learner says they do not know, that is not an answer — treat it as wrong and run the correction. `;
 
 const acceptClauseFor = (item: RhymeItem): string => {
-  if (item.mode === 'production') return openAcceptClause(item);
+  if (isOpenSet(item.mode)) return openAcceptClause(item);
   if (item.mode === 'recognition') {
     // `yes_no` carries the VC-length worry as LATITUDE. A five-year-old asked
     // "do they rhyme?" says "yeah", "uh huh", "nope", "they don't" at least as
@@ -640,7 +735,7 @@ const acceptClauseFor = (item: RhymeItem): string => {
 };
 
 const wrongClauseFor = (item: RhymeItem): string => {
-  if (item.mode === 'production') return openWrongClause(item);
+  if (isOpenSet(item.mode)) return openWrongClause(item);
   if (item.mode === 'recognition') {
     return (
       `Anything that plainly means ${item.doesRhyme ? 'NO' : 'YES'} is wrong. `
@@ -682,6 +777,8 @@ const affirmFor = (item: RhymeItem): string =>
      */
     : item.mode === 'production'
       ? `Yes, that rhymes with ${item.targetWord} — both end with ${item.rime}.`
+      : item.mode === 'collection'
+        ? `Yes, that is a new rhyme for ${item.targetWord}. You filled spot ${item.collectionSlot ?? 1} of ${item.collectionSize ?? RHYME_COLLECTION_SIZE}.`
       : `Yes, ${item.answer} rhymes with ${item.targetWord}.`;
 
 /**
@@ -709,12 +806,21 @@ const echoCorrectionFor = (item: RhymeItem): string =>
   + `Listen to the end of ${item.targetWord} — ${item.rime}. `
   + `Your turn. Tell me a different word that ends with ${item.rime}.`;
 
+const duplicateCorrectionFor = (item: RhymeItem): string =>
+  `My turn: you already used ${list(item.priorAcceptedWords)}. `
+  + `This family needs three different words. `
+  + `Listen to the end of ${item.targetWord} — ${item.rime}. `
+  + `Your turn. Tell me a new word that ends with ${item.rime}.`;
+
 const judgingContract = (item: RhymeItem): string =>
   `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. Never say the answer during their turn. `
   + `${acceptClauseFor(item)}${wrongClauseFor(item)}`
   + `If the answer is right, say exactly: "${affirmFor(item)}" `
   + (isOpenSet(item.mode)
-    ? `If the learner said "${item.targetWord}" back to you, say exactly: "${echoCorrectionFor(item)}" `
+    ? (item.mode === 'collection' && item.priorAcceptedWords.length > 0
+        ? `If the learner repeats any already accepted word (${list(item.priorAcceptedWords)}), say exactly: "${duplicateCorrectionFor(item)}" `
+        : '')
+      + `If the learner said "${item.targetWord}" back to you, say exactly: "${echoCorrectionFor(item)}" `
       + `If it is wrong for any other reason, say exactly: "${correctionFor(item)}"`
     : `If it is wrong, say exactly: "${correctionFor(item)}"`);
 
@@ -808,6 +914,11 @@ export const pronounceCue = (item: RhymeItem): string => {
           `Listen to this word: ${item.targetWord}. `
           + `Tell me a word that rhymes with ${item.targetWord}.`
         );
+      case 'collection':
+        return (
+          `Listen to this word: ${item.targetWord}. `
+          + `Say a new word that rhymes with ${item.targetWord}.`
+        );
     }
   })();
   return (
@@ -830,6 +941,8 @@ export const stimulusFor = (item: RhymeItem): string => {
       // No "on screen" clause: naming a surface the child cannot answer from
       // is how a tutor starts telling them to look at, or pick from, nothing.
       return `the word ${item.targetWord}`;
+    case 'collection':
+      return `the word ${item.targetWord}, with ${item.priorAcceptedWords.length} of three spots filled`;
   }
 };
 

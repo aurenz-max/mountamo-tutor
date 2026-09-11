@@ -5,15 +5,14 @@ import { clampGradeToK2 } from "../scopeContext";
 import { RhymeStudioData } from "../../primitives/visual-primitives/literacy/RhymeStudio";
 import { isSentinelSafeWord } from "../../primitives/visual-primitives/literacy/rhymeStudioScript";
 import {
-  resolveEvalModeConstraint,
+  resolveEvalModes,
   constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
-  logEvalModeResolution,
+  buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
 
-type RhymeMode = 'recognition' | 'identification' | 'production';
+type RhymeMode = 'recognition' | 'identification' | 'production' | 'collection';
 type RhymeRemediationMove = 'contrast_rime' | 'diagnostic_option' | 'constrained_production';
 export function rhymeRemediationMoveFor(mode: RhymeMode, focus?: string): RhymeRemediationMove | undefined {
   if (!focus?.trim()) return undefined;
@@ -114,6 +113,16 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `rhyme-poor word (orange, month). 2-3 challenges per session.`,
     schemaDescription: "'production' (think of a rhyming word and say it — open answer)",
   },
+  collection: {
+    promptDoc:
+      `"collection": Show ONE target word; the student builds a retained family by saying THREE distinct real rhyming words, one at a time. `
+      + `The runtime owns the three slots, accepted-word display, and duplicate checks; the generator supplies no examples or answer bank. `
+      + `REQUIRED fields: targetWord and rhymeFamily only. `
+      + `Do NOT include comparisonWord, doesRhyme, options, acceptableAnswers or bankDistractors. `
+      + `Choose targets with at least three common, distinct rhymes a young child would know (cat, sun, top) — never a rhyme-poor word. `
+      + `Generate 1-2 collection challenges per session because each challenge elicits three spoken responses.`,
+    schemaDescription: "'collection' (build three distinct spoken rhymes in retained slots)",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -187,7 +196,7 @@ export function holdsRhymeIntegrity(ch: Record<string, unknown>): boolean {
     return true;
   }
 
-  if (ch.mode === 'production') {
+  if (ch.mode === 'production' || ch.mode === 'collection') {
     /**
      * ⭐ AN OPEN ITEM HAS NO ANSWER KEY TO CHECK, SO THE GATE MOVED TO THE
      * STIMULUS — and this branch is the one place the bank deletion could have
@@ -297,10 +306,11 @@ export function applyRhymeSupportTier(
  * Schema definition for Rhyme Studio Data
  *
  * Generates multi-mode rhyme practice activities for K-2 students.
- * Three modes:
+ * Four modes:
  *   - Recognition: Do these two words rhyme? (yes/no)
  *   - Identification: Pick the rhyming word from options
- *   - Production: Type a word that rhymes with the target
+ *   - Production: Say a word that rhymes with the target
+ *   - Collection: Produce three distinct rhymes for one target
  */
 const rhymeStudioSchema: Schema = {
   type: Type.OBJECT,
@@ -320,7 +330,7 @@ const rhymeStudioSchema: Schema = {
           },
           mode: {
             type: Type.STRING,
-            enum: ["recognition", "identification", "production"],
+            enum: ["recognition", "identification", "production", "collection"],
             description: "Challenge mode",
           },
           remediationMove: {
@@ -396,8 +406,6 @@ const rhymeStudioSchema: Schema = {
  */
 type RhymeStudioConfig = Partial<{
     challengeCount: number;
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode: string;
   }>;
 
 export const generateRhymeStudio = async (
@@ -412,15 +420,21 @@ export const generateRhymeStudio = async (
   // in code AFTER the model responds; it never enters the prompt.
   const supportTier = ctx.supportTier;
   // ── Eval mode resolution ────────────────────────────────────────────
-  const evalConstraint = resolveEvalModeConstraint(
+  const resolution = await resolveEvalModes(
     'rhyme-studio',
-    config?.targetEvalMode,
+    {
+      targetEvalMode: ctx.targetEvalMode,
+      intent,
+      objectiveText: ctx.objective?.text,
+    },
     CHALLENGE_TYPE_DOCS,
   );
-  logEvalModeResolution('RhymeStudio', config?.targetEvalMode, evalConstraint);
+  console.log(
+    `[RhymeStudio] modes: ${resolution ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})` : 'mixed'} → types [${(resolution?.allowedTypes ?? ['all']).join(', ')}]`,
+  );
 
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(rhymeStudioSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+  const activeSchema = resolution
+    ? constrainChallengeTypeEnum(rhymeStudioSchema, resolution.allowedTypes, CHALLENGE_TYPE_DOCS, {
         fieldName: 'mode',
       })
     : rhymeStudioSchema;
@@ -432,7 +446,10 @@ export const generateRhymeStudio = async (
     (["K", "1", "2"].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : "K") as "K" | "1" | "2",
   );
 
-  const challengeCount = config?.challengeCount ?? 9;
+  const isCollectionOnly = resolution?.modes.length === 1
+    && resolution.allowedTypes.length === 1
+    && resolution.allowedTypes[0] === 'collection';
+  const challengeCount = config?.challengeCount ?? (isCollectionOnly ? 2 : 9);
   // Over-draw, then trim. The rhyme-integrity gate below CUTS items with a false
   // answer key, and the live probes show that biting hardest exactly where the
   // families get harder (a Grade-2 draw lost 2 of 4). Cutting is right — a wrong
@@ -451,7 +468,8 @@ ${K_WORD_MENU}
   for a non-rhyming pair, pick them from DIFFERENT lines (doesRhyme: false). Set comparisonWord, comparisonWordImage, doesRhyme.
 - Identification: EXACTLY 2 options — the correct one is a menu word from the SAME line as the target;
   the distractor is a menu word from a DIFFERENT line. Give each option a word + a short image description + isCorrect.
-- Do NOT invent words outside the menu. Do NOT create production challenges at K (production is Grade 1+).
+- Do NOT invent stimulus words outside the menu. Production and collection are oral and DO run at K.
+- Collection: choose a target from -at, -an, -ig, -og, -ot, -un, -en, -op, -ug, or -ip so the child has at least three familiar rhymes available.
 `,
     "1": `
 GRADE 1 GUIDELINES:
@@ -459,7 +477,8 @@ GRADE 1 GUIDELINES:
 - Rhyme families: -at, -ake, -ine, -ight, -ump, -ick, -ore, -ail
 - Recognition: include some tricky near-misses (e.g., "cat" and "cap" do NOT rhyme)
 - Identification: 3 options (one correct, two distractors from different families)
-- Production: provide 4-5 acceptable answers including less common words
+- Production: choose a target with many common rhymes; do not provide answer examples
+- Collection: choose a target with at least three common distinct rhymes; do not provide answer examples
 - Words can be up to 5 letters
 `,
     "2": `
@@ -468,14 +487,15 @@ GRADE 2 GUIDELINES:
 - Rhyme families: -ight, -ound, -tion, -ank, -eam, -oon, -ump, -ell
 - Recognition: include tricky pairs that share letters but don't rhyme (e.g., "though" / "tough")
 - Identification: 3 options with plausible distractors (same starting sound but different ending)
-- Production: provide 4-5 acceptable answers including 2-syllable words
+- Production: choose a target with many common rhymes; do not provide answer examples
+- Collection: choose a target with at least three common distinct rhymes; do not provide answer examples
 - Words can be up to 6 letters
 `,
   };
 
   // ── Build prompt ────────────────────────────────────────────────────
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
+  const challengeTypeSection = buildModeConstraintSection(
+    resolution,
     CHALLENGE_TYPE_DOCS,
   );
   const remediationSection = buildRemediationPrompt(ctx.remediationFocus);
@@ -495,9 +515,10 @@ MODE-SPECIFIC FIELD RULES:
 - recognition: set comparisonWord, comparisonWordImage, doesRhyme. Do NOT set options or acceptableAnswers.
 - identification: set options (array of {word, image, isCorrect}). Do NOT set comparisonWord, doesRhyme, or acceptableAnswers.
 - production: set ONLY targetWord + rhymeFamily. The answer is OPEN — the child says any real rhyme and the tutor judges it. Do NOT set comparisonWord, doesRhyme, options, acceptableAnswers or bankDistractors.
+- collection: set ONLY targetWord + rhymeFamily. The runtime collects three distinct open answers and checks duplicates. Do NOT set comparisonWord, doesRhyme, options, acceptableAnswers or bankDistractors.
 
 CRITICAL RULES:
-${ctx.remediationFocus ? '- REMEDIATION TRACE: recognition uses "contrast_rime", identification uses "diagnostic_option", production uses "constrained_production". Make a non-rhyme or distractor encode the diagnosed confusion.' : ''}
+${ctx.remediationFocus ? '- REMEDIATION TRACE: recognition uses "contrast_rime", identification uses "diagnostic_option", production and collection use "constrained_production". Make a non-rhyme or distractor encode the diagnosed confusion.' : ''}
 - Every challenge must have: id, mode, targetWord, targetWordImage, rhymeFamily
 - rhymeFamily MUST start with a hyphen (e.g., "-at", "-un", "-ig")
 - PHONETIC ACCURACY IS PARAMOUNT — words rhyme ONLY if they share the same ending SOUND:
@@ -508,12 +529,13 @@ ${ctx.remediationFocus ? '- REMEDIATION TRACE: recognition uses "contrast_rime",
 - For recognition with doesRhyme: true, BOTH words MUST end with the rhymeFamily spelling (e.g., rhymeFamily "-at" → "cat" and "hat", NOT "eight" and "kite")
 - For recognition with doesRhyme: false, words must have clearly different endings
 - For production, the targetWord MUST end with its rhymeFamily and MUST have many common rhymes a young child would know (cat, sun, bed, top). Never a rhyme-poor word (orange, month, silver).
+- For collection, the targetWord MUST end with its rhymeFamily and MUST have at least three common, distinct rhymes a young child would know. The answers are supplied by the child, never by this payload.
 - All words should relate to the topic "${topic}" when possible, but prioritize real rhymes
 - Use simple, common, age-appropriate words
 - NEVER use the word "yes" as a target, comparison, option, acceptable answer or distractor — the live tutor says every one of these words out loud, and "yes" is how it signals a correct answer
 - IDs should be sequential: "c1", "c2", "c3", etc.
 - Image descriptions should be brief (3-6 words) and kid-friendly
-${!evalConstraint ? '- Order challenges: recognition first, then identification, then production (easiest → hardest).' : ''}
+${!resolution ? '- Order challenges: recognition first, then identification, production, and collection.' : ''}
 
 Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
 
@@ -598,7 +620,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
             const real = options.find((o) => endsWithRime(o.word, rime));
             if (real) real.isCorrect = true;
           }
-        } else if (ch.mode === "production") {
+        } else if (ch.mode === "production" || ch.mode === "collection") {
           // ⛔ THE BANK-BUILDING BRANCH USED TO LIVE HERE and its deletion is
           // the point (rhymeStudioScript.ts header). It guaranteed both halves
           // of a four-tile word bank because that closed set was what kept
@@ -673,7 +695,8 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
     //    pre-reader band floor is imposed on a fully-formed K challenge and always
     //    wins over the tier. Gated ONLY on supportTier being present — absent ⇒ no
     //    fields stamped ⇒ byte-identical legacy full-help render. ──
-    if (supportTier) {
+    const appliesSupportTier = supportTier && resolution?.modes.length === 1;
+    if (appliesSupportTier) {
       applyRhymeSupportTier(
         result.challenges as Array<Record<string, unknown>>,
         supportTier,
@@ -709,7 +732,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
     // a degraded render but a broken ask (production with no bank has no answer
     // set, and identification with no options has nothing to enumerate).
     if (result.challenges.length === 0) {
-      const fallbackMode = evalConstraint?.allowedTypes[0] ?? 'recognition';
+      const fallbackMode = resolution?.allowedTypes[0] ?? 'recognition';
       const base = {
         id: 'c1',
         mode: fallbackMode,
@@ -726,7 +749,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
                 { word: 'cap', image: 'a blue cap', isCorrect: false },
               ],
             }
-          : fallbackMode === 'production'
+          : fallbackMode === 'production' || fallbackMode === 'collection'
             // Open production carries no answer material: the target and its
             // rime ARE the whole item.
             ? { ...base }
@@ -749,7 +772,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
           return ch;
         });
       }
-      if (supportTier) {
+      if (appliesSupportTier) {
         applyRhymeSupportTier(
           result.challenges as Array<Record<string, unknown>>,
           supportTier,
@@ -761,9 +784,9 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
     const finalData: RhymeStudioData = {
       title: result.title,
       gradeLevel: gradeLevelKey,
-      // Tell the live tutor the support level whenever a tier is present — it drives
-      // the tutor's reveal policy (how much it may say out loud).
-      ...(supportTier ? { supportTier } : {}),
+      // A blend/mixed session has no single support surface. Only a resolved
+      // single skill may carry the tier into the component and tutor script.
+      ...(appliesSupportTier ? { supportTier } : {}),
       challenges: result.challenges,
     };
 

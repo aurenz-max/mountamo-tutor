@@ -1,10 +1,54 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GenerationContext } from '../generation/generationContext';
+
+const generateContent = vi.hoisted(() => vi.fn());
+vi.mock('../geminiClient', () => ({
+  ai: { models: { generateContent } },
+}));
 import {
+  generateRhymeStudio,
   rhymeRemediationMoveFor,
   resolveRhymeSupportScaffold,
   applyRhymeSupportTier,
   holdsRhymeIntegrity,
 } from './gemini-rhyme-studio';
+
+beforeEach(() => generateContent.mockReset());
+
+describe('collection eval-mode generation', () => {
+  it('pins the schema to collection and emits no exemplar answer material', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        title: 'Build an At Family',
+        challenges: [
+          { id: 'c1', mode: 'collection', targetWord: 'cat', targetWordImage: 'a cat', rhymeFamily: '-at' },
+          { id: 'c2', mode: 'collection', targetWord: 'sun', targetWordImage: 'the sun', rhymeFamily: '-un' },
+        ],
+      }),
+    });
+    const data = await generateRhymeStudio({
+      topic: 'Rhyming families',
+      gradeContext: 'Kindergarten',
+      gradeLevel: 'K',
+      grade: 'K',
+      intent: 'Build three-word rhyming families with common endings',
+      objective: { id: 'LA005-03-E', text: 'Build three-word rhyming families with common endings' },
+      targetEvalMode: 'collection',
+      raw: {},
+    } as unknown as GenerationContext);
+
+    expect(data.challenges).toHaveLength(2);
+    expect(data.challenges.every((challenge) => challenge.mode === 'collection')).toBe(true);
+    expect(data.challenges.every((challenge) => challenge.acceptableAnswers === undefined)).toBe(true);
+
+    const call = generateContent.mock.calls[0][0] as {
+      contents: string;
+      config: { responseSchema: { properties: { challenges: { items: { properties: { mode: { enum: string[] } } } } } } };
+    };
+    expect(call.config.responseSchema.properties.challenges.items.properties.mode.enum).toEqual(['collection']);
+    expect(call.contents).toContain('the student builds a retained family by saying THREE distinct real rhyming words');
+  });
+});
 
 /**
  * The answer-key gate, pinned to the three false keys that live Gemini actually
@@ -53,6 +97,15 @@ describe('rhyme integrity — the answer key, checked in code', () => {
     })).toBe(true);
   });
 
+  it('collection is likewise gated on the stimulus and needs no exemplar list', () => {
+    expect(holdsRhymeIntegrity({
+      mode: 'collection', targetWord: 'cat', rhymeFamily: '-at',
+    })).toBe(true);
+    expect(holdsRhymeIntegrity({
+      mode: 'collection', targetWord: 'cat', rhymeFamily: '-ig',
+    })).toBe(false);
+  });
+
   it('recomputes doesRhyme from the words — the boolean is a claim, the words are the truth', () => {
     const rhyming: Record<string, unknown> = {
       mode: 'recognition', targetWord: 'cat', rhymeFamily: '-at', comparisonWord: 'hat', doesRhyme: false,
@@ -96,6 +149,7 @@ describe('RhymeStudio remediation affordances', () => {
     ['recognition', 'contrast_rime'],
     ['identification', 'diagnostic_option'],
     ['production', 'constrained_production'],
+    ['collection', 'constrained_production'],
   ] as const)('maps %s to its remediation move', (mode, expected) => {
     expect(rhymeRemediationMoveFor(mode, 'The student matches onset instead of rime.')).toBe(expected);
   });
