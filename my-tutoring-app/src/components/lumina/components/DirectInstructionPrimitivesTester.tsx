@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import { EvaluationProvider } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
@@ -14,155 +14,22 @@ import DiSpokenPractice, { type DiSpokenPracticeData } from '../primitives/visua
 import { DiSpokenPracticeScriptPanel } from '../primitives/visual-primitives/direct-instruction/DiSpokenPracticeScriptPanel';
 import DiWorkedProcedure, { type DiWorkedProcedureData } from '../primitives/visual-primitives/direct-instruction/DiWorkedProcedure';
 import DiDeduction, { type DiDeductionData } from '../primitives/visual-primitives/direct-instruction/DiDeduction';
+import DiWordProblemSetup, { type DiWordProblemSetupData } from '../primitives/visual-primitives/direct-instruction/DiWordProblemSetup';
 import { DiRunLogPanel } from '../primitives/visual-primitives/direct-instruction/DiRunLogPanel';
+import {
+  DI_TESTER_PRESETS,
+  DI_TESTER_PRIMITIVES,
+  getDiTesterPrimitive,
+  type DiPrimitiveId,
+  type DiSupportTier,
+  type DiTesterPreset,
+} from './di-tester/diTesterLibrary';
 
-interface Props { onBack: () => void; }
-
-// The generators are server-only (they import geminiClient). A client tester
-// must NEVER import them directly — generate via the eval-test API route.
-// One picker drives every DI pack; eval modes must mirror catalog/di.ts.
-// 'mixed' pins nothing → generator spread (letter-sounds L1 only).
-type DiPrimitiveId = 'di-dice-roll' | 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-shapes' | 'di-sentence-reading' | 'di-spoken-practice' | 'di-worked-procedure' | 'di-deduction';
-
-interface DiPrimitiveOption {
-  id: DiPrimitiveId;
-  label: string;
-  subtitle: string;
-  defaultTopic: string;
-  /** The band the pack is curriculum-scoped to. Grade is a real generator input
-   *  (di-sentence-reading narrows its word ceiling below G1), so the tester must
-   *  not send kindergarten for every pack. */
-  defaultGrade: string;
-  evalModes: ReadonlyArray<{ key: string; label: string }>;
+interface Props {
+  onBack: () => void;
 }
 
-const DI_PRIMITIVES: DiPrimitiveOption[] = [
-  {
-    id: 'di-letter-sounds',
-    label: 'Letter Sounds',
-    subtitle: 'Continuous letter sounds, spoken call-response.',
-    defaultTopic: 'letter sounds m, s, a, f',
-    defaultGrade: 'kindergarten',
-    evalModes: [
-      { key: 'letter_sound', label: 'Letter Sound (isolated)' },
-      { key: 'letter_sound_review', label: 'Sound Review (mixed set)' },
-      { key: 'first_sound_in_word', label: 'First Sound in a Word' },
-      { key: 'mixed', label: 'Mixed (all modes)' },
-    ],
-  },
-  {
-    id: 'di-dice-roll',
-    label: 'Dice Roll',
-    subtitle: 'Roll, count, compare, or add visible dice pips aloud.',
-    defaultTopic: 'subitizing dice patterns to 6',
-    defaultGrade: 'kindergarten',
-    evalModes: [
-      { key: 'count_pips', label: 'Count the Pips' },
-      { key: 'compare_dice', label: 'Compare Two Dice' },
-      { key: 'sum_two_dice', label: 'Add Two Dice' },
-      { key: 'mixed', label: 'Mixed (all modes)' },
-    ],
-  },
-  {
-    id: 'di-word-reading',
-    label: 'Word Reading',
-    subtitle: 'Read printed CVC + sight words aloud ("What word?").',
-    defaultTopic: 'reading short a words',
-    defaultGrade: 'kindergarten',
-    evalModes: [
-      { key: 'read_word', label: 'Read a Word' },
-    ],
-  },
-  {
-    id: 'di-math-facts',
-    label: 'Math Facts',
-    subtitle: 'Printed facts, spoken number-word answers ("What is 2 plus 1?").',
-    defaultTopic: 'addition facts within 5',
-    defaultGrade: 'kindergarten',
-    evalModes: [
-      { key: 'name_numeral', label: 'Name the Number' },
-      { key: 'counting_next', label: 'The Number After' },
-      { key: 'answer_fact', label: 'Answer a Fact' },
-      { key: 'fact_review', label: 'Fact Review (mixed set)' },
-      { key: 'subtraction_fact', label: 'Take-Away Fact' },
-    ],
-  },
-  {
-    id: 'di-shapes',
-    label: 'Shapes',
-    subtitle: 'A drawn 2D shape, spoken answers — its name, or how many sides/corners.',
-    defaultTopic: 'naming basic shapes',
-    defaultGrade: 'kindergarten',
-    evalModes: [
-      { key: 'name_shape', label: 'Name the Shape' },
-      { key: 'shape_review', label: 'Shape Review (mixed set)' },
-      { key: 'count_sides', label: 'How Many Sides' },
-      { key: 'count_corners', label: 'How Many Corners' },
-      { key: 'mixed', label: 'Mixed (all modes)' },
-    ],
-  },
-  {
-    id: 'di-sentence-reading',
-    label: 'Sentence Reading',
-    subtitle: 'Read a printed 3-8 word sentence aloud, judged word by word.',
-    defaultTopic: 'reading simple sentences',
-    defaultGrade: 'first grade',
-    evalModes: [
-      { key: 'decodable_sentence', label: 'Sound-It-Out Sentence' },
-      { key: 'read_sentence', label: 'Read a Sentence' },
-      { key: 'sentence_review', label: 'Sentence Review (mixed set)' },
-      { key: 'sight_phrase_sentence', label: 'Sight-Word Sentence' },
-      { key: 'mixed', label: 'Mixed (all modes)' },
-    ],
-  },
-  {
-    // The content-generic pack. Unlike the five above, its ITEMS are generated
-    // — so the topic box is the real control here: change the topic and the
-    // same component becomes a different lesson. Read the script panel below
-    // the run before driving it; that is what this pack exists to expose.
-    id: 'di-spoken-practice',
-    label: 'Spoken Practice (generic)',
-    subtitle: 'ANY short-spoken-answer skill — items, asks and judging clauses all generated.',
-    defaultTopic: 'adding one more, within 5',
-    defaultGrade: 'kindergarten',
-    evalModes: [
-      { key: 'say_answer', label: 'Say the Answer (recall)' },
-      { key: 'read_aloud', label: 'Read It Aloud (decode)' },
-      { key: 'count_and_say', label: 'Count and Say' },
-    ],
-  },
-  {
-    // The first "DI for Older Learners" pack: a whole procedure said aloud, one
-    // column at a time, each step judged where it happens. Grade is a real
-    // input (≤ G2 → two-digit, G3+ → three-digit unless the topic pins it).
-    id: 'di-worked-procedure',
-    label: 'Talk-Through Subtraction',
-    subtitle: 'Multi-digit subtraction narrated column by column; every step judged.',
-    defaultTopic: 'two-digit subtraction with regrouping',
-    defaultGrade: 'Grade 2',
-    evalModes: [
-      { key: 'subtract_regroup', label: 'With Regrouping' },
-      { key: 'subtract_no_regroup', label: 'No Regrouping' },
-      { key: 'mixed', label: 'Mixed (both)' },
-    ],
-  },
-  {
-    // The second "DI for Older Learners" pack: a rule and a case, the child
-    // says what follows and how they know. The topic steers the SUBJECT
-    // (science classification, social-studies rules, reading inference).
-    id: 'di-deduction',
-    label: 'Use the Rule (deductions)',
-    subtitle: 'A rule card, a case card; the child says what follows — and how they know.',
-    defaultTopic: 'using a rule to reason about animal groups: all birds lay eggs, all insects have six legs',
-    defaultGrade: 'Grade 3',
-    evalModes: [
-      { key: 'conclude', label: 'What Follows (conclude)' },
-      { key: 'deny', label: 'Rule It Out (deny)' },
-      { key: 'cannot_tell', label: "Can't Tell (affirming the consequent)" },
-      { key: 'mixed', label: 'Mixed (a rule through all three)' },
-    ],
-  },
-];
+type TesterMode = 'presets' | 'custom';
 
 type DiData =
   | { id: 'di-dice-roll'; data: DiDiceRollData }
@@ -173,142 +40,393 @@ type DiData =
   | { id: 'di-sentence-reading'; data: DiSentenceReadingData }
   | { id: 'di-spoken-practice'; data: DiSpokenPracticeData }
   | { id: 'di-worked-procedure'; data: DiWorkedProcedureData }
-  | { id: 'di-deduction'; data: DiDeductionData };
+  | { id: 'di-deduction'; data: DiDeductionData }
+  | { id: 'di-word-problem-setup'; data: DiWordProblemSetupData };
+
+interface RunRequest {
+  primitiveId: DiPrimitiveId;
+  evalMode: string;
+  objective: string;
+  gradeLevel: string;
+  difficulty: DiSupportTier;
+  presetId?: string;
+}
+
+interface RunValidation {
+  challengeCount?: number;
+  typesFound?: string[];
+  disallowedTypes?: string[];
+  error?: string;
+  payloadBytes?: number;
+  runawaySuspect?: boolean;
+  runawayError?: string;
+}
+
+interface CompletedRun extends RunRequest {
+  status: 'pass' | 'fail' | 'unknown';
+  duration?: number;
+  validation?: RunValidation;
+}
+
+const GRADE_OPTIONS = [
+  'kindergarten',
+  'Grade 1',
+  'Grade 2',
+  'Grade 3',
+  'Grade 4',
+  'Grade 5',
+];
+
+const inputClass =
+  'w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10';
+
+const formatBytes = (bytes: number | undefined) => {
+  if (bytes == null) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
+};
+
+const RenderedPrimitive: React.FC<{ generated: DiData; runKey: number }> = ({ generated, runKey }) => {
+  const evaluationProps = {
+    instanceId: `di-tester-${runKey}`,
+    onEvaluationSubmit: (result: unknown) => console.log('[DI tester evaluation]', result),
+  };
+
+  switch (generated.id) {
+    case 'di-dice-roll':
+      return <DiDiceRoll key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+    case 'di-letter-sounds':
+      return <DiLetterSounds key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+    case 'di-word-reading':
+      return <DiWordReading key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+    case 'di-math-facts':
+      return <DiMathFacts key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+    case 'di-shapes':
+      return <DiShapes key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+    case 'di-sentence-reading':
+      return <DiSentenceReading key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+    case 'di-spoken-practice':
+      return (
+        <>
+          <DiSpokenPractice key={runKey} data={{ ...generated.data, ...evaluationProps }} />
+          <DiSpokenPracticeScriptPanel items={generated.data.items} />
+        </>
+      );
+    case 'di-worked-procedure':
+      return <DiWorkedProcedure key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+    case 'di-deduction':
+      return <DiDeduction key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+    case 'di-word-problem-setup':
+      return <DiWordProblemSetup key={runKey} data={{ ...generated.data, ...evaluationProps }} />;
+  }
+};
 
 const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) => {
-  const [primitive, setPrimitive] = useState<DiPrimitiveOption>(DI_PRIMITIVES[0]);
+  const initialPrimitive = DI_TESTER_PRIMITIVES[0];
+  const initialPreset = initialPrimitive.presets[0];
+  const [mode, setMode] = useState<TesterMode>('presets');
+  const [primitiveId, setPrimitiveId] = useState<DiPrimitiveId>(initialPrimitive.id);
+  const [evalMode, setEvalMode] = useState(initialPreset.evalMode);
+  const [objective, setObjective] = useState(initialPreset.objective);
+  const [gradeLevel, setGradeLevel] = useState(initialPreset.gradeLevel);
+  const [difficulty, setDifficulty] = useState<DiSupportTier>(initialPreset.difficulty);
   const [generated, setGenerated] = useState<DiData | null>(null);
-  const [topic, setTopic] = useState(DI_PRIMITIVES[0].defaultTopic);
-  const [evalMode, setEvalMode] = useState<string>(DI_PRIMITIVES[0].evalModes[0].key);
-  // L3 support tier (config.difficulty). '' = manifest default (absent tier =
-  // the L0 easy shape). The eval-test route already threads ?difficulty=
-  // verbatim into config, so this is the runtime path for the tier mic checks
-  // (HUMAN-CHECKS #50(d) math / #54(d) sentence — hear the `hard` cold ask).
-  const [difficulty, setDifficulty] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  const [completedRun, setCompletedRun] = useState<CompletedRun | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Bumped on every Generate so the rendered pack REMOUNTS. The DI components
-  // kick the live loop off a mic gesture and don't reset on new data (a lesson
-  // gives each objective a fresh instance, so they never need to) — in this
-  // tester the same instance is reused across mode switches, so without a fresh
-  // key it would keep showing the prior run's recap instead of re-engaging.
   const [runKey, setRunKey] = useState(0);
+  const [copied, setCopied] = useState(false);
 
-  const pickPrimitive = useCallback((opt: DiPrimitiveOption) => {
-    setPrimitive(opt);
-    setTopic(opt.defaultTopic);
-    setEvalMode(opt.evalModes[0].key);
-    setGenerated(null);
+  const primitive = useMemo(() => getDiTesterPrimitive(primitiveId), [primitiveId]);
+  const selectedMode = primitive.evalModes.find((candidate) => candidate.evalMode === evalMode)
+    ?? primitive.evalModes[0];
+
+  const applyPreset = useCallback((preset: DiTesterPreset) => {
+    setPrimitiveId(preset.primitiveId);
+    setEvalMode(preset.evalMode);
+    setObjective(preset.objective);
+    setGradeLevel(preset.gradeLevel);
+    setDifficulty(preset.difficulty);
     setError(null);
   }, []);
 
-  const generate = useCallback(async () => {
-    setLoading(true); setError(null);
+  const selectPrimitive = useCallback((id: DiPrimitiveId) => {
+    const next = getDiTesterPrimitive(id);
+    const preset = next.presets[0];
+    setPrimitiveId(id);
+    setEvalMode(preset.evalMode);
+    setObjective(preset.objective);
+    setGradeLevel(preset.gradeLevel);
+    setDifficulty(preset.difficulty);
+    setError(null);
+  }, []);
+
+  const selectCustomMode = useCallback((nextEvalMode: string) => {
+    setEvalMode(nextEvalMode);
+    const preset = primitive.presets.find((candidate) => candidate.evalMode === nextEvalMode);
+    if (preset) {
+      setObjective(preset.objective);
+      setGradeLevel(preset.gradeLevel);
+      setDifficulty(preset.difficulty);
+    }
+  }, [primitive.presets]);
+
+  const generate = useCallback(async (request: RunRequest) => {
+    if (!request.objective.trim()) {
+      setError('Add an objective before generating a run.');
+      return;
+    }
+
+    setLoadingId(request.presetId ?? 'custom');
+    setError(null);
+    setCopied(false);
     try {
       const params = new URLSearchParams({
-        componentId: primitive.id,
-        evalMode,
-        topic,
-        gradeLevel: primitive.defaultGrade,
-        intent: topic,
+        componentId: request.primitiveId,
+        evalMode: request.evalMode,
+        topic: request.objective.trim(),
+        gradeLevel: request.gradeLevel,
+        intent: request.objective.trim(),
       });
-      if (difficulty) params.set('difficulty', difficulty);
-      const res = await fetch(`/api/lumina/eval-test?${params.toString()}`);
-      const json = await res.json();
-      if (!res.ok || !json.fullData) {
+      if (request.difficulty) params.set('difficulty', request.difficulty);
+
+      const response = await fetch(`/api/lumina/eval-test?${params.toString()}`);
+      const json = await response.json();
+      if (!response.ok || !json.fullData) {
         throw new Error(json.error || 'Generation failed');
       }
-      setGenerated({ id: primitive.id, data: json.fullData } as DiData);
-      setRunKey((k) => k + 1);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Generation failed');
+
+      setGenerated({ id: request.primitiveId, data: json.fullData } as DiData);
+      setCompletedRun({
+        ...request,
+        status: json.status === 'pass' || json.status === 'fail' ? json.status : 'unknown',
+        duration: typeof json.duration === 'number' ? json.duration : undefined,
+        validation: json.validation,
+      });
+      setRunKey((key) => key + 1);
+    } catch (generationError) {
+      setError(generationError instanceof Error ? generationError.message : 'Generation failed');
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
-  }, [topic, evalMode, difficulty, primitive.id, primitive.defaultGrade]);
+  }, []);
+
+  const runPreset = useCallback((preset: DiTesterPreset) => {
+    applyPreset(preset);
+    void generate({
+      primitiveId: preset.primitiveId,
+      evalMode: preset.evalMode,
+      objective: preset.objective,
+      gradeLevel: preset.gradeLevel,
+      difficulty: preset.difficulty,
+      presetId: preset.id,
+    });
+  }, [applyPreset, generate]);
+
+  const runCustom = useCallback(() => {
+    void generate({ primitiveId, evalMode, objective, gradeLevel, difficulty });
+  }, [difficulty, evalMode, generate, gradeLevel, objective, primitiveId]);
+
+  const copyPayload = useCallback(async () => {
+    if (!generated) return;
+    await navigator.clipboard.writeText(JSON.stringify(generated.data, null, 2));
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }, [generated]);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-16">
-      <div className="mb-6 flex items-center gap-4">
-        <button onClick={onBack} className="inline-flex items-center gap-2 rounded-full border border-slate-600 bg-slate-800/50 px-4 py-2 text-sm text-white hover:bg-slate-700/50">← Back</button>
-        <div>
-          <h1 className="text-xl font-semibold text-slate-100">Direct Instruction — {primitive.label}</h1>
-          <p className="text-xs text-slate-400">{primitive.subtitle} Generate objective-scoped items, then tap the mic to run the live-judged loop.</p>
-        </div>
-      </div>
-      <div className="mb-4 flex items-center gap-2">
-        {DI_PRIMITIVES.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => pickPrimitive(opt)}
-            className={`rounded-full border px-4 py-2 text-sm ${opt.id === primitive.id
-              ? 'border-cyan-400/50 bg-cyan-500/20 text-cyan-200'
-              : 'border-white/10 bg-slate-900/40 text-slate-300 hover:bg-slate-800/50'}`}
-          >
-            {opt.label}
+    <div className="mx-auto min-h-screen max-w-7xl px-4 pb-20 sm:px-6">
+      <header className="flex flex-col gap-5 border-b border-white/10 py-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-4">
+          <button onClick={onBack} className="mt-0.5 inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-600 bg-slate-900/60 px-4 py-2 text-sm text-white transition hover:bg-slate-800">
+            <span aria-hidden="true">←</span> Back
           </button>
-        ))}
-      </div>
-      <div className="mb-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/40 p-4">
-        <input value={topic} onChange={(e) => setTopic(e.target.value)} className="flex-1 rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-slate-200" placeholder="objective / target items" />
-        <select value={evalMode} onChange={(e) => setEvalMode(e.target.value)} className="rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-slate-200">
-          {primitive.evalModes.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-        </select>
-        <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-slate-200" title="L3 support tier — how much of the DISTAR sequence precedes the child's turn">
-          <option value="">Tier: default (easy)</option>
-          <option value="easy">Tier: easy (model + guide)</option>
-          <option value="medium">Tier: medium (model only)</option>
-          <option value="hard">Tier: hard (cold)</option>
-        </select>
-        <button onClick={() => void generate()} disabled={loading} className="rounded-full border border-cyan-400/40 bg-cyan-500/20 px-4 py-2 text-sm text-cyan-200 disabled:opacity-40">{loading ? 'Generating…' : 'Generate'}</button>
-      </div>
-      {error && <p className="mb-4 text-sm text-rose-300">{error}</p>}
-      {/* Mount exactly as a lesson does — ONE `data` prop with the evaluation
-          props merged in (ManifestOrderRenderer's shape). The bench used to
-          spread the data across props, which is why the packs' props-are-data
-          signature survived here and only crashed in a real lesson. */}
-      {generated?.id === 'di-dice-roll' && (
-        <DiDiceRoll key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">Developer test surface</p>
+            <h1 className="text-2xl font-semibold text-white sm:text-3xl">Direct Instruction Lab</h1>
+            <p className="mt-1 max-w-2xl text-sm text-slate-400">Run a curated example for every production evaluation mode, or build an objective-scoped run of your own.</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 gap-2 pl-0 sm:pl-4">
+          <span className="rounded-full border border-white/10 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300">{DI_TESTER_PRIMITIVES.length} primitives</span>
+          <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-200">{DI_TESTER_PRESETS.length} eval modes</span>
+        </div>
+      </header>
+
+      <section className="py-6">
+        <div className="mb-5 inline-flex rounded-xl border border-white/10 bg-slate-950/50 p-1" role="tablist" aria-label="Tester mode">
+          <button type="button" role="tab" aria-selected={mode === 'presets'} onClick={() => setMode('presets')} className={`rounded-lg px-4 py-2 text-sm font-medium transition ${mode === 'presets' ? 'bg-cyan-500/20 text-cyan-100 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>Example library</button>
+          <button type="button" role="tab" aria-selected={mode === 'custom'} onClick={() => setMode('custom')} className={`rounded-lg px-4 py-2 text-sm font-medium transition ${mode === 'custom' ? 'bg-cyan-500/20 text-cyan-100 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>Custom run</button>
+        </div>
+
+        {mode === 'presets' ? (
+          <div className="grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)]">
+            <nav className="rounded-2xl border border-white/10 bg-slate-900/40 p-2" aria-label="Direct Instruction primitives">
+              <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Primitive family</p>
+              <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-1">
+                {DI_TESTER_PRIMITIVES.map((candidate) => (
+                  <button key={candidate.id} type="button" onClick={() => selectPrimitive(candidate.id)} className={`flex min-w-0 items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left transition ${candidate.id === primitiveId ? 'bg-cyan-500/15 text-cyan-100 ring-1 ring-inset ring-cyan-400/30' : 'text-slate-300 hover:bg-white/5 hover:text-white'}`}>
+                    <span className="truncate text-sm font-medium">{candidate.shortLabel}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] ${candidate.id === primitiveId ? 'bg-cyan-400/15 text-cyan-200' : 'bg-slate-800 text-slate-500'}`}>{candidate.presets.length}</span>
+                  </button>
+                ))}
+              </div>
+            </nav>
+
+            <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 sm:p-5">
+              <div className="mb-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-lg font-semibold text-white">{primitive.label}</h2>
+                  <span className="rounded-full bg-slate-800 px-2 py-0.5 font-mono text-[10px] text-slate-400">{primitive.id}</span>
+                </div>
+                <p className="mt-1 text-sm text-slate-400">{primitive.subtitle}</p>
+              </div>
+
+              <div className="grid gap-3 xl:grid-cols-2">
+                {primitive.presets.map((preset) => {
+                  const isLoading = loadingId === preset.id;
+                  const isActive = evalMode === preset.evalMode;
+                  return (
+                    <article key={preset.id} className={`flex flex-col rounded-xl border p-4 transition ${isActive ? 'border-cyan-400/30 bg-cyan-500/[0.06]' : 'border-white/10 bg-slate-950/30 hover:border-white/20'}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-medium text-slate-100">{preset.label}</h3>
+                          <p className="mt-0.5 font-mono text-[10px] text-slate-500">{preset.evalMode}</p>
+                        </div>
+                        <div className="flex shrink-0 gap-1.5">
+                          <span className="rounded-md bg-slate-800 px-2 py-1 text-[10px] text-slate-400">β {preset.beta}</span>
+                          <span className="rounded-md bg-slate-800 px-2 py-1 text-[10px] text-slate-400">Mode {preset.scaffoldingMode}</span>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-xs leading-5 text-slate-400">{preset.description}</p>
+                      <div className="mt-3 rounded-lg border border-white/[0.07] bg-slate-950/50 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Preset objective</p>
+                        <p className="mt-1 text-sm text-slate-200">{preset.objective}</p>
+                        <p className="mt-1.5 text-[11px] text-slate-500">{preset.gradeLevel} · {preset.difficulty || 'default support'}</p>
+                      </div>
+                      <button type="button" disabled={loadingId !== null} onClick={() => runPreset(preset)} className="mt-3 inline-flex items-center justify-center rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/25 disabled:cursor-wait disabled:opacity-50">
+                        {isLoading ? 'Generating…' : 'Run this example'}
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 sm:p-5">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-white">Custom generation</h2>
+              <p className="mt-1 text-sm text-slate-400">Use the real eval-test route with explicit production inputs.</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1.2fr_0.8fr_0.8fr]">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-slate-400">Primitive</span>
+                <select value={primitiveId} onChange={(event) => selectPrimitive(event.target.value as DiPrimitiveId)} className={inputClass}>
+                  {DI_TESTER_PRIMITIVES.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.label}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-slate-400">Evaluation mode</span>
+                <select value={evalMode} onChange={(event) => selectCustomMode(event.target.value)} className={inputClass}>
+                  {primitive.evalModes.map((candidate) => <option key={candidate.evalMode} value={candidate.evalMode}>{candidate.label}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-slate-400">Grade</span>
+                <select value={gradeLevel} onChange={(event) => setGradeLevel(event.target.value)} className={inputClass}>
+                  {GRADE_OPTIONS.map((grade) => <option key={grade} value={grade}>{grade}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-slate-400">Support tier</span>
+                <select value={difficulty} onChange={(event) => setDifficulty(event.target.value as DiSupportTier)} className={inputClass}>
+                  <option value="">Default (easy)</option>
+                  <option value="easy">Easy — model + guide</option>
+                  <option value="medium">Medium — model only</option>
+                  <option value="hard">Hard — cold ask</option>
+                </select>
+              </label>
+            </div>
+            <label className="mt-3 block">
+              <span className="mb-1.5 block text-xs font-medium text-slate-400">Objective / content scope</span>
+              <textarea value={objective} onChange={(event) => setObjective(event.target.value)} rows={2} className={`${inputClass} resize-y`} placeholder="Describe exactly what this generated run should practice" />
+            </label>
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-slate-500">β {selectedMode.beta} · scaffolding mode {selectedMode.scaffoldingMode} · {selectedMode.description}</p>
+              <button type="button" onClick={runCustom} disabled={loadingId !== null || !objective.trim()} className="shrink-0 rounded-xl border border-cyan-400/30 bg-cyan-500/20 px-5 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/30 disabled:cursor-wait disabled:opacity-50">
+                {loadingId === 'custom' ? 'Generating…' : 'Generate run'}
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {error && (
+        <div role="alert" className="mb-5 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"><span className="font-semibold">Generation failed:</span> {error}</div>
       )}
-      {generated?.id === 'di-letter-sounds' && (
-        <DiLetterSounds key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
-      )}
-      {generated?.id === 'di-word-reading' && (
-        <DiWordReading key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
-      )}
-      {generated?.id === 'di-math-facts' && (
-        <DiMathFacts key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
-      )}
-      {generated?.id === 'di-shapes' && (
-        <DiShapes key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
-      )}
-      {generated?.id === 'di-sentence-reading' && (
-        <DiSentenceReading key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
-      )}
-      {generated?.id === 'di-spoken-practice' && (
-        <>
-          <DiSpokenPractice key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
-          {/* The point of this pack: READ what the model wrote before a child
-              hears it. Shows every generated clause plus the assembled cue. */}
-          <DiSpokenPracticeScriptPanel items={generated.data.items} />
-        </>
-      )}
-      {generated?.id === 'di-worked-procedure' && (
-        <DiWorkedProcedure key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
-      )}
-      {generated?.id === 'di-deduction' && (
-        <DiDeduction key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
-      )}
-      {/* Bench-parity diagnostics. Reads the diRunLog module store, so it needs
-          no props from the pack and never renders in a lesson. Read its FLAGS
-          row first when a sitting decoheres. */}
-      {generated && <DiRunLogPanel />}
+
+      <section aria-label="Generated Direct Instruction run" className="border-t border-white/10 pt-6">
+        {!generated || !completedRun ? (
+          <div className="flex min-h-52 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-slate-950/20 p-8 text-center">
+            <div>
+              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-cyan-500/10 text-xl text-cyan-300" aria-hidden="true">▶</div>
+              <h2 className="font-medium text-slate-200">No test run loaded</h2>
+              <p className="mt-1 text-sm text-slate-500">Choose any example above for a known-good starting point.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${completedRun.status === 'pass' ? 'bg-emerald-500/15 text-emerald-300' : completedRun.status === 'fail' ? 'bg-amber-500/15 text-amber-200' : 'bg-slate-700 text-slate-300'}`}>Contract {completedRun.status}</span>
+                    <span className="font-medium text-white">{getDiTesterPrimitive(completedRun.primitiveId).label}</span>
+                    <span className="font-mono text-xs text-cyan-300">{completedRun.evalMode}</span>
+                  </div>
+                  <p className="mt-2 truncate text-sm text-slate-300">{completedRun.objective}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {completedRun.gradeLevel} · {completedRun.difficulty || 'default support'}
+                    {completedRun.duration != null ? ` · generated in ${(completedRun.duration / 1000).toFixed(1)}s` : ''}
+                    {completedRun.validation?.challengeCount != null ? ` · ${completedRun.validation.challengeCount} challenges` : ''}
+                    {formatBytes(completedRun.validation?.payloadBytes) ? ` · ${formatBytes(completedRun.validation?.payloadBytes)}` : ''}
+                  </p>
+                </div>
+                <button type="button" onClick={() => setRunKey((key) => key + 1)} className="shrink-0 rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-700">Reset this run</button>
+              </div>
+              {completedRun.status === 'fail' && (
+                <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-100">{completedRun.validation?.runawayError || completedRun.validation?.error || `Unexpected challenge types: ${(completedRun.validation?.disallowedTypes ?? []).join(', ') || 'see payload'}`}</p>
+              )}
+            </div>
+
+            <RenderedPrimitive generated={generated} runKey={runKey} />
+            <DiRunLogPanel />
+
+            <details className="rounded-2xl border border-white/10 bg-slate-900/40">
+              <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-slate-300 hover:text-white">Generated payload</summary>
+              <div className="border-t border-white/10 p-4">
+                <div className="mb-2 flex justify-end">
+                  <button type="button" onClick={() => void copyPayload()} className="rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700">{copied ? 'Copied' : 'Copy JSON'}</button>
+                </div>
+                <pre className="max-h-[34rem] overflow-auto rounded-xl bg-slate-950/70 p-4 text-xs leading-5 text-slate-300">{JSON.stringify(generated.data, null, 2)}</pre>
+              </div>
+            </details>
+          </div>
+        )}
+      </section>
     </div>
   );
 };
 
 const DirectInstructionPrimitivesTester: React.FC<Props> = (props) => (
-  <EvaluationProvider><ExhibitProvider objectives={[]} manifestItems={[]}><LuminaAIProvider><DirectInstructionPrimitivesTesterContent {...props} /></LuminaAIProvider></ExhibitProvider></EvaluationProvider>
+  <EvaluationProvider>
+    <ExhibitProvider objectives={[]} manifestItems={[]}>
+      <LuminaAIProvider>
+        <DirectInstructionPrimitivesTesterContent {...props} />
+      </LuminaAIProvider>
+    </ExhibitProvider>
+  </EvaluationProvider>
 );
 
 export default DirectInstructionPrimitivesTester;
