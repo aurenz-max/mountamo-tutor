@@ -594,10 +594,20 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "reorganize":        PriorConfig(5.5, "Reorder for logical flow"),
         "concision":         PriorConfig(6.5, "Eliminate wordiness"),
     },
+    # L1 ladder (2026-09-11). The modes were WORD LENGTHS until this slice, which
+    # made one act look like three skills; they are now the three acts of
+    # syllable awareness, and word length moved to the support tier. The betas
+    # are unchanged in magnitude, so no ability estimate shifts by more than the
+    # re-labelling implies. The three legacy keys are KEPT so historical attempts
+    # filed under a length band still resolve to the counting act they were.
     "syllable-clapper": {
-        "easy":   PriorConfig(1.5, "Easy: high-frequency 1-2 syllable words, clear boundaries"),
-        "medium": PriorConfig(2.5, "Medium: 2-3 syllable words, broader vocab, compound words"),
-        "hard":   PriorConfig(3.5, "Hard: 3-4 syllable words, ambiguous boundaries"),
+        "blend_syllables": PriorConfig(1.5, "Blending: hear the parts, say the whole word"),
+        "count_parts":     PriorConfig(2.5, "Segmenting: hear the word, clap and say how many parts"),
+        "delete_compound": PriorConfig(3.5, "Compound deletion: say a two-word compound without one of its words"),
+        # Retired 2026-09-11 — word-length bands, read-only for old attempts.
+        "easy":   PriorConfig(2.0, "RETIRED band: counting, 1-2 syllable words"),
+        "medium": PriorConfig(2.5, "RETIRED band: counting, 2-3 syllable words"),
+        "hard":   PriorConfig(3.0, "RETIRED band: counting, 3-4 syllable words"),
     },
     "letter-spotter": {
         "name_it":   PriorConfig(1.5, "Recognition: name the letter shown"),

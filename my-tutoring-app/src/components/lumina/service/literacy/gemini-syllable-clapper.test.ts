@@ -5,14 +5,18 @@ import {
 } from './gemini-syllable-clapper';
 
 /**
- * Support-tier ladder for syllable-clapper (axis 3 — scaffolding withdrawal).
+ * Support-tier ladder for syllable-clapper — scaffolding withdrawal AND word
+ * length, which are the same axis and now say so.
  *
- * ⚠ The NAME COLLISION is the thing these tests exist to protect: this
- * primitive's eval modes / `challengeType` values are literally
- * 'easy' | 'medium' | 'hard' (WORD LENGTH), and the support tier reuses those
- * same three words for a completely different axis (HOW MUCH HELP). The
- * resolver below takes the support tier ONLY — it has no access to
- * challengeType — which is what makes the two axes structurally orthogonal.
+ * ⭐ THE NAME COLLISION THESE TESTS USED TO PROTECT IS GONE, AND THE REASON IS
+ * WORTH KEEPING. Until 2026-09-11 the eval modes were literally
+ * 'easy' | 'medium' | 'hard' — WORD LENGTH registered as three skills — while
+ * the support tier reused those same three words for HOW MUCH HELP, so every
+ * test here had to prove the two could not contaminate each other. The modes
+ * are now the three ACTS (blending, counting, deleting) and length moved onto
+ * the tier where it belonged, so the collision has no surface left. What the
+ * tier must still never touch is the ACT and the content it is made of, which
+ * is what the last test below pins.
  *
  * ⭐ THE LEVERS MOVED WITH THE DI PORT and the intent moved with them. The click
  * era withdrew a 6-circle clap TALLY and a directional miss hint ("too many
@@ -34,6 +38,7 @@ describe('SyllableClapper support tiers — ladder', () => {
     expect(resolveSyllableSupportScaffold('hard')).toEqual({
       echoWordSlowly: false,
       inviteClap: false,
+      band: 'hard',
     });
     expect(resolveSyllableSupportScaffold('easy').inviteClap).toBe(true);
     expect(resolveSyllableSupportScaffold('medium').inviteClap).toBe(true);
@@ -61,15 +66,28 @@ describe('SyllableClapper support tiers — ladder', () => {
     expect(medium).not.toEqual(hard);
   });
 
-  it('never returns fields that could re-band the CONTENT (word length is the eval mode, not the tier)', () => {
+  it('carries the word-length band — the third lever, and the one that moved here', () => {
+    // Length is how hard an instance of ONE act is, which is the tier's job. It
+    // was an eval mode until 2026-09-11, which made one act look like three
+    // skills; the modes are the acts now.
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      expect(resolveSyllableSupportScaffold(tier).band).toBe(tier);
+    }
+  });
+
+  it('never returns a field that could change the ACT or the content it is made of', () => {
+    // The rule the retired name-collision tests were really protecting: a tier
+    // withdraws help and shortens words, and it may never decide WHICH SKILL the
+    // child is practising or rewrite the item it is practising on.
     for (const tier of ['easy', 'medium', 'hard'] as const) {
       const keys = Object.keys(resolveSyllableSupportScaffold(tier)).sort();
-      expect(keys).toEqual(['echoWordSlowly', 'inviteClap']);
-      // Explicitly: nothing named like the content axis leaks out of the tier.
+      expect(keys).toEqual(['band', 'echoWordSlowly', 'inviteClap']);
       expect(keys).not.toContain('challengeType');
       expect(keys).not.toContain('syllableCount');
       expect(keys).not.toContain('word');
       expect(keys).not.toContain('syllables');
+      expect(keys).not.toContain('removePart');
+      expect(keys).not.toContain('residue');
     }
   });
 });

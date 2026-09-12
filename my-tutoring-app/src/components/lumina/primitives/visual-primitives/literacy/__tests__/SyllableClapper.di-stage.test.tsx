@@ -306,25 +306,29 @@ describe('SyllableClapper stage · the stimulus channel', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. NAME-COLLISION regression — challengeType (word length) ⟂ supportTier
+// 4. challengeType (the ACT) ⟂ supportTier — and the legacy-band payload
 // ---------------------------------------------------------------------------
 
 describe('SyllableClapper stage · challengeType/supportTier orthogonality', () => {
-  it('challengeType "hard" alone withdraws NOTHING — word length is not a support level', () => {
+  it('a LEGACY word-band challengeType renders as the counting act it always was', () => {
+    // 'easy'/'medium'/'hard' were this primitive's eval modes until 2026-09-11.
+    // Cached lessons still carry them, and a band is not an act, so they resolve
+    // to counting — and the badge now names the ACT, which is the only thing on
+    // this screen a five-year-old could act on.
     render(<SyllableClapper data={data([challenge({ challengeType: 'hard' })])} />);
     expect(screen.getByTestId('hear-word')).toBeTruthy();
     expect(bodyText()).toContain('Clap the parts');
-    expect(bodyText()).toContain('Long Words');
+    expect(bodyText()).toContain('Clap and Count');
   });
 
-  it('challengeType "easy" + a hard-tier stamp still withdraws — the tier alone drives the ask', () => {
+  it('the tier drives the ask, and never the ACT the badge names', () => {
     render(<SyllableClapper data={data(
-      [challenge({ challengeType: 'easy', inviteClap: false, echoWordSlowly: false })],
+      [challenge({ challengeType: 'count_parts', inviteClap: false, echoWordSlowly: false })],
       'hard',
     )} />);
     expect(bodyText()).not.toContain('Clap the parts');
-    // ...and the BAND badge still reads off challengeType, untouched by the tier.
-    expect(bodyText()).toContain('Short Words');
+    // The scaffold is withdrawn and the act is untouched.
+    expect(bodyText()).toContain('Clap and Count');
   });
 
   it('the tier never changes the CONTENT the component was handed', () => {
@@ -358,5 +362,78 @@ describe('SyllableClapper stage · unaskable challenges never render', () => {
       challenge({ id: 'y', word: 'apple', syllableCount: 2, syllables: ['ap', 'pel'] }),
     ])} />);
     expect(screen.getByText('No challenges available.')).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. The two acts added 2026-09-11 — each has its OWN pixel-leak shape
+// ---------------------------------------------------------------------------
+
+const blend = (over: Partial<Challenge> = {}): Challenge =>
+  challenge({ id: 'b1', challengeType: 'blend_syllables', ...over });
+
+const deletion = (over: Partial<Challenge> = {}): Challenge =>
+  challenge({
+    id: 'd1', word: 'cupcake', syllableCount: 2, syllables: ['cup', 'cake'],
+    imageDescription: 'a pink cupcake', challengeType: 'delete_compound',
+    removePart: 'cup', residue: 'cake', ...over,
+  });
+
+describe('SyllableClapper stage · blending', () => {
+  it('⭐ neither the word NOR its parts are on screen — on this act BOTH are the answer', () => {
+    // The strongest pixel-leak case in the pack. On counting, printing the parts
+    // would print the count; here printing EITHER the word or the parts hands
+    // over the whole answer, because the answer is the word the parts spell.
+    render(<SyllableClapper data={data([blend()])} />);
+    expect(bodyText()).not.toContain('butterfly');
+    for (const part of ['but', 'ter', 'fly']) expect(screen.queryByText(part)).toBeNull();
+    expect(reveal()).toBeNull();
+  });
+
+  it('the prompt names the ACT and never the answer', () => {
+    render(<SyllableClapper data={data([blend()])} />);
+    expect(bodyText()).toContain('Listen to the parts — then say the whole word!');
+    expect(bodyText()).toContain('Put It Together');
+    expect(bodyText()).not.toContain('Clap the parts');
+  });
+
+  it('the reveal prints the whole word once it is affirmed, and not before', () => {
+    render(<SyllableClapper data={data([blend()])} />);
+    openItem(0);
+    expect(reveal()).toBeNull();
+    affirmAndAdvance(0);
+    expect(reveal()!.textContent).toContain('butterfly');
+    // No count is asserted on this act, so the reveal states none.
+    expect(reveal()!.textContent).not.toContain('parts');
+  });
+});
+
+describe('SyllableClapper stage · deletion', () => {
+  it('the residue is never on screen before the affirmation', () => {
+    render(<SyllableClapper data={data([deletion()])} />);
+    expect(bodyText()).not.toContain('cupcake');
+    expect(bodyText()).not.toContain('cake');
+    expect(reveal()).toBeNull();
+  });
+
+  it('the prompt names the ACT, and the reveal states the deletion once affirmed', () => {
+    render(<SyllableClapper data={data([deletion()])} />);
+    expect(bodyText()).toContain('Take the part away — then say what is left!');
+    expect(bodyText()).toContain('Take a Part Away');
+    openItem(0);
+    affirmAndAdvance(0);
+    expect(reveal()!.textContent).toContain('cupcake without cup — cake');
+  });
+
+  it('⭐ a deletion that would leave a NONWORD never reaches the stage', () => {
+    // "banana without ba" is "nana". The gate is in the script module and both
+    // sides of the wire hold it; this pins that the STAGE honours the drop
+    // rather than rendering an ask no child could answer.
+    render(<SyllableClapper data={data([
+      deletion({ id: 'bad', word: 'banana', syllableCount: 3, syllables: ['ba', 'nan', 'a'],
+        removePart: 'ba', residue: 'nana' }),
+      deletion({ id: 'ok' }),
+    ])} />);
+    expect(runnerState.options!.pack.items.map((i) => i.id)).toEqual(['ok']);
   });
 });

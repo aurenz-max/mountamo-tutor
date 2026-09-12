@@ -7,116 +7,96 @@ import {
   DIALECT_VARIABLE_WORDS,
   MAX_PARTS,
   MIN_PARTS,
+  deletionShapeIsValid,
   endsWithSilentESyllable,
   hasStableSyllableCount,
   isSayableSyllableWord,
   syllablesJoinToWord,
+  taskOf,
+  type SyllableBand,
 } from "../../primitives/visual-primitives/literacy/syllableClapperScript";
 import {
-  resolveEvalModeConstraint,
+  SYLLABLE_CLAPPER_TYPE_DOCS,
+  SYLLABLE_TASKS,
+  syllableTaskShape,
+  type SyllableTask,
+} from "../../primitives/visual-primitives/literacy/syllableClapperModes";
+import {
+  resolveEvalModes,
   constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
-  logEvalModeResolution,
+  buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from '../evalMode';
 
 // ============================================================================
-// Challenge Type Documentation (one entry per WORD-LENGTH band)
+// Challenge Type Documentation — ONE ENTRY PER TASK IDENTITY, and it is NOT
+// written here.
 //
-// ⭐ THE `hard` BAND WAS RE-SPECIFIED BY THE DI PORT, and this is the port's
-// headline content finding. It used to ask for "words with ambiguous syllable
-// boundaries (caterpillar, refrigerator, comfortable, interesting,
-// hippopotamus)" — as though ambiguity were difficulty. Two of those have no
-// single defensible answer: "comfortable" is 3 or 4 beats and "interesting" is
-// 3 or 4, depending on the speaker. A tap surface could hide that (the key was
-// never spoken aloud, and the child had three tries and a directional hint); a
-// judged loop cannot — the tutor REFUSES a child who was right and then models
-// the "correct" count at them, teaching a dialect as a fact.
-//
-// Hard is now LENGTH plus unfamiliarity, never dialect variance. The words are
-// long and less common but cleanly segmented, and `hasStableSyllableCount`
-// (imported from the script module) drops the variable ones on both sides of
-// the wire, so a cached or hand-authored payload is covered too.
+// ⭐ THE DOCS COME FROM `syllableClapperModes`, which is also where the catalog
+// gets its `evalModes` and the pack gets its response classes and step
+// sequence. That single declaration is the point: before it, the generator's
+// prompt docs, the catalog's mode list and the judged pack's contracts were
+// three hand-maintained copies of the same three facts, and the failure mode
+// was silent — a mode renamed in one place still generated, still rendered,
+// and simply stopped being routable.
 // ============================================================================
 
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  easy: {
-    promptDoc:
-      `"easy": High-frequency 1-2 syllable words with clean, unambiguous boundaries. `
-      + `Use concrete, picturable words every kindergartener knows (cat, dog, apple, puppy, happy, tiger). `
-      + `Difficulty 3. Syllable count: 1-2.`,
-    schemaDescription: "'easy' — 1-2 syllable, high-frequency words",
-  },
-  medium: {
-    promptDoc:
-      `"medium": 2-3 syllable words from broader vocabulary. Compound words are ideal `
-      + `(butterfly, sunflower, basketball, rainbow) because their beats are obvious to the ear. `
-      + `Words should still be concrete and picturable but can be less common. `
-      + `Difficulty 4. Syllable count: 2-3.`,
-    schemaDescription: "'medium' — 2-3 syllable, broader vocabulary",
-  },
-  hard: {
-    promptDoc:
-      `"hard": 3-4 syllable words — LONGER and less familiar, but every beat still CLEARLY heard `
-      + `(caterpillar, watermelon, alligator, kindergarten, dinosaur, helicopter, television). `
-      + `Length is the difficulty here, never ambiguity. `
-      + `Difficulty 5. Syllable count: 3-4.`,
-    schemaDescription: "'hard' — 3-4 syllable, longer and less common words",
-  },
-};
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = SYLLABLE_CLAPPER_TYPE_DOCS;
 
 // ============================================================================
-// Within-mode SUPPORT TIER (axis 3) — scaffolding withdrawal
+// Within-mode SUPPORT TIER (config.difficulty) — scaffolding AND word length
 //
-// ⚠ NAME-COLLISION WARNING (read before touching anything below):
-// this primitive's EVAL MODES / `challengeType` values are LITERALLY
-// 'easy' | 'medium' | 'hard' — but those name WORD LENGTH (1-2 / 2-3 / 3-4
-// syllables), i.e. the task's content band. The SUPPORT TIER is a completely
-// SEPARATE axis that arrives on `config.difficulty` and is normalized upstream
-// into `ctx.supportTier`. The two are ORTHOGONAL: evalMode='medium' with
-// supportTier='hard' is a legal and common pairing (2-3 syllable words, no clap
-// invitation). NEVER infer one from the other, and NEVER let the tier write
-// `challengeType` — that would silently re-band the content.
+// ⭐ WORD LENGTH LIVES HERE NOW (2026-09-11). It used to be the eval mode, under
+// the names `easy` / `medium` / `hard`, which made one act look like three
+// skills and left the three real acts — blending, counting, deleting — with
+// nowhere to be declared. Length is what it always was: how hard an instance of
+// ONE skill is, which is the tier axis. It now rides `config.difficulty`
+// alongside the two ask scaffolds that were already there.
 //
-// ⭐ THE LEVERS MOVED WITH THE MODALITY. The click era withdrew a 6-circle clap
-// TALLY and a directional miss hint ("too many claps"); the DI port deleted both
-// surfaces outright — the tally printed the running count the child was supposed
-// to hold, and a direction turns a 1-to-4 answer space into a binary search. The
-// tier now shapes THE TUTOR'S ENUNCIATION, which is the only scaffold channel a
-// spoken listening task actually has:
+// THE NAME COLLISION THAT MOTIVATED THE OLD WARNING BLOCK IS GONE. `evalMode`
+// and `challengeType` are now `blend_syllables` | `count_parts` |
+// `delete_compound`; the tier is `easy` | `medium` | `hard`. The two axes no
+// longer share a single word.
 //
-//   #1 stimulus   echoWordSlowly — the ask says the word a SECOND time, slower
-//                                  and drawn out but still one joined stream.
-//                                  easy only. Never chanted in parts: the parts
-//                                  ARE the answer (see syllableClapperScript).
+//   #1 stimulus   echoWordSlowly — the ask voices the stimulus a SECOND time.
+//                                  easy only. On counting and deleting that is
+//                                  the word, slower and still joined — never
+//                                  chanted, because the parts ARE the answer
+//                                  there. On blending it is the same chant
+//                                  again, because the chant IS the question.
 //   #2 motor      inviteClap     — the ask invites the hands ("clap the parts,
-//                                  then tell me how many"). easy + medium; hard
-//                                  withdraws the motor scaffold so the
-//                                  segmenting happens in the ear alone.
+//                                  then tell me how many"). `count_parts` only,
+//                                  easy + medium; hard withdraws the motor
+//                                  scaffold so the segmenting happens in the
+//                                  ear alone.
+//   #3 length     band           — how many parts the drawn words have. A
+//                                  PROMPT steer only: it never becomes a code
+//                                  gate, because a tier that DROPS content
+//                                  empties a draw silently. The code gate is
+//                                  the mode's own part window
+//                                  (`syllableTaskShape`), which is about what
+//                                  the act can ask at all.
 //
-// INVARIANTS. The tier NEVER touches the word, the syllable split, the count,
-// `difficulty` or `challengeType`. No tier text reaches the LLM prompt at all —
-// both fields are stamped in CODE, deterministically, after the parse — so a
-// tier can never steer which words are drawn. The spoken word itself and
-// tap-to-hear are never withdrawn at any tier: this is a listening task and the
-// stimulus is its whole point.
+// INVARIANTS. The tier never touches the syllable split, the count, the
+// residue, or `challengeType`. The scaffold flags are stamped in CODE after the
+// parse, so they cannot steer which words the model drew; only the band reaches
+// the prompt, and only as a length preference.
 // ============================================================================
 
 export type SyllableSupportTier = 'easy' | 'medium' | 'hard';
 
 export interface SyllableClapperSupportScaffold {
-  /** #1 — the ask says the word a second time, slower and still joined. */
+  /** #1 — the ask voices the stimulus a second time. */
   echoWordSlowly: boolean;
-  /** #2 — the ask invites the hands. */
+  /** #2 — the ask invites the hands (`count_parts` only). */
   inviteClap: boolean;
+  /** #3 — the word-length band the prompt asks for. */
+  band: SyllableBand;
 }
 
 /**
- * Resolve the ask scaffolds for one SUPPORT tier.
- *
+ * Resolve the ask scaffolds and the length band for one SUPPORT tier.
  * Pure + exported so the tier ladder is unit-testable without a Gemini call.
- * Takes the support tier ONLY — it must never see `challengeType` / the eval
- * mode (see the name-collision warning above).
  */
 export function resolveSyllableSupportScaffold(
   tier: SyllableSupportTier,
@@ -124,8 +104,40 @@ export function resolveSyllableSupportScaffold(
   return {
     echoWordSlowly: tier === 'easy',
     inviteClap: tier !== 'hard',
+    band: tier,
   };
 }
+
+/**
+ * The length preference for one act at one tier, as a prompt line.
+ *
+ * `delete_compound` is exactly two parts at every tier — a compound has two
+ * words in it and that is the whole shape of the act — so its ladder is word
+ * FAMILIARITY instead of word length. That is an honest ladder and not a missing
+ * one: "say cupcake without cup" and "say lighthouse without light" are
+ * genuinely different asks for a five-year-old.
+ */
+const bandPromptLine = (task: SyllableTask, band: SyllableBand): string => {
+  if (task === 'delete_compound') {
+    return band === 'easy'
+      ? 'Use the most familiar two-part compounds a five-year-old hears every day (cupcake, sunhat, bedtime, football).'
+      : band === 'medium'
+        ? 'Use common two-part compounds (bedroom, rainbow, raincoat, toothbrush, snowman).'
+        : 'Use less everyday two-part compounds whose parts are still both ordinary words (sandcastle, lighthouse, grasshopper, butterfly).';
+  }
+  if (task === 'blend_syllables') {
+    return band === 'easy'
+      ? 'Use TWO-part words, highly familiar and concrete (rabbit, pencil, tiger, apple).'
+      : band === 'medium'
+        ? 'Use two- and three-part words from a broader vocabulary (butterfly, umbrella, banana).'
+        : 'Use three- and four-part words that are still instantly recognisable once joined (alligator, watermelon, helicopter).';
+  }
+  return band === 'easy'
+    ? 'Use ONE- and TWO-part high-frequency words with clean boundaries (cat, dog, apple, puppy, tiger).'
+    : band === 'medium'
+      ? 'Use TWO- and THREE-part words from a broader vocabulary; compound words are ideal because their beats are obvious to the ear (butterfly, sunflower, basketball).'
+      : 'Use THREE- and FOUR-part words — longer and less familiar, but every beat still cleanly heard (caterpillar, watermelon, alligator, helicopter). Length is the difficulty here, never ambiguity.';
+};
 
 // ============================================================================
 // Schema
@@ -137,7 +149,7 @@ const syllableClapperSchema: Schema = {
     title: {
       type: Type.STRING,
       description:
-        "Engaging title for the syllable clapping activity (e.g., 'Clap It Out: Animals!')",
+        "Engaging title for the syllable activity (e.g., 'Clap It Out: Animals!')",
     },
     challenges: {
       type: Type.ARRAY,
@@ -151,24 +163,39 @@ const syllableClapperSchema: Schema = {
           word: {
             type: Type.STRING,
             description:
-              "ONE single word to clap — no spaces, no phrases, no proper nouns. "
+              "ONE single word — no spaces, no phrases, no proper nouns. "
               + "Age-appropriate, concrete, picturable, and instantly recognisable BY EAR.",
           },
           challengeType: {
             type: Type.STRING,
-            enum: ["easy", "medium", "hard"],
+            enum: [...SYLLABLE_TASKS],
             description:
-              "Word-length band: 'easy' (1-2 syllable, high-frequency), 'medium' (2-3 syllable, broader vocab), 'hard' (3-4 syllable, longer and less common)",
+              "The task: 'blend_syllables' (hear the parts, say the word), "
+              + "'count_parts' (hear the word, say how many parts), "
+              + "'delete_compound' (say the compound word without one of its two words)",
           },
           syllableCount: {
             type: Type.NUMBER,
-            description: "Number of syllables in the word (1-4)",
+            description: "Number of syllables in the word (1-5)",
           },
           syllables: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
             description:
               'The word split into syllable parts. Joining them MUST spell the word exactly (e.g. ["but", "ter", "fly"]).',
+          },
+          removePart: {
+            type: Type.STRING,
+            description:
+              "delete_compound ONLY: the compound WORD the tutor takes away. MUST be exactly "
+              + "one of the two entries in 'syllables'. Leave empty for the other tasks.",
+          },
+          residue: {
+            type: Type.STRING,
+            description:
+              "delete_compound ONLY: the ordinary word left behind. MUST be the OTHER entry in "
+              + "'syllables', and MUST be a word a five-year-old knows on its own. Leave empty "
+              + "for the other tasks.",
           },
           imageDescription: {
             type: Type.STRING,
@@ -191,7 +218,7 @@ const syllableClapperSchema: Schema = {
           "difficulty",
         ],
       },
-      description: "Array of 6-10 syllable clapping challenges",
+      description: "Array of 6-10 syllable challenges",
     },
   },
   required: ["title", "challenges"],
@@ -218,6 +245,8 @@ const syllableClapperSchema: Schema = {
 type SyllableClapperConfig = Partial<{
   challengeCount: number;
   intent: string;
+  /** Parent objective text — the secondary routing signal for mode resolution. */
+  objectiveText: string;
   /** Target eval mode from the IRT calibration system. */
   targetEvalMode: string;
 }>;
@@ -229,13 +258,22 @@ interface RawChallenge {
   syllableCount?: number;
   imageDescription?: string;
   challengeType?: string;
+  removePart?: string;
+  residue?: string;
   difficulty?: number;
   echoWordSlowly?: boolean;
   inviteClap?: boolean;
 }
 
-/** Why a challenge was dropped, for the log. A reject path that never says why
- *  is how interactive-book shipped five fallback books in six draws. */
+/**
+ * Why a challenge was dropped, for the log. A reject path that never says why
+ * is how interactive-book shipped five fallback books in six draws.
+ *
+ * It mirrors `itemFromChallenge`'s gates one for one, including the per-TASK
+ * part window — a two-part word is a fine `count_parts` item and an impossible
+ * `blend_syllables` one at the four-part band, and the generator should say so
+ * rather than let the component drop it silently at render.
+ */
 const dropReason = (ch: RawChallenge): string | null => {
   const word = (ch.word ?? '').trim();
   // Kept separately because `isSayableSyllableWord` is a type guard: inside its
@@ -243,16 +281,24 @@ const dropReason = (ch: RawChallenge): string | null => {
   // branch is to PRINT what arrived (letter-spotter's 400-char deliberation).
   const shown = word.slice(0, 30);
   const parts = (ch.syllables ?? []).map((p) => (p ?? '').trim()).filter(Boolean);
+  const task = taskOf(ch.challengeType);
+  const shape = syllableTaskShape(task);
   if (!isSayableSyllableWord(word)) return `"${shown}" is not one sayable word`;
   if (!hasStableSyllableCount(word)) return `"${word}" has no single syllable count in English`;
-  if (parts.length < MIN_PARTS || parts.length > MAX_PARTS) {
-    return `"${word}" split into ${parts.length} parts (allowed ${MIN_PARTS}-${MAX_PARTS})`;
+  const min = Math.max(MIN_PARTS, shape.partsMin);
+  const max = Math.min(MAX_PARTS, shape.partsMax);
+  if (parts.length < min || parts.length > max) {
+    return `"${word}" split into ${parts.length} parts (${task} allows ${min}-${max})`;
   }
   if (!syllablesJoinToWord(word, parts)) {
     return `"${word}" parts [${parts.join('|')}] do not spell the word`;
   }
   if (endsWithSilentESyllable(parts)) {
     return `"${word}" parts [${parts.join('|')}] make a beat out of a silent final e`;
+  }
+  if (shape.needsResidue && !deletionShapeIsValid(parts, ch.removePart, ch.residue)) {
+    return `"${word}" cannot be a deletion item: remove="${ch.removePart ?? ''}" `
+      + `residue="${ch.residue ?? ''}" must be the two parts [${parts.join('|')}], both sayable words`;
   }
   return null;
 };
@@ -273,59 +319,50 @@ export const generateSyllableClapper = async (
 
   const challengeCount = config?.challengeCount ?? 8;
 
-  // ── Support tier (axis 3) ─────────────────────────────────────────
+  // ── Support tier ──────────────────────────────────────────────────
   // Normalized upstream by resolveGenerationContext (config.difficulty →
-  // 'easy'|'medium'|'hard'|undefined). Read it here and NOWHERE else — never
-  // re-parse config.difficulty, and never confuse it with targetEvalMode, whose
-  // values happen to share these three words (see the warning block above).
+  // 'easy'|'medium'|'hard'|undefined). Read it here and NOWHERE else.
   const supportTier = ctx.supportTier as SyllableSupportTier | undefined;
 
   // ── Eval mode resolution ──────────────────────────────────────────
-  const evalConstraint = resolveEvalModeConstraint(
+  // The INTENT path matters now in a way it could not before: with the modes
+  // renamed from word lengths to acts, "blend syllables to say the word" and
+  // "count the syllables you hear" are different objectives that resolve to
+  // different modes, where previously both landed on a length band.
+  const resolution = await resolveEvalModes(
     'syllable-clapper',
-    config?.targetEvalMode,
+    {
+      targetEvalMode: config?.targetEvalMode,
+      intent: config?.intent,
+      objectiveText: config?.objectiveText,
+    },
     CHALLENGE_TYPE_DOCS,
   );
-  logEvalModeResolution('SyllableClapper', config?.targetEvalMode, evalConstraint);
 
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(syllableClapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+  const activeSchema = resolution
+    ? constrainChallengeTypeEnum(syllableClapperSchema, resolution.allowedTypes, CHALLENGE_TYPE_DOCS, {
         fieldName: 'challengeType',
       })
     : syllableClapperSchema;
 
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
-    CHALLENGE_TYPE_DOCS,
+  const challengeTypeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
+
+  console.log(
+    `[SyllableClapper] modes: ${resolution ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})` : 'mixed'}`
+    + ` → types [${(resolution?.allowedTypes ?? ['all']).join(', ')}]`,
   );
 
-  // ── Grade guidelines (only for mixed mode) ────────────────────────
-  const gradeGuidelines: Record<string, string> = {
-    K: `
-KINDERGARTEN GUIDELINES:
-- Use simple, concrete words kids already know (cat, apple, banana, dog, happy)
-- "easy" words: 1-syllable (cat, dog, sun) and 2-syllable (apple, puppy, tiger)
-- "medium" words: 2-3 syllable compound/familiar (butterfly, elephant, banana)
-- "hard" words: 3-syllable (dinosaur, kangaroo) — use sparingly for K
-- All words should be highly picturable and familiar to 5-year-olds
-`,
-    "1": `
-GRADE 1 GUIDELINES:
-- Use familiar words with a wider range of syllable counts
-- "easy": 1-2 syllable high-frequency (cat, truck, robot, flower)
-- "medium": 2-3 syllable broader vocab (umbrella, computer, butterfly)
-- "hard": 3-4 syllable words (caterpillar, watermelon)
-- Words should be common in grade 1 vocabulary and easy to recognise by ear
-`,
-    "2": `
-GRADE 2 GUIDELINES:
-- Use a broader vocabulary including descriptive words
-- "easy": 1-2 syllable (bright, garden, pencil)
-- "medium": 2-3 syllable (sunflower, basketball, tomato)
-- "hard": 3-4 syllable (caterpillar, kindergarten, alligator)
-- Can include compound words and words with common prefixes/suffixes
-`,
-  };
+  // ── The length band reaches the prompt; the scaffolds never do ─────
+  // Gated on a SINGLE resolved mode: a blend of two acts has no one length
+  // ladder (two parts is the floor for blending and the ceiling for deleting),
+  // so asking for one would steer one act's words with the other's rung.
+  const pinnedTask = resolution?.modes.length === 1
+    ? (resolution.allowedTypes[0] as SyllableTask)
+    : undefined;
+  const scaffold = supportTier ? resolveSyllableSupportScaffold(supportTier) : null;
+  const tierSection = scaffold && pinnedTask
+    ? `\nWORD LENGTH FOR THIS ACTIVITY:\n- ${bandPromptLine(pinnedTask, scaffold.band)}\n`
+    : '';
 
   // ⭐ The dialect blocklist goes into the PROMPT as well as the code gate. The
   // gate alone would drop items silently and cost supply; steering the WORD
@@ -333,25 +370,29 @@ GRADE 2 GUIDELINES:
   // its drop rate 4/20 → 0/15 the same way).
   const bannedSample = Array.from(DIALECT_VARIABLE_WORDS).slice(0, 24).join(', ');
 
-  const generationPrompt = `Create a syllable clapping activity for the topic: "${topic}".
+  const generationPrompt = `Create a syllable activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 HOW THIS ACTIVITY IS PLAYED — read this before choosing a single word.
-A live tutor SAYS the word out loud, as one unbroken stream. The word is NEVER
-shown on screen. The child claps the parts with their own hands and SAYS how many
-parts they heard. So every word must:
+A live tutor VOICES the word out loud and the child answers OUT LOUD. The word is
+NEVER shown on screen, in any task. So every word must:
   - be recognisable BY EAR alone (no homophone traps, no words a 5-year-old would
     only know in print),
   - be ONE word: no spaces, no hyphenated phrases, no proper nouns, no initials,
   - have ONE syllable count that every English speaker agrees on.
 
 ${challengeTypeSection}
-
-${!evalConstraint ? (gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]) : ''}
-
+${tierSection}
+${!resolution ? `
+GRADE GUIDANCE (${gradeLevelKey}): use concrete, picturable words the child already
+knows by sound. Kindergarten stays with everyday one- and two-part words; Grade 1
+adds three-part words; Grade 2 adds longer and less common words.
+` : ''}
 Generate exactly ${challengeCount} challenges.
-${!evalConstraint ? 'Order them from easiest to hardest (easy first, hard last).' : `All challenges MUST have challengeType "${evalConstraint.allowedTypes[0]}".`}
+${resolution && resolution.allowedTypes.length === 1
+  ? `All challenges MUST have challengeType "${resolution.allowedTypes[0]}".`
+  : 'Order them from easiest to hardest.'}
 
 CRITICAL RULES:
 1. The "syllables" array MUST correctly split the word into its real syllable parts.
@@ -383,46 +424,61 @@ CRITICAL RULES:
 8. All words must be age-appropriate, concrete, and picturable for young children.
 9. IDs should be sequential: "c1", "c2", "c3", etc.
 10. Image descriptions should be brief (3-6 words) and kid-friendly.
-11. Do NOT use the same word twice — a word is asked about once per session.
+11. Do NOT use the same word twice — a word is asked about once per session,
+    whatever the task.
 12. Try to relate words to the topic "${topic}" when possible, but prioritize
     correct, unambiguous syllable splitting over topic fit.
-${!evalConstraint ? `
-DISTRIBUTION for ${challengeCount} challenges:
-- 2-3 "easy" words (1-2 syllables, difficulty 3)
-- 3 "medium" words (2-3 syllables, difficulty 4)
-- 2 "hard" words (3-4 syllables, difficulty 5)
-Adjust proportions if challengeCount differs, but always include a mix.` : ''}
+13. ⛔ FOR "delete_compound" ONLY — the strictest rule in this prompt, and the
+    reason is that the child has to SAY the leftover out loud. The word MUST be a
+    TWO-part COMPOUND, and BOTH parts must be ordinary words a five-year-old
+    already knows on their own. The parts here are WORDS, not syllables — a part
+    may be two beats long ("dragonfly" is "dragon" + "fly", and that is correct).
+    Supply "removePart" (one of the two parts) and "residue" (the OTHER part).
+    Both parts are checked against a list of common words in code, and the
+    challenge is DISCARDED if either is not on it.
+    - "cupcake" → ["cup","cake"], removePart "cup", residue "cake" ✓
+    - "dragonfly" → ["dragon","fly"], removePart "dragon", residue "fly" ✓
+    - "peanut" → ["pe","anut"] ✗ — "anut" is not a word. It is "pea" + "nut".
+    - "walnut" → ["wal","nut"] ✗ — "wal" is not a word.
+    - "banana" ✗ — not a compound at all; "banana without ba" is "nana".
+    - "sunflower" → ["sun","flower"] ✗ — "flower" is dialect-variable.
+    - "rabbit" → ["rab","bit"] ✗ — "rab" is not a word.
+    Good sources: cupcake, bedroom, raincoat, toothbrush, snowman, football,
+    sandbox, popcorn, bedtime, sunhat, backpack, mailbox, cowboy, starfish,
+    bluebird, ladybug, dragonfly, honeybee, birdhouse, cornbread, oatmeal.
 
-EXAMPLE:
+EXAMPLE (one of each task — your activity will usually be all one task):
 {
   "title": "Clap It Out: Animals!",
   "challenges": [
     {
       "id": "c1",
-      "word": "cat",
-      "challengeType": "easy",
-      "syllableCount": 1,
-      "syllables": ["cat"],
-      "imageDescription": "a fluffy orange cat",
-      "difficulty": 3
-    },
-    {
-      "id": "c2",
       "word": "tiger",
-      "challengeType": "easy",
+      "challengeType": "blend_syllables",
       "syllableCount": 2,
       "syllables": ["ti", "ger"],
       "imageDescription": "a striped orange tiger",
       "difficulty": 3
     },
     {
-      "id": "c3",
+      "id": "c2",
       "word": "elephant",
-      "challengeType": "medium",
+      "challengeType": "count_parts",
       "syllableCount": 3,
       "syllables": ["el", "e", "phant"],
       "imageDescription": "a big gray elephant",
       "difficulty": 4
+    },
+    {
+      "id": "c3",
+      "word": "starfish",
+      "challengeType": "delete_compound",
+      "syllableCount": 2,
+      "syllables": ["star", "fish"],
+      "removePart": "star",
+      "residue": "fish",
+      "imageDescription": "an orange starfish",
+      "difficulty": 5
     }
   ]
 }
@@ -442,6 +498,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
           "You understand English syllable structure deeply and always produce linguistically accurate syllable splits. " +
           "You choose concrete, picturable words that young learners know and can recognise by ear. " +
           "You never choose a word whose syllable count varies between speakers. " +
+          "For deletion tasks you only ever choose two-part compounds whose halves are both real, familiar words. " +
           "You never reveal answers in labels or descriptions. " +
           "You double-check that joining the syllables array produces the original word exactly.",
       },
@@ -453,16 +510,24 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
 
     const raw: RawChallenge[] = Array.isArray(result.challenges) ? result.challenges : [];
     const kept: RawChallenge[] = [];
+    const validTypes: string[] = resolution?.allowedTypes ?? [...SYLLABLE_TASKS];
     for (let idx = 0; idx < raw.length; idx++) {
-      const ch = raw[idx];
+      const ch = {
+        ...raw[idx],
+        // Normalize BEFORE the gate: a payload whose challengeType is outside
+        // the resolved set is re-homed to the resolved act, and the gate then
+        // judges it against THAT act's part window. Re-homing after the gate
+        // would let a three-part word through as a deletion item.
+        challengeType: validTypes.includes(raw[idx].challengeType ?? '')
+          ? raw[idx].challengeType
+          : validTypes[0],
+      };
       const reason = dropReason(ch);
       if (reason) {
         console.warn(`[syllable-clapper] dropped challenge ${idx + 1}: ${reason}`);
         continue;
       }
       const parts = (ch.syllables ?? []).map((p) => p.trim()).filter(Boolean);
-      const validTypes = evalConstraint?.allowedTypes ?? ['easy', 'medium', 'hard'];
-      const inferred = parts.length <= 2 ? 'easy' : parts.length <= 3 ? 'medium' : 'hard';
       kept.push({
         ...ch,
         id: ch.id || `c${idx + 1}`,
@@ -471,9 +536,9 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
         // The SPLIT is authoritative; a model-supplied count that disagrees with
         // its own split is exactly what rule 3 and the join gate exist to catch.
         syllableCount: parts.length,
-        challengeType: validTypes.includes(ch.challengeType ?? '')
-          ? ch.challengeType
-          : (validTypes.includes(inferred) ? inferred : validTypes[0]),
+        ...(ch.challengeType === 'delete_compound'
+          ? { removePart: (ch.removePart ?? '').trim(), residue: (ch.residue ?? '').trim() }
+          : { removePart: undefined, residue: undefined }),
         difficulty:
           typeof ch.difficulty === 'number' && ch.difficulty >= 3 && ch.difficulty <= 5
             ? ch.difficulty
@@ -500,21 +565,18 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       ({ title, kept, drawn } = await draw());
     }
 
-    // ── Within-mode support tier: shape the ASK (never the word, the split, or
-    //    the count). Stamped PER CHALLENGE in code AFTER the parse, so the tier
-    //    cannot have influenced which words the LLM drew. Gated ONLY on
-    //    supportTier being present — never on challengeType / the eval mode,
-    //    which share the same three words. ──
-    if (supportTier) {
-      const sc = resolveSyllableSupportScaffold(supportTier);
+    // ── Support tier: shape the ASK (never the word, the split, the count or
+    //    the residue). Stamped PER CHALLENGE in code AFTER the parse, so the
+    //    tier cannot have influenced which words the LLM drew. ──
+    if (scaffold) {
       for (const ch of kept) {
-        ch.echoWordSlowly = sc.echoWordSlowly;
-        ch.inviteClap = sc.inviteClap;
+        ch.echoWordSlowly = scaffold.echoWordSlowly;
+        ch.inviteClap = scaffold.inviteClap;
       }
       console.log(
         `[syllable-clapper] Support tier "${supportTier}" applied to ${kept.length} challenge(s) — `
-        + `echoWordSlowly=${sc.echoWordSlowly}, inviteClap=${sc.inviteClap}. Eval mode (word band) `
-        + `"${config?.targetEvalMode ?? 'blended'}" is UNCHANGED by the tier.`,
+        + `echoWordSlowly=${scaffold.echoWordSlowly}, inviteClap=${scaffold.inviteClap}, `
+        + `band="${scaffold.band}"${pinnedTask ? '' : ' (band NOT sent — no single pinned act)'}.`,
       );
     }
 

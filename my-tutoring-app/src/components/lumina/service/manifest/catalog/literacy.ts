@@ -15,6 +15,7 @@
 
 import { ComponentDefinition } from '../../../types';
 import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
+import { SYLLABLE_CLAPPER_EVAL_MODES } from '../../../primitives/visual-primitives/literacy/syllableClapperModes';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
@@ -1598,11 +1599,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'syllable-clapper',
     misconceptionScope: 'primitive',
     description:
-      'Live Direct Instruction syllable counting with a spoken tutor. The tutor SAYS a word with '
-      + 'purposeful enunciation — one joined stream, never broken into its parts — the child claps the '
-      + 'parts with their own hands and SAYS how many parts they heard, and the tutor’s own affirmation '
-      + 'moves the lesson on. The word is deliberately never printed before the answer is affirmed, so a '
-      + 'reader cannot chunk it by sight instead of hearing it; the only thing on screen before then is a '
+      'Live Direct Instruction syllable work with a spoken tutor, across the three acts of syllable '
+      + 'awareness: BLENDING (the tutor says the parts one at a time, the child says the whole word), '
+      + 'COUNTING (the tutor says the word as one joined stream, the child claps the parts with their own '
+      + 'hands and says how many), and DELETION (the tutor says a two-part compound and takes one part '
+      + 'away, the child says what is left). Every answer is spoken and judged from the audio, and the '
+      + 'tutor’s own affirmation moves the lesson on. Nothing is printed before the answer is affirmed, '
+      + 'so a reader cannot solve by sight instead of by ear; the only thing on screen before then is a '
       + 'tap-to-hear button. There are no clap buttons, no counters, no answer buttons and nothing to '
       + 'click to advance. Requires a microphone. ESSENTIAL for kindergarten phonological awareness.',
     constraints:
@@ -1610,8 +1613,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'Every word must have ONE syllable count all English speakers agree on: words whose count varies by '
       + 'speaker ("squirrel", "fire", "flower", "every", "chocolate", "comfortable", "interesting") are '
       + 'rejected in code, because a judged tutor would refuse a child who was right. 1-4 syllables '
-      + '(5 tolerated). Spoken answers are COUNTS, never letters or sounds. Requires the live tutor and a '
-      + 'microphone.',
+      + '(5 tolerated). Spoken answers are a COUNT, a whole WORD, or a leftover WORD — never letters or '
+      + 'individual sounds. DELETION items must be two-part compounds whose BOTH halves are ordinary words '
+      + '(cupcake, bedtime, starfish): a deletion that leaves a nonword ("banana without ba") is dropped in '
+      + 'code, because a child cannot confidently say it and a judge cannot honestly score it. Requires the '
+      + 'live tutor and a microphone.',
     // reader: 'none' — a shipped judged-loop port with a live gate
     // (qa/tutor-reports/syllable-clapper-live-di-cap-2026-08-16.md,
     // -signature-2026-08-16.md); the word is never printed at all, before or
@@ -1639,60 +1645,38 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // taskDescription, scaffolding level, struggle response or directive
     // sentence begins with "Yes" or with "My turn".
     audioInput: { manual_activity: true },
-    evalModes: [
-      {
-        evalMode: 'easy',
-        label: 'Short Words (Tier 1)',
-        // β raised 1.5 → 2.0 at the DI port because the STRUCTURE changed: the
-        // click era gave a 6-circle running tally, three attempts and a
-        // directional miss hint ("too many claps"), which over a 1-to-4 answer
-        // space is a binary search almost nobody fails. The answer is now
-        // unaided spoken production with two corrections.
-        beta: 2.0,
-        scaffoldingMode: 1,
-        challengeTypes: ['easy'],
-        description:
-          'High-frequency 1-2 syllable words with clear boundaries. The tutor says the word twice at the '
-          + 'most-supported tier (natural, then slower and still joined) and invites the hands.',
-      },
-      {
-        evalMode: 'medium',
-        label: 'Longer Words (Tier 2)',
-        // β 2.5 → 3.0, same structural reason as tier 1.
-        beta: 3.0,
-        scaffoldingMode: 2,
-        challengeTypes: ['medium'],
-        description:
-          '2-3 syllable words, broader vocabulary including compound words, whose beats are obvious to the '
-          + 'ear. Said once, naturally; the child claps and says the count.',
-      },
-      {
-        evalMode: 'hard',
-        label: 'Long Words (Tier 3)',
-        // β 3.5 → 4.0, same structural reason as tier 1.
-        beta: 4.0,
-        scaffoldingMode: 3,
-        challengeTypes: ['hard'],
-        description:
-          '3-4 syllable words — longer and less familiar, but every beat still cleanly heard. Length is the '
-          + 'difficulty, never ambiguity: a word whose count varies by speaker has no defensible answer and '
-          + 'is dropped rather than graded.',
-      },
-    ],
+    // ⭐ THE MODES ARE THE THREE ACTS, NOT THREE WORD LENGTHS (2026-09-11).
+    // The 2026-08-16 port registered `easy` / `medium` / `hard` — word-length
+    // bands — as eval modes, which made ONE act look like three skills and left
+    // the three acts a phonological-awareness sequence is actually made of with
+    // nowhere to be declared. Length moved to config.difficulty beside the ask
+    // scaffolds; the modes are now blending, counting and deleting. Declared
+    // ONCE in `syllableClapperModes.ts`, which also feeds the generator's prompt
+    // docs, the judged response classes and the step sequence — before that, the
+    // same three facts lived in three hand-maintained copies and a rename in one
+    // of them left a mode that still generated and simply stopped being routable.
+    // βs are unchanged in magnitude from the shipped registry (1.5 / 2.5 / 3.5).
+    evalModes: SYLLABLE_CLAPPER_EVAL_MODES,
     tutoring: {
       taskDescription:
-        'Live-judged Direct Instruction syllable counting for a young child. Right now the word band is '
-        + '"{{challengeType}}" and the word you are saying is "{{stimulus}}". You say the word out loud; the '
-        + 'child claps its parts with their hands and answers with a NUMBER, and you judge the audio you '
-        + 'heard. You speak the exact scripted lines from each bracketed application message and nothing '
-        + 'else. Hearing the parts inside a spoken word — not reading them — is the entire skill being '
-        + 'practiced, so the word is never shown on screen and nothing prints an answer.',
+        'Live-judged Direct Instruction syllable work for a young child. Right now the act is '
+        + '"{{challengeType}}" and the thing you are voicing is "{{stimulus}}". There are three acts and '
+        + 'they ask for different answers: on "blend_syllables" you say the parts one at a time and the '
+        + 'child says the WHOLE WORD; on "count_parts" you say the word as one joined stream and the child '
+        + 'claps its parts and answers with a NUMBER; on "delete_compound" you say a two-part word and name '
+        + 'a part to take away, and the child says the WORD THAT IS LEFT. You judge the audio you heard. '
+        + 'You speak the exact scripted lines from each bracketed application message and nothing else. '
+        + 'Hearing the parts inside a spoken word — not reading them — is the entire skill being practiced, '
+        + 'so the word is never shown on screen and nothing prints an answer.',
       // Exactly what the pack pushes through updateContext (and what the
       // connect-time primitive_data also carries). The stimulus is ANSWER-FREE
-      // by construction: the word IS the question here and the answer is the
-      // COUNT, which is never pushed. The old seven keys went with the improvised
-      // turns they served — there is no `studentClaps` any more because there is
-      // no clap button, and no `supportTier` directive because tier latitude now
+      // by construction, and ⭐ WHICH STRING IT IS DEPENDS ON THE ACT: on
+      // counting and deleting the WORD is the question (the answer is a count or
+      // a residue), while on blending the CHANT is the question and the word is
+      // the answer — so `stimulusFor` pushes the chant there and the word never
+      // crosses this channel. The old seven keys went with the improvised turns
+      // they served — there is no `studentClaps` any more because there is no
+      // clap button, and no `supportTier` directive because tier latitude now
       // lives IN the scripted ask (the second saying, the clap invitation).
       contextKeys: ['challengeType', 'stimulus'],
       // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION. A re-spoken
@@ -1724,6 +1708,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           response: 'Treat it as not yet answered: the scripted correction says the parts as whole beats, names the count, then asks again.',
         },
         {
+          pattern: 'Blending: says the parts back one at a time instead of joining them into a word',
+          response: 'Treat it as not yet answered: give the scripted correction for this item, which says the parts once more, then says the whole word, then asks again.',
+        },
+        {
+          pattern: 'Deleting: says the whole word back, or says the part that was taken away',
+          response: 'Treat it as not yet answered: give the scripted correction, which states the word without that part and then asks again.',
+        },
+        {
           pattern: 'Goes quiet after being asked',
           response: 'Say the question once more, then wait for them alone.',
         },
@@ -1741,16 +1733,17 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'yourself.',
         },
         {
-          title: 'HOW YOU SAY THE WORD IS THE LESSON',
+          title: 'HOW YOU SAY THE WORD IS THE LESSON, AND IT FLIPS BETWEEN THE ACTS',
           instruction:
-            'In the ask, the word is ONE JOINED STREAM every time you say it — even, unhurried, and never '
-            + 'broken into parts, because the parts are exactly what the child is counting. Saying it in '
-            + 'beats gives the answer away just as surely as saying the number would. When a cue tells you '
-            + 'to say the word a second time, that second saying is slower and more drawn out, still one '
-            + 'unbroken stream. The ONLY place you ever say a word in separate parts is the scripted '
-            + 'correction line, which writes them out with spaced dots — say those exactly as written, one '
-            + 'beat at a time with a clear pause between them. That model is earned, because the child has '
-            + 'already answered.',
+            'On "count_parts" and "delete_compound" the word is ONE JOINED STREAM every time you say it '
+            + 'in the ask — even, unhurried, and never broken into parts, because the parts are exactly '
+            + 'what the child is working out. Saying it in beats there gives the answer away just as '
+            + 'surely as saying the number would. On "blend_syllables" it is the reverse: the parts one '
+            + 'at a time with a clear pause between them IS the question, and the joined word is the '
+            + 'answer, so you never say the whole word in that ask. Follow the spaced dots in the quoted '
+            + 'line and you will always be right — where the line writes "but … ter … fly" say separate '
+            + 'beats, and where it writes the word say one stream. When a cue tells you to voice the '
+            + 'stimulus a second time, that repeat takes the same form as the first, just unhurried.',
         },
         {
           title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
@@ -1765,22 +1758,26 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         {
           title: 'WHAT COUNTS AS AN ANSWER (and the answer law)',
           instruction:
-            'The answer is ONE NUMBER from the child\'s own mouth. Counting the parts aloud counts too — '
-            + 'judge the number they LAND on, because that is their answer, and a count that keeps going '
-            + 'past the total is wrong even though the right number was said along the way. The number '
-            + 'inside a little phrase counts. Saying the word back, or saying its parts with no number, is '
-            + 'not yet an answer. LAW: never say how many parts a word has before the child has been '
-            + 'affirmed — the microphone is open the whole time; the scripted correction is the one place '
-            + 'the count is spoken, and only because the attempt is already judged.',
+            'The answer always comes from the child\'s own mouth, and what it is made of depends on the '
+            + 'act. On "count_parts" it is ONE NUMBER; counting the parts aloud counts too — judge the '
+            + 'number they LAND on, and a count that keeps going past the total is wrong even though the '
+            + 'right number was said along the way. On "blend_syllables" it is the WHOLE WORD; the parts '
+            + 'said back still separated are not it, because those parts were handed to them. On '
+            + '"delete_compound" it is the WORD THAT IS LEFT; the whole word repeated is not it, and '
+            + 'neither is the part that was taken away. An answer inside a little phrase counts on every '
+            + 'act. LAW: never speak the answer before the child has been affirmed — the microphone is '
+            + 'open the whole time; the scripted correction is the one place the answer is spoken, and '
+            + 'only because the attempt is already judged.',
         },
         {
           title: 'WAIT (the silence is theirs)',
           instruction:
             'After you ask, STOP and stay silent until the child answers. Do not re-ask, do not fill the '
-            + 'pause, do not say the word again unprompted, and do not answer for them. They are clapping '
-            + 'the word with their hands and listening to it inside their own head, and that IS the '
-            + 'activity, so the pause is longer here than it feels. If they tap to hear the word you will '
-            + 'receive a separate [SC_HEAR] message: answer that and nothing more, then go back to waiting.',
+            + 'pause, do not voice the stimulus again unprompted, and do not answer for them. They are '
+            + 'holding the word in their own head — clapping it, joining it, or taking a part out of it — '
+            + 'and that IS the activity, so the pause is longer here than it feels. If they tap to hear '
+            + 'the question you will receive a separate [SC_HEAR] message: answer that and nothing more, '
+            + 'then go back to waiting.',
         },
         {
           title: 'WORD OR PART ON DEMAND ([SC_HEAR])',

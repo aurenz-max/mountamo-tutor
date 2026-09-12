@@ -1257,9 +1257,9 @@ const decodableReaderAdapter: DiPortAdapter<DecodableReaderItem> = {
 };
 
 /**
- * syllable-clapper (the DI port, 2026-08-16). ALL-VOICE and SINGLE-ACTION — the
- * three eval modes are word-LENGTH bands, not different tasks, so every item is
- * `count-parts` and there is no gesture commit anywhere. The click era's `Clap!`
+ * syllable-clapper (the DI port, 2026-08-16; three acts 2026-09-11). ALL-VOICE
+ * and now THREE ACTIONS — `blend_syllables`, `count_parts` and
+ * `delete_compound` — with no gesture commit anywhere. The click era's `Clap!`
  * button was a tally widget wearing a manipulative's costume; the clapping now
  * happens with the child's own hands, off screen, and only the spoken count
  * crosses the wire.
@@ -1275,7 +1275,14 @@ const decodableReaderAdapter: DiPortAdapter<DecodableReaderItem> = {
  *     `segment` and counting-board's counted modes drive, and it matters most
  *     here: over-counting (an extra beat on the last syllable) is this
  *     primitive's own documented commonest error.
- *  2. **The leak oracle is FLAT and the ask still says a number.** The
+ *  2. **The leak oracle is FLAT on `count_parts` and SPAN-EXEMPT on the other
+ *     two, for a reason that is structural rather than incidental.** Counting's
+ *     ask carries no number at all, so the oracle stays live over every word of
+ *     it. Blending's ask IS the answer's own parts and deletion's ask says a
+ *     word that CONTAINS its residue, so each subtracts exactly its stimulus and
+ *     nothing else — the greeting, the how-to-play, the question and the
+ *     hand-over all stay governed.
+ *  3. **The counting how-to-play says a number and is still clean.** The
  *     how-to-play works a practice word ("Watch me first: pencil. Pen … cil.
  *     That is two parts.") and `pickModelWord` guarantees that count is never
  *     the item's own — so no `leakExemptSpan` is issued and the oracle stays

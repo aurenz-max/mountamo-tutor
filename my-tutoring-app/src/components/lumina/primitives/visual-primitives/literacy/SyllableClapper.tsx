@@ -63,9 +63,9 @@ import {
   hearPartCue,
   itemsFromChallenges,
   syllableClapperPackBase,
-  type SyllableBand,
   type SyllableClapperItem,
 } from './syllableClapperScript';
+import type { SyllableTask } from './syllableClapperModes';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
@@ -82,8 +82,13 @@ interface SyllableChallenge {
   syllables: string[];         // ["but", "ter", "fly"]
   imageDescription: string;
   difficulty: number;          // 3-5
-  /** WORD-LENGTH band (the eval mode). NOT the support tier — see `supportTier`. */
-  challengeType: 'easy' | 'medium' | 'hard';
+  /** The TASK IDENTITY (the eval mode). Legacy payloads carrying a word-length
+   *  band ('easy'|'medium'|'hard') resolve to `count_parts` at build. */
+  challengeType: SyllableTask | 'easy' | 'medium' | 'hard';
+  /** `delete_compound` only — the part the ask takes away. */
+  removePart?: string;
+  /** `delete_compound` only — the real word left behind. */
+  residue?: string;
 
   // ── Within-mode SUPPORT-TIER scaffolds (stamped by the generator from
   //    ctx.supportTier). ASK levers now, not render levers: the click era's
@@ -99,11 +104,9 @@ interface SyllableChallenge {
 export interface SyllableClapperData {
   title: string;
   /**
-   * Within-mode SUPPORT tier from the manifest (config.difficulty). Orthogonal
-   * to `challengeType`, which happens to use the same three words for the WORD
-   * LENGTH band. The generator stamps the per-challenge flags from it; nothing
-   * in this component reads it, which is what makes the two axes structurally
-   * unable to contaminate each other.
+   * Within-mode SUPPORT tier from the manifest (config.difficulty): the ask
+   * scaffolds AND the word-length band. The generator stamps the per-challenge
+   * flags from it; nothing in this component reads it.
    */
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SyllableChallenge[];
@@ -135,10 +138,23 @@ const SYLLABLE_COLORS = [
   'bg-rose-500/30 border-rose-400/50 text-rose-200',
 ];
 
-const BAND_META: Record<SyllableBand, { badge: string; icon: string; accent: LuminaAccent }> = {
-  easy: { badge: 'Short Words', icon: '👏', accent: 'blue' },
-  medium: { badge: 'Longer Words', icon: '👏', accent: 'purple' },
-  hard: { badge: 'Long Words', icon: '👏', accent: 'emerald' },
+/** One row per ACT. The badge names what the child is doing, which is the only
+ *  thing a five-year-old could read off the screen anyway — the old badge named
+ *  the word-length band, a fact about the content that meant nothing to them. */
+const TASK_META: Record<SyllableTask, { badge: string; icon: string; accent: LuminaAccent }> = {
+  blend_syllables: { badge: 'Put It Together', icon: '🔗', accent: 'blue' },
+  count_parts: { badge: 'Clap and Count', icon: '👏', accent: 'purple' },
+  delete_compound: { badge: 'Take a Part Away', icon: '✂️', accent: 'emerald' },
+};
+
+/** The on-screen line under the stimulus button. It must never name the answer:
+ *  no count, no word, no residue — only the ACT. */
+const promptLineFor = (item: SyllableClapperItem): string => {
+  if (item.task === 'blend_syllables') return 'Listen to the parts — then say the whole word!';
+  if (item.task === 'delete_compound') return 'Take the part away — then say what is left!';
+  return item.inviteClap
+    ? 'Clap the parts — then say how many!'
+    : 'How many parts do you hear? Say the number!';
 };
 
 // ============================================================================
@@ -201,13 +217,31 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
       syllableCountsEncountered[item.partCount] =
         (syllableCountsEncountered[item.partCount] ?? 0) + 1;
     }
+    const scores = new Map(summary.outcomes.map((o) => [o.id, o.score]));
+    const accuracyFor = (task: SyllableTask): number | undefined => {
+      const group = items.filter((i) => i.task === task);
+      if (!group.length) return undefined;
+      return Math.round(group.reduce((sum, i) => sum + (scores.get(i.id) ?? 0), 0) / group.length);
+    };
+    // ⭐ `evalMode` was ABSENT on the shipped port, which is the same defect the
+    // three older-learner DI packs carried: with no mode on the metric the
+    // backend files every attempt under 'default' and the β priors this ladder
+    // registers are never reached. A run is one act in practice (the manifest
+    // pins one mode), so the dominant act is the honest label.
+    const dominantTask = (['blend_syllables', 'count_parts', 'delete_compound'] as SyllableTask[])
+      .map((task) => ({ task, n: items.filter((i) => i.task === task).length }))
+      .sort((a, b) => b.n - a.n)[0];
     const metrics: SyllableClapperMetrics = {
       type: 'syllable-clapper',
+      evalMode: dominantTask.n ? dominantTask.task : undefined,
       wordsCorrect: summary.solvedCount,
       wordsTotal: items.length,
       clapCountAccuracy: summary.accuracy,
       syllableCountsEncountered,
       attemptsCount: summary.attemptsCount,
+      blendAccuracy: accuracyFor('blend_syllables'),
+      countPartsAccuracy: accuracyFor('count_parts'),
+      deleteAccuracy: accuracyFor('delete_compound'),
     };
     evaluation.submitResult(
       summary.passed,
@@ -225,14 +259,18 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
   const pack = useMemo<JudgedScriptPack<SyllableClapperItem>>(() => ({
     ...syllableClapperPackBase(items),
     statusLines: {
-      ready: () => 'Listen, then say how many parts.',
-      retry: () => 'Have another go — say how many parts.',
+      ready: () => 'Listen, then answer out loud.',
+      retry: () => 'Have another go — say your answer.',
       affirmedNext: 'Yes! You heard the parts.',
       done: 'Great listening today!',
     },
     diagnosisObservation: (item, { lastHeard }) => ({
-      challenge: `Count the parts in "${item.word}".`,
-      expected: `${item.answer} (${item.partCount})`,
+      challenge: item.task === 'blend_syllables'
+        ? `Blend the parts of "${item.word}" into the whole word.`
+        : item.task === 'delete_compound'
+          ? `Say "${item.word}" without "${item.removePart}".`
+          : `Count the parts in "${item.word}".`,
+      expected: item.task === 'count_parts' ? `${item.answer} (${item.partCount})` : item.answer,
       observed: lastHeard
         ? `Heard "${lastHeard}".`
         : 'The tutor judged the answer wrong from the audio.',
@@ -267,7 +305,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
     return phaseResultsFromSummary(items, runner.summary, (item) => {
-      const meta = BAND_META[item.band];
+      const meta = TASK_META[item.task];
       return { label: meta.badge, icon: meta.icon };
     });
   }, [evaluation.hasSubmitted, runner.summary, items]);
@@ -286,7 +324,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     );
   }
 
-  const bandMeta = BAND_META[currentItem?.band ?? 'easy'];
+  const taskMeta = TASK_META[currentItem?.task ?? 'count_parts'];
 
   return (
     <LuminaCard className={className}>
@@ -294,8 +332,8 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           {!evaluation.hasSubmitted && currentItem && (
-            <LuminaBadge accent={bandMeta.accent} className="text-xs">
-              {bandMeta.icon} {bandMeta.badge}
+            <LuminaBadge accent={taskMeta.accent} className="text-xs">
+              {taskMeta.icon} {taskMeta.badge}
             </LuminaBadge>
           )}
         </div>
@@ -314,8 +352,9 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
 
             {/* The stimulus. The word is NEVER printed here — it arrives in her
                 voice, and a printed word lets a reader chunk it by sight instead
-                of hearing it. Tapping re-asks the whole question (question-side
-                audio only; the ask carries no count). */}
+                of hearing it, or read a blend's answer straight off the screen.
+                Tapping re-asks the whole question (question-side audio only;
+                every ask states its stimulus and withholds its answer). */}
             <div className="flex flex-col items-center gap-3">
               <button
                 onClick={runner.hearStimulus}
@@ -330,12 +369,10 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
                 `}
               >
                 <span className="text-6xl">🔊</span>
-                <p className="text-xs text-emerald-300/70 mt-3">Tap to hear the word again</p>
+                <p className="text-xs text-emerald-300/70 mt-3">Tap to hear the question again</p>
               </button>
               <p className="text-center text-base text-slate-300 font-medium">
-                {currentItem?.inviteClap === false
-                  ? 'How many parts do you hear? Say the number!'
-                  : 'Clap the parts — then say how many!'}
+                {currentItem ? promptLineFor(currentItem) : 'Listen, then answer out loud.'}
               </p>
             </div>
 
@@ -360,8 +397,11 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
                   ))}
                 </div>
                 <p className="text-center text-emerald-300 text-lg font-black">
-                  {revealItem.word} — {revealItem.answer}{' '}
-                  {revealItem.partCount === 1 ? 'part' : 'parts'}
+                  {revealItem.task === 'count_parts'
+                    ? `${revealItem.word} — ${revealItem.answer} ${revealItem.partCount === 1 ? 'part' : 'parts'}`
+                    : revealItem.task === 'delete_compound'
+                      ? `${revealItem.word} without ${revealItem.removePart} — ${revealItem.residue}`
+                      : revealItem.word}
                 </p>
                 {revealItem.imageDescription && (
                   <p className="text-center text-sm text-slate-500 italic">

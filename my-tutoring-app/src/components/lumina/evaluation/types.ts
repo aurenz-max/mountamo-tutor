@@ -2405,6 +2405,10 @@ export interface SyllableClapperMetrics extends BasePrimitiveMetrics {
   clapCountAccuracy: number;
   syllableCountsEncountered: Record<number, number>;
   attemptsCount: number;
+  /** Per-ACT accuracy. Absent when the run contained none of that act. */
+  blendAccuracy?: number;
+  countPartsAccuracy?: number;
+  deleteAccuracy?: number;
 }
 
 export interface SoundSwapMetrics extends BasePrimitiveMetrics {
