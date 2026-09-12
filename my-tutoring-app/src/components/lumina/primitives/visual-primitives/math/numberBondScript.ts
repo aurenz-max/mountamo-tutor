@@ -25,9 +25,9 @@
  *   - `decompose`: no. Splitting the counters into two groups IS decomposition
  *     — the K concrete manipulative. Saying pairs aloud would be a different
  *     (and open-ended) task.
- *   - `fact-family`: no. The mode's identity is writing all four related
+ *   - `fact-family`: no. The mode's identity is writing every distinct related
  *     equations — symbolic FORM, the third unsayable shape. Reciting them
- *     aloud would not show the child can write them. The four input slots are
+ *     aloud would not show the child can write them. The equation workspace is
  *     the page a teacher pushes across the table.
  *   - `build-equation`: no. Same FORM argument, settled on ASS's identical
  *     mode (its docblock calls it "the pack's one genuinely arguable fork" and
@@ -102,6 +102,18 @@ export type NumberBondKind =
   | 'fact-family'
   | 'build-equation';
 export type BondBand = 'K' | '1';
+export type BondModelAction = 'join' | 'separate-left' | 'separate-right' | 'swap';
+export type BondFamilyForm = 'add-left' | 'add-right' | 'subtract-left' | 'subtract-right';
+export type NumberBondInteractionPhase =
+  | 'missing-infer'
+  | 'related-join'
+  | 'related-say-addend'
+  | 'related-separate'
+  | 'related-say-remainder'
+  | 'equation-model'
+  | 'equation-build'
+  | 'family-model'
+  | 'family-build';
 
 /**
  * `ten-and-ones` — the bond side of CCSS K.NBT.1, added 2026-09-08 alongside
@@ -133,7 +145,7 @@ export type BondBand = 'K' | '1';
  * facts"), and one unknown-addend turn is one fact, not a relationship.
  *
  * WHY IT IS NOT `fact-family`. That mode's floor HELD at PRE and should: it
- * types four equations, and written symbolic form IS its declared skill. This
+ * constructs every distinct equation, and written symbolic form IS its declared skill. This
  * one asks for the same relationship in the K-legal channel — the child SAYS
  * both facts, one number word each.
  *
@@ -216,6 +228,16 @@ export const actionFor = (kind: NumberBondKind): string => {
 };
 
 export interface NumberBondItem extends JudgedScriptItem {
+  /** Runtime split-and-say expansion; source challenge identity stays unchanged. */
+  splitPhase?: 'build' | 'say';
+  /** Stateful phase added by the runtime expander. */
+  interactionPhase?: NumberBondInteractionPhase;
+  /** Existing assessment-unit id underneath one or more runtime phases. */
+  logicalId?: string;
+  /** Transformation the student performed or is being asked to perform. */
+  bondAction?: BondModelAction;
+  /** Fact-family form owned by this transform/build pair. */
+  familyForm?: BondFamilyForm;
   kind: NumberBondKind;
   band: BondBand;
   /** The generated challenge this item came from — decompose expands one
@@ -251,8 +273,10 @@ export interface ParsedBondEquation {
   valid: boolean;
   /** Uses exactly {whole, part1, part2}. */
   usesCorrectNumbers: boolean;
-  /** Dedup key — commutative addition collapses to one key. */
+  /** Mathematical equivalence key — commutative addition collapses. */
   canonicalKey: string;
+  /** Required family form; addition order remains visible here. */
+  familyFormKey: string;
 }
 
 /** Parse "a op b = c" or "c = a op b", whitespace-insensitive. */
@@ -284,16 +308,39 @@ export const parseBondEquation = (
   const canonicalKey = op === '+'
     ? `${Math.min(left, right)}+${Math.max(left, right)}=${result}`
     : `${left}-${right}=${result}`;
-  return { left, op, right, result, valid, usesCorrectNumbers, canonicalKey };
+  const familyFormKey = `${left}${op}${right}=${result}`;
+  return { left, op, right, result, valid, usesCorrectNumbers, canonicalKey, familyFormKey };
 };
 
-/** The 3 canonical keys that cover all 4 fact-family equations (a+b and b+a
- *  collapse). Symmetric bonds (3+3=6) legitimately have 2. */
+/** Required family forms. Equality orientation is normalized by the parser,
+ * while unequal addition orders remain distinct. Symmetric bonds have 2. */
 export const factFamilyCanonicalKeys = (whole: number, p1: number, p2: number): Set<string> => {
-  const min = Math.min(p1, p2);
-  const max = Math.max(p1, p2);
-  return new Set([`${min}+${max}=${whole}`, `${whole}-${min}=${max}`, `${whole}-${max}=${min}`]);
+  return new Set([
+    `${p1}+${p2}=${whole}`,
+    `${p2}+${p1}=${whole}`,
+    `${whole}-${p1}=${p2}`,
+    `${whole}-${p2}=${p1}`,
+  ]);
 };
+
+export const familyFormKeyFor = (
+  form: BondFamilyForm,
+  whole: number,
+  p1: number,
+  p2: number,
+): string => {
+  switch (form) {
+    case 'add-left': return `${p1}+${p2}=${whole}`;
+    case 'add-right': return `${p2}+${p1}=${whole}`;
+    case 'subtract-left': return `${whole}-${p1}=${p2}`;
+    case 'subtract-right': return `${whole}-${p2}=${p1}`;
+  }
+};
+
+export const factFamilyForms = (p1: number, p2: number): BondFamilyForm[] =>
+  p1 === p2
+    ? ['add-left', 'subtract-left']
+    : ['add-left', 'add-right', 'subtract-left', 'subtract-right'];
 
 /** "two plus three equals five" — an equation spoken; numerals stay off the
  *  tutor's tongue everywhere in this pack. */
@@ -464,7 +511,7 @@ export const howToPlayFor = (item: NumberBondItem): string => {
       // ("twice") rather than numerals, the same sentence carries no answer.
       return 'I will ask about the same number bond twice. Look at it, think, then say your answer out loud. ';
     case 'fact-family':
-      return 'Write all four equations in the boxes — two plus and two take away. When you stop, I will check them. ';
+      return 'Build every distinct equation for this bond, one move at a time. When you stop, I will check each one. ';
     case 'build-equation':
       return 'Tap the tiles to build the number sentence. When you stop, I will check it. ';
   }
@@ -504,7 +551,7 @@ const askFor = (item: NumberBondItem): string => {
         ? `${cap(numberWordFor(item.knownPart))} and how many more make ${wholeWord}?`
         : `Good — now the other way round. ${cap(wholeWord)} take away ${numberWordFor(item.knownPart)}. What is left?`;
     case 'fact-family':
-      return `The parts are ${numberWordFor(item.knownPart)} and ${numberWordFor(item.otherPart)}, and the whole is ${wholeWord}. Write all four equations for this fact family.`;
+      return `The parts are ${numberWordFor(item.knownPart)} and ${numberWordFor(item.otherPart)}, and the whole is ${wholeWord}. Build all ${factFamilyForms(item.knownPart, item.otherPart).length} distinct equations for this fact family.`;
     case 'build-equation':
       return `The parts are ${numberWordFor(item.knownPart)} and ${numberWordFor(item.otherPart)}, and the whole is ${wholeWord}. Build a number sentence with the tiles.`;
   }
@@ -736,8 +783,8 @@ export const familyFaultOf = (
     if (!parsed) continue; // an unparseable slot reads as incomplete below
     if (!parsed.valid) { badMath = true; continue; }
     if (!parsed.usesCorrectNumbers) { wrongNumbers = true; continue; }
-    if (seen.has(parsed.canonicalKey)) { duplicate = true; continue; }
-    if (keys.has(parsed.canonicalKey)) seen.add(parsed.canonicalKey);
+    if (seen.has(parsed.familyFormKey)) { duplicate = true; continue; }
+    if (keys.has(parsed.familyFormKey)) seen.add(parsed.familyFormKey);
   }
   const fault: FamilyFault = seen.size >= keys.size
     ? 'match'
@@ -758,36 +805,63 @@ export const familyVerdictCue = (item: NumberBondItem, inputs: readonly string[]
     `[NB_FAMILY] The learner wrote "${wrote}"; the fact family is ${item.knownPart}+${item.otherPart}=${item.whole} `
     + `(${uniqueCorrect} of ${needed} unique facts) — that ${fault === 'match' ? 'MATCHES' : 'does NOT match'}. `;
   if (fault === 'match') {
-    return `${head}Say exactly: "Yes! The same three numbers — ${p1w}, ${p2w} and ${ww} — make all four facts. You wrote the whole fact family!" Never read bracket tags aloud.`;
+    return `${head}Say exactly: "Yes! The same three numbers — ${p1w}, ${p2w} and ${ww}. You wrote the whole fact family!" Never read bracket tags aloud.`;
   }
   const specific =
     fault === 'bad-math'
       ? `My turn: check the arithmetic — ${p1w} plus ${p2w} equals ${ww}. Your turn — fix the equation that does not add up.`
       : fault === 'wrong-numbers'
-        ? `My turn: a fact family uses the SAME three numbers — ${p1w}, ${p2w} and ${ww}, and no others. Your turn — write the four equations with just those.`
-        : fault === 'duplicate'
-          ? `My turn: two of your equations say the same thing. ${cap(ww)} take away ${p1w} and ${ww} take away ${p2w} are different facts. Your turn — make every equation different.`
-          : `My turn: a fact family needs four equations — two plus and two take away. Your turn — write all four.`;
+        ? `My turn: a fact family uses the SAME three numbers — ${p1w}, ${p2w} and ${ww}, and no others. Your turn — write all ${needed} distinct equations with just those.`
+      : fault === 'duplicate'
+          ? needed === 2
+            ? `My turn: this equal-parts family has one distinct plus equation and one distinct take-away equation. Your turn — build each once.`
+            : `My turn: two of your equations say the same thing. ${cap(ww)} take away ${p1w} and ${ww} take away ${p2w} are different facts. Your turn — make every equation different.`
+          : needed === 2
+            ? `My turn: this equal-parts family has two distinct equations — one plus and one take away. Your turn — write both.`
+            : `My turn: a fact family needs four equations — two plus and two take away. Your turn — write all four.`;
   return `${head}Say exactly: "${specific}" Never read bracket tags aloud.`;
 };
 
-/** build-equation faults, same three checks the click-era button ran. Any
- *  valid form over {p1, p2, whole} matches — the shipped grading, kept. */
-export type BondEquationFault = 'match' | 'incomplete' | 'arithmetic' | 'numbers';
+/** Build-equation faults. Arithmetic validity and bond-number use are recorded
+ * separately from whether the equation describes the committed action. */
+export type BondEquationFault = 'match' | 'incomplete' | 'arithmetic' | 'numbers' | 'action';
+
+export const bondEquationMatchesAction = (
+  parsed: ParsedBondEquation,
+  action: BondModelAction,
+  whole: number,
+  p1: number,
+  p2: number,
+): boolean => {
+  if (action === 'join' || action === 'swap') {
+    return parsed.op === '+' && parsed.result === whole
+      && ((parsed.left === p1 && parsed.right === p2) || (parsed.left === p2 && parsed.right === p1));
+  }
+  if (action === 'separate-left') {
+    return parsed.op === '-' && parsed.left === whole && parsed.right === p1 && parsed.result === p2;
+  }
+  return parsed.op === '-' && parsed.left === whole && parsed.right === p2 && parsed.result === p1;
+};
 
 export const bondEquationFaultOf = (
   item: NumberBondItem,
   tiles: readonly string[],
+  action?: BondModelAction,
 ): BondEquationFault => {
   const parsed = parseBondEquation(tiles.join(''), item.whole, item.knownPart, item.otherPart);
   if (!parsed) return 'incomplete';
   if (!parsed.valid) return 'arithmetic';
   if (!parsed.usesCorrectNumbers) return 'numbers';
+  if (action && !bondEquationMatchesAction(parsed, action, item.whole, item.knownPart, item.otherPart)) return 'action';
   return 'match';
 };
 
-export const bondEquationVerdictCue = (item: NumberBondItem, tiles: readonly string[]): string => {
-  const fault = bondEquationFaultOf(item, tiles);
+export const bondEquationVerdictCue = (
+  item: NumberBondItem,
+  tiles: readonly string[],
+  action?: BondModelAction,
+): string => {
+  const fault = bondEquationFaultOf(item, tiles, action);
   const p1w = numberWordFor(item.knownPart);
   const p2w = numberWordFor(item.otherPart);
   const ww = numberWordFor(item.whole);
@@ -797,11 +871,16 @@ export const bondEquationVerdictCue = (item: NumberBondItem, tiles: readonly str
     const parsed = parseBondEquation(tiles.join(''), item.whole, item.knownPart, item.otherPart)!;
     return `${head}Say exactly: "Yes! ${cap(equationSpoken(parsed.left, parsed.op, parsed.right, parsed.result))}. Your number sentence tells the truth about the bond!" Never read bracket tags aloud.`;
   }
+  const actionPrompt = action === 'join' || action === 'swap'
+    ? 'That equation belongs to this bond. Show the joining you just did.'
+    : 'That equation belongs to this bond. Show the taking-apart action you just did.';
   const specific =
     fault === 'arithmetic'
       ? `My turn: those numbers do not make that total. Look at the bond: ${p1w} and ${p2w} make ${ww}. Your turn — build the number sentence again.`
       : fault === 'numbers'
         ? `My turn: use the three numbers from the bond — ${p1w}, ${p2w} and ${ww}. Your turn — build the number sentence with just those.`
+        : fault === 'action'
+          ? `My turn: ${actionPrompt} Your turn — build the number sentence for that action.`
         : `My turn: a number sentence needs two numbers, a sign, an equals, and the total. Your turn — build the whole number sentence.`;
   return `${head}Say exactly: "${specific}" Never read bracket tags aloud.`;
 };
@@ -852,7 +931,7 @@ export const stimulusFor = (item: NumberBondItem): string => {
       // started from. The shape is all the channel carries.
       return 'a number bond with the whole shown and a single part shown; the other part is hidden, and the same three numbers are asked about twice';
     case 'fact-family':
-      return 'a number bond with all three numbers shown; writing the four related equations';
+      return 'a number bond with all three numbers shown; writing every distinct related equation';
     case 'build-equation':
       return 'a number bond with all three numbers shown; building one number sentence from tiles';
   }
@@ -999,7 +1078,7 @@ export const numberBondHarnessAnswers = (item: NumberBondItem): NumberBondHarnes
     }
     case 'fact-family':
       return {
-        correct: 'wrote all four fact-family equations',
+        correct: `wrote all ${factFamilyForms(item.knownPart, item.otherPart).length} distinct fact-family equations`,
         plainWrong: 'wrote a valid equation over the wrong numbers',
         placed: { correct: 1, wrong: 0 },
         leakTokens: [],

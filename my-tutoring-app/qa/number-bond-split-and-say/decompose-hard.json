@@ -1,0 +1,354 @@
+{
+  "generatedAt": "2026-09-12T02:47:13.946Z",
+  "data": {
+    "title": "Split and Say 5!",
+    "description": "Learn to split whole numbers into two parts and say one part out loud.",
+    "maxNumber": 5,
+    "showCounters": true,
+    "showEquation": false,
+    "gradeBand": "K",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "decompose",
+        "instruction": "Let's explore the number 3! Move counters to split 3 into parts.",
+        "whole": 3,
+        "allPairs": [
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "part1": null,
+        "part2": null
+      },
+      {
+        "id": "c2",
+        "type": "decompose",
+        "instruction": "Now let's work with 4! Can you find all the ways to split 4?",
+        "whole": 4,
+        "allPairs": [
+          [
+            0,
+            4
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            2
+          ]
+        ],
+        "part1": null,
+        "part2": null
+      },
+      {
+        "id": "c3",
+        "type": "decompose",
+        "instruction": "You are doing great! Let's split 5 into parts and say one part.",
+        "whole": 5,
+        "allPairs": [
+          [
+            0,
+            5
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "part1": null,
+        "part2": null
+      }
+    ],
+    "showFactFamilyHelper": false,
+    "supportTier": "hard"
+  },
+  "traces": [
+    {
+      "id": "c1::p0::build",
+      "phase": "build",
+      "counters": [
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 3,
+        "known": 0,
+        "ask": "This part is empty. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Split three into two parts.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c1::p0::say",
+      "phase": "say",
+      "counters": [
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 3,
+        "known": 0,
+        "ask": "This part is empty. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"This part is empty. How many are in the highlighted part?\" Private expected number: 3. Judge only fresh speech for this turn. Accept number words or short sentences such as \"three in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, three in that part.\" If incorrect say exactly \"My turn: this part has three. Your turn. This part is empty. How many are in the highlighted part?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c1::p1::build",
+      "phase": "build",
+      "counters": [
+        "left",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 2,
+        "known": 1,
+        "ask": "This part has one. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Move the counters to make a different way to split three.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c1::p1::say",
+      "phase": "say",
+      "counters": [
+        "left",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 2,
+        "known": 1,
+        "ask": "This part has one. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"This part has one. How many are in the highlighted part?\" Private expected number: 2. Judge only fresh speech for this turn. Accept number words or short sentences such as \"two in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, two in that part.\" If incorrect say exactly \"My turn: this part has two. Your turn. This part has one. How many are in the highlighted part?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c2::p0::build",
+      "phase": "build",
+      "counters": [
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 4,
+        "known": 0,
+        "ask": "This part is empty. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Split four into two parts.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c2::p0::say",
+      "phase": "say",
+      "counters": [
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 4,
+        "known": 0,
+        "ask": "This part is empty. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"This part is empty. How many are in the highlighted part?\" Private expected number: 4. Judge only fresh speech for this turn. Accept number words or short sentences such as \"four in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, four in that part.\" If incorrect say exactly \"My turn: this part has four. Your turn. This part is empty. How many are in the highlighted part?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c2::p1::build",
+      "phase": "build",
+      "counters": [
+        "left",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 3,
+        "known": 1,
+        "ask": "This part has one. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Move the counters to make a different way to split four.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c2::p1::say",
+      "phase": "say",
+      "counters": [
+        "left",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 3,
+        "known": 1,
+        "ask": "This part has one. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"This part has one. How many are in the highlighted part?\" Private expected number: 3. Judge only fresh speech for this turn. Accept number words or short sentences such as \"three in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, three in that part.\" If incorrect say exactly \"My turn: this part has three. Your turn. This part has one. How many are in the highlighted part?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c2::p2::build",
+      "phase": "build",
+      "counters": [
+        "left",
+        "left",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 2,
+        "known": 2,
+        "ask": "This part has two. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Move the counters to make a different way to split four.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c2::p2::say",
+      "phase": "say",
+      "counters": [
+        "left",
+        "left",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 2,
+        "known": 2,
+        "ask": "This part has two. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"This part has two. How many are in the highlighted part?\" Private expected number: 2. Judge only fresh speech for this turn. Accept number words or short sentences such as \"two in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, two in that part.\" If incorrect say exactly \"My turn: this part has two. Your turn. This part has two. How many are in the highlighted part?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c3::p0::build",
+      "phase": "build",
+      "counters": [
+        "right",
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 5,
+        "known": 0,
+        "ask": "This part is empty. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Split five into two parts.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c3::p0::say",
+      "phase": "say",
+      "counters": [
+        "right",
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 5,
+        "known": 0,
+        "ask": "This part is empty. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"This part is empty. How many are in the highlighted part?\" Private expected number: 5. Judge only fresh speech for this turn. Accept number words or short sentences such as \"five in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, five in that part.\" If incorrect say exactly \"My turn: this part has five. Your turn. This part is empty. How many are in the highlighted part?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c3::p1::build",
+      "phase": "build",
+      "counters": [
+        "left",
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 4,
+        "known": 1,
+        "ask": "This part has one. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Move the counters to make a different way to split five.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c3::p1::say",
+      "phase": "say",
+      "counters": [
+        "left",
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 4,
+        "known": 1,
+        "ask": "This part has one. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"This part has one. How many are in the highlighted part?\" Private expected number: 4. Judge only fresh speech for this turn. Accept number words or short sentences such as \"four in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, four in that part.\" If incorrect say exactly \"My turn: this part has four. Your turn. This part has one. How many are in the highlighted part?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c3::p2::build",
+      "phase": "build",
+      "counters": [
+        "left",
+        "left",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 3,
+        "known": 2,
+        "ask": "This part has two. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Move the counters to make a different way to split five.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c3::p2::say",
+      "phase": "say",
+      "counters": [
+        "left",
+        "left",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 3,
+        "known": 2,
+        "ask": "This part has two. How many are in the highlighted part?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"This part has two. How many are in the highlighted part?\" Private expected number: 3. Judge only fresh speech for this turn. Accept number words or short sentences such as \"three in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, three in that part.\" If incorrect say exactly \"My turn: this part has three. Your turn. This part has two. How many are in the highlighted part?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    }
+  ],
+  "issues": []
+}

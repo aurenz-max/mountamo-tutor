@@ -3291,6 +3291,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
       aiDirectives: [
         {
+          title: 'SPLIT AND SAY OVERRIDES THE OLD HAND-ONLY FORK',
+          instruction: 'For decompose and ten-and-ones, [NS_ITEM] explicitly chooses a hand turn or a spoken turn. These cues override the older hand-only guidance below. '
+            + 'In the hand turn, counters move between the whole and both parts. Wait for [NS_SPLIT] and use its code-computed result. Never state the part counts in the hand affirmation. '
+            + 'Then the app highlights a part and [NS_ITEM] asks for ONE spoken count. Judge fresh speech using that cue, not a prior response. Questions, silence and unfinished counting are not wrong answers. '
+            + 'Known empty parts are allowed; the spoken question asks about the nonempty part. Teen tasks ask for the ones beside the ten. '
+            + 'Never invent a second spoken question. A capped hand turn may show a tutor example; attribute it to the tutor.',
+        },
+        {
           title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
           instruction:
             'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
@@ -3300,9 +3308,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
           instruction:
             'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
-            + 'On a SPOKEN item (missing-part; related-fact) the answer is ONE number word from 1 to 9 and nothing else. '
+            + 'On a SPOKEN item (missing-part; the two related-fact speech phases; Split and Say speech phases) the answer is ONE number word from 1 to 20 and nothing else. '
             + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
-            + 'On a HANDS item (decompose; fact-family; build-equation) the child answers by changing what is on the screen, and you are told what they made and whether it matches. '
+            + 'On a HANDS item the child changes the persistent counter model or constructs an equation, and you are told what they made and whether it matches. Physical preparation does not create a new mastery item. '
             + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
         },
         {
@@ -3310,6 +3318,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           instruction:
             'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no encouragement mid-build. '
             + 'You will be told what they made and whether it matches; only then do you speak the line the cue gives you.',
+        },
+        {
+          title: 'PERSISTENT MODEL PHASES',
+          instruction: 'Related Facts follows join → spoken missing addend → separate the just-found group → spoken remainder. Missing Part keeps the covered quantity hidden in visual and accessible labels until verification; optional counters are support, not a second answer. Build Equation and Fact Family assess the student-built equation, never a spoken arithmetic shortcut. For Build Equation, distinguish bad arithmetic from a true equation that belongs to the bond but does not describe the committed action. For Fact Family, keep accepted equations as the child\'s record and never fill the next form automatically.',
         },
         {
           title: 'THE CHILD IS THINKING — WAIT',
@@ -3340,19 +3352,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'decompose',
-        affordances: { representation: 'concrete', answers: ['build'] },
-        label: 'Decompose (Tier 1)',
+        affordances: { representation: 'concrete', answers: ['build', 'spoken'] },
+        label: 'Split and Say',
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['decompose'],
         // β HELD — the same split-the-counters construction, one pair at a
         // time, exactly as the Submit Pair loop paced it; it merely gained a
         // judge (and a stillness close instead of a button).
-        description: 'Break the whole into parts by splitting counters into the two circles — one judged turn per pair until every way is found. Concrete manipulative.',
+        description: 'Break the whole into parts by splitting counters into the two circles — one hand construction followed by one spoken part per pair. The same counters can move between parts, and confirmed or coached pairs remain visible.',
       },
       {
         evalMode: 'ten_and_ones',
-        affordances: { representation: 'concrete', answers: ['build'] },
+        affordances: { representation: 'concrete', answers: ['build', 'spoken'] },
         label: 'Ten and Ones (Teen Numbers)',
         beta: 2.0,
         scaffoldingMode: 1,
@@ -3361,12 +3373,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // pair rather than any pair: a split that makes the whole is still
         // wrong unless one part is a full ten, which is the place-value
         // demand the mode exists to measure.
-        description: 'Break a teen number (11-19) into a full TEN and the ones left over by splitting counters into the two circles — the only accepted pair is ten and the rest, so a sum-correct split like 6 and 8 is corrected. CCSS K.NBT.1, "compose and decompose numbers 11-19 into ten ones and some further ones". Concrete manipulative; no microphone needed. Kindergarten.',
+        description: 'Break a teen number (11-19) into a full TEN and the ones left over by splitting counters into the two circles — the only accepted pair is ten and the rest, so a sum-correct split like 6 and 8 is corrected. CCSS K.NBT.1, "compose and decompose numbers 11-19 into ten ones and some further ones". Move the counters, then say how many ones accompany the ten. Requires a microphone. Kindergarten.',
       },
       {
         evalMode: 'missing_part',
-        affordances: { answers: ['spoken'] },
-        label: 'Missing Part (Tier 2)',
+        affordances: { representation: 'concrete', answers: ['spoken', 'manipulate'] },
+        label: 'Covered Missing Part',
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['missing-part'],
@@ -3374,12 +3386,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // became unaided speech — a structural change, but the stepper was a
         // WEAK menu (every numeral in range, no chosen distractors), so the
         // guess floor it removed is small, and β is per MODE.
-        description: 'Find the unknown part and SAY it out loud — the tutor judges the spoken number. Unaided spoken production; no stepper and no menu.',
+        description: 'Infer one covered part and say it once. Optional counters let the student set aside the known part; evidence records whether the answer was independent, counter-supported, or followed a reveal.',
       },
       {
         evalMode: 'related_fact',
-        affordances: { answers: ['spoken'] },
-        label: 'Related Facts (Spoken)',
+        affordances: { representation: 'concrete', answers: ['manipulate', 'spoken'] },
+        label: 'Join and Undo',
         beta: 3.0,
         scaffoldingMode: 2,
         challengeTypes: ['related-fact'],
@@ -3387,29 +3399,30 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // spacing is the point: turn 1 IS a missing_part ask, and turn 2 adds
         // the demand neither neighbour measures — carrying the fact just found
         // into its subtraction form. Both gaps are 0.5, inside the densify rule.
-        description: 'Say TWO related facts over one bond: first the addition fact ("two and how many more make five?"), then the subtraction that matches it ("five take away three — what is left?"). The second turn is answered with the number the child produced on the first, so the inverse relationship is something they DO rather than something they are told. Unaided spoken production, one number word per turn; no typing and no menu. Kindergarten and Grade 1 — this is the K-reachable form of the fact family (K OPS001-02-G, OPS001-03-F).',
+        description: 'Join the same colored groups and say the missing addend, then move that group out and say the remainder. The counters retain identity across both linked spoken outcomes.',
       },
       {
         evalMode: 'fact_family',
-        affordances: { representation: 'symbolic', answers: ['type'] },
-        label: 'Fact Family (Tier 3)',
+        affordances: { representation: ['concrete', 'symbolic'], answers: ['manipulate', 'build', 'type'] },
+        label: 'Transform a Fact Family',
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['fact-family'],
-        // β HELD — the written surface is untouched (the same four boxes);
-        // only the Check button became a stillness close.
-        description: 'Write all 4 related equations in the boxes; the tutor judges the written family. Symbolic FORM is the skill, so the answer is written, not spoken. Grade 1 — and the floor HELD on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): writing four equations is typing, which the pre-reader band excludes by rule. Route K inverse-operation objectives (K OPS001-02-G, OPS001-03-F) to the spoken related_fact instead — a 2026-09-09 K probe of missing_part against both objectives came back ten unknown-addend turns with no subtraction anywhere, so missing_part is the part-part-whole half only, not the relationship (qa/eval-reports/k-held-floors-2026-09-09.json).',
+        // β HELD — unequal parts still require the same four forms, now
+        // elicited one transformation-linked equation at a time. Equal parts
+        // correctly collapse to their two genuinely distinct forms.
+        description: 'Transform the same two groups and build one matching equation at a time. Unequal parts require both addition orders and both subtraction directions; equal parts require the two distinct forms. One aggregate outcome retains per-form evidence. Grade 1.',
       },
       {
         evalMode: 'build_equation',
-        affordances: { representation: 'symbolic', answers: ['build'] },
-        label: 'Build Equation (Tier 4)',
+        affordances: { representation: ['concrete', 'symbolic'], answers: ['manipulate', 'build', 'type'] },
+        label: 'Act, Then Build',
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['build-equation'],
         // β HELD — the same tile tray and the same three checks; only the
         // Check button is gone.
-        description: 'Construct a number sentence from tiles; the tutor judges the assembled sentence. Any valid form over the bond\'s three numbers is accepted. Grade 1.',
+        description: 'Choose and perform a join or separation, then construct an equation that describes that committed action. Equivalent equality orientation is accepted; a different true fact receives action-specific coaching. Grade 1.',
       },
     ],
   },

@@ -22,15 +22,11 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    `part1 !== part2`: a symmetric bond gives both turns the same answer, so the
  *    script drops it and the challenge yields nothing. Both parts must be in
  *    1..whole-1 (the shared `isValidBondPart` gate), because both are spoken.
- *  - fact-family (handleCheckFactFamily, ~L737): correctness is computed from
- *    `factFamilyCanonicalKeys(whole, part1, part2)` — the component does NOT read
- *    the shipped `factFamily` strings to grade. So the load-bearing key is simply
- *    `part1 + part2 === whole`; the shipped `factFamily` array is a display
- *    artifact that must still reconstruct to that same 3-key set.
- *  - build-equation (handleCheckEquation, ~L830): correct = the built equation is
- *    valid AND uses exactly {whole, part1, part2} (ANY valid form accepted). The
- *    shipped `targetEquation` is the easy-tier model answer and must itself be a
- *    valid form over those three numbers.
+ *  - fact-family: unequal parts require four FORM keys (addition order stays
+ *    distinct); equal parts require the two genuinely distinct forms.
+ *  - build-equation: source validity remains arithmetic + bond numbers. Runtime
+ *    adds an independent action-match check against the student's committed
+ *    model; a generated targetEquation never supplies that runtime choice.
  *
  * Independence: this oracle recomputes the expected pair set and the arithmetic
  * of every equation string with its OWN parser (`parseEq` below), from the raw
@@ -53,13 +49,13 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *
  * Deliberately NOT checked: answer-leak. By design the instruction MUST name the
  * `whole` (generator requirement #11), missing-part names the known part, and
- * fact-family/build-equation name both parts ("write all 4 equations for parts 2
+ * fact-family/build-equation name both parts ("build the related equations for parts 2
  * and 4"). A whole-number leak test would fire on that intentional structure and
  * route phantom bugs to /eval-fix — worse than an honest gap. Instruction quality
  * stays with /eval-test.
  */
 
-const KNOWN_TYPES = new Set(['decompose', 'missing-part', 'related-fact', 'fact-family', 'build-equation']);
+const KNOWN_TYPES = new Set(['decompose', 'ten-and-ones', 'missing-part', 'related-fact', 'fact-family', 'build-equation']);
 
 interface ParsedEq {
   left: number;
@@ -100,21 +96,19 @@ function eqUsesNumbers(p: ParsedEq, a: number, b: number, c: number): boolean {
   return got[0] === want[0] && got[1] === want[1] && got[2] === want[2];
 }
 
-/** Canonical dedup key for a valid equation, mirroring the component's form. */
+/** Required family form key. Equality orientation is normalized by parseEq;
+ * addition operand order remains distinct. */
 function canonicalKey(p: ParsedEq): string {
-  return p.op === '+'
-    ? `${Math.min(p.left, p.right)}+${Math.max(p.left, p.right)}=${p.result}`
-    : `${p.left}-${p.right}=${p.result}`;
+  return `${p.left}${p.op}${p.right}=${p.result}`;
 }
 
 /** Independently recompute the expected fact-family canonical key set. */
 function expectedFamilyKeys(whole: number, p1: number, p2: number): Set<string> {
-  const min = Math.min(p1, p2);
-  const max = Math.max(p1, p2);
   return new Set([
-    `${min}+${max}=${whole}`,
-    `${whole}-${min}=${max}`,
-    `${whole}-${max}=${min}`,
+    `${p1}+${p2}=${whole}`,
+    `${p2}+${p1}=${whole}`,
+    `${whole}-${p1}=${p2}`,
+    `${whole}-${p2}=${p1}`,
   ]);
 }
 
@@ -196,10 +190,23 @@ export const numberBondOracle: ContentOracle = {
       }
       const w = whole as number;
       checked++;
-      flagScope(where, 'whole', w);
 
       const part1 = c.part1;
       const part2 = c.part2;
+
+      if (type === 'ten-and-ones') {
+        if (w < 11 || w > 19) {
+          violations.push({ check: 'scope', where, detail: `ten-and-ones whole ${w} outside the intrinsic teen window 11..19` });
+        }
+        if (part1 != null || part2 != null) {
+          violations.push({ check: 'answer-key-desync', where, detail: 'ten-and-ones parts must stay null; the student constructs ten and the remainder' });
+        }
+        varietyValues.push(w);
+        taskSeen.set(`ten-and-ones|${w}`, (taskSeen.get(`ten-and-ones|${w}`) ?? 0) + 1);
+        continue;
+      }
+
+      flagScope(where, 'whole', w);
 
       if (type === 'decompose') {
         // ── Independence: recompute the full pair set, never trust c.allPairs ──
@@ -370,6 +377,13 @@ export const numberBondOracle: ContentOracle = {
                 continue;
               }
               gotKeys.add(canonicalKey(p));
+            }
+            if (shipped.length !== want.size || gotKeys.size !== shipped.length) {
+              violations.push({
+                check: 'answer-key-desync',
+                where,
+                detail: `factFamily must contain exactly ${want.size} distinct form(s) for bond ${w}=${p1}+${p2}; got ${shipped.length} entries and ${gotKeys.size} distinct forms`,
+              });
             }
             const missing = Array.from(want).filter((k) => !gotKeys.has(k));
             if (missing.length > 0) {

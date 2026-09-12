@@ -1,0 +1,201 @@
+{
+  "generatedAt": "2026-09-12T02:47:17.180Z",
+  "data": {
+    "title": "Ten and Ones Fun",
+    "description": "Learn to split teen numbers into a ten and some ones.",
+    "maxNumber": 19,
+    "showCounters": true,
+    "showEquation": false,
+    "gradeBand": "K",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "ten-and-ones",
+        "instruction": "The whole is 11. Break it into a ten and some more!",
+        "whole": 11,
+        "part1": null,
+        "part2": null,
+        "allPairs": null,
+        "factFamily": null,
+        "targetEquation": null
+      },
+      {
+        "id": "c2",
+        "type": "ten-and-ones",
+        "instruction": "The whole is 12. Break it into a ten and some more!",
+        "whole": 12,
+        "part1": null,
+        "part2": null,
+        "allPairs": null,
+        "factFamily": null,
+        "targetEquation": null
+      },
+      {
+        "id": "c3",
+        "type": "ten-and-ones",
+        "instruction": "The whole is 13. Break it into a ten and some more!",
+        "whole": 13,
+        "part1": null,
+        "part2": null,
+        "allPairs": null,
+        "factFamily": null,
+        "targetEquation": null
+      }
+    ],
+    "showFactFamilyHelper": false,
+    "supportTier": "hard"
+  },
+  "traces": [
+    {
+      "id": "c1::build",
+      "phase": "build",
+      "counters": [
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 1,
+        "known": 10,
+        "ask": "One ten and how many ones?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Split eleven into a ten and some ones.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c1::say",
+      "phase": "say",
+      "counters": [
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 1,
+        "known": 10,
+        "ask": "One ten and how many ones?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"One ten and how many ones?\" Private expected number: 1. Judge only fresh speech for this turn. Accept number words or short sentences such as \"one in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, one in that part.\" If incorrect say exactly \"My turn: this part has one. Your turn. One ten and how many ones?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c2::build",
+      "phase": "build",
+      "counters": [
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 2,
+        "known": 10,
+        "ask": "One ten and how many ones?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Split twelve into a ten and some ones.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c2::say",
+      "phase": "say",
+      "counters": [
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 2,
+        "known": 10,
+        "ask": "One ten and how many ones?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"One ten and how many ones?\" Private expected number: 2. Judge only fresh speech for this turn. Accept number words or short sentences such as \"two in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, two in that part.\" If incorrect say exactly \"My turn: this part has two. Your turn. One ten and how many ones?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c3::build",
+      "phase": "build",
+      "counters": [
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 3,
+        "known": 10,
+        "ask": "One ten and how many ones?"
+      },
+      "cue": "[NS_ITEM] Say exactly: \"Split thirteen into a ten and some ones.\" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    },
+    {
+      "id": "c3::say",
+      "phase": "say",
+      "counters": [
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "right",
+        "right",
+        "right"
+      ],
+      "question": {
+        "answerSide": "right",
+        "answer": 3,
+        "known": 10,
+        "ask": "One ten and how many ones?"
+      },
+      "cue": "[NS_ITEM] Highlighted answer side: right. Say exactly: \"One ten and how many ones?\" Private expected number: 3. Judge only fresh speech for this turn. Accept number words or short sentences such as \"three in that part\". Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. If correct say exactly \"Yes, three in that part.\" If incorrect say exactly \"My turn: this part has three. Your turn. One ten and how many ones?\" Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. "
+    }
+  ],
+  "issues": []
+}

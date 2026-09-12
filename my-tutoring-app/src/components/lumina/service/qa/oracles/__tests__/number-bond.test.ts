@@ -3,9 +3,8 @@ import { numberBondOracle } from '../number-bond';
 
 /**
  * Seeded-violation tests for the number-bond oracle. One clean fixture — a mix of
- * all four challenge types, trimmed from real /api/lumina/eval-test runs
- * (componentId=number-bond, decompose / missing_part / fact_family /
- * build_equation, topic "Number bonds to 10", grade 1) — that must pass, plus one
+ * core challenge types trimmed from real /api/lumina/eval-test runs
+ * (componentId=number-bond, topic "Number bonds to 10", grade 1) — that must pass, plus one
  * mutated fixture per implemented check class that MUST fire. An oracle that never
  * fires is decoration.
  */
@@ -65,6 +64,47 @@ describe('number-bond oracle', () => {
     };
     const v = numberBondOracle.verify(data, nbCtx).violations;
     expect(v.some((x) => x.check === 'answer-key-desync' && x.where.startsWith('c3'))).toBe(true);
+  });
+
+  it('accepts the two genuinely distinct forms for an equal-part family', () => {
+    const data = {
+      ...numberBondClean,
+      challenges: [
+        ...numberBondClean.challenges.slice(0, 2),
+        { id: 'c3', type: 'fact-family', instruction: 'Build the distinct facts.', whole: 6, part1: 3, part2: 3,
+          factFamily: ['3+3=6', '6-3=3'], allPairs: null, targetEquation: null },
+        ...numberBondClean.challenges.slice(3),
+      ],
+    };
+    const result = numberBondOracle.verify(data, nbCtx);
+    expect(result.violations.filter((x) => x.where.startsWith('c3'))).toEqual([]);
+  });
+
+  it('rejects padded duplicates in an equal-part family', () => {
+    const data = {
+      ...numberBondClean,
+      challenges: [
+        ...numberBondClean.challenges.slice(0, 2),
+        { id: 'c3', type: 'fact-family', instruction: 'Build the distinct facts.', whole: 6, part1: 3, part2: 3,
+          factFamily: ['3+3=6', '3+3=6', '6-3=3', '6-3=3'], allPairs: null, targetEquation: null },
+        ...numberBondClean.challenges.slice(3),
+      ],
+    };
+    const v = numberBondOracle.verify(data, nbCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where.startsWith('c3') && x.detail.includes('exactly 2 distinct'))).toBe(true);
+  });
+
+  it('accepts a teen whole for the ten-and-ones mode without widening bonds-to-10', () => {
+    const data = {
+      ...numberBondClean,
+      challenges: [
+        { id: 'c1', type: 'ten-and-ones', instruction: 'Make a ten and some ones.', whole: 14, part1: null, part2: null },
+        ...numberBondClean.challenges.slice(1),
+      ],
+    };
+    const result = numberBondOracle.verify(data, nbCtx);
+    expect(result.violations.filter((x) => x.where.startsWith('c1'))).toEqual([]);
+    expect(result.uncheckedTypes).toEqual([]);
   });
 
   it('flags answer-key-desync — build-equation targetEquation is arithmetically wrong', () => {

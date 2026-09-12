@@ -35,7 +35,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `and the ones left over — the only accepted pair (CCSS K.NBT.1, "14 = 10 + 4"). `
       + `Set whole to the teen number; part1 and part2 should be null (the student produces both). `
       + `VARY the whole across challenges — nine teen numbers exist, so do not repeat one in a set. `
-      + `Concrete manipulative; the student answers with their hands, not their voice.`,
+      + `Concrete manipulative; the student builds it with their hands, then says the ones.`,
     schemaDescription: "'ten-and-ones' (split a teen number into a ten and the ones)",
   },
   'missing-part': {
@@ -43,7 +43,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"missing-part": Given the whole and one part, find the other. `
       + `Set part1 to the known part, part2 to null (student finds it). `
       + `part1 MUST be between 1 and whole-1 — never 0 and never the whole. `
-      + `The child SAYS the missing part out loud to the live tutor. Pictorial representation.`,
+      + `The child SAYS the missing part out loud to the live tutor. The hidden group stays covered; counters are optional support.`,
     schemaDescription: "'missing-part' (find unknown part)",
   },
   'related-fact': {
@@ -53,24 +53,23 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Set part1 and part2 to the two parts (part1 + part2 = whole). `
       + `part1 and part2 MUST BE DIFFERENT — a symmetric bond like 3 and 3 gives both turns the `
       + `same answer, and the activity DROPS the challenge rather than ask it. `
-      + `Both parts must be between 1 and whole-1. Kindergarten and Grade 1.`,
+      + `Both parts must be between 1 and whole-1. The same colored counters join before turn 1 and one group separates before turn 2. Kindergarten and Grade 1.`,
     schemaDescription: "'related-fact' (say the addition fact, then its related subtraction)",
   },
   'fact-family': {
     promptDoc:
-      `"fact-family": Student identifies all 4 related equations. `
+      `"fact-family": Student constructs every distinct related equation. `
       + `Set part1 and part2 to the two parts. `
-      + `factFamily MUST have exactly 4 equations: ["a+b=w","b+a=w","w-a=b","w-b=a"]. `
-      + `Example for 2,3,5: ["2+3=5","3+2=5","5-2=3","5-3=2"]. Grade 1 only.`,
-    schemaDescription: "'fact-family' (all 4 equations)",
+      + `For unequal parts, factFamily MUST have 4 distinct forms: ["a+b=w","b+a=w","w-a=b","w-b=a"]. `
+      + `For equal parts, emit only the 2 distinct forms ["a+a=w","w-a=a"] — never duplicate them. Grade 1 only.`,
+    schemaDescription: "'fact-family' (all distinct related equations)",
   },
   'build-equation': {
     promptDoc:
       `"build-equation": Student constructs a specific equation from the bond. `
       + `Set part1 and part2 to the two parts. `
-      + `targetEquation to the equation string — MIX addition AND subtraction forms across challenges. `
-      + `Use all 4 fact-family forms: "p1+p2=w", "p2+p1=w", "w-p1=p2", "w-p2=p1". `
-      + `Example targets for 3,4,7: "3+4=7", "7-3=4", "7-4=3". `
+      + `targetEquation remains a valid source fixture, but the runtime asks the student to choose and perform an action, then build the equation matching that committed action. `
+      + `MIX valid addition AND subtraction source forms across challenges. `
       + `Grade 1 only. Transitional symbolic/pictorial.`,
     schemaDescription: "'build-equation' (construct equation — mix + and −)",
   },
@@ -155,14 +154,14 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 type UnknownSide = 'larger' | 'smaller' | null;
 
 interface SupportScaffold {
-  /** Dot pips inside the part circles. Decompose: tracks the student's live
-   *  placement (safe). Other modes: dots sit on GIVEN parts and reveal the
-   *  answer-by-counting — must be OFF at hard. */
+  /** Persistent counters. In model-based modes these are the learning objects,
+   *  not a removable answer hint; Missing Part keeps them behind an explicit
+   *  learner-requested support action. */
   showCounters: boolean;
   /** Live part-whole equation mirror (`? + ? = whole`, `p1 + p2 = whole`). The
    *  free part-whole frame; withdrawn at the harder tiers. */
   showEquation: boolean;
-  /** Fact-family worked-example helper (all 4 forms). Reveals the whole task if
+  /** Fact-family worked-example helper (all distinct forms). Reveals the whole task if
    *  left up at hard — gate it. easy → visible+expanded, medium → collapsed,
    *  hard → hidden. */
   showFactFamilyHelper: boolean;
@@ -178,8 +177,8 @@ interface SupportScaffold {
 
 /**
  * Resolve the on-workspace support structure for a tier on a pinned challenge type.
- * Support is withdrawn as the tier hardens; the SAME task with less scaffolding —
- * never a different task, never a bigger number. The unknown-side lever for
+ * Optional scaffolding is withdrawn as the tier hardens; the SAME task keeps
+ * its concrete model and number range. The unknown-side lever for
  * missing-part is STRUCTURAL (harder problem) and is CODE-ENFORCED below, not
  * trusted to the LLM.
  */
@@ -187,7 +186,7 @@ function resolveSupportStructure(
   pinnedType: NumberBondChallengeType,
   tier: SupportTier,
 ): SupportScaffold {
-  // Defaults — withdrawn per-mode below.
+  // Defaults — refined per-mode below.
   let showCounters = tier !== 'hard';
   let showEquation = tier === 'easy';
   let showFactFamilyHelper = tier !== 'hard';
@@ -195,46 +194,24 @@ function resolveSupportStructure(
   let unknownSide: UnknownSide = null;
 
   const promptLines: string[] = [
-    `Support tier: ${tier.toUpperCase()} — this sets on-workspace SCAFFOLDING and (for missing-part) the unknown SIDE only (${tier === 'easy' ? 'maximum support: the workspace shows dots, the live equation, and worked examples so the student can self-check' : tier === 'medium' ? 'moderate support: fewer on-screen aids; the student reasons more unaided' : 'minimum support: numerals only, no equation mirror or worked example; the student works unaided and justifies their thinking'}). Keep every whole and part within the grade band and maxNumber; a harder tier NEVER means bigger numbers, only less help.`,
+    `Support tier: ${tier.toUpperCase()} — this changes optional scaffolding and (for missing-part) the unknown SIDE only. Persistent counters remain wherever they are the learning model, and no answer-bearing equation appears before the assessed response. Keep every whole and part within the grade band and maxNumber; a harder tier NEVER means bigger numbers or a different assessment.`,
   ];
 
   switch (pinnedType) {
     case 'decompose':
-      // Decompose dots track the STUDENT's live placement (not a given answer),
-      // so they can stay through medium; the found-pairs tracker is always-on in
-      // the component and is a legitimate self-tracking aid kept at every tier.
-      showCounters = tier !== 'hard';
-      showEquation = tier === 'easy';
-      promptLines.push(
-        tier === 'easy'
-          ? 'Show dot counters and the live "L + R = whole" equation, plus the running found-pairs tracker, so the student can self-check each split as they build it.'
-          : tier === 'hard'
-            ? 'Numerals only — no dot counters and no equation mirror. The student tracks splits mentally; the found-pairs list remains so they can see which ways they have already found.'
-            : 'Show dot counters but hide the live equation mirror; the student reads the split from the numbers themselves.',
-      );
-      break;
-
     case 'ten-and-ones':
-      // Same as decompose: the dots track the STUDENT's live placement, not a
-      // given answer, so they are a self-check rather than a leak. The lever is
-      // how many ones are left over once the ten is taken out — eleven asks the
-      // child to notice one, nineteen to notice nine. The teen window itself
-      // never narrows; the objective owns it.
-      showCounters = tier !== 'hard';
-      showEquation = tier === 'easy';
-      promptLines.push(
-        tier === 'easy'
-          ? 'Favour the smallest teen wholes (11, 12, 13) so few ones remain beside the ten; show dot counters and the live "L + R = whole" equation so the student can self-check the split as they build it.'
-          : tier === 'hard'
-            ? 'Favour the largest teen wholes (17, 18, 19); numerals only — no dot counters and no equation mirror, so the student counts out the ten unaided.'
-            : 'Mix teen wholes across the middle of the range (13-16); show dot counters but hide the live equation mirror.',
-      );
+      // Counters are the objects being manipulated, not a removable hint.
+      showCounters = true;
+      showEquation = false; // The runtime reveals the equation after the spoken interpretation.
+      promptLines.length = 0;
+      promptLines.push('Split and Say uses a fixed set of movable counters at every support tier. Students move them between the whole and both parts, then say one highlighted part. '
+        + 'Never print live part counts or the equation before the spoken answer. Preserve the same number bounds across support tiers. '
+        + (pinnedType === 'ten-and-ones' ? 'The split must contain a full ten; the spoken answer is the remaining ones.' : 'Each new pair has one hand construction and one spoken interpretation.'));
       break;
 
     case 'missing-part':
-      // Dots on a GIVEN part render the answer-by-counting → OFF except easy.
-      showCounters = tier === 'easy';
-      showEquation = tier === 'easy';
+      showCounters = true;
+      showEquation = false;
       showEarlyHint = tier === 'easy';
       // Structural unknown-side lever (code-enforced): easy → unknown is the
       // LARGER part (count up from a small known part — easiest); medium →
@@ -242,35 +219,42 @@ function resolveSupportStructure(
       unknownSide = tier === 'easy' ? 'larger' : tier === 'medium' ? 'smaller' : null;
       promptLines.push(
         tier === 'easy'
-          ? 'Show dot counters on the known part and the live equation mirror; the unknown is the LARGER part so the student can count up from the small known part. An early, gentle hint is welcome.'
+          ? 'Introduce the optional counter workspace explicitly. Keep the unknown group covered and do not show an equation until after the spoken answer.'
           : tier === 'hard'
-            ? 'Numerals only — no dot counters and no equation mirror, and no early hint. Either part may be the unknown; the student finds it unaided.'
-            : 'Show dot counters but hide the equation mirror; the unknown is the SMALLER part so the student reasons about the remaining amount.',
+            ? 'Start with the compact whole/known/covered bond. Keep the counter workspace available on request and reveal no answer-bearing label or equation.'
+            : 'Start with the covered bond and make the optional counter workspace available on request. Hide the equation until affirmation.',
       );
       break;
 
+    case 'related-fact':
+      showCounters = true;
+      showEquation = false;
+      showFactFamilyHelper = false;
+      promptLines.push('Keep stable colored counter groups across join, spoken addend, separation, and spoken remainder. Do not print the highlighted group count or either equation before its spoken response.');
+      break;
+
     case 'fact-family':
-      showCounters = tier !== 'hard';
+      showCounters = true;
       showFactFamilyHelper = tier !== 'hard';
       promptLines.push(
         tier === 'easy'
-          ? 'Show dot counters and keep the fact-family worked example VISIBLE and expanded so the student can model their 4 equations on it.'
+          ? 'Keep the movable counter groups visible and the different-bond worked example available. Build one transformation-linked equation at a time.'
           : tier === 'hard'
-            ? 'Numerals only — hide the worked-example helper entirely. The instruction names ONLY the three numbers; the student recalls all 4 equation forms unaided.'
-            : 'Show dot counters; the worked-example helper is available but collapsed so the student tries before peeking.',
+            ? 'Keep the counter model visible but hide the worked example. The student transforms the model and constructs each distinct form.'
+            : 'Keep the counter model visible; the different-bond worked example is available but collapsed.',
       );
       break;
 
     case 'build-equation':
-      showCounters = tier !== 'hard';
-      showFactFamilyHelper = tier === 'easy';
-      showEquation = tier === 'easy';
+      showCounters = true;
+      showFactFamilyHelper = false;
+      showEquation = false;
       promptLines.push(
         tier === 'easy'
-          ? 'Show dot counters and the live equation mirror; the instruction NAMES the target equation form to build, and the worked-example helper is available.'
+          ? 'Keep the movable counter groups visible. Prompt the student to choose a join or separation action, then build its equation; never prefill the equation.'
           : tier === 'hard'
-            ? 'Numerals only — no helper. Use a generic instruction ("build an equation with these numbers"); the student chooses and constructs a valid form unaided.'
-            : 'Show dot counters; use a generic instruction with no named target form and no helper.',
+            ? 'Keep the model visible without a symbolic helper. The equation must match the committed action.'
+            : 'Keep the movable model visible and use a neutral tile workspace after the action.',
       );
       break;
   }
@@ -316,7 +300,7 @@ const OPTIONAL_FIELD_SCHEMAS: Record<string, Schema> = {
   factFamily: {
     type: Type.ARRAY,
     items: { type: Type.STRING },
-    description: "All 4 related equations. E.g., ['2+3=5','3+2=5','5-2=3','5-3=2'].",
+    description: "Every distinct related form: 4 for unequal parts, 2 for equal parts.",
   },
   targetEquation: {
     type: Type.STRING,
@@ -436,7 +420,7 @@ function generateInstruction(type: string, whole: number): string {
     case 'related-fact':
       return `The whole is ${whole}. Say the two facts that go with this number bond.`;
     case 'fact-family':
-      return `Write all 4 equations for this number bond with ${whole}.`;
+      return `Build every distinct equation for this number bond with ${whole}.`;
     case 'build-equation':
       return `Use the tiles to build an equation with ${whole}.`;
     default:
@@ -453,7 +437,7 @@ function generateInstruction(type: string, whole: number): string {
  *
  * Grade-aware content:
  * - Kindergarten (K): maxNumber 5, focus on decompose and missing-part
- * - Grade 1: maxNumber 10, include all 4 challenge types
+ * - Grade 1: maxNumber 10, may include all 6 challenge types
  *
  * @param topic - The math topic or concept
  * @param gradeLevel - Grade level for age-appropriate content
@@ -548,7 +532,7 @@ GUIDELINES FOR GRADE LEVELS:
 
 - Grade 1 (gradeBand "1"):
   * maxNumber: 10 (wholes range from 3 to 10)
-  * Include ALL 4 types: decompose, missing-part, fact-family, build-equation
+  * May include all 6 types: decompose, missing-part, related-fact, ten-and-ones, fact-family, build-equation
   * More formal but still encouraging language
   * showCounters: true
   * showEquation: true (Grade 1 connects bonds to equations)
@@ -569,9 +553,9 @@ REQUIREMENTS:
 4. For Kindergarten: ONLY use 'decompose', 'missing-part', 'related-fact' and 'ten-and-ones' types
 4b. For 'ten-and-ones', the whole is a TEEN NUMBER 11-19 (never 10, never 20) and both
     parts are null — the student places the ten and the ones. Vary the whole across the set.
-5. For Grade 1: mix all 4 types, progressing from decompose to build-equation
+5. For Grade 1: mix all 6 types, progressing from decompose to symbolic relationships
 6. For decompose challenges, allPairs MUST include ALL valid unique pairs (a <= b)
-7. For fact-family challenges, factFamily MUST have exactly 4 equations
+7. For fact-family challenges, factFamily MUST contain every DISTINCT family form: 4 for unequal parts, 2 for equal parts
 8. Vary the whole numbers across challenges (don't repeat the same whole consecutively)
 9. Ensure part1 + part2 = whole whenever parts are specified
 10. For missing-part, choose part1 values that are not trivially 0 or equal to whole
@@ -773,13 +757,18 @@ Return the complete number bond configuration.
       const p2 = challenge.whole - p1;
       challenge.part1 = p1;
       challenge.part2 = p2;
-      // Ensure exactly 4 equations
-      challenge.factFamily = [
-        `${p1}+${p2}=${challenge.whole}`,
-        `${p2}+${p1}=${challenge.whole}`,
-        `${challenge.whole}-${p1}=${p2}`,
-        `${challenge.whole}-${p2}=${p1}`
-      ];
+      // Required FORM coverage differs from mathematical equivalence. Unequal
+      // parts need both addition orders and both subtraction directions; equal
+      // parts have only one distinct form of each operation.
+      challenge.factFamily = p1 === p2
+        ? [`${p1}+${p2}=${challenge.whole}`, `${challenge.whole}-${p1}=${p2}`]
+        : [
+          `${p1}+${p2}=${challenge.whole}`,
+          `${p2}+${p1}=${challenge.whole}`,
+          `${challenge.whole}-${p1}=${p2}`,
+          `${challenge.whole}-${p2}=${p1}`,
+        ];
+      challenge.instruction = `Build all ${p1 === p2 ? 2 : 4} distinct equations for this number bond with ${challenge.whole}.`;
       challenge.allPairs = null;
       challenge.targetEquation = null;
     }
@@ -864,9 +853,19 @@ Return the complete number bond configuration.
         factFamily: null,
         targetEquation: null,
       },
+      'related-fact': {
+        type: 'related-fact',
+        instruction: `Join the parts of ${w}, then undo the relationship.`,
+        whole: w,
+        part1: 1,
+        part2: w - 1,
+        allPairs: null,
+        factFamily: null,
+        targetEquation: null,
+      },
       'fact-family': {
         type: 'fact-family',
-        instruction: `Write all 4 equations for 3 + ${w - 3} = ${w}.`,
+        instruction: `Transform the bond and build each distinct related equation.`,
         whole: w,
         part1: 3,
         part2: w - 3,
@@ -876,7 +875,7 @@ Return the complete number bond configuration.
       },
       'build-equation': {
         type: 'build-equation',
-        instruction: `Build the equation: 3 + ${w - 3} = ${w}`,
+        instruction: `Choose an action on the bond, then build the matching equation.`,
         whole: w,
         part1: 3,
         part2: w - 3,
