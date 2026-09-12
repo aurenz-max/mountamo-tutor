@@ -1,0 +1,459 @@
+{
+  "status": "warn",
+  "componentId": "place-value-chart",
+  "audit": {
+    "componentId": "place-value-chart",
+    "status": "warn",
+    "componentFiles": [
+      "src/components/lumina/primitives/visual-primitives/math/PlaceValueChart.tsx",
+      "src/components/lumina/primitives/visual-primitives/math/placeValueScript.ts"
+    ],
+    "dataBagKeys": null,
+    "dataBagDynamic": true,
+    "contextKeys": [
+      "challengeType",
+      "stimulus"
+    ],
+    "templateVars": [
+      "challengeType",
+      "stimulus"
+    ],
+    "sendTextTags": [],
+    "findings": [
+      {
+        "check": "data-bag-unparsed",
+        "severity": "WARN",
+        "message": "Could not statically parse the primitiveData bag — contextKeys/{{var}} checks skipped. Run the &probe=1 tier or verify in the Lumina Tutor Tester."
+      },
+      {
+        "check": "indirect-script",
+        "severity": "WARN",
+        "message": "commonStruggles[4].response narrates the UI (\"answer the question\") instead of enacting the question directly — say the question itself (\"[question], what do you think?\"), don't point the student at it."
+      },
+      {
+        "check": "no-sendtext-moments",
+        "severity": "WARN",
+        "message": "Component never calls sendText — the tutor will go silent after the initial greeting (no pedagogical moments are wired)."
+      },
+      {
+        "check": "directive-tag-never-emitted",
+        "severity": "WARN",
+        "message": "aiDirectives reference [BRACKETS] but no source file ever sends that tag — the directive is dead prompt text (or the trigger was renamed)."
+      }
+    ]
+  },
+  "staticPromptPreview": "\n**CURRENT PRIMITIVE: place-value-chart**\nGrade Level: K-6\n\n**TASK:** LIVE-JUDGED place value practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or by WRITING digits into the chart, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: . The question side of what is on screen: .\n\n**RUNTIME STATE:**\n  (no state reported yet)\n\n**SCAFFOLDING STRATEGY:**\nLevel 1: Repeat the current scripted ask exactly once, a little slower. Never name a place, a value, or a digit beyond what the ask names.\nLevel 2: A wrong answer is never met with a hint of your own — speak the scripted \"My turn:\" correction from the cue again, exactly as written, even if you just said it.\nLevel 3: If the child stays stuck, stay with the script: the correction walks the places (or the columns) and re-asks for you. Never invent encouragement, a new question, a softer hint, or a walk of your own.\n\n**COMMON STRUGGLES:**\n- Long silence → \"Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.\"\n- Says the digit's value, or the digit itself, when asked for its PLACE → \"That answers what the digit is worth, not where it sits, so it is wrong: speak the scripted \"My turn:\" correction, which walks the places from the end and re-asks.\"\n- Says the bare digit when asked what it is WORTH (four for forty) → \"That says how many ones, not what the digit is worth in its place, so it is WRONG however close it sounds: speak the scripted correction, which is where digit and worth get told apart.\"\n- Says the right digit at the wrong place (four hundred for forty) → \"Wrong place, wrong worth: speak the scripted \"My turn:\" correction exactly as written.\"\n- Reads the whole number off the screen instead of answering → \"That does not answer the question — only the glowing digit's place or worth does. It is wrong: speak the scripted correction.\"\n- Writes the digits in the wrong columns, or leaves a column empty → \"The chart is judged in code and you are told whether it matches — speak only the verdict line the cue gives you. The correction models the column walk on a different number and dictates the target again; never walk the target's own columns beyond it.\"\n- The same wrong answer comes twice in a row → \"Speak the SAME scripted \"My turn:\" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.\"\n\n**THE OPENING LINE ALREADY SAYS HOW TO PLAY:**\nYour first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. Never invent a greeting, add instructions, or ask a question of your own before or after it — and never read the number on the screen out loud before the ask.\n\n**WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE:**\nThe current type is , and every cue states which kind of answer its item wants — this activity asks for three different kinds and you must never assume which. On find_place the answer is a PLACE NAME — ones, tens, hundreds, thousands, ten thousands. The digit or its value said instead is the recorded confusion and is wrong. On say_value the answer is the digit's WORTH said with place vocabulary — \"forty\", \"three hundred\". The bare digit is wrong however close it sounds: it says how many, not what it is worth. Where ten thousands is on the chart, a bare \"thousands\" for the ten-thousands column is the wrong column and is corrected. The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. On a WRITING item (build_number) the child writes the number you dictated into the chart, and you are told what they wrote and whether it matches. THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.\n\n**THE VERDICT ENDS THE TURN:**\nAn affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another digit, or the next item, even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong number.\n\n**NEVER READ THE SCREEN OR THE STATE ALOUD:**\nNever read the number on the screen out loud during the child's turn — on an analysis item it contains the value they are about to say, and reading it hands the answer over. Never read the [CURRENT STATE] block, its heading, or any of its lines aloud: it is context for you, never content for the child. Never name the columns beyond what the quoted ask names.\n\n**WRITING ITEMS ARE SILENT:**\nWhen the cue tells you the child answers by writing, say nothing at all while they work — no repeating the number, no digit names, no column names, no narration. The dictation is said once in the ask; if the child wants it again they tap to hear it. You will be told what number they wrote and whether it matches; only then do you speak the line the cue gives you.\n\n**THE CHILD IS THINKING — WAIT:**\nThink time is unbounded. Never fill a silence, never count the columns for them, and never prompt while the child is looking at the number. The silence is theirs.\n\n**SENTINEL DISCIPLINE:**\nEvery affirmation begins with \"Yes\" and EVERY correction begins with \"My turn:\" exactly as the cue scripts. Never begin any other sentence with either opener.\n\n**HEAR-THE-QUESTION ON DEMAND:**\nThe child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, treat nothing you just heard as an answer, and never say the answer. On a writing item that means dictating the whole number again, because it is never printed.\n\n**NEVER READ BRACKET TAGS:**\nText in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.\n",
+  "probe": {
+    "contentHash": "45869bc4d6d511c0d9c7bc30fe9b5ba328dbaf1069be14797b5d4e0d0cc70380",
+    "evalMode": "identify",
+    "topic": "general practice",
+    "gradeLevel": "Grade 3",
+    "generatedKeys": [
+      "challengeType",
+      "stimulus"
+    ],
+    "varResolution": [
+      {
+        "name": "challengeType",
+        "kind": "templateVar",
+        "resolvedBy": "generator-only",
+        "sampleValue": "find_place"
+      },
+      {
+        "name": "stimulus",
+        "kind": "templateVar",
+        "resolvedBy": "generator-only",
+        "sampleValue": "a 4-digit number with one digit glowing"
+      },
+      {
+        "name": "challengeType",
+        "kind": "contextKey",
+        "resolvedBy": "generator-only",
+        "sampleValue": "find_place"
+      },
+      {
+        "name": "stimulus",
+        "kind": "contextKey",
+        "resolvedBy": "generator-only",
+        "sampleValue": "a 4-digit number with one digit glowing"
+      }
+    ],
+    "promptPreview": "\n**CURRENT PRIMITIVE: place-value-chart**\nGrade Level: K-6\n\n**TASK:** LIVE-JUDGED place value practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or by WRITING digits into the chart, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: find_place. The question side of what is on screen: a 4-digit number with one digit glowing.\n\n**RUNTIME STATE:**\n  challengeType: find_place\n  stimulus: a 4-digit number with one digit glowing\n\n**SCAFFOLDING STRATEGY:**\nLevel 1: Repeat the current scripted ask exactly once, a little slower. Never name a place, a value, or a digit beyond what the ask names.\nLevel 2: A wrong answer is never met with a hint of your own — speak the scripted \"My turn:\" correction from the cue again, exactly as written, even if you just said it.\nLevel 3: If the child stays stuck, stay with the script: the correction walks the places (or the columns) and re-asks for you. Never invent encouragement, a new question, a softer hint, or a walk of your own.\n\n**COMMON STRUGGLES:**\n- Long silence → \"Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.\"\n- Says the digit's value, or the digit itself, when asked for its PLACE → \"That answers what the digit is worth, not where it sits, so it is wrong: speak the scripted \"My turn:\" correction, which walks the places from the end and re-asks.\"\n- Says the bare digit when asked what it is WORTH (four for forty) → \"That says how many ones, not what the digit is worth in its place, so it is WRONG however close it sounds: speak the scripted correction, which is where digit and worth get told apart.\"\n- Says the right digit at the wrong place (four hundred for forty) → \"Wrong place, wrong worth: speak the scripted \"My turn:\" correction exactly as written.\"\n- Reads the whole number off the screen instead of answering → \"That does not answer the question — only the glowing digit's place or worth does. It is wrong: speak the scripted correction.\"\n- Writes the digits in the wrong columns, or leaves a column empty → \"The chart is judged in code and you are told whether it matches — speak only the verdict line the cue gives you. The correction models the column walk on a different number and dictates the target again; never walk the target's own columns beyond it.\"\n- The same wrong answer comes twice in a row → \"Speak the SAME scripted \"My turn:\" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.\"\n\n**THE OPENING LINE ALREADY SAYS HOW TO PLAY:**\nYour first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. Never invent a greeting, add instructions, or ask a question of your own before or after it — and never read the number on the screen out loud before the ask.\n\n**WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE:**\nThe current type is find_place, and every cue states which kind of answer its item wants — this activity asks for three different kinds and you must never assume which. On find_place the answer is a PLACE NAME — ones, tens, hundreds, thousands, ten thousands. The digit or its value said instead is the recorded confusion and is wrong. On say_value the answer is the digit's WORTH said with place vocabulary — \"forty\", \"three hundred\". The bare digit is wrong however close it sounds: it says how many, not what it is worth. Where ten thousands is on the chart, a bare \"thousands\" for the ten-thousands column is the wrong column and is corrected. The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. On a WRITING item (build_number) the child writes the number you dictated into the chart, and you are told what they wrote and whether it matches. THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.\n\n**THE VERDICT ENDS THE TURN:**\nAn affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another digit, or the next item, even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong number.\n\n**NEVER READ THE SCREEN OR THE STATE ALOUD:**\nNever read the number on the screen out loud during the child's turn — on an analysis item it contains the value they are about to say, and reading it hands the answer over. Never read the [CURRENT STATE] block, its heading, or any of its lines aloud: it is context for you, never content for the child. Never name the columns beyond what the quoted ask names.\n\n**WRITING ITEMS ARE SILENT:**\nWhen the cue tells you the child answers by writing, say nothing at all while they work — no repeating the number, no digit names, no column names, no narration. The dictation is said once in the ask; if the child wants it again they tap to hear it. You will be told what number they wrote and whether it matches; only then do you speak the line the cue gives you.\n\n**THE CHILD IS THINKING — WAIT:**\nThink time is unbounded. Never fill a silence, never count the columns for them, and never prompt while the child is looking at the number. The silence is theirs.\n\n**SENTINEL DISCIPLINE:**\nEvery affirmation begins with \"Yes\" and EVERY correction begins with \"My turn:\" exactly as the cue scripts. Never begin any other sentence with either opener.\n\n**HEAR-THE-QUESTION ON DEMAND:**\nThe child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, treat nothing you just heard as an answer, and never say the answer. On a writing item that means dictating the whole number again, because it is never printed.\n\n**NEVER READ BRACKET TAGS:**\nText in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.\n",
+    "liveContext": {
+      "tutoring": {
+        "taskDescription": "LIVE-JUDGED place value practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or by WRITING digits into the chart, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.",
+        "contextKeys": [
+          "challengeType",
+          "stimulus"
+        ],
+        "scaffoldingLevels": {
+          "level1": "Repeat the current scripted ask exactly once, a little slower. Never name a place, a value, or a digit beyond what the ask names.",
+          "level2": "A wrong answer is never met with a hint of your own — speak the scripted \"My turn:\" correction from the cue again, exactly as written, even if you just said it.",
+          "level3": "If the child stays stuck, stay with the script: the correction walks the places (or the columns) and re-asks for you. Never invent encouragement, a new question, a softer hint, or a walk of your own."
+        },
+        "commonStruggles": [
+          {
+            "pattern": "Long silence",
+            "response": "Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them."
+          },
+          {
+            "pattern": "Says the digit's value, or the digit itself, when asked for its PLACE",
+            "response": "That answers what the digit is worth, not where it sits, so it is wrong: speak the scripted \"My turn:\" correction, which walks the places from the end and re-asks."
+          },
+          {
+            "pattern": "Says the bare digit when asked what it is WORTH (four for forty)",
+            "response": "That says how many ones, not what the digit is worth in its place, so it is WRONG however close it sounds: speak the scripted correction, which is where digit and worth get told apart."
+          },
+          {
+            "pattern": "Says the right digit at the wrong place (four hundred for forty)",
+            "response": "Wrong place, wrong worth: speak the scripted \"My turn:\" correction exactly as written."
+          },
+          {
+            "pattern": "Reads the whole number off the screen instead of answering",
+            "response": "That does not answer the question — only the glowing digit's place or worth does. It is wrong: speak the scripted correction."
+          },
+          {
+            "pattern": "Writes the digits in the wrong columns, or leaves a column empty",
+            "response": "The chart is judged in code and you are told whether it matches — speak only the verdict line the cue gives you. The correction models the column walk on a different number and dictates the target again; never walk the target's own columns beyond it."
+          },
+          {
+            "pattern": "The same wrong answer comes twice in a row",
+            "response": "Speak the SAME scripted \"My turn:\" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint."
+          }
+        ],
+        "aiDirectives": [
+          {
+            "title": "THE OPENING LINE ALREADY SAYS HOW TO PLAY",
+            "instruction": "Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. Never invent a greeting, add instructions, or ask a question of your own before or after it — and never read the number on the screen out loud before the ask."
+          },
+          {
+            "title": "WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE",
+            "instruction": "The current type is {{challengeType}}, and every cue states which kind of answer its item wants — this activity asks for three different kinds and you must never assume which. On find_place the answer is a PLACE NAME — ones, tens, hundreds, thousands, ten thousands. The digit or its value said instead is the recorded confusion and is wrong. On say_value the answer is the digit's WORTH said with place vocabulary — \"forty\", \"three hundred\". The bare digit is wrong however close it sounds: it says how many, not what it is worth. Where ten thousands is on the chart, a bare \"thousands\" for the ten-thousands column is the wrong column and is corrected. The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. On a WRITING item (build_number) the child writes the number you dictated into the chart, and you are told what they wrote and whether it matches. THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction."
+          },
+          {
+            "title": "THE VERDICT ENDS THE TURN",
+            "instruction": "An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another digit, or the next item, even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong number."
+          },
+          {
+            "title": "NEVER READ THE SCREEN OR THE STATE ALOUD",
+            "instruction": "Never read the number on the screen out loud during the child's turn — on an analysis item it contains the value they are about to say, and reading it hands the answer over. Never read the [CURRENT STATE] block, its heading, or any of its lines aloud: it is context for you, never content for the child. Never name the columns beyond what the quoted ask names."
+          },
+          {
+            "title": "WRITING ITEMS ARE SILENT",
+            "instruction": "When the cue tells you the child answers by writing, say nothing at all while they work — no repeating the number, no digit names, no column names, no narration. The dictation is said once in the ask; if the child wants it again they tap to hear it. You will be told what number they wrote and whether it matches; only then do you speak the line the cue gives you."
+          },
+          {
+            "title": "THE CHILD IS THINKING — WAIT",
+            "instruction": "Think time is unbounded. Never fill a silence, never count the columns for them, and never prompt while the child is looking at the number. The silence is theirs."
+          },
+          {
+            "title": "SENTINEL DISCIPLINE",
+            "instruction": "Every affirmation begins with \"Yes\" and EVERY correction begins with \"My turn:\" exactly as the cue scripts. Never begin any other sentence with either opener."
+          },
+          {
+            "title": "HEAR-THE-QUESTION ON DEMAND",
+            "instruction": "The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, treat nothing you just heard as an answer, and never say the answer. On a writing item that means dictating the whole number again, because it is never printed."
+          },
+          {
+            "title": "NEVER READ BRACKET TAGS",
+            "instruction": "Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken."
+          }
+        ]
+      },
+      "generatedData": {
+        "title": "Four-Digit Place Value Mastery",
+        "description": "Join your live voice tutor to explore four-digit numbers across three interactive phases. You'll name place values out loud, state the true worth of digits, and write dictated numbers directly into your chart.",
+        "challenges": [
+          {
+            "id": "pvc-1",
+            "targetNumber": 1610,
+            "highlightedDigitPlace": 1,
+            "minPlace": 0,
+            "maxPlace": 3,
+            "placeNameChoices": [
+              "Tens",
+              "Ones",
+              "Hundreds",
+              "Thousands"
+            ],
+            "digitValueChoices": [
+              {
+                "value": 1,
+                "wordForm": "One"
+              },
+              {
+                "value": 10,
+                "wordForm": "Ten"
+              },
+              {
+                "value": 100,
+                "wordForm": "One Hundred"
+              },
+              {
+                "value": 0.1,
+                "wordForm": "One Tenth"
+              }
+            ]
+          },
+          {
+            "id": "pvc-2",
+            "targetNumber": 8262,
+            "highlightedDigitPlace": 2,
+            "minPlace": 0,
+            "maxPlace": 3,
+            "placeNameChoices": [
+              "Tens",
+              "Thousands",
+              "Ones",
+              "Hundreds"
+            ],
+            "digitValueChoices": [
+              {
+                "value": 20,
+                "wordForm": "Twenty"
+              },
+              {
+                "value": 2000,
+                "wordForm": "Two Thousand"
+              },
+              {
+                "value": 200,
+                "wordForm": "Two Hundred"
+              },
+              {
+                "value": 2,
+                "wordForm": "Two"
+              }
+            ]
+          },
+          {
+            "id": "pvc-3",
+            "targetNumber": 9132,
+            "highlightedDigitPlace": 2,
+            "minPlace": 0,
+            "maxPlace": 3,
+            "placeNameChoices": [
+              "Hundreds",
+              "Tens",
+              "Thousands",
+              "Ones"
+            ],
+            "digitValueChoices": [
+              {
+                "value": 100,
+                "wordForm": "One Hundred"
+              },
+              {
+                "value": 10,
+                "wordForm": "Ten"
+              },
+              {
+                "value": 1000,
+                "wordForm": "One Thousand"
+              },
+              {
+                "value": 1,
+                "wordForm": "One"
+              }
+            ]
+          }
+        ],
+        "challengeType": "compare",
+        "showExpandedForm": true,
+        "showMultipliers": false,
+        "supportTier": "medium",
+        "gradeLevel": "Grade 3"
+      },
+      "mergedBag": {
+        "challengeType": "find_place",
+        "stimulus": "a 4-digit number with one digit glowing"
+      }
+    },
+    "diPlan": {
+      "componentId": "place-value-chart",
+      "primitiveType": "place-value-chart",
+      "activityLine": "live direct instruction place value practice",
+      "gradeLevel": "Grade 3",
+      "audioInput": {
+        "manual_activity": true
+      },
+      "sentinels": {
+        "affirm": [
+          [
+            "yes"
+          ]
+        ],
+        "correct": [
+          [
+            "my",
+            "turn"
+          ]
+        ]
+      },
+      "maxCorrections": 2,
+      "items": [
+        {
+          "id": "pvc-1::place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place",
+          "cue": "[PVC_ITEM] Say exactly: \"Hi! Time to work with big numbers! Look at the glowing digit, then say the name of its place. Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"tens\". \"ten\" — the digit's worth — is the confident wrong answer here: it answers what the digit is WORTH, and this question asks WHERE it sits. \"one\" — the digit read off the screen — is the same miss. Both are wrong however sure they sound; the correction walks the places and re-asks. A neighbouring column's name is the quieter miss — one place off in the walk. Accept \"tens\" on its own or inside the child's phrasing — \"the tens\", \"tens place\", \"it is in the tens\" are all the same answer. If the answer is right, say exactly: \"Yes, the one is in the tens place.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I start at the end and walk left — ones, tens. The one sits in the tens place. Your turn. Which place is the glowing one in?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "askLine": "Hi! Time to work with big numbers! Look at the glowing digit, then say the name of its place. Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?",
+          "affirmLine": "Yes, the one is in the tens place.",
+          "correctionLine": "My turn: I start at the end and walk left — ones, tens. The one sits in the tens place. Your turn. Which place is the glowing one in?",
+          "correctionLines": [
+            "My turn: I start at the end and walk left — ones, tens. The one sits in the tens place. Your turn. Which place is the glowing one in?"
+          ],
+          "context": {
+            "challengeType": "find_place",
+            "stimulus": "a 4-digit number with one digit glowing"
+          },
+          "answers": {
+            "correct": "tens",
+            "plainWrong": "thousands",
+            "signatureWrong": {
+              "text": "ten",
+              "why": "the digit's VALUE said where its PLACE was asked — the mode confusion the catalog's own struggle row records"
+            },
+            "leakTokens": [
+              "tens"
+            ],
+            "leakExemptSpan": " Is it the ones place, the tens place, the hundreds place, or the thousands place?"
+          },
+          "pronounceCue": "[PVC_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+          "reanchorCue": "[PVC_ITEM] Say exactly: \"Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"tens\". \"ten\" — the digit's worth — is the confident wrong answer here: it answers what the digit is WORTH, and this question asks WHERE it sits. \"one\" — the digit read off the screen — is the same miss. Both are wrong however sure they sound; the correction walks the places and re-asks. A neighbouring column's name is the quieter miss — one place off in the walk. Accept \"tens\" on its own or inside the child's phrasing — \"the tens\", \"tens place\", \"it is in the tens\" are all the same answer. If the answer is right, say exactly: \"Yes, the one is in the tens place.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I start at the end and walk left — ones, tens. The one sits in the tens place. Your turn. Which place is the glowing one in?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "moveOnCue": "[PVC_MOVE] Say exactly: \"Good try! Say what the glowing digit is worth. The glowing digit is in the tens place. What is it worth?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"ten\". \"one\" on its own is the confident wrong answer here — the digit read off the screen with no place. It is WRONG however close it sounds: it says how many ones, not what the digit is worth here, and the correction is where the difference gets taught. \"one hundred\" is the other miss — the right digit in the wrong place. Reading the whole number off the screen is not an answer to this question either. Accept \"ten\" on its own or inside phrasing — \"it is worth ten\" counts. \"one tens\" — the unit way of saying it — is also right; affirm it with the word \"ten\". If the answer is right, say exactly: \"Yes, ten — an one in the tens place is worth ten.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I say the digit, then its place — one, tens: ten. One alone only counts ones; in the tens place it is worth ten. Your turn. What is the glowing one worth?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "pvc-1::value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value",
+          "cue": "[PVC_ITEM] Say exactly: \"Say what the glowing digit is worth. The glowing digit is in the tens place. What is it worth?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"ten\". \"one\" on its own is the confident wrong answer here — the digit read off the screen with no place. It is WRONG however close it sounds: it says how many ones, not what the digit is worth here, and the correction is where the difference gets taught. \"one hundred\" is the other miss — the right digit in the wrong place. Reading the whole number off the screen is not an answer to this question either. Accept \"ten\" on its own or inside phrasing — \"it is worth ten\" counts. \"one tens\" — the unit way of saying it — is also right; affirm it with the word \"ten\". If the answer is right, say exactly: \"Yes, ten — an one in the tens place is worth ten.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I say the digit, then its place — one, tens: ten. One alone only counts ones; in the tens place it is worth ten. Your turn. What is the glowing one worth?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "askLine": "Say what the glowing digit is worth. The glowing digit is in the tens place. What is it worth?",
+          "affirmLine": "Yes, ten — an one in the tens place is worth ten.",
+          "correctionLine": "My turn: I say the digit, then its place — one, tens: ten. One alone only counts ones; in the tens place it is worth ten. Your turn. What is the glowing one worth?",
+          "correctionLines": [
+            "My turn: I say the digit, then its place — one, tens: ten. One alone only counts ones; in the tens place it is worth ten. Your turn. What is the glowing one worth?"
+          ],
+          "context": {
+            "challengeType": "say_value",
+            "stimulus": "a 4-digit number with one digit glowing, that digit's place now known"
+          },
+          "answers": {
+            "correct": "ten",
+            "plainWrong": "twenty",
+            "signatureWrong": {
+              "text": "one",
+              "why": "the bare digit said for its worth — how many ones, not what it is worth here; the confusion this mode exists to undo, refused on purpose"
+            },
+            "leakTokens": [
+              "ten"
+            ]
+          },
+          "pronounceCue": "[PVC_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"The glowing digit is in the tens place. What is it worth?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+          "reanchorCue": "[PVC_ITEM] Say exactly: \"The glowing digit is in the tens place. What is it worth?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"ten\". \"one\" on its own is the confident wrong answer here — the digit read off the screen with no place. It is WRONG however close it sounds: it says how many ones, not what the digit is worth here, and the correction is where the difference gets taught. \"one hundred\" is the other miss — the right digit in the wrong place. Reading the whole number off the screen is not an answer to this question either. Accept \"ten\" on its own or inside phrasing — \"it is worth ten\" counts. \"one tens\" — the unit way of saying it — is also right; affirm it with the word \"ten\". If the answer is right, say exactly: \"Yes, ten — an one in the tens place is worth ten.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I say the digit, then its place — one, tens: ten. One alone only counts ones; in the tens place it is worth ten. Your turn. What is the glowing one worth?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "moveOnCue": "[PVC_MOVE] Say exactly: \"Good try! I say a number, and you write it — one digit in each column. When you stop, I look at your number. Listen. The number is: eight thousand two hundred sixty-two. Write it — one digit in each column.\" The quoted line is the ONLY thing you say on this turn; the learner answers with their HANDS, writing one digit in each column, so you then stay completely silent. Never repeat the number while they work, never say a digit or a column name, and never read their chart back to them as they write. Do not narrate what they are doing or fill the pause. You will be told what number they wrote and whether it matches; only then do you speak. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "pvc-2::build",
+          "answerKind": "gesture",
+          "responseClass": "manipulation",
+          "action": "write-number",
+          "cue": "[PVC_ITEM] Say exactly: \"I say a number, and you write it — one digit in each column. When you stop, I look at your number. Listen. The number is: eight thousand two hundred sixty-two. Write it — one digit in each column.\" The quoted line is the ONLY thing you say on this turn; the learner answers with their HANDS, writing one digit in each column, so you then stay completely silent. Never repeat the number while they work, never say a digit or a column name, and never read their chart back to them as they write. Do not narrate what they are doing or fill the pause. You will be told what number they wrote and whether it matches; only then do you speak. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "askLine": "I say a number, and you write it — one digit in each column. When you stop, I look at your number. Listen. The number is: eight thousand two hundred sixty-two. Write it — one digit in each column.",
+          "context": {
+            "challengeType": "build_number",
+            "stimulus": "an empty place-value chart of 4 labeled columns, waiting for a spoken number"
+          },
+          "answers": {
+            "correct": "",
+            "plainWrong": "",
+            "placed": {
+              "correct": 8262,
+              "wrong": 2862
+            },
+            "leakTokens": [
+              "eight thousand two hundred sixty-two"
+            ],
+            "leakExemptSpan": "eight thousand two hundred sixty-two"
+          },
+          "gestureVerdict": {
+            "correct": "[PVC_WRITE] The learner wrote — thousands: 8, hundreds: 2, tens: 6, ones: 2; the dictated number is 8262 — that MATCHES. Say exactly: \"Yes! Eight thousand two hundred sixty-two — every digit in its own place.\" Never read bracket tags aloud.",
+            "wrong": "[PVC_WRITE] The learner wrote — thousands: 2, hundreds: 8, tens: 6, ones: 2; the dictated number is 8262 — that does NOT match. Say exactly: \"My turn: when I hear three hundred six, I go column by column — a three in the hundreds place; no tens — so a zero in the tens place; a six in the ones place. Your turn. Listen: eight thousand two hundred sixty-two. Write it again.\" Never read bracket tags aloud."
+          },
+          "pronounceCue": "[PVC_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"Listen. The number is: eight thousand two hundred sixty-two. Write it — one digit in each column.\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+          "reanchorCue": "[PVC_ITEM] Say exactly: \"Listen. The number is: eight thousand two hundred sixty-two. Write it — one digit in each column.\" The quoted line is the ONLY thing you say on this turn; the learner answers with their HANDS, writing one digit in each column, so you then stay completely silent. Never repeat the number while they work, never say a digit or a column name, and never read their chart back to them as they write. Do not narrate what they are doing or fill the pause. You will be told what number they wrote and whether it matches; only then do you speak. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "moveOnCue": "[PVC_MOVE] Say exactly: \"Good try! Look at the glowing digit, then say the name of its place. Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"hundreds\". \"one hundred\" — the digit's worth — is the confident wrong answer here: it answers what the digit is WORTH, and this question asks WHERE it sits. \"one\" — the digit read off the screen — is the same miss. Both are wrong however sure they sound; the correction walks the places and re-asks. A neighbouring column's name is the quieter miss — one place off in the walk. Accept \"hundreds\" on its own or inside the child's phrasing — \"the hundreds\", \"hundreds place\", \"it is in the hundreds\" are all the same answer. If the answer is right, say exactly: \"Yes, the one is in the hundreds place.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I start at the end and walk left — ones, tens, hundreds. The one sits in the hundreds place. Your turn. Which place is the glowing one in?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "pvc-3::place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place",
+          "cue": "[PVC_ITEM] Say exactly: \"Look at the glowing digit, then say the name of its place. Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"hundreds\". \"one hundred\" — the digit's worth — is the confident wrong answer here: it answers what the digit is WORTH, and this question asks WHERE it sits. \"one\" — the digit read off the screen — is the same miss. Both are wrong however sure they sound; the correction walks the places and re-asks. A neighbouring column's name is the quieter miss — one place off in the walk. Accept \"hundreds\" on its own or inside the child's phrasing — \"the hundreds\", \"hundreds place\", \"it is in the hundreds\" are all the same answer. If the answer is right, say exactly: \"Yes, the one is in the hundreds place.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I start at the end and walk left — ones, tens, hundreds. The one sits in the hundreds place. Your turn. Which place is the glowing one in?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "askLine": "Look at the glowing digit, then say the name of its place. Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?",
+          "affirmLine": "Yes, the one is in the hundreds place.",
+          "correctionLine": "My turn: I start at the end and walk left — ones, tens, hundreds. The one sits in the hundreds place. Your turn. Which place is the glowing one in?",
+          "correctionLines": [
+            "My turn: I start at the end and walk left — ones, tens, hundreds. The one sits in the hundreds place. Your turn. Which place is the glowing one in?"
+          ],
+          "context": {
+            "challengeType": "find_place",
+            "stimulus": "a 4-digit number with one digit glowing"
+          },
+          "answers": {
+            "correct": "hundreds",
+            "plainWrong": "thousands",
+            "signatureWrong": {
+              "text": "one hundred",
+              "why": "the digit's VALUE said where its PLACE was asked — the mode confusion the catalog's own struggle row records"
+            },
+            "leakTokens": [
+              "hundreds"
+            ],
+            "leakExemptSpan": " Is it the ones place, the tens place, the hundreds place, or the thousands place?"
+          },
+          "pronounceCue": "[PVC_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+          "reanchorCue": "[PVC_ITEM] Say exactly: \"Find the glowing one. Which place is it in? Is it the ones place, the tens place, the hundreds place, or the thousands place?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"hundreds\". \"one hundred\" — the digit's worth — is the confident wrong answer here: it answers what the digit is WORTH, and this question asks WHERE it sits. \"one\" — the digit read off the screen — is the same miss. Both are wrong however sure they sound; the correction walks the places and re-asks. A neighbouring column's name is the quieter miss — one place off in the walk. Accept \"hundreds\" on its own or inside the child's phrasing — \"the hundreds\", \"hundreds place\", \"it is in the hundreds\" are all the same answer. If the answer is right, say exactly: \"Yes, the one is in the hundreds place.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I start at the end and walk left — ones, tens, hundreds. The one sits in the hundreds place. Your turn. Which place is the glowing one in?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "moveOnCue": "[PVC_MOVE] Say exactly: \"Good try! Say what the glowing digit is worth. The glowing digit is in the hundreds place. What is it worth?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"one hundred\". \"one\" on its own is the confident wrong answer here — the digit read off the screen with no place. It is WRONG however close it sounds: it says how many ones, not what the digit is worth here, and the correction is where the difference gets taught. \"one thousand\" is the other miss — the right digit in the wrong place. Reading the whole number off the screen is not an answer to this question either. Accept \"one hundred\" on its own or inside phrasing — \"it is worth one hundred\" counts. \"one hundreds\" — the unit way of saying it — is also right; affirm it with the word \"one hundred\". If the answer is right, say exactly: \"Yes, one hundred — an one in the hundreds place is worth one hundred.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I say the digit, then its place — one, hundreds: one hundred. One alone only counts ones; in the hundreds place it is worth one hundred. Your turn. What is the glowing one worth?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking."
+        },
+        {
+          "id": "pvc-3::value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value",
+          "cue": "[PVC_ITEM] Say exactly: \"Say what the glowing digit is worth. The glowing digit is in the hundreds place. What is it worth?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"one hundred\". \"one\" on its own is the confident wrong answer here — the digit read off the screen with no place. It is WRONG however close it sounds: it says how many ones, not what the digit is worth here, and the correction is where the difference gets taught. \"one thousand\" is the other miss — the right digit in the wrong place. Reading the whole number off the screen is not an answer to this question either. Accept \"one hundred\" on its own or inside phrasing — \"it is worth one hundred\" counts. \"one hundreds\" — the unit way of saying it — is also right; affirm it with the word \"one hundred\". If the answer is right, say exactly: \"Yes, one hundred — an one in the hundreds place is worth one hundred.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I say the digit, then its place — one, hundreds: one hundred. One alone only counts ones; in the hundreds place it is worth one hundred. Your turn. What is the glowing one worth?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "askLine": "Say what the glowing digit is worth. The glowing digit is in the hundreds place. What is it worth?",
+          "affirmLine": "Yes, one hundred — an one in the hundreds place is worth one hundred.",
+          "correctionLine": "My turn: I say the digit, then its place — one, hundreds: one hundred. One alone only counts ones; in the hundreds place it is worth one hundred. Your turn. What is the glowing one worth?",
+          "correctionLines": [
+            "My turn: I say the digit, then its place — one, hundreds: one hundred. One alone only counts ones; in the hundreds place it is worth one hundred. Your turn. What is the glowing one worth?"
+          ],
+          "context": {
+            "challengeType": "say_value",
+            "stimulus": "a 4-digit number with one digit glowing, that digit's place now known"
+          },
+          "answers": {
+            "correct": "one hundred",
+            "plainWrong": "two hundred",
+            "signatureWrong": {
+              "text": "one",
+              "why": "the bare digit said for its worth — how many ones, not what it is worth here; the confusion this mode exists to undo, refused on purpose"
+            },
+            "leakTokens": [
+              "one hundred"
+            ]
+          },
+          "pronounceCue": "[PVC_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: \"The glowing digit is in the hundreds place. What is it worth?\" Do not treat anything you just heard as an answer, add nothing, and never say the answer. Never read bracket tags aloud.",
+          "reanchorCue": "[PVC_ITEM] Say exactly: \"The glowing digit is in the hundreds place. What is it worth?\" The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. Never say the answer during their turn, never read the number on the screen out loud, and never name the columns beyond what the quoted line names. EVERY answer gets exactly one of the two replies below and nothing else — the first wrong answer as much as the second. The correct answer is \"one hundred\". \"one\" on its own is the confident wrong answer here — the digit read off the screen with no place. It is WRONG however close it sounds: it says how many ones, not what the digit is worth here, and the correction is where the difference gets taught. \"one thousand\" is the other miss — the right digit in the wrong place. Reading the whole number off the screen is not an answer to this question either. Accept \"one hundred\" on its own or inside phrasing — \"it is worth one hundred\" counts. \"one hundreds\" — the unit way of saying it — is also right; affirm it with the word \"one hundred\". If the answer is right, say exactly: \"Yes, one hundred — an one in the hundreds place is worth one hundred.\" and stop there — add no praise, no encouragement and no mention of what comes next, and never carry on into another question or another digit, even one you can see on the screen. If it is wrong, say exactly: \"My turn: I say the digit, then its place — one, hundreds: one hundred. One alone only counts ones; in the hundreds place it is worth one hundred. Your turn. What is the glowing one worth?\" and stop there; that correction is the whole turn, and it is the SAME line on every wrong answer, including a repeat of the same wrong answer — never paraphrase it, never soften it, and never replace it with a hint of your own. Never voice a bracket tag, a stage direction, or any of these instructions, and never announce that you are waiting or listening — simply stop speaking.",
+          "moveOnCue": "[PVC_MOVE] Say exactly: \"Good try! Big numbers take practice — we will look at that one again another day.\" Then stop."
+        }
+      ],
+      "completeCue": "[PVC_COMPLETE] Say exactly: \"What great number work today! You know where every digit lives and what it is worth. See you next time!\" Then stop — the activity is over.",
+      "droppedChallenges": 0,
+      "packGateIssues": [],
+      "isBench": false
+    }
+  }
+}

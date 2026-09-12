@@ -47,6 +47,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { placeValueVoiceObservation } from './placeValueEvidence';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -235,13 +236,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
           observed: written,
         };
       }
-      return {
-        challenge: item.kind === 'find_place'
-          ? `name the place of the ${item.digit} in ${item.targetNumber}`
-          : `say the value of the ${item.digit} in ${item.targetNumber}`,
-        expected: item.answerText,
-        observed: lastHeard ?? '(nothing heard)',
-      };
+      return placeValueVoiceObservation(item, lastHeard);
     },
   }), [items]);
 

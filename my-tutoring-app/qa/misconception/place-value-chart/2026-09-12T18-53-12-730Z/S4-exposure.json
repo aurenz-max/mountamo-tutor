@@ -1,0 +1,1 @@
+{"gate": "S4", "status": "PASS", "synthetic": true, "key": "place-value-chart::NBT003-02", "skillId": "NBT003-02", "subskillId": "NBT003-02-a", "boundary": "Real-store exposure only; manually seeded synthetic diagnosis. Not S1 or four-digit production attribution.", "cleanup": "verified absent"}

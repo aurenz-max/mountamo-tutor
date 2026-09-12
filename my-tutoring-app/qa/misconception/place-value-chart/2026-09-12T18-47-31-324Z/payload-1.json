@@ -1,0 +1,104 @@
+{
+  "title": "Four-Digit Place Value Explorer",
+  "description": "Join your tutor to explore several numbers across three fun phases by identifying places, naming values out loud, and building numbers together. Get ready to speak your answers and write each digit into the chart!",
+  "challenges": [
+    {
+      "id": "pvc-1",
+      "targetNumber": 8784,
+      "highlightedDigitPlace": 1,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Tens",
+        "Ones",
+        "Hundreds",
+        "Thousands"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 8,
+          "wordForm": "Eight"
+        },
+        {
+          "value": 80,
+          "wordForm": "Eighty"
+        },
+        {
+          "value": 800,
+          "wordForm": "Eight Hundred"
+        },
+        {
+          "value": 0.8,
+          "wordForm": "Eight Tenths"
+        }
+      ]
+    },
+    {
+      "id": "pvc-2",
+      "targetNumber": 8269,
+      "highlightedDigitPlace": 1,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Ones",
+        "Hundreds",
+        "Tens",
+        "Thousands"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 6,
+          "wordForm": "Six"
+        },
+        {
+          "value": 600,
+          "wordForm": "Six Hundred"
+        },
+        {
+          "value": 0.6000000000000001,
+          "wordForm": "Six Tenths"
+        },
+        {
+          "value": 60,
+          "wordForm": "Sixty"
+        }
+      ]
+    },
+    {
+      "id": "pvc-3",
+      "targetNumber": 1588,
+      "highlightedDigitPlace": 1,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Tens",
+        "Ones",
+        "Hundreds",
+        "Thousands"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 8,
+          "wordForm": "Eight"
+        },
+        {
+          "value": 80,
+          "wordForm": "Eighty"
+        },
+        {
+          "value": 800,
+          "wordForm": "Eight Hundred"
+        },
+        {
+          "value": 0.8,
+          "wordForm": "Eight Tenths"
+        }
+      ]
+    }
+  ],
+  "challengeType": "compare",
+  "showExpandedForm": true,
+  "showMultipliers": false,
+  "supportTier": "medium",
+  "gradeLevel": "Grade 3"
+}

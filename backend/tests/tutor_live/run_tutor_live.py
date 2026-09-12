@@ -21,6 +21,7 @@ Usage:
   python run_tutor_live.py --component states-of-matter
 """
 import argparse
+import hashlib
 import asyncio
 import json
 import os
@@ -3509,7 +3510,9 @@ def report_suffix(args: Any, journey: Dict[str, Any]) -> str:
     if args.di:
         suffix = f"-di-{args.di_wrong}"
         if args.di_cap:
-            suffix += "-cap" + (f"-{args.di_cap_item}" if args.di_cap_item else "")
+            suffix += "-cap" + (f"-{re.sub(r'[^A-Za-z0-9_-]', '_', args.di_cap_item)}" if args.di_cap_item else "")
+        if getattr(args, "di_independent_item", None):
+            suffix += "-independent"
         return suffix
     if args.lesson or journey.get("force_lesson"):
         return "-lesson"
@@ -3682,6 +3685,8 @@ def write_report(path: str, component_id: str, journey: Dict[str, Any],
 async def amain() -> int:
     ap = argparse.ArgumentParser(description="Tier-3 live tutor harness")
     ap.add_argument("--component", default="states-of-matter")
+    ap.add_argument("--di-input", help="Saved place-value pilot JSON; server rebuilds production DI plan")
+    ap.add_argument("--di-independent-item", help="Place-value pilot value item to answer correctly before any correction")
     ap.add_argument("--plumbing", action="store_true", help="connect + greeting only")
     ap.add_argument("--runs", type=int, default=1,
                     help="sessions to run over the SAME content; findings rate-scored, confirmed at >=2/3")
@@ -3741,7 +3746,26 @@ async def amain() -> int:
     token = get_id_token()
 
     print(f"[2/4] Generating real content + fetching tutoring block (probe&live)…")
-    if args.component in ("lesson-refer-back", "lesson-curiosity", "lesson-resume-continuity"):
+    if args.di_input:
+        if args.component != "place-value-chart" or not args.di or args.di_bench:
+            ap.error("--di-input requires --component place-value-chart --di and forbids --di-bench")
+        with open(args.di_input, encoding="utf-8") as payload_file:
+            payload = json.load(payload_file)
+        saved_data = payload.get("fullData", payload)
+        expected_hash = hashlib.sha256(json.dumps(saved_data, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
+        response = requests.post(f"{args.frontend}/api/lumina/tutor-test",
+            params={"componentId": args.component, "probe": "1", "live": "1", "di": "1", "gradeLevel": args.grade},
+            json={"generatedData": saved_data}, timeout=180)
+        response.raise_for_status()
+        body = response.json()
+        probe = body.get("probe", {})
+        if not probe.get("contentHash") or not probe.get("diPlan") or not probe.get("liveContext"):
+            raise RuntimeError("Frozen payload did not produce a hashed production DI plan")
+        if probe["contentHash"] != expected_hash:
+            raise RuntimeError("Server DI plan content hash differs from the saved payload")
+        live = {**probe["liveContext"], "diPlan": probe["diPlan"], "contentHash": probe["contentHash"], "status": body.get("status")}
+        print(f"      frozen content sha256: {probe['contentHash']}")
+    elif args.component in ("lesson-refer-back", "lesson-curiosity", "lesson-resume-continuity"):
         live = {"status": "static-journey", "tutoring": None, "generatedData": {}}
     else:
         live = fetch_live_context(args.frontend, args.component, args.topic, args.grade,
@@ -3780,6 +3804,17 @@ async def amain() -> int:
         build = JOURNEYS.get(args.component, build_generic_journey)
         journey = build(live, args.grade)
     beats = journey["beats"]
+    if args.di_independent_item:
+        item_id = args.di_independent_item
+        if not args.di_input or args.di_cap or not item_id.endswith("::value"):
+            ap.error("--di-independent-item requires --di-input, a value item, and no cap drill")
+        if not any(b.name == f"wrong:{item_id}" for b in beats):
+            ap.error("Independent item is not a surviving spoken value item")
+        beats[:] = [b for b in beats if b.name != f"wrong:{item_id}"]
+        journey["meta"]["independent_item"] = item_id
+        for beat in beats:
+            if beat.name == f"right:{item_id}":
+                beat.note = "Synthetic first response before correction; not evidence of real learner improvement"
     if args.plumbing:
         beats = [b for b in beats if b.name in ("greeting", "activity_start")]
         print("      plumbing mode: greeting + activity_start only")
@@ -3892,6 +3927,9 @@ async def amain() -> int:
               f"(same run shape — re-drive)")
     write_report(report_path, args.component, journey, run_results, aggregated, style, all_events,
                  bench_reports)
+    if live.get("contentHash"):
+        with open(report_path, "a", encoding="utf-8") as report_file:
+            report_file.write(f"\n\nFrozen production payload SHA-256: `{live['contentHash']}`\n")
 
     print(f"[4/4] Report: {report_path}")
     if style:

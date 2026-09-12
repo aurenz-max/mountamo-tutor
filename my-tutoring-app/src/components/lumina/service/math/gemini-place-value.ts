@@ -33,6 +33,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { createNumberPool } from './numberPoolService';
+import { placeValueRemediationMoveFor, selectPlaceValueContrast } from './placeValueRemediation';
 import {
   isAskablePlace,
   isInBandTarget,
@@ -852,12 +853,31 @@ Return ONLY the wrapper metadata in the response schema.
   const problemShape = supportTier
     ? resolveProblemShape(challengeType as ChallengeType, supportTier)
     : undefined;
-  const built = buildChallenges(
+  let built = buildChallenges(
     challengeType,
     instanceCount,
     config?.numberRange,
     problemShape,
   );
+
+  // Exact objective grade takes precedence over broad lesson framing. Explicit
+  // numeric anchors are left untouched; this pilot does not reinterpret them.
+  const anchored = /\b\d{2,}\b/.test([ctx.topic, ctx.intent, ctx.objective.text].filter(Boolean).join(' '));
+  const incompatibleScope = /\b(?:two|three|[23])[ -]digit|decimal|fraction/i.test([ctx.topic, ctx.intent, ctx.objective.text].filter(Boolean).join(' '));
+  const move = ctx.grade === '3' && !anchored && !incompatibleScope
+    ? placeValueRemediationMoveFor(challengeType, supportTier ?? undefined, ctx.remediationFocus) : null;
+  if (move) {
+    const selected = selectPlaceValueContrast(built, move, config?.numberRange);
+    built = selected.challenges.map((ch, index) => {
+      if (ch === built[index]) return ch;
+      const digit = getDigitAtPlace(ch.targetNumber, ch.highlightedDigitPlace);
+      return { ...ch,
+        placeNameChoices: buildPlaceNameChoices(ch.highlightedDigitPlace, ch.minPlace, ch.maxPlace),
+        digitValueChoices: buildDigitValueChoices(digit, ch.highlightedDigitPlace),
+      };
+    });
+    console.info('[PlaceValue remediation]', { move, count: selected.count, reason: selected.reason });
+  }
 
   // ── Judged-loop content gates, generator-side (KEEP-OR-DROP, never repair;
   // IMPORTED from placeValueScript so both sides of the wire run one

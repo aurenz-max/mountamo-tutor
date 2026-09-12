@@ -1,0 +1,25 @@
+{
+  "input": {
+    "id": "place-value-chart-missing-transcript",
+    "label": "Scripted correction without reliable learner words",
+    "subject": "Math",
+    "subskillId": "NBT003-02-a",
+    "evalMode": "compare",
+    "gradeLevel": "3",
+    "success": false,
+    "score": 40,
+    "evidence": {
+      "challengeSummary": "Say the value of the 4 in 342.",
+      "expected": "forty",
+      "observed": "No reliable transcription. Audio response is unavailable; ASR alternates four and forty.",
+      "judgeFeedback": "My turn: I say the digit, then its place — four, tens: forty. Four alone only counts ones; in the tens place it is worth forty. Your turn. What is the glowing four worth?"
+    },
+    "expectation": "abstain",
+    "note": "Generic scripted correction is not independent evidence of a wrong response. Must abstain."
+  },
+  "output": {
+    "abstain": true,
+    "reason": "The student's response lacks a reliable transcription and there are no prior attempts to establish a pattern.",
+    "evidenceTier": "judge"
+  }
+}

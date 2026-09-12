@@ -1,0 +1,26 @@
+[
+  {
+    "grade": "3",
+    "skillId": "NBT003-01",
+    "subskillId": "NBT003-01-b",
+    "text": "Students round three-digit numbers to the nearest ten by analyzing the digit in the ones place. Focus: Identifying the nearest ten for three-digit numbers. Examples: 124, 356, 482, 597, 613, 745, 829, 908. Constraints: Keep multiples of ten simple; focus on the threshold of 5."
+  },
+  {
+    "grade": "3",
+    "skillId": "NBT003-02",
+    "subskillId": "NBT003-02-a",
+    "text": "Students identify the specific value represented by each digit in a three-digit number. Focus: Recognizing place value significance. Examples: 245, 608, 319, 750, 922, 143, 567, 881. Constraints: Include zeros as placeholders to test understanding."
+  },
+  {
+    "grade": "3",
+    "skillId": "NBT003-02",
+    "subskillId": "NBT003-02-c",
+    "text": "Students break down a three-digit number into its expanded form. Focus: Decomposing numbers by place value. Examples: 342 = 300 + 40 + 2, 509 = 500 + 9, 870 = 800 + 70, 111, 456, 923, 605, 290. Constraints: Ensure variety in the placement of zeroes."
+  },
+  {
+    "grade": "3",
+    "skillId": "NBT003-05",
+    "subskillId": "NBT003-05-a",
+    "text": "Students multiply one-digit numbers by 10 using place value logic. Focus: Multiplying by ten. Examples: 2x10, 5x10, 9x10, 4x10, 7x10, 3x10, 8x10, 6x10. Constraints: Results should be 90 or less."
+  }
+]

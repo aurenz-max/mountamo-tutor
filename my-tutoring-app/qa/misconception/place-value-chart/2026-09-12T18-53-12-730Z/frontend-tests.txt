@@ -1,0 +1,73 @@
+
+> my-tutoring-app@0.1.0 test
+> vitest run --run
+
+npm.cmd : (node:38860) ExperimentalWarning: CommonJS module C:\Users\xbox3\claude web 
+tutor\my-tutoring-app\vitest.config.ts is loading ES Module C:\Users\xbox3\claude web 
+tutor\my-tutoring-app\node_modules\@vitejs\plugin-react\dist\index.js using require().
+At line:2 char:77
++ ... k.log 2>&1; npm.cmd test -- --run > ../artifacts/place-value-final-un ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:38860) Ex...sing require().:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Support for loading ES Module in require() is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ RUN  v4.1.9 C:/Users/xbox3/claude web tutor/my-tutoring-app
+
+ ❯ src/components/lumina/service/manifest/catalog/affordances.test.ts (10 tests | 1 failed) 176ms
+     × a judged pack (audioInput) that declares answers includes spoken 4ms
+Browserslist: browsers data (caniuse-lite) is 20 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/lumina/service/manifest/catalog/affordances.test.ts > affordances — catalog consistency > a 
+judged pack (audioInput) that declares answers includes spoken
+AssertionError: fraction-circles: expected [ 'type', 'tap', 'build' ] to include 'spoken'
+ ❯ src/components/lumina/service/manifest/catalog/affordances.test.ts:87:46
+     85|     for (const c of tagged) {
+     86|       if (c.audioInput && c.affordances!.answers) {
+     87|         expect(c.affordances!.answers, c.id).toContain('spoken');
+       |                                              ^
+     88|       }
+     89|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 382 passed | 2 skipped (385)
+      Tests  1 failed | 5965 passed | 10 skipped (5976)
+   Start at  15:01:26
+   Duration  79.27s (transform 52.86s, setup 5.31s, import 521.51s, tests 198.17s, environment 219.67s)
+

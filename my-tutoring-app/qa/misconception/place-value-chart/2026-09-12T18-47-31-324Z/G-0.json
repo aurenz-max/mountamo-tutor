@@ -1,0 +1,127 @@
+{
+  "status": "pass",
+  "componentId": "place-value-chart",
+  "evalMode": "compare",
+  "duration": 903,
+  "catalogMeta": {
+    "label": "Compare Places (Tier 3)",
+    "beta": 4,
+    "scaffoldingMode": 3,
+    "allowedChallengeTypes": [
+      "compare"
+    ],
+    "description": "4-digit numbers with multiple non-zero digits. Spoken place names through thousands, spoken values like \"four thousand\", and 4-digit dictation writing. Unaided production judged by the Live tutor."
+  },
+  "validation": {
+    "challengeCount": 3,
+    "typesFound": [],
+    "payloadBytes": 1314,
+    "longestStringLength": 188,
+    "longestStringPath": "description",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Four-Digit Place Value Mastery",
+    "description": "Join your live tutor to explore four-digit numbers across three exciting rounds! You'll identify glowing places, say their values out loud, and write numbers in the chart as you hear them.",
+    "challenges": [
+      {
+        "id": "pvc-1",
+        "targetNumber": 9361,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Tens",
+          "Hundreds",
+          "Thousands"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 6,
+            "wordForm": "Six"
+          },
+          {
+            "value": 600,
+            "wordForm": "Six Hundred"
+          },
+          {
+            "value": 60,
+            "wordForm": "Sixty"
+          },
+          {
+            "value": 0.6000000000000001,
+            "wordForm": "Six Tenths"
+          }
+        ]
+      },
+      {
+        "id": "pvc-2",
+        "targetNumber": 9190,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Thousands",
+          "Hundreds",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 10,
+            "wordForm": "Ten"
+          },
+          {
+            "value": 1000,
+            "wordForm": "One Thousand"
+          },
+          {
+            "value": 100,
+            "wordForm": "One Hundred"
+          },
+          {
+            "value": 1,
+            "wordForm": "One"
+          }
+        ]
+      },
+      {
+        "id": "pvc-3",
+        "targetNumber": 9197,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Hundreds",
+          "Thousands",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 10,
+            "wordForm": "Ten"
+          },
+          {
+            "value": 1000,
+            "wordForm": "One Thousand"
+          },
+          {
+            "value": 1,
+            "wordForm": "One"
+          },
+          {
+            "value": 100,
+            "wordForm": "One Hundred"
+          }
+        ]
+      }
+    ],
+    "challengeType": "compare",
+    "showExpandedForm": true,
+    "showMultipliers": false,
+    "supportTier": "medium",
+    "gradeLevel": "Grade 3"
+  }
+}

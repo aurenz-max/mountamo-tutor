@@ -1,0 +1,40 @@
+[1/4] Firebase sign-in…
+[2/4] Generating real content + fetching tutoring block (probe&live)…
+      frozen content sha256: 13a3962701ae3c8a952e426b55180a4c9c54475050dc9d8908f3ecd05c3d0543
+      tier-1 status: warn; scaffold keys: ['taskDescription', 'contextKeys', 'scaffoldingLevels', 'commonStruggles', 'aiDirectives']
+      judged loop: 5 items (4 spoken / 1 hands), 0 challenge(s) dropped by the build gates, wrong-answer mode: signature, cap drill ON (pvc-1::value)
+[3/4] Run 1/1: connecting ws://localhost:8000/api/lumina-tutor, driving 18 beats…
+python.exe : Traceback (most recent call last):
+At line:2 char:1
++ & 'C:/Users/xbox3/miniforge-pypy3/envs/py311env/python.exe' -u tests/ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\xbox3\claude web tutor\backend\tests\tutor_live\run_tutor_live.py", line 3941, in <module>
+    sys.exit(asyncio.run(amain()))
+             ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xbox3\miniforge-pypy3\envs\py311env\Lib\asyncio\runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\xbox3\miniforge-pypy3\envs\py311env\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xbox3\miniforge-pypy3\envs\py311env\Lib\asyncio\base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\xbox3\claude web tutor\backend\tests\tutor_live\run_tutor_live.py", line 3863, in amain
+    results = await client.run(auth_msg, beats)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xbox3\claude web tutor\backend\tests\tutor_live\run_tutor_live.py", line 3122, in run
+    await ws.send(json.dumps(m))
+  File "C:\Users\xbox3\miniforge-pypy3\envs\py311env\Lib\site-packages\websockets\asyncio\connection.py", line 478, in 
+send
+    async with self.send_context():
+  File "C:\Users\xbox3\miniforge-pypy3\envs\py311env\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\xbox3\miniforge-pypy3\envs\py311env\Lib\site-packages\websockets\asyncio\connection.py", line 965, in 
+send_context
+    raise self.protocol.close_exc from original_exc
+websockets.exceptions.ConnectionClosedError: received 1012 (service restart); then sent 1012 (service restart)

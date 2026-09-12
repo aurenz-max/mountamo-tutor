@@ -1,0 +1,36 @@
+{
+  "input": {
+    "id": "place-value-chart-bare-digit-7",
+    "label": "Synthetic repeated bare digit for worth",
+    "subject": "Math",
+    "subskillId": "NBT003-02-a",
+    "evalMode": "compare",
+    "gradeLevel": "3",
+    "success": false,
+    "score": 40,
+    "evidence": {
+      "challengeSummary": "Say the value of the 7 in 675.",
+      "expected": "seventy",
+      "observed": "seven",
+      "judgeFeedback": "The response was seven; the highlighted digit is in the tens column. The response was refused.",
+      "priorAttempts": [
+        {
+          "challenge": "Say the value of the 7 in 726 (hundreds column).",
+          "observed": "seven"
+        },
+        {
+          "challenge": "Say the value of the 7 in 379 (tens column).",
+          "observed": "seven"
+        }
+      ]
+    },
+    "expectation": "generative",
+    "note": "Reliable wrong responses predict bare-digit worth. Published objective is three-digit; these diagnosis fixtures honor it. Four-digit compare production attribution remains blocked."
+  },
+  "output": {
+    "abstain": false,
+    "misconceptionText": "The student interprets the value of a digit as its face value, naming the digit itself rather than its place value.",
+    "confidence": "high",
+    "evidenceTier": "judge"
+  }
+}

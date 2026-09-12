@@ -17,6 +17,7 @@ class _TracingStore(InMemoryFirestoreService):
 
 
 _DEFAULT_EVAL_MODES = {
+    "place-value-chart": "compare",
     "cvc-speller": "spell_word",
     # The DI packs' eval modes are TASK IDENTITIES, not difficulty tiers.
     "di-math-facts": "subtraction_fact",

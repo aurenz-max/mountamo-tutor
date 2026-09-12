@@ -25,6 +25,8 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
 import type { LoopEmission, LoopAttempt } from './judgedLoopModel';
+import { itemsFromChallenges, placeValuePackBase, type PlaceValueItem } from '../primitives/visual-primitives/math/placeValueScript';
+import { placeValueVoiceObservation } from '../primitives/visual-primitives/math/placeValueEvidence';
 
 const updateContext = vi.hoisted(() => vi.fn());
 const sendText = vi.hoisted(() => vi.fn());
@@ -395,6 +397,26 @@ describe('gesture rules (cvc-speller, the anchor’s first caller)', () => {
 });
 
 describe('diagnosis (Tier-A evidence)', () => {
+  it('retains repeated bare-digit failures from the production place-value pack through a genuine cap completion', async () => {
+    const { items } = itemsFromChallenges([{ id: 'p', targetNumber: 2345, highlightedDigitPlace: 1 }], { mode: 'compare', tier: 'medium' });
+    const pack = { ...placeValuePackBase(items), diagnosisObservation: (item: PlaceValueItem, context: { lastHeard: string | null }) => placeValueVoiceObservation(item, context.lastHeard) };
+    const { onFinished } = mount(items as unknown as TestItem[], pack as unknown as JudgedScriptPack<TestItem>);
+    await startRun();
+    verdict('affirmed'); // place question solved; worth is a different task
+    for (let attempt = 0; attempt < 3; attempt++) {
+      emit({ kind: 'attempt-open', attempt: voiceAttempt });
+      emit({ kind: 'attempt-transcript', attempt: voiceAttempt, text: 'four', responseMs: 900, commitLagMs: 400 });
+      verdict('corrected');
+      emit({ kind: 'verdict-text', judgment: 'corrected', text: 'My turn: I say the digit, then its place — four, tens: forty.' });
+    }
+    const summary = onFinished.mock.calls[0][0];
+    expect(summary.solvedCount).toBe(1);
+    expect(summary.accuracy).toBeLessThan(60);
+    expect(summary.passed).toBe(false);
+    expect(summary.observations).toHaveLength(3);
+    expect(summary.diagnosisEvidence?.challengeSummary).toBe('say the value of the 4 in 2345');
+    expect(summary.diagnosisEvidence?.priorAttempts).toEqual(expect.arrayContaining([expect.objectContaining({ challenge: 'say the value of the 4 in 2345', observed: 'four' })]));
+  });
   it('collects observations at corrections, attaches the judge’s finished line, and assembles evidence on a failed run', async () => {
     const { onFinished } = mount([voiceItem('i1', 'cat')], {
       diagnosisObservation: (item, { lastHeard }) => ({

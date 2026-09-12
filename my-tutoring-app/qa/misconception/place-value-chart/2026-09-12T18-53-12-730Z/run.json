@@ -1,0 +1,1509 @@
+{
+  "schema": "place-value-pilot-v1",
+  "synthetic": true,
+  "fixture": false,
+  "runId": "2026-09-12T18-53-12-730Z",
+  "time": "2026-09-12T18:53:12.876Z",
+  "status": "BLOCKED",
+  "gates": {
+    "curriculum": "BLOCKED",
+    "D": "PASS",
+    "G": "PASS",
+    "R": "PASS",
+    "Live": "PASS",
+    "S1": "BLOCKED",
+    "S4": "PASS",
+    "componentCapture": "PASS"
+  },
+  "diagnoses": [
+    {
+      "scenario": "place-value-chart-bare-digit-4",
+      "expectation": "generative",
+      "repeat": 0,
+      "output": {
+        "abstain": false,
+        "misconceptionText": "The student confuses the place value of a digit with its face value, consistently naming the digit itself rather than the quantity represented by its position.",
+        "confidence": "high",
+        "evidenceTier": "judge"
+      },
+      "pass": true,
+      "sourceRunId": "2026-09-12T18-47-31-324Z"
+    },
+    {
+      "scenario": "place-value-chart-bare-digit-7",
+      "expectation": "generative",
+      "repeat": 0,
+      "output": {
+        "abstain": false,
+        "misconceptionText": "The student interprets the value of a digit as its face value, naming the digit itself rather than its place value.",
+        "confidence": "high",
+        "evidenceTier": "judge"
+      },
+      "pass": true,
+      "sourceRunId": "2026-09-12T18-47-31-324Z"
+    },
+    {
+      "scenario": "place-value-chart-missing-transcript",
+      "expectation": "abstain",
+      "repeat": 0,
+      "output": {
+        "abstain": true,
+        "reason": "The audio transcription is unreliable and there are no prior attempts to confirm a consistent misconception.",
+        "evidenceTier": "judge"
+      },
+      "pass": true,
+      "sourceRunId": "2026-09-12T18-47-31-324Z"
+    },
+    {
+      "scenario": "place-value-chart-missing-transcript",
+      "expectation": "abstain",
+      "repeat": 1,
+      "output": {
+        "abstain": true,
+        "reason": "The student's response could not be reliably transcribed, providing insufficient evidence to diagnose a misconception.",
+        "evidenceTier": "judge"
+      },
+      "pass": true,
+      "sourceRunId": "2026-09-12T18-47-31-324Z"
+    },
+    {
+      "scenario": "place-value-chart-missing-transcript",
+      "expectation": "abstain",
+      "repeat": 2,
+      "output": {
+        "abstain": true,
+        "reason": "The student's response lacks a reliable transcription, leaving insufficient evidence to identify any misconception.",
+        "evidenceTier": "judge"
+      },
+      "pass": true,
+      "sourceRunId": "2026-09-12T18-47-31-324Z"
+    }
+  ],
+  "examples": [
+    {
+      "targeted": false,
+      "draw": 0,
+      "hash": "3f57bd802d2f61a0f3dfa1a58678c2937aa50e5f5eadf297d67661771005f87c",
+      "verdict": "BASELINE",
+      "invariants": {
+        "mode": true,
+        "tier": true,
+        "count": true,
+        "unique": true,
+        "legal": true,
+        "private": true,
+        "target": true
+      },
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 6093,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Ones",
+            "Hundreds",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 9,
+              "wordForm": "Nine"
+            },
+            {
+              "value": 900,
+              "wordForm": "Nine Hundred"
+            },
+            {
+              "value": 0.9,
+              "wordForm": "Nine Tenths"
+            },
+            {
+              "value": 90,
+              "wordForm": "Ninety"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 5610,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Thousands",
+            "Hundreds",
+            "Ones"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 600,
+              "wordForm": "Six Hundred"
+            },
+            {
+              "value": 60,
+              "wordForm": "Sixty"
+            },
+            {
+              "value": 6000,
+              "wordForm": "Six Thousand"
+            },
+            {
+              "value": 6,
+              "wordForm": "Six"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 2791,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Hundreds",
+            "Thousands",
+            "Tens"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 9,
+              "wordForm": "Nine"
+            },
+            {
+              "value": 900,
+              "wordForm": "Nine Hundred"
+            },
+            {
+              "value": 90,
+              "wordForm": "Ninety"
+            },
+            {
+              "value": 0.9,
+              "wordForm": "Nine Tenths"
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 6093,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 9,
+          "answerText": "tens",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 6093,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 9,
+          "answerText": "ninety",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 5610,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 0,
+          "digit": 0,
+          "answerText": "",
+          "dictationWords": "five thousand six hundred ten",
+          "expectedDigits": [
+            5,
+            6,
+            1,
+            0
+          ],
+          "modelClause": "",
+          "modelNumber": 306,
+          "id": "pvc-2::build",
+          "kind": "build_number",
+          "answerKind": "gesture",
+          "responseClass": "manipulation",
+          "action": "write-number"
+        }
+      ],
+      "targets": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 6093,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 9,
+          "answerText": "ninety",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ]
+    },
+    {
+      "targeted": true,
+      "draw": 1,
+      "hash": "29e31fff1d89aafc09d7653aba3efc79a92aa90a4dc1b03be0bf1683acf82a52",
+      "verdict": "TARGETED",
+      "invariants": {
+        "mode": true,
+        "tier": true,
+        "count": true,
+        "unique": true,
+        "legal": true,
+        "private": true,
+        "target": true,
+        "samePayload": true
+      },
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 4685,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Hundreds",
+            "Tens",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 8,
+              "wordForm": "Eight"
+            },
+            {
+              "value": 800,
+              "wordForm": "Eight Hundred"
+            },
+            {
+              "value": 80,
+              "wordForm": "Eighty"
+            },
+            {
+              "value": 0.8,
+              "wordForm": "Eight Tenths"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 4047,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Tens",
+            "Hundreds",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 4,
+              "wordForm": "Four"
+            },
+            {
+              "value": 400,
+              "wordForm": "Four Hundred"
+            },
+            {
+              "value": 0.4,
+              "wordForm": "Four Tenths"
+            },
+            {
+              "value": 40,
+              "wordForm": "Forty"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 8891,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Thousands",
+            "Hundreds",
+            "Ones"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 80,
+              "wordForm": "Eighty"
+            },
+            {
+              "value": 8000,
+              "wordForm": "Eight Thousand"
+            },
+            {
+              "value": 800,
+              "wordForm": "Eight Hundred"
+            },
+            {
+              "value": 8,
+              "wordForm": "Eight"
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 4685,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 8,
+          "answerText": "tens",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 4685,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 8,
+          "answerText": "eighty",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 4047,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 0,
+          "digit": 0,
+          "answerText": "",
+          "dictationWords": "four thousand forty-seven",
+          "expectedDigits": [
+            4,
+            0,
+            4,
+            7
+          ],
+          "modelClause": "",
+          "modelNumber": 306,
+          "id": "pvc-2::build",
+          "kind": "build_number",
+          "answerKind": "gesture",
+          "responseClass": "manipulation",
+          "action": "write-number"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 8891,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 8,
+          "answerText": "hundreds",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 8891,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 8,
+          "answerText": "eight hundred",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ],
+      "targets": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 4685,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 8,
+          "answerText": "eighty",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 8891,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 8,
+          "answerText": "eight hundred",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ]
+    },
+    {
+      "targeted": true,
+      "draw": 2,
+      "hash": "18b204e155c78981293e4bed1b1f10e9eafca00095403268aa952f98fc42f72a",
+      "verdict": "TARGETED",
+      "invariants": {
+        "mode": true,
+        "tier": true,
+        "count": true,
+        "unique": true,
+        "legal": true,
+        "private": true,
+        "target": true,
+        "samePayload": true
+      },
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 3357,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Hundreds",
+            "Tens",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 50,
+              "wordForm": "Fifty"
+            },
+            {
+              "value": 5,
+              "wordForm": "Five"
+            },
+            {
+              "value": 500,
+              "wordForm": "Five Hundred"
+            },
+            {
+              "value": 0.5,
+              "wordForm": "Five Tenths"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 7193,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Ones",
+            "Tens",
+            "Hundreds",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 9,
+              "wordForm": "Nine"
+            },
+            {
+              "value": 900,
+              "wordForm": "Nine Hundred"
+            },
+            {
+              "value": 0.9,
+              "wordForm": "Nine Tenths"
+            },
+            {
+              "value": 90,
+              "wordForm": "Ninety"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 3566,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Thousands",
+            "Ones",
+            "Hundreds"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 500,
+              "wordForm": "Five Hundred"
+            },
+            {
+              "value": 50,
+              "wordForm": "Fifty"
+            },
+            {
+              "value": 5000,
+              "wordForm": "Five Thousand"
+            },
+            {
+              "value": 5,
+              "wordForm": "Five"
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 3357,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 5,
+          "answerText": "tens",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 3357,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 5,
+          "answerText": "fifty",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 7193,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 0,
+          "digit": 0,
+          "answerText": "",
+          "dictationWords": "seven thousand one hundred ninety-three",
+          "expectedDigits": [
+            7,
+            1,
+            9,
+            3
+          ],
+          "modelClause": "",
+          "modelNumber": 306,
+          "id": "pvc-2::build",
+          "kind": "build_number",
+          "answerKind": "gesture",
+          "responseClass": "manipulation",
+          "action": "write-number"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 3566,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 5,
+          "answerText": "hundreds",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 3566,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 5,
+          "answerText": "five hundred",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ],
+      "targets": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 3357,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 5,
+          "answerText": "fifty",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 3566,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 5,
+          "answerText": "five hundred",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ]
+    },
+    {
+      "targeted": true,
+      "draw": 3,
+      "hash": "45869bc4d6d511c0d9c7bc30fe9b5ba328dbaf1069be14797b5d4e0d0cc70380",
+      "verdict": "TARGETED",
+      "invariants": {
+        "mode": true,
+        "tier": true,
+        "count": true,
+        "unique": true,
+        "legal": true,
+        "private": true,
+        "target": true,
+        "samePayload": true
+      },
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 1610,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Ones",
+            "Hundreds",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 1,
+              "wordForm": "One"
+            },
+            {
+              "value": 10,
+              "wordForm": "Ten"
+            },
+            {
+              "value": 100,
+              "wordForm": "One Hundred"
+            },
+            {
+              "value": 0.1,
+              "wordForm": "One Tenth"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 8262,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Thousands",
+            "Ones",
+            "Hundreds"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 20,
+              "wordForm": "Twenty"
+            },
+            {
+              "value": 2000,
+              "wordForm": "Two Thousand"
+            },
+            {
+              "value": 200,
+              "wordForm": "Two Hundred"
+            },
+            {
+              "value": 2,
+              "wordForm": "Two"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 9132,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Hundreds",
+            "Tens",
+            "Thousands",
+            "Ones"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 100,
+              "wordForm": "One Hundred"
+            },
+            {
+              "value": 10,
+              "wordForm": "Ten"
+            },
+            {
+              "value": 1000,
+              "wordForm": "One Thousand"
+            },
+            {
+              "value": 1,
+              "wordForm": "One"
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 1610,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 1,
+          "answerText": "tens",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 1610,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 1,
+          "answerText": "ten",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 8262,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 0,
+          "digit": 0,
+          "answerText": "",
+          "dictationWords": "eight thousand two hundred sixty-two",
+          "expectedDigits": [
+            8,
+            2,
+            6,
+            2
+          ],
+          "modelClause": "",
+          "modelNumber": 306,
+          "id": "pvc-2::build",
+          "kind": "build_number",
+          "answerKind": "gesture",
+          "responseClass": "manipulation",
+          "action": "write-number"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 9132,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 1,
+          "answerText": "hundreds",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 9132,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 1,
+          "answerText": "one hundred",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ],
+      "targets": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 1610,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 1,
+          "answerText": "ten",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 9132,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 1,
+          "answerText": "one hundred",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ]
+    },
+    {
+      "targeted": true,
+      "draw": 1,
+      "hash": "13a3962701ae3c8a952e426b55180a4c9c54475050dc9d8908f3ecd05c3d0543",
+      "invariants": {
+        "mode": true,
+        "tier": true,
+        "count": true,
+        "unique": true,
+        "legal": true,
+        "private": true,
+        "target": true,
+        "samePayload": true
+      },
+      "challenges": [
+        {
+          "id": "pvc-1",
+          "targetNumber": 2258,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Thousands",
+            "Ones",
+            "Hundreds"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 20,
+              "wordForm": "Twenty"
+            },
+            {
+              "value": 200,
+              "wordForm": "Two Hundred"
+            },
+            {
+              "value": 2000,
+              "wordForm": "Two Thousand"
+            },
+            {
+              "value": 2,
+              "wordForm": "Two"
+            }
+          ]
+        },
+        {
+          "id": "pvc-2",
+          "targetNumber": 3997,
+          "highlightedDigitPlace": 2,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Hundreds",
+            "Thousands",
+            "Ones"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 900,
+              "wordForm": "Nine Hundred"
+            },
+            {
+              "value": 90,
+              "wordForm": "Ninety"
+            },
+            {
+              "value": 9000,
+              "wordForm": "Nine Thousand"
+            },
+            {
+              "value": 9,
+              "wordForm": "Nine"
+            }
+          ]
+        },
+        {
+          "id": "pvc-3",
+          "targetNumber": 9027,
+          "highlightedDigitPlace": 1,
+          "minPlace": 0,
+          "maxPlace": 3,
+          "placeNameChoices": [
+            "Tens",
+            "Ones",
+            "Hundreds",
+            "Thousands"
+          ],
+          "digitValueChoices": [
+            {
+              "value": 2,
+              "wordForm": "Two"
+            },
+            {
+              "value": 200,
+              "wordForm": "Two Hundred"
+            },
+            {
+              "value": 0.2,
+              "wordForm": "Two Tenths"
+            },
+            {
+              "value": 20,
+              "wordForm": "Twenty"
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 2258,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 2,
+          "answerText": "hundreds",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 2258,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 2,
+          "answerText": "two hundred",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 3997,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 0,
+          "digit": 0,
+          "answerText": "",
+          "dictationWords": "three thousand nine hundred ninety-seven",
+          "expectedDigits": [
+            3,
+            9,
+            9,
+            7
+          ],
+          "modelClause": "",
+          "modelNumber": 306,
+          "id": "pvc-2::build",
+          "kind": "build_number",
+          "answerKind": "gesture",
+          "responseClass": "manipulation",
+          "action": "write-number"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 9027,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 2,
+          "answerText": "tens",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::place",
+          "kind": "find_place",
+          "answerKind": "voice",
+          "responseClass": "short_spoken_word",
+          "action": "name-place"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 9027,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 2,
+          "answerText": "twenty",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ],
+      "targets": [
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 2258,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 2,
+          "digit": 2,
+          "answerText": "two hundred",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-1::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        },
+        {
+          "mode": "compare",
+          "tier": "medium",
+          "targetNumber": 9027,
+          "chartPlaces": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "place": 1,
+          "digit": 2,
+          "answerText": "twenty",
+          "dictationWords": "",
+          "expectedDigits": [],
+          "modelClause": "",
+          "modelNumber": 0,
+          "id": "pvc-3::value",
+          "kind": "say_value",
+          "answerKind": "voice",
+          "responseClass": "place_value_word",
+          "action": "say-value"
+        }
+      ],
+      "sourceRunId": "2026-09-12T18-43-31-141Z",
+      "verdict": "TARGETED / used in Live drives"
+    }
+  ],
+  "blockers": [
+    "Published Grade 3 NBT003-02-a is three-digit worth; compare mode is four-digit. No production attribution claim.",
+    "No browsers exposed by computer-use inventory. Browser capture, next production lesson and actual matched browser resolution remain open."
+  ],
+  "links": [
+    "report.md",
+    "frontend-tests.txt",
+    "baseline-failure-reproduction.txt",
+    "typecheck.txt",
+    "backend-tests.txt",
+    "S4-exposure.json",
+    "Live-plain.md",
+    "Live-signature.md",
+    "Live-signature-independent.md",
+    "Live-signature-cap-pvc-1__value.md",
+    "place-value-live-cap.txt",
+    "place-value-live-cap-value.txt",
+    "place-value-live-cap-value-retry.txt"
+  ],
+  "revision": "2add48dac6c6220b8525f6bc6a1fc783deb951bf",
+  "dirtyFiles": [
+    "M ../WORKSTREAMS.md",
+    " M ../backend/app/services/calibration/problem_type_registry.py",
+    " M ../backend/tests/test_misconception_round_trip.py",
+    " M ../backend/tests/tutor_live/run_tutor_live.py",
+    " M qa/HUMAN-CHECKS.md",
+    " M qa/di/BACKLOG.md",
+    " M src/app/api/lumina/tutor-test/route.ts",
+    " M src/components/lumina/evaluation/diagnosis/scenarios.ts",
+    " M src/components/lumina/evaluation/types.ts",
+    " M src/components/lumina/hooks/useJudgedScriptRunner.test.tsx",
+    " M src/components/lumina/primitives/visual-primitives/math/BaseTenBlocks.answer-channel.test.tsx",
+    " M src/components/lumina/primitives/visual-primitives/math/BaseTenBlocks.tsx",
+    " M src/components/lumina/primitives/visual-primitives/math/FractionCircles.tsx",
+    " M src/components/lumina/primitives/visual-primitives/math/PlaceValueChart.tsx",
+    " M src/components/lumina/service/manifest/catalog/math.ts",
+    " M src/components/lumina/service/math/gemini-base-ten-blocks.ts",
+    " M src/components/lumina/service/math/gemini-fraction-circles.grade-band.test.ts",
+    " M src/components/lumina/service/math/gemini-fraction-circles.ts",
+    " M src/components/lumina/service/math/gemini-place-value.ts",
+    " M src/components/lumina/service/qa/di/diDrivePlan.ts",
+    " M src/components/lumina/service/qa/oracles/fraction-circles.ts"
+  ],
+  "anchors": [
+    {
+      "grade": "3",
+      "skillId": "NBT003-01",
+      "subskillId": "NBT003-01-b",
+      "text": "Students round three-digit numbers to the nearest ten by analyzing the digit in the ones place. Focus: Identifying the nearest ten for three-digit numbers. Examples: 124, 356, 482, 597, 613, 745, 829, 908. Constraints: Keep multiples of ten simple; focus on the threshold of 5."
+    },
+    {
+      "grade": "3",
+      "skillId": "NBT003-02",
+      "subskillId": "NBT003-02-a",
+      "text": "Students identify the specific value represented by each digit in a three-digit number. Focus: Recognizing place value significance. Examples: 245, 608, 319, 750, 922, 143, 567, 881. Constraints: Include zeros as placeholders to test understanding."
+    },
+    {
+      "grade": "3",
+      "skillId": "NBT003-02",
+      "subskillId": "NBT003-02-c",
+      "text": "Students break down a three-digit number into its expanded form. Focus: Decomposing numbers by place value. Examples: 342 = 300 + 40 + 2, 509 = 500 + 9, 870 = 800 + 70, 111, 456, 923, 605, 290. Constraints: Ensure variety in the placement of zeroes."
+    },
+    {
+      "grade": "3",
+      "skillId": "NBT003-05",
+      "subskillId": "NBT003-05-a",
+      "text": "Students multiply one-digit numbers by 10 using place value logic. Focus: Multiplying by ten. Examples: 2x10, 5x10, 9x10, 4x10, 7x10, 3x10, 8x10, 6x10. Constraints: Results should be 90 or less."
+    }
+  ],
+  "nonVacuity": {
+    "baseline": 1,
+    "targeted": 2
+  },
+  "stateTransitions": "In-memory: seeded diagnosis ? matching generation identity ? weak/wrong primitive/wrong skill stay active ? matched score 90 resolves after fan-out ? active read empty. Real S4 independently exposes place-value-chart::NBT003-02 and verifies cleanup. Browser S1 is unverified.",
+  "exposure": {
+    "gate": "S4",
+    "status": "PASS",
+    "synthetic": true,
+    "key": "place-value-chart::NBT003-02",
+    "skillId": "NBT003-02",
+    "subskillId": "NBT003-02-a",
+    "boundary": "Real-store exposure only; manually seeded synthetic diagnosis. Not S1 or four-digit production attribution.",
+    "cleanup": "verified absent"
+  },
+  "assembledAt": "2026-09-12T19:08:56.583Z",
+  "liveWarnings": [
+    "Cap: verbatim correction repeats (2 beats); cap re-ask immediately withdrawn (1 beat). Existing scripts preserved; zero HIGH."
+  ],
+  "livePayloadSourceRun": "2026-09-12T18-43-31-141Z"
+}

@@ -1,0 +1,104 @@
+{
+  "title": "Four-Digit Place Value Explorer",
+  "description": "Join your tutor to explore four-digit numbers across three interactive phases: identifying places, naming values, and building numbers together out loud.",
+  "challenges": [
+    {
+      "id": "pvc-1",
+      "targetNumber": 5351,
+      "highlightedDigitPlace": 2,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Tens",
+        "Thousands",
+        "Hundreds",
+        "Ones"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 30,
+          "wordForm": "Thirty"
+        },
+        {
+          "value": 3000,
+          "wordForm": "Three Thousand"
+        },
+        {
+          "value": 300,
+          "wordForm": "Three Hundred"
+        },
+        {
+          "value": 3,
+          "wordForm": "Three"
+        }
+      ]
+    },
+    {
+      "id": "pvc-2",
+      "targetNumber": 1634,
+      "highlightedDigitPlace": 1,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Tens",
+        "Ones",
+        "Hundreds",
+        "Thousands"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 3,
+          "wordForm": "Three"
+        },
+        {
+          "value": 30,
+          "wordForm": "Thirty"
+        },
+        {
+          "value": 300,
+          "wordForm": "Three Hundred"
+        },
+        {
+          "value": 0.30000000000000004,
+          "wordForm": "Three Tenths"
+        }
+      ]
+    },
+    {
+      "id": "pvc-3",
+      "targetNumber": 2098,
+      "highlightedDigitPlace": 1,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Ones",
+        "Hundreds",
+        "Tens",
+        "Thousands"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 9,
+          "wordForm": "Nine"
+        },
+        {
+          "value": 90,
+          "wordForm": "Ninety"
+        },
+        {
+          "value": 900,
+          "wordForm": "Nine Hundred"
+        },
+        {
+          "value": 0.9,
+          "wordForm": "Nine Tenths"
+        }
+      ]
+    }
+  ],
+  "challengeType": "compare",
+  "showExpandedForm": true,
+  "showMultipliers": false,
+  "supportTier": "medium",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+}

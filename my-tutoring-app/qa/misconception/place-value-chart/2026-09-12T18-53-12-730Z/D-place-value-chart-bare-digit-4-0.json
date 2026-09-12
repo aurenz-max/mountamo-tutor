@@ -1,0 +1,36 @@
+{
+  "input": {
+    "id": "place-value-chart-bare-digit-4",
+    "label": "Synthetic repeated bare digit for worth",
+    "subject": "Math",
+    "subskillId": "NBT003-02-a",
+    "evalMode": "compare",
+    "gradeLevel": "3",
+    "success": false,
+    "score": 40,
+    "evidence": {
+      "challengeSummary": "Say the value of the 4 in 342.",
+      "expected": "forty",
+      "observed": "four",
+      "judgeFeedback": "The response was four; the highlighted digit is in the tens column. The response was refused.",
+      "priorAttempts": [
+        {
+          "challenge": "Say the value of the 4 in 426 (hundreds column).",
+          "observed": "four"
+        },
+        {
+          "challenge": "Say the value of the 4 in 849 (tens column).",
+          "observed": "four"
+        }
+      ]
+    },
+    "expectation": "generative",
+    "note": "Reliable wrong responses predict bare-digit worth. Published objective is three-digit; these diagnosis fixtures honor it. Four-digit compare production attribution remains blocked."
+  },
+  "output": {
+    "abstain": false,
+    "misconceptionText": "The student confuses the place value of a digit with its face value, consistently naming the digit itself rather than the quantity represented by its position.",
+    "confidence": "high",
+    "evidenceTier": "judge"
+  }
+}

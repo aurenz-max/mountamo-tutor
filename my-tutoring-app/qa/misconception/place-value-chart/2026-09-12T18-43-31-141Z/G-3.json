@@ -1,0 +1,127 @@
+{
+  "status": "pass",
+  "componentId": "place-value-chart",
+  "evalMode": "compare",
+  "duration": 991,
+  "catalogMeta": {
+    "label": "Compare Places (Tier 3)",
+    "beta": 4,
+    "scaffoldingMode": 3,
+    "allowedChallengeTypes": [
+      "compare"
+    ],
+    "description": "4-digit numbers with multiple non-zero digits. Spoken place names through thousands, spoken values like \"four thousand\", and 4-digit dictation writing. Unaided production judged by the Live tutor."
+  },
+  "validation": {
+    "challengeCount": 3,
+    "typesFound": [],
+    "payloadBytes": 1469,
+    "longestStringLength": 182,
+    "longestStringPath": "description",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Four-Digit Place Value Explorer",
+    "description": "Welcome! You will explore different numbers with your tutor across three phases: identifying place names, discovering what each digit is worth, and building numbers as you hear them.",
+    "challenges": [
+      {
+        "id": "pvc-1",
+        "targetNumber": 1226,
+        "highlightedDigitPlace": 1,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Ones",
+          "Hundreds",
+          "Thousands",
+          "Tens"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 20,
+            "wordForm": "Twenty"
+          },
+          {
+            "value": 2,
+            "wordForm": "Two"
+          },
+          {
+            "value": 200,
+            "wordForm": "Two Hundred"
+          },
+          {
+            "value": 0.2,
+            "wordForm": "Two Tenths"
+          }
+        ]
+      },
+      {
+        "id": "pvc-2",
+        "targetNumber": 5654,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Hundreds",
+          "Thousands",
+          "Ones"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 600,
+            "wordForm": "Six Hundred"
+          },
+          {
+            "value": 60,
+            "wordForm": "Sixty"
+          },
+          {
+            "value": 6000,
+            "wordForm": "Six Thousand"
+          },
+          {
+            "value": 6,
+            "wordForm": "Six"
+          }
+        ]
+      },
+      {
+        "id": "pvc-3",
+        "targetNumber": 5283,
+        "highlightedDigitPlace": 2,
+        "minPlace": 0,
+        "maxPlace": 3,
+        "placeNameChoices": [
+          "Tens",
+          "Thousands",
+          "Ones",
+          "Hundreds"
+        ],
+        "digitValueChoices": [
+          {
+            "value": 200,
+            "wordForm": "Two Hundred"
+          },
+          {
+            "value": 20,
+            "wordForm": "Twenty"
+          },
+          {
+            "value": 2000,
+            "wordForm": "Two Thousand"
+          },
+          {
+            "value": 2,
+            "wordForm": "Two"
+          }
+        ]
+      }
+    ],
+    "challengeType": "compare",
+    "showExpandedForm": true,
+    "showMultipliers": false,
+    "supportTier": "medium",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+  }
+}

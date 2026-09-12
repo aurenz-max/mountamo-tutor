@@ -264,6 +264,11 @@ def test_i2_a_forced_lesson_journey_still_names_itself():
     assert report_suffix(_args(), {"force_lesson": True}) == "-lesson"
 
 
+def test_place_value_cap_filename_is_windows_safe_and_independent_run_is_distinct():
+    assert report_suffix(_args(di=True, di_cap=True, di_cap_item="pvc-1::value"), {}) == "-di-plain-cap-pvc-1__value"
+    assert report_suffix(_args(di=True, di_independent_item="pvc-3::value"), {}) == "-di-plain-independent"
+
+
 # ---------------------------------------------------------------------------
 # Item 27, I3 - the bench summary speaks the PORT's vocabulary, not rhyme's
 # ---------------------------------------------------------------------------

@@ -1,0 +1,104 @@
+{
+  "title": "Four-Digit Place Value Mastery",
+  "description": "Join your tutor to explore four-digit numbers across three interactive phases as you identify place names, speak their values, and build numbers you hear. Speak your answers out loud and write digits into the chart!",
+  "challenges": [
+    {
+      "id": "pvc-1",
+      "targetNumber": 2258,
+      "highlightedDigitPlace": 2,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Tens",
+        "Thousands",
+        "Ones",
+        "Hundreds"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 20,
+          "wordForm": "Twenty"
+        },
+        {
+          "value": 200,
+          "wordForm": "Two Hundred"
+        },
+        {
+          "value": 2000,
+          "wordForm": "Two Thousand"
+        },
+        {
+          "value": 2,
+          "wordForm": "Two"
+        }
+      ]
+    },
+    {
+      "id": "pvc-2",
+      "targetNumber": 3997,
+      "highlightedDigitPlace": 2,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Tens",
+        "Hundreds",
+        "Thousands",
+        "Ones"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 900,
+          "wordForm": "Nine Hundred"
+        },
+        {
+          "value": 90,
+          "wordForm": "Ninety"
+        },
+        {
+          "value": 9000,
+          "wordForm": "Nine Thousand"
+        },
+        {
+          "value": 9,
+          "wordForm": "Nine"
+        }
+      ]
+    },
+    {
+      "id": "pvc-3",
+      "targetNumber": 9027,
+      "highlightedDigitPlace": 1,
+      "minPlace": 0,
+      "maxPlace": 3,
+      "placeNameChoices": [
+        "Tens",
+        "Ones",
+        "Hundreds",
+        "Thousands"
+      ],
+      "digitValueChoices": [
+        {
+          "value": 2,
+          "wordForm": "Two"
+        },
+        {
+          "value": 200,
+          "wordForm": "Two Hundred"
+        },
+        {
+          "value": 0.2,
+          "wordForm": "Two Tenths"
+        },
+        {
+          "value": 20,
+          "wordForm": "Twenty"
+        }
+      ]
+    }
+  ],
+  "challengeType": "compare",
+  "showExpandedForm": true,
+  "showMultipliers": false,
+  "supportTier": "medium",
+  "gradeLevel": "Grade 3"
+}

@@ -720,6 +720,8 @@ Headless first (closes the semantics half — DONE 2026-08-19, all five modes):
 
 ### #113 — **`place-value-chart` (math port 8, the FIRST past the ≤20 bench): the mic row IS the #63 acceptance material — fold the two into one sitting** · OPEN
 
+**2026-09-12 misconception pilot:** component/runner/capture seam, real D/G, in-memory R and real-store S4 verified; same-payload plain/signature/independent Live pass, cap has existing WARNs. Browser inventory was empty. Full S1 → next production lesson → resolution remains OPEN: published Grade 3 `NBT003-02-a` is three-digit, but compare mode is four-digit. Resolve that curriculum/mode mismatch before the disposable-student sitting. [Pilot report](misconception/place-value-chart-2026-09-12.md). Preserve this row and #63; no microphone claim is closed.
+
 **Why a row.** Machine gates green (40 di-script pins, typecheck 0 in-slice, census 0, live
 6-probe build clean with zero drops) and the headless drives are green (compare plain +
 signature, identify signature, build signature, cap drill 0 HIGH after the ones-place leak

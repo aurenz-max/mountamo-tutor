@@ -34,6 +34,29 @@ export interface DiagnosisScenario {
 }
 
 export const DIAGNOSIS_SCENARIOS: DiagnosisScenario[] = [
+  ...([4, 7] as const).map((digit): DiagnosisScenario => ({
+    id: `place-value-chart-bare-digit-${digit}`,
+    label: 'Synthetic repeated bare digit for worth', subject: 'Math',
+    subskillId: 'NBT003-02-a', evalMode: 'compare', gradeLevel: '3', success: false, score: 40,
+    evidence: {
+      challengeSummary: `Say the value of the ${digit} in ${digit === 4 ? 342 : 675}.`,
+      expected: digit === 4 ? 'forty' : 'seventy', observed: digit === 4 ? 'four' : 'seven',
+      judgeFeedback: `The response was ${digit === 4 ? 'four' : 'seven'}; the highlighted digit is in the tens column. The response was refused.`,
+      priorAttempts: [
+        { challenge: `Say the value of the ${digit} in ${digit === 4 ? 426 : 726} (hundreds column).`, observed: digit === 4 ? 'four' : 'seven' },
+        { challenge: `Say the value of the ${digit} in ${digit === 4 ? 849 : 379} (tens column).`, observed: digit === 4 ? 'four' : 'seven' },
+      ],
+    }, expectation: 'generative',
+    note: 'Reliable wrong responses predict bare-digit worth. Published objective is three-digit; these diagnosis fixtures honor it. Four-digit compare production attribution remains blocked.',
+  })),
+  {
+    id: 'place-value-chart-missing-transcript', label: 'Scripted correction without reliable learner words',
+    subject: 'Math', subskillId: 'NBT003-02-a', evalMode: 'compare', gradeLevel: '3', success: false, score: 40,
+    evidence: { challengeSummary: 'Say the value of the 4 in 342.', expected: 'forty',
+      observed: 'No reliable transcription. Audio response is unavailable; ASR alternates four and forty.',
+      judgeFeedback: 'My turn: I say the digit, then its place — four, tens: forty. Four alone only counts ones; in the tens place it is worth forty. Your turn. What is the glowing four worth?',
+    }, expectation: 'abstain', note: 'Generic scripted correction is not independent evidence of a wrong response. Must abstain.',
+  },
   // ── Clear signatures — should GENERATE ────────────────────────────────────
   {
     id: 'maya-comparison',

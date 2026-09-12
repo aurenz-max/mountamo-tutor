@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'node:crypto';
 import { UNIVERSAL_CATALOG, getComponentById } from '@/components/lumina/service/manifest/catalog';
 import { generateComponentContent } from '@/components/lumina/service/geminiService';
 import type { ComponentDefinition, TutoringScaffold } from '@/components/lumina/types';
@@ -40,6 +41,31 @@ import type { YouAndMeData } from '@/components/lumina/primitives/visual-primiti
  * is NOT covered here; use run_tutor_live.py or the Lumina Tutor Tester panel.
  */
 export async function GET(request: NextRequest) {
+  return handleProbe(request);
+}
+
+/** Local QA transport: rebuild the production plan from saved data, never accept cues. */
+export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') return NextResponse.json({ error: 'Local QA only' }, { status: 404 });
+  try {
+    const { generatedData } = await request.json();
+    if (request.nextUrl.searchParams.get('componentId') !== 'place-value-chart'
+      || generatedData?.challengeType !== 'compare' || generatedData?.supportTier !== 'medium'
+      || !Array.isArray(generatedData.challenges) || generatedData.challenges.length < 1
+      || generatedData.challenges.length > 6
+      || generatedData.challenges.some((c: Record<string, unknown>) => typeof c.id !== 'string'
+        || !Number.isInteger(c.targetNumber) || Number(c.targetNumber) < 1111 || Number(c.targetNumber) > 9999
+        || ![1, 2].includes(Number(c.highlightedDigitPlace)))
+      || /remediationFocus|misconceptionText/.test(JSON.stringify(generatedData))) {
+      return NextResponse.json({ error: 'Invalid place-value pilot payload' }, { status: 400 });
+    }
+    return handleProbe(request, generatedData);
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+  }
+}
+
+async function handleProbe(request: NextRequest, frozen?: Record<string, unknown>) {
   const { searchParams } = new URL(request.url);
   const componentId = searchParams.get('componentId');
 
@@ -106,7 +132,7 @@ export async function GET(request: NextRequest) {
         instanceId: `tutor-test-${componentId}-${Date.now()}`,
         config: { ...(evalMode ? { targetEvalMode: evalMode } : {}), ...(difficulty ? { difficulty } : {}) },
       };
-      const result = await generateComponentContent(item, topic, gradeLevel);
+      const result = frozen ? { data: frozen } : await generateComponentContent(item, topic, gradeLevel);
       const generated = (result?.data ?? {}) as Record<string, unknown>;
       // Role names and mode help are derived by the production pack, not raw indices.
       const youAndMeItems = componentId === 'you-and-me'
@@ -139,6 +165,7 @@ export async function GET(request: NextRequest) {
         if (staticKeys.size === 0 || staticKeys.has(key)) mergedBag[key] = generatedBag[key];
       }
       probe = {
+        ...(frozen ? { contentHash: createHash('sha256').update(JSON.stringify(generated)).digest('hex') } : {}),
         evalMode: evalMode ?? null,
         topic,
         gradeLevel,
