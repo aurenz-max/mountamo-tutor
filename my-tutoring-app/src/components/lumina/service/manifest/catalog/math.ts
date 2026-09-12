@@ -1,3 +1,4 @@
+import { BASE_TEN_DI_EVAL_MODES } from '../../../primitives/visual-primitives/math/baseTenModes';
 import { NUMBER_SEQUENCER_EVAL_MODES } from '../../../primitives/visual-primitives/math/numberSequencerModes';
 /**
  * Math Catalog - Component definitions for mathematics primitives
@@ -254,8 +255,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'base-ten-blocks',
-    description: 'Interactive base-ten manipulative with place value columns, supply tray, and regrouping. Students drag blocks to build numbers, decompose values, regroup (trade 10 ones for 1 ten), and perform addition/subtraction with blocks. Supports decimal mode (tenths/hundredths) and thousands. Challenge modes: build_number, read_blocks, regroup, add_with_blocks, subtract_with_blocks. ESSENTIAL for K-5 place value.',
-    constraints: 'Requires a number to work with. Challenges array drives interactivity. Grade band determines complexity.',
+    description: 'Interactive base-ten manipulative with place value columns, supply tray, and regrouping. TWO MODES ARE LIVE TUTOR-JUDGED AND SPOKEN. read_blocks: the child reads one size of block at a time OUT LOUD — how many are there, and what are they worth altogether ("forty") — and never says the composed numeral; the tutor puts the whole number together. regroup: the child PREDICTS the result of a trade out loud while the mat is still untraded, then makes the trade with their hands. build_number and the operate modes remain hands-and-keypad: students drag blocks to build numbers and perform addition/subtraction with regrouping, with decimal mode (tenths/hundredths) and thousands. ESSENTIAL for K-5 place value.',
+    constraints: 'Requires a number to work with. Challenges array drives interactivity. Grade band determines complexity. read_blocks and regroup require a microphone and a targetNumber of at least 10 with a non-zero digit above the ones place — code picks which place is read or traded, and drops any number that cannot carry one. Those two modes must be generated as HOMOGENEOUS sessions: a payload mixing them with build_number or the operate modes falls back to the click surface for all of them.',
+    audioInputByMode: { read_blocks: JUDGED_AUDIO_INPUT, regroup: JUDGED_AUDIO_INPUT },
     affordances: { representation: 'concrete', answers: ['build', 'manipulate', 'type'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
       taskDescription: 'Explore place value using base-ten blocks. Mode: {{interactionMode}}. Target: {{targetNumber}}. Current total: {{currentTotal}}.',
@@ -269,8 +271,30 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Adding too many blocks in wrong column', response: '"Check which column you are adding to. Hundreds are the biggest, ones are the smallest."' },
         { pattern: 'Not regrouping when column has 10+', response: '"You have 10 or more in one column! You can trade 10 of those for 1 in the next column."' },
         { pattern: 'Confusing decimal places', response: '"Tenths are 0.1 — ten of them make 1 whole. Hundredths are 0.01 — ten of them make one tenth."' },
+        { pattern: 'Child says the bare count where the value was asked (four for forty)', response: 'Use the current cue exact correction. A sentiment without the scripted verdict cannot advance the run.' },
+        { pattern: 'Child predicts ten for a trade', response: 'The blocks already on the mat are being forgotten. Use the current scripted correction, which adds the ten new blocks to the ones already there.' },
+        { pattern: 'Child is moving blocks', response: 'Speech does not submit a trade. Only the application supplies the code-computed verdict for a hands turn.' },
       ],
       aiDirectives: [
+        {
+          title: 'READ THE BLOCKS: SCRIPTED, SPOKEN, ONE PLACE AT A TIME',
+          instruction:
+            'When challengeType is read_blocks this directive OVERRIDES every legacy phase, hint and channel note below. '
+            + 'Only [BT_ITEM], [BT_MOVE], [BT_HEAR] and [BT_COMPLETE] supply spoken lines. Speak their quoted line exactly and never read a bracket tag or a private rule. '
+            + 'There is no keypad and no Check button. The child answers OUT LOUD, twice per mat: how many blocks of one size are there, and what are those blocks worth altogether. '
+            + 'The block counts and the number the mat shows are withheld from you on purpose — never state a column count, a total, or the whole number before the child has answered, and never guess one. '
+            + 'The bare count said where the VALUE was asked is incorrect, not a near miss; the scripted correction is where the relationship gets taught. '
+            + 'The composed number belongs to YOU, in the affirmation the cue gives you, and is never asked of the child.',
+        },
+        {
+          title: 'TRADE TEN: PREDICT ALOUD, THEN MOVE THE BLOCKS',
+          instruction:
+            'When challengeType is regroup this directive OVERRIDES every legacy phase, hint and channel note below. '
+            + 'Only [BT_ITEM], [BT_CHANGE], [BT_CHECK], [BT_MOVE], [BT_HEAR] and [BT_COMPLETE] supply spoken lines. Speak their quoted line exactly. '
+            + 'The child speaks FIRST, predicting how many smaller blocks they will have after the trade, and only then moves the blocks. Never reveal that count during the spoken turn. '
+            + 'The hands turn is not judged from speech. [BT_CHANGE] is coaching only; only [BT_CHECK] carries a code-computed verdict, and you use its result rather than your own reading of the mat. '
+            + 'Tapping the wrong size of block is a real wrong answer and receives the scripted correction. Exploration before a trade is not an attempt.',
+        },
         {
           title: 'REGROUPING DISCOVERY',
           instruction:
@@ -299,24 +323,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['build_number'],
         description: 'Concrete manipulative: student builds a target number by placing blocks in place value columns.',
       },
-      {
-        evalMode: 'read_blocks',
-        affordances: { representation: 'pictorial', answers: ['type'] },
-        label: 'Read Blocks (Pictorial)',
-        beta: 2.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['read_blocks'],
-        description: 'Pictorial recognition: student identifies the number represented by pre-placed blocks.',
-      },
-      {
-        evalMode: 'regroup',
-        affordances: { answers: ['manipulate'] },
-        label: 'Regroup (Strategy)',
-        beta: 3.5,
-        scaffoldingMode: 3,
-        challengeTypes: ['regroup'],
-        description: 'Strategy: student regroups blocks by trading 10 of one unit for 1 of the next.',
-      },
+      // read_blocks + regroup are PROJECTED from baseTenModes.ts — the DI port's
+      // single source for identity, beta, docs and the learner's action story.
+      ...BASE_TEN_DI_EVAL_MODES,
       {
         evalMode: 'operate',
         affordances: { answers: ['manipulate', 'type'] },

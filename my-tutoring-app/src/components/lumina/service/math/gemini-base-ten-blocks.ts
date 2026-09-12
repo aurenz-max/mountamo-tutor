@@ -17,6 +17,9 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { createNumberPool } from './numberPoolService';
+import { BASE_TEN_DI_TYPE_DOCS, isBaseTenDiChallengeType } from '../../primitives/visual-primitives/math/baseTenModes';
+import { isAskableTarget, MAX_TARGET, MIN_TARGET } from '../../primitives/visual-primitives/math/baseTenScript';
+import type { BtMode } from '../../primitives/visual-primitives/math/baseTenModel';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -44,32 +47,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Grades 4-5: numbers up to 9999, maxPlace 'thousands'. Full scaffolding — concrete manipulative.`,
     schemaDescription: "'build_number' (construct number from blocks)",
   },
-  read_blocks: {
-    promptDoc:
-      `"read_blocks": Blocks are pre-placed, student identifies the number they represent. `
-      + `Set targetNumber to the correct answer. `
-      + `Instruction must be a GENERIC prompt to look at the blocks — for example: `
-      + `"Look at the blocks shown above. What number do they represent?" or `
-      + `"What number is shown by these blocks?". `
-      + `CRITICAL: The instruction must NOT name how many blocks are in each place value. `
-      + `Do NOT say "2 hundreds blocks, 4 tens rods, and 5 ones" — that lets the student `
-      + `compute the answer (2·100+4·10+5=245) from the text alone without looking at the blocks. `
-      + `Do NOT mention specific digit counts ("X hundreds", "Y tens", "Z ones"). `
-      + `Do NOT mention block words ("hundreds blocks", "tens rods", "ones units", "flats", "rods", "units"). `
-      + `K-1: numbers 1-20. Grades 2-3: numbers 1-999. Vary digit patterns (e.g., 305 has 0 tens).`,
-    schemaDescription: "'read_blocks' (identify number from blocks)",
-  },
-  regroup: {
-    promptDoc:
-      `"regroup": Student regroups blocks by trading between place values. `
-      + `E.g., trade 10 ones for 1 ten, or 10 tens for 1 hundred. `
-      + `Set targetNumber to the number being regrouped. `
-      + `IMPORTANT: The blocks always START in standard form (e.g., 125 = 1 hundred, 2 tens, 5 ones). `
-      + `The instruction tells the student WHICH trade to make: "You have 1 hundred, 2 tens, and 5 ones. Trade 1 ten for 10 ones." `
-      + `Do NOT describe non-standard starting arrangements like "23 ones blocks" — the component cannot render those. `
-      + `Focus on the trading mechanic. Grades 2-3 primary. Include trades in both directions (up and down).`,
-    schemaDescription: "'regroup' (trade between place values)",
-  },
+  // read_blocks + regroup are PROJECTED from baseTenModes.ts (the DI port's one
+  // source for identity, docs and the learner's action story) — never re-typed.
+  read_blocks: BASE_TEN_DI_TYPE_DOCS.read_blocks,
+  regroup: BASE_TEN_DI_TYPE_DOCS.regroup,
   add_with_blocks: {
     promptDoc:
       `"add_with_blocks": Student adds two numbers using blocks, regrouping as needed. `
@@ -596,6 +577,47 @@ export function normalizeBuildNumberInstructions(challenges: BaseTenBlocksChalle
 }
 
 // ---------------------------------------------------------------------------
+// BT-6: the DI modes need an ASKABLE number
+// ---------------------------------------------------------------------------
+// `read_blocks` and `regroup` are on the judged loop, and both need a non-zero
+// digit ABOVE the ones place: read_blocks because "how many ones cubes" and
+// "what are they worth" have the identical answer on the ones column, regroup
+// because a standard-form mat can only break a bigger unit DOWN. A K-1 band
+// asked for 1-20 will still hand back a 7, so the gate runs in code rather than
+// living in the prompt. The gate is IMPORTED from the script module — the two
+// sides of this wire drifted on letter-spotter when they were hand-synced.
+//
+// A failing target is RE-SELECTED, not backfilled into a placeholder item: the
+// number is the whole stimulus, nothing else in the challenge depends on it
+// (the DI pack never speaks the generated instruction), and shipping an
+// unaskable challenge would put a broken ask in front of a child.
+
+export function normalizeDiTargets(challenges: BaseTenBlocksChallenge[]): number {
+  let repaired = 0;
+  for (const challenge of challenges) {
+    if (!isBaseTenDiChallengeType(challenge.type)) continue;
+    const mode = challenge.type as BtMode;
+    if (isAskableTarget(challenge.targetNumber, mode)) continue;
+    const from = typeof challenge.targetNumber === 'number' ? Math.trunc(challenge.targetNumber) : 0;
+    // Walk outward from whatever was asked for, so the repaired number stays in
+    // the band the objective implied rather than jumping to a fixed constant.
+    let picked: number | null = null;
+    for (let delta = 0; delta <= MAX_TARGET && picked === null; delta++) {
+      for (const candidate of [from + delta, from - delta]) {
+        if (candidate >= MIN_TARGET && candidate <= MAX_TARGET && isAskableTarget(candidate, mode)) {
+          picked = candidate;
+          break;
+        }
+      }
+    }
+    if (picked === null) continue;
+    challenge.targetNumber = picked;
+    repaired++;
+  }
+  return repaired;
+}
+
+// ---------------------------------------------------------------------------
 // Generator
 // ---------------------------------------------------------------------------
 
@@ -959,6 +981,12 @@ Return the complete base-ten blocks data structure.`;
   const buildRewriteCount = normalizeBuildNumberInstructions(data.challenges as BaseTenBlocksChallenge[]);
   if (buildRewriteCount > 0) {
     console.warn(`[BaseTenBlocks] BT-5 safety net: rewrote ${buildRewriteCount} build_number instruction(s) that leaked the decomposition or named a stale target`);
+  }
+
+  // ── BT-6: the judged modes need an askable number ──
+  const diRepairCount = normalizeDiTargets(data.challenges as BaseTenBlocksChallenge[]);
+  if (diRepairCount > 0) {
+    console.warn(`[BaseTenBlocks] BT-6: re-selected ${diRepairCount} target(s) with no place above the ones for a judged mode`);
   }
 
   // Final summary log

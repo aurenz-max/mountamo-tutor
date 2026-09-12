@@ -1,0 +1,394 @@
+{
+  "generatedAt": "2026-09-12T18:27:07.328Z",
+  "data": {
+    "title": "Trading Base-Ten Blocks",
+    "description": "Learn how to trade blocks between place value columns by breaking one larger block into ten smaller blocks.",
+    "numberValue": 13,
+    "challenges": [
+      {
+        "type": "regroup",
+        "instruction": "Examine the blocks on your mat and predict what will happen when you trade.",
+        "targetNumber": 193,
+        "secondNumber": null,
+        "hint": "Think about what one ten is worth in ones before you make the trade.",
+        "showColumnCounts": false,
+        "showBlocksTotal": true
+      },
+      {
+        "type": "regroup",
+        "instruction": "Look at the current blocks and predict the result before trading.",
+        "targetNumber": 138,
+        "secondNumber": null,
+        "hint": "Count how many ones you will get when you break a ten block apart.",
+        "showColumnCounts": false,
+        "showBlocksTotal": true
+      },
+      {
+        "type": "regroup",
+        "instruction": "Predict the new block count after performing a trade.",
+        "targetNumber": 472,
+        "secondNumber": null,
+        "hint": "Remember that a ten breaks down into ten individual ones.",
+        "showColumnCounts": false,
+        "showBlocksTotal": true
+      },
+      {
+        "type": "regroup",
+        "instruction": "Study the mat and make your prediction for this trade.",
+        "targetNumber": 814,
+        "secondNumber": null,
+        "hint": "Check the tens column to see which block you are about to break down.",
+        "showColumnCounts": false,
+        "showBlocksTotal": true
+      }
+    ],
+    "gradeBand": "2-3",
+    "interactionMode": "regroup",
+    "decimalMode": false,
+    "maxPlace": "hundreds",
+    "supplyTray": true,
+    "supportTier": "medium"
+  },
+  "plan": {
+    "componentId": "base-ten-blocks",
+    "primitiveType": "base-ten-blocks",
+    "activityLine": "read a block mat aloud and trade blocks between places",
+    "gradeLevel": "Grade 2",
+    "audioInput": {
+      "manual_activity": true
+    },
+    "sentinels": {
+      "affirm": [
+        [
+          "yes"
+        ]
+      ],
+      "correct": [
+        [
+          "my",
+          "turn"
+        ]
+      ]
+    },
+    "maxCorrections": 2,
+    "items": [
+      {
+        "id": "base-ten-1-predict",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "trade-predict",
+        "cue": "[BT_ITEM] Scene: Block mat: 1 hundred-flat, 9 ten-sticks, 3 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Let us trade some blocks. You tell me what will happen first, and then you make it happen. You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Private expected count: 19. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"nineteen ten-sticks\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, nineteen ten-sticks.\" If incorrect say exactly: \"My turn: ten new ten-sticks arrive and nine were already there, so there are nineteen. Your turn. You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "Let us trade some blocks. You tell me what will happen first, and then you make it happen. You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?",
+        "affirmLine": "Yes, nineteen ten-sticks.",
+        "correctionLine": "My turn: ten new ten-sticks arrive and nine were already there, so there are nineteen. Your turn. You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?",
+        "correctionLines": [
+          "My turn: ten new ten-sticks arrive and nine were already there, so there are nineteen. Your turn. You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "regroup",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "regroup",
+          "instruction": "You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "nineteen",
+          "plainWrong": "eleven",
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the blocks the trade CREATES, with the ones already on the mat forgotten"
+          },
+          "leakTokens": [
+            "nineteen",
+            "19"
+          ]
+        },
+        "pronounceCue": "[BT_HEAR] Scene: Block mat: 1 hundred-flat, 9 ten-sticks, 3 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Do not judge speech you have just heard. Private expected count: 19. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"nineteen ten-sticks\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, nineteen ten-sticks.\" If incorrect say exactly: \"My turn: ten new ten-sticks arrive and nine were already there, so there are nineteen. Your turn. You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: Block mat: 1 hundred-flat, 9 ten-sticks, 3 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Private expected count: 19. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"nineteen ten-sticks\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, nineteen ten-sticks.\" If incorrect say exactly: \"My turn: ten new ten-sticks arrive and nine were already there, so there are nineteen. Your turn. You have 9 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: Block mat: 1 hundred-flat, 9 ten-sticks, 3 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Let us keep going. Now make that trade. Tap one hundred-flat to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-1-trade",
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "trade-make",
+        "cue": "[BT_ITEM] Scene: Block mat: 1 hundred-flat, 9 ten-sticks, 3 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Now make that trade. Tap one hundred-flat to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "Now make that trade. Tap one hundred-flat to break it apart.",
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "regroup",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "regroup",
+          "instruction": "Now make that trade. Tap one hundred-flat to break it apart.",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "one hundred-flat tapped",
+          "plainWrong": "one ten-stick tapped",
+          "placed": {
+            "correct": 2,
+            "wrong": 1
+          },
+          "leakTokens": []
+        },
+        "gestureVerdict": {
+          "correct": "[BT_CHECK] Scene: Block mat: 19 ten-sticks, 3 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Code computed solved=true. Use this result. Say exactly: \"Yes, one hundred-flat became ten ten-sticks. The mat still shows the same number.\" A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+          "wrong": "[BT_CHECK] Scene: Block mat: 1 hundred-flat, 8 ten-sticks, 13 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Code computed solved=false. Use this result. Say exactly: \"My turn: Now make that trade. Tap one hundred-flat to break it apart.\" A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+        },
+        "pronounceCue": "[BT_HEAR] Scene: Block mat: 1 hundred-flat, 9 ten-sticks, 3 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Now make that trade. Tap one hundred-flat to break it apart.\" Do not judge speech you have just heard. This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: Block mat: 1 hundred-flat, 9 ten-sticks, 3 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Now make that trade. Tap one hundred-flat to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: Block mat: 1 hundred-flat, 3 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Let us keep going. You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Private expected count: 18. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"eighteen ones cubes\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, eighteen ones cubes.\" If incorrect say exactly: \"My turn: ten new ones cubes arrive and eight were already there, so there are eighteen. Your turn. You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-2-predict",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "trade-predict",
+        "cue": "[BT_ITEM] Scene: Block mat: 1 hundred-flat, 3 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Private expected count: 18. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"eighteen ones cubes\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, eighteen ones cubes.\" If incorrect say exactly: \"My turn: ten new ones cubes arrive and eight were already there, so there are eighteen. Your turn. You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?",
+        "affirmLine": "Yes, eighteen ones cubes.",
+        "correctionLine": "My turn: ten new ones cubes arrive and eight were already there, so there are eighteen. Your turn. You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?",
+        "correctionLines": [
+          "My turn: ten new ones cubes arrive and eight were already there, so there are eighteen. Your turn. You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "regroup",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "regroup",
+          "instruction": "You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "eighteen",
+          "plainWrong": "nineteen",
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the blocks the trade CREATES, with the ones already on the mat forgotten"
+          },
+          "leakTokens": [
+            "eighteen",
+            "18"
+          ]
+        },
+        "pronounceCue": "[BT_HEAR] Scene: Block mat: 1 hundred-flat, 3 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Do not judge speech you have just heard. Private expected count: 18. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"eighteen ones cubes\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, eighteen ones cubes.\" If incorrect say exactly: \"My turn: ten new ones cubes arrive and eight were already there, so there are eighteen. Your turn. You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: Block mat: 1 hundred-flat, 3 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Private expected count: 18. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"eighteen ones cubes\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, eighteen ones cubes.\" If incorrect say exactly: \"My turn: ten new ones cubes arrive and eight were already there, so there are eighteen. Your turn. You have 8 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: Block mat: 1 hundred-flat, 3 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Let us keep going. Now make that trade. Tap one ten-stick to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-2-trade",
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "trade-make",
+        "cue": "[BT_ITEM] Scene: Block mat: 1 hundred-flat, 3 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Now make that trade. Tap one ten-stick to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "Now make that trade. Tap one ten-stick to break it apart.",
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "regroup",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "regroup",
+          "instruction": "Now make that trade. Tap one ten-stick to break it apart.",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "one ten-stick tapped",
+          "plainWrong": "one hundred-flat tapped",
+          "placed": {
+            "correct": 1,
+            "wrong": 2
+          },
+          "leakTokens": []
+        },
+        "gestureVerdict": {
+          "correct": "[BT_CHECK] Scene: Block mat: 1 hundred-flat, 2 ten-sticks, 18 ones cubes. The trade under way is one ten-stick for ten ones cubes. Code computed solved=true. Use this result. Say exactly: \"Yes, one ten-stick became ten ones cubes. The mat still shows the same number.\" A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+          "wrong": "[BT_CHECK] Scene: Block mat: 13 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Code computed solved=false. Use this result. Say exactly: \"My turn: Now make that trade. Tap one ten-stick to break it apart.\" A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+        },
+        "pronounceCue": "[BT_HEAR] Scene: Block mat: 1 hundred-flat, 3 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Now make that trade. Tap one ten-stick to break it apart.\" Do not judge speech you have just heard. This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: Block mat: 1 hundred-flat, 3 ten-sticks, 8 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Now make that trade. Tap one ten-stick to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: Block mat: 4 hundred-flats, 7 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Let us keep going. You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Private expected count: 17. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"seventeen ten-sticks\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, seventeen ten-sticks.\" If incorrect say exactly: \"My turn: ten new ten-sticks arrive and seven were already there, so there are seventeen. Your turn. You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-3-predict",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "trade-predict",
+        "cue": "[BT_ITEM] Scene: Block mat: 4 hundred-flats, 7 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Private expected count: 17. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"seventeen ten-sticks\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, seventeen ten-sticks.\" If incorrect say exactly: \"My turn: ten new ten-sticks arrive and seven were already there, so there are seventeen. Your turn. You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?",
+        "affirmLine": "Yes, seventeen ten-sticks.",
+        "correctionLine": "My turn: ten new ten-sticks arrive and seven were already there, so there are seventeen. Your turn. You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?",
+        "correctionLines": [
+          "My turn: ten new ten-sticks arrive and seven were already there, so there are seventeen. Your turn. You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "regroup",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "regroup",
+          "instruction": "You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "seventeen",
+          "plainWrong": "eighteen",
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the blocks the trade CREATES, with the ones already on the mat forgotten"
+          },
+          "leakTokens": [
+            "seventeen",
+            "17"
+          ]
+        },
+        "pronounceCue": "[BT_HEAR] Scene: Block mat: 4 hundred-flats, 7 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Do not judge speech you have just heard. Private expected count: 17. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"seventeen ten-sticks\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, seventeen ten-sticks.\" If incorrect say exactly: \"My turn: ten new ten-sticks arrive and seven were already there, so there are seventeen. Your turn. You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: Block mat: 4 hundred-flats, 7 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Private expected count: 17. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"seventeen ten-sticks\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, seventeen ten-sticks.\" If incorrect say exactly: \"My turn: ten new ten-sticks arrive and seven were already there, so there are seventeen. Your turn. You have 7 ten-sticks. You are going to trade one hundred-flat for ten ten-sticks. How many ten-sticks will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: Block mat: 4 hundred-flats, 7 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Let us keep going. Now make that trade. Tap one hundred-flat to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-3-trade",
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "trade-make",
+        "cue": "[BT_ITEM] Scene: Block mat: 4 hundred-flats, 7 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Now make that trade. Tap one hundred-flat to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "Now make that trade. Tap one hundred-flat to break it apart.",
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "regroup",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "regroup",
+          "instruction": "Now make that trade. Tap one hundred-flat to break it apart.",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "one hundred-flat tapped",
+          "plainWrong": "one ten-stick tapped",
+          "placed": {
+            "correct": 2,
+            "wrong": 1
+          },
+          "leakTokens": []
+        },
+        "gestureVerdict": {
+          "correct": "[BT_CHECK] Scene: Block mat: 3 hundred-flats, 17 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Code computed solved=true. Use this result. Say exactly: \"Yes, one hundred-flat became ten ten-sticks. The mat still shows the same number.\" A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+          "wrong": "[BT_CHECK] Scene: Block mat: 4 hundred-flats, 6 ten-sticks, 12 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Code computed solved=false. Use this result. Say exactly: \"My turn: Now make that trade. Tap one hundred-flat to break it apart.\" A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+        },
+        "pronounceCue": "[BT_HEAR] Scene: Block mat: 4 hundred-flats, 7 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Now make that trade. Tap one hundred-flat to break it apart.\" Do not judge speech you have just heard. This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: Block mat: 4 hundred-flats, 7 ten-sticks, 2 ones cubes. The trade under way is one hundred-flat for ten ten-sticks. Say exactly: \"Now make that trade. Tap one hundred-flat to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: Block mat: 8 hundred-flats, 1 ten-stick, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Let us keep going. You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Private expected count: 14. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"fourteen ones cubes\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, fourteen ones cubes.\" If incorrect say exactly: \"My turn: ten new ones cubes arrive and four were already there, so there are fourteen. Your turn. You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-4-predict",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "trade-predict",
+        "cue": "[BT_ITEM] Scene: Block mat: 8 hundred-flats, 1 ten-stick, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Private expected count: 14. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"fourteen ones cubes\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, fourteen ones cubes.\" If incorrect say exactly: \"My turn: ten new ones cubes arrive and four were already there, so there are fourteen. Your turn. You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?",
+        "affirmLine": "Yes, fourteen ones cubes.",
+        "correctionLine": "My turn: ten new ones cubes arrive and four were already there, so there are fourteen. Your turn. You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?",
+        "correctionLines": [
+          "My turn: ten new ones cubes arrive and four were already there, so there are fourteen. Your turn. You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "regroup",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "regroup",
+          "instruction": "You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "fourteen",
+          "plainWrong": "fifteen",
+          "signatureWrong": {
+            "text": "ten",
+            "why": "the blocks the trade CREATES, with the ones already on the mat forgotten"
+          },
+          "leakTokens": [
+            "fourteen",
+            "14"
+          ]
+        },
+        "pronounceCue": "[BT_HEAR] Scene: Block mat: 8 hundred-flats, 1 ten-stick, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Do not judge speech you have just heard. Private expected count: 14. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"fourteen ones cubes\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, fourteen ones cubes.\" If incorrect say exactly: \"My turn: ten new ones cubes arrive and four were already there, so there are fourteen. Your turn. You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: Block mat: 8 hundred-flats, 1 ten-stick, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Private expected count: 14. Judge only the current spoken prediction. Accept a number word or a short sentence such as \"fourteen ones cubes\". The signature wrong answer is \"ten\" — the blocks the trade creates, with the ones already on the mat forgotten — and it is incorrect. The starting count on its own is also incorrect. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, fourteen ones cubes.\" If incorrect say exactly: \"My turn: ten new ones cubes arrive and four were already there, so there are fourteen. Your turn. You have 4 ones cubes. You are going to trade one ten-stick for ten ones cubes. How many ones cubes will you have then?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: Block mat: 8 hundred-flats, 1 ten-stick, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Let us keep going. Now make that trade. Tap one ten-stick to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-4-trade",
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "trade-make",
+        "cue": "[BT_ITEM] Scene: Block mat: 8 hundred-flats, 1 ten-stick, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Now make that trade. Tap one ten-stick to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "Now make that trade. Tap one ten-stick to break it apart.",
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "regroup",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "regroup",
+          "instruction": "Now make that trade. Tap one ten-stick to break it apart.",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "one ten-stick tapped",
+          "plainWrong": "one hundred-flat tapped",
+          "placed": {
+            "correct": 1,
+            "wrong": 2
+          },
+          "leakTokens": []
+        },
+        "gestureVerdict": {
+          "correct": "[BT_CHECK] Scene: Block mat: 8 hundred-flats, 14 ones cubes. The trade under way is one ten-stick for ten ones cubes. Code computed solved=true. Use this result. Say exactly: \"Yes, one ten-stick became ten ones cubes. The mat still shows the same number.\" A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+          "wrong": "[BT_CHECK] Scene: Block mat: 7 hundred-flats, 11 ten-sticks, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Code computed solved=false. Use this result. Say exactly: \"My turn: Now make that trade. Tap one ten-stick to break it apart.\" A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+        },
+        "pronounceCue": "[BT_HEAR] Scene: Block mat: 8 hundred-flats, 1 ten-stick, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Now make that trade. Tap one ten-stick to break it apart.\" Do not judge speech you have just heard. This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: Block mat: 8 hundred-flats, 1 ten-stick, 4 ones cubes. The trade under way is one ten-stick for ten ones cubes. Say exactly: \"Now make that trade. Tap one ten-stick to break it apart.\" This is a hands turn. Do not judge microphone speech and do not name the result of the trade. [BT_CHANGE] is coaching only and is never an attempt. Only [BT_CHECK] carries a code-computed verdict. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_COMPLETE] Say exactly: \"You read the blocks and said what they are worth. Nice work with the mat!\" Then stop."
+      }
+    ],
+    "completeCue": "[BT_COMPLETE] Say exactly: \"You read the blocks and said what they are worth. Nice work with the mat!\" Then stop.",
+    "droppedChallenges": 0,
+    "packGateIssues": [],
+    "isBench": false
+  },
+  "issues": []
+}

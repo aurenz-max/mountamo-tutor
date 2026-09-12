@@ -30,6 +30,11 @@ vi.mock('../../../hooks/useLuminaAI', () => ({
 }));
 // jsdom has no canvas, and the completion panel's confetti runs on rAF past teardown.
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+// The judged-loop stage needs the live tutor context and has its own suite
+// (`BaseTenBlocksDi.di-stage.test.tsx`). Here it is a routing marker.
+vi.mock('./BaseTenBlocksDi', () => ({
+  default: () => <div data-testid="di-stage" />,
+}));
 vi.mock('../../../utils/SoundManager', () => ({
   SoundManager: {
     playCorrect: vi.fn(), playIncorrect: vi.fn(), tick: vi.fn(), snap: vi.fn(),
@@ -120,33 +125,35 @@ describe('build_number — judged from the blocks, not a keypad', () => {
   });
 });
 
-describe('regroup — judged from the trade', () => {
+/**
+ * `regroup` and `read_blocks` LEFT THIS SURFACE on 2026-09-12 (qa/di/BACKLOG.md
+ * item 18): both are judged-loop modes now and render `BaseTenBlocksDi`, so the
+ * two describes that used to sit here — the trade's Check button and the
+ * read keypad — were describing a UI those modes no longer have.
+ *
+ * NOTHING THEY PINNED WAS DROPPED. Each intent was re-based onto the surface it
+ * still applies to:
+ *
+ *  · "asks the student to trade, not to type the number already on screen" and
+ *    "accepts a value-preserving trade" → `BaseTenBlocksDi.di-stage.test.tsx`,
+ *    strengthened: the Check button is gone too, so a wrong trade commits on
+ *    stillness as a real wrong answer rather than waiting to be submitted.
+ *  · "never states the target in the wrong-answer feedback" → the
+ *    `add_with_blocks` describe below, which is where Channel B (the keypad for
+ *    a number the screen does not state) still lives, AND widened to a pixel
+ *    rule on the DI stage, where the column count is itself an answer.
+ *
+ * What belongs HERE is the routing: which modes leave, which stay, and what a
+ * mixed deck does. The DI stage is stubbed for those cases — its behaviour is
+ * its own suite's job, and mounting it needs the live tutor context.
+ */
+describe('the staged port — which modes still answer on this surface', () => {
   const REGROUP_25: BaseTenBlocksChallenge = {
     type: 'regroup',
     instruction: 'You have 2 tens and 5 ones. Trade 1 ten for 10 ones.',
     targetNumber: 25,
     hint: '1 ten = 10 ones.',
   };
-
-  it('asks the student to trade, not to type the number already on screen', () => {
-    render(<BaseTenBlocks data={deck(REGROUP_25, { interactionMode: 'regroup' })} />);
-    expect(screen.getByRole('button', { name: /check my trade/i })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '7' })).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: /check my trade/i }));
-    expect(screen.getByText(/no trade yet/i)).toBeTruthy();
-  });
-
-  it('accepts a value-preserving trade', async () => {
-    render(<BaseTenBlocks data={deck(REGROUP_25, { interactionMode: 'regroup' })} />);
-    fireEvent.click(screen.getByRole('button', { name: /1 → 10 Ones/i }));
-    await waitFor(() => expect(screen.getByText(/1 ten = 10 ones/i)).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: /check my trade/i }));
-    expect(screen.getByText(/they still make 25/i)).toBeTruthy();
-  });
-});
-
-describe('read_blocks — the keypad is the only channel and stays', () => {
   const READ_23: BaseTenBlocksChallenge = {
     type: 'read_blocks',
     instruction: 'What number is shown by these blocks?',
@@ -154,14 +161,55 @@ describe('read_blocks — the keypad is the only channel and stays', () => {
     hint: 'Count each column.',
   };
 
+  it.each([
+    ['regroup', REGROUP_25],
+    ['read_blocks', READ_23],
+  ])('a judged %s deck leaves this component entirely', (_type, challenge) => {
+    render(<BaseTenBlocks data={deck(challenge, { interactionMode: 'regroup' })} />);
+    expect(screen.getByTestId('di-stage')).toBeTruthy();
+    // Neither channel of the click era survives for these modes.
+    expect(screen.queryByRole('button', { name: /check my (blocks|trade)/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: '7' })).toBeNull();
+  });
+
+  it('a MIXED deck keeps the whole deck on clicks — the transport cannot split mid-session', () => {
+    // The homogeneity rule the catalog's `audioInputByMode` resolver applies:
+    // the backend is told one transport for the payload, so one judged
+    // challenge beside a click one falls back for all of them.
+    render(<BaseTenBlocks data={{ ...deck(BUILD_12), challenges: [READ_23, BUILD_12] }} />);
+    expect(screen.queryByTestId('di-stage')).toBeNull();
+    // read_blocks is back on the click era's Channel B — the keypad.
+    expect(screen.getByRole('button', { name: '7' })).toBeTruthy();
+  });
+
+  it('a judged deck whose numbers ALL fail the build gate falls back rather than asking nothing', () => {
+    // 40 has no ones cube to receive the traded ten, so the prediction would
+    // state its own answer. The DI pack drops it; the click surface still works.
+    render(<BaseTenBlocks data={deck({ ...REGROUP_25, targetNumber: 40 }, { interactionMode: 'regroup' })} />);
+    expect(screen.queryByTestId('di-stage')).toBeNull();
+    expect(screen.getByRole('button', { name: /check my trade/i })).toBeTruthy();
+  });
+});
+
+describe('add_with_blocks — the keypad survives where the number is NOT on screen', () => {
+  const ADD_23: BaseTenBlocksChallenge = {
+    type: 'add_with_blocks',
+    instruction: 'Add 14 and 9 with the blocks, then type the total.',
+    targetNumber: 23,
+    secondNumber: 9,
+    hint: 'Build 14, add 9 more, then trade.',
+  };
+
   it('keeps the keypad and offers no Check My Blocks button', () => {
-    render(<BaseTenBlocks data={deck(READ_23, { interactionMode: 'decompose' })} />);
+    render(<BaseTenBlocks data={deck(ADD_23, { interactionMode: 'operate' })} />);
     expect(screen.getByRole('button', { name: '7' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /check my blocks/i })).toBeNull();
   });
 
   it('never states the target in the wrong-answer feedback', () => {
-    render(<BaseTenBlocks data={deck(READ_23, { interactionMode: 'decompose' })} />);
+    // Unlike build_number, the answer is NOT on screen here — naming it in the
+    // miss hands over the next attempt.
+    render(<BaseTenBlocks data={deck(ADD_23, { interactionMode: 'operate' })} />);
     fireEvent.click(screen.getByRole('button', { name: '4' }));
     fireEvent.click(screen.getByRole('button', { name: '1' }));
     fireEvent.click(screen.getByRole('button', { name: '✓' }));

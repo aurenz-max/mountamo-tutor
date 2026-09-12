@@ -4293,6 +4293,35 @@ it may be constrained production rather than free — decide it at the pack.
 ### 18. 🔢 **P4 OPEN — `3d-shape-explorer` SHIPPED 2026-09-04 (all 5 modes spoken, mic #131) · `place-value-chart` SHIPPED 2026-08-18 (math port 8, THE FIRST PAST THE ≤20 BENCH: new `place_value_word` class accepted-build-ahead on the user's 2026-08-19 ruling, mic **#113** = the #63 acceptance material itself) · `ordinal-line` SHIPPED 2026-08-18 (math port 6, all 5 eval modes, mic #110; its "unbenched ordinal words" gate was FALSE IN CODE) · `compare-objects` SHIPPED 2026-08-17 (4th math port, mic #107) · P1 SHIPPED 2026-08-13 + DRIVEN (6/6 refusals) · P2 `addition-subtraction-scene` SHIPPED 2026-08-14 · `number-bond` SHIPPED 2026-08-14 (the P3-correction port) · `shape-sorter` SHIPPED 2026-08-18 (5th port, 3/3 modes spoken, zero taps, mic #108) · P3 (#63) = THE REMAINING GATE — and #113 folds INTO the #63 sitting — THE DI MODALITY ON MATH PRIMITIVES (user thread 2026-08-12: *"would there be value adding /add-di-loop to any of those? for example ten frame… addition subtraction scene may benefit from speaking aloud instead of typing"*)**
 
 
+**2026-09-12 — base-ten-blocks DI: tests, drive adapter, and the port's FIRST headless drives.**
+The judged loop (`read_blocks` + `regroup`) shipped with four files, zero tests and no
+`DI_PORTS` adapter, so `--di` could not reach it and the only way to exercise it was a
+human at a browser — the same gap item 24 closed for rhyme-studio. Closed now: a
+`baseTenAdapter` in `diDrivePlan.ts` (gesture payload = the PLACE tapped, mat computed by
+the same `tradedColumns` the stage calls, all-or-nothing build mirroring `usesBaseTenDi`),
+99 tests across four suites, a live generation probe (`scripts/base-ten-blocks-probe.mjs`),
+and evidence in `qa/base-ten-blocks-di/`.
+
+FOUR DEFECTS, all found by the drives and all invisible to tsc, the pack gates and the
+probe: (1) ⭐ `regroup` on a mat with an EMPTY RECEIVING PLACE stated its own answer and
+handed the judge a contract calling "ten" both expected and signature-wrong — those
+numbers now drop at the build gate; (2) the pack wrote `say exactly "…"` without the colon
+`SPOKEN_SPAN_RE` anchors on, so the drive plan read `affirmLine` as undefined and
+`correctionLine` as the ASK; (3) subject-verb agreement broke at a count of one, spoken
+live as "there are one thousand-block"; (4) the sign-off was mode-blind and the hands
+correction was a bare "My turn: <the child's own instruction>".
+
+Drives: read_blocks plain 8/8, regroup plain 8/8 (all four hands items), `--di-wrong
+signature` **10/10** — the mirror-image pair discriminated in both directions on the same
+mat. Live mic/touch acceptance = HUMAN-CHECKS **#155**.
+
+⚠️ SIBLING PACKS CARRY DEFECT 2 AND ARE NOT TOUCHED HERE: `balanceWorkshopScript.ts`,
+`numberBondModes.ts` and `numberBondSplit.ts` all write `say exactly "…"` without the
+colon, so their verdict lines are invisible to `spokenSpansOf` the same way. number-bond
+has a registered adapter, so its drive plan is reading `correctionLine` as the ask today.
+QUEUED — executor `/eval-fix`, one-line change per file plus a bite in each pack's suite.
+
+
 **2026-09-11 ? Number Sequencer DI implemented (user-selected next math modernization).**
 All six existing modes now use `useJudgedScriptRunner`: count-from and gaps expand
 into one spoken number per item; before/after is spoken; spot-error names the

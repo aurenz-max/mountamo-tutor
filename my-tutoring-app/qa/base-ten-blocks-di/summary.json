@@ -1,0 +1,74 @@
+[
+  {
+    "name": "read-easy",
+    "challenges": 4,
+    "targets": [
+      432,
+      136,
+      482,
+      892
+    ],
+    "items": 8,
+    "issues": []
+  },
+  {
+    "name": "read-medium",
+    "challenges": 4,
+    "targets": [
+      201,
+      803,
+      107,
+      307
+    ],
+    "items": 8,
+    "issues": []
+  },
+  {
+    "name": "read-hard",
+    "challenges": 4,
+    "targets": [
+      604,
+      303,
+      908,
+      103
+    ],
+    "items": 8,
+    "issues": []
+  },
+  {
+    "name": "regroup-easy",
+    "challenges": 4,
+    "targets": [
+      486,
+      360,
+      731,
+      54
+    ],
+    "items": 8,
+    "issues": []
+  },
+  {
+    "name": "regroup-medium",
+    "challenges": 4,
+    "targets": [
+      193,
+      138,
+      472,
+      814
+    ],
+    "items": 8,
+    "issues": []
+  },
+  {
+    "name": "regroup-hard",
+    "challenges": 4,
+    "targets": [
+      754,
+      695,
+      628,
+      870
+    ],
+    "items": 8,
+    "issues": []
+  }
+]

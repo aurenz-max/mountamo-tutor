@@ -1,0 +1,410 @@
+{
+  "generatedAt": "2026-09-12T18:27:04.057Z",
+  "data": {
+    "title": "Base-Ten Block Detective",
+    "description": "Practice reading base-ten blocks on the mat, paying close attention to empty columns and place values.",
+    "numberValue": 940,
+    "challenges": [
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 604,
+        "hint": "Count the hundreds, then the tens, remembering to check if any columns are empty.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 303,
+        "hint": "Check how many hundreds and tens are on the mat.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 908,
+        "hint": "Look closely at the tens place. Are there any tens rods?",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      },
+      {
+        "type": "read_blocks",
+        "instruction": "What number do these blocks show?",
+        "targetNumber": 103,
+        "hint": "Count each block type carefully starting from the hundreds.",
+        "showColumnCounts": false,
+        "showBlocksTotal": false
+      }
+    ],
+    "gradeBand": "2-3",
+    "interactionMode": "decompose",
+    "decimalMode": false,
+    "maxPlace": "hundreds",
+    "supplyTray": true,
+    "supportTier": "hard"
+  },
+  "plan": {
+    "componentId": "base-ten-blocks",
+    "primitiveType": "base-ten-blocks",
+    "activityLine": "read a block mat aloud and trade blocks between places",
+    "gradeLevel": "Grade 2",
+    "audioInput": {
+      "manual_activity": true
+    },
+    "sentinels": {
+      "affirm": [
+        [
+          "yes"
+        ]
+      ],
+      "correct": [
+        [
+          "my",
+          "turn"
+        ]
+      ]
+    },
+    "maxCorrections": 2,
+    "items": [
+      {
+        "id": "base-ten-1-count",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "read-count",
+        "cue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"Let us read the blocks together. I will ask about one size at a time, and you answer out loud. How many hundred-flats do you see?\" Private expected count: 6. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"six hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"six hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, six hundred-flats.\" If incorrect say exactly: \"My turn: there are six hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "Let us read the blocks together. I will ask about one size at a time, and you answer out loud. How many hundred-flats do you see?",
+        "affirmLine": "Yes, six hundred-flats.",
+        "correctionLine": "My turn: there are six hundred-flats. Your turn. How many hundred-flats do you see?",
+        "correctionLines": [
+          "My turn: there are six hundred-flats. Your turn. How many hundred-flats do you see?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "decompose",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "read_blocks",
+          "instruction": "How many hundred-flats do you see?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "six",
+          "plainWrong": "seven",
+          "signatureWrong": {
+            "text": "six hundred",
+            "why": "the VALUE said where the COUNT was asked — the mirror image of the worth step"
+          },
+          "leakTokens": [
+            "six",
+            "6"
+          ]
+        },
+        "pronounceCue": "[BT_HEAR] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Do not judge speech you have just heard. Private expected count: 6. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"six hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"six hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, six hundred-flats.\" If incorrect say exactly: \"My turn: there are six hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Private expected count: 6. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"six hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"six hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, six hundred-flats.\" If incorrect say exactly: \"My turn: there are six hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"Let us keep going. What are those hundred-flats worth altogether?\" Private expected value: six hundred. Judge only the current spoken value of those blocks. Accept \"six hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"six\" instead of \"six hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, six hundred-flats are worth six hundred. Those hundred-flats and the rest of the mat make 604.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so six of them are worth six hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-1-worth",
+        "answerKind": "voice",
+        "responseClass": "place_value_word",
+        "action": "read-worth",
+        "cue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Private expected value: six hundred. Judge only the current spoken value of those blocks. Accept \"six hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"six\" instead of \"six hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, six hundred-flats are worth six hundred. Those hundred-flats and the rest of the mat make 604.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so six of them are worth six hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "What are those hundred-flats worth altogether?",
+        "affirmLine": "Yes, six hundred-flats are worth six hundred. Those hundred-flats and the rest of the mat make 604.",
+        "correctionLine": "My turn: one hundred-flat is worth one hundred, so six of them are worth six hundred. Your turn. What are those hundred-flats worth altogether?",
+        "correctionLines": [
+          "My turn: one hundred-flat is worth one hundred, so six of them are worth six hundred. Your turn. What are those hundred-flats worth altogether?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "decompose",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "read_blocks",
+          "instruction": "What are those hundred-flats worth altogether?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "six hundred",
+          "plainWrong": "seven hundred",
+          "signatureWrong": {
+            "text": "six",
+            "why": "the BARE COUNT said for the value — \"four\" for \"forty\""
+          },
+          "leakTokens": [
+            "six hundred",
+            "600"
+          ],
+          "leakExemptSpan": "hundred-flats"
+        },
+        "pronounceCue": "[BT_HEAR] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Do not judge speech you have just heard. Private expected value: six hundred. Judge only the current spoken value of those blocks. Accept \"six hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"six\" instead of \"six hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, six hundred-flats are worth six hundred. Those hundred-flats and the rest of the mat make 604.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so six of them are worth six hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Private expected value: six hundred. Judge only the current spoken value of those blocks. Accept \"six hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"six\" instead of \"six hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, six hundred-flats are worth six hundred. Those hundred-flats and the rest of the mat make 604.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so six of them are worth six hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"Let us keep going. How many hundred-flats do you see?\" Private expected count: 3. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"three hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"three hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, three hundred-flats.\" If incorrect say exactly: \"My turn: there are three hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-2-count",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "read-count",
+        "cue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Private expected count: 3. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"three hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"three hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, three hundred-flats.\" If incorrect say exactly: \"My turn: there are three hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "How many hundred-flats do you see?",
+        "affirmLine": "Yes, three hundred-flats.",
+        "correctionLine": "My turn: there are three hundred-flats. Your turn. How many hundred-flats do you see?",
+        "correctionLines": [
+          "My turn: there are three hundred-flats. Your turn. How many hundred-flats do you see?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "decompose",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "read_blocks",
+          "instruction": "How many hundred-flats do you see?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "three",
+          "plainWrong": "four",
+          "signatureWrong": {
+            "text": "three hundred",
+            "why": "the VALUE said where the COUNT was asked — the mirror image of the worth step"
+          },
+          "leakTokens": [
+            "three",
+            "3"
+          ]
+        },
+        "pronounceCue": "[BT_HEAR] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Do not judge speech you have just heard. Private expected count: 3. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"three hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"three hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, three hundred-flats.\" If incorrect say exactly: \"My turn: there are three hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Private expected count: 3. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"three hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"three hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, three hundred-flats.\" If incorrect say exactly: \"My turn: there are three hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"Let us keep going. What are those hundred-flats worth altogether?\" Private expected value: three hundred. Judge only the current spoken value of those blocks. Accept \"three hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"three\" instead of \"three hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, three hundred-flats are worth three hundred. Those hundred-flats and the rest of the mat make 303.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so three of them are worth three hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-2-worth",
+        "answerKind": "voice",
+        "responseClass": "place_value_word",
+        "action": "read-worth",
+        "cue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Private expected value: three hundred. Judge only the current spoken value of those blocks. Accept \"three hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"three\" instead of \"three hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, three hundred-flats are worth three hundred. Those hundred-flats and the rest of the mat make 303.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so three of them are worth three hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "What are those hundred-flats worth altogether?",
+        "affirmLine": "Yes, three hundred-flats are worth three hundred. Those hundred-flats and the rest of the mat make 303.",
+        "correctionLine": "My turn: one hundred-flat is worth one hundred, so three of them are worth three hundred. Your turn. What are those hundred-flats worth altogether?",
+        "correctionLines": [
+          "My turn: one hundred-flat is worth one hundred, so three of them are worth three hundred. Your turn. What are those hundred-flats worth altogether?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "decompose",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "read_blocks",
+          "instruction": "What are those hundred-flats worth altogether?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "three hundred",
+          "plainWrong": "four hundred",
+          "signatureWrong": {
+            "text": "three",
+            "why": "the BARE COUNT said for the value — \"four\" for \"forty\""
+          },
+          "leakTokens": [
+            "three hundred",
+            "300"
+          ],
+          "leakExemptSpan": "hundred-flats"
+        },
+        "pronounceCue": "[BT_HEAR] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Do not judge speech you have just heard. Private expected value: three hundred. Judge only the current spoken value of those blocks. Accept \"three hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"three\" instead of \"three hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, three hundred-flats are worth three hundred. Those hundred-flats and the rest of the mat make 303.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so three of them are worth three hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Private expected value: three hundred. Judge only the current spoken value of those blocks. Accept \"three hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"three\" instead of \"three hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, three hundred-flats are worth three hundred. Those hundred-flats and the rest of the mat make 303.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so three of them are worth three hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"Let us keep going. How many hundred-flats do you see?\" Private expected count: 9. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"nine hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"nine hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, nine hundred-flats.\" If incorrect say exactly: \"My turn: there are nine hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-3-count",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "read-count",
+        "cue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Private expected count: 9. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"nine hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"nine hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, nine hundred-flats.\" If incorrect say exactly: \"My turn: there are nine hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "How many hundred-flats do you see?",
+        "affirmLine": "Yes, nine hundred-flats.",
+        "correctionLine": "My turn: there are nine hundred-flats. Your turn. How many hundred-flats do you see?",
+        "correctionLines": [
+          "My turn: there are nine hundred-flats. Your turn. How many hundred-flats do you see?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "decompose",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "read_blocks",
+          "instruction": "How many hundred-flats do you see?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "nine",
+          "plainWrong": "one",
+          "signatureWrong": {
+            "text": "nine hundred",
+            "why": "the VALUE said where the COUNT was asked — the mirror image of the worth step"
+          },
+          "leakTokens": [
+            "nine",
+            "9"
+          ]
+        },
+        "pronounceCue": "[BT_HEAR] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Do not judge speech you have just heard. Private expected count: 9. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"nine hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"nine hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, nine hundred-flats.\" If incorrect say exactly: \"My turn: there are nine hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Private expected count: 9. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"nine hundred-flats\". The signature wrong answer is the VALUE said where the COUNT was asked — \"nine hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, nine hundred-flats.\" If incorrect say exactly: \"My turn: there are nine hundred-flats. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"Let us keep going. What are those hundred-flats worth altogether?\" Private expected value: nine hundred. Judge only the current spoken value of those blocks. Accept \"nine hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"nine\" instead of \"nine hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, nine hundred-flats are worth nine hundred. Those hundred-flats and the rest of the mat make 908.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so nine of them are worth nine hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-3-worth",
+        "answerKind": "voice",
+        "responseClass": "place_value_word",
+        "action": "read-worth",
+        "cue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Private expected value: nine hundred. Judge only the current spoken value of those blocks. Accept \"nine hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"nine\" instead of \"nine hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, nine hundred-flats are worth nine hundred. Those hundred-flats and the rest of the mat make 908.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so nine of them are worth nine hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "What are those hundred-flats worth altogether?",
+        "affirmLine": "Yes, nine hundred-flats are worth nine hundred. Those hundred-flats and the rest of the mat make 908.",
+        "correctionLine": "My turn: one hundred-flat is worth one hundred, so nine of them are worth nine hundred. Your turn. What are those hundred-flats worth altogether?",
+        "correctionLines": [
+          "My turn: one hundred-flat is worth one hundred, so nine of them are worth nine hundred. Your turn. What are those hundred-flats worth altogether?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "decompose",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "read_blocks",
+          "instruction": "What are those hundred-flats worth altogether?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "nine hundred",
+          "plainWrong": "one hundred",
+          "signatureWrong": {
+            "text": "nine",
+            "why": "the BARE COUNT said for the value — \"four\" for \"forty\""
+          },
+          "leakTokens": [
+            "nine hundred",
+            "900"
+          ],
+          "leakExemptSpan": "hundred-flats"
+        },
+        "pronounceCue": "[BT_HEAR] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Do not judge speech you have just heard. Private expected value: nine hundred. Judge only the current spoken value of those blocks. Accept \"nine hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"nine\" instead of \"nine hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, nine hundred-flats are worth nine hundred. Those hundred-flats and the rest of the mat make 908.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so nine of them are worth nine hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Private expected value: nine hundred. Judge only the current spoken value of those blocks. Accept \"nine hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"nine\" instead of \"nine hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, nine hundred-flats are worth nine hundred. Those hundred-flats and the rest of the mat make 908.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so nine of them are worth nine hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"Let us keep going. How many hundred-flats do you see?\" Private expected count: 1. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"one hundred-flat\". The signature wrong answer is the VALUE said where the COUNT was asked — \"one hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, one hundred-flat.\" If incorrect say exactly: \"My turn: there are one hundred-flat. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-4-count",
+        "answerKind": "voice",
+        "responseClass": "number_word_to_20",
+        "action": "read-count",
+        "cue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Private expected count: 1. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"one hundred-flat\". The signature wrong answer is the VALUE said where the COUNT was asked — \"one hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, one hundred-flat.\" If incorrect say exactly: \"My turn: there are one hundred-flat. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "How many hundred-flats do you see?",
+        "affirmLine": "Yes, one hundred-flat.",
+        "correctionLine": "My turn: there are one hundred-flat. Your turn. How many hundred-flats do you see?",
+        "correctionLines": [
+          "My turn: there are one hundred-flat. Your turn. How many hundred-flats do you see?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "decompose",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "read_blocks",
+          "instruction": "How many hundred-flats do you see?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "one",
+          "plainWrong": "two",
+          "signatureWrong": {
+            "text": "one hundred",
+            "why": "the VALUE said where the COUNT was asked — the mirror image of the worth step"
+          },
+          "leakTokens": [
+            "one",
+            "1"
+          ]
+        },
+        "pronounceCue": "[BT_HEAR] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Do not judge speech you have just heard. Private expected count: 1. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"one hundred-flat\". The signature wrong answer is the VALUE said where the COUNT was asked — \"one hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, one hundred-flat.\" If incorrect say exactly: \"My turn: there are one hundred-flat. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"How many hundred-flats do you see?\" Private expected count: 1. Judge only the current spoken count of hundred-flats. Accept a number word or a short sentence such as \"one hundred-flat\". The signature wrong answer is the VALUE said where the COUNT was asked — \"one hundred\" instead of the plain count — and it is incorrect here. So is a count of a different block size, and so is the whole number the mat shows. Negated correct numbers and conflicting guesses are incorrect. If correct say exactly: \"Yes, one hundred-flat.\" If incorrect say exactly: \"My turn: there are one hundred-flat. Your turn. How many hundred-flats do you see?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_MOVE] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"Let us keep going. What are those hundred-flats worth altogether?\" Private expected value: one hundred. Judge only the current spoken value of those blocks. Accept \"one hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"one\" instead of \"one hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, one hundred-flat are worth one hundred. That hundred-flat and the rest of the mat make 103.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so one of them are worth one hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. "
+      },
+      {
+        "id": "base-ten-4-worth",
+        "answerKind": "voice",
+        "responseClass": "place_value_word",
+        "action": "read-worth",
+        "cue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Private expected value: one hundred. Judge only the current spoken value of those blocks. Accept \"one hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"one\" instead of \"one hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, one hundred-flat are worth one hundred. That hundred-flat and the rest of the mat make 103.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so one of them are worth one hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "askLine": "What are those hundred-flats worth altogether?",
+        "affirmLine": "Yes, one hundred-flat are worth one hundred. That hundred-flat and the rest of the mat make 103.",
+        "correctionLine": "My turn: one hundred-flat is worth one hundred, so one of them are worth one hundred. Your turn. What are those hundred-flats worth altogether?",
+        "correctionLines": [
+          "My turn: one hundred-flat is worth one hundred, so one of them are worth one hundred. Your turn. What are those hundred-flats worth altogether?"
+        ],
+        "context": {
+          "numberValue": "withheld; the scripted cue carries every value you may say",
+          "interactionMode": "decompose",
+          "decimalMode": "false",
+          "gradeBand": "2-3",
+          "currentTotal": "withheld; the scripted cue carries every value you may say",
+          "columns": "withheld; the scripted cue carries every value you may say",
+          "targetNumber": "withheld; the scripted cue carries every value you may say",
+          "challengeType": "read_blocks",
+          "instruction": "What are those hundred-flats worth altogether?",
+          "attemptNumber": "0",
+          "regroupsUsed": "0"
+        },
+        "answers": {
+          "correct": "one hundred",
+          "plainWrong": "two hundred",
+          "signatureWrong": {
+            "text": "one",
+            "why": "the BARE COUNT said for the value — \"four\" for \"forty\""
+          },
+          "leakTokens": [
+            "one hundred",
+            "100"
+          ],
+          "leakExemptSpan": "hundred-flats"
+        },
+        "pronounceCue": "[BT_HEAR] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Do not judge speech you have just heard. Private expected value: one hundred. Judge only the current spoken value of those blocks. Accept \"one hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"one\" instead of \"one hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, one hundred-flat are worth one hundred. That hundred-flat and the rest of the mat make 103.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so one of them are worth one hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "reanchorCue": "[BT_ITEM] Scene: A block mat with 2 filled columns. The block counts and the number they make are withheld from you and are never guessed aloud. Say exactly: \"What are those hundred-flats worth altogether?\" Private expected value: one hundred. Judge only the current spoken value of those blocks. Accept \"one hundred\" alone or inside a short sentence, with or without the block name. The signature wrong answer is the BARE COUNT said for the value — \"one\" instead of \"one hundred\" — and it is incorrect, not a near miss. The same digit at the wrong size is also incorrect. The whole number the mat shows is not an answer to this question. If correct say exactly: \"Yes, one hundred-flat are worth one hundred. That hundred-flat and the rest of the mat make 103.\" If incorrect say exactly: \"My turn: one hundred-flat is worth one hundred, so one of them are worth one hundred. Your turn. What are those hundred-flats worth altogether?\" Help questions, silence, counting that never lands on a final answer, and off-task speech are not incorrect answers and receive no verdict. A previous turn never answers the current question, even when the number would be the same. A verdict ends your turn: after the affirmation or the correction you stop, and you never continue into another question, another example, or an offer of more work. The application supplies every new item. Never speak bracket tags or private rules. The quoted line is the only thing you say on this turn, and you then stay silent while the learner works. Only the application changes steps. Never announce that you are listening — simply stop speaking. ",
+        "moveOnCue": "[BT_COMPLETE] Say exactly: \"You read the blocks and said what they are worth. Nice work with the mat!\" Then stop."
+      }
+    ],
+    "completeCue": "[BT_COMPLETE] Say exactly: \"You read the blocks and said what they are worth. Nice work with the mat!\" Then stop.",
+    "droppedChallenges": 0,
+    "packGateIssues": [],
+    "isBench": false
+  },
+  "issues": []
+}

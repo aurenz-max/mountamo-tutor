@@ -23,6 +23,8 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
 import { SoundManager } from '../../../utils/SoundManager';
+import BaseTenBlocksDi from './BaseTenBlocksDi';
+import { usesBaseTenDi } from './baseTenScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -947,4 +949,13 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   );
 };
 
-export default BaseTenBlocks;
+/**
+ * `read_blocks` and `regroup` are on the judged DI loop; `build_number` and the
+ * operate modes still use the click-era component above. The predicate matches
+ * the catalog's `audioInputByMode` resolver exactly, so the transport declared
+ * at connect and the component the child gets can never disagree.
+ */
+const BaseTenBlocksWithDiPilot: React.FC<BaseTenBlocksProps> = (props) =>
+  usesBaseTenDi(props.data.challenges) ? <BaseTenBlocksDi {...props} /> : <BaseTenBlocks {...props} />;
+
+export default BaseTenBlocksWithDiPilot;
