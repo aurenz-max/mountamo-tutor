@@ -1,0 +1,269 @@
+{
+  "generatedAt": "2026-09-11T22:57:21.962Z",
+  "data": {
+    "gradeLevel": "2",
+    "title": "Exploring Balance and Equality",
+    "description": "Practice changing both sides of a balance scale and discover how to find the mystery quantity while keeping equations equal.",
+    "leftSide": [
+      {
+        "value": 1,
+        "label": "?",
+        "isVariable": true
+      },
+      {
+        "value": 5,
+        "label": "5"
+      }
+    ],
+    "rightSide": [
+      {
+        "value": 3,
+        "label": "3"
+      },
+      {
+        "value": 5,
+        "label": "5"
+      }
+    ],
+    "variableValue": 3,
+    "showTilt": true,
+    "showSideValues": false,
+    "showBalanceStatus": false,
+    "supportTier": "hard",
+    "allowOperations": [
+      "add",
+      "subtract"
+    ],
+    "gradeBand": "K-2",
+    "challenges": [
+      {
+        "type": "equality",
+        "instruction": "Find the mystery number that makes both sides balance.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          },
+          {
+            "value": 5,
+            "label": "5"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 3,
+            "label": "3"
+          },
+          {
+            "value": 5,
+            "label": "5"
+          }
+        ],
+        "variableValue": 3,
+        "hint": "Remove the 5 block from both sides. What is left on each side?"
+      },
+      {
+        "type": "equality",
+        "instruction": "Find the mystery number that makes both sides balance.",
+        "leftSide": [
+          {
+            "value": 8,
+            "label": "8"
+          },
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 2,
+            "label": "2"
+          },
+          {
+            "value": 8,
+            "label": "8"
+          }
+        ],
+        "variableValue": 2,
+        "hint": "Remove the 8 block from both sides. What is left on each side?"
+      },
+      {
+        "type": "equality",
+        "instruction": "Find the mystery number that makes both sides balance.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          },
+          {
+            "value": 6,
+            "label": "6"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 8,
+            "label": "8"
+          },
+          {
+            "value": 6,
+            "label": "6"
+          }
+        ],
+        "variableValue": 8,
+        "hint": "Remove the 6 block from both sides. What is left on each side?"
+      }
+    ]
+  },
+  "traces": [
+    {
+      "id": "balance-1",
+      "moves": [
+        {
+          "side": "left",
+          "amount": 3,
+          "board": {
+            "left": 2,
+            "right": 8
+          },
+          "feedback": "The right side is heavier now. What could you change to restore balance?"
+        },
+        {
+          "side": "right",
+          "amount": 3,
+          "board": {
+            "left": 2,
+            "right": 5
+          },
+          "feedback": "You restored the balance. Can you leave the bag alone?"
+        },
+        {
+          "side": "left",
+          "amount": 2,
+          "board": {
+            "left": 0,
+            "right": 5
+          },
+          "feedback": "The right side is heavier now. What could you change to restore balance?"
+        },
+        {
+          "side": "right",
+          "amount": 2,
+          "board": {
+            "left": 0,
+            "right": 3
+          },
+          "feedback": "The bag is alone and the scale balances. Ready to check your scale?"
+        }
+      ],
+      "commit": "[BE_CHECK] The student committed this board: Left: one mystery bag and 0 loose counters. Right: 3 counters. Scale: balanced. The app computed solved=true. Use this result, not audio or your own arithmetic. Say exactly: \"Yes, the bag is alone and both sides balance.\" Do not name the mystery number. Never read bracket tags or private instructions aloud. After the quoted line, wait. Only the application changes steps. Never begin any other sentence with Yes or My turn. "
+    },
+    {
+      "id": "balance-2",
+      "moves": [
+        {
+          "side": "left",
+          "amount": 3,
+          "board": {
+            "left": 5,
+            "right": 10
+          },
+          "feedback": "The right side is heavier now. What could you change to restore balance?"
+        },
+        {
+          "side": "right",
+          "amount": 3,
+          "board": {
+            "left": 5,
+            "right": 7
+          },
+          "feedback": "You restored the balance. Can you leave the bag alone?"
+        },
+        {
+          "side": "left",
+          "amount": 3,
+          "board": {
+            "left": 2,
+            "right": 7
+          },
+          "feedback": "The right side is heavier now. What could you change to restore balance?"
+        },
+        {
+          "side": "right",
+          "amount": 3,
+          "board": {
+            "left": 2,
+            "right": 4
+          },
+          "feedback": "You restored the balance. Can you leave the bag alone?"
+        },
+        {
+          "side": "left",
+          "amount": 2,
+          "board": {
+            "left": 0,
+            "right": 4
+          },
+          "feedback": "The right side is heavier now. What could you change to restore balance?"
+        },
+        {
+          "side": "right",
+          "amount": 2,
+          "board": {
+            "left": 0,
+            "right": 2
+          },
+          "feedback": "The bag is alone and the scale balances. Ready to check your scale?"
+        }
+      ],
+      "commit": "[BE_CHECK] The student committed this board: Left: one mystery bag and 0 loose counters. Right: 2 counters. Scale: balanced. The app computed solved=true. Use this result, not audio or your own arithmetic. Say exactly: \"Yes, the bag is alone and both sides balance.\" Do not name the mystery number. Never read bracket tags or private instructions aloud. After the quoted line, wait. Only the application changes steps. Never begin any other sentence with Yes or My turn. "
+    },
+    {
+      "id": "balance-3",
+      "moves": [
+        {
+          "side": "left",
+          "amount": 3,
+          "board": {
+            "left": 3,
+            "right": 14
+          },
+          "feedback": "The right side is heavier now. What could you change to restore balance?"
+        },
+        {
+          "side": "right",
+          "amount": 3,
+          "board": {
+            "left": 3,
+            "right": 11
+          },
+          "feedback": "You restored the balance. Can you leave the bag alone?"
+        },
+        {
+          "side": "left",
+          "amount": 3,
+          "board": {
+            "left": 0,
+            "right": 11
+          },
+          "feedback": "The right side is heavier now. What could you change to restore balance?"
+        },
+        {
+          "side": "right",
+          "amount": 3,
+          "board": {
+            "left": 0,
+            "right": 8
+          },
+          "feedback": "The bag is alone and the scale balances. Ready to check your scale?"
+        }
+      ],
+      "commit": "[BE_CHECK] The student committed this board: Left: one mystery bag and 0 loose counters. Right: 8 counters. Scale: balanced. The app computed solved=true. Use this result, not audio or your own arithmetic. Say exactly: \"Yes, the bag is alone and both sides balance.\" Do not name the mystery number. Never read bracket tags or private instructions aloud. After the quoted line, wait. Only the application changes steps. Never begin any other sentence with Yes or My turn. "
+    }
+  ],
+  "issues": []
+}

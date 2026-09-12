@@ -25,6 +25,10 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import BalanceScaleEquality from './BalanceScaleEquality';
+import { usesEqualityPilot } from './balanceEqualityModel';
+import BalanceScaleWorkshop from './BalanceScaleWorkshop';
+import { usesBalanceWorkshop } from './balanceWorkshopModel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -54,6 +58,7 @@ export interface BalanceScaleChallenge {
 }
 
 export interface BalanceScaleData {
+  gradeLevel?: string;
   title: string;
   description: string;
   leftSide: BalanceScaleObject[];
@@ -1008,4 +1013,8 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   );
 };
 
-export default BalanceScale;
+const BalanceScaleWithEqualityPilot: React.FC<BalanceScaleProps> = (props) =>
+  usesBalanceWorkshop(props.data) ? <BalanceScaleWorkshop {...props} />
+    : usesEqualityPilot(props.data) ? <BalanceScaleEquality {...props} /> : <BalanceScale {...props} />;
+
+export default BalanceScaleWithEqualityPilot;

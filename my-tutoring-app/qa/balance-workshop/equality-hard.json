@@ -1,0 +1,267 @@
+{
+  "generatedAt": "2026-09-12T00:49:00.276Z",
+  "data": {
+    "gradeLevel": "2",
+    "title": "Weigh It Together",
+    "description": "Place weights on the right until balanced, then add their weights aloud.",
+    "leftSide": [
+      {
+        "value": 8,
+        "label": "8"
+      },
+      {
+        "value": 1,
+        "label": "?",
+        "isVariable": true
+      }
+    ],
+    "rightSide": [
+      {
+        "value": 6,
+        "label": "6"
+      },
+      {
+        "value": 8,
+        "label": "8"
+      }
+    ],
+    "variableValue": 6,
+    "showTilt": true,
+    "showSideValues": false,
+    "showBalanceStatus": false,
+    "supportTier": "hard",
+    "allowOperations": [
+      "add",
+      "subtract"
+    ],
+    "gradeBand": "K-2",
+    "challenges": [
+      {
+        "type": "equality",
+        "instruction": "Place weights on the right until balanced, then add their weights aloud.",
+        "leftSide": [
+          {
+            "value": 8,
+            "label": "8"
+          },
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 6,
+            "label": "6"
+          },
+          {
+            "value": 8,
+            "label": "8"
+          }
+        ],
+        "variableValue": 6,
+        "hint": "Watch which pan is heavier as you add or remove a weight."
+      },
+      {
+        "type": "equality",
+        "instruction": "Place weights on the right until balanced, then add their weights aloud.",
+        "leftSide": [
+          {
+            "value": 8,
+            "label": "8"
+          },
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 12,
+            "label": "12"
+          },
+          {
+            "value": 8,
+            "label": "8"
+          }
+        ],
+        "variableValue": 12,
+        "hint": "Watch which pan is heavier as you add or remove a weight."
+      },
+      {
+        "type": "equality",
+        "instruction": "Place weights on the right until balanced, then add their weights aloud.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          },
+          {
+            "value": 9,
+            "label": "9"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 11,
+            "label": "11"
+          },
+          {
+            "value": 9,
+            "label": "9"
+          }
+        ],
+        "variableValue": 11,
+        "hint": "Watch which pan is heavier as you add or remove a weight."
+      }
+    ]
+  },
+  "traces": [
+    {
+      "id": "balance-1",
+      "moves": [
+        {
+          "amount": 5,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              }
+            ]
+          },
+          "feedback": "The left side is heavier. Try adding weight on the right."
+        },
+        {
+          "amount": 1,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              },
+              {
+                "id": 1,
+                "value": 1
+              }
+            ]
+          },
+          "feedback": "The scale is balanced."
+        }
+      ],
+      "commit": "[BE_CHECK] Scene: Left: one unnumbered weight block. Right blocks: 5, 1. Scale: balanced. Code computed solved=true. Use this result. Say exactly: \"Yes, the scale balances. Let us bring your weights together.\" Never read bracket tags or private rules aloud. After the quoted line, wait. Only the application changes steps. "
+    },
+    {
+      "id": "balance-2",
+      "moves": [
+        {
+          "amount": 5,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              }
+            ]
+          },
+          "feedback": "The left side is heavier. Try adding weight on the right."
+        },
+        {
+          "amount": 5,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              },
+              {
+                "id": 1,
+                "value": 5
+              }
+            ]
+          },
+          "feedback": "The left side is heavier. Try adding weight on the right."
+        },
+        {
+          "amount": 2,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              },
+              {
+                "id": 1,
+                "value": 5
+              },
+              {
+                "id": 2,
+                "value": 2
+              }
+            ]
+          },
+          "feedback": "The scale is balanced."
+        }
+      ],
+      "commit": "[BE_CHECK] Scene: Left: one unnumbered weight block. Right blocks: 5, 5, 2. Scale: balanced. Code computed solved=true. Use this result. Say exactly: \"Yes, the scale balances. Let us bring your weights together.\" Never read bracket tags or private rules aloud. After the quoted line, wait. Only the application changes steps. "
+    },
+    {
+      "id": "balance-3",
+      "moves": [
+        {
+          "amount": 5,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              }
+            ]
+          },
+          "feedback": "The left side is heavier. Try adding weight on the right."
+        },
+        {
+          "amount": 5,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              },
+              {
+                "id": 1,
+                "value": 5
+              }
+            ]
+          },
+          "feedback": "The left side is heavier. Try adding weight on the right."
+        },
+        {
+          "amount": 1,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              },
+              {
+                "id": 1,
+                "value": 5
+              },
+              {
+                "id": 2,
+                "value": 1
+              }
+            ]
+          },
+          "feedback": "The scale is balanced."
+        }
+      ],
+      "commit": "[BE_CHECK] Scene: Left: one unnumbered weight block. Right blocks: 5, 5, 1. Scale: balanced. Code computed solved=true. Use this result. Say exactly: \"Yes, the scale balances. Let us bring your weights together.\" Never read bracket tags or private rules aloud. After the quoted line, wait. Only the application changes steps. "
+    }
+  ],
+  "issues": []
+}

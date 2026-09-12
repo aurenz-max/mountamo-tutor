@@ -1173,7 +1173,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'balance-scale',
-    description: 'Multi-equation balance scale session (3-6 equations of the same difficulty tier). Each equation uses Explore → Solve → Verify pacing; students click blocks to remove from both sides, drag blocks from palette, or use operations panel. The generator pre-builds each equation deterministically; the catalog must NOT supply specific numbers. Grade-banded: K-2 (concrete, mystery number), 3-4 (one-step x equations), 5 (two-step). ESSENTIAL for pre-algebra and algebra.',
+    description: 'Touch-and-voice weight workshop with six mathematical actions: match and add; compose the same weight two ways; complete a known load; share among identical parcels; separate known weight then share; and connect those moves to equations. Unknown parcels have identical opaque containers; known weights show their quantities. Each challenge includes manipulation and separate spoken interpretation. Numeric pools are code-built. Never supply numbers in the manifest.',
+    audioInputByMode: {
+      equality: { manual_activity: true }, equality_hard: { manual_activity: true },
+      one_step: { manual_activity: true }, one_step_hard: { manual_activity: true },
+      two_step_intro: { manual_activity: true }, two_step: { manual_activity: true },
+    },
     constraints: 'The generator pre-selects every equation (leftSide, rightSide, variableValue) per session — the manifest must NOT supply specific numbers, sides, or solutions. The manifest may set instanceCount (default 4, max 6), showTilt, and the targetEvalMode.',
     affordances: { representation: ['concrete', 'pictorial', 'symbolic'], answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     tutoring: {
@@ -1191,6 +1196,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Stuck in explore phase', response: '"Click Start Solving when you are ready. Then click on blocks or use the operations panel."' },
       ],
       aiDirectives: [
+        {
+          title: 'WEIGHT WORKSHOP: SCRIPTED MODES',
+          instruction: 'For equality_hard, one_step, one_step_hard, two_step_intro and two_step, follow the [BW_ITEM], [BW_CHANGE], [BW_CHECK], [BW_HEAR], [BW_MOVE] and [BW_COMPLETE] cues. They override legacy phase prompts and hints below. '
+            + 'Speak the quoted cue exactly. The app controls steps, weight moves, arithmetic, and group checks. Never advance yourself or invent a physical action. '
+            + 'equality_hard makes two different combinations; one_step adds the missing weight to a known load; one_step_hard distributes units among identical parcels; two_step_intro separates known weight then shares; two_step connects the actions to equations. '
+            + 'Exploration and uneven groups are not wrong attempts. [BW_CHANGE] is coaching; only [BW_CHECK] carries a code-computed hand verdict. Never reveal parcel contents, missing weights, or group totals before the spoken quantity task. '
+            + 'Spoken quantities are separate turns; the same number in a prior answer does not answer the next question. Questions, silence, and off-task speech are not incorrect answers. Only actual verdicts start with Yes or My turn. '
+            + 'Do not ask for a typed value or demand formal vocabulary. The final equation explanation receives meaning-based coaching. Attribute any capped-step demonstration to the tutor.',
+        },
+        {
+          title: 'EQUALITY MODE: SCRIPTED HANDS AND VOICE',
+          instruction: 'When challengeType is equality, this directive OVERRIDES all legacy phase guidance, generic hints and student prompts below. '
+            + 'Only [BE_ITEM], [BE_CHANGE], [BE_CHECK], [BE_HEAR], [BE_MOVE] and [BE_COMPLETE] messages supply spoken lines. Speak their exact quotes, never private tags or rules. '
+            + 'The left block has no number or variable symbol. Its size is proportional to its weight. Students place or remove numbered right-side weights; do not require changes on both sides. '
+            + 'Exploration is ungraded. [BE_CHANGE] is coaching only. A settled match triggers [BE_CHECK]; use its code-computed result. Never reveal the left weight or add up the right weights during building. '
+            + 'The app gathers the chosen weights into an addition row, asks for the spoken total, then separately asks what the left side weighs since the scales balance. Do not ask for typing, isolation, or removal of shared terms. '
+            + 'Judge only the current response, using its cue. Do not reuse the total response for the later inference question. Only actual verdicts begin with Yes or My turn. Silence, questions and off-task speech are not wrong answers. '
+            + 'Only the app advances steps. Follow any modeled example cue exactly; do not claim the student placed modeled weights.',
+        },
         {
           title: 'PHASE-AWARE GUIDANCE',
           instruction:
@@ -1240,55 +1264,57 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'equality',
-        affordances: { representation: 'concrete' },
-        label: 'Equality (Concrete)',
+        affordances: { representation: 'concrete', answers: ['manipulate', 'spoken'] },
+        label: 'Equality - Balance and Add',
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['equality'],
-        description: 'Understand balance = equal; missing addend problems.',
+        description: 'Build a matching weight, add the chosen right-side blocks aloud, then infer the left weight from equal balance. Manipulation is ungraded exploration.',
       },
       {
         evalMode: 'equality_hard',
-        affordances: { representation: 'pictorial' },
-        label: 'Equality Hard (Pictorial)',
+        affordances: { representation: 'concrete', answers: ['manipulate', 'spoken'] },
+        label: 'Make It Another Way',
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['equality_hard'],
-        description: 'Subtraction missing-addend and larger sums (10-20), still □ notation.',
+        description: 'Build two distinct combinations of the same weight, say their totals, and infer the matching left weight.',
       },
       {
         evalMode: 'one_step',
-        affordances: { representation: 'pictorial' },
-        label: 'One-Step (Pictorial–)',
+        affordances: { representation: 'concrete', answers: ['manipulate', 'spoken'] },
+        label: 'Complete the Load',
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['one_step'],
-        description: 'Solve single-operation equations with x.',
+        description: 'Add weights to a known starting load until balanced. Say the added weight, then name the missing part.',
       },
       {
         evalMode: 'one_step_hard',
-        label: 'One-Step Hard (Transitional)',
+        affordances: { representation: 'concrete', answers: ['manipulate', 'spoken'] },
+        label: 'Share the Weight',
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['one_step_hard'],
-        description: 'One-step equations with multiply/divide (3x=12, x÷2=5).',
+        description: 'Distribute weight units into equal groups, one per identical parcel. Say a group weight and infer one parcel weight.',
       },
       {
         evalMode: 'two_step_intro',
-        label: 'Two-Step Intro (Transitional)',
+        affordances: { representation: 'concrete', answers: ['manipulate', 'spoken'] },
+        label: 'Unpack and Share',
         beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['two_step_intro'],
-        description: 'Simple two-step equations, small positive coefficients only (2x+1=7).',
+        description: 'Set aside equal known weights, identify the remaining combined weight, then share it equally among parcels.',
       },
       {
         evalMode: 'two_step',
-        affordances: { representation: 'symbolic' },
-        label: 'Two-Step (Symbolic)',
+        affordances: { representation: 'symbolic', answers: ['manipulate', 'spoken'] },
+        label: 'Build the Equation',
         beta: 6.5,
         scaffoldingMode: 5,
         challengeTypes: ['two_step'],
-        description: 'Solve multi-step equations with coefficients.',
+        description: 'Connect separating and sharing weights to equation transformations. Alternate rounds ask students to demonstrate symbolic instructions.',
       },
     ],
   },

@@ -17,48 +17,30 @@ import {
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   equality: {
-    promptDoc:
-      `"equality": K-2 missing addend problems. Use □ or "mystery number" — no variable notation. `
-      + `Simple addition equations: □ + 3 = 7 or 5 + □ = 8. `
-      + `Positive integers under 20. allowOperations: ['add', 'subtract']. gradeBand: 'K-2'.`,
-    schemaDescription: "'equality' (balance = equal, missing addend)",
+    promptDoc: '"equality": K-2 weight matching. One unnumbered block on the left; students place numbered weights on the right, add their chosen weights aloud, then infer the equal left weight. No x, typing, or paired removal.',
+    schemaDescription: "'equality' (match, add weights, infer equality)",
   },
   equality_hard: {
-    promptDoc:
-      `"equality_hard": K-2 harder missing-addend problems with subtraction and larger numbers. `
-      + `Subtraction equations: 12 - □ = 7 or □ - 3 = 5. Sums/differences 10-20. `
-      + `Still □ or "mystery number" — no x. allowOperations: ['add', 'subtract']. gradeBand: 'K-2'.`,
-    schemaDescription: "'equality_hard' (harder missing addend with subtraction)",
+    promptDoc: '"equality_hard": Match an unnumbered weight, then make the same weight with a different combination. Say each total and infer the left weight.',
+    schemaDescription: "'equality_hard' (compose the same weight two ways)",
   },
   one_step: {
-    promptDoc:
-      `"one_step": Grades 3-4 one-step equations with x notation. `
-      + `Examples: x + 5 = 12, x - 3 = 7. Positive integers under 50. `
-      + `allowOperations: ['add', 'subtract']. gradeBand: '3-4'.`,
-    schemaDescription: "'one_step' (single-operation x equation)",
+    promptDoc: '"one_step": Complete the load. One pan has a known starting weight; the other a known target total. Add blocks to the lighter pan, say the added weight, then name the missing part.',
+    schemaDescription: "'one_step' (complete a known load)",
   },
   one_step_hard: {
-    promptDoc:
-      `"one_step_hard": Grades 3-4 one-step equations using multiplication or division. `
-      + `Examples: 3x = 12, x ÷ 2 = 5. Products under 50, divisors 2-10. `
-      + `Coefficients shown as multiple variable objects. `
-      + `allowOperations: ['multiply', 'divide']. gradeBand: '3-4'.`,
-    schemaDescription: "'one_step_hard' (multiply/divide one-step equation)",
+    promptDoc: '"one_step_hard": Share the weight. Identical opaque parcels balance known weight units. Distribute units equally into one group per parcel, then say each group and parcel weight.',
+    schemaDescription: "'one_step_hard' (equal sharing)",
   },
   two_step_intro: {
-    promptDoc:
-      `"two_step_intro": Grades 4-5 simple two-step equations with small coefficients. `
-      + `Examples: 2x + 1 = 7, 3x - 2 = 10. Coefficients 2-4, results under 30. `
-      + `All values positive. allowOperations: ['add', 'subtract', 'multiply', 'divide']. gradeBand: '3-4'.`,
-    schemaDescription: "'two_step_intro' (simple two-step, small coefficients)",
+    promptDoc: '"two_step_intro": Unpack and share. Set known loose weight aside from both sides, say the remaining combined weight, then share it equally among identical parcels.',
+    schemaDescription: "'two_step_intro' (separate and share)",
   },
   two_step: {
-    promptDoc:
-      `"two_step": Grade 5+ two-step equations with coefficients. `
-      + `Examples: 2x + 3 = 11, 3x - 4 = 14. Coefficients 2-6, results under 50. `
-      + `allowOperations: ['add', 'subtract', 'multiply', 'divide']. gradeBand: '5'.`,
-    schemaDescription: "'two_step' (multi-step equation)",
+    promptDoc: '"two_step": Build equations from physical moves: subtract equal known weights, then form equal parcel groups. Show equations after their corresponding actions. Alternate rounds ask students to show a symbolic instruction with weights.',
+    schemaDescription: "'two_step' (connect physical transformations to equations)",
   },
+
 };
 
 // ---------------------------------------------------------------------------
@@ -94,45 +76,13 @@ interface SupportScaffold {
   promptLines: string[];
 }
 
-/**
- * Easy→hard withdrawal of the three balance-feedback aids, most-explicit first:
- * exact side totals → BALANCED pill → beam tilt. The aids are mode-independent
- * (the `_mode` param is kept for signature parity with the skill pattern and
- * future per-mode tuning). Numbers are NEVER touched.
- */
+/** Keep physical tilt at every tier; easy may add explicit group counts. */
 function resolveSupportStructure(_mode: ChallengeType, tier: SupportTier): SupportScaffold {
-  const base = 'This tier changes ONLY how much balance feedback is on screen — it never changes the equations or the numbers.';
-  if (tier === 'easy') {
-    return {
-      showSideValues: true,
-      showBalanceStatus: true,
-      showTilt: true,
-      promptLines: [
-        base,
-        'EASY: full self-check support — exact side totals, a BALANCED/UNBALANCED readout, and a tilting beam are all visible. Title/description may reassure the student the scale will show them when both sides match.',
-      ],
-    };
-  }
-  if (tier === 'medium') {
-    return {
-      showSideValues: false,
-      showBalanceStatus: true,
-      showTilt: true,
-      promptLines: [
-        base,
-        'MEDIUM: the exact side totals are hidden, but the tilting beam and the BALANCED/UNBALANCED readout remain — the student adds each side themselves and confirms with the scale. Keep the tone matter-of-fact; do not reveal which operation to use.',
-      ],
-    };
-  }
-  // hard
   return {
-    showSideValues: false,
-    showBalanceStatus: false,
-    showTilt: false,
-    promptLines: [
-      base,
-      'HARD: all balance feedback is withdrawn — no side totals, no BALANCED readout, and the beam stays level. The student must reason about balance from the equation alone. Title/description should invite careful, justified reasoning and must never hint at the operation to use.',
-    ],
+    showSideValues: false, showBalanceStatus: tier === 'easy', showTilt: true,
+    promptLines: ['Use a live tilting scale and hands-on weights. Never disclose an unknown weight through side totals. '
+      + 'Easy may show group counts; other tiers let students count their units. Use the mode-specific action: compose, complete, separate, or share. '
+      + 'Students speak their quantities after building. No typed-answer phase or generic solve-for-x instructions.'],
   };
 }
 
@@ -219,7 +169,7 @@ function buildEqualityHard(): EquationSpec {
   const varLabel = '?';
   if (useFirstSlot) {
     // c + ? = c + answer (shown as [c, ?] = [c, answer])
-    const x = randInt(1, 9);
+    const x = randInt(2, 9);
     const c = randInt(5, 12);
     return {
       leftSide: [CONST_BLOCK(c), VAR_BLOCK(varLabel)],
@@ -245,29 +195,14 @@ function buildEqualityHard(): EquationSpec {
 
 /** Grades 3-4: x + b = c, shown as decomposed [x, b] = [answer, b]. */
 function buildOneStep(): EquationSpec {
-  const isolatedForm = Math.random() < 0.35;
-  if (isolatedForm) {
-    // x = c + b  — variable pre-isolated. Student computes the sum.
-    const x = randInt(8, 30);
-    const b = randInt(1, Math.min(x - 1, 15));
-    const c = x - b;
-    return {
-      leftSide: [VAR_BLOCK('x')],
-      rightSide: [CONST_BLOCK(c), CONST_BLOCK(b)],
-      variableValue: x,
-      instruction: `Solve for x. The variable is already isolated.`,
-      hint: `Add the right side: ${c} + ${b} = ?`,
-    };
-  }
-  // x + b = c  →  [x, b] = [answer, b]. Student clicks b off both sides.
   const x = randInt(1, 25);
   const b = randInt(1, 20);
   return {
     leftSide: [VAR_BLOCK('x'), CONST_BLOCK(b)],
     rightSide: [CONST_BLOCK(x), CONST_BLOCK(b)],
     variableValue: x,
-    instruction: `Solve for x.`,
-    hint: `Remove ${b} from both sides to isolate x.`,
+    instruction: 'Add weights to complete the load, then say how much you added.',
+    hint: 'Compare the known weight on each pan. Add weight to the lighter side.',
   };
 }
 
@@ -576,6 +511,7 @@ Return ONLY the wrapper fields described above.
     ? (wrapper.challengeType as ChallengeType)
     : (evalConstraint?.allowedTypes[0] as ChallengeType) ?? 'one_step';
   if (!validTypes.includes(challengeType)) challengeType = 'one_step';
+  if (evalConstraint?.allowedTypes.length === 1) challengeType = evalConstraint.allowedTypes[0] as ChallengeType;
 
   // ── Build the per-challenge equation pool locally ──
   const challenges = selectBalanceScaleChallenges(challengeType, config?.instanceCount);
@@ -598,13 +534,37 @@ Return ONLY the wrapper fields described above.
     showTilt = sc.showTilt;
     console.log(`[BalanceScale] Support tier "${supportTier}" applied (single-mode ${challengeType})`);
   }
+  showTilt = true;
+  showSideValues = false;
 
   // First challenge populates the legacy session-level leftSide/rightSide/variableValue
   // fields so the component's initial render has data before the per-challenge reset
   // effect runs. The component reads from challenges[currentIndex] thereafter.
+  const workshopTitles: Record<ChallengeType, string> = {
+    equality: 'Weigh It Together', equality_hard: 'Make It Another Way', one_step: 'Complete the Load',
+    one_step_hard: 'Share the Weight', two_step_intro: 'Unpack and Share', two_step: 'Build the Equation',
+  };
+  const workshopInstructions: Record<ChallengeType, string> = {
+    equality: 'Place weights on the right until balanced, then add their weights aloud.',
+    equality_hard: 'Match the weight, then make the same weight with a different combination.',
+    one_step: 'Add weights to complete the load. Say how much you added.',
+    one_step_hard: 'Share the weight equally among identical parcels. Find one parcel weight.',
+    two_step_intro: 'Set known weight aside on both sides, then share what remains among the parcels.',
+    two_step: 'Use the weights to subtract and share. Connect each move to its equation.',
+  };
+  for (const challenge of challenges) {
+    challenge.instruction = workshopInstructions[challengeType];
+    challenge.hint = challengeType === 'equality' || challengeType === 'one_step'
+      ? 'Watch which pan is heavier as you add or remove a weight.'
+      : 'Use the current weight task. Keep equal amounts together and use one group per identical parcel.';
+  }
+  wrapper.title = workshopTitles[challengeType];
+  wrapper.description = workshopInstructions[challengeType];
+
   const first = challenges[0];
 
   const data: BalanceScaleData = {
+    gradeLevel: ctx.grade ?? ctx.gradeLevel,
     title: wrapper.title,
     description: wrapper.description,
     leftSide: first.leftSide,

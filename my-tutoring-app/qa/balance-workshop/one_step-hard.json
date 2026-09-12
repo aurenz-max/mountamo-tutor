@@ -1,0 +1,347 @@
+{
+  "generatedAt": "2026-09-12T00:49:04.775Z",
+  "data": {
+    "gradeLevel": "2",
+    "title": "Complete the Load",
+    "description": "Add weights to complete the load. Say how much you added.",
+    "leftSide": [
+      {
+        "value": 1,
+        "label": "x",
+        "isVariable": true
+      },
+      {
+        "value": 16,
+        "label": "16"
+      }
+    ],
+    "rightSide": [
+      {
+        "value": 9,
+        "label": "9"
+      },
+      {
+        "value": 16,
+        "label": "16"
+      }
+    ],
+    "variableValue": 9,
+    "showTilt": true,
+    "showSideValues": false,
+    "showBalanceStatus": false,
+    "supportTier": "hard",
+    "allowOperations": [
+      "add",
+      "subtract"
+    ],
+    "gradeBand": "3-4",
+    "challenges": [
+      {
+        "type": "one_step",
+        "instruction": "Add weights to complete the load. Say how much you added.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 16,
+            "label": "16"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 9,
+            "label": "9"
+          },
+          {
+            "value": 16,
+            "label": "16"
+          }
+        ],
+        "variableValue": 9,
+        "hint": "Watch which pan is heavier as you add or remove a weight."
+      },
+      {
+        "type": "one_step",
+        "instruction": "Add weights to complete the load. Say how much you added.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 8,
+            "label": "8"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 18,
+            "label": "18"
+          },
+          {
+            "value": 8,
+            "label": "8"
+          }
+        ],
+        "variableValue": 18,
+        "hint": "Watch which pan is heavier as you add or remove a weight."
+      },
+      {
+        "type": "one_step",
+        "instruction": "Add weights to complete the load. Say how much you added.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 14,
+            "label": "14"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 14,
+            "label": "14"
+          },
+          {
+            "value": 14,
+            "label": "14"
+          }
+        ],
+        "variableValue": 14,
+        "hint": "Watch which pan is heavier as you add or remove a weight."
+      }
+    ]
+  },
+  "traces": [
+    {
+      "id": "workshop-1",
+      "stages": [
+        {
+          "step": "complete",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 5
+              },
+              {
+                "id": -2,
+                "value": 3
+              },
+              {
+                "id": -3,
+                "value": 1
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 16, added blocks 5, 3, 1. Right known weight 25. Scale balanced. Say exactly: \"The right side weighs 25. The left already has 16. Add weights to the left until it balances.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "added",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 5
+              },
+              {
+                "id": -2,
+                "value": 3
+              },
+              {
+                "id": -3,
+                "value": 1
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 16, added blocks 5, 3, 1. Right known weight 25. Scale balanced. Say exactly: \"Add up just the blocks you placed. How much weight did you add?\" Private expected number: 9. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 9. Your turn. Add up just the blocks you placed. How much weight did you add?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "relate",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 5
+              },
+              {
+                "id": -2,
+                "value": 3
+              },
+              {
+                "id": -3,
+                "value": 1
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 16, added blocks 5, 3, 1. Right known weight 25. Scale balanced. Say exactly: \"16 and what make 25?\" Private expected number: 9. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 9. Your turn. 16 and what make 25?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        }
+      ]
+    },
+    {
+      "id": "workshop-2",
+      "stages": [
+        {
+          "step": "complete",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 10
+              },
+              {
+                "id": -2,
+                "value": 5
+              },
+              {
+                "id": -3,
+                "value": 3
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 8, added blocks 10, 5, 3. Right known weight 26. Scale balanced. Say exactly: \"The right side weighs 26. The left already has 8. Add weights to the left until it balances.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "added",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 10
+              },
+              {
+                "id": -2,
+                "value": 5
+              },
+              {
+                "id": -3,
+                "value": 3
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 8, added blocks 10, 5, 3. Right known weight 26. Scale balanced. Say exactly: \"Add up just the blocks you placed. How much weight did you add?\" Private expected number: 18. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 18. Your turn. Add up just the blocks you placed. How much weight did you add?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "relate",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 10
+              },
+              {
+                "id": -2,
+                "value": 5
+              },
+              {
+                "id": -3,
+                "value": 3
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 8, added blocks 10, 5, 3. Right known weight 26. Scale balanced. Say exactly: \"8 and what make 26?\" Private expected number: 18. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 18. Your turn. 8 and what make 26?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        }
+      ]
+    },
+    {
+      "id": "workshop-3",
+      "stages": [
+        {
+          "step": "complete",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 10
+              },
+              {
+                "id": -2,
+                "value": 3
+              },
+              {
+                "id": -3,
+                "value": 1
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 14, added blocks 10, 3, 1. Right known weight 28. Scale balanced. Say exactly: \"The right side weighs 28. The left already has 14. Add weights to the left until it balances.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "added",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 10
+              },
+              {
+                "id": -2,
+                "value": 3
+              },
+              {
+                "id": -3,
+                "value": 1
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 14, added blocks 10, 3, 1. Right known weight 28. Scale balanced. Say exactly: \"Add up just the blocks you placed. How much weight did you add?\" Private expected number: 14. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 14. Your turn. Add up just the blocks you placed. How much weight did you add?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "relate",
+          "board": {
+            "weights": [
+              {
+                "id": -1,
+                "value": 10
+              },
+              {
+                "id": -2,
+                "value": 3
+              },
+              {
+                "id": -3,
+                "value": 1
+              }
+            ],
+            "first": [],
+            "leftAside": false,
+            "units": []
+          },
+          "cue": "[BW_ITEM] Scene: Left known weight 14, added blocks 10, 3, 1. Right known weight 28. Scale balanced. Say exactly: \"14 and what make 28?\" Private expected number: 14. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 14. Your turn. 14 and what make 28?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        }
+      ]
+    }
+  ],
+  "issues": []
+}

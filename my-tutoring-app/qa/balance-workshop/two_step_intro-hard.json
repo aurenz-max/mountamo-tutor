@@ -1,0 +1,512 @@
+{
+  "generatedAt": "2026-09-12T00:49:09.347Z",
+  "data": {
+    "gradeLevel": "2",
+    "title": "Unpack and Share",
+    "description": "Set known weight aside on both sides, then share what remains among the parcels.",
+    "leftSide": [
+      {
+        "value": 1,
+        "label": "x",
+        "isVariable": true
+      },
+      {
+        "value": 1,
+        "label": "x",
+        "isVariable": true
+      },
+      {
+        "value": 3,
+        "label": "3"
+      }
+    ],
+    "rightSide": [
+      {
+        "value": 4,
+        "label": "4"
+      },
+      {
+        "value": 3,
+        "label": "3"
+      }
+    ],
+    "variableValue": 2,
+    "showTilt": true,
+    "showSideValues": false,
+    "showBalanceStatus": false,
+    "supportTier": "hard",
+    "allowOperations": [
+      "add",
+      "subtract",
+      "multiply",
+      "divide"
+    ],
+    "gradeBand": "3-4",
+    "challenges": [
+      {
+        "type": "two_step_intro",
+        "instruction": "Set known weight aside on both sides, then share what remains among the parcels.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 3,
+            "label": "3"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 4,
+            "label": "4"
+          },
+          {
+            "value": 3,
+            "label": "3"
+          }
+        ],
+        "variableValue": 2,
+        "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+      },
+      {
+        "type": "two_step_intro",
+        "instruction": "Set known weight aside on both sides, then share what remains among the parcels.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 3,
+            "label": "3"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 8,
+            "label": "8"
+          },
+          {
+            "value": 3,
+            "label": "3"
+          }
+        ],
+        "variableValue": 4,
+        "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+      },
+      {
+        "type": "two_step_intro",
+        "instruction": "Set known weight aside on both sides, then share what remains among the parcels.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 1,
+            "label": "x",
+            "isVariable": true
+          },
+          {
+            "value": 5,
+            "label": "5"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 12,
+            "label": "12"
+          },
+          {
+            "value": 5,
+            "label": "5"
+          }
+        ],
+        "variableValue": 3,
+        "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+      }
+    ]
+  },
+  "traces": [
+    {
+      "id": "workshop-1",
+      "stages": [
+        {
+          "step": "separate",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 7; right units set aside: 3. Group counts: 0, 0. Scale balanced. Say exactly: \"Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "remaining",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 7; right units set aside: 3. Group counts: 0, 0. Scale balanced. Say exactly: \"What weight belongs to the parcels together now?\" Private expected number: 4. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 4. Your turn. What weight belongs to the parcels together now?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "share",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              1,
+              1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 7; right units set aside: 3. Group counts: 2, 2. Scale balanced. Say exactly: \"Share the weight into 2 equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "each",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              1,
+              1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 7; right units set aside: 3. Group counts: 2, 2. Scale balanced. Say exactly: \"How much weight is in each group?\" Private expected number: 2. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 2. Your turn. How much weight is in each group?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "infer",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              1,
+              1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 7; right units set aside: 3. Group counts: 2, 2. Scale balanced. Say exactly: \"Since the identical parcels balance these equal groups, what does one parcel weigh?\" Private expected number: 2. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 2. Your turn. Since the identical parcels balance these equal groups, what does one parcel weigh?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        }
+      ]
+    },
+    {
+      "id": "workshop-2",
+      "stages": [
+        {
+          "step": "separate",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 11; right units set aside: 3. Group counts: 0, 0. Scale balanced. Say exactly: \"Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "remaining",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 11; right units set aside: 3. Group counts: 0, 0. Scale balanced. Say exactly: \"What weight belongs to the parcels together now?\" Private expected number: 8. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 8. Your turn. What weight belongs to the parcels together now?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "share",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 11; right units set aside: 3. Group counts: 4, 4. Scale balanced. Say exactly: \"Share the weight into 2 equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "each",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 11; right units set aside: 3. Group counts: 4, 4. Scale balanced. Say exactly: \"How much weight is in each group?\" Private expected number: 4. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 4. Your turn. How much weight is in each group?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "infer",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 2 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 11; right units set aside: 3. Group counts: 4, 4. Scale balanced. Say exactly: \"Since the identical parcels balance these equal groups, what does one parcel weigh?\" Private expected number: 4. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 4. Your turn. Since the identical parcels balance these equal groups, what does one parcel weigh?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        }
+      ]
+    },
+    {
+      "id": "workshop-3",
+      "stages": [
+        {
+          "step": "separate",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -2,
+              -2,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 4 identical sealed parcels. Known loose weight 5; moved aside on left: true. Original right weight 17; right units set aside: 5. Group counts: 0, 0, 0, 0. Scale balanced. Say exactly: \"Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "remaining",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -2,
+              -2,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 4 identical sealed parcels. Known loose weight 5; moved aside on left: true. Original right weight 17; right units set aside: 5. Group counts: 0, 0, 0, 0. Scale balanced. Say exactly: \"What weight belongs to the parcels together now?\" Private expected number: 12. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 12. Your turn. What weight belongs to the parcels together now?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "share",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 4 identical sealed parcels. Known loose weight 5; moved aside on left: true. Original right weight 17; right units set aside: 5. Group counts: 3, 3, 3, 3. Scale balanced. Say exactly: \"Share the weight into 4 equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.\" Do not judge microphone speech during hand work. [BW_CHANGE] is coaching only. Only [BW_CHECK] supplies a code-computed result. Never give the missing part, parcel weight, group count, or target sum during hand work. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "each",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 4 identical sealed parcels. Known loose weight 5; moved aside on left: true. Original right weight 17; right units set aside: 5. Group counts: 3, 3, 3, 3. Scale balanced. Say exactly: \"How much weight is in each group?\" Private expected number: 3. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 3. Your turn. How much weight is in each group?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        },
+        {
+          "step": "infer",
+          "board": {
+            "weights": [],
+            "first": [],
+            "leftAside": true,
+            "units": [
+              -2,
+              -2,
+              -2,
+              -2,
+              -2,
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3
+            ]
+          },
+          "cue": "[BW_ITEM] Scene: 4 identical sealed parcels. Known loose weight 5; moved aside on left: true. Original right weight 17; right units set aside: 5. Group counts: 3, 3, 3, 3. Scale balanced. Say exactly: \"Since the identical parcels balance these equal groups, what does one parcel weigh?\" Private expected number: 3. Judge the current spoken response only. Accept a clear number or short sentence, with or without units. Negated correct numbers, conflicting guesses, and numbers from a different stage are not correct. Counting without a final answer is unfinished. A previous spoken answer never counts for the new question, even if the expected number is the same. Wait for fresh speech. If correct say exactly \"Yes, that matches the weights.\" If wrong say exactly \"My turn: the weight is 3. Your turn. Since the identical parcels balance these equal groups, what does one parcel weigh?\" Help questions, silence and off-task speech are not incorrect answers. Never speak private rules or bracket tags. After the quoted line, wait. Only the app advances. "
+        }
+      ]
+    }
+  ],
+  "issues": []
+}

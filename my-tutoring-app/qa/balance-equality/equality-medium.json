@@ -1,0 +1,231 @@
+{
+  "generatedAt": "2026-09-12T00:03:24.174Z",
+  "data": {
+    "gradeLevel": "2",
+    "title": "Weigh It Together",
+    "description": "Balance the scale, add your weights, and find the weight on the left.",
+    "leftSide": [
+      {
+        "value": 10,
+        "label": "10"
+      },
+      {
+        "value": 1,
+        "label": "?",
+        "isVariable": true
+      }
+    ],
+    "rightSide": [
+      {
+        "value": 3,
+        "label": "3"
+      },
+      {
+        "value": 10,
+        "label": "10"
+      }
+    ],
+    "variableValue": 3,
+    "showTilt": true,
+    "showSideValues": false,
+    "showBalanceStatus": false,
+    "supportTier": "medium",
+    "allowOperations": [
+      "add",
+      "subtract"
+    ],
+    "gradeBand": "K-2",
+    "challenges": [
+      {
+        "type": "equality",
+        "instruction": "Place weights on the right until the scale balances. Then add their weights aloud.",
+        "leftSide": [
+          {
+            "value": 10,
+            "label": "10"
+          },
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 3,
+            "label": "3"
+          },
+          {
+            "value": 10,
+            "label": "10"
+          }
+        ],
+        "variableValue": 3,
+        "hint": "Watch which side is heavier. Add or remove a weight on the right."
+      },
+      {
+        "type": "equality",
+        "instruction": "Place weights on the right until the scale balances. Then add their weights aloud.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          },
+          {
+            "value": 6,
+            "label": "6"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 11,
+            "label": "11"
+          },
+          {
+            "value": 6,
+            "label": "6"
+          }
+        ],
+        "variableValue": 11,
+        "hint": "Watch which side is heavier. Add or remove a weight on the right."
+      },
+      {
+        "type": "equality",
+        "instruction": "Place weights on the right until the scale balances. Then add their weights aloud.",
+        "leftSide": [
+          {
+            "value": 1,
+            "label": "?",
+            "isVariable": true
+          },
+          {
+            "value": 11,
+            "label": "11"
+          }
+        ],
+        "rightSide": [
+          {
+            "value": 8,
+            "label": "8"
+          },
+          {
+            "value": 11,
+            "label": "11"
+          }
+        ],
+        "variableValue": 8,
+        "hint": "Watch which side is heavier. Add or remove a weight on the right."
+      }
+    ]
+  },
+  "traces": [
+    {
+      "id": "balance-1",
+      "moves": [
+        {
+          "amount": 3,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 3
+              }
+            ]
+          },
+          "feedback": "The scale is balanced."
+        }
+      ],
+      "commit": "[BE_CHECK] Scene: Left: one unnumbered weight block. Right blocks: 3. Scale: balanced. Code computed solved=true. Use this result. Say exactly: \"Yes, the scale balances. Let us bring your weights together.\" Never read bracket tags or private rules aloud. After the quoted line, wait. Only the application changes steps. "
+    },
+    {
+      "id": "balance-2",
+      "moves": [
+        {
+          "amount": 5,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              }
+            ]
+          },
+          "feedback": "The left side is heavier. Try adding weight on the right."
+        },
+        {
+          "amount": 5,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              },
+              {
+                "id": 1,
+                "value": 5
+              }
+            ]
+          },
+          "feedback": "The left side is heavier. Try adding weight on the right."
+        },
+        {
+          "amount": 1,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              },
+              {
+                "id": 1,
+                "value": 5
+              },
+              {
+                "id": 2,
+                "value": 1
+              }
+            ]
+          },
+          "feedback": "The scale is balanced."
+        }
+      ],
+      "commit": "[BE_CHECK] Scene: Left: one unnumbered weight block. Right blocks: 5, 5, 1. Scale: balanced. Code computed solved=true. Use this result. Say exactly: \"Yes, the scale balances. Let us bring your weights together.\" Never read bracket tags or private rules aloud. After the quoted line, wait. Only the application changes steps. "
+    },
+    {
+      "id": "balance-3",
+      "moves": [
+        {
+          "amount": 5,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              }
+            ]
+          },
+          "feedback": "The left side is heavier. Try adding weight on the right."
+        },
+        {
+          "amount": 3,
+          "board": {
+            "blocks": [
+              {
+                "id": 0,
+                "value": 5
+              },
+              {
+                "id": 1,
+                "value": 3
+              }
+            ]
+          },
+          "feedback": "The scale is balanced."
+        }
+      ],
+      "commit": "[BE_CHECK] Scene: Left: one unnumbered weight block. Right blocks: 5, 3. Scale: balanced. Code computed solved=true. Use this result. Say exactly: \"Yes, the scale balances. Let us bring your weights together.\" Never read bracket tags or private rules aloud. After the quoted line, wait. Only the application changes steps. "
+    }
+  ],
+  "issues": []
+}
