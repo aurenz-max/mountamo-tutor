@@ -31,6 +31,7 @@ import {
   phonemeExplorerPackBase,
   pronounceCue,
   responseClassFor,
+  shufflePhonemeMenus,
   spokenOperation,
   spokenPhonemeToken,
   stimulusFor,
@@ -103,6 +104,40 @@ const pack: JudgedScriptPack<PhonemeExplorerItem> = phonemeExplorerPackBase(ITEM
 /** The line the tutor actually SPEAKS — the shared parser, so every port reads
  *  the same span. Everything else in a cue is judge-side instruction. */
 const spokenLine = spokenSpanOf;
+
+describe('phoneme-explorer menu order', () => {
+  it('shuffles choices stably without changing or mutating the menu', () => {
+    const originalWords = ISOLATE.menu!.map((card) => card.word);
+    const once = shufflePhonemeMenus([ISOLATE], 'lesson-session-1')[0];
+    const again = shufflePhonemeMenus([ISOLATE], 'lesson-session-1')[0];
+
+    expect(again.menu).toEqual(once.menu);
+    expect(once.menu!.map((card) => card.word).sort()).toEqual(originalWords.slice().sort());
+    expect(ISOLATE.menu!.map((card) => card.word)).toEqual(originalWords);
+    expect(once.answer).toBe(ISOLATE.answer);
+  });
+
+  it('allows the correct card to occupy different positions across sessions', () => {
+    const positions = new Set(
+      Array.from({ length: 24 }, (_, index) => {
+        const shuffled = shufflePhonemeMenus([ISOLATE], `lesson-session-${index}`)[0];
+        return shuffled.menu!.findIndex((card) => card.word === shuffled.answer);
+      }),
+    );
+
+    expect(positions.size).toBeGreaterThan(1);
+  });
+
+  it('uses one shuffled order for the menu and the tutor enumeration', () => {
+    const shuffled = shufflePhonemeMenus([ISOLATE], 'spoken-order-session')[0];
+    const words = shuffled.menu!.map((card) => card.word);
+    const cue = spokenLine(itemCue(shuffled));
+
+    for (let index = 1; index < words.length; index += 1) {
+      expect(cue.indexOf(words[index - 1])).toBeLessThan(cue.indexOf(words[index]));
+    }
+  });
+});
 
 // ── 1. Structural gates ─────────────────────────────────────────────────────
 

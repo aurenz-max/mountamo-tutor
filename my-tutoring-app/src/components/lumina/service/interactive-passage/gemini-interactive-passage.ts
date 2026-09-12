@@ -8,6 +8,7 @@
 import { Type, Schema } from "@google/genai";
 import { InteractivePassageData } from "../../types";
 import { ai } from "../geminiClient";
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 
 /**
  * Generate Interactive Passage content
@@ -121,6 +122,22 @@ Structure the text as a sequence of segments. Most segments will be 'text', but 
 
   if (!response.text) throw new Error("No content generated");
   const data = JSON.parse(response.text) as InteractivePassageData;
+  data.sections = data.sections.map((section) => {
+    if (!section.inlineQuestion) return section;
+    const shuffled = shuffleIndexedChoices(
+      section.inlineQuestion.options,
+      section.inlineQuestion.correctIndex,
+      `interactive-passage|${section.id}|${section.inlineQuestion.prompt}`,
+    );
+    return {
+      ...section,
+      inlineQuestion: {
+        ...section.inlineQuestion,
+        options: shuffled.options,
+        correctIndex: shuffled.correctIndex,
+      },
+    };
+  });
 
   console.log('📖 Interactive Passage Generated from dedicated service:', {
     topic,

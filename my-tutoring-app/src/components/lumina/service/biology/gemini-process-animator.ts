@@ -4,6 +4,7 @@ import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { ProcessAnimatorData } from "../../primitives/visual-primitives/biology/ProcessAnimator";
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 
 /**
  * Schema definition for Process Animator Data
@@ -441,6 +442,14 @@ Now generate a process animator for "${topic}" at grade level ${gradeBand}.`;
       stages: config?.stages || result.stages,
       checkpoints: config?.checkpoints || result.checkpoints,
     };
+    finalData.checkpoints = finalData.checkpoints.map((checkpoint) => {
+      const shuffled = shuffleIndexedChoices(
+        checkpoint.options,
+        checkpoint.correctIndex,
+        `process-animator|${checkpoint.afterStageId}|${checkpoint.question}`,
+      );
+      return { ...checkpoint, options: shuffled.options, correctIndex: shuffled.correctIndex };
+    });
 
     console.log('🎬 Process Animator Generated:', {
       processName: finalData.processName,

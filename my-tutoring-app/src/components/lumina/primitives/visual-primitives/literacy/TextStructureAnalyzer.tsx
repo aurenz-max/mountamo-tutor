@@ -81,6 +81,7 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { stableShuffle } from '../../../utils/choiceOrder';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import {
   itemsFromPayload,
@@ -212,7 +213,24 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
 
   /** Build gates drop what cannot be asked — a placeholder in a judged loop
    *  becomes a spoken ask the tutor has to stand behind. */
-  const { items, sentences } = useMemo(() => itemsFromPayload(data), [data]);
+  const { items, sentences } = useMemo(() => {
+    const built = itemsFromPayload(data);
+    return {
+      ...built,
+      items: built.items.map((item) => {
+        if (item.action !== 'name-structure' || item.choices.length < 2) return item;
+        const ordered = stableShuffle(
+          item.choices.map((choice, index) => ({ choice, note: item.choiceNotes[index] ?? '' })),
+          `${resolvedInstanceId}|${item.id}|${item.choices.join('|')}`,
+        );
+        return {
+          ...item,
+          choices: ordered.map(({ choice }) => choice),
+          choiceNotes: ordered.map(({ note }) => note),
+        };
+      }),
+    };
+  }, [data, resolvedInstanceId]);
 
   /**
    * The affirmed item's reveal payload. Set on the affirm and rendered behind

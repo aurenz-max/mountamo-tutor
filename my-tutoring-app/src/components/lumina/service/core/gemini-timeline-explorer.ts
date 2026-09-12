@@ -14,6 +14,7 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
 import { TimelineExplorerData } from '../../primitives/visual-primitives/core/TimelineExplorer';
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -268,7 +269,12 @@ function validateTimelineExplorerData(raw: any): TimelineExplorerData {
         ];
         let correctIndex = typeof c.correctIndex === 'number' ? c.correctIndex : 0;
         if (correctIndex < 0 || correctIndex > 3) correctIndex = 0;
-        return { ...base, options, correctIndex };
+        const shuffled = shuffleIndexedChoices(
+          options,
+          correctIndex,
+          `timeline-explorer|${base.question}`,
+        );
+        return { ...base, options: shuffled.options, correctIndex: shuffled.correctIndex };
       }
 
       if (type === 'order') {

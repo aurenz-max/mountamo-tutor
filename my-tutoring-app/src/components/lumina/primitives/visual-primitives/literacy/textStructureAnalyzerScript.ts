@@ -252,6 +252,8 @@ export interface TextStructureItem extends JudgedScriptItem {
   choices: string[];
   /** Index-aligned printed gloss for `choices`; '' where there is none. */
   choiceNotes: string[];
+  /** Nearest misconception, retained independently of randomized screen order. */
+  diagnosticWrong?: string;
   /**
    * `find-signal`: the sentence the child must read, PRINTED and never spoken.
    * `place-idea`: the excerpt the tutor reads aloud.
@@ -748,6 +750,7 @@ export const itemsFromPayload = (
         answer: STRUCTURE_LABEL[structureType],
         choices: labels,
         choiceNotes: menu.map((t) => glossOf.get(t) || STRUCTURE_GLOSS[t]),
+        diagnosticWrong: labels.find((label) => label !== STRUCTURE_LABEL[structureType]),
         stimulusText: '',
         sentenceIndex: -1,
         namesChoices,
@@ -1319,7 +1322,7 @@ export const textStructureAnalyzerHarnessAnswers = (item: TextStructureItem) => 
       signatureWrong: {
         // Axis 2 orders distractors nearest-first at `hard`, so the leading one
         // IS the structure most easily mistaken for the answer.
-        text: others[0] ?? 'something else',
+        text: item.diagnosticWrong ?? others[0] ?? 'something else',
         why:
           'the NEAREST structure — the sibling axis-2 deliberately puts in the menu at hard because both '
           + 'mean "this leads to that" (cause-effect against problem-solution). It is a real option, '

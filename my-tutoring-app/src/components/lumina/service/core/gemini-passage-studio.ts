@@ -16,6 +16,7 @@ import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import { buildScopePromptSection } from '../scopeContext';
 import type { GenerationContext } from '../generation/generationContext';
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 import type {
   PassageStudioData,
   PassageStimulus,
@@ -659,6 +660,11 @@ Pick a word that appears VERBATIM in the passage. Generate 3–4 plausible meani
         const meanings = [data.meaning0, data.meaning1, data.meaning2];
         if (data.meaning3) meanings.push(data.meaning3);
         const correctIndex = Math.max(0, Math.min(meanings.length - 1, Math.round(data.correctIndex)));
+        const shuffled = shuffleIndexedChoices(
+          meanings,
+          correctIndex,
+          `passage-vocab|${baseId}|${data.word}`,
+        );
         const block: VocabInContextBlockData = {
           id: baseId,
           blockType: 'vocab-in-context',
@@ -667,8 +673,8 @@ Pick a word that appears VERBATIM in the passage. Generate 3–4 plausible meani
           transitionCue: plan.transitionCue,
           word: data.word,
           targetAnchor,
-          meanings,
-          correctIndex,
+          meanings: shuffled.options,
+          correctIndex: shuffled.correctIndex,
           explanation: data.explanation,
         };
         return block;
@@ -703,6 +709,11 @@ The explanation should cover both why the correct inference is best-supported AN
           evidenceAnchor: i === correctIndex ? correctAnchor : undefined,
           rationale: '',
         }));
+        const shuffled = shuffleIndexedChoices(
+          candidates,
+          correctIndex,
+          `passage-inference|${baseId}|${data.question}`,
+        );
 
         const block: InferenceBuilderBlockData = {
           id: baseId,
@@ -711,8 +722,8 @@ The explanation should cover both why the correct inference is best-supported AN
           tutoringBrief: plan.tutoringBrief,
           transitionCue: plan.transitionCue,
           question: data.question,
-          candidates,
-          correctIndex,
+          candidates: shuffled.options,
+          correctIndex: shuffled.correctIndex,
           explanation: data.explanation,
         };
         return block;

@@ -2,6 +2,7 @@ import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 
 // Import data types from component (single source of truth)
 import type {
@@ -438,11 +439,16 @@ function reconstructQuestions(raw: any): PlanetQuestion[] {
     const validTypes = ['mc', 'compare', 'true-false'];
     if (!validTypes.includes(qType)) continue;
 
+    const shuffled = shuffleIndexedChoices(
+      options,
+      Math.floor(correctIndex),
+      `planet-question|${questionText}`,
+    );
     questions.push({
       question: questionText,
       questionType: qType as 'mc' | 'compare' | 'true-false',
-      options,
-      correctIndex: Math.floor(correctIndex),
+      options: shuffled.options,
+      correctIndex: shuffled.correctIndex,
       explanation,
       difficulty: resolvedDifficulty as 'easy' | 'medium' | 'hard',
     });
@@ -506,11 +512,16 @@ function reconstructQuizQuestions(raw: any, journeyPlanetIds: string[]): PlanetQ
     const validDifficulties = ['easy', 'medium', 'hard'];
     const resolvedDifficulty = validDifficulties.includes(difficulty) ? difficulty : 'medium';
 
+    const shuffled = shuffleIndexedChoices(
+      options,
+      correctIndex,
+      `planet-quiz|${questionText}`,
+    );
     questions.push({
       question: questionText,
       questionType: 'mc',
-      options,
-      correctIndex,
+      options: shuffled.options,
+      correctIndex: shuffled.correctIndex,
       explanation,
       difficulty: resolvedDifficulty as 'easy' | 'medium' | 'hard',
       aboutPlanetId: correctPlanet,

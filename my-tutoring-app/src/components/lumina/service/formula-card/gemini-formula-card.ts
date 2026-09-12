@@ -8,6 +8,7 @@
 import { Type, Schema } from "@google/genai";
 import { EquationData, FormulaSegment, FormulaParameter, FormulaRelationship, FormulaExample } from "../../types";
 import { ai } from "../geminiClient";
+import { stableShuffle } from '../../utils/choiceOrder';
 
 export interface ComprehensionGate {
   question: string;
@@ -195,6 +196,15 @@ Now generate comprehensive formula data WITH comprehension gates following these
 
   if (!response.text) throw new Error("No content generated");
   const data = JSON.parse(response.text);
+  if (Array.isArray(data.comprehensionGates)) {
+    data.comprehensionGates = data.comprehensionGates.map((gate: ComprehensionGate) => ({
+      ...gate,
+      options: stableShuffle(
+        gate.options,
+        `formula-card|${gate.question}|${gate.correctAnswer}`,
+      ),
+    }));
+  }
 
   console.log('🔢 Formula Card Generated from dedicated service:', {
     topic,

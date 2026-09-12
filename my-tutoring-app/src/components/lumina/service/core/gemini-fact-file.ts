@@ -11,6 +11,7 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
 import { FactFileData } from '../../primitives/visual-primitives/core/FactFile';
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -355,14 +356,18 @@ function validateFactFileData(
         rawEmojis.every((e) => e.length > 0) &&
         new Set(rawEmojis).size === rawEmojis.length;
 
+      const question = String(c.question || 'Question');
+      const shuffled = shuffleIndexedChoices(options, correctIndex, `fact-file|${question}`);
       return {
-        question: String(c.question || 'Question'),
-        options,
-        correctIndex,
+        question,
+        options: shuffled.options,
+        correctIndex: shuffled.correctIndex,
         explanation: String(c.explanation || ''),
         difficulty: difficulty as 'easy' | 'medium' | 'hard',
         relatedSection: relatedSection as 'quickFacts' | 'deepDive' | 'records' | 'didYouKnow',
-        ...(emojisComplete ? { optionEmojis: rawEmojis } : {}),
+        ...(emojisComplete
+          ? { optionEmojis: shuffled.order.map((index) => rawEmojis[index]) }
+          : {}),
       };
     });
   }

@@ -14,6 +14,7 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
 import { HowItWorksData } from '../../primitives/visual-primitives/core/HowItWorks';
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -408,7 +409,12 @@ function validateHowItWorksData(raw: any): HowItWorksData {
             );
           }
         }
-        return { ...base, options, correctIndex };
+        const shuffled = shuffleIndexedChoices(
+          options,
+          correctIndex,
+          `how-it-works|${base.question}`,
+        );
+        return { ...base, options: shuffled.options, correctIndex: shuffled.correctIndex };
       }
 
       if (type === 'sequence') {

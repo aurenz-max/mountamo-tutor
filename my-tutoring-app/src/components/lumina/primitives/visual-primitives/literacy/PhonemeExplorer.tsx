@@ -73,6 +73,7 @@ import {
   hearWordCue,
   itemsFromChallenges,
   phonemeExplorerPackBase,
+  shufflePhonemeMenus,
   type PhonemeExplorerItem,
 } from './phonemeExplorerScript';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -208,8 +209,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         `[PhonemeExplorer] dropped ${challenges.length - built.length} unaskable challenge(s) (leak/sayability gates)`,
       );
     }
-    return built;
-  }, [challenges]);
+    return shufflePhonemeMenus(built, resolvedInstanceId);
+  }, [challenges, resolvedInstanceId]);
 
   const challengeById = useMemo(() => {
     const map = new Map<string, PhonemeChallenge>();

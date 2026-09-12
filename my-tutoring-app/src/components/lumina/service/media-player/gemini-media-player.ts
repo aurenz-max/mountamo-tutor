@@ -3,6 +3,7 @@ import { MediaPlayerData, FullLessonSegment, SegmentKnowledgeCheck } from "../..
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 
 /**
  * media-player generator — narrated listening-comprehension walkthrough.
@@ -242,15 +243,20 @@ const resolveOptionEmojis = (kc: RawSegment['knowledgeCheck']): string[] | undef
 };
 
 const toSegment = (raw: RawSegment, preReader: boolean): FullLessonSegment => {
+  const shuffled = shuffleIndexedChoices(
+    raw.knowledgeCheck.options,
+    raw.knowledgeCheck.correctOptionIndex,
+    `media-player|${raw.title}|${raw.knowledgeCheck.question}`,
+  );
   const kc: SegmentKnowledgeCheck = {
     question: raw.knowledgeCheck.question,
-    options: raw.knowledgeCheck.options,
-    correctOptionIndex: raw.knowledgeCheck.correctOptionIndex,
+    options: shuffled.options,
+    correctOptionIndex: shuffled.correctIndex,
     ...(raw.knowledgeCheck.explanation ? { explanation: raw.knowledgeCheck.explanation } : {}),
   };
   if (preReader) {
     const emojis = resolveOptionEmojis(raw.knowledgeCheck);
-    if (emojis) kc.optionEmojis = emojis;
+    if (emojis) kc.optionEmojis = shuffled.order.map((index) => emojis[index]);
   }
   return {
     title: raw.title,

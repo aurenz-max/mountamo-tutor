@@ -74,6 +74,7 @@ import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { stableShuffle } from '../../../utils/choiceOrder';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -198,8 +199,18 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
 
   // ── Items + the code-owned rule-model pair ────────────────────────────────
   const items = useMemo<RhymeItem[]>(
-    () => challenges.flatMap((ch) => itemsFromChallenge(ch, supportTier ?? 'medium')),
-    [challenges, supportTier],
+    () => challenges
+      .flatMap((ch) => itemsFromChallenge(ch, supportTier ?? 'medium'))
+      .map((item) => item.choices.length < 2
+        ? item
+        : {
+            ...item,
+            choices: stableShuffle(
+              item.choices,
+              `${resolvedInstanceId}|${item.id}|${item.choices.map((choice) => choice.word).join('|')}`,
+            ),
+          }),
+    [challenges, supportTier, resolvedInstanceId],
   );
   const modelPair = useMemo(() => pickModelRhymePair(items), [items]);
   const lastHeardRef = useRef('');

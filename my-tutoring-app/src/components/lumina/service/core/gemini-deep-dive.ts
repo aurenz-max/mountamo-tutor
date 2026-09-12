@@ -13,6 +13,7 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import { buildScopePromptSection } from '../scopeContext';
+import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 import type { GenerationContext } from '../generation/generationContext';
 import type {
   DeepDiveData,
@@ -489,10 +490,16 @@ Rules:
   if (!text) throw new Error('Pattern check generation returned empty');
 
   const data = JSON.parse(text);
+  const question = String(data.question);
+  const shuffled = shuffleIndexedChoices(
+    [data.option0, data.option1, data.option2, data.option3],
+    Math.max(0, Math.min(3, Math.round(data.correctIndex))),
+    `deep-dive-table|${question}`,
+  );
   return {
-    question: data.question,
-    options: [data.option0, data.option1, data.option2, data.option3],
-    correctIndex: Math.max(0, Math.min(3, Math.round(data.correctIndex))),
+    question,
+    options: shuffled.options,
+    correctIndex: shuffled.correctIndex,
     explanation: data.explanation,
   };
 }
@@ -569,12 +576,20 @@ IMPORTANT: Do NOT make the correct answer obvious from its position or length.${
     ? emojis.map((e: string) => e.trim())
     : undefined;
 
-  return {
-    question: data.question,
-    options: [data.option0, data.option1, data.option2, data.option3],
+  const question = String(data.question);
+  const shuffled = shuffleIndexedChoices(
+    [data.option0, data.option1, data.option2, data.option3],
     correctIndex,
+    `deep-dive-mcq|${question}`,
+  );
+  return {
+    question,
+    options: shuffled.options,
+    correctIndex: shuffled.correctIndex,
     explanation: data.explanation,
-    optionEmojis,
+    optionEmojis: optionEmojis
+      ? shuffled.order.map((index) => optionEmojis[index])
+      : undefined,
   };
 }
 
@@ -1287,12 +1302,20 @@ Use age-appropriate language for ${gradeLevel}.${preReaderRules}`,
     ? predEmojis.map((e: string) => e.trim())
     : undefined;
 
+  const predictionQuestion = String(data.predictionQuestion);
+  const shuffledPrediction = shuffleIndexedChoices(
+    [data.predictionOption0, data.predictionOption1, data.predictionOption2, data.predictionOption3].filter(Boolean),
+    Math.max(0, Math.min(3, Math.round(data.predictionCorrectIndex))),
+    `deep-dive-prediction|${predictionQuestion}`,
+  );
   const prediction = {
-    question: data.predictionQuestion,
-    options: [data.predictionOption0, data.predictionOption1, data.predictionOption2, data.predictionOption3].filter(Boolean),
-    correctIndex: Math.max(0, Math.min(3, Math.round(data.predictionCorrectIndex))),
+    question: predictionQuestion,
+    options: shuffledPrediction.options,
+    correctIndex: shuffledPrediction.correctIndex,
     explanation: data.predictionExplanation,
-    ...(optionEmojis && { optionEmojis }),
+    ...(optionEmojis && {
+      optionEmojis: shuffledPrediction.order.map((index) => optionEmojis[index]),
+    }),
   };
 
   return {
@@ -1429,10 +1452,16 @@ Make the perspectives genuinely different in stance, not just different speakers
     throw new Error('Perspectives generated fewer than 2 voices');
   }
 
+  const comprehensionQuestion = String(data.compQuestion);
+  const shuffledComprehension = shuffleIndexedChoices(
+    [data.compOption0, data.compOption1, data.compOption2, data.compOption3].filter(Boolean),
+    Math.max(0, Math.min(3, Math.round(data.compCorrectIndex))),
+    `deep-dive-perspectives|${comprehensionQuestion}`,
+  );
   const comprehension = {
-    question: data.compQuestion,
-    options: [data.compOption0, data.compOption1, data.compOption2, data.compOption3].filter(Boolean),
-    correctIndex: Math.max(0, Math.min(3, Math.round(data.compCorrectIndex))),
+    question: comprehensionQuestion,
+    options: shuffledComprehension.options,
+    correctIndex: shuffledComprehension.correctIndex,
     explanation: data.compExplanation,
   };
 

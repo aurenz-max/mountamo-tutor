@@ -53,6 +53,7 @@ import type {
   ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
 import { isSpeakablePhoneme, speakablePhoneme } from './phonemeVoice';
+import { stableShuffle } from '../../../utils/choiceOrder';
 
 export type PhonemeItemKind = 'isolate' | 'ending' | 'medial' | 'blend' | 'segment' | 'manipulate';
 
@@ -106,6 +107,27 @@ export interface PhonemeExplorerItem extends JudgedScriptItem {
   /** The operation as the tutor SAYS it (phoneme-safe, answer-free — gated). */
   operationSpoken?: string;
 }
+
+/**
+ * Shuffle every closed-set menu without mutating generator data.
+ *
+ * The session seed makes a fresh lesson eligible for a fresh layout; item id
+ * and menu content keep different questions independent. Because the shuffled
+ * items feed both the renderer and the judged script pack, an enumerated menu
+ * is always spoken in the same order in which its cards appear.
+ */
+export const shufflePhonemeMenus = (
+  items: readonly PhonemeExplorerItem[],
+  sessionSeed: string,
+): PhonemeExplorerItem[] => items.map((item) => {
+  if (!item.menu || item.menu.length < 2) return item;
+
+  const menu = stableShuffle(
+    item.menu,
+    `${sessionSeed}|${item.id}|${item.menu.map((card) => card.word.toLowerCase()).join('|')}`,
+  );
+  return { ...item, menu };
+});
 
 export const responseClassFor = (kind: PhonemeItemKind): ResponseClassId =>
   kind === 'segment' ? 'number_word_to_20' : 'short_spoken_word';
