@@ -1856,6 +1856,9 @@ export interface ComponentDefinition {
    *  DI live-judged packs). Sent at WebSocket auth; a lesson session applies it
    *  when ANY of its manifest items declares one. */
   audioInput?: AudioInputConfig;
+  /** A staged DI port can declare audio for selected modes without changing
+   * the transport of its remaining legacy modes. */
+  audioInputByMode?: Record<string, AudioInputConfig>;
   /** Whether this primitive supports evaluation tracking (used by practice-visual-catalog). */
   supportsEvaluation?: boolean;
   /** IRT eval modes with β priors. When present, enables mode-specific generation. */

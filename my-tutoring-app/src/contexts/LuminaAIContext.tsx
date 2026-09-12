@@ -7,6 +7,7 @@ import { useExhibitContext } from '@/components/lumina/contexts/ExhibitContext';
 import { useEvaluationContext } from '@/components/lumina/evaluation';
 import type { AudioInputConfig, ManifestItem, ObjectiveData, TutoringScaffold } from '@/components/lumina/types';
 import { getComponentById } from '@/components/lumina/service/manifest/catalog';
+import { resolvePrimitiveAudioInput } from '@/components/lumina/hooks/primitiveAudioInput';
 import { getClientRunId } from '@/components/lumina/service/clientRunId';
 import {
   useLiveVoiceTurnsWithTransport,
@@ -714,7 +715,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               instance_id: primitiveContext.instance_id,
               primitive_data: primitiveContext.primitive_data,
               tutoring: primitiveContext.tutoring ?? componentDef?.tutoring ?? null,
-              audio_input: primitiveContext.audio_input ?? componentDef?.audioInput ?? null,
+              audio_input: primitiveContext.audio_input ?? resolvePrimitiveAudioInput(componentDef, primitiveContext.primitive_data) ?? null,
               // DI-GREET-1: suppresses the backend's improvised greeting turn so
               // the pack's own scripted cue is the first thing the child hears.
               owns_opening: primitiveContext.owns_opening ?? false,
@@ -802,6 +803,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // lesson now uses manual activity because the provider owns the one
           // shared turn authority; catalog fields may still contribute tuning.
           const declaredAudioInput = info.firstPrimitive.audio_input
+            ?? resolvePrimitiveAudioInput(componentDef, info.firstPrimitive.primitive_data)
             ?? manifestItems
               .map((item) => getComponentById(item.componentId)?.audioInput)
               .find(Boolean)
@@ -825,6 +827,8 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               primitive_data: info.firstPrimitive.primitive_data,
               tutoring: info.firstPrimitive.tutoring ?? componentDef?.tutoring ?? null,
               audio_input: lessonAudioInput,
+              owns_opening: info.firstPrimitive.owns_opening
+                ?? resolvePrimitiveAudioInput(componentDef, info.firstPrimitive.primitive_data)?.manual_activity === true,
             },
             lesson_context: lessonContext,
             student_progress: {
@@ -914,7 +918,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Informational carry — Gemini's audio config is fixed at session
         // creation (connectLesson already scanned the manifest and applied it),
         // but the backend sees what the incoming primitive would have asked for.
-        audio_input: componentDef?.audioInput ?? null,
+        audio_input: primitiveContext.audio_input ?? resolvePrimitiveAudioInput(componentDef, primitiveContext.primitive_data) ?? null,
         // DI-GREET-1 AT THE SWITCH BOUNDARY (lesson-bench sitting b833c0f89475,
         // 2026-09-03). The connect paths already pass owns_opening so the
         // backend skips its greeting turn; the switch never did, so a judged
@@ -927,7 +931,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // declares both together — see JUDGED_AUDIO_INPUT + owns_opening in
         // useJudgedScriptRunner). An explicit flag on the context still wins.
         owns_opening: primitiveContext.owns_opening
-          ?? componentDef?.audioInput?.manual_activity === true,
+          ?? resolvePrimitiveAudioInput(componentDef, primitiveContext.primitive_data)?.manual_activity === true,
       },
     }));
 
