@@ -650,7 +650,7 @@ Return the complete number bond configuration.
     const teenChallenges = (data.challenges as Array<{ type: string; whole: number }>)
       .filter((ch) => ch.type === 'ten-and-ones');
     if (teenChallenges.length > 0) {
-      const window = resolveTeenWindow(ctx.scope?.objectiveText, ctx.scope?.intent, topic);
+      const window = await resolveTeenWindow(ctx.scope, gradeLevel);
       const sweep = teenSweep(window, teenChallenges.length);
       teenChallenges.forEach((ch, i) => { ch.whole = sweep[i]; });
       console.log(

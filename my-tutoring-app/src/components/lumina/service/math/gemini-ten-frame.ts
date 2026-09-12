@@ -736,7 +736,7 @@ Return the complete ten frame configuration.
     const teenChallenges = (data.challenges as TenFrameChallenge[])
       .filter((ch) => ch.type === 'build_teen' || ch.type === 'decompose_teen');
     if (teenChallenges.length > 0) {
-      const window = resolveTeenWindow(scope.objectiveText, scope.intent, topic);
+      const window = await resolveTeenWindow(ctx.scope, gradeLevel);
       const sweep = teenSweep(window, teenChallenges.length);
       teenChallenges.forEach((ch, i) => {
         ch.targetCount = sweep[i];

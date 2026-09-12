@@ -52,9 +52,15 @@ export async function resolveScopeRange(
   gradeLevel: string,
   quantity: string,
   ceiling: { min: number; max: number },
+  options: {
+    /** Some targets legitimately name one exact value (for example, compose 14). */
+    allowSingleton?: boolean;
+    /** Resolve a free-form topic even when no manifest objective/intent is present. */
+    resolveTopicOnly?: boolean;
+  } = {},
 ): Promise<{ min: number; max: number } | null> {
   // Nothing component-specific to bind → keep the grade-band default (no call, no cost).
-  if (!scope.intent && !scope.objectiveText) return null;
+  if (!scope.intent && !scope.objectiveText && !options.resolveTopicOnly) return null;
   try {
     const prompt = `A math activity needs the numeric range for ${quantity} inferred from what it teaches.
 
@@ -74,11 +80,11 @@ Return the integer range for ${quantity} the student actually works with in THIS
     const parsed = JSON.parse(result.text);
     let min = Math.round(Number(parsed?.min));
     let max = Math.round(Number(parsed?.max));
-    if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return null;
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
     // The resolver is advisory; the ceiling is law. Hard-clamp so it can only narrow.
     min = Math.max(ceiling.min, min);
     max = Math.min(ceiling.max, max);
-    if (max <= min) return null;
+    if (max < min || (!options.allowSingleton && max === min)) return null;
     return { min, max };
   } catch (e) {
     console.warn(`[scopeRangeResolver] resolution failed for "${quantity}":`, e);
