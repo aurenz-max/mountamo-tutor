@@ -53,13 +53,12 @@ function mockChallenges(gradeBandStamp: string) {
       title: 'Fraction Fun',
       description: 'Explore fractions with circles.',
       gradeBand: gradeBandStamp,
-      challenges: [
-        {
-          id: 'fc1', type: 'identify', instruction: 'What fraction is shaded?',
+      challenges: ['touch_fraction', 'identify', 'build', 'compare', 'equivalent'].map((type, index) => ({
+          id: `fc${index}`, type, instruction: 'What fraction is shaded?',
+          compareFraction: { numerator: 1, denominator: 3 }, equivalentDenominator: 2,
           denominator: 4, numerator: 2, hint: 'Count the shaded slices.',
           narration: 'Look at the circle.',
-        },
-      ],
+        })),
     }),
   } as never);
 }

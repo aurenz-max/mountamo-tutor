@@ -65,7 +65,7 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * withdrawal stays with /eval-test.
  */
 
-const KNOWN_TYPES = new Set(['identify', 'build', 'compare', 'equivalent']);
+const KNOWN_TYPES = new Set(['touch_fraction', 'identify', 'build', 'compare', 'equivalent']);
 
 // Intrinsic denominator ceiling when neither the harness nor the topic names one.
 // Mirrors the generator's GRADE_BAND_DENOMINATORS max (gemini-fraction-circles.ts:36-39).
@@ -161,6 +161,9 @@ export const fractionCirclesOracle: ContentOracle = {
         });
       }
 
+      if (type === 'touch_fraction' && (![2, 3, 4].includes(d) || n < 1 || n >= d)) {
+        violations.push({ check: 'answer-key-desync', where: id, detail: 'Touch fraction requires a proper fraction in halves, thirds, or fourths.' });
+      }
       baseValues.push(reduce(n, d));
 
       if (type === 'compare') {
@@ -241,6 +244,9 @@ export const fractionCirclesOracle: ContentOracle = {
         }
         continue;
       }
+
+      // Touch repeats use newly shuffled picture banks and shaded positions.
+      if (type === 'touch_fraction') continue;
 
       // identify / build — the displayed identity is just the base fraction.
       const key = `${type}:${n}/${d}`;

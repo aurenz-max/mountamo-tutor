@@ -1,5 +1,10 @@
 # Direct Instruction — Primitive Family Backlog
 
+## 2026-09-12 ? Fraction Circles touch mode implemented
+
+User-requested `fraction-circles[touch_fraction]`: hear a fraction, touch its pictured amount. Existing `manipulation` class; no new response-class bench or shared-engine changes. Mode contract, code-owned picture choices/correctness, DI stage, generator routing, calibration prior, mixed-session aggregation, and drive adapter are in. **27 frontend tests + 3 backend tests pass; Lumina typecheck 0; five live generated scenarios pass; live DI 5 wrong corrected / 5 right affirmed / 5 holds silent, no findings.** [Report](../fraction-touch/README.md) ? [Live transcript](../tutor-reports/fraction-circles-live-di-plain-2026-09-12.md). Remaining: HUMAN-CHECKS **#153** for tablet/audio/cap and mixed handoff. This adds the requested recognition mode; it does not port the four existing fraction-circle tasks to DI or reorder other math ports.
+
+
 Working queue for the DI primitive family. Top = next. Graduated 2026-07-20 from
 `qa/HANDOFF-di-bench-2026-07-16.md` per its own gate ("graduate to a BACKLOG file
 if the bench passes") — the bench passed: open-mic run, probe run, hook-parity

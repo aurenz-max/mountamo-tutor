@@ -1,0 +1,117 @@
+{
+  "generatedAt": "2026-09-12T17:34:33.132Z",
+  "data": {
+    "title": "Exploring Halves, Thirds, and Fourths",
+    "challenges": [
+      {
+        "id": "fc1",
+        "type": "identify",
+        "instruction": "What fraction of the circle is shaded?",
+        "denominator": 2,
+        "numerator": 1,
+        "hint": "Count the equal parts, then count the shaded parts.",
+        "narration": "What fraction of the circle is shaded?"
+      },
+      {
+        "id": "fc2",
+        "type": "build",
+        "instruction": "Shade the circle to show 2/3.",
+        "denominator": 3,
+        "numerator": 2,
+        "hint": "Look at the equal parts and the amount you need to shade.",
+        "narration": "Shade the circle to show 2/3."
+      },
+      {
+        "id": "fc3",
+        "type": "touch_fraction",
+        "instruction": "Touch the picture showing one fourth.",
+        "denominator": 4,
+        "numerator": 1,
+        "hint": "Look at the equal parts and the shaded parts.",
+        "narration": "Touch the picture showing one fourth."
+      },
+      {
+        "id": "fc4",
+        "type": "compare",
+        "instruction": "Compare 1/2 and 1/4. Which fraction is larger, or are they equal?",
+        "denominator": 2,
+        "numerator": 1,
+        "hint": "Compare the shaded amounts in the two equal-sized circles.",
+        "narration": "Compare 1/2 and 1/4. Which fraction is larger, or are they equal?",
+        "compareFraction": {
+          "numerator": 1,
+          "denominator": 4
+        }
+      },
+      {
+        "id": "fc5",
+        "type": "equivalent",
+        "instruction": "Build a fraction equivalent to 1/2 using 4 equal slices.",
+        "denominator": 2,
+        "numerator": 1,
+        "hint": "Look at the equal parts and the amount you need to shade.",
+        "narration": "Build a fraction equivalent to 1/2 using 4 equal slices.",
+        "equivalentDenominator": 4
+      }
+    ],
+    "description": "Practice identifying, building, comparing, and finding equivalent fractions for halves, thirds, and fourths.",
+    "gradeBand": "K-2"
+  },
+  "traces": [
+    {
+      "item": {
+        "id": "fc3",
+        "challengeType": "touch_fraction",
+        "numerator": 1,
+        "denominator": 4,
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "touch_fraction",
+        "actionContract": {
+          "id": "fc3-touch",
+          "label": "Touch the fraction",
+          "icon": "◔",
+          "answerKind": "gesture",
+          "instruction": "Touch the picture showing one fourth.",
+          "checkingInstruction": "Look at the picture you touched and listen."
+        },
+        "choices": [
+          {
+            "id": "fc3-picture-0",
+            "numerator": 1,
+            "denominator": 3,
+            "shaded": [
+              0
+            ]
+          },
+          {
+            "id": "fc3-picture-1",
+            "numerator": 1,
+            "denominator": 4,
+            "shaded": [
+              3
+            ]
+          },
+          {
+            "id": "fc3-picture-2",
+            "numerator": 3,
+            "denominator": 4,
+            "shaded": [
+              2,
+              3,
+              0
+            ]
+          }
+        ],
+        "correctChoiceId": "fc3-picture-1"
+      },
+      "ask": "[FT_ITEM] Say exactly: \"Touch the picture showing one fourth.\" The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+      "verdicts": [
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched one third. one fourth means 1 of 4 equal parts are shaded. Touch the picture showing one fourth.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: MATCHES. Say exactly: \"Yes, that shows one fourth.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched three fourths. one fourth means 1 of 4 equal parts are shaded. Touch the picture showing one fourth.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question."
+      ]
+    }
+  ],
+  "issues": []
+}

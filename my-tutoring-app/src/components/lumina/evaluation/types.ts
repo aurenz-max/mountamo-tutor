@@ -705,6 +705,7 @@ export interface BaseTenBlocksMetrics extends BasePrimitiveMetrics {
 }
 
 export interface FractionCirclesMetrics extends BasePrimitiveMetrics {
+  touchFractionAccuracy?: number;
   type: 'fraction-circles';
   totalChallenges: number;
   correctCount: number;

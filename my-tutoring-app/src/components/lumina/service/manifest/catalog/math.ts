@@ -1,3 +1,4 @@
+import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
 import { BASE_TEN_DI_EVAL_MODES } from '../../../primitives/visual-primitives/math/baseTenModes';
 import { NUMBER_SEQUENCER_EVAL_MODES } from '../../../primitives/visual-primitives/math/numberSequencerModes';
 /**
@@ -340,12 +341,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-circles',
-    description: 'Multi-phase fraction learning with circle diagrams. Challenges include identifying fractions from shaded circles, building target fractions by clicking slices, comparing two fractions visually, and discovering equivalent fractions. ESSENTIAL for elementary fraction concepts.',
+    description: 'DI touch_fraction: hear a fraction and touch its matching shaded circle (halves, thirds, fourths). Multi-phase fraction learning with circle diagrams. Challenges include identifying fractions from shaded circles, building target fractions by clicking slices, comparing two fractions visually, and discovering equivalent fractions. ESSENTIAL for elementary fraction concepts.',
     constraints: 'Generates 4-6 challenges mixing identify, build, compare, and equivalent types. Denominators 2-12.',
     affordances: { representation: ['concrete', 'pictorial'], answers: ['type', 'tap', 'build'], role: 'apply', minutes: 5 },
+    // Scoped like base-ten-blocks' audioInputByMode: only touch_fraction is a judged
+    // Live session (gesture-judged, no spoken answer); the legacy identify/build/compare/
+    // equivalent modes stay Check-button and must not trigger a mic request.
+    audioInputByMode: { touch_fraction: JUDGED_AUDIO_INPUT },
     tutoring: {
       taskDescription: 'Complete fraction challenges using circle diagrams. Current challenge: {{instruction}} (type: {{challengeType}}). Circle has {{denominator}} slices.',
-      contextKeys: ['challengeType', 'instruction', 'denominator', 'numerator', 'shadedCount', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges'],
+      contextKeys: ['challengeType', 'instruction', 'denominator', 'numerator', 'shadedCount', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges', 'equivalentDenominator'],
       scaffoldingLevels: {
         level1: '"How many total pieces is this circle divided into? Count the lines."',
         level2: '"The circle has {{denominator}} slices. Count the shaded ones — that is your numerator. The total slices is the denominator."',
@@ -358,6 +363,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Difficulty comparing fractions with different denominators', response: '"Look at how much of each circle is filled with color. Which circle has more color showing?"' },
       ],
       aiDirectives: [
+        { title: 'TOUCH FRACTION DI', instruction: 'When challengeType is touch_fraction, only the authored FT cues control speech. Read their quoted line exactly. The child touches a picture; code supplies the verdict. Microphone speech is not an answer. No hints, answer positions, improvised questions, or next-item guesses. Each verdict ends the turn. The other fraction coaching directives apply only to legacy identify/build/compare/equivalent tasks.' },
         {
           title: 'FRACTION CIRCLE COACHING',
           instruction:
@@ -371,6 +377,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     evalModes: [
+      ...FRACTION_TOUCH_EVAL_MODES,
       {
         evalMode: 'identify',
         affordances: { representation: 'pictorial', answers: ['type'] },

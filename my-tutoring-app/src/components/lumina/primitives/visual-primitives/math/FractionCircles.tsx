@@ -1,5 +1,6 @@
 'use client';
 
+import FractionTouch from './FractionTouch';
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface FractionCirclesChallenge {
   id: string;
-  type: 'identify' | 'build' | 'compare' | 'equivalent';
+  type: 'identify' | 'build' | 'compare' | 'equivalent' | 'touch_fraction';
   instruction: string;
   denominator: number;
   numerator: number;
@@ -187,13 +188,14 @@ function tutorRevealClause(
 interface FractionCirclesProps {
   data: FractionCirclesData;
   className?: string;
+  localOnly?: boolean;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) => {
+const LegacyFractionCircles: React.FC<FractionCirclesProps> = ({ data, className, localOnly = false }) => {
   const {
     title,
     description,
@@ -268,6 +270,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
     elapsedMs,
   } = usePrimitiveEvaluation<FractionCirclesMetrics>({
     primitiveType: 'fraction-circles',
+    localOnly,
     instanceId: resolvedInstanceId,
     skillId,
     subskillId,
@@ -287,6 +290,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
     instruction: currentChallenge?.instruction ?? '',
     denominator: currentChallenge?.denominator ?? 4,
     numerator: currentChallenge?.numerator ?? 0,
+    equivalentDenominator: currentChallenge?.equivalentDenominator ?? '',
     shadedCount: shadedSlices.size,
     attemptNumber: currentAttempts + 1,
     supportTier: currentChallenge?.supportTier ?? 'none',
@@ -520,7 +524,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
 
         const metrics: FractionCirclesMetrics = {
           type: 'fraction-circles',
-          evalMode: 'default',
+          evalMode: new Set(challenges.map(c => c.type)).size === 1 ? challenges[0].type : 'mixed',
           totalChallenges: challenges.length,
           correctCount,
           accuracy: overallPct,
@@ -904,4 +908,55 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
   );
 };
 
+// Keep each teaching flow intact; local child results feed one session submission.
+const FractionCircles: React.FC<FractionCirclesProps> = (props) => {
+  const hasTouch = props.data.challenges.some(c => c.type === 'touch_fraction');
+  if (!hasTouch) return <LegacyFractionCircles {...props} />;
+  if (props.data.challenges.every(c => c.type === 'touch_fraction')) return <FractionTouch key={`${props.data.instanceId ?? ''}:${props.data.challenges.map(c => `${c.id}-${c.numerator}-${c.denominator}`).join('|')}`} {...props} />;
+  return <MixedFractionCircles key={props.data.instanceId ?? props.data.challenges.map(c => c.id).join('|')} {...props} />;
+};
+const MixedFractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) => {
+  const groups = useMemo(() => {
+    const blocks: FractionCirclesChallenge[][] = [];
+    for (const c of data.challenges) {
+      const last = blocks[blocks.length - 1];
+      if (last && (last[0].type === 'touch_fraction') === (c.type === 'touch_fraction')) last.push(c);
+      else blocks.push([c]);
+    }
+    return blocks;
+  }, [data.challenges]);
+  const [index, setIndex] = useState(0);
+  const results = useRef<PrimitiveEvaluationResult<FractionCirclesMetrics>[]>([]);
+  const instance = useRef(data.instanceId ?? `fraction-mixed-${Date.now()}`);
+  const evaluation = usePrimitiveEvaluation<FractionCirclesMetrics>({
+    primitiveType: 'fraction-circles', instanceId: instance.current, skillId: data.skillId,
+    subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,
+    onSubmit: data.onEvaluationSubmit,
+  });
+  const completeBlock = (result: PrimitiveEvaluationResult<FractionCirclesMetrics>) => {
+    if (results.current.length !== index) return;
+    results.current.push(result);
+    if (index + 1 < groups.length) { setIndex(index + 1); return; }
+    const blocks = results.current;
+    const total = data.challenges.length;
+    const accuracy = blocks.reduce((sum, r) => sum + r.score * r.metrics.totalChallenges, 0) / total;
+    const modeAccuracy = (mode: FractionCirclesChallenge['type'], field: keyof FractionCirclesMetrics) => {
+      const count = data.challenges.filter(c => c.type === mode).length;
+      return count ? blocks.reduce((sum, r, i) => sum + Number(r.metrics[field] ?? 0) * groups[i].filter(c => c.type === mode).length, 0) / count : 0;
+    };
+    evaluation.submitResult(blocks.every(r => r.success), accuracy, {
+      type: 'fraction-circles', evalMode: 'mixed', totalChallenges: total, accuracy,
+      correctCount: blocks.reduce((n, r) => n + r.metrics.correctCount, 0),
+      attemptsCount: blocks.reduce((n, r) => n + r.metrics.attemptsCount, 0),
+      identifyAccuracy: modeAccuracy('identify', 'identifyAccuracy'), buildAccuracy: modeAccuracy('build', 'buildAccuracy'),
+      compareAccuracy: modeAccuracy('compare', 'compareAccuracy'), equivalentAccuracy: modeAccuracy('equivalent', 'equivalentAccuracy'),
+      touchFractionAccuracy: modeAccuracy('touch_fraction', 'touchFractionAccuracy'),
+    }, { blocks: blocks.map(r => ({ metrics: r.metrics, studentWork: r.studentWork, diagnosisEvidence: r.diagnosisEvidence })) });
+  };
+  if (evaluation.hasSubmitted) return <LuminaPanel><p>You finished your fraction activities.</p></LuminaPanel>;
+  const childData = { ...data, challenges: groups[index], instanceId: `${instance.current}-block-${index}`, onEvaluationSubmit: completeBlock };
+  return groups[index][0].type === 'touch_fraction'
+    ? <FractionTouch key={index} data={childData} className={className} localOnly />
+    : <LegacyFractionCircles key={index} data={childData} className={className} localOnly />;
+};
 export default FractionCircles;

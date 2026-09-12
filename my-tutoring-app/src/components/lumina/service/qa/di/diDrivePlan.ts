@@ -1,3 +1,5 @@
+import { buildFractionTouchItems, fractionTouchPack, fractionTouchHarnessAnswers, fractionTouchVerdictCue, type FractionTouchItem } from '../../../primitives/visual-primitives/math/fractionTouchScript';
+import type { FractionCirclesChallenge } from '../../../primitives/visual-primitives/math/FractionCircles';
 import { buildSequencerItems, sequencerPackBase, sequencerHarnessAnswers, sequencerOrderCue, type SequencerItem } from '../../../primitives/visual-primitives/math/numberSequencerScript';
 import type { NumberSequencerChallenge } from '../../../primitives/visual-primitives/math/NumberSequencer';
 /**
@@ -669,6 +671,16 @@ const interactiveBookAdapter: DiPortAdapter<InteractiveBookItem> = {
 };
 
 /** Story Bridge: mixed gesture and spoken comparison over two read-alouds. */
+const fractionTouchAdapter: DiPortAdapter<FractionTouchItem> = {
+  build: data => {
+    const challenges = (data.challenges ?? []) as FractionCirclesChallenge[];
+    const items = buildFractionTouchItems(challenges);
+    return { items, dropped: challenges.length - items.length, surface: fractionTouchPack(items) };
+  },
+  answersFor: fractionTouchHarnessAnswers,
+  gestureVerdictCue: (item, gesture) => fractionTouchVerdictCue(item, String(gesture)),
+};
+
 const storyBridgeAdapter: DiPortAdapter<StoryBridgeItem> = {
   build: (data) => {
     const challenges = (data.challenges ?? []) as StoryBridgeChallenge[];
@@ -2296,6 +2308,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'word-builder': wordBuilderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'decodable-reader': decodableReaderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'fraction-circles': fractionTouchAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-bridge': storyBridgeAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'compare-objects': compareObjectsAdapter as unknown as DiPortAdapter<JudgedScriptItem>,

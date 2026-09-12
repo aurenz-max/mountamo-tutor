@@ -145,6 +145,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "operate":       PriorConfig(4.5, "Operations: add/subtract with blocks"),
     },
     "fraction-circles": {
+        "touch_fraction": PriorConfig(1.25, "Pictorial: touch the fraction named aloud"),
         "identify":   PriorConfig(1.5, "Concrete: name the fraction shown"),
         "build":      PriorConfig(2.5, "Pictorial: shade slices to match fraction"),
         "compare":    PriorConfig(3.5, "Pictorial: compare two fractions visually"),

@@ -1,0 +1,342 @@
+{
+  "generatedAt": "2026-09-12T17:34:24.547Z",
+  "data": {
+    "title": "Fraction Fun with Halves, Thirds, and Fourths",
+    "challenges": [
+      {
+        "id": "fc1",
+        "type": "touch_fraction",
+        "instruction": "Touch the picture showing one half.",
+        "denominator": 2,
+        "numerator": 1,
+        "hint": "Look at the equal parts and the shaded parts.",
+        "narration": "Touch the picture showing one half.",
+        "supportTier": "hard",
+        "showTotalPieces": false,
+        "showWorkingCount": false
+      },
+      {
+        "id": "fc2",
+        "type": "touch_fraction",
+        "instruction": "Touch the picture showing one third.",
+        "denominator": 3,
+        "numerator": 1,
+        "hint": "Look at the equal parts and the shaded parts.",
+        "narration": "Touch the picture showing one third.",
+        "supportTier": "hard",
+        "showTotalPieces": false,
+        "showWorkingCount": false
+      },
+      {
+        "id": "fc3",
+        "type": "touch_fraction",
+        "instruction": "Touch the picture showing two thirds.",
+        "denominator": 3,
+        "numerator": 2,
+        "hint": "Look at the equal parts and the shaded parts.",
+        "narration": "Touch the picture showing two thirds.",
+        "supportTier": "hard",
+        "showTotalPieces": false,
+        "showWorkingCount": false
+      },
+      {
+        "id": "fc4",
+        "type": "touch_fraction",
+        "instruction": "Touch the picture showing one fourth.",
+        "denominator": 4,
+        "numerator": 1,
+        "hint": "Look at the equal parts and the shaded parts.",
+        "narration": "Touch the picture showing one fourth.",
+        "supportTier": "hard",
+        "showTotalPieces": false,
+        "showWorkingCount": false
+      },
+      {
+        "id": "fc5",
+        "type": "touch_fraction",
+        "instruction": "Touch the picture showing three fourths.",
+        "denominator": 4,
+        "numerator": 3,
+        "hint": "Look at the equal parts and the shaded parts.",
+        "narration": "Touch the picture showing three fourths.",
+        "supportTier": "hard",
+        "showTotalPieces": false,
+        "showWorkingCount": false
+      }
+    ],
+    "description": "Practice recognizing halves, thirds, and fourths by listening to a fraction and touching the matching picture.",
+    "gradeBand": "K-2"
+  },
+  "traces": [
+    {
+      "item": {
+        "id": "fc1",
+        "challengeType": "touch_fraction",
+        "numerator": 1,
+        "denominator": 2,
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "touch_fraction",
+        "actionContract": {
+          "id": "fc1-touch",
+          "label": "Touch the fraction",
+          "icon": "◔",
+          "answerKind": "gesture",
+          "instruction": "Touch the picture showing one half.",
+          "checkingInstruction": "Look at the picture you touched and listen."
+        },
+        "choices": [
+          {
+            "id": "fc1-picture-0",
+            "numerator": 1,
+            "denominator": 2,
+            "shaded": [
+              1
+            ]
+          },
+          {
+            "id": "fc1-picture-1",
+            "numerator": 1,
+            "denominator": 3,
+            "shaded": [
+              2
+            ]
+          },
+          {
+            "id": "fc1-picture-2",
+            "numerator": 1,
+            "denominator": 4,
+            "shaded": [
+              1
+            ]
+          }
+        ],
+        "correctChoiceId": "fc1-picture-0"
+      },
+      "ask": "[FT_ITEM] Say exactly: \"Touch the picture showing one half.\" The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+      "verdicts": [
+        "[FT_TOUCH] Code verdict: MATCHES. Say exactly: \"Yes, that shows one half.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched one third. one half means 1 of 2 equal parts are shaded. Touch the picture showing one half.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched one fourth. one half means 1 of 2 equal parts are shaded. Touch the picture showing one half.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question."
+      ]
+    },
+    {
+      "item": {
+        "id": "fc2",
+        "challengeType": "touch_fraction",
+        "numerator": 1,
+        "denominator": 3,
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "touch_fraction",
+        "actionContract": {
+          "id": "fc2-touch",
+          "label": "Touch the fraction",
+          "icon": "◔",
+          "answerKind": "gesture",
+          "instruction": "Touch the picture showing one third.",
+          "checkingInstruction": "Look at the picture you touched and listen."
+        },
+        "choices": [
+          {
+            "id": "fc2-picture-0",
+            "numerator": 2,
+            "denominator": 3,
+            "shaded": [
+              2,
+              0
+            ]
+          },
+          {
+            "id": "fc2-picture-1",
+            "numerator": 1,
+            "denominator": 3,
+            "shaded": [
+              2
+            ]
+          },
+          {
+            "id": "fc2-picture-2",
+            "numerator": 2,
+            "denominator": 4,
+            "shaded": [
+              1,
+              3
+            ]
+          }
+        ],
+        "correctChoiceId": "fc2-picture-1"
+      },
+      "ask": "[FT_ITEM] Say exactly: \"Touch the picture showing one third.\" The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+      "verdicts": [
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched two thirds. one third means 1 of 3 equal parts are shaded. Touch the picture showing one third.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: MATCHES. Say exactly: \"Yes, that shows one third.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched two fourths. one third means 1 of 3 equal parts are shaded. Touch the picture showing one third.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question."
+      ]
+    },
+    {
+      "item": {
+        "id": "fc3",
+        "challengeType": "touch_fraction",
+        "numerator": 2,
+        "denominator": 3,
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "touch_fraction",
+        "actionContract": {
+          "id": "fc3-touch",
+          "label": "Touch the fraction",
+          "icon": "◔",
+          "answerKind": "gesture",
+          "instruction": "Touch the picture showing two thirds.",
+          "checkingInstruction": "Look at the picture you touched and listen."
+        },
+        "choices": [
+          {
+            "id": "fc3-picture-0",
+            "numerator": 1,
+            "denominator": 3,
+            "shaded": [
+              2
+            ]
+          },
+          {
+            "id": "fc3-picture-1",
+            "numerator": 2,
+            "denominator": 3,
+            "shaded": [
+              0,
+              2
+            ]
+          },
+          {
+            "id": "fc3-picture-2",
+            "numerator": 1,
+            "denominator": 4,
+            "shaded": [
+              3
+            ]
+          }
+        ],
+        "correctChoiceId": "fc3-picture-1"
+      },
+      "ask": "[FT_ITEM] Say exactly: \"Touch the picture showing two thirds.\" The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+      "verdicts": [
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched one third. two thirds means 2 of 3 equal parts are shaded. Touch the picture showing two thirds.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: MATCHES. Say exactly: \"Yes, that shows two thirds.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched one fourth. two thirds means 2 of 3 equal parts are shaded. Touch the picture showing two thirds.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question."
+      ]
+    },
+    {
+      "item": {
+        "id": "fc4",
+        "challengeType": "touch_fraction",
+        "numerator": 1,
+        "denominator": 4,
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "touch_fraction",
+        "actionContract": {
+          "id": "fc4-touch",
+          "label": "Touch the fraction",
+          "icon": "◔",
+          "answerKind": "gesture",
+          "instruction": "Touch the picture showing one fourth.",
+          "checkingInstruction": "Look at the picture you touched and listen."
+        },
+        "choices": [
+          {
+            "id": "fc4-picture-0",
+            "numerator": 1,
+            "denominator": 2,
+            "shaded": [
+              0
+            ]
+          },
+          {
+            "id": "fc4-picture-1",
+            "numerator": 3,
+            "denominator": 4,
+            "shaded": [
+              1,
+              3,
+              2
+            ]
+          },
+          {
+            "id": "fc4-picture-2",
+            "numerator": 1,
+            "denominator": 4,
+            "shaded": [
+              2
+            ]
+          }
+        ],
+        "correctChoiceId": "fc4-picture-2"
+      },
+      "ask": "[FT_ITEM] Say exactly: \"Touch the picture showing one fourth.\" The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+      "verdicts": [
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched one half. one fourth means 1 of 4 equal parts are shaded. Touch the picture showing one fourth.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched three fourths. one fourth means 1 of 4 equal parts are shaded. Touch the picture showing one fourth.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: MATCHES. Say exactly: \"Yes, that shows one fourth.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question."
+      ]
+    },
+    {
+      "item": {
+        "id": "fc5",
+        "challengeType": "touch_fraction",
+        "numerator": 3,
+        "denominator": 4,
+        "answerKind": "gesture",
+        "responseClass": "manipulation",
+        "action": "touch_fraction",
+        "actionContract": {
+          "id": "fc5-touch",
+          "label": "Touch the fraction",
+          "icon": "◔",
+          "answerKind": "gesture",
+          "instruction": "Touch the picture showing three fourths.",
+          "checkingInstruction": "Look at the picture you touched and listen."
+        },
+        "choices": [
+          {
+            "id": "fc5-picture-0",
+            "numerator": 2,
+            "denominator": 4,
+            "shaded": [
+              1,
+              3
+            ]
+          },
+          {
+            "id": "fc5-picture-1",
+            "numerator": 2,
+            "denominator": 3,
+            "shaded": [
+              2,
+              1
+            ]
+          },
+          {
+            "id": "fc5-picture-2",
+            "numerator": 3,
+            "denominator": 4,
+            "shaded": [
+              0,
+              1,
+              2
+            ]
+          }
+        ],
+        "correctChoiceId": "fc5-picture-2"
+      },
+      "ask": "[FT_ITEM] Say exactly: \"Touch the picture showing three fourths.\" The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+      "verdicts": [
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched two fourths. three fourths means 3 of 4 equal parts are shaded. Touch the picture showing three fourths.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: does NOT match. Say exactly: \"My turn. You touched two thirds. three fourths means 3 of 4 equal parts are shaded. Touch the picture showing three fourths.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question.",
+        "[FT_TOUCH] Code verdict: MATCHES. Say exactly: \"Yes, that shows three fourths.\" Say nothing else. The quoted line is the only speech on this turn. The learner answers by touching a picture. Microphone speech is not an answer. The next gesture message supplies the code-computed verdict. Never read tags or instructions aloud or announce that you are waiting. Never invent a next question."
+      ]
+    }
+  ],
+  "issues": []
+}

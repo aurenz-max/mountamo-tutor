@@ -1,3 +1,5 @@
+import { FRACTION_TOUCH_TYPE_DOCS, fractionTouchPlan } from '../../primitives/visual-primitives/math/fractionTouchModes';
+import { buildFractionTouchItems } from '../../primitives/visual-primitives/math/fractionTouchScript';
 /**
  * Fraction Circles Generator - Dedicated service for fraction circle challenges
  *
@@ -13,10 +15,9 @@ import type {
   FractionCirclesChallenge,
 } from "../../primitives/visual-primitives/math/FractionCircles";
 import {
-  resolveEvalModeConstraint,
+  resolveEvalModes,
   constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
-  logEvalModeResolution,
+  buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from "../evalMode";
 // ---------------------------------------------------------------------------
@@ -117,6 +118,7 @@ FRACTION POOL (pre-shuffled by the adaptive system for variety):
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  ...FRACTION_TOUCH_TYPE_DOCS,
   identify: {
     promptDoc:
       `"identify": A fraction circle is shown with some slices shaded. Student names the fraction (e.g., 3/4). `
@@ -163,7 +165,7 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
   return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
 }
 
-type FractionChallengeType = 'identify' | 'build' | 'compare' | 'equivalent';
+type FractionChallengeType = FractionCirclesChallenge['type'];
 
 /** Per-challenge scaffold flags written by the tier. All are DISPLAY-ONLY —
  *  the component's checkers read numerator/denominator, never these — so
@@ -189,6 +191,8 @@ const TIER_GUARDRAIL =
 
 function resolveSupportStructure(type: FractionChallengeType, tier: SupportTier): SupportScaffold {
   switch (type) {
+    case 'touch_fraction':
+      return { showTotalPieces: false, showWorkingCount: false, showFractionLabels: false, promptLines: ['touch_fraction: no fraction labels or hints that identify the matching picture. Use proper fractions in halves, thirds, fourths only.'] };
     case 'identify':
       if (tier === 'easy')
         return { showTotalPieces: true, showWorkingCount: true, showFractionLabels: true,
@@ -275,6 +279,8 @@ const fractionCirclesSchema: Schema = {
     },
     challenges: {
       type: Type.ARRAY,
+      minItems: '5',
+      maxItems: '6',
       description:
         "Array of 4-6 challenges mixing identify, build, compare, and equivalent types with progressive difficulty",
       items: {
@@ -286,8 +292,9 @@ const fractionCirclesSchema: Schema = {
           },
           type: {
             type: Type.STRING,
+            enum: Object.keys(CHALLENGE_TYPE_DOCS),
             description:
-              "Challenge type: 'identify' (name the shaded fraction), 'build' (shade slices to match a fraction), 'compare' (decide which of two fractions is larger), 'equivalent' (build an equivalent fraction with a different denominator)",
+              Object.values(CHALLENGE_TYPE_DOCS).map(doc => doc.schemaDescription).join(", "),
           },
           instruction: {
             type: Type.STRING,
@@ -377,6 +384,7 @@ type FractionCirclesConfig = Partial<{
   intent: string;
   /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
   targetEvalMode: string;
+  objectiveText: string;
   /**
    * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
    * Second axis of the two-field contract: targetEvalMode = which skill,
@@ -390,17 +398,17 @@ export const generateFractionCircles = async (ctx: GenerationContext): Promise<F
   const gradeContext = ctx.gradeContext;
   const config: FractionCirclesConfig = { ...(ctx.raw as FractionCirclesConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
-  const evalConstraint = resolveEvalModeConstraint(
+  const evalConstraint = await resolveEvalModes(
     'fraction-circles',
-    config?.targetEvalMode,
+    { targetEvalMode: ctx.targetEvalMode ?? config?.targetEvalMode, intent: config?.intent, objectiveText: ctx.objective.text ?? config?.objectiveText },
     CHALLENGE_TYPE_DOCS,
   );
 
   // ── Resolve the within-mode support tier (drives BOTH the prompt tone and the
   //    deterministic per-challenge scaffold application after generation) ──
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  const supportTier = normalizeSupportTier(ctx.supportTier ?? config?.difficulty);
   const tierModes = (evalConstraint?.allowedTypes
-    ?? ['identify', 'build', 'compare', 'equivalent']) as FractionChallengeType[];
+    ?? ['touch_fraction', 'identify', 'build', 'compare', 'equivalent']) as FractionChallengeType[];
   const tierSection = supportTier ? buildTierPromptSection(tierModes, supportTier) : '';
 
   // ── Pre-roll a grade-legal fraction pool (entropy lives in the prompt); the
@@ -415,8 +423,9 @@ export const generateFractionCircles = async (ctx: GenerationContext): Promise<F
     : fractionCirclesSchema;
 
   // ── Build prompt ──
-  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  const challengeTypeSection = buildModeConstraintSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  const requiredTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
   const prompt = `
 Create an educational fraction circles activity for teaching "${topic}" to ${gradeContext} students.
 
@@ -434,20 +443,22 @@ GUIDELINES FOR GRADE LEVELS:
   * Use denominators 2, 3, 4 only
   * Focus on identify and build challenges (at least 3 of these)
   * Include 1 compare challenge with simple fractions
-  * Skip equivalent challenges or include at most 1 very simple one (e.g., 1/2 = 2/4)
+  * Include one simple equivalent challenge (1/2 = 2/4) when equivalent is an allowed mode
   * Use warm, simple language ("How many pieces are coloured in?")
 
 - 3-5 (gradeBand "3-5"):
   * Use denominators 2-12
-  * Mix all four types roughly evenly
+  * Include touch_fraction alongside the other four types; touch_fraction stays within halves, thirds, fourths
   * Include at least 1 compare and 1 equivalent challenge
   * Use proper fraction vocabulary ("What fraction is represented?")
   * Equivalent challenges: ensure equivalentDenominator creates a valid equivalent
     (e.g., 2/4 equivalent with denominator 6 => 3/6, so equivalentDenominator=6)
 ` : ''}
 
+REQUIRED TASK COVERAGE: ${requiredTypes.join(", ")}. Every listed task MUST appear at least once.
+
 REQUIREMENTS:
-1. Generate 4-6 challenges that progress in difficulty
+1. Generate 5-6 challenges that progress in difficulty. In mixed or blended sessions, include every allowed challenge type at least once. For touch_fraction use only proper fractions with denominators 2, 3, 4; use at least three distinct target values if generating three or more touch items. Their picture choices are built by code.
 2. Choose every fraction from the FRACTION POOL above — do NOT invent your own values and do NOT default to the 1/2, 2/3, 3/4 sequence. Use varied numerators across the session.
 3. Each challenge needs a unique id (e.g., 'fc1', 'fc2', ...)
 4. denominators must be between 2 and 12 inclusive
@@ -464,22 +475,20 @@ REQUIREMENTS:
 Return the complete fraction circles configuration.
 `;
 
-  logEvalModeResolution('FractionCircles', config?.targetEvalMode, evalConstraint);
+  console.log(`[FractionCircles] modes: ${evalConstraint?.modes.map(m => m.evalMode).join('+') ?? 'mixed'}`);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-
-  if (!data) {
-    throw new Error("No valid fraction circles data returned from Gemini API");
+  let data: any = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt + (attempt ? `\nThe prior draw omitted required task types. Return a NEW complete session containing ALL of: ${requiredTypes.join(', ')}.` : ''),
+      config: { responseMimeType: "application/json", responseSchema: activeSchema },
+    });
+    data = result.text ? JSON.parse(result.text) : null;
+    if (data && requiredTypes.every(type => data.challenges?.some((c: FractionCirclesChallenge) => c.type === type))) break;
+    data = null;
   }
+  if (!data) throw new Error('Fraction Circles did not generate all required task types after two draws');
 
   // ---- Validation & Defaults ----
 
@@ -497,12 +506,19 @@ Return the complete fraction circles configuration.
   }
 
   // Validate challenge types (safety net — schema enum handles the eval mode case)
-  const validTypes = ["identify", "build", "compare", "equivalent"];
+  const validTypes = Object.keys(CHALLENGE_TYPE_DOCS);
 
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type)
   );
 
+  if (evalConstraint && data.challenges.some((c: FractionCirclesChallenge) => !evalConstraint.allowedTypes.includes(c.type))) {
+    throw new Error('Fraction Circles returned a challenge outside the resolved modes');
+  }
+  // Reject illegal touch targets before legacy numeric repair can change the question.
+  buildFractionTouchItems(data.challenges);
+
+  const maxDenominator = data.gradeBand === 'K-2' ? 4 : 12;
   // Per-challenge validation
   for (let i = 0; i < data.challenges.length; i++) {
     const challenge = data.challenges[i] as FractionCirclesChallenge;
@@ -516,8 +532,8 @@ Return the complete fraction circles configuration.
     if (!challenge.denominator || challenge.denominator < 2) {
       challenge.denominator = 4;
     }
-    if (challenge.denominator > 12) {
-      challenge.denominator = 12;
+    if (challenge.denominator > maxDenominator) {
+      challenge.denominator = maxDenominator;
     }
     challenge.denominator = Math.round(challenge.denominator);
 
@@ -541,7 +557,7 @@ Return the complete fraction circles configuration.
         const altDen = challenge.denominator <= 4
           ? challenge.denominator * 2
           : Math.max(2, challenge.denominator - 1);
-        const clampedAltDen = Math.min(12, Math.max(2, altDen));
+        const clampedAltDen = Math.min(maxDenominator, Math.max(2, altDen));
         // Pick a numerator that gives a different value (not equivalent)
         const mainVal = challenge.numerator / challenge.denominator;
         let altNum = Math.round(clampedAltDen * mainVal * 0.6); // ~60% of main => smaller
@@ -555,7 +571,7 @@ Return the complete fraction circles configuration.
       // Clamp compareFraction values
       const cf = challenge.compareFraction;
       cf.denominator = Math.round(
-        Math.min(12, Math.max(2, cf.denominator))
+        Math.min(maxDenominator, Math.max(2, cf.denominator))
       );
       cf.numerator = Math.round(
         Math.min(cf.denominator, Math.max(0, cf.numerator))
@@ -569,7 +585,7 @@ Return the complete fraction circles configuration.
       ) {
         // Make them visually different: use a different denominator
         const newDen = cf.denominator <= 6 ? cf.denominator * 2 : Math.max(2, cf.denominator - 1);
-        cf.denominator = Math.min(12, newDen);
+        cf.denominator = Math.min(maxDenominator, newDen);
         // Pick a numerator that gives a genuinely different value
         cf.numerator = Math.max(1, Math.min(cf.denominator - 1, challenge.numerator + 1));
       }
@@ -580,11 +596,11 @@ Return the complete fraction circles configuration.
       if (
         !challenge.equivalentDenominator ||
         challenge.equivalentDenominator < 2 ||
-        challenge.equivalentDenominator > 12
+        challenge.equivalentDenominator > maxDenominator
       ) {
         // Pick a valid equivalent denominator (a multiple or factor of the current denominator, 2-12)
         const candidates: number[] = [];
-        for (let d = 2; d <= 12; d++) {
+        for (let d = 2; d <= maxDenominator; d++) {
           if (
             d !== challenge.denominator &&
             (challenge.numerator * d) % challenge.denominator === 0
@@ -595,7 +611,7 @@ Return the complete fraction circles configuration.
         challenge.equivalentDenominator =
           candidates.length > 0
             ? candidates[Math.floor(Math.random() * candidates.length)]
-            : challenge.denominator * 2 <= 12
+            : challenge.denominator * 2 <= maxDenominator
               ? challenge.denominator * 2
               : challenge.denominator;
       }
@@ -619,6 +635,28 @@ Return the complete fraction circles configuration.
       }
     }
 
+    // The displayed fractions are authoritative after validation. Generated
+    // prose must never ask about a different operand or partition count.
+    const shown = `${challenge.numerator}/${challenge.denominator}`;
+    if (challenge.type === 'identify') challenge.instruction = 'What fraction of the circle is shaded?';
+    if (challenge.type === 'build') challenge.instruction = `Shade the circle to show ${shown}.`;
+    if (challenge.type === 'compare' && challenge.compareFraction) {
+      const other = `${challenge.compareFraction.numerator}/${challenge.compareFraction.denominator}`;
+      challenge.instruction = `Compare ${shown} and ${other}. Which fraction is larger, or are they equal?`;
+    }
+    if (challenge.type === 'equivalent') challenge.instruction = `Build a fraction equivalent to ${shown} using ${challenge.equivalentDenominator} equal slices.`;
+    challenge.narration = challenge.instruction;
+    challenge.hint = challenge.type === 'identify'
+      ? 'Count the equal parts, then count the shaded parts.'
+      : challenge.type === 'compare' ? 'Compare the shaded amounts in the two equal-sized circles.'
+      : 'Look at the equal parts and the amount you need to shade.';
+
+    if (challenge.type === 'touch_fraction') {
+      challenge.instruction = fractionTouchPlan({ ...challenge, challengeType: 'touch_fraction' }).answerStep.actionContract.instruction;
+      challenge.narration = challenge.instruction;
+      challenge.hint = 'Look at the equal parts and the shaded parts.';
+    }
+
     // Ensure hint and narration are present
     if (!challenge.hint) {
       challenge.hint = "Look carefully at the circle and count the slices.";
@@ -633,6 +671,7 @@ Return the complete fraction circles configuration.
 
   // Ensure at least one challenge (use eval constraint fallback type)
   if (data.challenges.length === 0) {
+    if (evalConstraint?.allowedTypes.includes('touch_fraction')) throw new Error('No valid touch fraction challenges generated');
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'identify';
 
     const fallbacks: Record<string, FractionCirclesChallenge> = {
