@@ -230,6 +230,9 @@ the next pull, not this slice.
 
 ### 31. 🧏 **SHIPPED 2026-09-04 (same day; lesson-bench sitting `de90b50f9e1b`, K counting package `…pgr5`, user: "it's getting hung up on Say it out loud") — SCROLL-LAYOUT LESSONS: A JUDGED RUN THE STUDENT SCROLLED AWAY FROM KEPT ITS FLOOR HOLD AND ITS EARS. `di-spoken-practice` was DEAF for 149s because `ten-frame`, three blocks up, was still mid-gesture-item.** Machine gates green; the mic sitting is HUMAN-CHECKS **#129**.
 
+> **2026-09-12 follow-up ? TU-7, implemented; live replay pending.** Session `f1b2ab9da15f` exposed an incomplete rollout: nine legacy DI consumers never supplied `active`, so CVC advanced on sentence/passage verdicts and sent ?wet?/?fix? cues into those activities. All nine now gate shared-loop ownership and item-context updates by instance. The shared runner's context effect is gated too; no selected instance means no lesson focus. Immediate cues and recovery callbacks now honor inactivity. 440 related tests pass, including real CVC + sentence component/engine replay. [Evidence](../tutor-reports/di-lesson-isolation-2026-09-12.md). Live microphone verification remains open; historical evidence and residuals below are preserved.
+
+
 > **Shipped.** `useJudgedSpeechLoop` takes `active` (default true). While false the loop releases the
 > provider's bracket hold, unsubscribes from the shared turn authority, advances past the conversation
 > without dispatching (another block's exchange never replays on return), and holds any queued cue

@@ -655,8 +655,13 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     [applyVerdict, cueOptsFor, currentItem],
   );
 
+  // Scroll lessons keep sibling DI runs mounted. Only this instance's
+  // activity may consume the shared judge or publish its current item.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId === resolvedInstanceId;
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    active: activeInLesson,
     onEmission: handleEmission,
   });
   loopRef.current = loop;
@@ -743,7 +748,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
   // ── Keep the tutor's RUNTIME STATE truthful as items advance ──────
   useEffect(() => {
-    if (!ctx.isConnected || !currentChallenge) return;
+    if (!activeInLesson || !ctx.isConnected || !currentChallenge) return;
     const item = itemOf(currentIndex);
     if (!item) return;
     ctx.updateContext({
@@ -753,7 +758,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     });
     // Context methods are stable; keyed on the current challenge + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge, currentIndex]);
+  }, [activeInLesson, ctx.isConnected, currentChallenge, currentIndex]);
 
   // ── Tap-to-hear — never withdrawn by band or tier ─────────────────
   // Says the WORD and stops. It never segments and never isolates the middle

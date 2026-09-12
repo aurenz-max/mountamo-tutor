@@ -451,15 +451,20 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     [applyVerdict, currentItem, phonemesNamed],
   );
 
+  // Scroll lessons keep sibling DI runs mounted. Only this instance's
+  // activity may consume the shared judge or publish its current item.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId === resolvedInstanceId;
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    active: activeInLesson,
     onEmission: handleEmission,
   });
   loopRef.current = loop;
 
   // ── Keep the tutor's RUNTIME STATE truthful as words advance ─────
   useEffect(() => {
-    if (!ctx.isConnected || !currentWord) return;
+    if (!activeInLesson || !ctx.isConnected || !currentWord) return;
     ctx.updateContext({
       patternType,
       currentWord: currentWord.targetWord,
@@ -468,7 +473,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     });
     // Context methods are stable; keyed on the current word + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentWord, patternType, supportTier]);
+  }, [activeInLesson, ctx.isConnected, currentWord, patternType, supportTier]);
 
   // ── Tap-to-hear (R2) — never withdrawn by band or tier ───────────
   // Speaks the SOUND, never the whole word: the word is the answer. A child

@@ -630,8 +630,13 @@ export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: 
     [applyVerdict, commitAdvance, currentOf, noteSessionDead, noteSessionResumed],
   );
 
+  // Scroll lessons keep sibling DI runs mounted. Only this instance's
+  // activity may consume the shared judge or publish its current item.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId === resolvedInstanceId;
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    active: activeInLesson,
     // The pack's one engine parameter: a mid-sentence pause is part of the
     // response (bench finding 2). Family default stays 500ms.
     voice: { config: { silenceCloseMs: SENTENCE_SILENCE_CLOSE_MS } },
@@ -719,7 +724,7 @@ export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: 
   // this bag. updateContext is the SILENT channel (no end_of_turn), so these
   // never perturb the judged loop; the context provider dedupes by value.
   useEffect(() => {
-    if (!ctx.isConnected || !currentChallenge) return;
+    if (!activeInLesson || !ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
       challengeType: data.challengeType,
       text: currentChallenge.text,
@@ -729,7 +734,7 @@ export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: 
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge, data.challengeType, sentencesSummary]);
+  }, [activeInLesson, ctx.isConnected, currentChallenge, data.challengeType, sentencesSummary]);
 
   const startRun = useCallback(() => {
     const first = data.challenges[0];

@@ -524,6 +524,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           stopAudioPlayback();
           setIsAIResponding(false);
         } else if (messageType === 'primitive_switched') {
+          // Rapid navigation can leave older acknowledgements in flight.
+          // Never reactivate that old activity with the new activity's data.
+          if (message.instance_id !== currentPrimitiveRef.current?.instance_id) return;
           console.log(`Lumina AI: switched to ${message.primitive_type} (${message.instance_id})`);
           activePrimitiveIdRef.current = message.instance_id;
           setActivePrimitiveId(message.instance_id);

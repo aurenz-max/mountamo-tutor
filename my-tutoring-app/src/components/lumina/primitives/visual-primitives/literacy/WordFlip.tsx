@@ -436,15 +436,20 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
     [applyVerdict, currentItem],
   );
 
+  // Scroll lessons keep sibling DI runs mounted. Only this instance's
+  // activity may consume the shared judge or publish its current item.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId === resolvedInstanceId;
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    active: activeInLesson,
     onEmission: handleEmission,
   });
   loopRef.current = loop;
 
   // ── Keep the tutor's RUNTIME STATE truthful as items advance ──────
   useEffect(() => {
-    if (!ctx.isConnected || !currentChallenge) return;
+    if (!activeInLesson || !ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
       sourceWord: currentChallenge.sourceWord,
       transformationFrame: isPluralChallengeType(currentChallenge.type)
@@ -454,7 +459,7 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
     });
     // Context methods are stable; keyed on the current challenge + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge]);
+  }, [activeInLesson, ctx.isConnected, currentChallenge]);
 
   // ── Tap-to-hear — never withdrawn by band or tier ─────────────────
   // Speaks the ONE-THING word for a child who does not recognise the emoji. It

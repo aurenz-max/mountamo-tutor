@@ -377,4 +377,39 @@ describe('lesson focus — item 31', () => {
       vi.useRealTimers();
     }
   });
+  it('holds an immediate opening until its activity has focus', () => {
+    vi.useFakeTimers();
+    const view = renderHook(({ active }) => useJudgedSpeechLoop({ enabled: true, active }),
+      { initialProps: { active: false } });
+    try {
+      ctxState.sentTexts = [];
+      act(() => view.result.current.sendCueNow('[ITEM] opening'));
+      act(() => vi.advanceTimersByTime(500));
+      expect(ctxState.sentTexts).toEqual([]);
+      act(() => view.rerender({ active: true }));
+      act(() => vi.advanceTimersByTime(500));
+      expect(ctxState.sentTexts).toEqual(['[ITEM] opening']);
+    } finally { view.unmount(); vi.useRealTimers(); }
+  });
+
+  it('does not run verdict or dead-session recovery while another activity has focus', () => {
+    vi.useFakeTimers();
+    const emissions: LoopEmission[] = [];
+    const view = renderHook(({ active }) => useJudgedSpeechLoop({
+      enabled: true, active, onEmission: e => emissions.push(e),
+    }), { initialProps: { active: true } });
+    try {
+      act(() => {
+        view.result.current.arm();
+        view.result.current.sendCueNow('[ITEM] question');
+        sharedClose?.(close());
+      });
+      expect(view.result.current.isAwaitingJudgment()).toBe(true);
+      emissions.length = 0;
+      act(() => view.rerender({ active: false }));
+      act(() => vi.advanceTimersByTime(60_000));
+      expect(emissions).toEqual([]);
+    } finally { view.unmount(); vi.useRealTimers(); }
+  });
+
 });

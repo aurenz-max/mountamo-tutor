@@ -26,6 +26,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
 import type { LoopEmission, LoopAttempt } from './judgedLoopModel';
 
+const updateContext = vi.hoisted(() => vi.fn());
 const sendText = vi.hoisted(() => vi.fn());
 const ctxState = vi.hoisted(() => ({
   isConnected: true,
@@ -49,7 +50,7 @@ vi.mock('@/contexts/LuminaAIContext', () => ({
     reconnect: vi.fn(),
     startListening: vi.fn(() => { ctxState.isListening = true; }),
     stopListening: vi.fn(),
-    updateContext: vi.fn(),
+    updateContext,
   }),
 }));
 
@@ -762,10 +763,28 @@ describe('lesson focus (item 31)', () => {
     refresh();
     expect(loopStub.active).toBe(true);
 
-    // Tracking has not started (no switch yet): fail OPEN, never deafen a pack.
+    // No activity owns lesson focus until tracking selects an instance.
     ctxState.activePrimitiveId = null;
     refresh();
-    expect(loopStub.active).toBe(true);
+    expect(loopStub.active).toBe(false);
+  });
+
+  it('publishes only the focused item and refreshes it when returning', () => {
+    updateContext.mockClear();
+    ctxState.sessionMode = 'lesson';
+    ctxState.activePrimitiveId = 'other';
+    mount([voiceItem('i1', 'cat')]);
+    expect(updateContext).not.toHaveBeenCalled();
+    ctxState.activePrimitiveId = 'test-1';
+    refresh();
+    expect(updateContext).toHaveBeenLastCalledWith({ word: 'cat' });
+    updateContext.mockClear();
+    ctxState.activePrimitiveId = 'other';
+    refresh();
+    expect(updateContext).not.toHaveBeenCalled();
+    ctxState.activePrimitiveId = 'test-1';
+    refresh();
+    expect(updateContext).toHaveBeenLastCalledWith({ word: 'cat' });
   });
 
   it('is always active outside a lesson, whatever the provider points at', () => {

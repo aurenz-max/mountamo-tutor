@@ -12,14 +12,11 @@
  *
  * The Gemini Live tutor session is per-exhibit (owned by LuminaAIProvider in
  * LessonScreen), so mounting one section at a time is safe: on each advance we
- * call switchPrimitive on the SAME socket and fire a silent [SECTION_START]
- * nudge so the tutor orients the child by voice — mirroring CuratorBrief's
- * [READ_SECTION] and DeepDive's [DEEP_DIVE_START] patterns. The FIRST section
- * is deliberately NOT nudged: the lesson greeting covers it, and auto-firing
- * on mount races the greeting (see ADDING_TUTORING_SCAFFOLD "Avoiding races").
+ * switch on the same socket when the incoming frame mounts. The switch owns
+ * orientation unless the primitive supplies its own scripted opening.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useLayoutEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -46,6 +43,21 @@ interface KindergartenStageProps {
   onFinished: () => void;
 }
 
+// Live inside AnimatePresence so the tutor changes with the mounted frame,
+// after the outgoing frame exits. Layout timing precedes child opening effects.
+const StageTutorFocus: React.FC<{ section: OrderedComponent; children: React.ReactNode }> = ({ section, children }) => {
+  const { sessionMode, isConnected, switchPrimitive } = useLuminaAIContext();
+  useLayoutEffect(() => {
+    if (sessionMode !== 'lesson' || !isConnected) return;
+    switchPrimitive({
+      primitive_type: section.componentId,
+      instance_id: section.instanceId,
+      primitive_data: section.data || {},
+    });
+  }, [section, sessionMode, isConnected, switchPrimitive]);
+  return <>{children}</>;
+};
+
 export const KindergartenStage: React.FC<KindergartenStageProps> = ({
   orderedComponents,
   onDetailItemClick,
@@ -65,9 +77,6 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
   const [finished, setFinished] = useState(false);
 
   const evaluationContext = useEvaluationContext();
-  const aiContext = useLuminaAIContext();
-  const aiContextRef = useRef(aiContext);
-  aiContextRef.current = aiContext;
 
   const active = sections[activeIndex];
   const activeConfig = active ? getPrimitive(active.componentId) : undefined;
@@ -118,39 +127,6 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
     if (dwellElapsed) setArrowReady(true);
   }, [arrowReady, isEvaluable, activeDone, dwellElapsed]);
 
-  // Tell the tutor which section is active. Skip the first section — the
-  // lesson bootstrap already registered it and the greeting covers orientation;
-  // firing on mount races the greeting. switchPrimitive no-ops on same id.
-  const lastNudgedIndexRef = useRef(0);
-  useEffect(() => {
-    if (activeIndex === 0) return;
-    const ctx = aiContextRef.current;
-    if (ctx.sessionMode !== 'lesson' || !ctx.isConnected) return;
-    const section = sections[activeIndex];
-    if (!section) return;
-
-    ctx.switchPrimitive({
-      primitive_type: section.componentId,
-      instance_id: section.instanceId,
-      primitive_data: section.data || {},
-    });
-
-    // One narration nudge per section entry, forward motion only (going BACK
-    // to a finished section re-syncs the tutor via switchPrimitive but stays
-    // quiet — quiet-by-default doctrine).
-    if (activeIndex > lastNudgedIndexRef.current) {
-      lastNudgedIndexRef.current = activeIndex;
-      const title = section.title ? `"${section.title}"` : 'a new activity';
-      ctx.sendText(
-        `[SECTION_START] The student just moved to the next activity: ${title}. `
-        + `They are a young student who may not be able to read the screen. In one or two short, `
-        + `warm sentences, tell them what this activity is and what to do first — speak everything, `
-        + `never ask them to read, and do not mention sections, screens, or the interface.`,
-        { silent: true },
-      );
-    }
-  }, [activeIndex, sections]);
-
   const goTo = useCallback((nextIndex: number) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setActiveIndex(nextIndex);
@@ -198,15 +174,17 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
           exit={{ opacity: 0, x: -120, scale: 0.97 }}
           transition={{ duration: 0.45, ease: [0.22, 0.9, 0.3, 1] }}
         >
-          <div className="min-h-[62vh] flex flex-col justify-center">
-            <OrderedSection
-              item={active}
-              index={activeIndex}
-              onDetailItemClick={onDetailItemClick}
-              onTermClick={onTermClick}
-              hideChrome
-            />
-          </div>
+          <StageTutorFocus section={active}>
+            <div className="min-h-[62vh] flex flex-col justify-center">
+              <OrderedSection
+                item={active}
+                index={activeIndex}
+                onDetailItemClick={onDetailItemClick}
+                onTermClick={onTermClick}
+                hideChrome
+              />
+            </div>
+          </StageTutorFocus>
         </motion.div>
       </AnimatePresence>
 

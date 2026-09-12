@@ -498,15 +498,20 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     [applyVerdict, currentItem],
   );
 
+  // Scroll lessons keep sibling DI runs mounted. Only this instance's
+  // activity may consume the shared judge or publish its current item.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId === resolvedInstanceId;
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    active: activeInLesson,
     onEmission: handleEmission,
   });
   loopRef.current = loop;
 
   // ── Keep the tutor's RUNTIME STATE truthful as challenges advance ─
   useEffect(() => {
-    if (!ctx.isConnected || !currentChallenge) return;
+    if (!activeInLesson || !ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
       operation: currentChallenge.operation,
       originalWord: currentChallenge.originalWord,
@@ -515,7 +520,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     });
     // Context methods are stable; keyed on the current challenge + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge, supportTier]);
+  }, [activeInLesson, ctx.isConnected, currentChallenge, supportTier]);
 
   // ── Tap-to-hear — never withdrawn by band or tier ────────────────
   // Speaks one SOUND of the starting word. A child who taps every sound has the

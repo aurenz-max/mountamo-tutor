@@ -226,6 +226,7 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
 
   // Refs for viewport tracking
   const containerRef = useRef<HTMLDivElement>(null);
+  const pendingInstanceRef = useRef<string | null>(null);
   const switchTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const aiContextRef = useRef(aiContext);
   aiContextRef.current = aiContext;
@@ -236,8 +237,18 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
   // Debounced switch: waits 500ms after a primitive enters the viewport
   // before switching, so fast scrolling doesn't spam the backend
   const debouncedSwitch = useCallback((componentId: string, instanceId: string, data: any) => {
+    const ctx = aiContextRef.current;
+    if (instanceId === ctx.activePrimitiveId) {
+      clearTimeout(switchTimerRef.current);
+      pendingInstanceRef.current = null;
+      return;
+    }
+    // Continued scrolling inside the same activity must not starve its handoff.
+    if (pendingInstanceRef.current === instanceId) return;
     clearTimeout(switchTimerRef.current);
+    pendingInstanceRef.current = instanceId;
     switchTimerRef.current = setTimeout(() => {
+      pendingInstanceRef.current = null;
       const ctx = aiContextRef.current;
       if (ctx.sessionMode !== 'lesson' || !ctx.isConnected) return;
 
@@ -319,8 +330,9 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
       window.removeEventListener('resize', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
       clearTimeout(switchTimerRef.current);
+      pendingInstanceRef.current = null;
     };
-  }, [orderedComponents, debouncedSwitch]);
+  }, [orderedComponents, debouncedSwitch, aiContext.isConnected, aiContext.sessionMode]);
 
   if (!orderedComponents || orderedComponents.length === 0) {
     return null;

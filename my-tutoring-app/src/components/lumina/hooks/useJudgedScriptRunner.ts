@@ -744,10 +744,9 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   // lesson is pointed at owns the floor. `activePrimitiveId` is the viewport's
   // choice, set synchronously on the switch, and it IS the manifest instanceId
   // OrderedSection injects into `data` — the same string every consumer hands
-  // this runner. Null = tracking has not started; fail open, never deafen a
-  // pack because the first switch has not landed.
+  // this runner. Wait for focus when tracking has not started; otherwise
+  // every mounted pack would own the same lesson turn.
   const activeInLesson = ctx.sessionMode !== 'lesson'
-    || ctx.activePrimitiveId == null
     || ctx.activePrimitiveId === options.instanceId;
 
   const loop = useJudgedSpeechLoop({
@@ -762,13 +761,13 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
 
   // ── Keep the tutor's RUNTIME STATE truthful as items advance ──────────────
   useEffect(() => {
-    if (!ctx.isConnected) return;
+    if (!activeInLesson || !ctx.isConnected) return;
     const item = itemOf(currentIndex);
     if (!item) return;
     ctx.updateContext(packRef.current.contextFor(item));
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentIndex]);
+  }, [activeInLesson, ctx.isConnected, currentIndex]);
 
   // ── THE STIMULUS GATE: THE TUTOR'S VOICE OWNS THE STIMULUS ────────────────
   // She says "Watch the frame — the counters show for just a moment… How many

@@ -478,8 +478,13 @@ export const DiWordReading: React.FC<{ data: DiWordReadingData; index?: number }
     [applyVerdict, currentOf, noteSessionDead, noteSessionResumed],
   );
 
+  // Scroll lessons keep sibling DI runs mounted. Only this instance's
+  // activity may consume the shared judge or publish its current item.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId === resolvedInstanceId;
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    active: activeInLesson,
     onEmission: handleEmission,
     // Diagnostics: the tutor's raw output transcription + mic turn telemetry.
     // The bench has wired both since the open-mic runs; the packs shipped with
@@ -562,7 +567,7 @@ export const DiWordReading: React.FC<{ data: DiWordReadingData; index?: number }
   // bag. updateContext is the SILENT channel (no end_of_turn), so these never
   // perturb the judged loop; the context provider dedupes by value.
   useEffect(() => {
-    if (!ctx.isConnected || !currentChallenge) return;
+    if (!activeInLesson || !ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
       challengeType: data.challengeType,
       word: currentChallenge.word,
@@ -571,7 +576,7 @@ export const DiWordReading: React.FC<{ data: DiWordReadingData; index?: number }
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge, data.challengeType, wordsSummary]);
+  }, [activeInLesson, ctx.isConnected, currentChallenge, data.challengeType, wordsSummary]);
 
   const startRun = useCallback(() => {
     const first = data.challenges[0];

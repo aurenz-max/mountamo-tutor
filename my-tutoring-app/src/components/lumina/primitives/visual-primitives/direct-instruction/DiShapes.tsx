@@ -601,8 +601,13 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     [applyVerdict, commitAdvance, currentOf, noteSessionDead, noteSessionResumed],
   );
 
+  // Scroll lessons keep sibling DI runs mounted. Only this instance's
+  // activity may consume the shared judge or publish its current item.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId === resolvedInstanceId;
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    active: activeInLesson,
     onEmission: handleEmission,
     onTutorText: (text) => logDiTutorText(text, logCtx()),
     onVoiceTurnClose: (event) => logDiVoiceClose(event, logCtx()),
@@ -676,14 +681,14 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
   // tier names how much help preceded it; neither the shape's name nor its
   // count ever enters the context bag.
   useEffect(() => {
-    if (!ctx.isConnected || !currentChallenge) return;
+    if (!activeInLesson || !ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
       challengeType: currentChallenge.challengeType,
       supportTier: currentChallenge.supportTier ?? 'easy',
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge]);
+  }, [activeInLesson, ctx.isConnected, currentChallenge]);
 
   const startRun = useCallback(() => {
     const first = data.challenges[0];

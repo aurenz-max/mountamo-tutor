@@ -641,8 +641,13 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
     [data.challenges],
   );
 
+  // Scroll lessons keep sibling DI runs mounted. Only this instance's
+  // activity may consume the shared judge or publish its current item.
+  const activeInLesson = ctx.sessionMode !== 'lesson'
+    || ctx.activePrimitiveId === resolvedInstanceId;
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    active: activeInLesson,
     voice: hasCompoundAnswers
       ? { config: { silenceCloseMs: COMPOUND_NUMERAL_SILENCE_CLOSE_MS } }
       : undefined,
@@ -730,7 +735,7 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
   // side only: the answer reaches the tutor inside the [DI_ITEM] judging
   // contract, never through RUNTIME STATE.
   useEffect(() => {
-    if (!ctx.isConnected || !currentChallenge) return;
+    if (!activeInLesson || !ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
       challengeType: data.challengeType,
       display: currentChallenge.display,
@@ -740,7 +745,7 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge, data.challengeType, factsSummary]);
+  }, [activeInLesson, ctx.isConnected, currentChallenge, data.challengeType, factsSummary]);
 
   const startRun = useCallback(() => {
     const first = data.challenges[0];

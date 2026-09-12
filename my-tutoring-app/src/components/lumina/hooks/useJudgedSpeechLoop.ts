@@ -304,7 +304,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     if (deadCueTimerRef.current != null) window.clearTimeout(deadCueTimerRef.current);
     const onDeadline = () => {
       deadCueTimerRef.current = null;
-      if (!callbacksRef.current.enabled) return;
+      if (!callbacksRef.current.enabled || !activeRef.current) return;
       deadCueCountRef.current += 1;
       callbacksRef.current.onCue?.({ phase: 'dead', text: lastSentCueRef.current ?? '' });
       if (deadCueCountRef.current >= SESSION_DEAD_CUES) {
@@ -414,6 +414,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   dispatchRef.current = dispatch;
 
   const handleVoiceTurnClose = useCallback((event: Extract<VoiceTurnEvent, { kind: 'close' }>) => {
+    if (!activeRef.current) return;
     flushJudgeText();
     callbacksRef.current.onVoiceTurnClose?.(event);
     const turn = {
@@ -440,7 +441,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   // activity-bracket owner and this judged loop only consumes its turn stream.
   const usesSharedVoiceTurns = ctx.sessionMode === 'lesson' && !!ctx.sharedVoiceTurns;
   const localVoiceTurns = useLiveVoiceTurns({
-    enabled: enabled && listenForVoice && !usesSharedVoiceTurns,
+    enabled: enabled && active && listenForVoice && !usesSharedVoiceTurns,
     config: options.voice?.config,
     onTurnClose: handleVoiceTurnClose,
   });
@@ -465,8 +466,13 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   useEffect(() => {
     const wasActive = previousActiveRef.current;
     previousActiveRef.current = active;
+    if (!active && wasActive) {
+      clearDeadCueWatch(true);
+      // A partial judge line must not be completed with another activity's audio.
+      pendingJudgeRef.current = null;
+    }
     if (active && !wasActive) schedulePendingCue();
-  }, [active, schedulePendingCue]);
+  }, [active, schedulePendingCue, clearDeadCueWatch]);
 
   const preserveSharedTransport = useCallback(() => {
     // A judged-run reset must not close conversation or discard calibration.
@@ -519,6 +525,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   useEffect(() => {
     const wasPlaying = previousAudioPlayingRef.current;
     previousAudioPlayingRef.current = ctx.isAudioPlaying;
+    if (!active) return;
     if (!wasPlaying && ctx.isAudioPlaying) {
       clearDeadCueWatch(true);
       // Audio rising while a cue is pending AND its queue-time line already
@@ -538,7 +545,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       if (pendingCueRef.current != null) pendingCueQuietEdgeRef.current = true;
       schedulePendingCue();
     }
-  }, [ctx.isAudioPlaying, enabled, dispatch, flushJudgeText, schedulePendingCue, clearDeadCueWatch]);
+  }, [ctx.isAudioPlaying, enabled, active, dispatch, flushJudgeText, schedulePendingCue, clearDeadCueWatch]);
 
   // Verdict-timeout scan while an attempt is pending.
   //
@@ -571,7 +578,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   useEffect(() => {
     if (!enabled) return;
     const interval = window.setInterval(() => {
-      if (loopStateRef.current.attempt != null) {
+      if (activeRef.current && loopStateRef.current.attempt != null) {
         dispatchRef.current({ type: 'tick', at: performance.now() });
       }
     }, TICK_MS);
@@ -592,7 +599,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       return;
     }
     lastResumeCountRef.current = resumeCount;
-    if (!callbacksRef.current.enabled) return;
+    if (!callbacksRef.current.enabled || !activeRef.current) return;
     // Fresh connection, fresh liveness slate: the re-cue this triggers re-arms
     // the dead-cue watch, which is what catches a resume into a dead session.
     clearDeadCueWatch(true);
@@ -685,6 +692,12 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   }, [queueCue]);
 
   const sendCueNow = useCallback((text: string) => {
+    // Immediate openers have the same ownership rule as paced cues. A start
+    // that races viewport activation waits for its own activity's floor.
+    if (!activeRef.current) {
+      queueCue(text);
+      return;
+    }
     if (pendingCueRef.current != null) {
       callbacksRef.current.onCue?.({ phase: 'dropped', text: pendingCueRef.current });
       noteCueDropped(pendingCueRef.current);
@@ -699,7 +712,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     callbacksRef.current.onCue?.({ phase: 'sent', text });
     armDeadCueWatch(text);
     noteCueSent(text);
-  }, [armDeadCueWatch, clearCueTimers, noteCueDropped, noteCueSent]);
+  }, [armDeadCueWatch, clearCueTimers, noteCueDropped, noteCueSent, queueCue]);
 
   const arm = useCallback(() => dispatch({ type: 'arm' }), [dispatch]);
   const disarm = useCallback(() => dispatch({ type: 'disarm' }), [dispatch]);

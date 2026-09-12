@@ -43,6 +43,7 @@ const ctxState = {
   isListening: true,
   isAudioPlaying: false,
   sessionMode: 'lesson' as const,
+  activePrimitiveId: 'obj2-next-number',
   sessionResumeCount: 0,
   conversation: [] as Array<{ role: string; content: string }>,
 };
