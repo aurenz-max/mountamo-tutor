@@ -1,0 +1,125 @@
+{
+  "index": 1,
+  "grade": 3,
+  "topic": "Find the total in 3 groups of 4 apples",
+  "httpStatus": 200,
+  "elapsed": 74114,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 70585,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 2760,
+      "longestStringLength": 152,
+      "longestStringPath": "problem.statement",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding the Total of Equal Groups",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Maya is getting ready for a party. She sets up 3 fruit bowls on the table. She places 4 fresh apples into each bowl. How many apples are there in total?"
+      },
+      "solutionStrategy": "Multiply the number of bowls by the number of apples in each bowl.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Calculate total number of apples",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "groups",
+              "counts": [
+                4,
+                4,
+                4
+              ],
+              "itemLabel": "apple"
+            },
+            "imagePrompt": "",
+            "altText": "Three groups of four apples each",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I placed 4 apples into each of the 3 bowls and counted them all.",
+            "strategy": "I notice that putting the same amount in each group lets me multiply instead of counting one by one.",
+            "misconceptions": "A common mistake is adding the number of bowls to the apples, like 3 plus 4, instead of using equal groups.",
+            "connections": "This equal-group model is the foundation for multiplication and division.",
+            "narrative": "Multiply the $3$ bowls by the $4$ apples in each bowl to get $3 \\times 4 = 12$, so there are $12$ apples in total."
+          },
+          "challenge": {
+            "prompt": "How many apples are there in all 3 bowls?",
+            "acceptableAnswers": [
+              "12",
+              "12 apples"
+            ],
+            "rationale": "There are 3 groups of 4 apples, so 3 × 4 = 12 apples in total, whereas adding 3 + 4 = 7 mistakenly adds the number of bowls to the number of apples.",
+            "distractors": [
+              "7",
+              "8"
+            ],
+            "answerFormat": "katex"
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Maya is getting ready for a party. She sets up 3 fruit bowls on the table. She places 4 fresh apples into each bowl. How many apples are there in total?",
+        "body": "Multiply the $3$ bowls by the $4$ apples in each bowl to get $3 \\times 4 = 12$, so there are $12$ apples in total.",
+        "separatorCount": 0,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Multiply the $3$ bowls by the $4$ apples in each bowl to get $3 \\times 4 = 12$, so there are $12$ apples in total."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Calculate total number of apples",
+              "pedagogicalGoal": "Understand multiplication as determining the total quantity across equal groups.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Model 3 groups of 4 apples each to visually and symbolically represent the product $3 \\times 4 = 12$."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 0,
+              "prompt": "How many apples are there in all 3 bowls?",
+              "acceptableAnswers": [
+                "12",
+                "12 apples"
+              ],
+              "distractors": [
+                "7",
+                "8"
+              ],
+              "rationale": "There are 3 groups of 4 apples, so 3 × 4 = 12 apples in total, whereas adding 3 + 4 = 7 mistakenly adds the number of bowls to the number of apples.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

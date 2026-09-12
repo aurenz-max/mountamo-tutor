@@ -20,6 +20,7 @@ import { solveProblem, type SolvedProblem } from './solver';
 import { splitSolverBlocks, type SolverBlock } from './blocks';
 import { planSteps, buildFallbackPlan } from './planner';
 import { assignChallenges } from './challenger';
+import { consolidateRepeatedAlgebra } from './step-ownership';
 import { generateStep } from './registry';
 import { runAnnotatedExampleOrchestrator } from './orchestrator';
 import type { StepGeneratorContext } from './generators/_shared';
@@ -115,12 +116,12 @@ async function generateAllSteps(
       );
       const generated = await generateStep(spec.stepType, ctx);
       if (!generated) {
-        console.warn(`[AnnotatedExample] Spec ${i} (${spec.stepType}) "${spec.title}" failed to generate`);
-        return null;
+        throw new Error(`[AnnotatedExample] Required spec ${i} (${spec.stepType}) failed to generate; refusing a partial solution`);
       }
       const narrative = joinNarrativeProse(spec, blocks);
       return {
         id: i + 1,
+        ...(generated.generationReview ? { generationReview: generated.generationReview } : {}),
         title: spec.title,
         content: generated.content,
         annotations: {
@@ -131,7 +132,7 @@ async function generateAllSteps(
     }),
   );
 
-  return filled.filter((s): s is RichExampleStep => s != null);
+  return filled;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -259,8 +260,11 @@ async function hydratePinnedProblem(
     console.warn(`[AnnotatedExample] ${planner.specs.length - steps.length} spec(s) failed to render — see per-generator logs`);
   }
 
+  consolidateRepeatedAlgebra(steps, planner);
   console.log('[AnnotatedExample] Stage 4: challenge layer (global gating decisions)...');
   const challenger = await assignChallenges({
+    problemTitle: solved.title,
+    problemInset: options.pinnedInset,
     topic,
     gradeContext,
     problemStatement: solved.problemStatement,

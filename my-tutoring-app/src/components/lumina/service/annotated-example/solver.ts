@@ -94,7 +94,7 @@ TITLE: <short descriptive title of the problem>
 SUBJECT: <subject area, e.g. Algebra, Calculus, Physics>
 PROBLEM: <the problem prompt${config?.pinnedProblem ? ' (echo the PINNED PROBLEM verbatim)' : ' you chose to solve, stated clearly'}>
 
-STRATEGY: <2-3 sentences describing the overall approach and WHY it works>
+STRATEGY: <one short sentence describing the approach without giving away the answer>
 
 <move 1: one strategic mathematical move — a complete thought. Use KaTeX inline ($...$) for math.>
 ---
@@ -136,7 +136,8 @@ You have Python code execution available. USE IT for every numerical computation
 - For currency, prices, or any literal dollar sign in prose, write \`\\$\` (backslash-dollar) — e.g. \`\\$15\`, \`a profit of \\$45\`. Reserve \`$...$\` for math only. Bare \`$\` next to a number (e.g. \`$15\`) will be paired with the next \`$\` and italicize whole sentences.
 - Include a verification or check move when the problem asks for one, OR when sanity-checking the final answer aids understanding.
 - Keep individual moves focused — no filler, no "as you can see," no recap at the end.
-- A typical worked example has 3-6 moves. If you produced only 2, you almost certainly skipped a part of the problem — re-read it.
+- Use only the moves the problem needs. Simple elementary examples can have 1-3 moves; do not pad them with setup, recap, or optional verification. Complex problems may need more.
+- For grades 2-3 use concrete words and one short sentence per move; for grades 4-5 use at most two short sentences. Keep essential math; omit teacher-facing commentary.
 - ${config?.intent || 'Demonstrate the solving process with clear pedagogical value.'}
 
 Begin now. Output the TITLE/SUBJECT/PROBLEM/STRATEGY header, then the moves separated by \`---\` on their own lines.`;

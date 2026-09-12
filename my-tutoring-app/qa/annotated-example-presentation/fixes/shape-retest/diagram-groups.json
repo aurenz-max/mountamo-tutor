@@ -1,0 +1,13 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "There are 3 bags of 4 apples. Each bag adds 4. The running totals are 4, 8, 12.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "See equal groups.",
+    "seedNotes": "Draw all three groups of four."
+  },
+  "error": "Worked step failed both validation attempts: The `labels` array in `content` only includes entries for 'Bag 1' and 'Bag 2', omitting the label for the third bag ('Bag 3') despite the diagram having 3 groups (`counts: [4, 4, 4]`).; The `labels` array in `content` is incomplete: it only defines labels for 'Bag 1' and 'Bag 2', omitting a label for the third bag ('Bag 3') corresponding to the 3 groups defined in `visual.counts`."
+}

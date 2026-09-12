@@ -1,0 +1,55 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 5",
+    "problemStatement": "Show 0.4 plus 0.3 on a number line.",
+    "solutionStrategy": "Count four apples per bag.",
+    "groundingProse": "Start at zero, jump four tenths to 0.4, then three tenths to 0.7. Scale zero to one.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Combine decimal distances.",
+    "seedNotes": "Draw both jumps on a scale marked in tenths."
+  },
+  "generated": {
+    "content": {
+      "type": "diagram",
+      "visual": {
+        "kind": "number-line",
+        "min": 0,
+        "max": 1,
+        "divisions": 10,
+        "start": 0,
+        "jumps": [
+          0.4,
+          0.3
+        ]
+      },
+      "imagePrompt": "",
+      "altText": "A number line from 0 to 1 divided into tenths, showing a jump of 0.4 followed by a jump of 0.3, landing at 0.7.",
+      "labels": [
+        {
+          "text": "Start at 0",
+          "description": "Begin your addition at zero on the number line."
+        },
+        {
+          "text": "Jump 0.4",
+          "description": "Move forward four tenths to reach 0.4."
+        },
+        {
+          "text": "Jump 0.3",
+          "description": "Move three more tenths to arrive at the final sum."
+        }
+      ]
+    },
+    "annotations": {
+      "steps": "I start at zero, make a first jump of four tenths to reach 0.4, and then make a second jump of three tenths to reach 0.7.",
+      "strategy": "I notice that combining decimals on a number line works just like whole number addition by moving right in increments.",
+      "misconceptions": "A common error is counting the tick marks instead of the spaces between them, which leads to starting the jump at the wrong tick.",
+      "connections": "This connects decimal addition directly to linear measurement and the concept of combining fractional parts on a continuous scale."
+    },
+    "result": "0.4 + 0.3 = 0.7",
+    "generationReview": {
+      "attempts": 1,
+      "rejections": []
+    }
+  }
+}

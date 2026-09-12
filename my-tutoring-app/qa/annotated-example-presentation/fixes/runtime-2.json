@@ -1,0 +1,228 @@
+{
+  "index": 2,
+  "grade": 4,
+  "topic": "Find an equivalent fraction for 1/2 with denominator 8",
+  "httpStatus": 200,
+  "elapsed": 116733,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 106796,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 6381,
+      "longestStringLength": 352,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding an Equivalent Fraction on a Number Line",
+      "subject": "Fractions",
+      "problem": {
+        "statement": "Leo has a pizza cut into 2 equal slices, and he eats 1 slice, which is $\\frac{1}{2}$ of the pizza. He wants to cut the same pizza into 8 equal slices instead. Use the number line to find out how many slices he would need to eat to have the same amount of pizza as $\\frac{1}{2}$. Write your answer as a fraction with a denominator of 8.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.125,
+            0.25,
+            0.375,
+            0.5,
+            0.625,
+            0.75,
+            0.875,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0.5,
+              "label": "1/2"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Count the equal intervals from $0$ to the marked point $\\frac{1}{2}$ on the number line to write the fraction in eighths.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 2,
+            "rejections": [
+              [
+                "Invalid number-line scale or jumps"
+              ]
+            ]
+          },
+          "title": "Count intervals on the number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 8,
+              "start": 0,
+              "jumps": [
+                0.125,
+                0.125,
+                0.125,
+                0.125
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into 8 equal parts with 4 jumps of one-eighth stopping at one-half.",
+            "labels": [
+              {
+                "text": "0",
+                "description": "Start at zero on the number line."
+              },
+              {
+                "text": "1/2",
+                "description": "Stop at the one-half mark."
+              }
+            ]
+          },
+          "annotations": {
+            "steps": "I count four equal jumps of one-eighth from zero to reach one-half on the number line.",
+            "strategy": "I notice that using a number line helps me see how many eighths fit into one-half by counting the tick marks.",
+            "misconceptions": "A common mistake is counting the jump arrows instead of the spaces or tick marks, which leads to an incorrect numerator.",
+            "connections": "This connects the visual model of a number line to finding equivalent fractions by scaling the denominator.",
+            "narrative": "On the number line, count the tick marks from $0$ to the point $\\frac{1}{2}$ at $0.5$: $0.125$, $0.25$, $0.375$, and $0.5$. This equals $4$ intervals, so Leo needs to eat $4$ slices."
+          },
+          "challenge": {
+            "prompt": "How many $\\frac{1}{8}$ intervals are there on the number line from $0$ to $\\frac{1}{2}$?",
+            "acceptableAnswers": [
+              "4",
+              "4 intervals",
+              "4 slices"
+            ],
+            "rationale": "There are 4 intervals of size $\\frac{1}{8}$ between $0$ and $\\frac{1}{2}$; counting 5 mistakenly counts the tick marks including 0 instead of the spaces.",
+            "distractors": [
+              "3",
+              "5",
+              "2"
+            ],
+            "answerFormat": "katex"
+          }
+        },
+        {
+          "id": 2,
+          "title": "Write the equivalent fraction",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "\\frac{1}{2}"
+                },
+                "to": {
+                  "latex": "\\frac{4}{8}"
+                },
+                "operation": "write as eighths"
+              }
+            ],
+            "result": "\\frac{4}{8}"
+          },
+          "annotations": {
+            "steps": "Combine 4 parts of size 1/8 to form 4/8, showing the equivalence 1/2 = 4/8.",
+            "strategy": "I notice that 4 slices out of 8 equal parts make the exact same amount of pizza as 1 half.",
+            "misconceptions": "A common mistake is counting only the slices eaten without realizing the total number of parts increased to 8.",
+            "connections": "This shows how equivalent fractions represent the exact same quantity with different denominators.",
+            "narrative": "Because the whole pizza from $0$ to $1$ has $8$ equal parts, each slice is $\\frac{1}{8}$ of the pizza. Eating $4$ slices gives the equivalent fraction $\\frac{4}{8}$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Leo has a pizza cut into 2 equal slices, and he eats 1 slice, which is $\\frac{1}{2}$ of the pizza. He wants to cut the same pizza into 8 equal slices instead. Use the number line to find out how many slices he would need to eat to have the same amount of pizza as $\\frac{1}{2}$. Write your answer as a fraction with a denominator of 8.",
+        "body": "On the number line, count the tick marks from $0$ to the point $\\frac{1}{2}$ at $0.5$: $0.125$, $0.25$, $0.375$, and $0.5$. This equals $4$ intervals, so Leo needs to eat $4$ slices.\n---\nBecause the whole pizza from $0$ to $1$ has $8$ equal parts, each slice is $\\frac{1}{8}$ of the pizza. Eating $4$ slices gives the equivalent fraction $\\frac{4}{8}$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "On the number line, count the tick marks from $0$ to the point $\\frac{1}{2}$ at $0.5$: $0.125$, $0.25$, $0.375$, and $0.5$. This equals $4$ intervals, so Leo needs to eat $4$ slices."
+          },
+          {
+            "index": 1,
+            "prose": "Because the whole pizza from $0$ to $1$ has $8$ equal parts, each slice is $\\frac{1}{8}$ of the pizza. Eating $4$ slices gives the equivalent fraction $\\frac{4}{8}$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Count intervals on the number line",
+              "pedagogicalGoal": "Visualize equivalence by counting unit intervals of size one-eighth from zero to one-half.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Draw a number line partitioned into 8 equal parts from 0 to 1, showing 4 unit jumps from 0 up to 1/2 (0.5)."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Write the equivalent fraction",
+              "pedagogicalGoal": "Express the accumulated count of eighths as a single fraction equal to one-half.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Combine 4 parts of size 1/8 to form 4/8, showing the equivalence 1/2 = 4/8."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 0,
+              "prompt": "How many $\\frac{1}{8}$ intervals are there on the number line from $0$ to $\\frac{1}{2}$?",
+              "acceptableAnswers": [
+                "4",
+                "4 intervals",
+                "4 slices"
+              ],
+              "distractors": [
+                "3",
+                "5",
+                "2"
+              ],
+              "rationale": "There are 4 intervals of size $\\frac{1}{8}$ between $0$ and $\\frac{1}{2}$; counting 5 mistakenly counts the tick marks including 0 instead of the spaces.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "transition",
+                "stepIndex": 1,
+                "prompt": "Now that we know Leo needs $4$ one-eighth slices, what is $\\frac{1}{2}$ written as an equivalent fraction with a denominator of $8$?",
+                "acceptableAnswers": [
+                  "\\frac{4}{8}"
+                ],
+                "distractors": [
+                  "\\frac{1}{8}",
+                  "\\frac{2}{8}",
+                  "\\frac{4}{16}"
+                ],
+                "rationale": "Eating 4 slices of size $\\frac{1}{8}$ gives the equivalent fraction $\\frac{4}{8}$; choosing $\\frac{1}{8}$ mistakenly keeps the original single slice without scaling to eighths.",
+                "transitionIndex": 0,
+                "hide": "to"
+              },
+              "reason": "The result was already worked out in the preceding number line step (which established 4 one-eighth intervals), making this a recall question rather than a prediction. Additionally, the prompt explicitly reveals the components of the answer by stating Leo needs 4 one-eighth slices."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

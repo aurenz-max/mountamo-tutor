@@ -1,0 +1,13 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 4",
+    "problemStatement": "Show four eighths as half of a whole.",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "Divide one bar into eight equal pieces, shade four pieces. Four eighths equals one half.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "See equivalent fractions.",
+    "seedNotes": "Use a fraction bar."
+  },
+  "error": "Worked step failed both validation attempts: {\"error\":{\"code\":400,\"message\":\"Request contains an invalid argument.\",\"status\":\"INVALID_ARGUMENT\"}}; {\"error\":{\"code\":400,\"message\":\"Request contains an invalid argument.\",\"status\":\"INVALID_ARGUMENT\"}}"
+}

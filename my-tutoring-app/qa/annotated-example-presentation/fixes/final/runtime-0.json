@@ -1,0 +1,14 @@
+{
+  "index": 0,
+  "grade": 2,
+  "topic": "Add 24 and 13 without regrouping",
+  "httpStatus": 500,
+  "elapsed": 19690,
+  "data": {
+    "status": "error",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 18841,
+    "error": "[AnnotatedExample] Required spec 0 (diagram) failed to generate; refusing a partial solution"
+  }
+}

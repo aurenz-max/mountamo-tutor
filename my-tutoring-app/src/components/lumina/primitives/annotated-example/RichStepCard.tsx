@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layers, BookOpen, AlertTriangle, Lightbulb, GitMerge } from 'lucide-react';
 import { Card } from '../../../ui/card';
@@ -28,6 +28,7 @@ interface RichStepCardProps {
   index: number;
   activeLayers: LayerId[];
   isCompact?: boolean;
+  optionalAnnotations?: boolean;
   interactive?: boolean;
   onCompletionChange?: (complete: boolean) => void;
 }
@@ -43,9 +44,12 @@ export const RichStepCard: React.FC<RichStepCardProps> = ({
   index,
   activeLayers,
   isCompact,
+  optionalAnnotations = false,
   interactive = true,
   onCompletionChange,
 }) => {
+  const hasChallenge = step.content.type === 'algebra' ? step.content.transitions.some((t) => Boolean(t.challenge)) : Boolean(step.challenge);
+  const [complete, setComplete] = useState(!hasChallenge);
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
@@ -69,11 +73,11 @@ export const RichStepCard: React.FC<RichStepCardProps> = ({
       >
         {/* Step Header */}
         <div className="flex items-center gap-2 mb-3 pt-1.5">
-          <StepTypeIcon type={step.content.type} />
-          <h3 className="text-lg font-serif font-semibold text-slate-100">{step.title}</h3>
-          <Badge variant="outline" className="text-[10px] text-slate-500 border-slate-700 ml-auto">
+          {!optionalAnnotations && <StepTypeIcon type={step.content.type} />}
+          <h3 className="text-lg font-serif font-semibold text-slate-100">{complete || !hasChallenge ? step.title : 'Your turn'}</h3>
+          {!optionalAnnotations && <Badge variant="outline" className="text-[10px] text-slate-500 border-slate-700 ml-auto">
             {step.content.type}
-          </Badge>
+          </Badge>}
         </div>
 
         {/* Step Content — type-specific renderer */}
@@ -82,14 +86,29 @@ export const RichStepCard: React.FC<RichStepCardProps> = ({
             content={step.content}
             challenge={step.challenge}
             interactive={interactive}
-            onCompletionChange={onCompletionChange}
+            onCompletionChange={(value) => { setComplete(value); onCompletionChange?.(value); }}
           />
         </div>
 
         {/* Annotation Grid */}
+        {optionalAnnotations && complete && (
+          <details className="rounded-lg border border-white/10 px-4 py-3">
+            <summary className="cursor-pointer text-sm text-slate-300">Help me understand</summary>
+            <div className="mt-3 space-y-3">
+              {ANNOTATION_LAYERS.filter((layer) => step.annotations[layer.id]).map((layer) => (
+                <details key={layer.id}>
+                  <summary className="cursor-pointer text-sm text-slate-300">
+                    {{ steps: 'Explain this step', strategy: 'Why does this work?', misconceptions: 'A mistake to avoid', connections: 'Connect it', narrative: 'Read the full explanation' }[layer.id]}
+                  </summary>
+                  <p className="mt-2 text-base leading-relaxed"><MixedContent text={step.annotations[layer.id]!} /></p>
+                </details>
+              ))}
+            </div>
+          </details>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <AnimatePresence>
-            {activeLayers.map((layerId) => {
+            {(complete ? activeLayers : []).map((layerId) => {
               const content = step.annotations[layerId];
               if (!content) return null;
 

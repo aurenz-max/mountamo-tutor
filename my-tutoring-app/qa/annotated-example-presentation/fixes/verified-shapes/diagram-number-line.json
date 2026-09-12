@@ -1,0 +1,42 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 5",
+    "problemStatement": "Show 0.4 plus 0.3 on a number line.",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "Start at zero, jump four tenths to 0.4, then three tenths to 0.7. Scale zero to one.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Combine decimal distances.",
+    "seedNotes": "Draw both jumps on a scale marked in tenths."
+  },
+  "generated": {
+    "content": {
+      "type": "diagram",
+      "visual": {
+        "kind": "number-line",
+        "min": 0,
+        "max": 1,
+        "divisions": 10,
+        "start": 0,
+        "jumps": [
+          0.4,
+          0.3
+        ]
+      },
+      "imagePrompt": "",
+      "altText": "A number line from 0 to 1 divided into tenths, showing a jump of 0.4 from 0 to 0.4, followed by another jump of 0.3 landing at 0.7.",
+      "labels": []
+    },
+    "annotations": {
+      "steps": "I start at zero, make a jump of 0.4, and then make another jump of 0.3 to the right.",
+      "strategy": "I notice that combining decimals on a number line works just like adding whole numbers by chaining the lengths together.",
+      "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+      "connections": "Adding decimals on a number line connects directly to adding fractions with a denominator of ten and using standard addition algorithms."
+    },
+    "result": "0.4 + 0.3 = 0.7",
+    "generationReview": {
+      "attempts": 1,
+      "rejections": []
+    }
+  }
+}

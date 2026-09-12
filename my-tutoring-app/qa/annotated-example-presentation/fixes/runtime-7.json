@@ -1,0 +1,14 @@
+{
+  "index": 7,
+  "grade": 5,
+  "topic": "Add 0.6 and 0.2",
+  "httpStatus": 500,
+  "elapsed": 18211,
+  "data": {
+    "status": "error",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 18166,
+    "error": "[AnnotatedExample] Required spec 1 (diagram) failed to generate; refusing a partial solution"
+  }
+}

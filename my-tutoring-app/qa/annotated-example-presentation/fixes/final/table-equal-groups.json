@@ -1,0 +1,59 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "There are 3 bags of 4 apples. Each bag adds 4. The running totals are 4, 8, 12.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Track apples added and running total.",
+    "seedNotes": "Show every bag, apples added, and running total."
+  },
+  "generated": {
+    "content": {
+      "type": "table",
+      "caption": "Apples in Each Bag",
+      "headers": [
+        "Bag Number",
+        "Apples Added",
+        "Total Apples"
+      ],
+      "rows": [
+        [
+          "$1$",
+          "$4$",
+          "$4$"
+        ],
+        [
+          "$2$",
+          "$4$",
+          "$8$"
+        ],
+        [
+          "$3$",
+          "$4$",
+          "$12$"
+        ]
+      ],
+      "highlightCell": [
+        1,
+        2
+      ]
+    },
+    "annotations": {
+      "steps": "I listed each bag and added 4 apples to the running total.",
+      "strategy": "I want to track the total step by step without skipping any bags.",
+      "misconceptions": "Writing the cumulative total 8 in the second row instead of adding just 4.",
+      "connections": "This repeated addition is the same as multiplication."
+    },
+    "result": "3 \\times 4 = 12 \\text{ apples}",
+    "generationReview": {
+      "attempts": 2,
+      "rejections": [
+        [
+          "In the table row for Bag Number 2 (row index 1), the 'Apples Added' cell is \"$8$\" instead of \"$4$\". Each bag contains 4 apples, so the added amount for bag 2 should be 4, not the cumulative total 8."
+        ]
+      ]
+    }
+  }
+}

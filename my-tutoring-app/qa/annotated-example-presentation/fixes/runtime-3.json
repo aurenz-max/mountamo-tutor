@@ -1,0 +1,211 @@
+{
+  "index": 3,
+  "grade": 5,
+  "topic": "Add 0.4 and 0.3",
+  "httpStatus": 200,
+  "elapsed": 39143,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 39112,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 5280,
+      "longestStringLength": 267,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Adding Decimals on a Number Line",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to his friend's house. Use the number line to find the total distance Leo walks by adding $0.4$ and $0.3$. What is the total distance in miles?",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0,
+              "label": "Start"
+            },
+            {
+              "value": 0.4,
+              "label": "Park"
+            },
+            {
+              "value": 0.7,
+              "label": "Friend's House"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Start at the park's position on the number line and count forward by three tenths.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Locate starting point on number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0.4,
+              "jumps": []
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into tenths, with a marker at 0.4 labeled Park.",
+            "labels": [
+              {
+                "text": "0.4",
+                "description": "Leo starts at four tenths of a mile."
+              },
+              {
+                "text": "Park",
+                "description": "The location where Leo begins his second walk."
+              }
+            ]
+          },
+          "annotations": {
+            "steps": "Locate and mark 0.4 on the number line to show the first distance Leo walks.",
+            "strategy": "I notice that starting at the first addend gives us our exact beginning location before adding more.",
+            "misconceptions": "Starting at 0 instead of 0.4 because you forget that Leo already walked the first part of the trip.",
+            "connections": "Plotting a decimal on a number line is just like plotting whole numbers, but the spaces are divided into tenths.",
+            "narrative": "Find Leo's first stop at the point labeled Park at $0.4$ on the number line."
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Count forward by three tenths",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0.4,
+              "jumps": [
+                0.1,
+                0.1,
+                0.1
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0.0 to 1.0 divided into tenths, showing three jumps of 0.1 forward starting from 0.4 and landing at 0.7.",
+            "labels": [
+              {
+                "text": "Start at 0.4",
+                "description": "Leo's first distance to the park."
+              },
+              {
+                "text": "Jump +0.3",
+                "description": "Count forward three tenths to the friend's house."
+              }
+            ]
+          },
+          "annotations": {
+            "steps": "Start at 0.4 on the number line and make three jumps of 0.1 forward to land at 0.7.",
+            "strategy": "I notice that adding decimals is just like counting forward on a number line with whole numbers, but using smaller jumps of one-tenth.",
+            "misconceptions": "A common error is counting the jumps instead of the tick marks, which can lead to starting your count on the wrong number and getting 0.6 instead of 0.7.",
+            "connections": "This connects decimal addition to standard whole-number counting and prepares you for adding numbers with mixed units.",
+            "narrative": "From $0.4$, count forward $3$ tick marks of $0.1$ each to land at the point labeled Friend's House at $0.7$. This shows $0.4 + 0.3 = 0.7$, so the total distance Leo walks is $0.7$ miles."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to his friend's house. Use the number line to find the total distance Leo walks by adding $0.4$ and $0.3$. What is the total distance in miles?",
+        "body": "Find Leo's first stop at the point labeled Park at $0.4$ on the number line.\n---\nFrom $0.4$, count forward $3$ tick marks of $0.1$ each to land at the point labeled Friend's House at $0.7$. This shows $0.4 + 0.3 = 0.7$, so the total distance Leo walks is $0.7$ miles.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Find Leo's first stop at the point labeled Park at $0.4$ on the number line."
+          },
+          {
+            "index": 1,
+            "prose": "From $0.4$, count forward $3$ tick marks of $0.1$ each to land at the point labeled Friend's House at $0.7$. This shows $0.4 + 0.3 = 0.7$, so the total distance Leo walks is $0.7$ miles."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Locate starting point on number line",
+              "pedagogicalGoal": "Understand how to represent the initial addend 0.4 as a starting location on a tenths-spaced number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Plot a number line from 0 to 1 marked in increments of 0.1, highlighting the point at 0.4 labeled Park."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Count forward by three tenths",
+              "pedagogicalGoal": "Visualize addition of decimals as counting forward along tick marks to reach the total sum of 0.7.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "From 0.4, draw 3 successive jumps of 0.1 to reach 0.7 labeled Friend's House, connecting the visual to the equation 0.4 + 0.3 = 0.7."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "step",
+                "stepIndex": 0,
+                "prompt": "Leo already walked $0.4$ miles to the park. To add the next $0.3$ miles on the number line, which number should you start counting forward from?",
+                "acceptableAnswers": [
+                  "0.4",
+                  "0.4 miles"
+                ],
+                "distractors": [
+                  "0",
+                  "0.3"
+                ],
+                "rationale": "Leo is already at the park at $0.4$ miles, so we start from $0.4$; starting at $0$ ignores the first leg of the walk, while $0.3$ is the distance to add rather than the starting position.",
+                "answerFormat": "katex"
+              },
+              "reason": "Answer already disclosed or invalid step index"
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

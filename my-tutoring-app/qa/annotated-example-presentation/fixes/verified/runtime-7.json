@@ -1,0 +1,209 @@
+{
+  "index": 7,
+  "grade": 5,
+  "topic": "Add 0.6 and 0.2",
+  "httpStatus": 200,
+  "elapsed": 46243,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 46209,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 5075,
+      "longestStringLength": 316,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Adding Decimals on a Number Line",
+      "subject": "Elementary Mathematics",
+      "problem": {
+        "statement": "Leo walks $0.6$ miles to the park, and then walks another $0.2$ miles to the library. Use the number line to find the total distance Leo walks by adding $0.6$ and $0.2$.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0,
+              "label": "Start"
+            },
+            {
+              "value": 0.6,
+              "label": "Park"
+            },
+            {
+              "value": 0.8,
+              "label": "Library"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Start at the first distance on the number line and jump forward by the second distance to find the sum.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Locate the first distance",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0,
+              "jumps": [
+                0.6
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into tenths, showing a jump from 0 to 0.6.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I draw a jump starting at 0 and landing at 0.6 on the number line.",
+            "strategy": "I notice that starting at zero helps me show the first distance clearly.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "Showing decimals on a number line is just like showing whole numbers or fractions.",
+            "narrative": "On the number line, start at $0$ and move forward to Park at $0.6$ to represent the first distance of $0.6$ miles."
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Add the second distance",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0.6,
+              "jumps": [
+                0.2
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 with 10 divisions, showing a jump of 0.2 forward from 0.6 to land at 0.8.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Jump forward by 0.2 from 0.6 to reach 0.8.",
+            "strategy": "I notice that adding decimals on a number line works just like adding whole numbers by moving right.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "Adding tenths on a number line is just like adding whole numbers, and connects directly to fraction addition.",
+            "narrative": "From $0.6$, count forward $2$ tick marks of $0.1$ each to add the next $0.2$ miles. This lands at Library at $0.8$, showing that Leo walks a total distance of $0.8$ miles because $0.6 + 0.2 = 0.8$."
+          },
+          "challenge": {
+            "prompt": "Each tick mark on the number line represents $0.1$ miles. Starting at $0.6$, how many tick marks forward should Leo jump to add $0.2$ miles?",
+            "acceptableAnswers": [
+              "2",
+              "2 tick marks",
+              "2 jumps",
+              "two"
+            ],
+            "rationale": "Since each tick mark is $0.1$, adding $0.2$ means jumping forward $2$ marks ($0.1 + 0.1$), counting each move made after $0.6$ rather than the starting mark.",
+            "distractors": [
+              "1",
+              "0.2",
+              "20"
+            ],
+            "answerFormat": "katex"
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Leo walks $0.6$ miles to the park, and then walks another $0.2$ miles to the library. Use the number line to find the total distance Leo walks by adding $0.6$ and $0.2$.",
+        "body": "On the number line, start at $0$ and move forward to Park at $0.6$ to represent the first distance of $0.6$ miles.\n---\nFrom $0.6$, count forward $2$ tick marks of $0.1$ each to add the next $0.2$ miles. This lands at Library at $0.8$, showing that Leo walks a total distance of $0.8$ miles because $0.6 + 0.2 = 0.8$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "On the number line, start at $0$ and move forward to Park at $0.6$ to represent the first distance of $0.6$ miles."
+          },
+          {
+            "index": 1,
+            "prose": "From $0.6$, count forward $2$ tick marks of $0.1$ each to add the next $0.2$ miles. This lands at Library at $0.8$, showing that Leo walks a total distance of $0.8$ miles because $0.6 + 0.2 = 0.8$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Locate the first distance",
+              "pedagogicalGoal": "Understand how to represent an initial decimal value as a directed jump from zero on a number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Render a number line from 0 to 1 with tenths ticks, highlighting a jump from 0 to 0.6 labeled 'Park'."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Add the second distance",
+              "pedagogicalGoal": "Visualize decimal addition as extending further along the number line to find the total sum.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Show a second jump of 0.2 (two 0.1 steps) starting at 0.6 and ending at 0.8 labeled 'Library', concluding 0.6 + 0.2 = 0.8."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 1,
+              "prompt": "Each tick mark on the number line represents $0.1$ miles. Starting at $0.6$, how many tick marks forward should Leo jump to add $0.2$ miles?",
+              "acceptableAnswers": [
+                "2",
+                "2 tick marks",
+                "2 jumps",
+                "two"
+              ],
+              "distractors": [
+                "1",
+                "0.2",
+                "20"
+              ],
+              "rationale": "Since each tick mark is $0.1$, adding $0.2$ means jumping forward $2$ marks ($0.1 + 0.1$), counting each move made after $0.6$ rather than the starting mark.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

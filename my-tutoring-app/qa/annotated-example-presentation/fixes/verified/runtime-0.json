@@ -1,0 +1,222 @@
+{
+  "index": 0,
+  "grade": 2,
+  "topic": "Add 24 and 13 without regrouping",
+  "httpStatus": 200,
+  "elapsed": 58257,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 54699,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 5463,
+      "longestStringLength": 289,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Adding on a Number Line",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Leo wants to add $24$ and $13$ using the number line. He starts at $24$ and jumps forward by tens and ones to represent adding $13$. Look at the number line to see his starting position at $24$. How far does Leo need to jump in total to add $13$, and what number does he land on?",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 40,
+          "ticks": [
+            0,
+            5,
+            10,
+            15,
+            20,
+            25,
+            30,
+            35,
+            40
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 24,
+              "label": "Start"
+            },
+            {
+              "value": 37,
+              "label": "End"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Break the added number into tens and ones to make forward jumps along the number line.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Decompose the jump distance",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "13"
+                },
+                "to": {
+                  "latex": "10 + 3"
+                },
+                "operation": "split into tens and ones",
+                "challenge": {
+                  "hide": "to",
+                  "prompt": "How is 13 written when broken apart into tens and ones?",
+                  "acceptableAnswers": [
+                    "10 + 3"
+                  ],
+                  "rationale": "The digit 1 represents one ten (10) and the digit 3 represents three ones (3), so 13 decomposes into 10 + 3.",
+                  "distractors": [
+                    "1 + 3",
+                    "30 + 1",
+                    "10 + 1"
+                  ]
+                }
+              }
+            ],
+            "result": "10 + 3"
+          },
+          "annotations": {
+            "steps": "Split the number 13 into a ten and three ones.",
+            "strategy": "I notice that breaking numbers by place value makes jumps on the number line much easier.",
+            "misconceptions": "Students might mistakenly split 13 into 1 + 3 instead of recognizing the 1 represents a ten (10).",
+            "connections": "This builds place-value understanding for mental math and addition strategies.",
+            "narrative": "To add $13$, Leo needs to jump forward a total distance of $13$ units, which splits into $1$ jump of $10$ and $3$ jumps of $1$."
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Jump along the number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 20,
+              "max": 40,
+              "divisions": 20,
+              "start": 24,
+              "jumps": [
+                10,
+                3
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 20 to 40 showing a starting point at 24, a jump of plus 10 to 34, and a jump of plus 3 to 37.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Start at 24 on the number line, jump forward by 10 to reach 34, and then jump 3 more to land on 37.",
+            "strategy": "I notice that breaking 13 into a ten and some ones makes jumping forward on the number line much easier.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This method connects counting on with place value, showing that adding numbers is like moving steps forward.",
+            "narrative": "Starting at the Start point of $24$ in Figure 1, jumping forward $10$ reaches $34$, and jumping $3$ more reaches the End point at $37$, so Leo lands on $37$."
+          },
+          "challenge": {
+            "prompt": "Leo starts at 24 and jumps forward by 10. What number does he land on?",
+            "acceptableAnswers": [
+              "34"
+            ],
+            "rationale": "Adding 10 to 24 gives 34, whereas counting the starting point 24 as the first move mistakenly leads to 33.",
+            "distractors": [
+              "33",
+              "35",
+              "25"
+            ],
+            "answerFormat": "katex"
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Leo wants to add $24$ and $13$ using the number line. He starts at $24$ and jumps forward by tens and ones to represent adding $13$. Look at the number line to see his starting position at $24$. How far does Leo need to jump in total to add $13$, and what number does he land on?",
+        "body": "To add $13$, Leo needs to jump forward a total distance of $13$ units, which splits into $1$ jump of $10$ and $3$ jumps of $1$.\n---\nStarting at the Start point of $24$ in Figure 1, jumping forward $10$ reaches $34$, and jumping $3$ more reaches the End point at $37$, so Leo lands on $37$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "To add $13$, Leo needs to jump forward a total distance of $13$ units, which splits into $1$ jump of $10$ and $3$ jumps of $1$."
+          },
+          {
+            "index": 1,
+            "prose": "Starting at the Start point of $24$ in Figure 1, jumping forward $10$ reaches $34$, and jumping $3$ more reaches the End point at $37$, so Leo lands on $37$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "algebra",
+              "title": "Decompose the jump distance",
+              "pedagogicalGoal": "Understand how to break a two-digit addend into tens and ones for structured mental addition on a number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Express the total jump of $13$ units as place-value components: $13 = 10 + 3$, representing $1$ jump of $10$ and $3$ jumps of $1$."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Jump along the number line",
+              "pedagogicalGoal": "Visualize addition as sequential forward hops along a number line from a given starting point.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Show a number line starting at $24$, jumping forward $+10$ to land on $34$, then jumping $+3$ to reach the final position at $37$."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "transition",
+              "stepIndex": 0,
+              "prompt": "How is 13 written when broken apart into tens and ones?",
+              "acceptableAnswers": [
+                "10 + 3"
+              ],
+              "distractors": [
+                "1 + 3",
+                "30 + 1",
+                "10 + 1"
+              ],
+              "rationale": "The digit 1 represents one ten (10) and the digit 3 represents three ones (3), so 13 decomposes into 10 + 3.",
+              "transitionIndex": 0,
+              "hide": "to"
+            },
+            {
+              "kind": "step",
+              "stepIndex": 1,
+              "prompt": "Leo starts at 24 and jumps forward by 10. What number does he land on?",
+              "acceptableAnswers": [
+                "34"
+              ],
+              "distractors": [
+                "33",
+                "35",
+                "25"
+              ],
+              "rationale": "Adding 10 to 24 gives 34, whereas counting the starting point 24 as the first move mistakenly leads to 33.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

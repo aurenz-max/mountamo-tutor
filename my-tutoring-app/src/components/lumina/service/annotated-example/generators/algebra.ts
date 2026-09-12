@@ -68,7 +68,7 @@ ${contextPrefix}
 Write 1-3 algebraic transitions. Each transition has a "from" KaTeX expression, a "to" KaTeX expression, and an operation label.
 Use proper KaTeX syntax (\\frac{}{}, \\sqrt{}, ^{}, etc.). The "result" is the final expression after all transitions.
 IMPORTANT: Use the GROUNDING PROSE as your source of truth — extract the actual KaTeX expressions and operations from it; do not invent math.
-IMPORTANT: Actually carry out the computation. Do NOT leave expressions unevaluated.
+IMPORTANT: Render only the mathematical move assigned by the grounding and planner seed. A setup move may deliberately end in an unevaluated expression; do not carry out a later step's computation. When THIS move computes a result, evaluate it completely.
 
 ## Per-term sub-moves (transNsub0..2 fields) + hover-link tokens
 

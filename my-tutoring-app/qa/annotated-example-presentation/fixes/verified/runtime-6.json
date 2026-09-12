@@ -1,0 +1,199 @@
+{
+  "index": 6,
+  "grade": 4,
+  "topic": "Find an equivalent fraction for 2/3 with denominator 9",
+  "httpStatus": 200,
+  "elapsed": 56416,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 56379,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4964,
+      "longestStringLength": 335,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding an Equivalent Fraction on a Number Line",
+      "subject": "Fractions",
+      "problem": {
+        "statement": "Use the number line to find an equivalent fraction for $\\frac{2}{3}$ that has a denominator of $9$. Fill in the missing numerator: $\\frac{2}{3} = \\frac{\\text{?}}{9}$.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.111,
+            0.222,
+            0.333,
+            0.444,
+            0.556,
+            0.667,
+            0.778,
+            0.889,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0.667,
+              "label": "2/3"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Count the tick marks from $0$ to the point at $0.667$ to find the matching number of ninths.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Determine the tick mark value",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 9,
+              "start": 0,
+              "jumps": []
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into 9 equal parts.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Count the total number of equal spaces between zero and one.",
+            "strategy": "I notice that splitting the whole into nine pieces gives us ninths.",
+            "misconceptions": "Read the scale first. Neighboring marks are not always one whole apart.",
+            "connections": "The bottom number of a fraction always tells you how many equal parts make one whole.",
+            "narrative": "The number line from $0$ to $1$ is divided into $9$ equal parts by the ticks, so each step marks $\\frac{1}{9}$."
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Count jumps to target fraction",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 9,
+              "start": 0,
+              "jumps": [
+                0.111,
+                0.111,
+                0.111,
+                0.111,
+                0.111,
+                0.111
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into ninths with six jumps of one-ninth from 0 to two-thirds.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I jump six times by one-ninth from zero to reach two-thirds.",
+            "strategy": "I notice that counting the small tick marks helps me find the matching numerator.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This shows how different fractions can name the exact same point on a number line.",
+            "narrative": "Starting at $0$, the point $\\frac{2}{3}$ sits at position $0.667$, which is $6$ steps of $\\frac{1}{9}$ along the line. Therefore, the equivalent fraction is $\\frac{2}{3} = \\frac{6}{9}$, and the missing numerator is $6$."
+          },
+          "challenge": {
+            "prompt": "Starting at $0$, how many jumps of $\\frac{1}{9}$ does it take to reach $\\frac{2}{3}$ on the number line?",
+            "acceptableAnswers": [
+              "6",
+              "6 jumps"
+            ],
+            "rationale": "There are $6$ jumps of $\\frac{1}{9}$ from $0$ to reach $\\frac{2}{3}$; counting the tick mark at $0$ as the first jump mistakenly results in $7$.",
+            "distractors": [
+              "7",
+              "5",
+              "2"
+            ],
+            "answerFormat": "katex"
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Use the number line to find an equivalent fraction for $\\frac{2}{3}$ that has a denominator of $9$. Fill in the missing numerator: $\\frac{2}{3} = \\frac{\\text{?}}{9}$.",
+        "body": "The number line from $0$ to $1$ is divided into $9$ equal parts by the ticks, so each step marks $\\frac{1}{9}$.\n---\nStarting at $0$, the point $\\frac{2}{3}$ sits at position $0.667$, which is $6$ steps of $\\frac{1}{9}$ along the line. Therefore, the equivalent fraction is $\\frac{2}{3} = \\frac{6}{9}$, and the missing numerator is $6$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "The number line from $0$ to $1$ is divided into $9$ equal parts by the ticks, so each step marks $\\frac{1}{9}$."
+          },
+          {
+            "index": 1,
+            "prose": "Starting at $0$, the point $\\frac{2}{3}$ sits at position $0.667$, which is $6$ steps of $\\frac{1}{9}$ along the line. Therefore, the equivalent fraction is $\\frac{2}{3} = \\frac{6}{9}$, and the missing numerator is $6$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Determine the tick mark value",
+              "pedagogicalGoal": "Connect the number of equal divisions between 0 and 1 to the denominator of the unit fraction.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Extract the number line spanning from 0 to 1 partitioned into 9 equal parts, highlighting that each tick step represents 1/9."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Count jumps to target fraction",
+              "pedagogicalGoal": "Demonstrate that counting unit fraction steps up to a given mark determines the equivalent numerator.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Show 6 jumps of size 1/9 from 0 to reach 2/3 (located at 0.667 or 6/9), concluding that 2/3 = 6/9 with missing numerator 6."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 1,
+              "prompt": "Starting at $0$, how many jumps of $\\frac{1}{9}$ does it take to reach $\\frac{2}{3}$ on the number line?",
+              "acceptableAnswers": [
+                "6",
+                "6 jumps"
+              ],
+              "distractors": [
+                "7",
+                "5",
+                "2"
+              ],
+              "rationale": "There are $6$ jumps of $\\frac{1}{9}$ from $0$ to reach $\\frac{2}{3}$; counting the tick mark at $0$ as the first jump mistakenly results in $7$.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,260 @@
+{
+  "index": 8,
+  "grade": 7,
+  "topic": "Solve 2x + 3 = 11",
+  "httpStatus": 200,
+  "elapsed": 27380,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 27349,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 11422,
+      "longestStringLength": 1230,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Modeling and Solving Linear Cost Equations",
+      "subject": "Algebra",
+      "problem": {
+        "statement": "An artisanal pottery studio charges a base studio fee of \\$3 for the use of the glazing station, plus \\$2 for each ceramic piece fired in the kiln. If a local artisan receives a final invoice totaling \\$11 before taxes, how many ceramic pieces did they fire? First, formulate the algebraic equation that models this scenario by selecting the correct relationship below.",
+        "inset": {
+          "insetType": "equation-setup",
+          "scenario": "An artisanal pottery studio calculates a total invoice by combining a fixed studio fee with a variable firing charge proportional to the number of ceramic pieces processed.",
+          "quantities": [
+            {
+              "symbol": "x",
+              "meaning": "number of ceramic pieces fired in the kiln"
+            },
+            {
+              "symbol": "F",
+              "meaning": "base studio fee in dollars",
+              "knownValue": "3"
+            },
+            {
+              "symbol": "P",
+              "meaning": "firing cost per ceramic piece in dollars",
+              "knownValue": "2"
+            },
+            {
+              "symbol": "T",
+              "meaning": "total invoice amount in dollars before taxes",
+              "knownValue": "11"
+            }
+          ],
+          "target": {
+            "symbol": "x",
+            "meaning": "number of ceramic pieces fired"
+          },
+          "canonicalEquation": "2x + 3 = 11",
+          "distractorEquations": [
+            {
+              "equation": "3x + 2 = 11",
+              "misconception": "Swapped the unit cost coefficient with the fixed base fee."
+            },
+            {
+              "equation": "2(x + 3) = 11",
+              "misconception": "Incorrectly applied the multiplier to both the variable and the fixed fee instead of just the variable."
+            },
+            {
+              "equation": "2x - 3 = 11",
+              "misconception": "Subtracted the base fee instead of adding it to the variable firing cost."
+            }
+          ],
+          "rationale": "The total invoice is determined by taking the product of the cost per piece and the number of pieces, then adding the independent base studio fee.",
+          "acceptableForms": [
+            "2x + 3 = 11",
+            "3 + 2x = 11",
+            "11 = 2x + 3",
+            "11 = 3 + 2x"
+          ],
+          "label": "Equation Setup"
+        }
+      },
+      "solutionStrategy": "Construct a two-step linear equation by combining fixed and variable costs, then isolate the unknown quantity using inverse operations.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Set up the linear equation",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "\\text{Craft the algebraic model by equating the sum of variable and fixed costs to the total expenditure}"
+                },
+                "to": {
+                  "latex": "2x + 3 = 11"
+                },
+                "operation": "model scenario"
+              }
+            ],
+            "result": "2x + 3 = 11"
+          },
+          "annotations": {
+            "steps": "Translate the verbal cost components—a marginal rate of $2 per ceramic piece multiplied by the variable quantity x, combined with a fixed studio fee of $3—and set their sum equal to the total invoice amount of $11.",
+            "strategy": "I notice that identifying the independent variable, constant term, and dependent output first allows me to synthesize a linear equation that rigorously encapsulates the underlying real-world constraints.",
+            "misconceptions": "Students often mistakenly multiply the fixed studio fee by the variable number of pieces or add the total charge to the rate, confusing independent constants with dependent variables.",
+            "connections": "This formulation exemplifies linear modeling, serving as a foundational bridge between descriptive verbal word problems and analytical algebraic functions of the form y = mx + b.",
+            "narrative": "Deconstruct the cost structure using the values given in the Equation Setup context: the fixed studio overhead is $F = 3$ (a constant term independent of production), the marginal firing rate is $P = 2$ per piece (the variable rate of change), and the total charge is $T = 11$. Letting $x$ represent the unknown number of ceramic pieces fired, the variable expenditure is the product $Px = 2x$. Summing the variable charge and the fixed studio fee models the total invoice:\n$$2x + 3 = 11$$"
+          }
+        },
+        {
+          "id": 2,
+          "title": "Isolate the variable",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "2x + 3 = 11"
+                },
+                "to": {
+                  "latex": "2x = 8"
+                },
+                "operation": "subtract 3 from both sides",
+                "challenge": {
+                  "hide": "operation",
+                  "prompt": "To begin isolating the variable term in the equation $2x + 3 = 11$, which inverse operation should you apply first to both sides?",
+                  "acceptableAnswers": [
+                    "subtract 3 from both sides",
+                    "subtract 3",
+                    "subtract 3 on both sides",
+                    "-3 from both sides",
+                    "minus 3 from both sides"
+                  ],
+                  "rationale": "Subtracting 3 undoes the constant addition to isolate the 2x term, whereas dividing first by 2 creates cumbersome fractions.",
+                  "distractors": [
+                    "divide both sides by 2",
+                    "add 3 to both sides",
+                    "subtract 11 from both sides"
+                  ]
+                }
+              }
+            ],
+            "result": "x = 4"
+          },
+          "annotations": {
+            "steps": "Subtract the constant term 3 from both sides using the subtraction property of equality, then divide both sides by the coefficient 2 using the division property of equality.",
+            "strategy": "I notice that isolating the variable requires dismantling the expression in reverse order of operations, first undoing addition and then undoing multiplication.",
+            "misconceptions": "Students often mistakenly attempt to divide by 2 before subtracting the constant term, which introduces fractional coefficients and unnecessary complexity.",
+            "connections": "This methodology generalizes to solving all multi-step linear equations by systematically applying inverse operations to peel away layers of operations from the variable.",
+            "narrative": "To isolate $x$, apply inverse operations by reversing the standard order of operations. First, apply the subtraction property of equality by subtracting $3$ from both sides to remove the constant studio fee:\n$$2x + 3 - 3 = 11 - 3 \\implies 2x = 8$$\nNext, apply the division property of equality by dividing both sides by the coefficient $2$ to isolate the variable:\n$$\\frac{2x}{2} = \\frac{8}{2} \\implies x = 4$$"
+          }
+        },
+        {
+          "id": 3,
+          "title": "Verify the solution",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "2(4) + 3"
+                },
+                "to": {
+                  "latex": "8 + 3"
+                },
+                "operation": "evaluate multiplication"
+              }
+            ],
+            "result": "11"
+          },
+          "annotations": {
+            "steps": "Substitute the calculated value x = 4 into the expression and evaluate the multiplication before performing addition.",
+            "strategy": "I verify my algebraic solution by substituting it back into the model to guarantee both mathematical validity and real-world consistency.",
+            "misconceptions": "A common error is performing the addition before multiplication, violating the standard order of operations.",
+            "connections": "This verification process mirrors checking constraints in engineering design and validating boundary conditions in physics models.",
+            "narrative": "Verify the result by substituting $x = 4$ back into the left side of the modeled relationship to ensure algebraic and real-world consistency:\n$$2(4) + 3 = 8 + 3 = 11$$\nSince both sides evaluate to $11$, the equation holds true. Thus, the correct algebraic model is $2x + 3 = 11$, and the artisan fired $4$ ceramic pieces."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "An artisanal pottery studio charges a base studio fee of \\$3 for the use of the glazing station, plus \\$2 for each ceramic piece fired in the kiln. If a local artisan receives a final invoice totaling \\$11 before taxes, how many ceramic pieces did they fire? First, formulate the algebraic equation that models this scenario by selecting the correct relationship below.",
+        "body": "Deconstruct the cost structure using the values given in the Equation Setup context: the fixed studio overhead is $F = 3$ (a constant term independent of production), the marginal firing rate is $P = 2$ per piece (the variable rate of change), and the total charge is $T = 11$. Letting $x$ represent the unknown number of ceramic pieces fired, the variable expenditure is the product $Px = 2x$. Summing the variable charge and the fixed studio fee models the total invoice:\n$$2x + 3 = 11$$\n---\nTo isolate $x$, apply inverse operations by reversing the standard order of operations. First, apply the subtraction property of equality by subtracting $3$ from both sides to remove the constant studio fee:\n$$2x + 3 - 3 = 11 - 3 \\implies 2x = 8$$\nNext, apply the division property of equality by dividing both sides by the coefficient $2$ to isolate the variable:\n$$\\frac{2x}{2} = \\frac{8}{2} \\implies x = 4$$\n---\nVerify the result by substituting $x = 4$ back into the left side of the modeled relationship to ensure algebraic and real-world consistency:\n$$2(4) + 3 = 8 + 3 = 11$$\nSince both sides evaluate to $11$, the equation holds true. Thus, the correct algebraic model is $2x + 3 = 11$, and the artisan fired $4$ ceramic pieces.",
+        "separatorCount": 2,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Deconstruct the cost structure using the values given in the Equation Setup context: the fixed studio overhead is $F = 3$ (a constant term independent of production), the marginal firing rate is $P = 2$ per piece (the variable rate of change), and the total charge is $T = 11$. Letting $x$ represent the unknown number of ceramic pieces fired, the variable expenditure is the product $Px = 2x$. Summing the variable charge and the fixed studio fee models the total invoice:\n$$2x + 3 = 11$$"
+          },
+          {
+            "index": 1,
+            "prose": "To isolate $x$, apply inverse operations by reversing the standard order of operations. First, apply the subtraction property of equality by subtracting $3$ from both sides to remove the constant studio fee:\n$$2x + 3 - 3 = 11 - 3 \\implies 2x = 8$$\nNext, apply the division property of equality by dividing both sides by the coefficient $2$ to isolate the variable:\n$$\\frac{2x}{2} = \\frac{8}{2} \\implies x = 4$$"
+          },
+          {
+            "index": 2,
+            "prose": "Verify the result by substituting $x = 4$ back into the left side of the modeled relationship to ensure algebraic and real-world consistency:\n$$2(4) + 3 = 8 + 3 = 11$$\nSince both sides evaluate to $11$, the equation holds true. Thus, the correct algebraic model is $2x + 3 = 11$, and the artisan fired $4$ ceramic pieces."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "algebra",
+              "title": "Set up the linear equation",
+              "pedagogicalGoal": "Learn how to model a real-world scenario by identifying fixed costs, variable rates, and total expenditure.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Express total cost as variable charge plus fixed fee: translate marginal rate $2$ per piece $x$, fixed fee $3$, and total $11$ into $2x + 3 = 11$."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Isolate the variable",
+              "pedagogicalGoal": "Master the application of inverse operations in reverse order of operations to isolate an unknown in a two-step equation.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Show two-step isolation starting from $2x + 3 = 11$, subtracting $3$ to reach $2x = 8$, then dividing by $2$ to obtain $x = 4$."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Verify the solution",
+              "pedagogicalGoal": "Reinforce the habit of validating solutions by substituting the result back into the original modeling equation.",
+              "groundingBlockIndices": [
+                2
+              ],
+              "seedNotes": "Substitute $x = 4$ into $2(4) + 3$, showing evaluation steps $8 + 3 = 11$ to verify equality."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "transition",
+              "stepIndex": 1,
+              "prompt": "To begin isolating the variable term in the equation $2x + 3 = 11$, which inverse operation should you apply first to both sides?",
+              "acceptableAnswers": [
+                "subtract 3 from both sides",
+                "subtract 3",
+                "subtract 3 on both sides",
+                "-3 from both sides",
+                "minus 3 from both sides"
+              ],
+              "distractors": [
+                "divide both sides by 2",
+                "add 3 to both sides",
+                "subtract 11 from both sides"
+              ],
+              "rationale": "Subtracting 3 undoes the constant addition to isolate the 2x term, whereas dividing first by 2 creates cumbersome fractions.",
+              "transitionIndex": 0,
+              "hide": "operation"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

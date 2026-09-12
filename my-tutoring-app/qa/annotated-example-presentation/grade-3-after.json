@@ -1,0 +1,195 @@
+{
+  "status": "pass",
+  "componentId": "annotated-example",
+  "evalMode": "auto",
+  "duration": 40882,
+  "catalogMeta": null,
+  "validation": {
+    "challengeCount": 0,
+    "typesFound": [],
+    "error": "No eval mode in catalog (skipped validation)",
+    "payloadBytes": 5529,
+    "longestStringLength": 265,
+    "longestStringPath": "problem.statement",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Finding the Total Number of Apples",
+    "subject": "Elementary Mathematics",
+    "problem": {
+      "statement": "Maya is getting ready for a party and puts apples into small gift bags. She fills 3 separate bags, and each bag contains 4 apples. How many apples does Maya use in total? Choose the correct equation to model this situation, and then find the total number of apples.",
+      "inset": {
+        "insetType": "equation-setup",
+        "scenario": "Maya is putting 4 apples into each of 3 gift bags to find the total number of apples.",
+        "quantities": [
+          {
+            "symbol": "b",
+            "meaning": "number of gift bags",
+            "knownValue": "3"
+          },
+          {
+            "symbol": "a",
+            "meaning": "apples in each bag",
+            "knownValue": "4"
+          },
+          {
+            "symbol": "x",
+            "meaning": "total number of apples"
+          }
+        ],
+        "target": {
+          "symbol": "x",
+          "meaning": "total number of apples"
+        },
+        "canonicalEquation": "3 \\times 4 = x",
+        "distractorEquations": [
+          {
+            "equation": "3 + 4 = x",
+            "misconception": "Uses addition instead of multiplication when combining equal groups."
+          },
+          {
+            "equation": "4 + 3x = x",
+            "misconception": "Mixes up repeated addition with an incorrect grouping structure."
+          }
+        ],
+        "rationale": "The total number of apples is found by multiplying the number of bags by the number of apples in each bag.",
+        "acceptableForms": [
+          "3 \\times 4 = x",
+          "x = 3 \\times 4",
+          "4 \\times 3 = x",
+          "x = 4 \\times 3"
+        ],
+        "label": "Equation Setup"
+      }
+    },
+    "solutionStrategy": "Multiply the number of bags by the number of apples in each bag to find the total.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Set up the multiplication equation",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "3 \\times 4"
+              },
+              "to": {
+                "latex": "12"
+              },
+              "operation": "multiply the number of bags by the apples in each bag",
+              "challenge": {
+                "hide": "operation",
+                "prompt": "Maya has 3 bags with 4 apples in each bag. Which operation should we use to find the total number of apples across all bags?",
+                "acceptableAnswers": [
+                  "multiply the number of bags by the apples in each bag"
+                ],
+                "rationale": "Because there are equal groups of apples, we multiply the number of groups by the size of each group; adding 3 and 4 confuses the count of bags with the count of apples.",
+                "distractors": [
+                  "add the number of bags and the apples in each bag",
+                  "divide the apples in each bag by the number of bags"
+                ]
+              }
+            }
+          ],
+          "result": "12"
+        },
+        "annotations": {
+          "steps": "We multiply 3 bags by 4 apples to find the total product.",
+          "strategy": "I notice that multiplication is faster than adding the same group over and over.",
+          "misconceptions": "Students might add the numbers instead of multiplying, confusing total groups with total size.",
+          "connections": "This connects equal-sized groups directly to multiplication and repeated addition.",
+          "narrative": "From the [Equation Setup], we are given $b = 3$ bags and $a = 4$ apples per bag, which gives the equation $3 \\times 4 = x$."
+        }
+      },
+      {
+        "id": 2,
+        "title": "Calculate the total apples",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "3 \\times 4"
+              },
+              "to": {
+                "latex": "12"
+              },
+              "operation": "Multiply 3 and 4"
+            }
+          ],
+          "result": "12"
+        },
+        "annotations": {
+          "steps": "Multiply the number of groups by the items in each group to calculate the product.",
+          "strategy": "I notice that multiplying 3 bags by 4 apples per bag gives the total number of apples quickly.",
+          "misconceptions": "Students might mistakenly add 3 and 4 instead of multiplying when finding a total of equal groups.",
+          "connections": "This repeated addition model of multiplication connects directly to scaling and finding areas of rectangles.",
+          "narrative": "Multiplying $3 \\times 4$ gives $x = 12$, so Maya uses a total of $12$ apples."
+        }
+      }
+    ],
+    "solverDebug": {
+      "problemEcho": "Maya is getting ready for a party and puts apples into small gift bags. She fills 3 separate bags, and each bag contains 4 apples. How many apples does Maya use in total? Choose the correct equation to model this situation, and then find the total number of apples.",
+      "body": "From the [Equation Setup], we are given $b = 3$ bags and $a = 4$ apples per bag, which gives the equation $3 \\times 4 = x$.\n---\nMultiplying $3 \\times 4$ gives $x = 12$, so Maya uses a total of $12$ apples.",
+      "separatorCount": 1,
+      "blocks": [
+        {
+          "index": 0,
+          "prose": "From the [Equation Setup], we are given $b = 3$ bags and $a = 4$ apples per bag, which gives the equation $3 \\times 4 = x$."
+        },
+        {
+          "index": 1,
+          "prose": "Multiplying $3 \\times 4$ gives $x = 12$, so Maya uses a total of $12$ apples."
+        }
+      ],
+      "planner": {
+        "specs": [
+          {
+            "stepType": "algebra",
+            "title": "Set up the multiplication equation",
+            "pedagogicalGoal": "Translate equal groups into a multiplication equation representing the total quantity.",
+            "groundingBlockIndices": [
+              0
+            ],
+            "seedNotes": "Extract 3 bags and 4 apples per bag to form the equation 3 \\times 4 = x."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Calculate the total apples",
+            "pedagogicalGoal": "Evaluate the product to determine the final count.",
+            "groundingBlockIndices": [
+              1
+            ],
+            "seedNotes": "Evaluate the multiplication 3 \\times 4 to find x = 12 apples."
+          }
+        ],
+        "unusedBlockIndices": [],
+        "injectedCount": 0,
+        "mergedCount": 0,
+        "fallback": false
+      },
+      "challenger": {
+        "assignments": [
+          {
+            "kind": "transition",
+            "stepIndex": 0,
+            "prompt": "Maya has 3 bags with 4 apples in each bag. Which operation should we use to find the total number of apples across all bags?",
+            "acceptableAnswers": [
+              "multiply the number of bags by the apples in each bag"
+            ],
+            "distractors": [
+              "add the number of bags and the apples in each bag",
+              "divide the apples in each bag by the number of bags"
+            ],
+            "rationale": "Because there are equal groups of apples, we multiply the number of groups by the size of each group; adding 3 and 4 confuses the count of bags with the count of apples.",
+            "transitionIndex": 0,
+            "hide": "operation"
+          }
+        ],
+        "dropped": [],
+        "failed": false
+      }
+    }
+  }
+}

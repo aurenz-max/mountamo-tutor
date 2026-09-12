@@ -1,0 +1,262 @@
+{
+  "index": 9,
+  "grade": 12,
+  "topic": "Find the area between y=x^2 and y=x from x=0 to x=1",
+  "intent": "Use this exact worked example: Find the area between y=x^2 and y=x from x=0 to x=1.",
+  "httpStatus": 200,
+  "elapsed": 95550,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 95517,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 10021,
+      "longestStringLength": 941,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Enclosed Area Between Curves via Definite Integration",
+      "subject": "Calculus",
+      "problem": {
+        "statement": "Evaluate the definite integral representing the enclosed area between the parabolic curve $y = x^2$ and the linear function $y = x$ on the interval from $x = 0$ to $x = 1$. Express your final answer in exact form as a reduced rational number.",
+        "inset": {
+          "insetType": "katex",
+          "expression": "\\int_{0}^{1} (x - x^2) \\, dx",
+          "displayMode": "display",
+          "caption": "Definite integral for the enclosed area",
+          "label": "Equation"
+        }
+      },
+      "solutionStrategy": "Determine the antiderivative of the integrand using the power rule and apply the Fundamental Theorem of Calculus across the given bounds.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Visualize the enclosed region",
+          "content": {
+            "type": "graph-sketch",
+            "expression": "x",
+            "keyPoints": [
+              {
+                "x": 0,
+                "y": 0,
+                "label": "(0, 0)"
+              },
+              {
+                "x": 1,
+                "y": 1,
+                "label": "(1, 1)"
+              }
+            ],
+            "domain": [
+              -0.5,
+              1.5
+            ],
+            "range": [
+              -0.5,
+              1.5
+            ],
+            "features": [],
+            "xLabel": "x",
+            "yLabel": "y",
+            "curves": [
+              {
+                "expression": "x",
+                "color": "primary",
+                "style": "solid",
+                "label": "y = x"
+              },
+              {
+                "expression": "x^2",
+                "color": "secondary",
+                "style": "solid",
+                "label": "y = x^2"
+              }
+            ],
+            "shadedRegions": [
+              {
+                "upper": "x",
+                "lower": "x^2",
+                "from": 0,
+                "to": 1,
+                "label": "A = \\frac{1}{6}"
+              }
+            ],
+            "caption": "Enclosed region bounded above by y = x and below by y = x^2 from x = 0 to x = 1."
+          },
+          "annotations": {
+            "steps": "I plotted the linear function y = x and the quadratic curve y = x^2, identified their intersection points at (0, 0) and (1, 1), and shaded the intervening region.",
+            "strategy": "I established which function dominates geometrically on the given interval to properly structure the integrand as the difference between the upper and lower bounding curves.",
+            "misconceptions": "Students frequently integrate in the wrong order or guess the sign without verifying which function physically resides above the other on the specific interval of integration.",
+            "connections": "This geometric visualization bridges the abstract definite integral with the concept of net accumulated area between intersecting boundaries in vector calculus and physics."
+          },
+          "challenge": {
+            "prompt": "At what coordinates $(x, y)$ in the first quadrant, other than the origin, do the curves $y = x$ and $y = x^2$ intersect to define the right-hand boundary of the enclosed region?",
+            "acceptableAnswers": [
+              "(1, 1)",
+              "(1,1)",
+              "1, 1",
+              "1,1"
+            ],
+            "rationale": "Equating $x^2 = x$ yields $x(x - 1) = 0$, giving intersection points at $(0, 0)$ and $(1, 1)$; $(1, 0)$ incorrectly identifies an x-axis intercept rather than the intersection point of both curves.",
+            "distractors": [
+              "(1, 0)",
+              "(2, 4)",
+              "(0.5, 0.25)"
+            ],
+            "answerFormat": "katex"
+          }
+        },
+        {
+          "id": 2,
+          "title": "Evaluate the definite integral",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "\\int_{0}^{1} (\\htmlClass{lumina-tok lumina-tok-0}{x} \\htmlClass{lumina-tok lumina-tok-1}{- x^2}) \\, dx"
+                },
+                "to": {
+                  "latex": "\\left[ \\htmlClass{lumina-tok lumina-tok-0}{\\frac{x^2}{2}} \\htmlClass{lumina-tok lumina-tok-1}{- \\frac{x^3}{3}} \\right]_{0}^{1}"
+                },
+                "operation": "integrate term-by-term via the power rule",
+                "subMoves": [
+                  {
+                    "from": "x",
+                    "to": "\\frac{x^2}{2}",
+                    "rule": "power rule"
+                  },
+                  {
+                    "from": "- x^2",
+                    "to": "- \\frac{x^3}{3}",
+                    "rule": "power rule"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "latex": "\\left( \\frac{1^2}{2} - \\frac{1^3}{3} \\right) - \\left( \\frac{0^2}{2} - \\frac{0^3}{3} \\right)"
+                },
+                "to": {
+                  "latex": "\\frac{1}{2} - \\frac{1}{3} - 0"
+                },
+                "operation": "apply Fundamental Theorem of Calculus"
+              },
+              {
+                "from": {
+                  "latex": "\\frac{3}{6} - \\frac{2}{6}"
+                },
+                "to": {
+                  "latex": "\\frac{1}{6}"
+                },
+                "operation": "simplify fractions to find exact area"
+              }
+            ],
+            "result": "\\frac{1}{6}"
+          },
+          "annotations": {
+            "steps": "Integrate the polynomial integrand term-by-term using the power rule, yielding the antiderivative evaluated across the integration bounds from 0 to 1.",
+            "strategy": "I choose to compute the antiderivative of the difference function directly to apply the Fundamental Theorem of Calculus efficiently.",
+            "misconceptions": "A common misconception is subtracting the lower limit without fully evaluating it, or incorrectly integrating the polynomial by failing to divide by the new exponent.",
+            "connections": "This procedure connects definite integration directly to accumulated net area under a curve, forming the foundational bridge between calculus and geometry.",
+            "narrative": "From the provided visual equation, the enclosed area is represented by $\\int_{0}^{1} (x - x^2) \\, dx$, where the integrand reflects the differential vertical distance $y_{\\text{upper}} - y_{\\text{lower}} = x - x^2$ on the closed interval $[0, 1]$. Applying the linearity of integration along with the power rule, $\\int x^n \\, dx = \\frac{x^{n+1}}{n+1}$ for $n \\neq -1$, produces the antiderivative:\n$F(x) = \\frac{x^2}{2} - \\frac{x^3}{3}$\n\nBy the Fundamental Theorem of Calculus, Part 2, evaluate the antiderivative at the limits of integration:\n$\\int_{0}^{1} (x - x^2) \\, dx = \\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1} = \\left( \\frac{1^2}{2} - \\frac{1^3}{3} \\right) - \\left( \\frac{0^2}{2} - \\frac{0^3}{3} \\right)$\nEvaluating the expression yields $\\frac{1}{2} - \\frac{1}{3} - 0 = \\frac{3}{6} - \\frac{2}{6} = \\frac{1}{6}$. Consequently, the exact enclosed area between the two curves is the reduced rational number $\\frac{1}{6}$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Evaluate the definite integral representing the enclosed area between the parabolic curve $y = x^2$ and the linear function $y = x$ on the interval from $x = 0$ to $x = 1$. Express your final answer in exact form as a reduced rational number.",
+        "body": "From the provided visual equation, the enclosed area is represented by $\\int_{0}^{1} (x - x^2) \\, dx$, where the integrand reflects the differential vertical distance $y_{\\text{upper}} - y_{\\text{lower}} = x - x^2$ on the closed interval $[0, 1]$. Applying the linearity of integration along with the power rule, $\\int x^n \\, dx = \\frac{x^{n+1}}{n+1}$ for $n \\neq -1$, produces the antiderivative:\n$F(x) = \\frac{x^2}{2} - \\frac{x^3}{3}$\n---\nBy the Fundamental Theorem of Calculus, Part 2, evaluate the antiderivative at the limits of integration:\n$\\int_{0}^{1} (x - x^2) \\, dx = \\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1} = \\left( \\frac{1^2}{2} - \\frac{1^3}{3} \\right) - \\left( \\frac{0^2}{2} - \\frac{0^3}{3} \\right)$\nEvaluating the expression yields $\\frac{1}{2} - \\frac{1}{3} - 0 = \\frac{3}{6} - \\frac{2}{6} = \\frac{1}{6}$. Consequently, the exact enclosed area between the two curves is the reduced rational number $\\frac{1}{6}$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "From the provided visual equation, the enclosed area is represented by $\\int_{0}^{1} (x - x^2) \\, dx$, where the integrand reflects the differential vertical distance $y_{\\text{upper}} - y_{\\text{lower}} = x - x^2$ on the closed interval $[0, 1]$. Applying the linearity of integration along with the power rule, $\\int x^n \\, dx = \\frac{x^{n+1}}{n+1}$ for $n \\neq -1$, produces the antiderivative:\n$F(x) = \\frac{x^2}{2} - \\frac{x^3}{3}$"
+          },
+          {
+            "index": 1,
+            "prose": "By the Fundamental Theorem of Calculus, Part 2, evaluate the antiderivative at the limits of integration:\n$\\int_{0}^{1} (x - x^2) \\, dx = \\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1} = \\left( \\frac{1^2}{2} - \\frac{1^3}{3} \\right) - \\left( \\frac{0^2}{2} - \\frac{0^3}{3} \\right)$\nEvaluating the expression yields $\\frac{1}{2} - \\frac{1}{3} - 0 = \\frac{3}{6} - \\frac{2}{6} = \\frac{1}{6}$. Consequently, the exact enclosed area between the two curves is the reduced rational number $\\frac{1}{6}$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "graph-sketch",
+              "title": "Visualize the enclosed region",
+              "pedagogicalGoal": "Illustrate that the line $y = x$ lies above the parabola $y = x^2$ on the interval $[0, 1]$ to justify the integrand $y_{\\text{upper}} - y_{\\text{lower}}$.",
+              "groundingBlockIndices": [],
+              "seedNotes": "Plot the functions $y = x$ and $y = x^2$ on $[0, 1]$, mark intersections at $(0, 0)$ and $(1, 1)$, and shade the enclosed area between them."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Evaluate the definite integral",
+              "pedagogicalGoal": "Integrate the difference of the functions term-by-term via the power rule and apply the Fundamental Theorem of Calculus to compute the exact area.",
+              "groundingBlockIndices": [
+                0,
+                1
+              ],
+              "seedNotes": "Compute $\\int_{0}^{1} (x - x^2) \\, dx = \\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1} = \\left( \\frac{1}{2} - \\frac{1}{3} \\right) - 0 = \\frac{1}{6}$."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 1,
+          "mergedCount": 1,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 0,
+              "prompt": "At what coordinates $(x, y)$ in the first quadrant, other than the origin, do the curves $y = x$ and $y = x^2$ intersect to define the right-hand boundary of the enclosed region?",
+              "acceptableAnswers": [
+                "(1, 1)",
+                "(1,1)",
+                "1, 1",
+                "1,1"
+              ],
+              "distractors": [
+                "(1, 0)",
+                "(2, 4)",
+                "(0.5, 0.25)"
+              ],
+              "rationale": "Equating $x^2 = x$ yields $x(x - 1) = 0$, giving intersection points at $(0, 0)$ and $(1, 1)$; $(1, 0)$ incorrectly identifies an x-axis intercept rather than the intersection point of both curves.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "transition",
+                "stepIndex": 1,
+                "prompt": "To begin evaluating $\\int_{0}^{1} (x - x^2) \\, dx$, what calculus operation should be performed on the integrand?",
+                "acceptableAnswers": [
+                  "integrate term-by-term via the power rule",
+                  "integrate using the power rule",
+                  "power rule",
+                  "apply power rule",
+                  "integrate term by term"
+                ],
+                "distractors": [
+                  "differentiate term-by-term via the power rule",
+                  "integrate by parts using u = x",
+                  "integrate by substitution using u = x - x^2"
+                ],
+                "rationale": "The polynomial integrand is antidifferentiated directly term-by-term using the power rule for integrals, $\\int x^n \\, dx = \\frac{x^{n+1}}{n+1}$, rather than applying differentiation or unnecessary techniques like parts or substitution.",
+                "transitionIndex": 0,
+                "hide": "operation"
+              },
+              "reason": "The answer is already directly revealed in the visible strategy, which explicitly instructs to 'Determine the antiderivative of the integrand using the power rule'."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

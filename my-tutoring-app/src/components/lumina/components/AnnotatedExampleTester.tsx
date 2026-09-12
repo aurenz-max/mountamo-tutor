@@ -411,7 +411,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
               </div>
             )}
 
-            {data && <AnnotatedExample data={data} />}
+            {data && <AnnotatedExample data={data} showDebug />}
           </div>
         </div>
       </div>

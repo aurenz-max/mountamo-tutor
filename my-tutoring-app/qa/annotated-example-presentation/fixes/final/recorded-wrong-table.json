@@ -1,0 +1,73 @@
+{
+  "name": "recorded-wrong-table",
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "There are 3 bags of 4 apples. Each bag adds 4. The running totals are 4, 8, 12.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Track apples added and running total.",
+    "seedNotes": "Show every bag, apples added, and running total."
+  },
+  "candidate": {
+    "id": 4,
+    "title": "Verify total by skip-counting",
+    "content": {
+      "type": "table",
+      "caption": "Verifying the total number of apples using skip-counting",
+      "headers": [
+        "Bag Number",
+        "Apples Added",
+        "Cumulative Total"
+      ],
+      "rows": [
+        [
+          "1st bag",
+          "$4$",
+          "$4$"
+        ],
+        [
+          "2nd bag",
+          "$8$",
+          "$8$"
+        ],
+        [
+          "3rd bag",
+          "$4$",
+          "$12$"
+        ]
+      ],
+      "highlightCell": [
+        2,
+        2
+      ]
+    },
+    "annotations": {
+      "steps": "Record the cumulative count of apples as each bag is counted by fours.",
+      "strategy": "I notice that skip-counting gives me a quick way to check my addition and multiplication results.",
+      "misconceptions": "A common error is skip-counting by the wrong number, such as counting by threes instead of fours because there are 3 bags.",
+      "connections": "Skip-counting lays the foundation for multiplication tables and understanding multiples.",
+      "narrative": "Verify the total by skip-counting and state the final answer:\nWe can check our calculation by skip-counting forward by $4$ three times (once for each bag):\n- $1\\text{st}$ bag: $4$\n- $2\\text{nd}$ bag: $8$\n- $3\\text{rd}$ bag: $12$\n\nSkip-counting lands on $12$, confirming that Maya has a total of $12$ apples."
+    },
+    "challenge": {
+      "prompt": "Using skip-counting by 4 for each bag, what is the cumulative total of apples after the 3rd bag?",
+      "acceptableAnswers": [
+        "12",
+        "12 apples"
+      ],
+      "rationale": "Each bag adds 4 apples, so skip-counting by 4 three times gives 4, 8, 12, whereas counting by 3s would mistakenly give 9.",
+      "distractors": [
+        "9",
+        "11",
+        "16"
+      ],
+      "answerFormat": "katex"
+    }
+  },
+  "expectedValid": false,
+  "issues": [
+    "In row 2 (\"2nd bag\") of the table, the \"Apples Added\" column lists \"$8$\" instead of \"$4$\". Each bag contains 4 apples, so the amount added should be \"$4$\" and the cumulative total should be \"$8$\"."
+  ],
+  "pass": true
+}

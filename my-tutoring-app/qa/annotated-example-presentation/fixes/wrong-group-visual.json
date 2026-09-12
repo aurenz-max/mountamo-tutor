@@ -1,0 +1,40 @@
+{
+  "name": "wrong-group-visual",
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?",
+    "solutionStrategy": "Count four apples per bag.",
+    "groundingProse": "There are 3 bags of 4 apples. Each bag adds 4. The running totals are 4, 8, 12.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Track apples added and running total.",
+    "seedNotes": "Show every bag, apples added, and running total."
+  },
+  "candidate": {
+    "content": {
+      "type": "diagram",
+      "visual": {
+        "kind": "groups",
+        "counts": [
+          4,
+          4
+        ],
+        "itemLabel": "apple"
+      },
+      "altText": "Three bags of four apples",
+      "imagePrompt": "",
+      "labels": []
+    },
+    "annotations": {
+      "steps": "",
+      "strategy": "",
+      "misconceptions": "",
+      "connections": ""
+    }
+  },
+  "expectedValid": false,
+  "issues": [
+    "In the diagram visual, `counts` is set to `[4, 4]`, representing only 2 groups of 4 apples instead of 3 groups of 4 apples (`[4, 4, 4]`) as specified in the problem and grounding."
+  ],
+  "pass": true
+}

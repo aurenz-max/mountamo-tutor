@@ -1,0 +1,206 @@
+{
+  "index": 7,
+  "grade": 5,
+  "topic": "Add 0.6 and 0.2",
+  "httpStatus": 200,
+  "elapsed": 50648,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 50608,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4997,
+      "longestStringLength": 285,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Adding Decimals on a Number Line",
+      "subject": "Elementary Mathematics",
+      "problem": {
+        "statement": "Leo walks $0.6$ kilometers to the park, and then walks another $0.2$ kilometers to the ice cream shop. Use the number line below to find the total distance Leo walks by adding $0.6$ and $0.2$. What is the total distance?",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0,
+              "label": "Start"
+            },
+            {
+              "value": 0.6,
+              "label": "Park"
+            },
+            {
+              "value": 0.8,
+              "label": "Ice Cream Shop"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Locate the first distance on the number line and jump forward by tenths to find the sum.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Plot initial distance on number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0,
+              "jumps": [
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into tenths, showing six jumps from 0 to 0.6.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I start at 0 on the number line and jump forward six tenths to reach 0.6.",
+            "strategy": "I notice that using a number line helps me see decimals as distances.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This connects whole number counting to decimal fractions on a continuous scale.",
+            "narrative": "Locate the point labeled Start at $0$ and move along the number line to Park at tick mark $0.6$."
+          },
+          "challenge": {
+            "prompt": "Starting at $0$, how many one-tenth ($0.1$) jumps forward does Leo need to make to reach the park at $0.6$?",
+            "acceptableAnswers": [
+              "6"
+            ],
+            "rationale": "Leo needs 6 jumps of 0.1 to reach 0.6, because each jump represents one tenth and we count the intervals rather than the starting tick mark.",
+            "distractors": [
+              "7",
+              "5"
+            ],
+            "answerFormat": "katex"
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Jump forward to find total distance",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0.6000000000000001,
+              "jumps": [
+                0.2
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0.0 to 1.0 divided into tenths, showing a jump of 0.2 forward from 0.6 to land at 0.8.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I start at 0.6 on the number line and jump forward by 0.2 to land at 0.8.",
+            "strategy": "I notice that adding decimals is just like jumping forward by tenths on a number line.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This connects decimal addition to the same forward movement we use for whole number addition.",
+            "narrative": "From $0.6$, jump forward $0.2$ (two tenths) along the number line to reach Ice Cream Shop at tick mark $0.8$. Since $0.6 + 0.2 = 0.8$, the total distance Leo walks is $0.8$ kilometers."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Leo walks $0.6$ kilometers to the park, and then walks another $0.2$ kilometers to the ice cream shop. Use the number line below to find the total distance Leo walks by adding $0.6$ and $0.2$. What is the total distance?",
+        "body": "Locate the point labeled Start at $0$ and move along the number line to Park at tick mark $0.6$.\n---\nFrom $0.6$, jump forward $0.2$ (two tenths) along the number line to reach Ice Cream Shop at tick mark $0.8$. Since $0.6 + 0.2 = 0.8$, the total distance Leo walks is $0.8$ kilometers.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Locate the point labeled Start at $0$ and move along the number line to Park at tick mark $0.6$."
+          },
+          {
+            "index": 1,
+            "prose": "From $0.6$, jump forward $0.2$ (two tenths) along the number line to reach Ice Cream Shop at tick mark $0.8$. Since $0.6 + 0.2 = 0.8$, the total distance Leo walks is $0.8$ kilometers."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Plot initial distance on number line",
+              "pedagogicalGoal": "Visualize the first distance of 0.6 kilometers as an interval starting from 0 on a tenths number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Draw a number line partitioned into tenths from 0 to 1, highlighting the move from Start at 0 to Park at 0.6."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Jump forward to find total distance",
+              "pedagogicalGoal": "Model decimal addition as moving forward by tenths on the number line to find the final position.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Illustrate a forward jump of +0.2 from 0.6 to arrive at 0.8 labeled Ice Cream Shop, showing 0.6 + 0.2 = 0.8 km."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 0,
+              "prompt": "Starting at $0$, how many one-tenth ($0.1$) jumps forward does Leo need to make to reach the park at $0.6$?",
+              "acceptableAnswers": [
+                "6"
+              ],
+              "distractors": [
+                "7",
+                "5"
+              ],
+              "rationale": "Leo needs 6 jumps of 0.1 to reach 0.6, because each jump represents one tenth and we count the intervals rather than the starting tick mark.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

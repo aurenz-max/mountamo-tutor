@@ -1,0 +1,13 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 7",
+    "problemStatement": "Show the perpendicular legs of a right triangle with legs 3 cm and 4 cm.",
+    "solutionStrategy": "Count four apples per bag.",
+    "groundingProse": "The 3 cm and 4 cm legs meet at a right angle. The hypotenuse is 5 cm.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Recognize perpendicular legs.",
+    "seedNotes": "Draw a right triangle and label the three lengths."
+  },
+  "error": "Worked step failed both validation attempts: Invalid drawing shape dimensions; Invalid drawing shape dimensions"
+}

@@ -1,0 +1,243 @@
+{
+  "index": 8,
+  "grade": 7,
+  "topic": "Solve 2x + 3 = 11",
+  "intent": "Use this exact worked example: Solve 2x + 3 = 11.",
+  "httpStatus": 200,
+  "elapsed": 31207,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 31175,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 9433,
+      "longestStringLength": 946,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Solving a Two-Step Linear Equation",
+      "subject": "Algebra",
+      "problem": {
+        "statement": "Analyze the linear relationship modeled by the algebraic expression in the inset. Determine the exact value of the independent variable $x$ by performing inverse operations to isolate the term containing $x$, noting that adding 3 to the product of $2$ and $x$ yields a sum of 11, and subsequently evaluate the complete solution.",
+        "inset": {
+          "insetType": "katex",
+          "expression": "2x + 3 = 11",
+          "displayMode": "display",
+          "caption": "Linear equation modeling the relationship",
+          "label": "Equation"
+        }
+      },
+      "solutionStrategy": "Use inverse operations in reverse order of operations to isolate the variable, then verify the resulting value by substitution.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Isolate the variable term",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "2x + 3 = 11"
+                },
+                "to": {
+                  "latex": "2x = 8"
+                },
+                "operation": "subtract 3 from both sides",
+                "challenge": {
+                  "hide": "to",
+                  "prompt": "After applying the subtraction property of equality to subtract 3 from both sides of $2x + 3 = 11$, what is the resulting equation?",
+                  "acceptableAnswers": [
+                    "2x = 8",
+                    "2x=8"
+                  ],
+                  "rationale": "Subtracting 3 from both sides yields $2x = 8$, whereas adding 3 produces $2x = 14$ and subtracting from only the left side leaves $2x = 11$.",
+                  "distractors": [
+                    "2x = 14",
+                    "x = 8",
+                    "2x = 11"
+                  ]
+                }
+              }
+            ],
+            "result": "2x = 8"
+          },
+          "annotations": {
+            "steps": "Subtract 3 from both sides of the equation to eliminate the additive constant on the left side.",
+            "strategy": "I notice that addition is paired with 2x, so I apply the inverse operation of subtraction to isolate the variable term.",
+            "misconceptions": "Students often incorrectly subtract 3 from only the left side or attempt to subtract 3 from 2x directly.",
+            "connections": "This applies the Subtraction Property of Equality, which maintains the balance of linear equations when scaling and shifting.",
+            "narrative": "From the linear equation $2x + 3 = 11$ in the inset, the expression models a relationship where an independent input $x$ is scaled by a factor of $2$ and shifted by an additive constant of $3$ to achieve a net value of $11$. To isolate the variable term $2x$, apply the Subtraction Property of Equality by subtracting the constant $3$ from both sides:\n$2x + 3 - 3 = 11 - 3$, which simplifies to $2x = 8$."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Solve for the variable",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "2x = 8"
+                },
+                "to": {
+                  "latex": "\\frac{2x}{2} = \\frac{8}{2}"
+                },
+                "operation": "divide both sides by 2",
+                "challenge": {
+                  "hide": "operation",
+                  "prompt": "Now that the variable term is isolated in $2x = 8$, what inverse operation isolates $x$ by undoing the multiplication by 2?",
+                  "acceptableAnswers": [
+                    "divide both sides by 2",
+                    "divide by 2",
+                    "divide each side by 2"
+                  ],
+                  "rationale": "Because 2 is multiplied by $x$, the inverse operation is dividing both sides by 2, whereas subtracting 2 confuses additive and multiplicative inverses.",
+                  "distractors": [
+                    "subtract 2 from both sides",
+                    "multiply both sides by 2",
+                    "divide both sides by 8"
+                  ]
+                }
+              }
+            ],
+            "result": "x = 4"
+          },
+          "annotations": {
+            "steps": "Divide both sides of the equation by the coefficient 2 to eliminate the multiplicative constraint.",
+            "strategy": "I notice that the variable is scaled by a factor of 2, so I must apply the inverse operation of division to completely isolate the independent variable.",
+            "misconceptions": "Students often mistakenly subtract 2 instead of dividing by 2 because they confuse additive inverses with multiplicative inverses.",
+            "connections": "This applies the Division Property of Equality, a foundational algebraic principle used universally to solve linear equations and isolate variables in scientific formulas.",
+            "narrative": "To resolve the multiplicative constraint, apply the Division Property of Equality by dividing both sides of $2x = 8$ by the coefficient $2$. This inverts the scaling factor and isolates the independent variable:\n$x = \\frac{8}{2} = 4$."
+          }
+        },
+        {
+          "id": 3,
+          "title": "Verify the solution",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "2(4) + 3"
+                },
+                "to": {
+                  "latex": "8 + 3"
+                },
+                "operation": "multiply 2 by 4"
+              }
+            ],
+            "result": "11"
+          },
+          "annotations": {
+            "steps": "Substitute 4 for x in the expression 2x + 3 and compute the product of 2 and 4 to yield 8.",
+            "strategy": "I choose to evaluate the expression by adhering strictly to the order of operations, performing multiplication before addition to verify the equality.",
+            "misconceptions": "A common pitfall is performing the addition operation before multiplication, incorrectly evaluating 2 plus 3 first and violating the standard hierarchy of operations.",
+            "connections": "This verification process relates to the broader mathematical principle of checking solutions in functions and equations to ensure logical consistency and accuracy.",
+            "narrative": "Evaluate the complete solution by substituting $x = 4$ back into the original inset equation $2x + 3 = 11$. Computing the operations in standard hierarchical order yields $2(4) + 3 = 8 + 3 = 11$, which satisfies the equation and confirms that the exact value of the independent variable is $x = 4$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Analyze the linear relationship modeled by the algebraic expression in the inset. Determine the exact value of the independent variable $x$ by performing inverse operations to isolate the term containing $x$, noting that adding 3 to the product of $2$ and $x$ yields a sum of 11, and subsequently evaluate the complete solution.",
+        "body": "From the linear equation $2x + 3 = 11$ in the inset, the expression models a relationship where an independent input $x$ is scaled by a factor of $2$ and shifted by an additive constant of $3$ to achieve a net value of $11$. To isolate the variable term $2x$, apply the Subtraction Property of Equality by subtracting the constant $3$ from both sides:\n$2x + 3 - 3 = 11 - 3$, which simplifies to $2x = 8$.\n---\nTo resolve the multiplicative constraint, apply the Division Property of Equality by dividing both sides of $2x = 8$ by the coefficient $2$. This inverts the scaling factor and isolates the independent variable:\n$x = \\frac{8}{2} = 4$.\n---\nEvaluate the complete solution by substituting $x = 4$ back into the original inset equation $2x + 3 = 11$. Computing the operations in standard hierarchical order yields $2(4) + 3 = 8 + 3 = 11$, which satisfies the equation and confirms that the exact value of the independent variable is $x = 4$.",
+        "separatorCount": 2,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "From the linear equation $2x + 3 = 11$ in the inset, the expression models a relationship where an independent input $x$ is scaled by a factor of $2$ and shifted by an additive constant of $3$ to achieve a net value of $11$. To isolate the variable term $2x$, apply the Subtraction Property of Equality by subtracting the constant $3$ from both sides:\n$2x + 3 - 3 = 11 - 3$, which simplifies to $2x = 8$."
+          },
+          {
+            "index": 1,
+            "prose": "To resolve the multiplicative constraint, apply the Division Property of Equality by dividing both sides of $2x = 8$ by the coefficient $2$. This inverts the scaling factor and isolates the independent variable:\n$x = \\frac{8}{2} = 4$."
+          },
+          {
+            "index": 2,
+            "prose": "Evaluate the complete solution by substituting $x = 4$ back into the original inset equation $2x + 3 = 11$. Computing the operations in standard hierarchical order yields $2(4) + 3 = 8 + 3 = 11$, which satisfies the equation and confirms that the exact value of the independent variable is $x = 4$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "algebra",
+              "title": "Isolate the variable term",
+              "pedagogicalGoal": "Demonstrate undoing addition with subtraction to isolate the variable term on one side of the equation.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Subtract 3 from both sides of $2x + 3 = 11$ to arrive at $2x = 8$."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Solve for the variable",
+              "pedagogicalGoal": "Show how to eliminate a multiplying coefficient using division to isolate the independent variable.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Divide both sides of $2x = 8$ by 2 to compute $x = 4$."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Verify the solution",
+              "pedagogicalGoal": "Teach verification of algebraic solutions by substituting the derived value back into the original relationship.",
+              "groundingBlockIndices": [
+                2
+              ],
+              "seedNotes": "Substitute $x = 4$ into $2x + 3 = 11$ and evaluate $2(4) + 3 = 8 + 3 = 11$."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "transition",
+              "stepIndex": 0,
+              "prompt": "After applying the subtraction property of equality to subtract 3 from both sides of $2x + 3 = 11$, what is the resulting equation?",
+              "acceptableAnswers": [
+                "2x = 8",
+                "2x=8"
+              ],
+              "distractors": [
+                "2x = 14",
+                "x = 8",
+                "2x = 11"
+              ],
+              "rationale": "Subtracting 3 from both sides yields $2x = 8$, whereas adding 3 produces $2x = 14$ and subtracting from only the left side leaves $2x = 11$.",
+              "transitionIndex": 0,
+              "hide": "to"
+            },
+            {
+              "kind": "transition",
+              "stepIndex": 1,
+              "prompt": "Now that the variable term is isolated in $2x = 8$, what inverse operation isolates $x$ by undoing the multiplication by 2?",
+              "acceptableAnswers": [
+                "divide both sides by 2",
+                "divide by 2",
+                "divide each side by 2"
+              ],
+              "distractors": [
+                "subtract 2 from both sides",
+                "multiply both sides by 2",
+                "divide both sides by 8"
+              ],
+              "rationale": "Because 2 is multiplied by $x$, the inverse operation is dividing both sides by 2, whereas subtracting 2 confuses additive and multiplicative inverses.",
+              "transitionIndex": 0,
+              "hide": "operation"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

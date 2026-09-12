@@ -1,0 +1,14 @@
+{
+  "index": 4,
+  "grade": 2,
+  "topic": "Subtract 12 from 45 without regrouping",
+  "httpStatus": 500,
+  "elapsed": 16122,
+  "data": {
+    "status": "error",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 16092,
+    "error": "[AnnotatedExample] Required spec 0 (diagram) failed to generate; refusing a partial solution"
+  }
+}

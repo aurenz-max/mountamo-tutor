@@ -1,0 +1,95 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 7",
+    "problemStatement": "Show the perpendicular legs of a right triangle with legs 3 cm and 4 cm.",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "The 3 cm and 4 cm legs meet at a right angle. The hypotenuse is 5 cm.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Recognize perpendicular legs.",
+    "seedNotes": "Draw a right triangle and label the three lengths."
+  },
+  "generated": {
+    "content": {
+      "type": "diagram",
+      "visual": {
+        "kind": "drawing",
+        "shapes": [
+          {
+            "kind": "line",
+            "x": 200,
+            "y": 100,
+            "x2": 200,
+            "y2": 260
+          },
+          {
+            "kind": "line",
+            "x": 200,
+            "y": 260,
+            "x2": 400,
+            "y2": 260
+          },
+          {
+            "kind": "line",
+            "x": 200,
+            "y": 100,
+            "x2": 400,
+            "y2": 260
+          },
+          {
+            "kind": "rect",
+            "x": 200,
+            "y": 240,
+            "width": 20,
+            "height": 20
+          },
+          {
+            "kind": "text",
+            "x": 160,
+            "y": 180,
+            "text": "3 cm"
+          },
+          {
+            "kind": "text",
+            "x": 290,
+            "y": 290,
+            "text": "4 cm"
+          },
+          {
+            "kind": "text",
+            "x": 280,
+            "y": 165,
+            "text": "5 cm"
+          }
+        ]
+      },
+      "imagePrompt": "",
+      "altText": "A right triangle with vertical leg 3 cm, horizontal leg 4 cm, and hypotenuse 5 cm, with a right angle symbol at their intersection.",
+      "labels": [
+        {
+          "text": "Leg 3 cm",
+          "description": "The vertical perpendicular leg."
+        },
+        {
+          "text": "Leg 4 cm",
+          "description": "The horizontal perpendicular leg meeting the first leg at a right angle."
+        }
+      ]
+    },
+    "annotations": {
+      "steps": "Draw the two perpendicular legs of lengths 3 cm and 4 cm meeting at a 90-degree angle, and complete the triangle with the 5 cm hypotenuse.",
+      "strategy": "I notice that a right triangle is defined by its two perpendicular legs forming the right angle, so I identify these given lengths first.",
+      "misconceptions": "Students often mistake the longest side (hypotenuse) for one of the legs, but the legs are always the two sides that form the right angle.",
+      "connections": "Identifying perpendicular legs is the foundation for applying the Pythagorean theorem and trigonometric ratios in right triangles."
+    },
+    "result": "3 \\text{ cm} \\perp 4 \\text{ cm}",
+    "generationReview": {
+      "attempts": 2,
+      "rejections": [
+        [
+          "The result '3^2 + 4^2 = 5^2' does not agree with the content; the step recognizes and displays the perpendicular legs (3 cm and 4 cm) rather than evaluating the Pythagorean theorem equation."
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "index": 1,
+  "grade": 3,
+  "topic": "Find the total in 3 groups of 4 apples",
+  "httpStatus": 500,
+  "elapsed": 33814,
+  "data": {
+    "status": "error",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 32995,
+    "error": "[AnnotatedExample] Required spec 0 (diagram) failed to generate; refusing a partial solution"
+  }
+}

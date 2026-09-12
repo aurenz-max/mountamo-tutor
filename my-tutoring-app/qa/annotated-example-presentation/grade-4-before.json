@@ -1,0 +1,297 @@
+{
+  "status": "pass",
+  "componentId": "annotated-example",
+  "evalMode": "auto",
+  "duration": 71269,
+  "catalogMeta": null,
+  "validation": {
+    "challengeCount": 0,
+    "typesFound": [],
+    "error": "No eval mode in catalog (skipped validation)",
+    "payloadBytes": 14614,
+    "longestStringLength": 1914,
+    "longestStringPath": "solverDebug.body",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Finding an Equivalent Fraction on a Number Line",
+    "subject": "Fractions",
+    "problem": {
+      "statement": "Leo is baking bread and needs to measure out $\\frac{1}{2}$ cup of milk. Using the number line below that goes from $0$ to $1$ with eighths marked, find the mark that lines up with $\\frac{1}{2}$ and write it as a fraction with a denominator of $8$.",
+      "inset": {
+        "insetType": "number-line",
+        "min": 0,
+        "max": 1,
+        "ticks": [
+          0,
+          0.125,
+          0.25,
+          0.375,
+          0.5,
+          0.625,
+          0.75,
+          0.875,
+          1
+        ],
+        "label": "Figure 1",
+        "points": [
+          {
+            "value": 0.5,
+            "label": "1/2"
+          },
+          {
+            "value": 0.5,
+            "label": "4/8"
+          }
+        ]
+      }
+    },
+    "solutionStrategy": "Two fractions are equivalent if they name the exact same spot on a number line. First, we identify what each tick mark represents by looking at how the distance from $0$ to $1$ is divided. Then, we find where $\\frac{1}{2}$ is located and count the number of eighths needed to reach that exact same point.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Identify number line tick marks",
+        "content": {
+          "type": "diagram",
+          "imagePrompt": "A clean educational number line diagram from 0 to 1 divided into 8 equal parts, with tick marks clearly labeled from 1/8 to 8/8, highlighting the halfway point at 4/8.",
+          "altText": "A number line from 0 to 1 marked in eighths with the halfway point highlighted.",
+          "labels": [
+            {
+              "text": "0 to 1 Interval",
+              "description": "The total distance representing one whole cup of milk."
+            },
+            {
+              "text": "Eighths Tick Marks",
+              "description": "Eight equal spaces where each jump represents one eighth."
+            }
+          ]
+        },
+        "annotations": {
+          "steps": "I counted the total number of equal spaces between 0 and 1 on the number line to find the denominator.",
+          "strategy": "I notice that splitting the whole into 8 equal parts lets me name any point using eighths as the unit.",
+          "misconceptions": "Students often count the tick marks instead of the spaces between them, which leads to miscounting the denominator.",
+          "connections": "This connects the visual representation of a fraction on a number line to the concept of equal partitioning in measurement.",
+          "narrative": "In Figure 1, the number line goes from $0$ to $1$ and is divided into $8$ equal spaces. Each tick mark increases by $0.125$, which is equal to one eighth ($\\frac{1}{8}$):\n- Tick 1 is at $0.125$ ($\\frac{1}{8}$)\n- Tick 2 is at $0.25$ ($\\frac{2}{8}$)\n- Tick 3 is at $0.375$ ($\\frac{3}{8}$)\n- Tick 4 is at $0.5$ ($\\frac{4}{8}$)\n- Tick 5 is at $0.625$ ($\\frac{5}{8}$)\n- Tick 6 is at $0.75$ ($\\frac{6}{8}$)\n- Tick 7 is at $0.875$ ($\\frac{7}{8}$)\n- Tick 8 is at $1$ ($\\frac{8}{8}$)\n\nEach step of $0.125$ from $0$ represents another $\\frac{1}{8}$ of a cup."
+        }
+      },
+      {
+        "id": 2,
+        "title": "Locate one-half on number line",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "\\frac{1}{2}"
+              },
+              "to": {
+                "latex": "0.5"
+              },
+              "operation": "convert fraction to decimal",
+              "challenge": {
+                "hide": "to",
+                "prompt": "When converting $\\frac{1}{2}$ to a decimal to locate its position on the number line, what value do you get?",
+                "acceptableAnswers": [
+                  "0.5",
+                  ".5",
+                  "0.50"
+                ],
+                "rationale": "Dividing 1 by 2 yields 0.5 to mark the halfway point, whereas 0.2 comes from mistakenly placing the denominator 2 into the tenths position.",
+                "distractors": [
+                  "0.2",
+                  "0.12",
+                  "2.0"
+                ]
+              }
+            }
+          ],
+          "result": "0.5"
+        },
+        "annotations": {
+          "steps": "Express the fraction 1/2 as a division problem 1 divided by 2, and compute its decimal value 0.5 to locate it at the center of the 0 to 1 interval.",
+          "strategy": "I notice that benchmark fractions like 1/2 are easier to place on a number line when I think of them as decimals right in the middle between 0 and 1.",
+          "misconceptions": "Students might mistakenly think 1/2 belongs closer to 1 or 2 because the denominator is 2, forgetting that the denominator tells us the number of equal parts in the whole, placing it exactly halfway.",
+          "connections": "This connects fractions directly to decimals and the midpoint concept on the number line, building a foundation for comparing and ordering numbers.",
+          "narrative": "Next, find where $\\frac{1}{2}$ is located. The fraction $\\frac{1}{2}$ means $1$ out of $2$ equal parts of the whole, which is halfway between $0$ and $1$. \n\nSince half of $1$ is $0.5$ ($1 \\div 2 = 0.5$), the fraction $\\frac{1}{2}$ sits right at the center of the line. In Figure 1, the point $\\frac{1}{2}$ is plotted directly at the tick mark $0.5$."
+        }
+      },
+      {
+        "id": 3,
+        "title": "Count eighths to the midpoint",
+        "content": {
+          "type": "diagram",
+          "imagePrompt": "A colorful educational number line diagram from 0 to 1 divided into 8 equal parts with eighths marked. Four curved jump arrows of equal size, each labeled 1/8, stretch sequentially from 0 to the 4/8 mark. The 4/8 mark is highlighted and directly aligns with the 1/2 mark above the number line, showing they share the exact same physical position.",
+          "altText": "A number line from 0 to 1 with eighths marked, showing four jumps of 1/8 reaching the 4/8 mark, which aligns with 1/2.",
+          "labels": [
+            {
+              "text": "Jump Arcs",
+              "description": "Four separate hops of size 1/8 moving forward from 0."
+            },
+            {
+              "text": "Equivalent Point",
+              "description": "The 4/8 tick mark that lines up with the 1/2 position."
+            }
+          ]
+        },
+        "annotations": {
+          "steps": "Count four individual jumps of size 1/8 starting from zero along the number line until reaching the position of one-half.",
+          "strategy": "I notice that if I take four equal hops of one-eighth each, I land right on the spot where one-half is located.",
+          "misconceptions": "Students often count the tick marks instead of the spaces or jumps, resulting in counting 5 tick marks instead of 4 intervals.",
+          "connections": "This connects the geometric concept of number line distance to numerical fraction equivalence and multiplication.",
+          "narrative": "Now, count the eighths starting from $0$ to reach position $0.5$:\n- 1 jump reaches $0.125$ ($\\frac{1}{8}$)\n- 2 jumps reach $0.25$ ($\\frac{2}{8}$)\n- 3 jumps reach $0.375$ ($\\frac{3}{8}$)\n- 4 jumps reach $0.5$ ($\\frac{4}{8}$)\n\nTaking $4$ jumps of size $\\frac{1}{8}$ brings us to $0.5$. Figure 1 shows the point $\\frac{4}{8}$ plotted at position $0.5$, right at the same mark as $\\frac{1}{2}$. This shows that the 4th tick mark lines up with $\\frac{1}{2}$."
+        },
+        "challenge": {
+          "prompt": "Starting from $0$, how many $\\frac{1}{8}$ intervals (or jumps) does it take to reach $\\frac{1}{2}$ on the number line?",
+          "acceptableAnswers": [
+            "4",
+            "4 jumps",
+            "4 intervals",
+            "four"
+          ],
+          "rationale": "Four jumps of size 1/8 equal 4/8 or 1/2, whereas picking 5 comes from counting tick marks instead of the spaces between them.",
+          "distractors": [
+            "5",
+            "2",
+            "3"
+          ],
+          "answerFormat": "katex"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Verify algebraically with equivalent fractions",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "\\frac{1 \\times 4}{2 \\times 4}"
+              },
+              "to": {
+                "latex": "\\frac{4}{8}"
+              },
+              "operation": "multiply numerator and denominator by 4"
+            }
+          ],
+          "result": "\\frac{4}{8}"
+        },
+        "annotations": {
+          "steps": "Multiply both the top number (numerator) and the bottom number (denominator) of one-half by 4 to get four-eighths.",
+          "strategy": "I notice that to change a denominator of 2 into 8, I need to multiply by 4. To keep the fraction equal, whatever I do to the bottom, I must also do to the top.",
+          "misconceptions": "A common mistake is multiplying only the bottom number by 4 while leaving the top number as 1, which changes the value of the fraction instead of finding an equivalent one.",
+          "connections": "This connects to the concept of the multiplicative identity, showing that multiplying a number by a fraction equivalent to 1 (like 4/4) changes its appearance without changing its value.",
+          "narrative": "To check our answer, we can find the equivalent fraction by multiplying the numerator (top number) and denominator (bottom number) by the same amount. To turn the denominator $2$ into $8$, we multiply by $4$:\n\n$\\frac{1 \\times 4}{2 \\times 4} = \\frac{4}{8}$\n\nBoth our number line and fraction multiplication confirm that $\\frac{1}{2}$ and $\\frac{4}{8}$ represent the same amount. The mark that lines up with $\\frac{1}{2}$ is the 4th tick mark at position $0.5$, and written as a fraction with a denominator of $8$, Leo needs $\\frac{4}{8}$ cup of milk."
+        }
+      }
+    ],
+    "solverDebug": {
+      "problemEcho": "Leo is baking bread and needs to measure out $\\frac{1}{2}$ cup of milk. Using the number line below that goes from $0$ to $1$ with eighths marked, find the mark that lines up with $\\frac{1}{2}$ and write it as a fraction with a denominator of $8$.",
+      "body": "In Figure 1, the number line goes from $0$ to $1$ and is divided into $8$ equal spaces. Each tick mark increases by $0.125$, which is equal to one eighth ($\\frac{1}{8}$):\n- Tick 1 is at $0.125$ ($\\frac{1}{8}$)\n- Tick 2 is at $0.25$ ($\\frac{2}{8}$)\n- Tick 3 is at $0.375$ ($\\frac{3}{8}$)\n- Tick 4 is at $0.5$ ($\\frac{4}{8}$)\n- Tick 5 is at $0.625$ ($\\frac{5}{8}$)\n- Tick 6 is at $0.75$ ($\\frac{6}{8}$)\n- Tick 7 is at $0.875$ ($\\frac{7}{8}$)\n- Tick 8 is at $1$ ($\\frac{8}{8}$)\n\nEach step of $0.125$ from $0$ represents another $\\frac{1}{8}$ of a cup.\n---\nNext, find where $\\frac{1}{2}$ is located. The fraction $\\frac{1}{2}$ means $1$ out of $2$ equal parts of the whole, which is halfway between $0$ and $1$. \n\nSince half of $1$ is $0.5$ ($1 \\div 2 = 0.5$), the fraction $\\frac{1}{2}$ sits right at the center of the line. In Figure 1, the point $\\frac{1}{2}$ is plotted directly at the tick mark $0.5$.\n---\nNow, count the eighths starting from $0$ to reach position $0.5$:\n- 1 jump reaches $0.125$ ($\\frac{1}{8}$)\n- 2 jumps reach $0.25$ ($\\frac{2}{8}$)\n- 3 jumps reach $0.375$ ($\\frac{3}{8}$)\n- 4 jumps reach $0.5$ ($\\frac{4}{8}$)\n\nTaking $4$ jumps of size $\\frac{1}{8}$ brings us to $0.5$. Figure 1 shows the point $\\frac{4}{8}$ plotted at position $0.5$, right at the same mark as $\\frac{1}{2}$. This shows that the 4th tick mark lines up with $\\frac{1}{2}$.\n---\nTo check our answer, we can find the equivalent fraction by multiplying the numerator (top number) and denominator (bottom number) by the same amount. To turn the denominator $2$ into $8$, we multiply by $4$:\n\n$\\frac{1 \\times 4}{2 \\times 4} = \\frac{4}{8}$\n\nBoth our number line and fraction multiplication confirm that $\\frac{1}{2}$ and $\\frac{4}{8}$ represent the same amount. The mark that lines up with $\\frac{1}{2}$ is the 4th tick mark at position $0.5$, and written as a fraction with a denominator of $8$, Leo needs $\\frac{4}{8}$ cup of milk.",
+      "separatorCount": 3,
+      "blocks": [
+        {
+          "index": 0,
+          "prose": "In Figure 1, the number line goes from $0$ to $1$ and is divided into $8$ equal spaces. Each tick mark increases by $0.125$, which is equal to one eighth ($\\frac{1}{8}$):\n- Tick 1 is at $0.125$ ($\\frac{1}{8}$)\n- Tick 2 is at $0.25$ ($\\frac{2}{8}$)\n- Tick 3 is at $0.375$ ($\\frac{3}{8}$)\n- Tick 4 is at $0.5$ ($\\frac{4}{8}$)\n- Tick 5 is at $0.625$ ($\\frac{5}{8}$)\n- Tick 6 is at $0.75$ ($\\frac{6}{8}$)\n- Tick 7 is at $0.875$ ($\\frac{7}{8}$)\n- Tick 8 is at $1$ ($\\frac{8}{8}$)\n\nEach step of $0.125$ from $0$ represents another $\\frac{1}{8}$ of a cup."
+        },
+        {
+          "index": 1,
+          "prose": "Next, find where $\\frac{1}{2}$ is located. The fraction $\\frac{1}{2}$ means $1$ out of $2$ equal parts of the whole, which is halfway between $0$ and $1$. \n\nSince half of $1$ is $0.5$ ($1 \\div 2 = 0.5$), the fraction $\\frac{1}{2}$ sits right at the center of the line. In Figure 1, the point $\\frac{1}{2}$ is plotted directly at the tick mark $0.5$."
+        },
+        {
+          "index": 2,
+          "prose": "Now, count the eighths starting from $0$ to reach position $0.5$:\n- 1 jump reaches $0.125$ ($\\frac{1}{8}$)\n- 2 jumps reach $0.25$ ($\\frac{2}{8}$)\n- 3 jumps reach $0.375$ ($\\frac{3}{8}$)\n- 4 jumps reach $0.5$ ($\\frac{4}{8}$)\n\nTaking $4$ jumps of size $\\frac{1}{8}$ brings us to $0.5$. Figure 1 shows the point $\\frac{4}{8}$ plotted at position $0.5$, right at the same mark as $\\frac{1}{2}$. This shows that the 4th tick mark lines up with $\\frac{1}{2}$."
+        },
+        {
+          "index": 3,
+          "prose": "To check our answer, we can find the equivalent fraction by multiplying the numerator (top number) and denominator (bottom number) by the same amount. To turn the denominator $2$ into $8$, we multiply by $4$:\n\n$\\frac{1 \\times 4}{2 \\times 4} = \\frac{4}{8}$\n\nBoth our number line and fraction multiplication confirm that $\\frac{1}{2}$ and $\\frac{4}{8}$ represent the same amount. The mark that lines up with $\\frac{1}{2}$ is the 4th tick mark at position $0.5$, and written as a fraction with a denominator of $8$, Leo needs $\\frac{4}{8}$ cup of milk."
+        }
+      ],
+      "planner": {
+        "specs": [
+          {
+            "stepType": "diagram",
+            "title": "Identify number line tick marks",
+            "pedagogicalGoal": "Recognize that dividing the interval from 0 to 1 into eight equal spaces makes each tick mark represent one eighth.",
+            "groundingBlockIndices": [
+              0
+            ],
+            "seedNotes": "Render a number line from 0 to 1 partitioned into 8 equal intervals of length 0.125, labeling tick marks from 1/8 to 8/8."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Locate one-half on number line",
+            "pedagogicalGoal": "Connect the benchmark fraction 1/2 to the midpoint of the unit interval at position 0.5.",
+            "groundingBlockIndices": [
+              1
+            ],
+            "seedNotes": "Express 1/2 as division 1 / 2 = 0.5 to show it sits at the center of the 0 to 1 interval."
+          },
+          {
+            "stepType": "diagram",
+            "title": "Count eighths to the midpoint",
+            "pedagogicalGoal": "Demonstrate that counting four unit intervals of 1/8 reaches the exact same position as 1/2.",
+            "groundingBlockIndices": [
+              2
+            ],
+            "seedNotes": "Show 4 jump arcs of size 1/8 from 0 to 0.5, showing the 4th tick mark (4/8) lines up with 1/2."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Verify algebraically with equivalent fractions",
+            "pedagogicalGoal": "Confirm the visual equivalence algebraically by scaling both numerator and denominator by 4.",
+            "groundingBlockIndices": [
+              3
+            ],
+            "seedNotes": "Multiply the numerator and denominator of 1/2 by 4 to compute (1 * 4) / (2 * 4) = 4/8."
+          }
+        ],
+        "unusedBlockIndices": [],
+        "injectedCount": 0,
+        "mergedCount": 0,
+        "fallback": false
+      },
+      "challenger": {
+        "assignments": [
+          {
+            "kind": "transition",
+            "stepIndex": 1,
+            "prompt": "When converting $\\frac{1}{2}$ to a decimal to locate its position on the number line, what value do you get?",
+            "acceptableAnswers": [
+              "0.5",
+              ".5",
+              "0.50"
+            ],
+            "distractors": [
+              "0.2",
+              "0.12",
+              "2.0"
+            ],
+            "rationale": "Dividing 1 by 2 yields 0.5 to mark the halfway point, whereas 0.2 comes from mistakenly placing the denominator 2 into the tenths position.",
+            "transitionIndex": 0,
+            "hide": "to"
+          },
+          {
+            "kind": "step",
+            "stepIndex": 2,
+            "prompt": "Starting from $0$, how many $\\frac{1}{8}$ intervals (or jumps) does it take to reach $\\frac{1}{2}$ on the number line?",
+            "acceptableAnswers": [
+              "4",
+              "4 jumps",
+              "4 intervals",
+              "four"
+            ],
+            "distractors": [
+              "5",
+              "2",
+              "3"
+            ],
+            "rationale": "Four jumps of size 1/8 equal 4/8 or 1/2, whereas picking 5 comes from counting tick marks instead of the spaces between them.",
+            "answerFormat": "katex"
+          }
+        ],
+        "dropped": [],
+        "failed": false
+      }
+    }
+  }
+}

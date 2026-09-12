@@ -27,6 +27,8 @@
 
 import { Type, Schema, ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { Inset } from '../../types';
+import { reviewPredictions } from './prediction-review';
 import type {
   AlgebraStepContent,
   ChallengeAssignment,
@@ -130,6 +132,8 @@ const CHALLENGER_SCHEMA: Schema = {
 // ── Step summaries (universal) ───────────────────────────────────────
 
 export interface ChallengerInput {
+  problemTitle?: string;
+  problemInset?: Inset;
   topic: string;
   gradeContext: string;
   problemStatement: string;
@@ -291,6 +295,11 @@ function buildChallengerPrompt(input: ChallengerInput, summaries: StepSummary[])
 Topic: ${input.topic}
 Grade context: ${input.gradeContext}
 
+## Visible problem title and inset
+${input.problemTitle || ''}
+${JSON.stringify(input.problemInset ?? null)}
+The inset is visible BEFORE every step. Never ask for an answer it already labels or reveals. A completed equation-setup inset has also revealed its canonical equation.
+
 ## Strategy
 ${input.solutionStrategy}
 
@@ -299,6 +308,10 @@ ${input.authoringGuidance ? `## Binding authoring contract\n${input.authoringGui
 ## Steps in this example
 
 ${stepView}
+
+## All step annotations and structured figures (earlier steps are available for review)
+${JSON.stringify(input.steps.map(s => ({ annotations: s.annotations, visual: s.content.type === 'diagram' ? s.content.visual : undefined })))}
+Never predict an answer stated in an earlier step or annotation. A pending current step uses a neutral heading and hides its annotations. Prefer zero questions to a repeated/already-revealed answer.
 
 ## Two kinds of challenge
 
@@ -344,6 +357,7 @@ Gate the WHOLE step content until the student commits. The content reveals on co
    Random alternatives are useless — leave distractors empty for free-response if you can't think of a real error.
 
 3. **Rationale ties to the misconception.** One sentence. Reference what the right reasoning was, OR (when free-response) why the canonical answer is the right move.
+   A valid alternate solving path is NOT a misconception. Dividing both sides before subtracting a constant is legal algebra. Never claim it violates operation order. For operation predictions, state a target that makes one choice uniquely appropriate; otherwise ask for a computed expression or skip the question.
 
 4. **Prompts are SPECIFIC to THIS step.** "What's next?" is bad. "After clearing the constant, what undoes the coefficient on x?" is good. "Predict the answer" is bad. "Predict the value of f(3)" is good.
 
@@ -575,7 +589,10 @@ export async function assignChallenges(input: ChallengerInput): Promise<Challeng
   const proposed = parseAssignments(data);
   console.log(`[Challenger] Proposed ${proposed.length} assignment(s).`);
 
-  const { merged, dropped } = mergeAssignmentsIntoSteps(input.steps, proposed);
+  const reviewed = await reviewPredictions(input, proposed);
+  const mergeResult = mergeAssignmentsIntoSteps(input.steps, reviewed.safe);
+  const merged = mergeResult.merged;
+  const dropped = [...reviewed.dropped, ...mergeResult.dropped];
 
   for (const a of merged) {
     if (a.kind === 'transition') {

@@ -1,0 +1,181 @@
+{
+  "status": "pass",
+  "componentId": "annotated-example",
+  "evalMode": "auto",
+  "duration": 32310,
+  "catalogMeta": null,
+  "validation": {
+    "challengeCount": 0,
+    "typesFound": [],
+    "error": "No eval mode in catalog (skipped validation)",
+    "payloadBytes": 5284,
+    "longestStringLength": 269,
+    "longestStringPath": "solverDebug.body",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Finding an Equivalent Fraction on a Number Line",
+    "subject": "Fractions",
+    "problem": {
+      "statement": "Use the number line below to help you find an equivalent fraction for $\\frac{1}{2}$ that has a denominator of $8$. Look at where $\\frac{1}{2}$ lands, and find the matching mark on the eighths scale.",
+      "inset": {
+        "insetType": "number-line",
+        "min": 0,
+        "max": 1,
+        "ticks": [
+          0,
+          0.125,
+          0.25,
+          0.375,
+          0.5,
+          0.625,
+          0.75,
+          0.875,
+          1
+        ],
+        "label": "Figure 1",
+        "points": [
+          {
+            "value": 0.5,
+            "label": "1/2"
+          },
+          {
+            "value": 0.5,
+            "label": "4/8"
+          }
+        ]
+      }
+    },
+    "solutionStrategy": "Locate $\\frac{1}{2}$ on the number line and read the fraction with denominator $8$ that shares the same position.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Locate one-half on number line",
+        "content": {
+          "type": "diagram",
+          "imagePrompt": "A clean, colorful educational diagram of a unit number line from 0 to 1, divided into 8 equal parts with tick marks. The midpoint at 4/8 or 1/2 is highlighted with a bright indicator and labeled 1/2.",
+          "altText": "A number line from 0 to 1 with eighths marked, highlighting the midpoint 1/2.",
+          "labels": [
+            {
+              "text": "Start",
+              "description": "The number line begins at zero and ends at one."
+            },
+            {
+              "text": "Midpoint",
+              "description": "Find the spot right in the middle, which shows one-half."
+            }
+          ]
+        },
+        "annotations": {
+          "steps": "I located the point one-half right in the middle of the number line.",
+          "strategy": "I notice that one-half is always the exact middle between zero and one.",
+          "misconceptions": "Students sometimes think one-half belongs at the third tick mark because they miscount the spaces instead of the tick marks.",
+          "connections": "This helps us see that many different fractions can name the exact same spot on a number line.",
+          "narrative": "Find the point labeled $\\frac{1}{2}$ on the number line, which sits at tick mark $0.5$."
+        }
+      },
+      {
+        "id": 2,
+        "title": "Identify equivalent eighths fraction",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "\\frac{1}{2}"
+              },
+              "to": {
+                "latex": "\\frac{4}{8}"
+              },
+              "operation": "read matching mark on the eighths scale",
+              "challenge": {
+                "hide": "to",
+                "prompt": "When looking at the midpoint $\\frac{1}{2}$ on a number line divided into eighths, which fraction matches that exact position?",
+                "acceptableAnswers": [
+                  "\\frac{4}{8}"
+                ],
+                "rationale": "One-half is halfway between 0 and 1, which corresponds to 4 out of 8 equal intervals ($\\frac{4}{8}$), whereas $\\frac{1}{8}$ keeps the numerator unchanged and $\\frac{3}{8}$ comes from miscounting tick marks.",
+                "distractors": [
+                  "\\frac{1}{8}",
+                  "\\frac{3}{8}",
+                  "\\frac{2}{8}"
+                ]
+              }
+            }
+          ],
+          "result": "\\frac{4}{8}"
+        },
+        "annotations": {
+          "steps": "Find the matching mark on the eighths scale at the same position as one-half.",
+          "strategy": "I notice that different fraction scales can share the exact same spot on the number line.",
+          "misconceptions": "Thinking that changing the denominator changes the position of the fraction on the number line.",
+          "connections": "This connects to the idea that many different fractions can name the exact same amount.",
+          "narrative": "At that same position of $0.5$, the matching mark on the eighths scale is $\\frac{4}{8}$, so the equivalent fraction for $\\frac{1}{2}$ with a denominator of $8$ is $\\frac{4}{8}$."
+        }
+      }
+    ],
+    "solverDebug": {
+      "problemEcho": "Use the number line below to help you find an equivalent fraction for $\\frac{1}{2}$ that has a denominator of $8$. Look at where $\\frac{1}{2}$ lands, and find the matching mark on the eighths scale.",
+      "body": "Find the point labeled $\\frac{1}{2}$ on the number line, which sits at tick mark $0.5$.\n---\nAt that same position of $0.5$, the matching mark on the eighths scale is $\\frac{4}{8}$, so the equivalent fraction for $\\frac{1}{2}$ with a denominator of $8$ is $\\frac{4}{8}$.",
+      "separatorCount": 1,
+      "blocks": [
+        {
+          "index": 0,
+          "prose": "Find the point labeled $\\frac{1}{2}$ on the number line, which sits at tick mark $0.5$."
+        },
+        {
+          "index": 1,
+          "prose": "At that same position of $0.5$, the matching mark on the eighths scale is $\\frac{4}{8}$, so the equivalent fraction for $\\frac{1}{2}$ with a denominator of $8$ is $\\frac{4}{8}$."
+        }
+      ],
+      "planner": {
+        "specs": [
+          {
+            "stepType": "diagram",
+            "title": "Locate one-half on number line",
+            "pedagogicalGoal": "Recognize the benchmark fraction value of one-half as the midpoint on a unit number line.",
+            "groundingBlockIndices": [
+              0
+            ],
+            "seedNotes": "Render a number line from 0 to 1 with subdivision ticks for eighths, highlighting the tick at 0.5 labeled 1/2."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Identify equivalent eighths fraction",
+            "pedagogicalGoal": "Connect identical positions on different fractional scales to establish fraction equivalence.",
+            "groundingBlockIndices": [
+              1
+            ],
+            "seedNotes": "State the equivalence between 1/2 and 4/8 corresponding to the shared mark at 0.5."
+          }
+        ],
+        "unusedBlockIndices": [],
+        "injectedCount": 0,
+        "mergedCount": 0,
+        "fallback": false
+      },
+      "challenger": {
+        "assignments": [
+          {
+            "kind": "transition",
+            "stepIndex": 1,
+            "prompt": "When looking at the midpoint $\\frac{1}{2}$ on a number line divided into eighths, which fraction matches that exact position?",
+            "acceptableAnswers": [
+              "\\frac{4}{8}"
+            ],
+            "distractors": [
+              "\\frac{1}{8}",
+              "\\frac{3}{8}",
+              "\\frac{2}{8}"
+            ],
+            "rationale": "One-half is halfway between 0 and 1, which corresponds to 4 out of 8 equal intervals ($\\frac{4}{8}$), whereas $\\frac{1}{8}$ keeps the numerator unchanged and $\\frac{3}{8}$ comes from miscounting tick marks.",
+            "transitionIndex": 0,
+            "hide": "to"
+          }
+        ],
+        "dropped": [],
+        "failed": false
+      }
+    }
+  }
+}

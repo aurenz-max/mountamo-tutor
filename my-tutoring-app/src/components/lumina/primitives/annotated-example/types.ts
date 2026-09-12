@@ -148,6 +148,8 @@ export interface TableStepContent {
 
 export interface DiagramStepContent {
   type: 'diagram';
+  /** Validated, code-rendered visual; new generation always supplies this. */
+  visual?: import('./diagramVisual').DiagramVisual;
   /** Description for AI image generation */
   imagePrompt: string;
   /** Base64 image data (filled by generator) */
@@ -271,6 +273,8 @@ export type LayerId = typeof ANNOTATION_LAYERS[number]['id'];
 // ═══════════════════════════════════════════════════════════════════════
 
 export interface RichExampleStep {
+  /** Generation diagnostics, never student-facing. */
+  generationReview?: { attempts: number; rejections: string[][] };
   id: number;
   title: string;
   content: StepContent;

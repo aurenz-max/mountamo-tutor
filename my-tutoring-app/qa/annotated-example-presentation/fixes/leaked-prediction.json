@@ -1,0 +1,74 @@
+{
+  "input": {
+    "problemStatement": "Solve 2x + 3 = 11.",
+    "problemTitle": "Find x",
+    "solutionStrategy": "Subtract three first to get 2x = 8.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Subtract three",
+        "annotations": {
+          "steps": "",
+          "strategy": "",
+          "misconceptions": "",
+          "connections": ""
+        },
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "2x+3=11"
+              },
+              "to": {
+                "latex": "2x=8"
+              },
+              "operation": "subtract 3 from both sides"
+            }
+          ],
+          "result": "2x=8"
+        }
+      }
+    ]
+  },
+  "assignment": {
+    "kind": "transition",
+    "stepIndex": 0,
+    "transitionIndex": 0,
+    "hide": "to",
+    "prompt": "What equation remains after subtracting 3 from both sides?",
+    "acceptableAnswers": [
+      "2x=8"
+    ],
+    "distractors": [
+      "2x=14",
+      "2x=11"
+    ],
+    "rationale": "Subtract 3 from each side."
+  },
+  "result": {
+    "safe": [],
+    "dropped": [
+      {
+        "assignment": {
+          "kind": "transition",
+          "stepIndex": 0,
+          "transitionIndex": 0,
+          "hide": "to",
+          "prompt": "What equation remains after subtracting 3 from both sides?",
+          "acceptableAnswers": [
+            "2x=8"
+          ],
+          "distractors": [
+            "2x=14",
+            "2x=11"
+          ],
+          "rationale": "Subtract 3 from each side."
+        },
+        "reason": "The answer '2x = 8' is already explicitly revealed in the visible strategy ('Subtract three first to get 2x = 8.')."
+      }
+    ]
+  },
+  "expectedSafe": false,
+  "pass": true
+}

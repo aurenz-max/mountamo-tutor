@@ -5,19 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bug, ChevronDown, Lock } from 'lucide-react';
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
-import { LuminaBadge } from '../ui';
 import { KaTeX, MixedContent } from './annotated-example/StepContentRenderer';
-import { RichStepCard, LayerIconMap } from './annotated-example/RichStepCard';
+import { RichStepCard } from './annotated-example/RichStepCard';
 import { InsetRenderer, isGateableInset } from './problem-primitives/insets/InsetRenderer';
 import type {
   ChallengeAssignment,
   RichAnnotatedExampleData,
-  LayerId,
   SolverDebugPayload,
   StepSpec,
 } from './annotated-example/types';
-import { ANNOTATION_LAYERS } from './annotated-example/types';
-import { SoundManager } from '../utils/SoundManager';
 
 // ═══════════════════════════════════════════════════════════════════════
 // AnnotatedExample — pre-hydrated worked example.
@@ -32,193 +28,78 @@ import { SoundManager } from '../utils/SoundManager';
 interface AnnotatedExampleProps {
   data: RichAnnotatedExampleData;
   className?: string;
+  showDebug?: boolean;
 }
 
-export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, className }) => {
-  const [activeLayers, setActiveLayers] = useState<LayerId[]>(['steps']);
-  /**
-   * Per-step challenge-completion state. Default is "complete" — a step
-   * reports `false` only while it has an uncommitted challenge. Steps
-   * unlock sequentially in the full-solution view so the next step's
-   * `from` (which is the current step's `to`) doesn't reveal the answer
-   * to a pending prompt.
-   */
-  const [stepCompletions, setStepCompletions] = useState<Record<number, boolean>>({});
-  /**
-   * Whether the problem-statement inset is committed. Only meaningful when
-   * the inset is gateable (currently `equation-setup`); for static insets
-   * or no inset the value stays `true` and never blocks step rendering.
-   * The inset reports its commit through `InsetRenderer`'s
-   * `onCompletionChange` prop, which we wire up below.
-   */
+export const AnnotatedExample: React.FC<AnnotatedExampleProps> = (props) => (
+  <AnnotatedExampleSession key={JSON.stringify(props.data)} {...props} />
+);
+
+const AnnotatedExampleSession: React.FC<AnnotatedExampleProps> = ({ data, className, showDebug = false }) => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [visitedStep, setVisitedStep] = useState(0);
+  const [completions, setCompletions] = useState<Record<number, boolean>>({});
   const insetGateable = isGateableInset(data.problem.inset);
   const [insetComplete, setInsetComplete] = useState(!insetGateable);
-
   const reportCompletion = useCallback((idx: number, complete: boolean) => {
-    setStepCompletions((prev) => (prev[idx] === complete ? prev : { ...prev, [idx]: complete }));
+    setCompletions((prev) => prev[idx] === complete ? prev : { ...prev, [idx]: complete });
   }, []);
-
-  const isStepComplete = useCallback(
-    (idx: number) => stepCompletions[idx] !== false,
-    [stepCompletions],
-  );
-
-  const isStepUnlocked = useCallback(
-    (idx: number) => {
-      // A gateable inset (currently the modeling MCQ) blocks every step
-      // until the student commits — otherwise the algebra would reveal
-      // the equation the inset is asking them to derive.
-      if (!insetComplete) return false;
-      for (let i = 0; i < idx; i++) {
-        if (!isStepComplete(i)) return false;
-      }
-      return true;
-    },
-    [insetComplete, isStepComplete],
-  );
-
-  const toggleLayer = (layerId: LayerId) => {
-    setActiveLayers((prev) => {
-      const turningOn = !prev.includes(layerId);
-      SoundManager.toggle(turningOn);
-      return turningOn ? [...prev, layerId] : prev.filter((id) => id !== layerId);
-    });
+  const isComplete = (idx: number) => {
+    if (completions[idx] !== undefined) return completions[idx];
+    const step = data.steps[idx];
+    return step.content.type === 'algebra'
+      ? step.content.transitions.length <= 1 && !step.content.transitions.some((transition) => transition.challenge)
+      : !step.challenge;
   };
+  const canContinue = insetComplete && isComplete(currentStep);
 
   return (
     <div className={`max-w-3xl mx-auto font-sans text-slate-200 ${className || ''}`}>
-      {/* ── Header ─────────────────────────────────────────────── */}
       <div className="mb-6 space-y-4">
-        <div>
-          <LuminaBadge accent="blue" className="mb-2">
-            {data.subject}
-          </LuminaBadge>
-          <h1 className="text-2xl font-serif font-bold text-white tracking-tight">{data.title}</h1>
-        </div>
-
-        {/* Problem Card */}
-        <Card className="relative overflow-hidden backdrop-blur-xl bg-gradient-to-br from-slate-900/60 to-slate-800/40 border-white/10 p-6 shadow-xl">
-          <div className="relative z-10">
-            <p className="text-slate-400 text-sm mb-3 font-medium uppercase tracking-wide">
-              Problem Statement
-            </p>
-            {data.problem.equations && data.problem.equations.length > 0 && (
-              <div className="text-xl md:text-2xl text-white mb-2 space-y-1">
-                {data.problem.equations.map((eq, i) => (
-                  <div key={i}>
-                    <KaTeX latex={eq} />
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-slate-300 leading-relaxed"><MixedContent text={data.problem.statement} /></p>
-            {data.problem.inset && (
-              <InsetRenderer
-                inset={data.problem.inset}
-                onCompletionChange={insetGateable ? setInsetComplete : undefined}
-              />
-            )}
-            {data.problem.context && (
-              <p className="text-slate-400 text-sm mt-2 leading-relaxed"><MixedContent text={data.problem.context} /></p>
-            )}
-          </div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <h1 className="text-2xl font-semibold text-white tracking-tight">{data.title}</h1>
+        <Card className="bg-slate-900/60 border-white/10 p-4 sm:p-6">
+          <p className="text-sm text-blue-300 mb-3">Let&apos;s work it out</p>
+          {data.problem.equations?.map((eq, i) => (
+            <div key={i} className="text-xl overflow-x-auto"><KaTeX latex={eq} /></div>
+          ))}
+          <p className="text-lg leading-relaxed"><MixedContent text={data.problem.statement} /></p>
+          {data.problem.inset && <InsetRenderer inset={data.problem.inset} onCompletionChange={insetGateable ? setInsetComplete : undefined} />}
+          {data.problem.context && <details className="mt-3">
+            <summary className="cursor-pointer text-sm text-slate-400">More about the problem</summary>
+            <p className="mt-2 leading-relaxed"><MixedContent text={data.problem.context} /></p>
+          </details>}
         </Card>
-
-        {/* Solution Strategy */}
-        {data.solutionStrategy && (
-          <Card className="backdrop-blur-xl bg-slate-900/30 border-white/5 px-5 py-3">
-            <p className="text-xs text-slate-500 uppercase tracking-wider font-medium mb-1">Strategy</p>
-            <p className="text-sm text-slate-400 leading-relaxed"><MixedContent text={data.solutionStrategy} /></p>
-          </Card>
-        )}
-
-        {/* Pipeline Debug — solver blocks → planner specs → rendered steps */}
-        {data.solverDebug && <PipelineDebugCard debug={data.solverDebug} renderedStepCount={data.steps.length} />}
-
-        {/* Layer Toggles */}
-        <div className="flex flex-wrap gap-2 py-1">
-          {ANNOTATION_LAYERS.map((layer) => {
-            const isActive = activeLayers.includes(layer.id);
-            return (
-              <Button
-                key={layer.id}
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleLayer(layer.id)}
-                className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'border-transparent shadow-sm'
-                    : 'bg-transparent border border-slate-700 text-slate-500 hover:border-slate-600'
-                }`}
-                style={
-                  isActive
-                    ? {
-                        backgroundColor: `${layer.color}20`,
-                        color: layer.color,
-                        boxShadow: `0 0 10px ${layer.color}15`,
-                      }
-                    : {}
-                }
-              >
-                {LayerIconMap[layer.id] || <span className="text-sm">{layer.icon}</span>}
-                {layer.label}
-              </Button>
-            );
-          })}
+        {data.solutionStrategy && insetComplete && data.steps.every((_, idx) => isComplete(idx)) && <details className="rounded-xl border border-white/10 px-4 py-3">
+          <summary className="cursor-pointer text-sm text-slate-300">Our plan</summary>
+          <p className="mt-2 leading-relaxed"><MixedContent text={data.solutionStrategy} /></p>
+        </details>}
+        {showDebug && data.solverDebug && <PipelineDebugCard debug={data.solverDebug} renderedStepCount={data.steps.length} />}
+      </div>
+      <section aria-label="Worked solution" className="space-y-4">
+        <p className="text-sm text-slate-400" aria-live="polite">Step {currentStep + 1} of {data.steps.length}</p>
+        {data.steps.slice(0, visitedStep + 1).map((step, idx) => (
+          <div key={step.id} hidden={idx !== currentStep}>
+            {insetComplete ? <RichStepCard
+              step={step} index={idx} activeLayers={[]} optionalAnnotations isCompact
+              interactive={data.interactive !== false}
+              onCompletionChange={(complete) => reportCompletion(idx, complete)}
+            /> : <LockedStepPlaceholder index={idx} total={data.steps.length} />}
+          </div>
+        ))}
+        <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-4">
+          <Button variant="ghost" disabled={currentStep === 0} onClick={() => setCurrentStep((step) => step - 1)}>Back</Button>
+          {currentStep < data.steps.length - 1 ? (
+            <Button disabled={!canContinue} onClick={() => {
+              setVisitedStep((step) => Math.max(step, currentStep + 1));
+              setCurrentStep((step) => step + 1);
+            }}>Next step</Button>
+          ) : canContinue ? <p className="text-sm text-emerald-300">You reached the last step.</p>
+            : <p className="text-sm text-slate-400">Try the question above.</p>}
         </div>
-      </div>
-
-      {/* ── Step Content (full-solution view) ───────────────────────── */}
-      <div className="space-y-0 relative">
-        {/* Vertical timeline line */}
-        <div className="absolute left-[1.15rem] top-4 bottom-4 w-0.5 bg-slate-800 z-0" />
-
-        {(() => {
-          // Render every unlocked step, then ONE locked placeholder for
-          // the next step (if any). Steps beyond that aren't rendered at
-          // all — a placeholder for each one would just be noise.
-          const rendered: React.ReactNode[] = [];
-          for (let idx = 0; idx < data.steps.length; idx++) {
-            if (!isStepUnlocked(idx)) {
-              rendered.push(
-                <LockedStepPlaceholder
-                  key={`locked-${idx}`}
-                  index={idx}
-                  total={data.steps.length}
-                />,
-              );
-              break;
-            }
-            const step = data.steps[idx];
-            rendered.push(
-              <div key={step.id} className="relative z-10 pb-8 last:pb-0">
-                <RichStepCard
-                  step={step}
-                  index={idx}
-                  activeLayers={activeLayers}
-                  isCompact
-                  interactive={data.interactive !== false}
-                  onCompletionChange={(complete) => reportCompletion(idx, complete)}
-                />
-              </div>,
-            );
-          }
-          return rendered;
-        })()}
-      </div>
-
+      </section>
     </div>
   );
 };
-
-// ═══════════════════════════════════════════════════════════════════════
-// Locked Step Placeholder — full view only
-// ═══════════════════════════════════════════════════════════════════════
-//
-// Renders in place of a step that is not yet unlocked. The bubble keeps
-// the timeline numbered correctly; the body explains why the card is
-// blank without revealing any of the step's content.
 
 const LockedStepPlaceholder: React.FC<{ index: number; total: number }> = ({ index, total }) => {
   return (

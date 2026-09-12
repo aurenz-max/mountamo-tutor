@@ -1,0 +1,277 @@
+{
+  "status": "pass",
+  "componentId": "annotated-example",
+  "evalMode": "auto",
+  "duration": 103881,
+  "catalogMeta": null,
+  "validation": {
+    "challengeCount": 0,
+    "typesFound": [],
+    "error": "No eval mode in catalog (skipped validation)",
+    "payloadBytes": 11014,
+    "longestStringLength": 1260,
+    "longestStringPath": "solverDebug.body",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Multiplying Equal Groups of Apples",
+    "subject": "Elementary Mathematics",
+    "problem": {
+      "statement": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?"
+    },
+    "solutionStrategy": "Identify the situation as combining equal groups, where there are $3$ groups with $4$ items in each group. We can find the total by using repeated addition ($4 + 4 + 4$) and connecting it directly to multiplication ($3 \\times 4$). Finally, we can verify our result by skip-counting by $4$.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Model equal groups of apples",
+        "content": {
+          "type": "diagram",
+          "imagePrompt": "A clean educational illustration showing 3 distinct brown paper bags labeled Bag 1, Bag 2, and Bag 3, arranged in a row from left to right against a light background. Each bag has exactly 4 bright red apples drawn clearly beside or sitting on top of it, representing 3 equal groups of 4.",
+          "altText": "Diagram showing 3 separate bags labeled Bag 1, Bag 2, and Bag 3, each containing 4 apples to show 3 equal groups.",
+          "labels": [
+            {
+              "text": "Bag 1",
+              "description": "The first group containing 4 apples."
+            },
+            {
+              "text": "Bag 2",
+              "description": "The second group containing 4 apples."
+            }
+          ]
+        },
+        "annotations": {
+          "steps": "I counted 3 separate bags, with each bag holding 4 apples.",
+          "strategy": "I notice that each bag has the exact same number of items, which tells me I am dealing with equal groups that can be solved using multiplication.",
+          "misconceptions": "Students often count every single apple one by one instead of recognizing the structure of 3 identical groups of 4.",
+          "connections": "This equal-group model forms the foundational building block for all future multiplication and division concepts.",
+          "narrative": "Identify the equal groups given in the problem:\nMaya has $3$ bags, and every bag has the exact same number of apples ($4$). Because each group has the same size, we have $3$ equal groups:\n- Bag 1: $4$ apples\n- Bag 2: $4$ apples\n- Bag 3: $4$ apples\n\nThis means our goal is to find the total amount in $3$ groups of $4$."
+        }
+      },
+      {
+        "id": 2,
+        "title": "Add equal groups repeatedly",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "4 + 4 + 4"
+              },
+              "to": {
+                "latex": "8 + 4"
+              },
+              "operation": "add the first two groups",
+              "challenge": {
+                "hide": "to",
+                "prompt": "When adding the apples from the 3 bags ($4 + 4 + 4$), what expression do you get after adding the first two bags?",
+                "acceptableAnswers": [
+                  "8 + 4"
+                ],
+                "rationale": "Adding the first two groups gives 4 + 4 = 8, and keeping the remaining group of 4 gives 8 + 4.",
+                "distractors": [
+                  "8",
+                  "7 + 4",
+                  "12"
+                ]
+              }
+            }
+          ],
+          "result": "12"
+        },
+        "annotations": {
+          "steps": "I add the number of apples in the first two bags together, then add the apples from the third bag to that running total.",
+          "strategy": "I notice that we have equal groups, so I can use repeated addition to combine them step by step instead of counting every single apple one by one.",
+          "misconceptions": "Students often miscount by touching the same apple twice or losing track of which bags have already been added into the running total.",
+          "connections": "This repeated addition of the same number is the foundational concept that leads directly to multiplication.",
+          "narrative": "Find the total using repeated addition:\nBecause each bag has $4$ apples, we add the size of each bag together:\n$4 + 4 + 4$\n\nAdd the first two bags together:\n$4 + 4 = 8$\n\nNow add the third bag to that running total:\n$8 + 4 = 12$\n\nRepeated addition shows there are $12$ apples altogether."
+        }
+      },
+      {
+        "id": 3,
+        "title": "Formulate the multiplication sentence",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "3 \\times 4"
+              },
+              "to": {
+                "latex": "12"
+              },
+              "operation": "multiply number of groups by size of each group"
+            }
+          ],
+          "result": "12"
+        },
+        "annotations": {
+          "steps": "Multiply the number of groups by the size of each group to find the total number of apples.",
+          "strategy": "I notice that we have three equal groups of four, so I can use multiplication as a faster way to find the total instead of adding four three times.",
+          "misconceptions": "A common mistake is adding the number of groups to the size of each group (3 + 4 = 7) instead of recognizing that multiplication represents repeated addition.",
+          "connections": "This connects equal-group counting directly to multiplication facts, which will be used for larger arrays and area models later.",
+          "narrative": "Represent the equal groups using multiplication:\nMultiplication is a quick way to add equal groups together:\n$\\text{number of groups} \\times \\text{size of each group} = \\text{total}$\n\nSince Maya has $3$ groups with $4$ apples in each group:\n$3 \\times 4 = 12$\n\nThis multiplication sentence matches our repeated addition result of $12$."
+        }
+      },
+      {
+        "id": 4,
+        "title": "Verify total by skip-counting",
+        "content": {
+          "type": "table",
+          "caption": "Verifying the total number of apples using skip-counting",
+          "headers": [
+            "Bag Number",
+            "Apples Added",
+            "Cumulative Total"
+          ],
+          "rows": [
+            [
+              "1st bag",
+              "$4$",
+              "$4$"
+            ],
+            [
+              "2nd bag",
+              "$8$",
+              "$8$"
+            ],
+            [
+              "3rd bag",
+              "$4$",
+              "$12$"
+            ]
+          ],
+          "highlightCell": [
+            2,
+            2
+          ]
+        },
+        "annotations": {
+          "steps": "Record the cumulative count of apples as each bag is counted by fours.",
+          "strategy": "I notice that skip-counting gives me a quick way to check my addition and multiplication results.",
+          "misconceptions": "A common error is skip-counting by the wrong number, such as counting by threes instead of fours because there are 3 bags.",
+          "connections": "Skip-counting lays the foundation for multiplication tables and understanding multiples.",
+          "narrative": "Verify the total by skip-counting and state the final answer:\nWe can check our calculation by skip-counting forward by $4$ three times (once for each bag):\n- $1\\text{st}$ bag: $4$\n- $2\\text{nd}$ bag: $8$\n- $3\\text{rd}$ bag: $12$\n\nSkip-counting lands on $12$, confirming that Maya has a total of $12$ apples."
+        },
+        "challenge": {
+          "prompt": "Using skip-counting by 4 for each bag, what is the cumulative total of apples after the 3rd bag?",
+          "acceptableAnswers": [
+            "12",
+            "12 apples"
+          ],
+          "rationale": "Each bag adds 4 apples, so skip-counting by 4 three times gives 4, 8, 12, whereas counting by 3s would mistakenly give 9.",
+          "distractors": [
+            "9",
+            "11",
+            "16"
+          ],
+          "answerFormat": "katex"
+        }
+      }
+    ],
+    "solverDebug": {
+      "problemEcho": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?",
+      "body": "Identify the equal groups given in the problem:\nMaya has $3$ bags, and every bag has the exact same number of apples ($4$). Because each group has the same size, we have $3$ equal groups:\n- Bag 1: $4$ apples\n- Bag 2: $4$ apples\n- Bag 3: $4$ apples\n\nThis means our goal is to find the total amount in $3$ groups of $4$.\n---\nFind the total using repeated addition:\nBecause each bag has $4$ apples, we add the size of each bag together:\n$4 + 4 + 4$\n\nAdd the first two bags together:\n$4 + 4 = 8$\n\nNow add the third bag to that running total:\n$8 + 4 = 12$\n\nRepeated addition shows there are $12$ apples altogether.\n---\nRepresent the equal groups using multiplication:\nMultiplication is a quick way to add equal groups together:\n$\\text{number of groups} \\times \\text{size of each group} = \\text{total}$\n\nSince Maya has $3$ groups with $4$ apples in each group:\n$3 \\times 4 = 12$\n\nThis multiplication sentence matches our repeated addition result of $12$.\n---\nVerify the total by skip-counting and state the final answer:\nWe can check our calculation by skip-counting forward by $4$ three times (once for each bag):\n- $1\\text{st}$ bag: $4$\n- $2\\text{nd}$ bag: $8$\n- $3\\text{rd}$ bag: $12$\n\nSkip-counting lands on $12$, confirming that Maya has a total of $12$ apples.",
+      "separatorCount": 3,
+      "blocks": [
+        {
+          "index": 0,
+          "prose": "Identify the equal groups given in the problem:\nMaya has $3$ bags, and every bag has the exact same number of apples ($4$). Because each group has the same size, we have $3$ equal groups:\n- Bag 1: $4$ apples\n- Bag 2: $4$ apples\n- Bag 3: $4$ apples\n\nThis means our goal is to find the total amount in $3$ groups of $4$."
+        },
+        {
+          "index": 1,
+          "prose": "Find the total using repeated addition:\nBecause each bag has $4$ apples, we add the size of each bag together:\n$4 + 4 + 4$\n\nAdd the first two bags together:\n$4 + 4 = 8$\n\nNow add the third bag to that running total:\n$8 + 4 = 12$\n\nRepeated addition shows there are $12$ apples altogether."
+        },
+        {
+          "index": 2,
+          "prose": "Represent the equal groups using multiplication:\nMultiplication is a quick way to add equal groups together:\n$\\text{number of groups} \\times \\text{size of each group} = \\text{total}$\n\nSince Maya has $3$ groups with $4$ apples in each group:\n$3 \\times 4 = 12$\n\nThis multiplication sentence matches our repeated addition result of $12$."
+        },
+        {
+          "index": 3,
+          "prose": "Verify the total by skip-counting and state the final answer:\nWe can check our calculation by skip-counting forward by $4$ three times (once for each bag):\n- $1\\text{st}$ bag: $4$\n- $2\\text{nd}$ bag: $8$\n- $3\\text{rd}$ bag: $12$\n\nSkip-counting lands on $12$, confirming that Maya has a total of $12$ apples."
+        }
+      ],
+      "planner": {
+        "specs": [
+          {
+            "stepType": "diagram",
+            "title": "Model equal groups of apples",
+            "pedagogicalGoal": "Understand multiplication as combining a specific number of equal-sized groups.",
+            "groundingBlockIndices": [
+              0
+            ],
+            "seedNotes": "Illustrate 3 separate bags labeled Bag 1, Bag 2, and Bag 3, each containing 4 apples."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Add equal groups repeatedly",
+            "pedagogicalGoal": "Connect the physical combination of equal groups to repeated addition.",
+            "groundingBlockIndices": [
+              1
+            ],
+            "seedNotes": "Chain the addition from $4 + 4 + 4$ to $8 + 4$ to $12$."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Formulate the multiplication sentence",
+            "pedagogicalGoal": "Recognize multiplication as an efficient notation for adding identical groups.",
+            "groundingBlockIndices": [
+              2
+            ],
+            "seedNotes": "Apply the rule $\\text{number of groups} \\times \\text{size of each group} = \\text{total}$ to evaluate $3 \\times 4 = 12$."
+          },
+          {
+            "stepType": "table",
+            "title": "Verify total by skip-counting",
+            "pedagogicalGoal": "Reinforce number patterns and verify arithmetic through skip-counting.",
+            "groundingBlockIndices": [
+              3
+            ],
+            "seedNotes": "Construct a table mapping each bag (1st, 2nd, 3rd) to its cumulative count (4, 8, 12), confirming the total of 12 apples."
+          }
+        ],
+        "unusedBlockIndices": [],
+        "injectedCount": 0,
+        "mergedCount": 0,
+        "fallback": false
+      },
+      "challenger": {
+        "assignments": [
+          {
+            "kind": "transition",
+            "stepIndex": 1,
+            "prompt": "When adding the apples from the 3 bags ($4 + 4 + 4$), what expression do you get after adding the first two bags?",
+            "acceptableAnswers": [
+              "8 + 4"
+            ],
+            "distractors": [
+              "8",
+              "7 + 4",
+              "12"
+            ],
+            "rationale": "Adding the first two groups gives 4 + 4 = 8, and keeping the remaining group of 4 gives 8 + 4.",
+            "transitionIndex": 0,
+            "hide": "to"
+          },
+          {
+            "kind": "step",
+            "stepIndex": 3,
+            "prompt": "Using skip-counting by 4 for each bag, what is the cumulative total of apples after the 3rd bag?",
+            "acceptableAnswers": [
+              "12",
+              "12 apples"
+            ],
+            "distractors": [
+              "9",
+              "11",
+              "16"
+            ],
+            "rationale": "Each bag adds 4 apples, so skip-counting by 4 three times gives 4, 8, 12, whereas counting by 3s would mistakenly give 9.",
+            "answerFormat": "katex"
+          }
+        ],
+        "dropped": [],
+        "failed": false
+      }
+    }
+  }
+}

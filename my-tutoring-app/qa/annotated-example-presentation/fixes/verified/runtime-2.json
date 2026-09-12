@@ -1,0 +1,190 @@
+{
+  "index": 2,
+  "grade": 4,
+  "topic": "Find an equivalent fraction for 1/2 with denominator 8",
+  "httpStatus": 200,
+  "elapsed": 119531,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 116003,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 5218,
+      "longestStringLength": 316,
+      "longestStringPath": "steps[0].generationReview.rejections[0][0]",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding Equivalent Fractions on a Number Line",
+      "subject": "Elementary Mathematics",
+      "problem": {
+        "statement": "Alex is baking a cake and needs to fill $\\frac{1}{2}$ of a measuring cup. The cup is divided into $8$ equal parts. Use the number line to find out how many of those $8$ parts are equal to $\\frac{1}{2}$.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.125,
+            0.25,
+            0.375,
+            0.5,
+            0.625,
+            0.75,
+            0.875,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0.5,
+              "label": "1/2"
+            },
+            {
+              "value": 0.5,
+              "label": "4/8"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Locate $\\frac{1}{2}$ on the number line and find the matching eighths value at the same position.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 2,
+            "rejections": [
+              [
+                "In `content.visual`, the number line fails to mark position $0.5$ (or $\\frac{1}{2}$). Although the grounding specifies locating the point $\\frac{1}{2}$ at position $0.5$ and the alt text states the point is marked at the middle, the visual specifies `start: 0` and `jumps: []` with no point or jump landing at $0.5$."
+              ]
+            ]
+          },
+          "title": "Locate one half on number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 8,
+              "start": 0.5,
+              "jumps": []
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into 8 equal parts, with a clear point marked at the exact middle at 0.5, labeled as one half.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I find the middle point between zero and one on the number line.",
+            "strategy": "I notice that one-half is always right in the middle, exactly halfway between zero and one.",
+            "misconceptions": "Read the scale first. Neighboring marks are not always one whole apart.",
+            "connections": "This connects fractions to decimals and shows that one-half is a benchmark fraction used everywhere.",
+            "narrative": "On the number line, locate the point $\\frac{1}{2}$ at position $0.5$."
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Identify the equivalent eighths mark",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 8,
+              "start": 0,
+              "jumps": [
+                0.5
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into 8 equal parts, with a jump highlighting the position at 4 out of 8 parts, which matches 1 half.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I looked at the point where one half is marked and counted over to the eighths tick mark directly underneath it.",
+            "strategy": "I notice that lining up different fraction pieces on the same scale helps me see which amounts are equal in size.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This connects the idea of equivalent fractions to decimals and percentages on the same number line.",
+            "narrative": "At that same position $0.5$, the number line marks the point $\\frac{4}{8}$. Therefore, $4$ of those $8$ parts are equal to $\\frac{1}{2}$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Alex is baking a cake and needs to fill $\\frac{1}{2}$ of a measuring cup. The cup is divided into $8$ equal parts. Use the number line to find out how many of those $8$ parts are equal to $\\frac{1}{2}$.",
+        "body": "On the number line, locate the point $\\frac{1}{2}$ at position $0.5$.\n---\nAt that same position $0.5$, the number line marks the point $\\frac{4}{8}$. Therefore, $4$ of those $8$ parts are equal to $\\frac{1}{2}$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "On the number line, locate the point $\\frac{1}{2}$ at position $0.5$."
+          },
+          {
+            "index": 1,
+            "prose": "At that same position $0.5$, the number line marks the point $\\frac{4}{8}$. Therefore, $4$ of those $8$ parts are equal to $\\frac{1}{2}$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Locate one half on number line",
+              "pedagogicalGoal": "Identify the benchmark fraction one-half as the exact midpoint between 0 and 1 on a number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Render a number line from 0 to 1 highlighting the position 0.5 labeled with $\\frac{1}{2}$."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Identify the equivalent eighths mark",
+              "pedagogicalGoal": "Visualize fraction equivalence by observing how finer subdivisions align at the exact same position.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Subdivide the number line into 8 equal parts and highlight that position 0.5 coincides with $\\frac{4}{8}$, concluding that 4 parts are needed."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "step",
+                "stepIndex": 0,
+                "prompt": "Before locating $\\frac{1}{2}$, check the scale: what fraction does each single space between neighboring tick marks represent?",
+                "acceptableAnswers": [
+                  "\\frac{1}{8}",
+                  "1/8"
+                ],
+                "distractors": [
+                  "1",
+                  "\\frac{1}{7}",
+                  "\\frac{1}{2}"
+                ],
+                "rationale": "Because the distance from 0 to 1 is divided into 8 equal spaces, each space represents $\\frac{1}{8}$, rather than 1 whole or $\\frac{1}{7}$ from counting tick marks instead of intervals.",
+                "answerFormat": "katex"
+              },
+              "reason": "The answer is already revealed: the strategy explicitly specifies finding the matching 'eighths value', the problem states the cup is divided into 8 equal parts, and the visible inset already labels the 4th tick mark as '4/8' alongside '1/2'."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

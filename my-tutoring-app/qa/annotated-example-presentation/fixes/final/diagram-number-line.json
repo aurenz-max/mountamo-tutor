@@ -1,0 +1,13 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 5",
+    "problemStatement": "Show 0.4 plus 0.3 on a number line.",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "Start at zero, jump four tenths to 0.4, then three tenths to 0.7. Scale zero to one.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Combine decimal distances.",
+    "seedNotes": "Draw both jumps on a scale marked in tenths."
+  },
+  "error": "Worked step failed both validation attempts: {\"error\":{\"code\":400,\"message\":\"Request contains an invalid argument.\",\"status\":\"INVALID_ARGUMENT\"}}; {\"error\":{\"code\":400,\"message\":\"Request contains an invalid argument.\",\"status\":\"INVALID_ARGUMENT\"}}"
+}

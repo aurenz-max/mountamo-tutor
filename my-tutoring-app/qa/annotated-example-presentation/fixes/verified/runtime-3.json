@@ -1,0 +1,205 @@
+{
+  "index": 3,
+  "grade": 5,
+  "topic": "Add 0.4 and 0.3",
+  "httpStatus": 200,
+  "elapsed": 52794,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 52760,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4801,
+      "longestStringLength": 238,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Adding Decimals on a Number Line",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to the library. Use the number line to show his total distance and find the sum of $0.4 + 0.3$.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0,
+              "label": "Start"
+            },
+            {
+              "value": 0.4,
+              "label": "Park"
+            },
+            {
+              "value": 0.7,
+              "label": "Library"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Start at zero and hop forward along the tenths tick marks to find the final landing point.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Plot the first distance",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0,
+              "jumps": [
+                0.4
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into tenths, showing a jump from 0 to 0.4.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Start at zero and make a forward jump of four tenths to reach 0.4.",
+            "strategy": "I start at zero because it is our safe home base before taking any steps.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This connects whole number counting to decimals by using equal jumps on a number line.",
+            "narrative": "Start at the point labeled $0$ and move forward $4$ tenths to reach the park at $0.4$."
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Add the second distance",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0.4,
+              "jumps": [
+                0.3
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 with a jump of 0.3 starting from 0.4 and landing at 0.7.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I start at 0.4 and jump forward three tenths to land on 0.7.",
+            "strategy": "I notice that adding decimals is just like adding whole numbers by moving forward on the number line.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This connects decimal addition to standard linear measurement and length models used with whole numbers.",
+            "narrative": "From $0.4$, jump forward $3$ more tenths to land on the library at $0.7$. Therefore, Leo's total distance is $0.7$ miles, giving $0.4 + 0.3 = 0.7$."
+          },
+          "challenge": {
+            "prompt": "Leo starts at $0.4$ and hops forward to add $0.3$. After taking his first forward hop of one tenth ($0.1$), which number does he land on?",
+            "acceptableAnswers": [
+              "0.5",
+              "0.50"
+            ],
+            "rationale": "Starting at $0.4$ and hopping forward one tenth lands on $0.5$, because counting on a number line measures the jumps between marks rather than counting the starting tick mark $0.4$.",
+            "distractors": [
+              "0.4",
+              "0.3",
+              "0.1"
+            ],
+            "answerFormat": "katex"
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to the library. Use the number line to show his total distance and find the sum of $0.4 + 0.3$.",
+        "body": "Start at the point labeled $0$ and move forward $4$ tenths to reach the park at $0.4$.\n---\nFrom $0.4$, jump forward $3$ more tenths to land on the library at $0.7$. Therefore, Leo's total distance is $0.7$ miles, giving $0.4 + 0.3 = 0.7$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Start at the point labeled $0$ and move forward $4$ tenths to reach the park at $0.4$."
+          },
+          {
+            "index": 1,
+            "prose": "From $0.4$, jump forward $3$ more tenths to land on the library at $0.7$. Therefore, Leo's total distance is $0.7$ miles, giving $0.4 + 0.3 = 0.7$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Plot the first distance",
+              "pedagogicalGoal": "Visualize the first addend as a forward jump from zero along a tenths number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Draw a number line partitioned into tenths from 0 to 1, showing an initial jump of 4 tenths from 0 to land at 0.4."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Add the second distance",
+              "pedagogicalGoal": "Show that adding decimals corresponds to continuing forward along the number line to determine the total sum.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Add a second jump of 3 tenths (+0.3) starting from 0.4 to land at 0.7, establishing 0.4 + 0.3 = 0.7."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 1,
+              "prompt": "Leo starts at $0.4$ and hops forward to add $0.3$. After taking his first forward hop of one tenth ($0.1$), which number does he land on?",
+              "acceptableAnswers": [
+                "0.5",
+                "0.50"
+              ],
+              "distractors": [
+                "0.4",
+                "0.3",
+                "0.1"
+              ],
+              "rationale": "Starting at $0.4$ and hopping forward one tenth lands on $0.5$, because counting on a number line measures the jumps between marks rather than counting the starting tick mark $0.4$.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

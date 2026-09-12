@@ -1,0 +1,211 @@
+{
+  "index": 3,
+  "grade": 5,
+  "topic": "Add 0.4 and 0.3",
+  "httpStatus": 200,
+  "elapsed": 69906,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 69876,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 5019,
+      "longestStringLength": 284,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Adding Decimals on a Number Line",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to the library. Use the number line to find the total distance Leo walks.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0,
+              "label": "Start"
+            },
+            {
+              "value": 0.4,
+              "label": "Park"
+            },
+            {
+              "value": 0.7,
+              "label": "Library"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Start at the first distance on the number line and count forward by tenths to find the total distance.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Plot the walk to park",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0,
+              "jumps": [
+                0.4
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into tenths, showing a jump of 0.4 from 0 to the park.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I draw a jump starting at zero and moving forward by four tenth-divisions to reach zero point four.",
+            "strategy": "I notice that starting at zero helps me track the exact distance Leo walked first.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This connects whole number counting on a number line to decimal numbers by using tenths as equal parts of one whole.",
+            "narrative": "On the number line, locate Start at $0$ and follow the $0.4\\text{ miles}$ to the point labeled Park at $0.4$."
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Count forward to library",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 10,
+              "start": 0.4,
+              "jumps": [
+                0.1,
+                0.1,
+                0.1
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 with 10 divisions, showing a start at 0.4 and three jumps of 0.1 forward, landing at 0.7.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Start at 0.4 on the number line and make three jumps of 0.1 to the right, landing on 0.7.",
+            "strategy": "I notice that adding decimals on a number line works just like whole numbers, so I count forward by tenths.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This connects decimal addition to the standard measurement and counting models used for whole numbers.",
+            "narrative": "From Park at $0.4$, count forward $3$ tenths ($0.3$) to reach the point labeled Library at $0.7$. This means Leo walks a total distance of $0.4 + 0.3 = 0.7\\text{ miles}$."
+          },
+          "challenge": {
+            "prompt": "Starting at the park at $0.4$, how many jumps of $0.1$ forward should Leo make to add $0.3$ miles?",
+            "acceptableAnswers": [
+              "3",
+              "3 jumps",
+              "three",
+              "three jumps"
+            ],
+            "rationale": "Since each jump represents $0.1$ miles, adding $0.3$ miles takes $3$ jumps; counting the starting mark at $0.4$ as a move would incorrectly give $4$.",
+            "distractors": [
+              "4",
+              "0.3",
+              "7"
+            ],
+            "answerFormat": "katex"
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to the library. Use the number line to find the total distance Leo walks.",
+        "body": "On the number line, locate Start at $0$ and follow the $0.4\\text{ miles}$ to the point labeled Park at $0.4$.\n---\nFrom Park at $0.4$, count forward $3$ tenths ($0.3$) to reach the point labeled Library at $0.7$. This means Leo walks a total distance of $0.4 + 0.3 = 0.7\\text{ miles}$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "On the number line, locate Start at $0$ and follow the $0.4\\text{ miles}$ to the point labeled Park at $0.4$."
+          },
+          {
+            "index": 1,
+            "prose": "From Park at $0.4$, count forward $3$ tenths ($0.3$) to reach the point labeled Library at $0.7$. This means Leo walks a total distance of $0.4 + 0.3 = 0.7\\text{ miles}$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Plot the walk to park",
+              "pedagogicalGoal": "Understand how to represent an initial decimal distance by marking a jump from zero on a number line partitioned into tenths.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Draw a number line from 0 to 1 divided into tenths, highlighting the interval from 0 (Start) to 0.4 (Park)."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Count forward to library",
+              "pedagogicalGoal": "Visualize decimal addition as continuing forward along the number line by jumping additional tenths to reach the total sum.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "From 0.4, show 3 jumps of 0.1 forward to land at 0.7 labeled Library, arriving at 0.4 + 0.3 = 0.7 miles."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 1,
+              "prompt": "Starting at the park at $0.4$, how many jumps of $0.1$ forward should Leo make to add $0.3$ miles?",
+              "acceptableAnswers": [
+                "3",
+                "3 jumps",
+                "three",
+                "three jumps"
+              ],
+              "distractors": [
+                "4",
+                "0.3",
+                "7"
+              ],
+              "rationale": "Since each jump represents $0.1$ miles, adding $0.3$ miles takes $3$ jumps; counting the starting mark at $0.4$ as a move would incorrectly give $4$.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

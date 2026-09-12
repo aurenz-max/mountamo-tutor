@@ -1,0 +1,60 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?",
+    "solutionStrategy": "Count four apples per bag.",
+    "groundingProse": "There are 3 bags of 4 apples. Each bag adds 4. The running totals are 4, 8, 12.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Track apples added and running total.",
+    "seedNotes": "Show every bag, apples added, and running total."
+  },
+  "generated": {
+    "content": {
+      "type": "table",
+      "caption": "Maya's Apple Count",
+      "headers": [
+        "Bag",
+        "Apples Added",
+        "Running Total"
+      ],
+      "rows": [
+        [
+          "Bag 1",
+          "4",
+          "4"
+        ],
+        [
+          "Bag 2",
+          "4",
+          "8"
+        ],
+        [
+          "Bag 3",
+          "4",
+          "12"
+        ]
+      ],
+      "highlightCell": [
+        2,
+        2
+      ]
+    },
+    "annotations": {
+      "steps": "I list each bag, the apples added, and the running total.",
+      "strategy": "I notice that adding the same amount per bag makes counting easy.",
+      "misconceptions": "Writing the total number of apples instead of just the new ones added.",
+      "connections": "Equal groups lead directly to multiplication."
+    },
+    "result": "3 \\times 4 = 12",
+    "generationReview": {
+      "attempts": 2,
+      "rejections": [
+        [
+          "In the table row for 'Bag 2', the 'Apples Added' value is listed as '8' instead of '4', and the resulting 'Running Total' is listed as '12' instead of '8'.",
+          "The table is missing a row for 'Bag 3' (with 'Apples Added' of 4 and 'Running Total' of 12) to represent all 3 bags from the problem."
+        ]
+      ]
+    }
+  }
+}

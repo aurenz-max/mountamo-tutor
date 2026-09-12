@@ -1,0 +1,14 @@
+{
+  "index": 6,
+  "grade": 4,
+  "topic": "Find an equivalent fraction for 2/3 with denominator 9",
+  "httpStatus": 500,
+  "elapsed": 20448,
+  "data": {
+    "status": "error",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 20419,
+    "error": "[AnnotatedExample] Required spec 0 (diagram) failed to generate; refusing a partial solution"
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "index": 5,
+  "grade": 3,
+  "topic": "Find the total in 4 groups of 3 buttons",
+  "httpStatus": 200,
+  "elapsed": 42055,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 42023,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4456,
+      "longestStringLength": 211,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Skip-Counting by Threes on a Number Line",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Emma is counting by threes to find out how many buttons she has. She has 4 groups with 3 buttons in each group. Use the number line to jump by threes 4 times starting from 0 to find the total number of buttons.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 15,
+          "ticks": [
+            0,
+            3,
+            6,
+            9,
+            12,
+            15
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0,
+              "label": "0"
+            },
+            {
+              "value": 3,
+              "label": "3"
+            },
+            {
+              "value": 6,
+              "label": "6"
+            },
+            {
+              "value": 9,
+              "label": "9"
+            },
+            {
+              "value": 12,
+              "label": "12"
+            },
+            {
+              "value": 15,
+              "label": "15"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Skip-count forward by threes on the number line four times to find the total.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Jump along the number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 12,
+              "divisions": 12,
+              "start": 0,
+              "jumps": [
+                3,
+                3,
+                3,
+                3
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 12 showing four jumps of plus 3, landing at 3, 6, 9, and 12.",
+            "labels": [
+              {
+                "text": "Start at 0",
+                "description": "Begin your counting journey at zero."
+              },
+              {
+                "text": "Jump 3",
+                "description": "Each jump moves forward by 3 buttons."
+              }
+            ]
+          },
+          "annotations": {
+            "steps": "I make four jumps of size three starting from zero on the number line.",
+            "strategy": "I notice that jumping by the same size repeatedly helps me add equal groups quickly.",
+            "misconceptions": "Starting the first jump at 1 instead of 0 will shift all landing numbers incorrectly.",
+            "connections": "Skip-counting on a number line connects repeated addition directly to multiplication.",
+            "narrative": "Start at tick $0$ on the number line and jump forward by $3$ four times, landing on ticks $3$, $6$, $9$, and $12$."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Calculate the total number of buttons",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "4 \\times 3"
+                },
+                "to": {
+                  "latex": "12"
+                },
+                "operation": "multiply groups by buttons in each group"
+              }
+            ],
+            "result": "12"
+          },
+          "annotations": {
+            "steps": "I multiplied the 4 jumps by 3 buttons each to find the final landing point of 12.",
+            "strategy": "I notice that jumping by threes four times is the exact same as multiplying 4 times 3.",
+            "misconceptions": "A common mistake is counting the tick marks instead of the spaces or jumps between them.",
+            "connections": "This connects skip-counting on a number line directly to multiplication facts.",
+            "narrative": "The fourth jump lands on tick $12$, so Emma has a total of $12$ buttons ($4 \\times 3 = 12$)."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Emma is counting by threes to find out how many buttons she has. She has 4 groups with 3 buttons in each group. Use the number line to jump by threes 4 times starting from 0 to find the total number of buttons.",
+        "body": "Start at tick $0$ on the number line and jump forward by $3$ four times, landing on ticks $3$, $6$, $9$, and $12$.\n---\nThe fourth jump lands on tick $12$, so Emma has a total of $12$ buttons ($4 \\times 3 = 12$).",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Start at tick $0$ on the number line and jump forward by $3$ four times, landing on ticks $3$, $6$, $9$, and $12$."
+          },
+          {
+            "index": 1,
+            "prose": "The fourth jump lands on tick $12$, so Emma has a total of $12$ buttons ($4 \\times 3 = 12$)."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Jump along the number line",
+              "pedagogicalGoal": "Visualize skip-counting by threes as equal-sized forward jumps along a number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Render a number line from 0 to 12 showing four consecutive jumps of +3 landing on 3, 6, 9, and 12."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Calculate the total number of buttons",
+              "pedagogicalGoal": "Connect repeated jumps on the number line to the multiplication sentence representing the total.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "State the landing point of the final jump at 12 and relate it to the multiplication fact 4 \\times 3 = 12."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "step",
+                "stepIndex": 0,
+                "prompt": "Starting at 0 on the number line, what number will Emma land on after making 4 jumps of 3?",
+                "acceptableAnswers": [
+                  "12"
+                ],
+                "distractors": [
+                  "13",
+                  "9",
+                  "7"
+                ],
+                "rationale": "Starting at 0 and skip-counting by 3 four times lands on 12 (3, 6, 9, 12); starting at 1 shifts the count to 13, making only 3 jumps stops at 9, and adding 4 + 3 gives 7.",
+                "answerFormat": "katex"
+              },
+              "reason": "Answer already disclosed or invalid step index"
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

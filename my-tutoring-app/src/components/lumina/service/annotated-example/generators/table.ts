@@ -7,6 +7,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../../geminiClient';
+import { generateVerifiedStep } from '../content-review';
 import type { TableStepContent, StepAnnotations } from '../../../primitives/annotated-example/types';
 import {
   ANNOTATIONS_SCHEMA_FIELDS,
@@ -87,6 +88,8 @@ IMPORTANT: Use the GROUNDING PROSE as your source of truth for the values that f
       ? [data.highlightRow, data.highlightCol]
       : undefined;
 
+  if (rows.length < 2 || rows.some(row => row.some(cell => !cell.trim()))) throw new Error('Table has missing rows or cells');
+  if (highlightCell && (!Number.isInteger(highlightCell[0]) || !Number.isInteger(highlightCell[1]) || highlightCell[0] < 0 || highlightCell[0] >= rows.length || highlightCell[1] < 0 || highlightCell[1] >= headers.length)) throw new Error('Table highlight is outside its cells');
   return {
     content: { type: 'table', caption: data.caption, headers, rows, highlightCell },
     annotations: extractAnnotations(data),
@@ -98,6 +101,6 @@ export const tablePrimitive: PrimitiveDef = {
   id: 'table',
   whenToUse:
     'Multiple parallel computations or a structured comparison. Renders as a 2-4 column table. Use when the block computes the same thing for several inputs (e.g. test points, sign analysis across intervals).',
-  generate: generateTableStep,
+  generate: (ctx) => generateVerifiedStep(ctx, generateTableStep),
   extractResult: (_c, explicit) => explicit ?? '',
 };

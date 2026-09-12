@@ -1,0 +1,82 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 7",
+    "problemStatement": "Show the perpendicular legs of a right triangle with legs 3 cm and 4 cm.",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "The 3 cm and 4 cm legs meet at a right angle. The hypotenuse is 5 cm.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Recognize perpendicular legs.",
+    "seedNotes": "Draw a right triangle and label the three lengths."
+  },
+  "generated": {
+    "content": {
+      "type": "diagram",
+      "visual": {
+        "kind": "drawing",
+        "shapes": [
+          {
+            "kind": "line",
+            "x": 200,
+            "y": 250,
+            "x2": 400,
+            "y2": 250
+          },
+          {
+            "kind": "line",
+            "x": 200,
+            "y": 100,
+            "x2": 200,
+            "y2": 250
+          },
+          {
+            "kind": "line",
+            "x": 200,
+            "y": 100,
+            "x2": 400,
+            "y2": 250
+          },
+          {
+            "kind": "rect",
+            "x": 200,
+            "y": 230,
+            "width": 20,
+            "height": 20
+          },
+          {
+            "kind": "text",
+            "x": 280,
+            "y": 270,
+            "text": "4 cm"
+          },
+          {
+            "kind": "text",
+            "x": 150,
+            "y": 175,
+            "text": "3 cm"
+          },
+          {
+            "kind": "text",
+            "x": 315,
+            "y": 160,
+            "text": "5 cm"
+          }
+        ]
+      },
+      "imagePrompt": "",
+      "altText": "A right triangle with a vertical leg of 3 cm, a horizontal leg of 4 cm, and a hypotenuse of 5 cm, with a right-angle symbol at the vertex between the legs.",
+      "labels": []
+    },
+    "annotations": {
+      "steps": "I drew a right triangle with legs measuring 3 cm and 4 cm and a hypotenuse of 5 cm, marking the 90-degree corner between the two legs.",
+      "strategy": "I notice that identifying the legs first helps me isolate the two sides that form the right angle.",
+      "misconceptions": "Students often mistake the longest side, the hypotenuse, for one of the legs.",
+      "connections": "Recognizing perpendicular legs is essential for applying the Pythagorean theorem, where the legs are substituted for 'a' and 'b'."
+    },
+    "result": "3 \\text{ cm and } 4 \\text{ cm are perpendicular legs}",
+    "generationReview": {
+      "attempts": 1,
+      "rejections": []
+    }
+  }
+}

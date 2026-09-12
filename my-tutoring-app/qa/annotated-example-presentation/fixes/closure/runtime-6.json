@@ -1,0 +1,188 @@
+{
+  "index": 6,
+  "grade": 4,
+  "topic": "Find an equivalent fraction for 2/3 with denominator 9",
+  "httpStatus": 200,
+  "elapsed": 42381,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 42347,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4965,
+      "longestStringLength": 312,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Equivalent Fractions on a Number Line",
+      "subject": "Fractions",
+      "problem": {
+        "statement": "Use the number line to find an equivalent fraction for $\\frac{2}{3}$ with a denominator of $9$. Fill in the missing numerator: $\\frac{2}{3} = \\frac{\\text{?}}{9}$.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.111,
+            0.222,
+            0.333,
+            0.444,
+            0.555,
+            0.667,
+            0.778,
+            0.889,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0.667,
+              "label": "2/3"
+            },
+            {
+              "value": 0.667,
+              "label": "6/9"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Locate the fraction on the number line and identify the ninth that shares the same position.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Locate fractions on number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 9,
+              "start": 0,
+              "jumps": [
+                0.1111111111111111,
+                0.1111111111111111,
+                0.1111111111111111,
+                0.1111111111111111,
+                0.1111111111111111,
+                0.1111111111111111
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into ninths, with jumps showing that 6 ninths lands on the exact same point as 2 thirds.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I count six jumps of one-ninth along the number line to reach the mark for two-thirds.",
+            "strategy": "I notice that fractions in the exact same spot on the number line are equal in value.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This connects the idea of equivalent fractions to coordinates and points on a continuous number line.",
+            "narrative": "On the number line, locate the point $\\frac{2}{3}$ at position $0.667$. The point $\\frac{6}{9}$ sits at this exact same position, which is $6$ tick marks past $0$."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Identify the missing numerator",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "\\frac{2}{3}"
+                },
+                "to": {
+                  "latex": "\\frac{6}{9}"
+                },
+                "operation": "Write equivalent fraction"
+              }
+            ],
+            "result": "\\frac{6}{9}"
+          },
+          "annotations": {
+            "steps": "I find the fraction on the number line that lines up with two-thirds and write it with nine as the bottom number.",
+            "strategy": "I notice that different fractions can share the exact same spot on our number line, so I use that spot to find the missing top number.",
+            "misconceptions": "A common mistake is changing both the top and the bottom numbers by adding the same amount instead of multiplying.",
+            "connections": "This connects visual fraction models to the rule of multiplying the top and bottom by the same number to keep fractions equal.",
+            "narrative": "Since both points share the position $0.667$, the two fractions are equivalent: $\\frac{2}{3} = \\frac{6}{9}$. Thus, the missing numerator is $6$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Use the number line to find an equivalent fraction for $\\frac{2}{3}$ with a denominator of $9$. Fill in the missing numerator: $\\frac{2}{3} = \\frac{\\text{?}}{9}$.",
+        "body": "On the number line, locate the point $\\frac{2}{3}$ at position $0.667$. The point $\\frac{6}{9}$ sits at this exact same position, which is $6$ tick marks past $0$.\n---\nSince both points share the position $0.667$, the two fractions are equivalent: $\\frac{2}{3} = \\frac{6}{9}$. Thus, the missing numerator is $6$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "On the number line, locate the point $\\frac{2}{3}$ at position $0.667$. The point $\\frac{6}{9}$ sits at this exact same position, which is $6$ tick marks past $0$."
+          },
+          {
+            "index": 1,
+            "prose": "Since both points share the position $0.667$, the two fractions are equivalent: $\\frac{2}{3} = \\frac{6}{9}$. Thus, the missing numerator is $6$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Locate fractions on number line",
+              "pedagogicalGoal": "Understand that equivalent fractions occupy the exact same coordinate position on a number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Construct a number line from 0 to 1 with tick marks for thirds and ninths, showing that 2/3 aligns at the same position as 6/9."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Identify the missing numerator",
+              "pedagogicalGoal": "Translate visual alignment on a number line into a formal statement of fraction equivalence.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Express the equivalence \\frac{2}{3} = \\frac{6}{9} and conclude that the missing numerator is 6."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "step",
+                "stepIndex": 0,
+                "prompt": "Starting at $0$, how many jumps of $\\frac{1}{9}$ are needed to reach $\\frac{2}{3}$ on the number line?",
+                "acceptableAnswers": [
+                  "6",
+                  "6 jumps"
+                ],
+                "distractors": [
+                  "7",
+                  "3"
+                ],
+                "rationale": "There are 6 jumps of $\\frac{1}{9}$ to reach $\\frac{2}{3}$; answer 7 comes from mistakenly counting the starting mark at 0, while 3 is the number of jumps left to reach 1.",
+                "answerFormat": "katex"
+              },
+              "reason": "The answer is already revealed in the visible inset (Figure 1), where the point at 2/3 is explicitly labeled with '6/9', indicating 6 jumps of 1/9."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

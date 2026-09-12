@@ -1,0 +1,256 @@
+{
+  "status": "pass",
+  "componentId": "annotated-example",
+  "evalMode": "auto",
+  "duration": 32996,
+  "catalogMeta": null,
+  "validation": {
+    "challengeCount": 0,
+    "typesFound": [],
+    "error": "No eval mode in catalog (skipped validation)",
+    "payloadBytes": 10302,
+    "longestStringLength": 1030,
+    "longestStringPath": "solverDebug.body",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Adding Decimals on a Number Line",
+    "subject": "Elementary Mathematics",
+    "problem": {
+      "statement": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to the library. Use the number line to show his total distance walked, and find the sum $0.4 + 0.3$.",
+      "inset": {
+        "insetType": "number-line",
+        "min": 0,
+        "max": 1,
+        "ticks": [
+          0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1
+        ],
+        "label": "Figure 1",
+        "points": [
+          {
+            "value": 0,
+            "label": "Start"
+          },
+          {
+            "value": 0.4,
+            "label": "Park"
+          },
+          {
+            "value": 0.7,
+            "label": "Library"
+          }
+        ]
+      }
+    },
+    "solutionStrategy": "On a number line from $0$ to $1$ divided into tenths, each tick mark represents $0.1$ miles. We can model addition as moving to the right: first jump $0.4$ from the start to locate the park, and then jump an additional $0.3$ to find the final stopping point at the library.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Plot the first distance",
+        "content": {
+          "type": "diagram",
+          "imagePrompt": "An educational, colorful number line from 0 to 1 with tick marks at every tenth. An arrow starts at 0 and jumps 4 intervals to the right, landing on 0.4 labeled as Park.",
+          "altText": "A number line from 0 to 1 with tenths marked, showing an arrow jumping from 0 to 0.4.",
+          "labels": [
+            {
+              "text": "Start",
+              "description": "The starting point at 0 miles."
+            },
+            {
+              "text": "Park",
+              "description": "The location after the first walk of 0.4 miles."
+            }
+          ]
+        },
+        "annotations": {
+          "steps": "I identified the starting position at 0 on the number line and drew an arrow pointing right, making 4 jumps of 0.1 to land at 0.4.",
+          "strategy": "I notice that a number line helps turn invisible decimal numbers into visible physical steps, making the addition process much easier to track.",
+          "misconceptions": "Students often count the tick marks instead of the spaces between them, which leads to starting the jump at 1 instead of 0 or miscounting the tenths.",
+          "connections": "This connects whole number addition on a number line to decimals, showing that tenths work just like ones when moving along a scale.",
+          "narrative": "Look at the number line in Figure 1. The line runs from $0$ to $1$, divided into $10$ equal spaces with tick marks at every tenth: $\\{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1\\}$. \n\nLeo begins at $\\text{Start@0}$. His first walk is $0.4$ miles, which equals $4$ tenths. Moving $4$ tick intervals to the right from $0$:\n$$0 \\xrightarrow{+0.1} 0.1 \\xrightarrow{+0.1} 0.2 \\xrightarrow{+0.1} 0.3 \\xrightarrow{+0.1} 0.4$$\nThis lands at the point labeled $\\text{Park@0.4}$."
+        }
+      },
+      {
+        "id": 2,
+        "title": "Add the second distance",
+        "content": {
+          "type": "diagram",
+          "imagePrompt": "A colorful educational number line from 0 to 1 divided into ten equal parts, labeled with decimals from 0.0 to 1.0. A curved arrow starts at 0.4 and jumps 3 small steps to the right, landing on 0.7. The points 0.4 and 0.7 are marked with cute icons for a park and a library.",
+          "altText": "A number line showing a second jump of 0.3 starting from 0.4 and landing at 0.7.",
+          "labels": [
+            {
+              "text": "Start at Park (0.4)",
+              "description": "The starting position on the number line where the second jump begins."
+            },
+            {
+              "text": "Jump +0.3 (3 tenths)",
+              "description": "Moving forward three tick marks to the right, one tenth at a time."
+            }
+          ]
+        },
+        "annotations": {
+          "steps": "I start at 0.4 on the number line and draw an arrow making three jumps of 0.1 to the right, landing at 0.7.",
+          "strategy": "I chose to build directly on the first jump so students can see that addition on a number line is just combining lengths sequentially.",
+          "misconceptions": "Students often start counting from the first tick mark after 0.4 as 'one', or they count the jumps instead of the tick marks, resulting in an incorrect landing point.",
+          "connections": "This connects decimal addition directly to whole number addition on a number line, reinforcing that adding means moving forward.",
+          "narrative": "From $\\text{Park@0.4}$, Leo walks another $0.3$ miles to the library. Because $0.3$ means $3$ tenths, count $3$ more tick marks to the right:\n$$0.4 \\xrightarrow{+0.1} 0.5 \\xrightarrow{+0.1} 0.6 \\xrightarrow{+0.1} 0.7$$\nLeo arrives at the point labeled $\\text{Library@0.7}$."
+        },
+        "challenge": {
+          "prompt": "Starting at the park at 0.4 miles, where will Leo land after jumping forward another 0.3 miles (3 tenths)?",
+          "acceptableAnswers": [
+            "0.7",
+            "0.70",
+            ".7"
+          ],
+          "rationale": "Starting at 0.4 and making 3 jumps of one tenth lands on 0.7; counting 0.4 itself as the first jump leads to the off-by-one mistake of 0.6.",
+          "distractors": [
+            "0.6",
+            "0.8",
+            "7"
+          ],
+          "answerFormat": "katex"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Calculate the total distance",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "4\\text{ tenths} + 3\\text{ tenths}"
+              },
+              "to": {
+                "latex": "7\\text{ tenths}"
+              },
+              "operation": "add tenths",
+              "challenge": {
+                "hide": "to",
+                "prompt": "When you combine 4 tenths and 3 tenths, what is the resulting total?",
+                "acceptableAnswers": [
+                  "7\\text{ tenths}"
+                ],
+                "rationale": "Adding 4 tenths and 3 tenths gives 7 tenths, which keeps the place value unit of tenths rather than converting to ones.",
+                "distractors": [
+                  "7\\text{ ones}",
+                  "0.7\\text{ tenths}"
+                ]
+              }
+            }
+          ],
+          "result": "0.4 + 0.3 = 0.7"
+        },
+        "annotations": {
+          "steps": "I combined four tenths and three tenths to get seven tenths.",
+          "strategy": "I notice that decimals are just like whole numbers when we use place value, so adding tenths works the exact same way as adding standard counters.",
+          "misconceptions": "A common mistake is adding the digits as if they were whole numbers without considering place value, resulting in 4 + 3 = 7 treated as 7 ones instead of 7 tenths, or mistakenly writing 0.7 as 0.07.",
+          "connections": "This connects number line jumps to standard decimal addition and reinforces the base-ten place value system learned with whole numbers.",
+          "narrative": "The number line shows that moving $0.4$ and then $0.3$ more brings Leo to $0.7$. We can verify this using place value:\n$$4\\text{ tenths} + 3\\text{ tenths} = 7\\text{ tenths}$$\n$$0.4 + 0.3 = 0.7$$\n\nLeo's total distance walked is $0.7$ miles, so the sum is $0.4 + 0.3 = 0.7$."
+        }
+      }
+    ],
+    "solverDebug": {
+      "problemEcho": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to the library. Use the number line to show his total distance walked, and find the sum $0.4 + 0.3$.",
+      "body": "Look at the number line in Figure 1. The line runs from $0$ to $1$, divided into $10$ equal spaces with tick marks at every tenth: $\\{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1\\}$. \n\nLeo begins at $\\text{Start@0}$. His first walk is $0.4$ miles, which equals $4$ tenths. Moving $4$ tick intervals to the right from $0$:\n$$0 \\xrightarrow{+0.1} 0.1 \\xrightarrow{+0.1} 0.2 \\xrightarrow{+0.1} 0.3 \\xrightarrow{+0.1} 0.4$$\nThis lands at the point labeled $\\text{Park@0.4}$.\n---\nFrom $\\text{Park@0.4}$, Leo walks another $0.3$ miles to the library. Because $0.3$ means $3$ tenths, count $3$ more tick marks to the right:\n$$0.4 \\xrightarrow{+0.1} 0.5 \\xrightarrow{+0.1} 0.6 \\xrightarrow{+0.1} 0.7$$\nLeo arrives at the point labeled $\\text{Library@0.7}$.\n---\nThe number line shows that moving $0.4$ and then $0.3$ more brings Leo to $0.7$. We can verify this using place value:\n$$4\\text{ tenths} + 3\\text{ tenths} = 7\\text{ tenths}$$\n$$0.4 + 0.3 = 0.7$$\n\nLeo's total distance walked is $0.7$ miles, so the sum is $0.4 + 0.3 = 0.7$.",
+      "separatorCount": 2,
+      "blocks": [
+        {
+          "index": 0,
+          "prose": "Look at the number line in Figure 1. The line runs from $0$ to $1$, divided into $10$ equal spaces with tick marks at every tenth: $\\{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1\\}$. \n\nLeo begins at $\\text{Start@0}$. His first walk is $0.4$ miles, which equals $4$ tenths. Moving $4$ tick intervals to the right from $0$:\n$$0 \\xrightarrow{+0.1} 0.1 \\xrightarrow{+0.1} 0.2 \\xrightarrow{+0.1} 0.3 \\xrightarrow{+0.1} 0.4$$\nThis lands at the point labeled $\\text{Park@0.4}$."
+        },
+        {
+          "index": 1,
+          "prose": "From $\\text{Park@0.4}$, Leo walks another $0.3$ miles to the library. Because $0.3$ means $3$ tenths, count $3$ more tick marks to the right:\n$$0.4 \\xrightarrow{+0.1} 0.5 \\xrightarrow{+0.1} 0.6 \\xrightarrow{+0.1} 0.7$$\nLeo arrives at the point labeled $\\text{Library@0.7}$."
+        },
+        {
+          "index": 2,
+          "prose": "The number line shows that moving $0.4$ and then $0.3$ more brings Leo to $0.7$. We can verify this using place value:\n$$4\\text{ tenths} + 3\\text{ tenths} = 7\\text{ tenths}$$\n$$0.4 + 0.3 = 0.7$$\n\nLeo's total distance walked is $0.7$ miles, so the sum is $0.4 + 0.3 = 0.7$."
+        }
+      ],
+      "planner": {
+        "specs": [
+          {
+            "stepType": "diagram",
+            "title": "Plot the first distance",
+            "pedagogicalGoal": "Help students visualize a decimal value as a forward distance along a number line divided into tenths.",
+            "groundingBlockIndices": [
+              0
+            ],
+            "seedNotes": "Render a number line from 0 to 1 marked in intervals of 0.1, showing a jump of +0.4 from Start at 0 to Park at 0.4."
+          },
+          {
+            "stepType": "diagram",
+            "title": "Add the second distance",
+            "pedagogicalGoal": "Show that adding another decimal corresponds to continuing forward from the previous position on the number line.",
+            "groundingBlockIndices": [
+              1
+            ],
+            "seedNotes": "Continue on the tenths number line from Park at 0.4 with a jump of +0.3 (3 intervals) to arrive at Library at 0.7."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Calculate the total distance",
+            "pedagogicalGoal": "Connect geometric movements on a number line to place-value addition of tenths and standard decimal notation.",
+            "groundingBlockIndices": [
+              2
+            ],
+            "seedNotes": "Extract the place-value reasoning 4\\text{ tenths} + 3\\text{ tenths} = 7\\text{ tenths} leading to 0.4 + 0.3 = 0.7."
+          }
+        ],
+        "unusedBlockIndices": [],
+        "injectedCount": 0,
+        "mergedCount": 0,
+        "fallback": false
+      },
+      "challenger": {
+        "assignments": [
+          {
+            "kind": "step",
+            "stepIndex": 1,
+            "prompt": "Starting at the park at 0.4 miles, where will Leo land after jumping forward another 0.3 miles (3 tenths)?",
+            "acceptableAnswers": [
+              "0.7",
+              "0.70",
+              ".7"
+            ],
+            "distractors": [
+              "0.6",
+              "0.8",
+              "7"
+            ],
+            "rationale": "Starting at 0.4 and making 3 jumps of one tenth lands on 0.7; counting 0.4 itself as the first jump leads to the off-by-one mistake of 0.6.",
+            "answerFormat": "katex"
+          },
+          {
+            "kind": "transition",
+            "stepIndex": 2,
+            "prompt": "When you combine 4 tenths and 3 tenths, what is the resulting total?",
+            "acceptableAnswers": [
+              "7\\text{ tenths}"
+            ],
+            "distractors": [
+              "7\\text{ ones}",
+              "0.7\\text{ tenths}"
+            ],
+            "rationale": "Adding 4 tenths and 3 tenths gives 7 tenths, which keeps the place value unit of tenths rather than converting to ones.",
+            "transitionIndex": 0,
+            "hide": "to"
+          }
+        ],
+        "dropped": [],
+        "failed": false
+      }
+    }
+  }
+}

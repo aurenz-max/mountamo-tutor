@@ -1,0 +1,304 @@
+{
+  "status": "pass",
+  "componentId": "annotated-example",
+  "evalMode": "auto",
+  "duration": 91237,
+  "catalogMeta": null,
+  "validation": {
+    "challengeCount": 0,
+    "typesFound": [],
+    "error": "No eval mode in catalog (skipped validation)",
+    "payloadBytes": 11712,
+    "longestStringLength": 1282,
+    "longestStringPath": "solverDebug.body",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Adding on a Number Line Without Regrouping",
+    "subject": "Arithmetic",
+    "problem": {
+      "statement": "Leo wants to add 24 and 13. He starts at number 24 on the number line and jumps forward by 10, then jumps forward by 3 more. Use the number line to find the final number Leo lands on.",
+      "inset": {
+        "insetType": "number-line",
+        "min": 20,
+        "max": 40,
+        "ticks": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40
+        ],
+        "label": "Figure 1",
+        "points": [
+          {
+            "value": 24,
+            "label": "Start"
+          },
+          {
+            "value": 34,
+            "label": "+10"
+          },
+          {
+            "value": 37,
+            "label": "+3"
+          }
+        ]
+      }
+    },
+    "solutionStrategy": "Break the number $13$ into $10$ and $3$ using place value, then find the starting point $24$ on the number line. Make a large jump forward of $+10$ to add the tens, followed by a smaller jump of $+3$ to add the ones without needing to regroup. Reading the tick mark where the final jump lands reveals the sum.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Locate start on number line",
+        "content": {
+          "type": "diagram",
+          "imagePrompt": "A clean educational number line graphic on a white background, marked from 20 to 40 with evenly spaced tick marks. A prominent purple dot and label points to tick 24 labeled Start@24. Above the number line, text boxes display the place-value breakdown 13 = 10 + 3 in bright blue and orange colors.",
+          "altText": "A number line showing the starting point at 24 and the place value breakdown of 13 into 10 and 3.",
+          "labels": [
+            {
+              "text": "Start@24",
+              "description": "Leo's starting position on the number line."
+            },
+            {
+              "text": "13 = 10 + 3",
+              "description": "Splitting the number 13 into tens and ones."
+            }
+          ]
+        },
+        "annotations": {
+          "steps": "I located tick mark 24 on the number line and split the number 13 into 10 and 3.",
+          "strategy": "I notice that breaking 13 into tens and ones makes the addition much easier to handle in smaller, sequential chunks rather than all at once.",
+          "misconceptions": "Students often make the mistake of counting 24 as a jump instead of starting on it, which leads to an off-by-one error.",
+          "connections": "This strategy of breaking numbers apart by place value lays the foundation for mental math and standard addition algorithms.",
+          "narrative": "Locate Leo's starting position on the Figure 1 number line at tick $24$, labeled **Start@24**. Leo is adding $13$, which splits by place value into $1\\text{ ten}$ and $3\\text{ ones}$ ($13 = 10 + 3$). Breaking $13$ into tens and ones allows Leo to add in two clear steps: first jump forward by $10$, then jump forward by $3$."
+        }
+      },
+      {
+        "id": 2,
+        "title": "Jump forward by ten",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "24 + 10"
+              },
+              "to": {
+                "latex": "34"
+              },
+              "operation": "add 10 to tens place",
+              "challenge": {
+                "hide": "to",
+                "prompt": "Leo is at 24 on the number line and takes a jump of 10 forward. What number does he land on?",
+                "acceptableAnswers": [
+                  "34"
+                ],
+                "rationale": "Adding 10 increases the tens digit by 1 while leaving the ones digit unchanged, landing on 34 rather than adding to the ones place to get 25.",
+                "distractors": [
+                  "25",
+                  "35",
+                  "44"
+                ]
+              }
+            }
+          ],
+          "result": "34"
+        },
+        "annotations": {
+          "steps": "Take the starting number 24 and add 10 by moving the tens digit up by one while keeping the ones digit the same, landing on 34.",
+          "strategy": "I notice that adding 10 to a two-digit number is much easier if I just change the tens digit by 1 and leave the ones digit alone, so I do that first.",
+          "misconceptions": "Students might mistakenly add 10 to the ones digit instead of the tens digit, getting 25 instead of 34.",
+          "connections": "This builds foundational base-ten understanding, preparing students for multi-digit addition and place value grouping.",
+          "narrative": "Take the first jump forward by $10$ from tick $24$ to add the tens. Adding $1\\text{ ten}$ increases the tens digit by $1$ while the ones digit stays unchanged: $24 + 10 = 34$. On Figure 1, this jump follows the arrow to the point labeled **+10@34**, placing Leo at tick $34$."
+        }
+      },
+      {
+        "id": 3,
+        "title": "Jump forward by three",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "34 + 3"
+              },
+              "to": {
+                "latex": "37"
+              },
+              "operation": "add the ones by counting forward",
+              "challenge": {
+                "hide": "to",
+                "prompt": "From 34, Leo jumps forward 3 more units. What final number does he land on?",
+                "acceptableAnswers": [
+                  "37"
+                ],
+                "rationale": "Starting at 34 and taking 3 jumps of one lands on 37; counting 34 itself as the first jump leads to landing short on 36.",
+                "distractors": [
+                  "36",
+                  "38",
+                  "47"
+                ]
+              }
+            }
+          ],
+          "result": "37"
+        },
+        "annotations": {
+          "steps": "Take the second jump forward by 3 from tick 34 to add the ones, counting forward 3 individual tick marks 35, 36, and 37 to land on tick 37.",
+          "strategy": "I notice that after adding the tens to reach 34, I can just count on by ones to finish adding the remaining 3 units without needing to regroup.",
+          "misconceptions": "A common mistake is counting the starting number 34 as the first jump, which leads to landing incorrectly on 36 instead of 37.",
+          "connections": "This connects place value decomposition to movement along a number line, reinforcing that addition is simply counting forward in chunks of tens and ones.",
+          "narrative": "Take the second jump forward by $3$ from tick $34$ to add the ones. Count forward $3$ individual tick marks on Figure 1: $35$, $36$, and $37$, which gives $34 + 3 = 37$. On Figure 1, this step reaches the point labeled **+3@37**, landing Leo directly on tick $37$."
+        }
+      },
+      {
+        "id": 4,
+        "title": "Verify using place-value addition",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "(20 + 10) + (4 + 3)"
+              },
+              "to": {
+                "latex": "30 + 7"
+              },
+              "operation": "add tens and ones independently"
+            }
+          ],
+          "result": "37"
+        },
+        "annotations": {
+          "steps": "I add the ones together (4 + 3 = 7) and the tens together (20 + 10 = 30) separately, then combine the partial sums.",
+          "strategy": "I notice that by breaking the numbers into tens and ones, I can add them easily without needing any extra steps or regrouping.",
+          "misconceptions": "Students often make mistakes by accidentally adding the tens digit to the ones digit (like 20 + 3), forgetting to keep place values separated.",
+          "connections": "This reinforces the foundational place-value concept that multidigit addition can always be split into separate place-value columns.",
+          "narrative": "Verify the result using place-value addition to confirm the sum without regrouping:\n- Add the ones: $4\\text{ ones} + 3\\text{ ones} = 7\\text{ ones}$.\n- Add the tens: $2\\text{ tens} + 1\\text{ ten} = 3\\text{ tens}$.\n\nCombining $3\\text{ tens}$ and $7\\text{ ones}$ gives $37$. Because the sum of the ones ($7$) is less than $10$, no regrouping is needed, confirming that the final number Leo lands on is $37$."
+        }
+      }
+    ],
+    "solverDebug": {
+      "problemEcho": "Leo wants to add 24 and 13. He starts at number 24 on the number line and jumps forward by 10, then jumps forward by 3 more. Use the number line to find the final number Leo lands on.",
+      "body": "Locate Leo's starting position on the Figure 1 number line at tick $24$, labeled **Start@24**. Leo is adding $13$, which splits by place value into $1\\text{ ten}$ and $3\\text{ ones}$ ($13 = 10 + 3$). Breaking $13$ into tens and ones allows Leo to add in two clear steps: first jump forward by $10$, then jump forward by $3$.\n---\nTake the first jump forward by $10$ from tick $24$ to add the tens. Adding $1\\text{ ten}$ increases the tens digit by $1$ while the ones digit stays unchanged: $24 + 10 = 34$. On Figure 1, this jump follows the arrow to the point labeled **+10@34**, placing Leo at tick $34$.\n---\nTake the second jump forward by $3$ from tick $34$ to add the ones. Count forward $3$ individual tick marks on Figure 1: $35$, $36$, and $37$, which gives $34 + 3 = 37$. On Figure 1, this step reaches the point labeled **+3@37**, landing Leo directly on tick $37$.\n---\nVerify the result using place-value addition to confirm the sum without regrouping:\n- Add the ones: $4\\text{ ones} + 3\\text{ ones} = 7\\text{ ones}$.\n- Add the tens: $2\\text{ tens} + 1\\text{ ten} = 3\\text{ tens}$.\n\nCombining $3\\text{ tens}$ and $7\\text{ ones}$ gives $37$. Because the sum of the ones ($7$) is less than $10$, no regrouping is needed, confirming that the final number Leo lands on is $37$.",
+      "separatorCount": 3,
+      "blocks": [
+        {
+          "index": 0,
+          "prose": "Locate Leo's starting position on the Figure 1 number line at tick $24$, labeled **Start@24**. Leo is adding $13$, which splits by place value into $1\\text{ ten}$ and $3\\text{ ones}$ ($13 = 10 + 3$). Breaking $13$ into tens and ones allows Leo to add in two clear steps: first jump forward by $10$, then jump forward by $3$."
+        },
+        {
+          "index": 1,
+          "prose": "Take the first jump forward by $10$ from tick $24$ to add the tens. Adding $1\\text{ ten}$ increases the tens digit by $1$ while the ones digit stays unchanged: $24 + 10 = 34$. On Figure 1, this jump follows the arrow to the point labeled **+10@34**, placing Leo at tick $34$."
+        },
+        {
+          "index": 2,
+          "prose": "Take the second jump forward by $3$ from tick $34$ to add the ones. Count forward $3$ individual tick marks on Figure 1: $35$, $36$, and $37$, which gives $34 + 3 = 37$. On Figure 1, this step reaches the point labeled **+3@37**, landing Leo directly on tick $37$."
+        },
+        {
+          "index": 3,
+          "prose": "Verify the result using place-value addition to confirm the sum without regrouping:\n- Add the ones: $4\\text{ ones} + 3\\text{ ones} = 7\\text{ ones}$.\n- Add the tens: $2\\text{ tens} + 1\\text{ ten} = 3\\text{ tens}$.\n\nCombining $3\\text{ tens}$ and $7\\text{ ones}$ gives $37$. Because the sum of the ones ($7$) is less than $10$, no regrouping is needed, confirming that the final number Leo lands on is $37$."
+        }
+      ],
+      "planner": {
+        "specs": [
+          {
+            "stepType": "diagram",
+            "title": "Locate start on number line",
+            "pedagogicalGoal": "Teach students to identify the starting position on a number line and partition an addend into tens and ones to plan the sequence of jumps.",
+            "groundingBlockIndices": [
+              0
+            ],
+            "seedNotes": "Render a number line from 20 to 40 highlighting the tick mark 24 labeled Start@24 and the place-value decomposition $13 = 10 + 3$."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Jump forward by ten",
+            "pedagogicalGoal": "Show that adding 10 to a two-digit number increments the tens digit by 1 while leaving the ones digit unchanged.",
+            "groundingBlockIndices": [
+              1
+            ],
+            "seedNotes": "Evaluate the first jump $24 + 10 = 34$, highlighting that Leo moves from tick 24 to tick 34 labeled +10@34."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Jump forward by three",
+            "pedagogicalGoal": "Demonstrate counting on by ones from an intermediate value to arrive at the final sum.",
+            "groundingBlockIndices": [
+              2
+            ],
+            "seedNotes": "Evaluate the second jump $34 + 3 = 37$, counting through ticks 35, 36, and 37 to land on tick 37 labeled +3@37."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Verify using place-value addition",
+            "pedagogicalGoal": "Reinforce that adding without regrouping allows tens and ones to be summed independently to verify the total.",
+            "groundingBlockIndices": [
+              3
+            ],
+            "seedNotes": "Add the ones $4 + 3 = 7$ and tens $2 + 1 = 3$ to show $(20 + 10) + (4 + 3) = 30 + 7 = 37$, noting no regrouping is needed."
+          }
+        ],
+        "unusedBlockIndices": [],
+        "injectedCount": 0,
+        "mergedCount": 0,
+        "fallback": false
+      },
+      "challenger": {
+        "assignments": [
+          {
+            "kind": "transition",
+            "stepIndex": 1,
+            "prompt": "Leo is at 24 on the number line and takes a jump of 10 forward. What number does he land on?",
+            "acceptableAnswers": [
+              "34"
+            ],
+            "distractors": [
+              "25",
+              "35",
+              "44"
+            ],
+            "rationale": "Adding 10 increases the tens digit by 1 while leaving the ones digit unchanged, landing on 34 rather than adding to the ones place to get 25.",
+            "transitionIndex": 0,
+            "hide": "to"
+          },
+          {
+            "kind": "transition",
+            "stepIndex": 2,
+            "prompt": "From 34, Leo jumps forward 3 more units. What final number does he land on?",
+            "acceptableAnswers": [
+              "37"
+            ],
+            "distractors": [
+              "36",
+              "38",
+              "47"
+            ],
+            "rationale": "Starting at 34 and taking 3 jumps of one lands on 37; counting 34 itself as the first jump leads to landing short on 36.",
+            "transitionIndex": 0,
+            "hide": "to"
+          }
+        ],
+        "dropped": [],
+        "failed": false
+      }
+    }
+  }
+}

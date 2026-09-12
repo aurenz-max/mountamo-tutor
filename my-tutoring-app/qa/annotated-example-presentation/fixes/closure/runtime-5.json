@@ -1,0 +1,198 @@
+{
+  "index": 5,
+  "grade": 3,
+  "topic": "Find the total in 4 groups of 3 buttons",
+  "httpStatus": 200,
+  "elapsed": 47742,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 47710,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4714,
+      "longestStringLength": 374,
+      "longestStringPath": "steps[0].generationReview.rejections[0][0]",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding the Total Number of Plates",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Maya is setting up tables for a party. She puts 4 plates on each table, and she sets up 3 tables. Look at the chart showing the groups of plates and find the total number of plates Maya uses.",
+        "inset": {
+          "insetType": "chart",
+          "chartType": "bar",
+          "title": "Party Tables",
+          "data": [
+            {
+              "label": "Table 1",
+              "value": 4
+            },
+            {
+              "label": "Table 2",
+              "value": 4
+            },
+            {
+              "label": "Table 3",
+              "value": 4
+            }
+          ],
+          "label": "Figure 1",
+          "xLabel": "Tables",
+          "yLabel": "Number of Plates"
+        }
+      },
+      "solutionStrategy": "Read the number of plates for each table from the bar chart and add the equal groups together.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 2,
+            "rejections": [
+              [
+                "The result ('4 + 4 + 4 = 12') does not agree with the step content, intended move, or grounding. The content only extracts the values from the bar chart (4 plates for Table 1, Table 2, and Table 3) without setting up the addition or calculating the sum of 12. The result should reflect the extracted values (such as 4 plates on each table) rather than the final calculation."
+              ]
+            ]
+          },
+          "title": "Read plates per table",
+          "content": {
+            "type": "table",
+            "caption": "Plates on Each Table",
+            "headers": [
+              "Table Number",
+              "Number of Plates"
+            ],
+            "rows": [
+              [
+                "Table 1",
+                "4"
+              ],
+              [
+                "Table 2",
+                "4"
+              ],
+              [
+                "Table 3",
+                "4"
+              ]
+            ]
+          },
+          "annotations": {
+            "steps": "I find the bar height for each table in the chart.",
+            "strategy": "I notice that reading each table separately helps me see the equal groups.",
+            "misconceptions": "Thinking the total is already shown instead of looking at one table at a time.",
+            "connections": "Reading bar charts helps us find values for equal groups before adding them.",
+            "narrative": "From the \"Party Tables\" bar chart, the bar for Table 1 is at $4$, Table 2 is at $4$, and Table 3 is at $4$ plates."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Add the equal groups",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "4 + 4 + 4"
+                },
+                "to": {
+                  "latex": "12"
+                },
+                "operation": "add the equal groups",
+                "challenge": {
+                  "hide": "to",
+                  "prompt": "What is the total number of plates when you add the three equal groups: 4 + 4 + 4?",
+                  "acceptableAnswers": [
+                    "12"
+                  ],
+                  "rationale": "Adding the three equal groups gives 4 + 4 + 4 = 12, whereas adding the numbers in the problem (4 + 3) gives 7 and adding only two tables gives 8.",
+                  "distractors": [
+                    "7",
+                    "8",
+                    "9"
+                  ]
+                }
+              }
+            ],
+            "result": "12"
+          },
+          "annotations": {
+            "steps": "Add the four plates from each of the three tables together.",
+            "strategy": "I notice that when groups are the same size, I can add them repeatedly to find the total.",
+            "misconceptions": "Students sometimes multiply the number of tables by the plates incorrectly or add the number of tables instead of the plates.",
+            "connections": "Repeated addition is the building block for multiplication, showing how groups of the same size combine into a total.",
+            "narrative": "Add the $3$ equal groups together to get $4 + 4 + 4 = 12$, so Maya uses a total of $12$ plates."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Maya is setting up tables for a party. She puts 4 plates on each table, and she sets up 3 tables. Look at the chart showing the groups of plates and find the total number of plates Maya uses.",
+        "body": "From the \"Party Tables\" bar chart, the bar for Table 1 is at $4$, Table 2 is at $4$, and Table 3 is at $4$ plates.\n---\nAdd the $3$ equal groups together to get $4 + 4 + 4 = 12$, so Maya uses a total of $12$ plates.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "From the \"Party Tables\" bar chart, the bar for Table 1 is at $4$, Table 2 is at $4$, and Table 3 is at $4$ plates."
+          },
+          {
+            "index": 1,
+            "prose": "Add the $3$ equal groups together to get $4 + 4 + 4 = 12$, so Maya uses a total of $12$ plates."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "table",
+              "title": "Read plates per table",
+              "pedagogicalGoal": "Extract each group's value by reading the bar height for every table.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Create a table listing Table 1, Table 2, and Table 3 with their corresponding values of 4 plates each."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Add the equal groups",
+              "pedagogicalGoal": "Show how repeated addition combines equal-sized groups into a single total.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Represent the total plates as the repeated addition expression 4 + 4 + 4 and evaluate to get 12."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "transition",
+              "stepIndex": 1,
+              "prompt": "What is the total number of plates when you add the three equal groups: 4 + 4 + 4?",
+              "acceptableAnswers": [
+                "12"
+              ],
+              "distractors": [
+                "7",
+                "8",
+                "9"
+              ],
+              "rationale": "Adding the three equal groups gives 4 + 4 + 4 = 12, whereas adding the numbers in the problem (4 + 3) gives 7 and adding only two tables gives 8.",
+              "transitionIndex": 0,
+              "hide": "to"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

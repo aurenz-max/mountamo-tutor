@@ -1,0 +1,292 @@
+{
+  "index": 8,
+  "grade": 7,
+  "topic": "Solve 2x + 3 = 11",
+  "httpStatus": 200,
+  "elapsed": 99937,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 99198,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 13557,
+      "longestStringLength": 1702,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Modeling and Solving Architectural Facade Constraints",
+      "subject": "Algebra",
+      "problem": {
+        "statement": "An architectural firm is designing a modern sustainable pavilion. The exterior perimeter wall consists of a fixed structural anchor measuring exactly 3 meters, complemented by two identical vertical glass panels of variable height $x$ meters. Due to strict zoning regulations regarding solar glare, the total vertical height of this combined structural facade must not exceed 11 meters. Before calculating the precise dimensions, construct the mathematical model that represents this physical constraint.",
+        "inset": {
+          "insetType": "equation-setup",
+          "scenario": "Determining the height of two identical glass panels combined with a fixed structural anchor to meet a maximum facade height limitation.",
+          "quantities": [
+            {
+              "symbol": "x",
+              "meaning": "height of one glass panel in meters",
+              "knownValue": ""
+            },
+            {
+              "symbol": "3",
+              "meaning": "fixed structural anchor in meters",
+              "knownValue": "3"
+            },
+            {
+              "symbol": "11",
+              "meaning": "total vertical height limit in meters",
+              "knownValue": "11"
+            }
+          ],
+          "target": {
+            "symbol": "x",
+            "meaning": "height of one glass panel"
+          },
+          "canonicalEquation": "2x + 3 = 11",
+          "distractorEquations": [
+            {
+              "equation": "3x + 2 = 11",
+              "misconception": "Swapped the coefficient for the number of panels with the fixed structural anchor value."
+            },
+            {
+              "equation": "2(x + 3) = 11",
+              "misconception": "Incorrectly applied the fixed anchor to both panels instead of treating it as a single separate addition."
+            }
+          ],
+          "rationale": "The total height is composed of the sum of two identical glass panel heights and the single fixed structural anchor, capped at the regulatory limit.",
+          "acceptableForms": [
+            "2x + 3 = 11",
+            "3 + 2x = 11",
+            "11 = 2x + 3",
+            "11 = 3 + 2x"
+          ],
+          "label": "Equation Setup"
+        }
+      },
+      "solutionStrategy": "Formulate a linear equation representing the composite facade height, isolate the variable using inverse operations, and verify the resulting dimension against the zoning constraint.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Formulate the facade equation",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "x + x + 3 = 11"
+                },
+                "to": {
+                  "latex": "2x + 3 = 11"
+                },
+                "operation": "combine identical variable heights",
+                "challenge": {
+                  "hide": "operation",
+                  "prompt": "In the unsimplified facade model $x + x + 3 = 11$, which algebraic operation simplifies the two panel height terms?",
+                  "acceptableAnswers": [
+                    "combine identical variable heights",
+                    "combine like terms",
+                    "combine variable heights",
+                    "add identical variable heights"
+                  ],
+                  "rationale": "Combining identical heights adds the linear terms ($x + x = 2x$), whereas multiplying them would incorrectly create an area term ($x^2$).",
+                  "distractors": [
+                    "multiply identical variable heights",
+                    "distribute 2 across the expression"
+                  ]
+                }
+              }
+            ],
+            "result": "2x + 3 = 11"
+          },
+          "annotations": {
+            "steps": "Translate physical dimensions into a linear equation by combining identical variable heights with fixed constants.",
+            "strategy": "I notice that we have two identical glass panels of height x, so I combine them into 2x before adding the 3-meter structural anchor.",
+            "misconceptions": "A common error is confusing additive combination (x + x = 2x) with exponential multiplication (x \\cdot x = x^2), which incorrectly changes the dimension.",
+            "connections": "This models a real-world architectural constraint using a linear equation, bridging physical spatial requirements with algebraic representation.",
+            "narrative": "From the visual data in the **[Equation Setup]**, the vertical dimension is defined by three components: the variable height of one glass panel (given $x$), the constant height of the structural anchor (given $3=3$), and the maximum total facade limit (given $11=11$). Because the facade incorporates two identical panels stacked vertically, their combined vertical contribution is represented algebraically as $x + x = 2x\\text{ meters}$. Adding the fixed base anchor yields the composite vertical expression $2x + 3$. Setting this expression equal to the regulatory upper boundary of $11\\text{ meters}$ establishes the canonical equation $2x + 3 = 11$, which serves as the mathematical model governing the physical constraint."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Isolate the panel height",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "2x + 3 = 11"
+                },
+                "to": {
+                  "latex": "2x = 8"
+                },
+                "operation": "subtract 3 from both sides",
+                "challenge": {
+                  "hide": "operation",
+                  "prompt": "To isolate the variable term in the linear model $2x + 3 = 11$, which inverse operation should be applied first?",
+                  "acceptableAnswers": [
+                    "subtract 3 from both sides",
+                    "subtract 3",
+                    "subtract 3 from each side",
+                    "-3 from both sides"
+                  ],
+                  "rationale": "Subtracting 3 undoes the addition of the constant anchor first, whereas dividing by 2 prematurely violates the standard order of inverse operations.",
+                  "distractors": [
+                    "divide both sides by 2",
+                    "add 3 to both sides",
+                    "subtract 11 from both sides"
+                  ]
+                }
+              }
+            ],
+            "result": "x = 4"
+          },
+          "annotations": {
+            "steps": "I subtracted 3 from both sides of the equation to isolate the variable term 2x.",
+            "strategy": "I notice that isolating the variable term first simplifies the equation before performing division.",
+            "misconceptions": "A common error is dividing by 2 before subtracting the constant 3, which violates the correct order of inverse operations.",
+            "connections": "This applies the subtraction property of equality, a foundational principle for balancing linear models in algebra and real-world constraints.",
+            "narrative": "To calculate the precise panel dimensions as targeted in the context (`find x (height of one glass panel)`), solve the linear model $2x + 3 = 11$ by applying inverse operations. First, use the subtraction property of equality to subtract the fixed $3\\text{-meter}$ anchor from both sides of the equation, isolating the variable term: $2x = 11 - 3 = 8$. Next, apply the division property of equality by dividing both sides by the coefficient $2$ to determine the height of a single panel: $x = \\frac{8}{2} = 4\\text{ meters}$."
+          }
+        },
+        {
+          "id": 3,
+          "title": "Verify the calculated height",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "2(4) + 3"
+                },
+                "to": {
+                  "latex": "8 + 3"
+                },
+                "operation": "multiply 2 by 4"
+              },
+              {
+                "from": {
+                  "latex": "8 + 3"
+                },
+                "to": {
+                  "latex": "11"
+                },
+                "operation": "add 8 and 3"
+              }
+            ],
+            "result": "11"
+          },
+          "annotations": {
+            "steps": "Substitute x = 4 into the expression 2x + 3 and compute the product 2(4).",
+            "strategy": "I notice that checking my solution through direct substitution ensures the physical constraint of the sustainable pavilion is fully satisfied before final construction.",
+            "misconceptions": "Students often forget to substitute the value back into the original expression or mistakenly add the 3 before completing the multiplication.",
+            "connections": "This verification step generalizes to all algebraic modeling where boundary conditions and engineering tolerances must be rigorously tested.",
+            "narrative": "Verify the mathematical model and physical feasibility by substituting the calculated dimension $x = 4$ back into the original structural height expression: $2(4) + 3 = 8 + 3 = 11\\text{ meters}$. This confirms that each vertical glass panel must measure exactly $4\\text{ meters}$ to satisfy the canonical equation $2x + 3 = 11$ and maximize the pavilion's vertical facade while strictly complying with the $11\\text{-meter}$ zoning threshold."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "An architectural firm is designing a modern sustainable pavilion. The exterior perimeter wall consists of a fixed structural anchor measuring exactly 3 meters, complemented by two identical vertical glass panels of variable height $x$ meters. Due to strict zoning regulations regarding solar glare, the total vertical height of this combined structural facade must not exceed 11 meters. Before calculating the precise dimensions, construct the mathematical model that represents this physical constraint.",
+        "body": "From the visual data in the **[Equation Setup]**, the vertical dimension is defined by three components: the variable height of one glass panel (given $x$), the constant height of the structural anchor (given $3=3$), and the maximum total facade limit (given $11=11$). Because the facade incorporates two identical panels stacked vertically, their combined vertical contribution is represented algebraically as $x + x = 2x\\text{ meters}$. Adding the fixed base anchor yields the composite vertical expression $2x + 3$. Setting this expression equal to the regulatory upper boundary of $11\\text{ meters}$ establishes the canonical equation $2x + 3 = 11$, which serves as the mathematical model governing the physical constraint.\n---\nTo calculate the precise panel dimensions as targeted in the context (`find x (height of one glass panel)`), solve the linear model $2x + 3 = 11$ by applying inverse operations. First, use the subtraction property of equality to subtract the fixed $3\\text{-meter}$ anchor from both sides of the equation, isolating the variable term: $2x = 11 - 3 = 8$. Next, apply the division property of equality by dividing both sides by the coefficient $2$ to determine the height of a single panel: $x = \\frac{8}{2} = 4\\text{ meters}$.\n---\nVerify the mathematical model and physical feasibility by substituting the calculated dimension $x = 4$ back into the original structural height expression: $2(4) + 3 = 8 + 3 = 11\\text{ meters}$. This confirms that each vertical glass panel must measure exactly $4\\text{ meters}$ to satisfy the canonical equation $2x + 3 = 11$ and maximize the pavilion's vertical facade while strictly complying with the $11\\text{-meter}$ zoning threshold.",
+        "separatorCount": 2,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "From the visual data in the **[Equation Setup]**, the vertical dimension is defined by three components: the variable height of one glass panel (given $x$), the constant height of the structural anchor (given $3=3$), and the maximum total facade limit (given $11=11$). Because the facade incorporates two identical panels stacked vertically, their combined vertical contribution is represented algebraically as $x + x = 2x\\text{ meters}$. Adding the fixed base anchor yields the composite vertical expression $2x + 3$. Setting this expression equal to the regulatory upper boundary of $11\\text{ meters}$ establishes the canonical equation $2x + 3 = 11$, which serves as the mathematical model governing the physical constraint."
+          },
+          {
+            "index": 1,
+            "prose": "To calculate the precise panel dimensions as targeted in the context (`find x (height of one glass panel)`), solve the linear model $2x + 3 = 11$ by applying inverse operations. First, use the subtraction property of equality to subtract the fixed $3\\text{-meter}$ anchor from both sides of the equation, isolating the variable term: $2x = 11 - 3 = 8$. Next, apply the division property of equality by dividing both sides by the coefficient $2$ to determine the height of a single panel: $x = \\frac{8}{2} = 4\\text{ meters}$."
+          },
+          {
+            "index": 2,
+            "prose": "Verify the mathematical model and physical feasibility by substituting the calculated dimension $x = 4$ back into the original structural height expression: $2(4) + 3 = 8 + 3 = 11\\text{ meters}$. This confirms that each vertical glass panel must measure exactly $4\\text{ meters}$ to satisfy the canonical equation $2x + 3 = 11$ and maximize the pavilion's vertical facade while strictly complying with the $11\\text{-meter}$ zoning threshold."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "algebra",
+              "title": "Formulate the facade equation",
+              "pedagogicalGoal": "Translate physical dimensions into a linear equation by combining identical variable heights with fixed constants.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Model the combined panel heights as x + x = 2x and combine with the 3-meter base to form 2x + 3 = 11."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Isolate the panel height",
+              "pedagogicalGoal": "Apply inverse operations in reverse order of operations to solve for the unknown dimension.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Subtract 3 from both sides of 2x + 3 = 11 to obtain 2x = 8, then divide by 2 to find x = 4."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Verify the calculated height",
+              "pedagogicalGoal": "Confirm that the derived dimension satisfies the original structural constraint through direct substitution.",
+              "groundingBlockIndices": [
+                2
+              ],
+              "seedNotes": "Substitute x = 4 into 2(4) + 3 to evaluate 8 + 3 = 11 and confirm compliance with the 11-meter zoning limit."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "transition",
+              "stepIndex": 0,
+              "prompt": "In the unsimplified facade model $x + x + 3 = 11$, which algebraic operation simplifies the two panel height terms?",
+              "acceptableAnswers": [
+                "combine identical variable heights",
+                "combine like terms",
+                "combine variable heights",
+                "add identical variable heights"
+              ],
+              "distractors": [
+                "multiply identical variable heights",
+                "distribute 2 across the expression"
+              ],
+              "rationale": "Combining identical heights adds the linear terms ($x + x = 2x$), whereas multiplying them would incorrectly create an area term ($x^2$).",
+              "transitionIndex": 0,
+              "hide": "operation"
+            },
+            {
+              "kind": "transition",
+              "stepIndex": 1,
+              "prompt": "To isolate the variable term in the linear model $2x + 3 = 11$, which inverse operation should be applied first?",
+              "acceptableAnswers": [
+                "subtract 3 from both sides",
+                "subtract 3",
+                "subtract 3 from each side",
+                "-3 from both sides"
+              ],
+              "distractors": [
+                "divide both sides by 2",
+                "add 3 to both sides",
+                "subtract 11 from both sides"
+              ],
+              "rationale": "Subtracting 3 undoes the addition of the constant anchor first, whereas dividing by 2 prematurely violates the standard order of inverse operations.",
+              "transitionIndex": 0,
+              "hide": "operation"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,221 @@
+{
+  "status": "pass",
+  "componentId": "annotated-example",
+  "evalMode": "auto",
+  "duration": 110790,
+  "catalogMeta": null,
+  "validation": {
+    "challengeCount": 0,
+    "typesFound": [],
+    "error": "No eval mode in catalog (skipped validation)",
+    "payloadBytes": 6239,
+    "longestStringLength": 354,
+    "longestStringPath": "solverDebug.body",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Adding Decimals on a Number Line",
+    "subject": "Arithmetic",
+    "problem": {
+      "statement": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to the library. Use the number line to show his total distance walked, and find the sum $0.4 + 0.3$.",
+      "inset": {
+        "insetType": "number-line",
+        "min": 0,
+        "max": 1,
+        "ticks": [
+          0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1
+        ],
+        "label": "Figure 1",
+        "points": [
+          {
+            "value": 0,
+            "label": "Start"
+          },
+          {
+            "value": 0.4,
+            "label": "Park"
+          },
+          {
+            "value": 0.7,
+            "label": "Library"
+          }
+        ]
+      }
+    },
+    "solutionStrategy": "Count forward along the number line in tenths to find the total distance.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Trace distances on number line",
+        "content": {
+          "type": "diagram",
+          "imagePrompt": "A clean educational number line from 0 to 1 divided into ten equal parts marked in tenths. An arrow starts at 0 and jumps 4 steps to 0.4 labeled Park. Another arrow starts at 0.4 and jumps 3 more steps to 0.7 labeled Library. Bright primary colors against a white background.",
+          "altText": "A number line showing two jumps, first from 0 to 0.4 and then 3 more tenths to 0.7.",
+          "labels": [
+            {
+              "text": "First Jump",
+              "description": "Jump four tenths from zero to reach zero point four."
+            },
+            {
+              "text": "Second Jump",
+              "description": "Jump three more tenths to land on zero point seven."
+            }
+          ]
+        },
+        "annotations": {
+          "steps": "Start at zero, jump right four tenths to zero point four, then jump three more tenths to zero point seven.",
+          "strategy": "I notice that using a number line helps me add decimals by counting jumps just like whole numbers.",
+          "misconceptions": "Students often count the tick marks instead of the spaces or jumps between them, leading to an off-by-one error.",
+          "connections": "This connects decimal addition directly to whole number addition on a number line, showing that tenths work just like ones.",
+          "narrative": "On Figure 1, start at $\\text{Start}$ at $0$ and move right $4$ tenths to the point labeled $\\text{Park}$ at $0.4$. From $0.4$, count $3$ more tenths to the right to reach the point labeled $\\text{Library}$ at $0.7$."
+        },
+        "challenge": {
+          "prompt": "Leo starts at 0 and jumps 4 tenths to 0.4. If he jumps 3 more tenths forward along the number line, on what number will he land?",
+          "acceptableAnswers": [
+            "0.7",
+            "0.70",
+            ".7"
+          ],
+          "rationale": "Counting 3 spaces forward from 0.4 lands on 0.7; counting tick marks instead of the spaces between them leads to an off-by-one error like 0.6 or 0.8.",
+          "distractors": [
+            "0.6",
+            "0.8"
+          ],
+          "answerFormat": "katex"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Calculate the total distance",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "0.4 + 0.3"
+              },
+              "to": {
+                "latex": "0.7"
+              },
+              "operation": "add the tenths together",
+              "challenge": {
+                "hide": "to",
+                "prompt": "Now write the total distance as an addition sentence: what is the sum when you add 0.4 and 0.3?",
+                "acceptableAnswers": [
+                  "0.7",
+                  "0.70",
+                  ".7"
+                ],
+                "rationale": "Adding 4 tenths and 3 tenths yields 7 tenths ($0.7$); adding the digits as whole numbers without decimal place value incorrectly gives $7$ or $70$.",
+                "distractors": [
+                  "7",
+                  "0.07",
+                  "70"
+                ]
+              }
+            }
+          ],
+          "result": "0.7"
+        },
+        "annotations": {
+          "steps": "Add four tenths and three tenths to get seven tenths.",
+          "strategy": "I notice we can just add the tenth parts together like whole numbers.",
+          "misconceptions": "A common mistake is adding the numbers as whole numbers to get four plus three equals seven, but forgetting the decimal point makes it seventy instead of zero point seven.",
+          "connections": "This connects decimal addition directly to counting fractional parts on a number line.",
+          "narrative": "Adding $4$ tenths and $3$ tenths gives $7$ tenths. Therefore, the sum is $0.4 + 0.3 = 0.7$, meaning Leo walked a total of $0.7$ miles."
+        }
+      }
+    ],
+    "solverDebug": {
+      "problemEcho": "Leo walks $0.4$ miles to the park, and then walks another $0.3$ miles to the library. Use the number line to show his total distance walked, and find the sum $0.4 + 0.3$.",
+      "body": "On Figure 1, start at $\\text{Start}$ at $0$ and move right $4$ tenths to the point labeled $\\text{Park}$ at $0.4$. From $0.4$, count $3$ more tenths to the right to reach the point labeled $\\text{Library}$ at $0.7$.\n---\nAdding $4$ tenths and $3$ tenths gives $7$ tenths. Therefore, the sum is $0.4 + 0.3 = 0.7$, meaning Leo walked a total of $0.7$ miles.",
+      "separatorCount": 1,
+      "blocks": [
+        {
+          "index": 0,
+          "prose": "On Figure 1, start at $\\text{Start}$ at $0$ and move right $4$ tenths to the point labeled $\\text{Park}$ at $0.4$. From $0.4$, count $3$ more tenths to the right to reach the point labeled $\\text{Library}$ at $0.7$."
+        },
+        {
+          "index": 1,
+          "prose": "Adding $4$ tenths and $3$ tenths gives $7$ tenths. Therefore, the sum is $0.4 + 0.3 = 0.7$, meaning Leo walked a total of $0.7$ miles."
+        }
+      ],
+      "planner": {
+        "specs": [
+          {
+            "stepType": "diagram",
+            "title": "Trace distances on number line",
+            "pedagogicalGoal": "Visualize decimal addition as sequential forward jumps marked in tenths along a number line.",
+            "groundingBlockIndices": [
+              0
+            ],
+            "seedNotes": "Show a number line marked in tenths from 0 to 1 with an initial jump of 0.4 from 0 to 'Park' and a second jump of 0.3 ending at 'Library' at 0.7."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Calculate the total distance",
+            "pedagogicalGoal": "Connect visual number line hops to place-value decimal addition of tenths.",
+            "groundingBlockIndices": [
+              1
+            ],
+            "seedNotes": "Express the sum of 4 tenths and 3 tenths as 7 tenths, resulting in the equation $0.4 + 0.3 = 0.7$ miles."
+          }
+        ],
+        "unusedBlockIndices": [],
+        "injectedCount": 0,
+        "mergedCount": 0,
+        "fallback": false
+      },
+      "challenger": {
+        "assignments": [
+          {
+            "kind": "step",
+            "stepIndex": 0,
+            "prompt": "Leo starts at 0 and jumps 4 tenths to 0.4. If he jumps 3 more tenths forward along the number line, on what number will he land?",
+            "acceptableAnswers": [
+              "0.7",
+              "0.70",
+              ".7"
+            ],
+            "distractors": [
+              "0.6",
+              "0.8"
+            ],
+            "rationale": "Counting 3 spaces forward from 0.4 lands on 0.7; counting tick marks instead of the spaces between them leads to an off-by-one error like 0.6 or 0.8.",
+            "answerFormat": "katex"
+          },
+          {
+            "kind": "transition",
+            "stepIndex": 1,
+            "prompt": "Now write the total distance as an addition sentence: what is the sum when you add 0.4 and 0.3?",
+            "acceptableAnswers": [
+              "0.7",
+              "0.70",
+              ".7"
+            ],
+            "distractors": [
+              "7",
+              "0.07",
+              "70"
+            ],
+            "rationale": "Adding 4 tenths and 3 tenths yields 7 tenths ($0.7$); adding the digits as whole numbers without decimal place value incorrectly gives $7$ or $70$.",
+            "transitionIndex": 0,
+            "hide": "to"
+          }
+        ],
+        "dropped": [],
+        "failed": false
+      }
+    }
+  }
+}

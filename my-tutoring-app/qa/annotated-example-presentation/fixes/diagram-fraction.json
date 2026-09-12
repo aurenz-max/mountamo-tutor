@@ -1,0 +1,45 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 4",
+    "problemStatement": "Show four eighths as half of a whole.",
+    "solutionStrategy": "Count four apples per bag.",
+    "groundingProse": "Divide one bar into eight equal pieces, shade four pieces. Four eighths equals one half.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "See equivalent fractions.",
+    "seedNotes": "Use a fraction bar."
+  },
+  "generated": {
+    "content": {
+      "type": "diagram",
+      "visual": {
+        "kind": "fraction-bar",
+        "numerator": 4,
+        "denominator": 8
+      },
+      "imagePrompt": "",
+      "altText": "A fraction bar divided into 8 equal parts with 4 parts shaded to show four eighths.",
+      "labels": [
+        {
+          "text": "4 shaded parts",
+          "description": "The numerator shows how many equal parts we are looking at."
+        },
+        {
+          "text": "8 total parts",
+          "description": "The denominator shows the total number of equal parts in the whole."
+        }
+      ]
+    },
+    "annotations": {
+      "steps": "I divided the fraction bar into eight equal parts and shaded four of those parts to represent four eighths.",
+      "strategy": "I notice that shading four out of the eight parts covers exactly half of the entire bar, which helps me visualize equivalent fractions.",
+      "misconceptions": "A common mistake is thinking that changing the denominator changes the size of the whole, rather than focusing on the relative size of the parts.",
+      "connections": "This connects to simplifying fractions and finding equivalent values by scaling both the numerator and denominator by the same factor."
+    },
+    "result": "\\frac{4}{8} = \\frac{1}{2}",
+    "generationReview": {
+      "attempts": 1,
+      "rejections": []
+    }
+  }
+}

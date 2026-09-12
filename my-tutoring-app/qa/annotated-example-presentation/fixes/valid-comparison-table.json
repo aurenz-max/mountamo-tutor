@@ -1,0 +1,43 @@
+{
+  "name": "valid-comparison-table",
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Compare a red bag with 3 apples and a blue bag with 7 apples.",
+    "solutionStrategy": "Count four apples per bag.",
+    "groundingProse": "Red has 3, blue has 7. Blue has 4 more.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Compare two quantities.",
+    "seedNotes": "Show every bag, apples added, and running total."
+  },
+  "candidate": {
+    "content": {
+      "type": "table",
+      "caption": "Apples",
+      "headers": [
+        "Bag",
+        "Apples"
+      ],
+      "rows": [
+        [
+          "Red",
+          "3"
+        ],
+        [
+          "Blue",
+          "7"
+        ]
+      ]
+    },
+    "annotations": {
+      "steps": "",
+      "strategy": "",
+      "misconceptions": "",
+      "connections": ""
+    },
+    "result": "7-3=4"
+  },
+  "expectedValid": true,
+  "issues": [],
+  "pass": true
+}

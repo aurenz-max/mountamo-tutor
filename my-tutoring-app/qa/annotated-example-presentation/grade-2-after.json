@@ -1,0 +1,195 @@
+{
+  "status": "pass",
+  "componentId": "annotated-example",
+  "evalMode": "auto",
+  "duration": 30645,
+  "catalogMeta": null,
+  "validation": {
+    "challengeCount": 0,
+    "typesFound": [],
+    "error": "No eval mode in catalog (skipped validation)",
+    "payloadBytes": 4357,
+    "longestStringLength": 259,
+    "longestStringPath": "problem.statement",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Adding on a Number Line Without Regrouping",
+    "subject": "Arithmetic",
+    "problem": {
+      "statement": "Leo is using a number line to add two numbers without regrouping. He starts at $24$ and jumps forward by $13$ in two steps: first he jumps forward by $10$ to reach $34$, and then he jumps forward by $3$ more. Use the number line to find his final destination.",
+      "inset": {
+        "insetType": "number-line",
+        "min": 20,
+        "max": 40,
+        "ticks": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40
+        ],
+        "label": "Figure 1",
+        "points": [
+          {
+            "value": 24,
+            "label": "Start"
+          },
+          {
+            "value": 34,
+            "label": "+10"
+          },
+          {
+            "value": 37,
+            "label": "End"
+          }
+        ]
+      }
+    },
+    "solutionStrategy": "Count forward along the number line first by tens and then by ones to find the sum.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Jump forward by tens",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "24 + 10"
+              },
+              "to": {
+                "latex": "34"
+              },
+              "operation": "jump forward by 10"
+            }
+          ],
+          "result": "34"
+        },
+        "annotations": {
+          "steps": "Leo makes a first jump of ten forward from twenty-four on the number line.",
+          "strategy": "I notice that adding the tens first makes the big leap easier to track.",
+          "misconceptions": "Students might mistakenly jump by ones instead of tens, slowing down the addition process.",
+          "connections": "This connects base-ten place value to visual movement along a number line.",
+          "narrative": "On the number line in Figure 1, the first jump of $+10$ moves Leo from the Start point at $24$ to the tick marked $34$."
+        }
+      },
+      {
+        "id": 2,
+        "title": "Jump forward by ones",
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "34 + 3"
+              },
+              "to": {
+                "latex": "37"
+              },
+              "operation": "count forward 3 ones",
+              "challenge": {
+                "hide": "to",
+                "prompt": "Leo is at 34 and counts forward 3 ones on the number line. What number does he land on?",
+                "acceptableAnswers": [
+                  "37"
+                ],
+                "rationale": "Counting forward 3 units from 34 lands on 37, while 36 is a common mistake from counting the starting number 34 as the first jump.",
+                "distractors": [
+                  "36",
+                  "38"
+                ]
+              }
+            }
+          ],
+          "result": "37"
+        },
+        "annotations": {
+          "steps": "Count forward 3 ticks from 34 on the number line to reach 37.",
+          "strategy": "I notice that adding the remaining ones finishes our total jump.",
+          "misconceptions": "Forgetting to count the starting tick or miscounting the hops.",
+          "connections": "This connects counting on with addition on a number line.",
+          "narrative": "From tick $34$, count forward $3$ ticks to reach the End point at $37$, which means Leo's final destination is $34 + 3 = 37$."
+        }
+      }
+    ],
+    "solverDebug": {
+      "problemEcho": "Leo is using a number line to add two numbers without regrouping. He starts at $24$ and jumps forward by $13$ in two steps: first he jumps forward by $10$ to reach $34$, and then he jumps forward by $3$ more. Use the number line to find his final destination.",
+      "body": "On the number line in Figure 1, the first jump of $+10$ moves Leo from the Start point at $24$ to the tick marked $34$.\n---\nFrom tick $34$, count forward $3$ ticks to reach the End point at $37$, which means Leo's final destination is $34 + 3 = 37$.",
+      "separatorCount": 1,
+      "blocks": [
+        {
+          "index": 0,
+          "prose": "On the number line in Figure 1, the first jump of $+10$ moves Leo from the Start point at $24$ to the tick marked $34$."
+        },
+        {
+          "index": 1,
+          "prose": "From tick $34$, count forward $3$ ticks to reach the End point at $37$, which means Leo's final destination is $34 + 3 = 37$."
+        }
+      ],
+      "planner": {
+        "specs": [
+          {
+            "stepType": "algebra",
+            "title": "Jump forward by tens",
+            "pedagogicalGoal": "Decompose the two-digit addition by making the larger leap of tens first along the number line.",
+            "groundingBlockIndices": [
+              0
+            ],
+            "seedNotes": "Represent the jump of +10 from the starting point 24 to reach 34 as 24 + 10 = 34."
+          },
+          {
+            "stepType": "algebra",
+            "title": "Jump forward by ones",
+            "pedagogicalGoal": "Complete the addition by counting on the remaining ones to reach the final sum.",
+            "groundingBlockIndices": [
+              1
+            ],
+            "seedNotes": "Represent counting forward 3 units from 34 to reach the end point 37 via 34 + 3 = 37."
+          }
+        ],
+        "unusedBlockIndices": [],
+        "injectedCount": 0,
+        "mergedCount": 0,
+        "fallback": false
+      },
+      "challenger": {
+        "assignments": [
+          {
+            "kind": "transition",
+            "stepIndex": 1,
+            "prompt": "Leo is at 34 and counts forward 3 ones on the number line. What number does he land on?",
+            "acceptableAnswers": [
+              "37"
+            ],
+            "distractors": [
+              "36",
+              "38"
+            ],
+            "rationale": "Counting forward 3 units from 34 lands on 37, while 36 is a common mistake from counting the starting number 34 as the first jump.",
+            "transitionIndex": 0,
+            "hide": "to"
+          }
+        ],
+        "dropped": [],
+        "failed": false
+      }
+    }
+  }
+}

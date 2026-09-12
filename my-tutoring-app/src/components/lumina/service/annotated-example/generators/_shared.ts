@@ -12,6 +12,7 @@ import type { StepAnnotations } from '../../../primitives/annotated-example/type
 // ── Generator input context ──────────────────────────────────────────
 
 export interface StepGeneratorContext {
+  repairFeedback?: string;
   topic: string;
   gradeContext: string;
   /** Full problem statement for context */
@@ -36,7 +37,9 @@ export interface StepGeneratorContext {
 
 export function buildStepContextPrefix(ctx: StepGeneratorContext): string {
   const parts: string[] = [];
+  if (ctx.repairFeedback) parts.push(`REPAIR THIS SAME MOVE (do not change the problem): ${ctx.repairFeedback}`);
 
+  parts.push(`READER: ${ctx.gradeContext}. Write directly to this student. For grades 2-3 use concrete words and one short sentence per explanation (aim for 12 words); for grades 4-5 aim for 20 words. Other readers also benefit from concise explanations. Keep essential math and units. Do not repeat the problem, narrate what students learn, or add a second explanation of the same action. Annotations are optional extra reading. Never describe a correct method as a mistake.`);
   parts.push(`PROBLEM: ${ctx.problemStatement}`);
   parts.push(`STRATEGY: ${ctx.solutionStrategy}`);
 
@@ -98,6 +101,7 @@ export function extractAnnotations(data: Record<string, unknown>): StepAnnotatio
 import type { StepContent, StepType } from '../../../primitives/annotated-example/types';
 
 export interface GeneratedStep {
+  generationReview?: { attempts: number; rejections: string[][] };
   content: StepContent;
   annotations: StepAnnotations;
   /** Optional explicit result expression (for types where it's not on the content itself). */

@@ -1,0 +1,60 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "There are 3 bags of 4 apples. Each bag adds 4. The running totals are 4, 8, 12.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Track apples added and running total.",
+    "seedNotes": "Show every bag, apples added, and running total."
+  },
+  "generated": {
+    "content": {
+      "type": "table",
+      "caption": "Tracking Apples by Bag",
+      "headers": [
+        "Bag Number",
+        "Apples Added",
+        "Total Apples"
+      ],
+      "rows": [
+        [
+          "$1$",
+          "$4$",
+          "$4$"
+        ],
+        [
+          "$2$",
+          "$4$",
+          "$8$"
+        ],
+        [
+          "$3$",
+          "$4$",
+          "$12$"
+        ]
+      ],
+      "highlightCell": [
+        2,
+        2
+      ]
+    },
+    "annotations": {
+      "steps": "List each bag and add four apples to the running total.",
+      "strategy": "I use a table to keep track of the apples in each bag.",
+      "misconceptions": "Writing the total number of apples for every bag instead of adding four.",
+      "connections": "This repeated addition builds the foundation for multiplication."
+    },
+    "result": "3 \\times 4 = 12",
+    "generationReview": {
+      "attempts": 2,
+      "rejections": [
+        [
+          "In the table, row 2 lists 'Apples Added' as '$8$' and 'Total Apples' as '$12$', but each bag contains 4 apples, so Bag 2 adds 4 apples for a running total of 8 apples.",
+          "The table only has rows for Bag 1 and Bag 2, omitting Bag 3, which is needed to reach the total of 3 bags (adding 4 apples to reach a total of 12 apples)."
+        ]
+      ]
+    }
+  }
+}

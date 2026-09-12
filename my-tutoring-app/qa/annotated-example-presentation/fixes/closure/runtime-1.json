@@ -1,0 +1,187 @@
+{
+  "index": 1,
+  "grade": 3,
+  "topic": "Find the total in 3 groups of 4 apples",
+  "httpStatus": 200,
+  "elapsed": 99742,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 96426,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4401,
+      "longestStringLength": 301,
+      "longestStringPath": "solverDebug.challenger.dropped[0].reason",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding the Total in Equal Groups of Apples",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Maya is getting ready for a party and puts apples into bags. She makes 3 bags, and puts 4 apples into each bag. How many apples does Maya have in total?"
+      },
+      "solutionStrategy": "Multiply the number of bags by the number of apples in each bag to find the total.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Model the groups of apples",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "groups",
+              "counts": [
+                4,
+                4,
+                4
+              ],
+              "itemLabel": "apple"
+            },
+            "imagePrompt": "",
+            "altText": "Three groups of four apples each, representing three bags with four apples in every bag.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I drew 3 separate groups and placed 4 apples into each group.",
+            "strategy": "I notice that drawing equal groups helps me see multiplication as repeated addition.",
+            "misconceptions": "A common mistake is adding the number of groups to the number of items instead of multiplying them.",
+            "connections": "Equal groups form the foundation for multiplication, arrays, and division.",
+            "narrative": "Write a multiplication expression for $3$ groups of $4$ apples: $3 \\times 4$."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Calculate the total apples",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "3 \\times 4"
+                },
+                "to": {
+                  "latex": "12"
+                },
+                "operation": "multiply",
+                "challenge": {
+                  "hide": "to",
+                  "prompt": "Multiply 3 by 4 to find the total number of apples.",
+                  "acceptableAnswers": [
+                    "12"
+                  ],
+                  "rationale": "Multiplying 3 groups of 4 apples gives 12 apples in total, whereas adding 3 and 4 incorrectly gives 7.",
+                  "distractors": [
+                    "7",
+                    "8",
+                    "16"
+                  ]
+                }
+              }
+            ],
+            "result": "12"
+          },
+          "annotations": {
+            "steps": "Multiply 3 bags by 4 apples to get 12 apples.",
+            "strategy": "I notice that equal groups can be multiplied to quickly find the total number of items.",
+            "misconceptions": "Adding the numbers instead of multiplying or counting every single apple one by one can lead to mistakes.",
+            "connections": "This connects repeated addition to multiplication, showing a faster way to count equal groups.",
+            "narrative": "Multiply $3 \\times 4$ to find that Maya has $12$ apples in total."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Maya is getting ready for a party and puts apples into bags. She makes 3 bags, and puts 4 apples into each bag. How many apples does Maya have in total?",
+        "body": "Write a multiplication expression for $3$ groups of $4$ apples: $3 \\times 4$.\n---\nMultiply $3 \\times 4$ to find that Maya has $12$ apples in total.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Write a multiplication expression for $3$ groups of $4$ apples: $3 \\times 4$."
+          },
+          {
+            "index": 1,
+            "prose": "Multiply $3 \\times 4$ to find that Maya has $12$ apples in total."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Model the groups of apples",
+              "pedagogicalGoal": "Visualize equal groups to translate a word problem into a multiplication expression.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Depict 3 bags with 4 apples in each bag to represent the expression $3 \\times 4$."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Calculate the total apples",
+              "pedagogicalGoal": "Evaluate the multiplication expression to determine the total quantity.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Compute $3 \\times 4 = 12$ to conclude that Maya has 12 apples."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "transition",
+              "stepIndex": 1,
+              "prompt": "Multiply 3 by 4 to find the total number of apples.",
+              "acceptableAnswers": [
+                "12"
+              ],
+              "distractors": [
+                "7",
+                "8",
+                "16"
+              ],
+              "rationale": "Multiplying 3 groups of 4 apples gives 12 apples in total, whereas adding 3 and 4 incorrectly gives 7.",
+              "transitionIndex": 0,
+              "hide": "to"
+            }
+          ],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "step",
+                "stepIndex": 0,
+                "prompt": "Which multiplication expression represents Maya's 3 bags with 4 apples in each bag?",
+                "acceptableAnswers": [
+                  "3 \\times 4",
+                  "4 \\times 3",
+                  "3 * 4",
+                  "4 * 3"
+                ],
+                "distractors": [
+                  "3 + 4",
+                  "3 \\times 3",
+                  "4 + 4"
+                ],
+                "rationale": "Maya has 3 equal groups with 4 apples in each bag, which is represented by 3 \\times 4 rather than adding 3 + 4.",
+                "answerFormat": "katex"
+              },
+              "reason": "The visible strategy already instructs to 'Multiply the number of bags by the number of apples in each bag', which semantically reveals the expression $3 \\times 4$. Additionally, asking for a 'multiplication expression' in the prompt directly eliminates the addition distractors ($3 + 4$ and $4 + 4$)."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

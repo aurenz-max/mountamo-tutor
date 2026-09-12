@@ -1,0 +1,168 @@
+{
+  "index": 1,
+  "grade": 3,
+  "topic": "Find the total in 3 groups of 4 apples",
+  "httpStatus": 200,
+  "elapsed": 48296,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 38352,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 3891,
+      "longestStringLength": 188,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Total Apples in Equal Groups",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Maya has 3 baskets of apples. Each basket contains 4 apples. How many apples does Maya have in total?"
+      },
+      "solutionStrategy": "Multiply the number of baskets by the number of apples in each basket to find the total.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Model baskets with equal groups",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "groups",
+              "counts": [
+                4,
+                4,
+                4
+              ],
+              "itemLabel": "apple"
+            },
+            "imagePrompt": "",
+            "altText": "Three groups of four apples, showing a total of twelve apples.",
+            "labels": [
+              {
+                "text": "Group 1",
+                "description": "Four apples in the first basket."
+              },
+              {
+                "text": "Group 2",
+                "description": "Four apples in the second basket."
+              },
+              {
+                "text": "Group 3",
+                "description": "Four apples in the third basket."
+              }
+            ]
+          },
+          "annotations": {
+            "steps": "Count three groups of four apples each to set up repeated addition.",
+            "strategy": "I notice that putting equal groups together lets me add the same number multiple times instead of counting one by one.",
+            "misconceptions": "A common error is counting the baskets themselves as the total instead of the apples inside them.",
+            "connections": "Equal groups form the foundation for multiplication and division facts.",
+            "narrative": "Add the $4$ apples across the $3$ baskets using repeated addition: $4 + 4 + 4 = 12$."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Multiply number of groups",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "3 \\times 4"
+                },
+                "to": {
+                  "latex": "12"
+                },
+                "operation": "multiply equal groups"
+              }
+            ],
+            "result": "12"
+          },
+          "annotations": {
+            "steps": "Multiply the number of baskets by the apples in each basket.",
+            "strategy": "I use multiplication instead of adding three fours.",
+            "misconceptions": "Confusing multiplication with addition by adding the numbers instead of multiplying.",
+            "connections": "Connects repeated addition to fast multiplication facts.",
+            "narrative": "Multiply $3$ baskets by $4$ apples each to get $3 \\times 4 = 12$, so Maya has $12$ apples in total."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Maya has 3 baskets of apples. Each basket contains 4 apples. How many apples does Maya have in total?",
+        "body": "Add the $4$ apples across the $3$ baskets using repeated addition: $4 + 4 + 4 = 12$.\n---\nMultiply $3$ baskets by $4$ apples each to get $3 \\times 4 = 12$, so Maya has $12$ apples in total.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Add the $4$ apples across the $3$ baskets using repeated addition: $4 + 4 + 4 = 12$."
+          },
+          {
+            "index": 1,
+            "prose": "Multiply $3$ baskets by $4$ apples each to get $3 \\times 4 = 12$, so Maya has $12$ apples in total."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Model baskets with equal groups",
+              "pedagogicalGoal": "Understand total quantity conceptually by visualizing repeated addition as equal groups of items.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Display 3 counted groups of 4 apples illustrating the repeated addition 4 + 4 + 4 = 12."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Multiply number of groups",
+              "pedagogicalGoal": "Transition from repeated addition to a concise multiplication expression for equal-sized groups.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Write and evaluate the product of 3 baskets and 4 apples as 3 \\times 4 = 12."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "transition",
+                "stepIndex": 1,
+                "prompt": "When you multiply the 3 baskets by the 4 apples in each basket ($3 \\times 4$), what is the total number of apples?",
+                "acceptableAnswers": [
+                  "12"
+                ],
+                "distractors": [
+                  "7",
+                  "3",
+                  "8"
+                ],
+                "rationale": "Multiplying 3 groups of 4 apples gives 12 apples in total ($4 + 4 + 4 = 12$), whereas adding $3 + 4 = 7$ confuses multiplication with addition.",
+                "transitionIndex": 0,
+                "hide": "to"
+              },
+              "reason": "The answer 12 has already been worked out and revealed in the previous step's narrative annotation (4 + 4 + 4 = 12)."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

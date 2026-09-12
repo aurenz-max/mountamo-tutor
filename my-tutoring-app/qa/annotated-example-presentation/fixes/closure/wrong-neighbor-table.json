@@ -1,0 +1,57 @@
+{
+  "name": "wrong-neighbor-table",
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Four bags each hold three buttons.",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "Each bag adds 3; totals 3, 6, 9, 12.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Track apples added and running total.",
+    "seedNotes": "Show every bag, apples added, and running total."
+  },
+  "candidate": {
+    "content": {
+      "type": "table",
+      "caption": "Buttons",
+      "headers": [
+        "Bag",
+        "Added",
+        "Total"
+      ],
+      "rows": [
+        [
+          "1",
+          "3",
+          "3"
+        ],
+        [
+          "2",
+          "6",
+          "6"
+        ],
+        [
+          "3",
+          "3",
+          "9"
+        ],
+        [
+          "4",
+          "3",
+          "12"
+        ]
+      ]
+    },
+    "annotations": {
+      "steps": "",
+      "strategy": "",
+      "misconceptions": "",
+      "connections": ""
+    }
+  },
+  "expectedValid": false,
+  "issues": [
+    "In row 2 of the table, the 'Added' column has a value of '6', but each bag adds 3 buttons, so the value should be '3'."
+  ],
+  "pass": true
+}

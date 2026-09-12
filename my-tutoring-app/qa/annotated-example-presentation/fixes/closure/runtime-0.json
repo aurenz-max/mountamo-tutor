@@ -1,0 +1,207 @@
+{
+  "index": 0,
+  "grade": 2,
+  "topic": "Add 24 and 13 without regrouping",
+  "httpStatus": 200,
+  "elapsed": 33241,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 29887,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4481,
+      "longestStringLength": 274,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Adding on a Number Line",
+      "subject": "Elementary Mathematics",
+      "problem": {
+        "statement": "Use the number line below to find the sum of 24 and 13. Start at 24 and make a big jump of 10, then make 3 small jumps of 1 to reach your answer.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 20,
+          "max": 40,
+          "ticks": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 24,
+              "label": "Start"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Break $13$ into tens and ones to jump forward along the number line in steps of $10$ and $1$.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Jump forward by tens",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 20,
+              "max": 40,
+              "divisions": 20,
+              "start": 24,
+              "jumps": [
+                10
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 20 to 40 with a jump of plus 10 starting at 24 and landing on 34.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I started at 24 and jumped 10 spaces forward to land on 34.",
+            "strategy": "I like to make a big jump of ten first because it is easier to add tens.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This shows how adding tens on a number line is the same as adding tens in base ten blocks.",
+            "narrative": "Start at the point marked $24$ on the number line and make one big jump forward of $10$ to land on tick $34$, since $24 + 10 = 34$."
+          },
+          "challenge": {
+            "prompt": "Start at 24 and make a big jump forward of 10. Which number do you land on?",
+            "acceptableAnswers": [
+              "34"
+            ],
+            "rationale": "Adding 10 to 24 brings you to 34, whereas counting the starting mark 24 as jump 1 mistakenly lands on 33.",
+            "distractors": [
+              "33",
+              "30",
+              "35"
+            ],
+            "answerFormat": "katex"
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Count forward by ones",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 20,
+              "max": 40,
+              "divisions": 20,
+              "start": 34,
+              "jumps": [
+                1,
+                1,
+                1
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 20 to 40 showing three small jumps of plus one from 34 to 37.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Take three small jumps of one forward from thirty-four to reach thirty-seven.",
+            "strategy": "I add the remaining ones one by one to finish adding thirteen.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "Counting by ones is just like moving forward on a ruler.",
+            "narrative": "From tick $34$, take $3$ small jumps forward of $1$ to visit ticks $35$, $36$, and land on $37$, which gives the final sum $24 + 13 = 37$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Use the number line below to find the sum of 24 and 13. Start at 24 and make a big jump of 10, then make 3 small jumps of 1 to reach your answer.",
+        "body": "Start at the point marked $24$ on the number line and make one big jump forward of $10$ to land on tick $34$, since $24 + 10 = 34$.\n---\nFrom tick $34$, take $3$ small jumps forward of $1$ to visit ticks $35$, $36$, and land on $37$, which gives the final sum $24 + 13 = 37$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Start at the point marked $24$ on the number line and make one big jump forward of $10$ to land on tick $34$, since $24 + 10 = 34$."
+          },
+          {
+            "index": 1,
+            "prose": "From tick $34$, take $3$ small jumps forward of $1$ to visit ticks $35$, $36$, and land on $37$, which gives the final sum $24 + 13 = 37$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Jump forward by tens",
+              "pedagogicalGoal": "Understand adding a two-digit number by first making a large jump of ten on the number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Render a number line starting at 24 with a jump arc of +10 landing on 34, highlighting 24 + 10 = 34."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Count forward by ones",
+              "pedagogicalGoal": "Complete the addition by taking individual unit jumps from the intermediate milestone to find the total sum.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Continue on the number line from 34 with 3 single jumps of +1 visiting 35 and 36 to land on 37, showing 24 + 13 = 37."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 0,
+              "prompt": "Start at 24 and make a big jump forward of 10. Which number do you land on?",
+              "acceptableAnswers": [
+                "34"
+              ],
+              "distractors": [
+                "33",
+                "30",
+                "35"
+              ],
+              "rationale": "Adding 10 to 24 brings you to 34, whereas counting the starting mark 24 as jump 1 mistakenly lands on 33.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

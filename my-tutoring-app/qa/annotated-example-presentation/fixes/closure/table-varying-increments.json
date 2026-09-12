@@ -1,0 +1,55 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "A child finds 2 shells, then 5 shells, then 1 shell. Show how the total grows.",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "The added amounts are 2, 5, 1; the running totals are 2, 7, 8.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Track apples added and running total.",
+    "seedNotes": "Show each find, added shells and total."
+  },
+  "generated": {
+    "content": {
+      "type": "table",
+      "caption": "Growing Shell Total",
+      "headers": [
+        "Step",
+        "Shells Found",
+        "Total"
+      ],
+      "rows": [
+        [
+          "1",
+          "2",
+          "2"
+        ],
+        [
+          "2",
+          "5",
+          "7"
+        ],
+        [
+          "3",
+          "1",
+          "8"
+        ]
+      ],
+      "highlightCell": [
+        2,
+        2
+      ]
+    },
+    "annotations": {
+      "steps": "I am recording the number of shells found at each step.",
+      "strategy": "I notice that tracking each group helps me see the total grow.",
+      "misconceptions": "A common error is forgetting to add the newest amount to the previous total.",
+      "connections": "This builds the foundation for addition and running sums."
+    },
+    "result": "Total = 8",
+    "generationReview": {
+      "attempts": 1,
+      "rejections": []
+    }
+  }
+}

@@ -1,0 +1,112 @@
+[
+  {
+    "index": 0,
+    "grade": 2,
+    "status": 500,
+    "steps": 0,
+    "challenges": 0,
+    "dropped": 0
+  },
+  {
+    "index": 1,
+    "grade": 3,
+    "status": 200,
+    "steps": 2,
+    "types": [
+      "diagram",
+      "algebra"
+    ],
+    "challenges": 0,
+    "dropped": 1
+  },
+  {
+    "index": 2,
+    "grade": 4,
+    "status": 200,
+    "steps": 2,
+    "types": [
+      "diagram",
+      "algebra"
+    ],
+    "challenges": 1,
+    "dropped": 1
+  },
+  {
+    "index": 3,
+    "grade": 5,
+    "status": 200,
+    "steps": 2,
+    "types": [
+      "diagram",
+      "diagram"
+    ],
+    "challenges": 0,
+    "dropped": 1
+  },
+  {
+    "index": 4,
+    "grade": 2,
+    "status": 500,
+    "steps": 0,
+    "challenges": 0,
+    "dropped": 0
+  },
+  {
+    "index": 5,
+    "grade": 3,
+    "status": 200,
+    "steps": 2,
+    "types": [
+      "diagram",
+      "algebra"
+    ],
+    "challenges": 0,
+    "dropped": 1
+  },
+  {
+    "index": 6,
+    "grade": 4,
+    "status": 200,
+    "steps": 2,
+    "types": [
+      "diagram",
+      "algebra"
+    ],
+    "challenges": 0,
+    "dropped": 1
+  },
+  {
+    "index": 7,
+    "grade": 5,
+    "status": 500,
+    "steps": 0,
+    "challenges": 0,
+    "dropped": 0
+  },
+  {
+    "index": 8,
+    "grade": 7,
+    "status": 200,
+    "steps": 3,
+    "types": [
+      "algebra",
+      "algebra",
+      "algebra"
+    ],
+    "challenges": 1,
+    "dropped": 0
+  },
+  {
+    "index": 9,
+    "grade": 12,
+    "status": 200,
+    "steps": 3,
+    "types": [
+      "graph-sketch",
+      "algebra",
+      "algebra"
+    ],
+    "challenges": 2,
+    "dropped": 0
+  }
+]

@@ -1,0 +1,347 @@
+{
+  "index": 9,
+  "grade": 12,
+  "topic": "Find the area between y=x^2 and y=x from x=0 to x=1",
+  "httpStatus": 200,
+  "elapsed": 135362,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 135332,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 18537,
+      "longestStringLength": 2694,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Quadrature of a Parabolic Region and Expected Value Analysis",
+      "subject": "Calculus",
+      "problem": {
+        "statement": "Evaluate the definite integral representing the exact quadrature of the region bounded by the parabolic curve $y = x^2$ and the linear function $y = x$ on the interval $[0, 1]$. Express your answer as a fully reduced rational number, and subsequently interpret this value as the expected value of a continuous random variable whose probability density function is proportional to the vertical distance between the curves.",
+        "inset": {
+          "insetType": "katex",
+          "expression": "\\int_{0}^{1} (x - x^2) \\, dx",
+          "displayMode": "display",
+          "caption": "Definite integral for the quadrature between the curves on [0, 1]",
+          "label": "Equation 1"
+        }
+      },
+      "solutionStrategy": "Evaluate the definite integral using the Fundamental Theorem of Calculus, then apply probability theory to normalize the density function and analyze the corresponding expected values.",
+      "steps": [
+        {
+          "id": 1,
+          "title": "Visualize the bounded region",
+          "content": {
+            "type": "graph-sketch",
+            "expression": "x",
+            "keyPoints": [
+              {
+                "x": 0,
+                "y": 0,
+                "label": "(0, 0)"
+              },
+              {
+                "x": 1,
+                "y": 1,
+                "label": "(1, 1)"
+              }
+            ],
+            "domain": [
+              -0.5,
+              1.5
+            ],
+            "range": [
+              -0.5,
+              1.5
+            ],
+            "features": [],
+            "xLabel": "x",
+            "yLabel": "y",
+            "curves": [
+              {
+                "expression": "x",
+                "color": "primary",
+                "style": "solid",
+                "label": "y = x"
+              },
+              {
+                "expression": "x^2",
+                "color": "secondary",
+                "style": "solid",
+                "label": "y = x^2"
+              }
+            ],
+            "shadedRegions": [
+              {
+                "upper": "x",
+                "lower": "x^2",
+                "from": 0,
+                "to": 1,
+                "label": "A = \\frac{1}{6}"
+              }
+            ],
+            "caption": "Quadrature region bounded above by y = x and below by y = x^2 on [0, 1]."
+          },
+          "annotations": {
+            "steps": "I plotted the linear function y = x and the parabolic function y = x^2, determined their intersection points at (0, 0) and (1, 1), and shaded the region between them on the interval [0, 1].",
+            "strategy": "I established the upper and lower boundaries by comparing the functions on the given interval to ensure the integrand is set up with the correct orientation.",
+            "misconceptions": "A common error is subtracting the functions in the wrong order, yielding a negative area because the lower function was incorrectly treated as the upper bound.",
+            "connections": "This setup is fundamental to evaluating definite integrals for area, volume, and probability density functions in multivariable calculus and statistics."
+          },
+          "challenge": {
+            "prompt": "At what non-zero coordinate point $(x, y)$ in the first quadrant do the curves $y = x$ and $y = x^2$ intersect to define the boundary of the enclosed region?",
+            "acceptableAnswers": [
+              "(1, 1)",
+              "(1,1)"
+            ],
+            "rationale": "Setting $x^2 = x$ yields $x(x - 1) = 0$, giving the intersection points $(0, 0)$ and $(1, 1)$.",
+            "distractors": [
+              "(1, 0)",
+              "(\\frac{1}{2}, \\frac{1}{4})",
+              "(0, 1)"
+            ],
+            "answerFormat": "katex"
+          }
+        },
+        {
+          "id": 2,
+          "title": "Evaluate the definite integral",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "\\int_{0}^{1} (\\htmlClass{lumina-tok lumina-tok-0}{x} - \\htmlClass{lumina-tok lumina-tok-1}{x^2}) \\, dx"
+                },
+                "to": {
+                  "latex": "\\left[ \\htmlClass{lumina-tok lumina-tok-0}{\\frac{x^2}{2}} \\htmlClass{lumina-tok lumina-tok-1}{- \\frac{x^3}{3}} \\right]_{0}^{1}"
+                },
+                "operation": "integrate using the power rule",
+                "subMoves": [
+                  {
+                    "from": "x",
+                    "to": "\\frac{x^2}{2}",
+                    "rule": "power rule"
+                  },
+                  {
+                    "from": "- x^2",
+                    "to": "- \\frac{x^3}{3}",
+                    "rule": "power rule"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "latex": "\\left( \\frac{1^2}{2} - \\frac{1^3}{3} \\right) - \\left( \\frac{0^2}{2} - \\frac{0^3}{3} \right)"
+                },
+                "to": {
+                  "latex": "\\frac{1}{2} - \\frac{1}{3}"
+                },
+                "operation": "evaluate at upper and lower bounds"
+              },
+              {
+                "from": {
+                  "latex": "\\frac{1}{2} - \\frac{1}{3}"
+                },
+                "to": {
+                  "latex": "\\frac{1}{6}"
+                },
+                "operation": "find a common denominator and subtract"
+              }
+            ],
+            "result": "\\frac{1}{6}"
+          },
+          "annotations": {
+            "steps": "Compute the antiderivative of each term in the integrand using the power rule for integration.",
+            "strategy": "I recognize this as a standard definite integral, so I apply linearity to integrate term by term.",
+            "misconceptions": "A common error is forgetting to divide by the new exponent when applying the power rule, treating it instead as differentiation.",
+            "connections": "This connects directly to the Fundamental Theorem of Calculus, bridging antiderivatives with the evaluation of accumulated area.",
+            "narrative": "Evaluate the definite integral given in [Equation 1], $\\int_{0}^{1} (x - x^2) \\, dx$, which defines the quadrature of the planar region bounded above by the linear curve $y = x$ and below by the parabolic arc $y = x^2$ on the closed interval $[0, 1]$. By the linearity of the integral and the power rule, the general antiderivative is:\n$\\int (x - x^2) \\, dx = \\frac{x^2}{2} - \\frac{x^3}{3} + C$\nApplying the Fundamental Theorem of Calculus across the integration limits $[0, 1]$ yields:\n$\\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1} = \\left( \\frac{1^2}{2} - \\frac{1^3}{3} \\right) - \\left( \\frac{0^2}{2} - \\frac{0^3}{3} \\right) = \\frac{1}{2} - \\frac{1}{3} = \\frac{1}{6}$\nThus, the exact quadrature of the enclosed region is the fully reduced rational number $\\frac{1}{6}$."
+          }
+        },
+        {
+          "id": 3,
+          "title": "Determine the normalization constant",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "c \\int_{0}^{1} (x - x^2) \\, dx = 1"
+                },
+                "to": {
+                  "latex": "c \\cdot \\frac{1}{6} = 1"
+                },
+                "operation": "substitute evaluated integral"
+              }
+            ],
+            "result": "c = 6"
+          },
+          "annotations": {
+            "steps": "Substitute the evaluated quadrature integral of one-sixth into the total probability axiom equation, yielding c times one-sixth equals one.",
+            "strategy": "I notice that the total integral must equal one for a valid probability density function, so I substitute the previously calculated area to isolate the normalization constant.",
+            "misconceptions": "Students often forget to set the integral equal to one when finding a normalization constant, treating it merely as an evaluation rather than a probability axiom.",
+            "connections": "This connects directly to the foundational axiom of probability measure in measure theory, where the total measure of the sample space must evaluate to unity.",
+            "narrative": "Construct the probability density function (PDF) $f_X(x)$ for a continuous random variable $X$ supported on $[0, 1]$ that is proportional to the vertical distance between the curves, $h(x) = x - x^2$. Setting $f_X(x) = c(x - x^2)$ for $x \\in [0, 1]$ and $f_X(x) = 0$ otherwise, the total probability axiom requires:\n$\\int_{-\\infty}^{\\infty} f_X(x) \\, dx = \\int_{0}^{1} c(x - x^2) \\, dx = 1$\nFactoring out the constant scalar $c$ and substituting the quadrature integral evaluated in [Equation 1] gives:\n$c \\int_{0}^{1} (x - x^2) \\, dx = c \\cdot \\frac{1}{6} = 1 \\implies c = 6$\nHence, the quadrature value $\\frac{1}{6}$ functions as the reciprocal of the normalization constant $c$, formally defining the probability density function as $f_X(x) = 6(x - x^2) = 6x(1 - x)$ on $[0, 1]$, which corresponds to a standard $\\text{Beta}(\\alpha = 2, \\beta = 2)$ distribution."
+          }
+        },
+        {
+          "id": 4,
+          "title": "Compute the expected value",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "\\mathbb{E}[X] = 6 \\int_{0}^{1} (x^2 - x^3) \\, dx"
+                },
+                "to": {
+                  "latex": "6 \\left[ \\frac{x^3}{3} - \\frac{x^4}{4} \\right]_{0}^{1}"
+                },
+                "operation": "integrate using the power rule",
+                "subMoves": [
+                  {
+                    "from": "x^2",
+                    "to": "\\frac{x^3}{3}",
+                    "rule": "power rule"
+                  },
+                  {
+                    "from": "- x^3",
+                    "to": "- \\frac{x^4}{4}",
+                    "rule": "power rule"
+                  }
+                ],
+                "challenge": {
+                  "hide": "to",
+                  "prompt": "Applying the power rule to evaluate the expectation integral $6 \\int_{0}^{1} (x^2 - x^3) \\, dx$, what is the resulting bracketed antiderivative expression evaluated from $0$ to $1$?",
+                  "acceptableAnswers": [
+                    "6 \\left[ \\frac{x^3}{3} - \\frac{x^4}{4} \\right]_{0}^{1}"
+                  ],
+                  "rationale": "Integrating $x^2 - x^3$ term-by-term using the power rule yields $\\frac{x^3}{3} - \\frac{x^4}{4}$, which must retain the scalar normalization factor of $6$.",
+                  "distractors": [
+                    "\\left[ \\frac{x^3}{3} - \\frac{x^4}{4} \\right]_{0}^{1}",
+                    "6 \\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1}",
+                    "6 \\left[ 2x - 3x^2 \\right]_{0}^{1}"
+                  ]
+                }
+              }
+            ],
+            "result": "\\frac{1}{2}"
+          },
+          "annotations": {
+            "steps": "Integrate the polynomial expression term-by-term and apply the limits of integration from zero to one.",
+            "strategy": "I recognize that computing the expected value of a polynomial probability density function reduces to evaluating standard definite integrals.",
+            "misconceptions": "A common error is forgetting to multiply the evaluated antiderivative by the normalization factor of six.",
+            "connections": "This calculation connects definite integration directly to the definition of expected value in continuous probability distributions.",
+            "narrative": "Compute the expectation of the continuous random variable $X$ and synthesize the interpretation of the quadrature value within this probabilistic model. By definition of mathematical expectation:\n$\\mathbb{E}[X] = \\int_{0}^{1} x f_X(x) \\, dx = 6 \\int_{0}^{1} (x^2 - x^3) \\, dx = 6 \\left[ \\frac{x^3}{3} - \\frac{x^4}{4} \\right]_{0}^{1} = 6 \\left( \\frac{1}{3} - \\frac{1}{4} \\right) = 6 \\left( \\frac{1}{12} \\right) = \\frac{1}{2}$\nThe mean $\\mathbb{E}[X] = \\frac{1}{2}$ reflects the exact bilateral symmetry of $f_X(x) = 6x(1-x)$ across the midpoint $x = \\frac{1}{2}$. The calculated quadrature value $\\frac{1}{6}$ is interpreted as the expected vertical separation distance between the curves, $\\mathbb{E}[U - U^2] = \\int_{0}^{1} (u - u^2)(1) \\, du = \\frac{1}{6}$, under standard uniform sampling $U \\sim \\text{Uniform}(0, 1)$, while simultaneously providing the inverse normalization constant $\\frac{1}{c} = \\frac{1}{6}$ that generates the density $f_X(x)$ whose scaled expectation satisfies $\\mathbb{E}\\left[\\frac{1}{3}X\\right] = \\frac{1}{6}$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Evaluate the definite integral representing the exact quadrature of the region bounded by the parabolic curve $y = x^2$ and the linear function $y = x$ on the interval $[0, 1]$. Express your answer as a fully reduced rational number, and subsequently interpret this value as the expected value of a continuous random variable whose probability density function is proportional to the vertical distance between the curves.",
+        "body": "Evaluate the definite integral given in [Equation 1], $\\int_{0}^{1} (x - x^2) \\, dx$, which defines the quadrature of the planar region bounded above by the linear curve $y = x$ and below by the parabolic arc $y = x^2$ on the closed interval $[0, 1]$. By the linearity of the integral and the power rule, the general antiderivative is:\n$\\int (x - x^2) \\, dx = \\frac{x^2}{2} - \\frac{x^3}{3} + C$\nApplying the Fundamental Theorem of Calculus across the integration limits $[0, 1]$ yields:\n$\\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1} = \\left( \\frac{1^2}{2} - \\frac{1^3}{3} \\right) - \\left( \\frac{0^2}{2} - \\frac{0^3}{3} \\right) = \\frac{1}{2} - \\frac{1}{3} = \\frac{1}{6}$\nThus, the exact quadrature of the enclosed region is the fully reduced rational number $\\frac{1}{6}$.\n---\nConstruct the probability density function (PDF) $f_X(x)$ for a continuous random variable $X$ supported on $[0, 1]$ that is proportional to the vertical distance between the curves, $h(x) = x - x^2$. Setting $f_X(x) = c(x - x^2)$ for $x \\in [0, 1]$ and $f_X(x) = 0$ otherwise, the total probability axiom requires:\n$\\int_{-\\infty}^{\\infty} f_X(x) \\, dx = \\int_{0}^{1} c(x - x^2) \\, dx = 1$\nFactoring out the constant scalar $c$ and substituting the quadrature integral evaluated in [Equation 1] gives:\n$c \\int_{0}^{1} (x - x^2) \\, dx = c \\cdot \\frac{1}{6} = 1 \\implies c = 6$\nHence, the quadrature value $\\frac{1}{6}$ functions as the reciprocal of the normalization constant $c$, formally defining the probability density function as $f_X(x) = 6(x - x^2) = 6x(1 - x)$ on $[0, 1]$, which corresponds to a standard $\\text{Beta}(\\alpha = 2, \\beta = 2)$ distribution.\n---\nCompute the expectation of the continuous random variable $X$ and synthesize the interpretation of the quadrature value within this probabilistic model. By definition of mathematical expectation:\n$\\mathbb{E}[X] = \\int_{0}^{1} x f_X(x) \\, dx = 6 \\int_{0}^{1} (x^2 - x^3) \\, dx = 6 \\left[ \\frac{x^3}{3} - \\frac{x^4}{4} \\right]_{0}^{1} = 6 \\left( \\frac{1}{3} - \\frac{1}{4} \\right) = 6 \\left( \\frac{1}{12} \\right) = \\frac{1}{2}$\nThe mean $\\mathbb{E}[X] = \\frac{1}{2}$ reflects the exact bilateral symmetry of $f_X(x) = 6x(1-x)$ across the midpoint $x = \\frac{1}{2}$. The calculated quadrature value $\\frac{1}{6}$ is interpreted as the expected vertical separation distance between the curves, $\\mathbb{E}[U - U^2] = \\int_{0}^{1} (u - u^2)(1) \\, du = \\frac{1}{6}$, under standard uniform sampling $U \\sim \\text{Uniform}(0, 1)$, while simultaneously providing the inverse normalization constant $\\frac{1}{c} = \\frac{1}{6}$ that generates the density $f_X(x)$ whose scaled expectation satisfies $\\mathbb{E}\\left[\\frac{1}{3}X\\right] = \\frac{1}{6}$.",
+        "separatorCount": 2,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Evaluate the definite integral given in [Equation 1], $\\int_{0}^{1} (x - x^2) \\, dx$, which defines the quadrature of the planar region bounded above by the linear curve $y = x$ and below by the parabolic arc $y = x^2$ on the closed interval $[0, 1]$. By the linearity of the integral and the power rule, the general antiderivative is:\n$\\int (x - x^2) \\, dx = \\frac{x^2}{2} - \\frac{x^3}{3} + C$\nApplying the Fundamental Theorem of Calculus across the integration limits $[0, 1]$ yields:\n$\\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1} = \\left( \\frac{1^2}{2} - \\frac{1^3}{3} \\right) - \\left( \\frac{0^2}{2} - \\frac{0^3}{3} \\right) = \\frac{1}{2} - \\frac{1}{3} = \\frac{1}{6}$\nThus, the exact quadrature of the enclosed region is the fully reduced rational number $\\frac{1}{6}$."
+          },
+          {
+            "index": 1,
+            "prose": "Construct the probability density function (PDF) $f_X(x)$ for a continuous random variable $X$ supported on $[0, 1]$ that is proportional to the vertical distance between the curves, $h(x) = x - x^2$. Setting $f_X(x) = c(x - x^2)$ for $x \\in [0, 1]$ and $f_X(x) = 0$ otherwise, the total probability axiom requires:\n$\\int_{-\\infty}^{\\infty} f_X(x) \\, dx = \\int_{0}^{1} c(x - x^2) \\, dx = 1$\nFactoring out the constant scalar $c$ and substituting the quadrature integral evaluated in [Equation 1] gives:\n$c \\int_{0}^{1} (x - x^2) \\, dx = c \\cdot \\frac{1}{6} = 1 \\implies c = 6$\nHence, the quadrature value $\\frac{1}{6}$ functions as the reciprocal of the normalization constant $c$, formally defining the probability density function as $f_X(x) = 6(x - x^2) = 6x(1 - x)$ on $[0, 1]$, which corresponds to a standard $\\text{Beta}(\\alpha = 2, \\beta = 2)$ distribution."
+          },
+          {
+            "index": 2,
+            "prose": "Compute the expectation of the continuous random variable $X$ and synthesize the interpretation of the quadrature value within this probabilistic model. By definition of mathematical expectation:\n$\\mathbb{E}[X] = \\int_{0}^{1} x f_X(x) \\, dx = 6 \\int_{0}^{1} (x^2 - x^3) \\, dx = 6 \\left[ \\frac{x^3}{3} - \\frac{x^4}{4} \\right]_{0}^{1} = 6 \\left( \\frac{1}{3} - \\frac{1}{4} \\right) = 6 \\left( \\frac{1}{12} \\right) = \\frac{1}{2}$\nThe mean $\\mathbb{E}[X] = \\frac{1}{2}$ reflects the exact bilateral symmetry of $f_X(x) = 6x(1-x)$ across the midpoint $x = \\frac{1}{2}$. The calculated quadrature value $\\frac{1}{6}$ is interpreted as the expected vertical separation distance between the curves, $\\mathbb{E}[U - U^2] = \\int_{0}^{1} (u - u^2)(1) \\, du = \\frac{1}{6}$, under standard uniform sampling $U \\sim \\text{Uniform}(0, 1)$, while simultaneously providing the inverse normalization constant $\\frac{1}{c} = \\frac{1}{6}$ that generates the density $f_X(x)$ whose scaled expectation satisfies $\\mathbb{E}\\left[\\frac{1}{3}X\\right] = \\frac{1}{6}$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "graph-sketch",
+              "title": "Visualize the bounded region",
+              "pedagogicalGoal": "Help the student identify which function forms the upper boundary versus lower boundary on the interval to set up the integrand correctly.",
+              "groundingBlockIndices": [],
+              "seedNotes": "Plot the line y = x and parabola y = x^2 across [0, 1], highlighting intersections at (0, 0) and (1, 1) with shaded vertical distance between the curves."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Evaluate the definite integral",
+              "pedagogicalGoal": "Teach how to apply the power rule and the Fundamental Theorem of Calculus to compute the exact quadrature of the enclosed region.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Extract the integrand x - x^2, general antiderivative x^2/2 - x^3/3, evaluation at bounds 1 and 0, and final reduced value 1/6."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Determine the normalization constant",
+              "pedagogicalGoal": "Demonstrate that normalizing a probability density function requires scaling by the reciprocal of the total area under the curve.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Set up c * \\int_0^1 (x - x^2) dx = 1, substitute 1/6 to solve for c = 6, and define f_X(x) = 6(x - x^2) as a Beta(2, 2) PDF."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Compute the expected value",
+              "pedagogicalGoal": "Show how the distribution mean reflects symmetry and how the original quadrature corresponds to expected vertical separation.",
+              "groundingBlockIndices": [
+                2
+              ],
+              "seedNotes": "Compute E[X] = 6 \\int_0^1 (x^2 - x^3) dx = 1/2, note symmetry about x = 1/2, and interpret 1/6 as E[U - U^2] for U ~ Uniform(0, 1)."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 1,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 0,
+              "prompt": "At what non-zero coordinate point $(x, y)$ in the first quadrant do the curves $y = x$ and $y = x^2$ intersect to define the boundary of the enclosed region?",
+              "acceptableAnswers": [
+                "(1, 1)",
+                "(1,1)"
+              ],
+              "distractors": [
+                "(1, 0)",
+                "(\\frac{1}{2}, \\frac{1}{4})",
+                "(0, 1)"
+              ],
+              "rationale": "Setting $x^2 = x$ yields $x(x - 1) = 0$, giving the intersection points $(0, 0)$ and $(1, 1)$.",
+              "answerFormat": "katex"
+            },
+            {
+              "kind": "transition",
+              "stepIndex": 3,
+              "prompt": "Applying the power rule to evaluate the expectation integral $6 \\int_{0}^{1} (x^2 - x^3) \\, dx$, what is the resulting bracketed antiderivative expression evaluated from $0$ to $1$?",
+              "acceptableAnswers": [
+                "6 \\left[ \\frac{x^3}{3} - \\frac{x^4}{4} \\right]_{0}^{1}"
+              ],
+              "distractors": [
+                "\\left[ \\frac{x^3}{3} - \\frac{x^4}{4} \\right]_{0}^{1}",
+                "6 \\left[ \\frac{x^2}{2} - \\frac{x^3}{3} \\right]_{0}^{1}",
+                "6 \\left[ 2x - 3x^2 \\right]_{0}^{1}"
+              ],
+              "rationale": "Integrating $x^2 - x^3$ term-by-term using the power rule yields $\\frac{x^3}{3} - \\frac{x^4}{4}$, which must retain the scalar normalization factor of $6$.",
+              "transitionIndex": 0,
+              "hide": "to"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

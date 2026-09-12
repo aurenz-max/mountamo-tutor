@@ -1,0 +1,14 @@
+{
+  "index": 2,
+  "grade": 4,
+  "topic": "Find an equivalent fraction for 1/2 with denominator 8",
+  "httpStatus": 500,
+  "elapsed": 86790,
+  "data": {
+    "status": "error",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 85970,
+    "error": "[AnnotatedExample] Required spec 0 (diagram) failed to generate; refusing a partial solution"
+  }
+}

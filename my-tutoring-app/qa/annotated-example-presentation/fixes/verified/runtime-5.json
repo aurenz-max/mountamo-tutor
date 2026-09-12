@@ -1,0 +1,196 @@
+{
+  "index": 5,
+  "grade": 3,
+  "topic": "Find the total in 4 groups of 3 buttons",
+  "httpStatus": 200,
+  "elapsed": 77692,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 77651,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4918,
+      "longestStringLength": 558,
+      "longestStringPath": "steps[0].generationReview.rejections[0][0]",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Total Number of Buttons in Equal Groups",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Leo is getting ready for a craft project. He has 4 small boxes, and he puts 3 buttons into each box. Look at the chart showing Leo's boxes and buttons. How many buttons does Leo have in total?",
+        "inset": {
+          "insetType": "chart",
+          "chartType": "bar",
+          "title": "Leo's Buttons",
+          "data": [
+            {
+              "label": "Box 1",
+              "value": 3
+            },
+            {
+              "label": "Box 2",
+              "value": 3
+            },
+            {
+              "label": "Box 3",
+              "value": 3
+            },
+            {
+              "label": "Box 4",
+              "value": 3
+            }
+          ],
+          "label": "Figure 1",
+          "xLabel": "Boxes",
+          "yLabel": "Number of Buttons"
+        }
+      },
+      "solutionStrategy": "Read the number of buttons in each box from the chart and multiply the equal groups to find the total.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 2,
+            "rejections": [
+              [
+                "The step's result '4 \\times 3 = 12' exceeds the grounding (Block 0 only establishes that each of the four boxes reaches a value of 3 buttons) and goes beyond the intended move ('Recognize that each box contains the same number of buttons to establish four equal groups'). The result also disagrees with the content and annotations, which only establish 4 groups of 3 buttons and describe equal groups as building blocks before multiplication; the result should state the established groups (e.g., 4 groups of 3 buttons) rather than computing the final total."
+              ]
+            ]
+          },
+          "title": "Model equal groups of buttons",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "groups",
+              "counts": [
+                3,
+                3,
+                3,
+                3
+              ],
+              "itemLabel": "button"
+            },
+            "imagePrompt": "",
+            "altText": "A chart showing four groups with three buttons in each group.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "I counted 4 groups with 3 buttons in each group.",
+            "strategy": "I notice that each box has the same number of buttons so I can see four equal groups.",
+            "misconceptions": "Thinking that different boxes have different amounts because you only count one box.",
+            "connections": "Equal groups help us understand how multiplication works with repeated addition.",
+            "narrative": "On the bar chart, the bars for Box 1, Box 2, Box 3, and Box 4 each reach a value of $3$ buttons."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Multiply to find total buttons",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "4 \\times 3"
+                },
+                "to": {
+                  "latex": "12"
+                },
+                "operation": "multiply equal groups",
+                "challenge": {
+                  "hide": "to",
+                  "prompt": "What is the total number of buttons when you multiply 4 groups of 3 buttons ($4 \\times 3$)?",
+                  "acceptableAnswers": [
+                    "12"
+                  ],
+                  "rationale": "Multiplying 4 groups of 3 gives 12 total buttons, whereas adding 4 plus 3 results in 7.",
+                  "distractors": [
+                    "7",
+                    "9",
+                    "15"
+                  ]
+                }
+              }
+            ],
+            "result": "12"
+          },
+          "annotations": {
+            "steps": "Multiply the number of boxes by the number of buttons in each box to find the total product.",
+            "strategy": "I notice that each box has an equal number of buttons, so multiplication is faster than counting one by one.",
+            "misconceptions": "Adding the numbers instead of multiplying, such as thinking 4 times 3 is 4 plus 3 equals 7.",
+            "connections": "This connects equal-group counting directly to multiplication facts and repeated addition.",
+            "narrative": "Multiply the $4$ boxes by $3$ buttons each to find that Leo has $4 \\times 3 = 12$ buttons in total."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Leo is getting ready for a craft project. He has 4 small boxes, and he puts 3 buttons into each box. Look at the chart showing Leo's boxes and buttons. How many buttons does Leo have in total?",
+        "body": "On the bar chart, the bars for Box 1, Box 2, Box 3, and Box 4 each reach a value of $3$ buttons.\n---\nMultiply the $4$ boxes by $3$ buttons each to find that Leo has $4 \\times 3 = 12$ buttons in total.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "On the bar chart, the bars for Box 1, Box 2, Box 3, and Box 4 each reach a value of $3$ buttons."
+          },
+          {
+            "index": 1,
+            "prose": "Multiply the $4$ boxes by $3$ buttons each to find that Leo has $4 \\times 3 = 12$ buttons in total."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Model equal groups of buttons",
+              "pedagogicalGoal": "Recognize that each box contains the same number of buttons to establish four equal groups.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Render 4 counted groups representing Boxes 1 through 4, each containing 3 buttons based on the bar chart heights of 3."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Multiply to find total buttons",
+              "pedagogicalGoal": "Use multiplication to find the total count across equal-sized groups.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Multiply the 4 boxes by 3 buttons each to evaluate the expression 4 \\times 3 = 12 total buttons."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "transition",
+              "stepIndex": 1,
+              "prompt": "What is the total number of buttons when you multiply 4 groups of 3 buttons ($4 \\times 3$)?",
+              "acceptableAnswers": [
+                "12"
+              ],
+              "distractors": [
+                "7",
+                "9",
+                "15"
+              ],
+              "rationale": "Multiplying 4 groups of 3 gives 12 total buttons, whereas adding 4 plus 3 results in 7.",
+              "transitionIndex": 0,
+              "hide": "to"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

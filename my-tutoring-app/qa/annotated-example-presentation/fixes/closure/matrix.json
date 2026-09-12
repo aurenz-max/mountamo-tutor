@@ -1,0 +1,44 @@
+[
+  [
+    2,
+    "Add 24 and 13 without regrouping"
+  ],
+  [
+    3,
+    "Find the total in 3 groups of 4 apples"
+  ],
+  [
+    4,
+    "Find an equivalent fraction for 1/2 with denominator 8"
+  ],
+  [
+    5,
+    "Add 0.4 and 0.3"
+  ],
+  [
+    2,
+    "Subtract 12 from 45 without regrouping"
+  ],
+  [
+    3,
+    "Find the total in 4 groups of 3 buttons"
+  ],
+  [
+    4,
+    "Find an equivalent fraction for 2/3 with denominator 9"
+  ],
+  [
+    5,
+    "Add 0.6 and 0.2"
+  ],
+  [
+    7,
+    "Solve 2x + 3 = 11",
+    "Use this exact worked example: Solve 2x + 3 = 11."
+  ],
+  [
+    12,
+    "Find the area between y=x^2 and y=x from x=0 to x=1",
+    "Use this exact worked example: Find the area between y=x^2 and y=x from x=0 to x=1."
+  ]
+]

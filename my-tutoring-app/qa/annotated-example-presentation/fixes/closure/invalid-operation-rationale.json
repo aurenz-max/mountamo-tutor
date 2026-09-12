@@ -1,0 +1,74 @@
+{
+  "input": {
+    "problemStatement": "Solve 2x + 3 = 11.",
+    "problemTitle": "Find x",
+    "solutionStrategy": "Keep both sides equal.",
+    "steps": [
+      {
+        "id": 1,
+        "title": "Subtract three",
+        "annotations": {
+          "steps": "",
+          "strategy": "",
+          "misconceptions": "",
+          "connections": ""
+        },
+        "content": {
+          "type": "algebra",
+          "transitions": [
+            {
+              "from": {
+                "latex": "2x+3=11"
+              },
+              "to": {
+                "latex": "2x=8"
+              },
+              "operation": "subtract 3 from both sides"
+            }
+          ],
+          "result": "2x=8"
+        }
+      }
+    ]
+  },
+  "assignment": {
+    "kind": "transition",
+    "stepIndex": 0,
+    "transitionIndex": 0,
+    "hide": "operation",
+    "prompt": "Which inverse operation should come first?",
+    "acceptableAnswers": [
+      "subtract 3 from both sides"
+    ],
+    "distractors": [
+      "divide both sides by 2",
+      "add 3 to both sides"
+    ],
+    "rationale": "Subtracting first is required; dividing by 2 first violates the order of inverse operations."
+  },
+  "result": {
+    "safe": [],
+    "dropped": [
+      {
+        "assignment": {
+          "kind": "transition",
+          "stepIndex": 0,
+          "transitionIndex": 0,
+          "hide": "operation",
+          "prompt": "Which inverse operation should come first?",
+          "acceptableAnswers": [
+            "subtract 3 from both sides"
+          ],
+          "distractors": [
+            "divide both sides by 2",
+            "add 3 to both sides"
+          ],
+          "rationale": "Subtracting first is required; dividing by 2 first violates the order of inverse operations."
+        },
+        "reason": "Dividing both sides by 2 first is a mathematically valid solving path, not an order-of-operations violation. The question lacks an explicit target to make subtracting 3 uniquely correct, and the rationale incorrectly asserts that dividing first is invalid."
+      }
+    ]
+  },
+  "expectedSafe": false,
+  "pass": true
+}

@@ -1,0 +1,195 @@
+{
+  "index": 4,
+  "grade": 2,
+  "topic": "Subtract 12 from 45 without regrouping",
+  "httpStatus": 200,
+  "elapsed": 44728,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 44698,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 4597,
+      "longestStringLength": 257,
+      "longestStringPath": "solverDebug.body",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Subtracting on a Number Line",
+      "subject": "Arithmetic",
+      "problem": {
+        "statement": "Maya has 45 beads in her box. She uses 12 beads to make a bracelet. Use the number-line to start at 45 and count back by tens and ones to find how many beads Maya has left.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 50,
+          "ticks": [
+            0,
+            5,
+            10,
+            15,
+            20,
+            25,
+            30,
+            35,
+            40,
+            45,
+            50
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 45,
+              "label": "Start"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Split 12 into tens and ones, then count back in steps along the number line.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Jump back the ten",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 20,
+              "max": 50,
+              "divisions": 30,
+              "start": 45,
+              "jumps": [
+                -10
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 20 to 50 showing a backward jump of 10 from 45 to 35.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Start at 45 on the number line and jump backward by 10 to land on 35.",
+            "strategy": "I notice that subtracting a ten first makes the subtraction much easier to do in my head.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "This builds on place value understanding by separating numbers into tens and ones.",
+            "narrative": "Split $12$ into $1$ ten and $2$ ones, then jump back $10$ from the point Start@45 on the Figure 1 number line to reach the tick mark $35$ ($45 - 10 = 35$)."
+          },
+          "challenge": {
+            "prompt": "To subtract 12 from 45, Maya first jumps backward by 1 ten. What number does she land on?",
+            "acceptableAnswers": [
+              "35"
+            ],
+            "rationale": "Subtracting 1 ten from 45 moves backward 10 spaces to land on 35, rather than moving forward or counting the starting mark 45 as the first step.",
+            "distractors": [
+              "55",
+              "36",
+              "25"
+            ],
+            "answerFormat": "katex"
+          }
+        },
+        {
+          "id": 2,
+          "generationReview": {
+            "attempts": 1,
+            "rejections": []
+          },
+          "title": "Count back the remaining ones",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 30,
+              "max": 50,
+              "divisions": 20,
+              "start": 35,
+              "jumps": [
+                -2
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 30 to 50, showing a backward jump of 2 from 35 to 33.",
+            "labels": []
+          },
+          "annotations": {
+            "steps": "Count back 2 ones from 35 on the number line to land at 33.",
+            "strategy": "I split 12 into a ten and ones so I can count back in easy steps.",
+            "misconceptions": "Start at the given number. Count the moves after it, not the starting mark.",
+            "connections": "Breaking numbers into tens and ones helps make subtraction much easier.",
+            "narrative": "From $35$, count back $2$ ones to land at $33$ ($35 - 2 = 33$), meaning Maya has $33$ beads left."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Maya has 45 beads in her box. She uses 12 beads to make a bracelet. Use the number-line to start at 45 and count back by tens and ones to find how many beads Maya has left.",
+        "body": "Split $12$ into $1$ ten and $2$ ones, then jump back $10$ from the point Start@45 on the Figure 1 number line to reach the tick mark $35$ ($45 - 10 = 35$).\n---\nFrom $35$, count back $2$ ones to land at $33$ ($35 - 2 = 33$), meaning Maya has $33$ beads left.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "Split $12$ into $1$ ten and $2$ ones, then jump back $10$ from the point Start@45 on the Figure 1 number line to reach the tick mark $35$ ($45 - 10 = 35$)."
+          },
+          {
+            "index": 1,
+            "prose": "From $35$, count back $2$ ones to land at $33$ ($35 - 2 = 33$), meaning Maya has $33$ beads left."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Jump back the ten",
+              "pedagogicalGoal": "Demonstrate how decomposing 12 allows taking an easy jump of 10 backward on the number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Render a number line showing a start at 45 and a backward jump of 10 labeled -10 landing at 35, with decomposition 12 = 10 + 2 and equation 45 - 10 = 35."
+            },
+            {
+              "stepType": "diagram",
+              "title": "Count back the remaining ones",
+              "pedagogicalGoal": "Show how subtracting the remaining ones completes the decomposition to find the final total.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "Extend the number line visual from 35 with a backward jump of 2 units (or two -1 jumps) to land at 33, concluding with 35 - 2 = 33 beads."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [
+            {
+              "kind": "step",
+              "stepIndex": 0,
+              "prompt": "To subtract 12 from 45, Maya first jumps backward by 1 ten. What number does she land on?",
+              "acceptableAnswers": [
+                "35"
+              ],
+              "distractors": [
+                "55",
+                "36",
+                "25"
+              ],
+              "rationale": "Subtracting 1 ten from 45 moves backward 10 spaces to land on 35, rather than moving forward or counting the starting mark 45 as the first step.",
+              "answerFormat": "katex"
+            }
+          ],
+          "dropped": [],
+          "failed": false
+        }
+      }
+    }
+  }
+}

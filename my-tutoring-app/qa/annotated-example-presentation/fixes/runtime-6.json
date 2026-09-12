@@ -1,0 +1,192 @@
+{
+  "index": 6,
+  "grade": 4,
+  "topic": "Find an equivalent fraction for 2/3 with denominator 9",
+  "httpStatus": 200,
+  "elapsed": 117022,
+  "data": {
+    "status": "pass",
+    "componentId": "annotated-example",
+    "evalMode": "auto",
+    "duration": 116970,
+    "catalogMeta": null,
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No eval mode in catalog (skipped validation)",
+      "payloadBytes": 5349,
+      "longestStringLength": 313,
+      "longestStringPath": "steps[0].generationReview.rejections[0][0]",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Equivalent Fractions on a Number Line",
+      "subject": "Fractions",
+      "problem": {
+        "statement": "Help Leo find a fraction equivalent to $\\frac{2}{3}$ that has a denominator of $9$. Use the number line below divided into ninths to locate $\\frac{2}{3}$, which is the same point as $\\frac{6}{9}$. Fill in the missing numerator: $\\frac{2}{3} = \\frac{\\text{?}}{9}$.",
+        "inset": {
+          "insetType": "number-line",
+          "min": 0,
+          "max": 1,
+          "ticks": [
+            0,
+            0.111,
+            0.222,
+            0.333,
+            0.444,
+            0.556,
+            0.667,
+            0.778,
+            0.889,
+            1
+          ],
+          "label": "Figure 1",
+          "points": [
+            {
+              "value": 0.667,
+              "label": "2/3 and 6/9"
+            }
+          ]
+        }
+      },
+      "solutionStrategy": "Locate the fraction on the number line to find the matching numerator with denominator 9.",
+      "steps": [
+        {
+          "id": 1,
+          "generationReview": {
+            "attempts": 2,
+            "rejections": [
+              [
+                "In content.visual, jumps is empty ([]), so the number line does not include a jump or landing position at 6/9 (or 6 ninths / position 0.667) to locate 2/3 as required by the problem and grounding. The structured visual must include the jump data from 0 ending at 6 (or 6/9) so the landing position can be derived."
+              ]
+            ]
+          },
+          "title": "Locate the point on number line",
+          "content": {
+            "type": "diagram",
+            "visual": {
+              "kind": "number-line",
+              "min": 0,
+              "max": 1,
+              "divisions": 9,
+              "start": 0,
+              "jumps": [
+                0.667
+              ]
+            },
+            "imagePrompt": "",
+            "altText": "A number line from 0 to 1 divided into 9 equal parts, with a jump highlighting the point at six ninths, which is the same as two thirds.",
+            "labels": [
+              {
+                "text": "0",
+                "description": "Start of the number line"
+              },
+              {
+                "text": "6/9",
+                "description": "Equivalent position for two thirds"
+              }
+            ]
+          },
+          "annotations": {
+            "steps": "I located six ninths on the number line to match the position of two thirds.",
+            "strategy": "I notice that fractions in the same spot on a number line have the same value.",
+            "misconceptions": "You might count the tick marks instead of the spaces between them.",
+            "connections": "This connects to placing fractions on number lines and finding equal amounts.",
+            "narrative": "On the number line, locate the point at position $0.667$, where $\\frac{2}{3}$ shares the tick mark with $\\frac{6}{9}$."
+          }
+        },
+        {
+          "id": 2,
+          "title": "Identify the missing numerator",
+          "content": {
+            "type": "algebra",
+            "transitions": [
+              {
+                "from": {
+                  "latex": "\\frac{2}{3}"
+                },
+                "to": {
+                  "latex": "\\frac{6}{9}"
+                },
+                "operation": "find equivalent fraction using the number line"
+              }
+            ],
+            "result": "\\frac{2}{3} = \\frac{6}{9}"
+          },
+          "annotations": {
+            "steps": "I find the point for two thirds on the number line and look at the matching fraction with denominator nine.",
+            "strategy": "I notice that fractions in the same spot on the number line have the same value, so they are equal.",
+            "misconceptions": "It is tempting to just add three to the top and bottom numbers, but we must multiply by the same number to keep it equal.",
+            "connections": "This connects number line positions to fraction equivalence.",
+            "narrative": "Since $\\frac{2}{3}$ sits at the exact same point as $\\frac{6}{9}$, the missing numerator is $6$, giving $\\frac{2}{3} = \\frac{6}{9}$."
+          }
+        }
+      ],
+      "solverDebug": {
+        "problemEcho": "Help Leo find a fraction equivalent to $\\frac{2}{3}$ that has a denominator of $9$. Use the number line below divided into ninths to locate $\\frac{2}{3}$, which is the same point as $\\frac{6}{9}$. Fill in the missing numerator: $\\frac{2}{3} = \\frac{\\text{?}}{9}$.",
+        "body": "On the number line, locate the point at position $0.667$, where $\\frac{2}{3}$ shares the tick mark with $\\frac{6}{9}$.\n---\nSince $\\frac{2}{3}$ sits at the exact same point as $\\frac{6}{9}$, the missing numerator is $6$, giving $\\frac{2}{3} = \\frac{6}{9}$.",
+        "separatorCount": 1,
+        "blocks": [
+          {
+            "index": 0,
+            "prose": "On the number line, locate the point at position $0.667$, where $\\frac{2}{3}$ shares the tick mark with $\\frac{6}{9}$."
+          },
+          {
+            "index": 1,
+            "prose": "Since $\\frac{2}{3}$ sits at the exact same point as $\\frac{6}{9}$, the missing numerator is $6$, giving $\\frac{2}{3} = \\frac{6}{9}$."
+          }
+        ],
+        "planner": {
+          "specs": [
+            {
+              "stepType": "diagram",
+              "title": "Locate the point on number line",
+              "pedagogicalGoal": "Understand that equivalent fractions correspond to the exact same position on a partitioned number line.",
+              "groundingBlockIndices": [
+                0
+              ],
+              "seedNotes": "Render a number line from 0 to 1 divided into 9 equal intervals, highlighting the point at 6/9 which coincides with 2/3."
+            },
+            {
+              "stepType": "algebra",
+              "title": "Identify the missing numerator",
+              "pedagogicalGoal": "Connect the shared position on the number line to the formal equivalence between the two fractions.",
+              "groundingBlockIndices": [
+                1
+              ],
+              "seedNotes": "State the equivalent equation \\frac{2}{3} = \\frac{6}{9} and conclude that the missing numerator is 6."
+            }
+          ],
+          "unusedBlockIndices": [],
+          "injectedCount": 0,
+          "mergedCount": 0,
+          "fallback": false
+        },
+        "challenger": {
+          "assignments": [],
+          "dropped": [
+            {
+              "assignment": {
+                "kind": "transition",
+                "stepIndex": 1,
+                "prompt": "Using the number line, what fraction with a denominator of $9$ is equivalent to $\\frac{2}{3}$?",
+                "acceptableAnswers": [
+                  "\\frac{6}{9}"
+                ],
+                "distractors": [
+                  "\\frac{5}{9}",
+                  "\\frac{8}{9}"
+                ],
+                "rationale": "To find an equivalent fraction, we multiply both the numerator and denominator by 3 to get $\\frac{6}{9}$; adding numbers to the top and bottom (such as adding 3 to get $\\frac{5}{9}$ or adding 6 to get $\\frac{8}{9}$) does not preserve equivalence.",
+                "transitionIndex": 0,
+                "hide": "to"
+              },
+              "reason": "The answer 6/9 is already explicitly given in the problem statement ('which is the same point as 6/9'), the inset label, and the earlier step's labels and annotations."
+            }
+          ],
+          "failed": false
+        }
+      }
+    }
+  }
+}

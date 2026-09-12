@@ -1,0 +1,47 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 10",
+    "problemStatement": "Evaluate x squared minus one at -2, 0 and 2.",
+    "solutionStrategy": "Use the quantities given in the problem.",
+    "groundingProse": "For x=-2, x^2-1=3; for x=0, -1; for x=2, 3.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "Compare function values.",
+    "seedNotes": "Show x and x squared minus one in a three-row table."
+  },
+  "generated": {
+    "content": {
+      "type": "table",
+      "caption": "Evaluating $x^2 - 1$ for different values of $x$",
+      "headers": [
+        "$x$",
+        "$x^2 - 1$"
+      ],
+      "rows": [
+        [
+          "-2",
+          "3"
+        ],
+        [
+          "0",
+          "-1"
+        ],
+        [
+          "2",
+          "3"
+        ]
+      ]
+    },
+    "annotations": {
+      "steps": "Substitute each given value of x into the expression x squared minus one and simplify.",
+      "strategy": "I organized the inputs and outputs in a table to easily compare the function values at different points.",
+      "misconceptions": "Forgetting parentheses when squaring a negative number, resulting in -4-1 instead of 4-1.",
+      "connections": "This method of creating input-output tables builds foundational knowledge for graphing functions on a coordinate plane."
+    },
+    "result": "(-2)^2-1 = 3, \\quad 0^2-1 = -1, \\quad 2^2-1 = 3",
+    "generationReview": {
+      "attempts": 1,
+      "rejections": []
+    }
+  }
+}

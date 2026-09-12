@@ -2866,3 +2866,8 @@ history, not status.)*
 - word-sorter @ K staged-word presentation — user browser check 2026-07-14 (RF-3).
 - K-stage presentation mode MVP (was #1) — user browser check 2026-07-15.
 - LuminaReadAloud pilot renders/plays (was #8) — user browser check 2026-07-15.
+
+
+### Annotated example presentation - 2026-09-12 - OPEN
+
+Check grade 2-5 examples at phone and tablet widths: one visible step, readable math, optional explanations, real SVG groups/ticks/fractions/geometry, correct- and wrong-answer reveal, Back preserving answers, Next blocked until predictions and all transformations are complete, and replacement data resetting the walkthrough. Browser connection was unavailable; 243 relevant tests pass, including real renderer DOM checks. AE-5..AE-7 content fixes passed live retests; this check remains OPEN for browser visual acceptance. [Report](eval-reports/annotated-example-2026-09-12.md).

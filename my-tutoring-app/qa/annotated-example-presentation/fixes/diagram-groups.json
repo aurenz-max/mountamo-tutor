@@ -1,0 +1,53 @@
+{
+  "context": {
+    "topic": "Equal groups",
+    "gradeContext": "grade 3",
+    "problemStatement": "Maya has 3 bags of apples. Each bag contains 4 apples. How many apples does Maya have in total?",
+    "solutionStrategy": "Count four apples per bag.",
+    "groundingProse": "There are 3 bags of 4 apples. Each bag adds 4. The running totals are 4, 8, 12.",
+    "priorStepSummaries": [],
+    "pedagogicalGoal": "See equal groups.",
+    "seedNotes": "Draw all three groups of four."
+  },
+  "generated": {
+    "content": {
+      "type": "diagram",
+      "visual": {
+        "kind": "groups",
+        "counts": [
+          4,
+          4,
+          4
+        ],
+        "itemLabel": "apple"
+      },
+      "imagePrompt": "",
+      "altText": "Three groups of four apples representing three bags.",
+      "labels": [
+        {
+          "text": "Bag 1",
+          "description": "4 apples in the first bag."
+        },
+        {
+          "text": "Bag 2",
+          "description": "4 apples in the second bag."
+        },
+        {
+          "text": "Bag 3",
+          "description": "4 apples in the third bag."
+        }
+      ]
+    },
+    "annotations": {
+      "steps": "I draw three separate groups with four apples in each group.",
+      "strategy": "I notice that drawing each bag helps me see the equal groups clearly.",
+      "misconceptions": "A common mistake is drawing different amounts in each bag instead of keeping them equal.",
+      "connections": "Equal groups connect directly to multiplication and repeated addition."
+    },
+    "result": "3 \\times 4 = 12",
+    "generationReview": {
+      "attempts": 1,
+      "rejections": []
+    }
+  }
+}

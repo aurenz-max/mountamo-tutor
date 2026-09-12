@@ -91,3 +91,13 @@ variant or eval-mode split is required.
 ## Changelog
 
 - 2026-08-04 — initial derivation for reader-fit 14j.
+- 2026-09-12 — presentation and content-integrity follow-up. The earlier "Preserve" edit zones were specific to 14j; this authorized repair changes diagram generation, prediction placement, and rendering as described below.
+
+## Content integrity follow-up — 2026-09-12
+
+- New diagram steps contain validated structured visual data: a number-line scale and signed jumps, explicit group counts, fraction partitions, or bounded geometry shapes. The component draws the figure from that data; an image description alone is not a generated visual. Legacy hydrated images remain renderable.
+- Tables and structured figures receive a separate source/correctness review with the thinking model. Rejected output gets one regeneration using concrete feedback; two rejected attempts fail hydration rather than omitting a required step. Reviews remain probabilistic and require calibrated negative/positive probes. Successful steps retain attempt/rejection diagnostics.
+- Prediction placement receives the problem title, inset, and complete earlier content. Direct repeated answer labels are excluded, then each candidate receives a separate correctness/disclosure review before attachment. If a candidate cannot be verified it is omitted; the worked example remains usable without optional prediction gates.
+- Pending prediction cards use a neutral title. Future algebra transitions and final results are absent from the rendered UI until revealed, rather than merely dimmed. A question must not be answered by a placeholder, annotation, prior transformation, or initial inset.
+- Exact adjacent algebra duplicates can consolidate before challenge assignment. Their source-block coverage and teaching notes are retained; equal final answers reached by different transformations are not duplicates.
+- This campaign does not claim to close all historical advanced step-overlap or verification findings AE-1–AE-4. Only the demonstrated identical-step mechanism is consolidated here.

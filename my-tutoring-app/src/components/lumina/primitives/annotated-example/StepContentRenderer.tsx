@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { StructuredDiagram } from './StructuredDiagram';
 import { ArrowRight, Check, GitBranch, Table2, Image, TrendingUp, X } from 'lucide-react';
 import type {
   StepContent,
@@ -334,8 +335,8 @@ const ChallengeRow: React.FC<ChallengeRowProps> = ({
             onKeyDown={(e) => e.key === 'Enter' && submit(typed)}
             placeholder={
               challenge.hide === 'operation'
-                ? 'e.g. subtract 3 from both sides'
-                : 'e.g. 2x = 4'
+                ? 'Type the next move'
+                : 'Type your answer'
             }
             className="flex-1 px-3 py-1.5 text-xs bg-slate-900/60 text-white rounded-md border border-amber-400/30 focus:border-amber-400 focus:outline-none font-mono"
           />
@@ -477,7 +478,7 @@ const StepChallengeGate: React.FC<StepChallengeGateProps> = ({
           <div className="text-slate-400">
             You answered:{' '}
             <span className="text-slate-200 font-mono">{attempt.answer}</span>
-            <span className="text-slate-500"> · canonical: </span>
+            <span className="text-slate-500"> · worked answer: </span>
             {useKatex ? (
               <KaTeX latex={canonical} display={false} className="text-emerald-300" />
             ) : (
@@ -532,8 +533,8 @@ const AlgebraStepView: React.FC<{
     if (!onCompletionChange) return;
     const challengeCount = content.transitions.filter((t) => Boolean(t.challenge)).length;
     const committedCount = Object.keys(attempts).length;
-    onCompletionChange(challengeCount === 0 || committedCount >= challengeCount);
-  }, [content.transitions, attempts, onCompletionChange]);
+    onCompletionChange(activeTransition >= totalTransitions - 1 && (challengeCount === 0 || committedCount >= challengeCount));
+  }, [content.transitions, attempts, activeTransition, totalTransitions, onCompletionChange]);
 
   const commitAttempt = useCallback(
     (i: number, answer: string, correct: boolean) => {
@@ -604,7 +605,7 @@ const AlgebraStepView: React.FC<{
           <KaTeXTrusted latex={content.transitions[0].from.latex} />
         </motion.div>
 
-        {content.transitions.map((t, i) => {
+        {content.transitions.slice(0, activeTransition + 1).map((t, i) => {
           const isActive = i <= activeTransition;
           const prev = i > 0 ? content.transitions[i - 1] : null;
           const chainsFromPrior = prev && normalize(prev.to.latex) === normalize(t.from.latex);
@@ -726,15 +727,15 @@ const AlgebraStepView: React.FC<{
         </motion.button>
       )}
 
-      {/* Result */}
-      <motion.div
+      {/* A final result must never preempt a pending prediction. */}
+      {activeTransition >= totalTransitions - 1 && !content.transitions.some((_, i) => isGated(i)) && <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: activeTransition >= totalTransitions - 1 ? 1 : 0.3 }}
         className="flex items-center gap-2 pt-2 border-t border-slate-800/50"
       >
         <Check size={14} className="text-emerald-400 flex-shrink-0" />
         <KaTeX latex={content.result} className="text-emerald-300 font-semibold" />
-      </motion.div>
+      </motion.div>}
     </div>
   );
 };
@@ -784,7 +785,7 @@ const TableStepView: React.FC<{ content: TableStepContent }> = ({ content }) => 
 const DiagramStepView: React.FC<{ content: DiagramStepContent }> = ({ content }) => {
   return (
     <div className="space-y-3">
-      {content.imageBase64 ? (
+      {content.visual ? <StructuredDiagram visual={content.visual} altText={content.altText} /> : content.imageBase64 ? (
         <div className="rounded-lg overflow-hidden border border-slate-800/50">
           <img src={content.imageBase64} alt={content.altText} className="w-full" />
         </div>
