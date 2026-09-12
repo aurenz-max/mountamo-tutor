@@ -1,0 +1,86 @@
+{
+  "status": "pass",
+  "componentId": "number-sequencer",
+  "evalMode": "order_cards",
+  "duration": 1486,
+  "catalogMeta": {
+    "label": "Order Cards",
+    "beta": 3.5,
+    "scaffoldingMode": 3,
+    "allowedChallengeTypes": [
+      "order-cards"
+    ],
+    "description": "Arrange shuffled number cards from smallest to largest. Provide distinct numbers in sequence and the same set sorted ascending in correctAnswers. K uses 3-4 cards; Grade 1 uses 4-6."
+  },
+  "validation": {
+    "challengeCount": 3,
+    "typesFound": [
+      "order-cards"
+    ],
+    "payloadBytes": 844,
+    "longestStringLength": 95,
+    "longestStringPath": "description",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Order the Number Cards!",
+    "description": "Help the friendly animals put their number cards in the correct order from smallest to largest.",
+    "challenges": [
+      {
+        "id": "seq1",
+        "type": "order-cards",
+        "instruction": "Can you put these numbers in order from smallest to largest?",
+        "sequence": [
+          3,
+          1,
+          2
+        ],
+        "correctAnswers": [
+          1,
+          2,
+          3
+        ],
+        "rangeMin": 1,
+        "rangeMax": 3
+      },
+      {
+        "id": "seq2",
+        "type": "order-cards",
+        "instruction": "Great job! Let's try three new numbers. Put them in order from smallest to largest.",
+        "sequence": [
+          6,
+          7,
+          5
+        ],
+        "correctAnswers": [
+          5,
+          6,
+          7
+        ],
+        "rangeMin": 5,
+        "rangeMax": 7
+      },
+      {
+        "id": "seq3",
+        "type": "order-cards",
+        "instruction": "You are doing wonderful! Can you order these larger numbers from smallest to largest?",
+        "sequence": [
+          11,
+          12,
+          10
+        ],
+        "correctAnswers": [
+          10,
+          11,
+          12
+        ],
+        "rangeMin": 10,
+        "rangeMax": 12
+      }
+    ],
+    "gradeBand": "K",
+    "showNumberLine": true,
+    "showDotArrays": true,
+    "supportTier": "easy"
+  }
+}

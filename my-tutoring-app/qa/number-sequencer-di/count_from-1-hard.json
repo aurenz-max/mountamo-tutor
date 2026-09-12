@@ -1,0 +1,92 @@
+{
+  "status": "pass",
+  "componentId": "number-sequencer",
+  "evalMode": "count_from",
+  "duration": 2046,
+  "catalogMeta": {
+    "label": "Count From",
+    "beta": 1.5,
+    "scaffoldingMode": 1,
+    "allowedChallengeTypes": [
+      "count-from"
+    ],
+    "description": "Continue counting aloud, one number at a time, from a given start. Provide startNumber, direction and correctAnswers; sequence is empty or contains only the start. K counts forward."
+  },
+  "validation": {
+    "challengeCount": 3,
+    "typesFound": [
+      "count-from"
+    ],
+    "payloadBytes": 844,
+    "longestStringLength": 77,
+    "longestStringPath": "description",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Counting Backward Adventures",
+    "description": "Practice counting backward within 120 to build strong number sequence skills.",
+    "challenges": [
+      {
+        "id": "seq1",
+        "type": "count-from",
+        "instruction": "Count backward starting from 35.",
+        "sequence": [
+          35
+        ],
+        "correctAnswers": [
+          34,
+          33,
+          32,
+          31,
+          30
+        ],
+        "rangeMin": 30,
+        "rangeMax": 35,
+        "direction": "backward",
+        "startNumber": 35
+      },
+      {
+        "id": "seq2",
+        "type": "count-from",
+        "instruction": "Count backward starting from 72.",
+        "sequence": [
+          72
+        ],
+        "correctAnswers": [
+          71,
+          70,
+          69,
+          68,
+          67
+        ],
+        "rangeMin": 67,
+        "rangeMax": 72,
+        "direction": "backward",
+        "startNumber": 72
+      },
+      {
+        "id": "seq3",
+        "type": "count-from",
+        "instruction": "Count backward starting from 115.",
+        "sequence": [
+          115
+        ],
+        "correctAnswers": [
+          114,
+          113,
+          112,
+          111,
+          110
+        ],
+        "rangeMin": 110,
+        "rangeMax": 115,
+        "direction": "backward",
+        "startNumber": 115
+      }
+    ],
+    "gradeBand": "1",
+    "showNumberLine": false,
+    "showDotArrays": false,
+    "supportTier": "hard"
+  }
+}

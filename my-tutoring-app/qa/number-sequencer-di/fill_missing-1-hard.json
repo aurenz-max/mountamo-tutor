@@ -1,0 +1,104 @@
+{
+  "status": "pass",
+  "componentId": "number-sequencer",
+  "evalMode": "fill_missing",
+  "duration": 2336,
+  "catalogMeta": {
+    "label": "Fill the Gaps",
+    "beta": 4.5,
+    "scaffoldingMode": 4,
+    "allowedChallengeTypes": [
+      "fill-missing"
+    ],
+    "description": "Say each missing number in a sequence. Provide 1-3 nulls, at least two visible terms defining one arithmetic rule, and correctAnswers in blank order."
+  },
+  "validation": {
+    "challengeCount": 3,
+    "typesFound": [
+      "fill-missing"
+    ],
+    "payloadBytes": 862,
+    "longestStringLength": 95,
+    "longestStringPath": "description",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Fill the Missing Numbers Within 20",
+    "description": "Practice finding missing numbers in sequences from 1 to 20 to build strong number order skills.",
+    "challenges": [
+      {
+        "id": "seq1",
+        "type": "fill-missing",
+        "instruction": "Can you figure out which numbers are missing?",
+        "sequence": [
+          2,
+          null,
+          4,
+          5,
+          null,
+          7,
+          8,
+          9,
+          null
+        ],
+        "correctAnswers": [
+          3,
+          6,
+          10
+        ],
+        "rangeMin": 2,
+        "rangeMax": 10
+      },
+      {
+        "id": "seq2",
+        "type": "fill-missing",
+        "instruction": "Look at the pattern and find the missing numbers!",
+        "sequence": [
+          null,
+          6,
+          7,
+          null,
+          9,
+          null,
+          11,
+          12,
+          13
+        ],
+        "correctAnswers": [
+          5,
+          8,
+          10
+        ],
+        "rangeMin": 5,
+        "rangeMax": 13
+      },
+      {
+        "id": "seq3",
+        "type": "fill-missing",
+        "instruction": "Great job! Let's fill in these tricky missing numbers up to 20.",
+        "sequence": [
+          null,
+          12,
+          null,
+          14,
+          15,
+          null,
+          17,
+          18,
+          19
+        ],
+        "correctAnswers": [
+          11,
+          13,
+          16
+        ],
+        "rangeMin": 11,
+        "rangeMax": 19
+      }
+    ],
+    "gradeBand": "1",
+    "showNumberLine": false,
+    "showDotArrays": false,
+    "supportTier": "hard"
+  }
+}

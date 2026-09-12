@@ -1,0 +1,101 @@
+{
+  "status": "pass",
+  "componentId": "number-sequencer",
+  "evalMode": "spot_error",
+  "duration": 1681,
+  "catalogMeta": {
+    "label": "Spot the Error",
+    "beta": 3.5,
+    "scaffoldingMode": 3,
+    "allowedChallengeTypes": [
+      "spot-error"
+    ],
+    "description": "Say which printed number breaks the count. Provide a correct consecutive forward sequence of 5-7 numbers; code introduces exactly one error and owns wrongIndex and its replacement."
+  },
+  "validation": {
+    "challengeCount": 3,
+    "typesFound": [
+      "spot-error"
+    ],
+    "payloadBytes": 931,
+    "longestStringLength": 71,
+    "longestStringPath": "description",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Spot the Silly Number!",
+    "description": "Help find the number that got mixed up in the counting train within 20!",
+    "challenges": [
+      {
+        "id": "seq1",
+        "type": "spot-error",
+        "instruction": "Which printed number does not belong? Say that number.",
+        "sequence": [
+          2,
+          3,
+          11,
+          5,
+          6,
+          7,
+          8
+        ],
+        "correctAnswers": [
+          4
+        ],
+        "rangeMin": 2,
+        "rangeMax": 11,
+        "wrongIndex": 2,
+        "startNumber": 2,
+        "direction": "forward"
+      },
+      {
+        "id": "seq2",
+        "type": "spot-error",
+        "instruction": "Which printed number does not belong? Say that number.",
+        "sequence": [
+          6,
+          7,
+          8,
+          16,
+          10,
+          11,
+          12
+        ],
+        "correctAnswers": [
+          9
+        ],
+        "rangeMin": 6,
+        "rangeMax": 16,
+        "wrongIndex": 3,
+        "startNumber": 6,
+        "direction": "forward"
+      },
+      {
+        "id": "seq3",
+        "type": "spot-error",
+        "instruction": "Which printed number does not belong? Say that number.",
+        "sequence": [
+          11,
+          12,
+          13,
+          14,
+          8,
+          16,
+          17
+        ],
+        "correctAnswers": [
+          15
+        ],
+        "rangeMin": 8,
+        "rangeMax": 17,
+        "wrongIndex": 4,
+        "startNumber": 11,
+        "direction": "forward"
+      }
+    ],
+    "gradeBand": "K",
+    "showNumberLine": false,
+    "showDotArrays": false,
+    "supportTier": "hard"
+  }
+}

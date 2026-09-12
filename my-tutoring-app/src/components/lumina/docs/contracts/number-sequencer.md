@@ -153,3 +153,36 @@ while retaining the generic ≤100 default and the five existing mode identities
   instruction enumerated the entire continuation. Prompt now models exactly one
   step; a post-parse `instructionLeaksAnswers` filter rejects any `count-from`
   challenge whose instruction states every `correctAnswers` value.
+
+
+## DI modality amendment ? 2026-09-11
+
+The existing six task identities and calibration values remain. R1?R3, R6,
+R7 and R9?R10 still apply; the current generator also supports explicit K counting
+scope through 100 (the earlier K ceiling in this document predates that extension).
+
+- **R4:** the local window now bounds the number train and its optional reference
+  line. Spoken answers replace numeric inputs. No sorted reference is shown for
+  order-cards or spot-error, because it would solve the arrangement/detection task.
+- **R5:** count-from produces one judged number per continuation step; fill-missing
+  and decade-fill produce one per blank. Before-after produces one adjacent number.
+  Spot-error asks for the printed wrong number; `correctAnswers[0]` remains the
+  repair in the data contract, and the script derives the spoken target from
+  `sequence[wrongIndex]`. Order-cards preserves actual arrangement and submits on
+  three seconds of stillness, including wrong and incomplete arrangements.
+- **R8:** `useJudgedScriptRunner` supplies the exact current question and private
+  judging target. The general context carries only `challengeType` and an
+  answer-free `stimulus`; generated instructions, answers, and wrongIndex are not
+  general tutor context. The tutor verdict is the only progression authority.
+- Each continuation/blank has a stable source-and-slot item ID. Evaluation records
+  those tutor outcomes with the source challenge ID and voice/gesture modality;
+  scores are per judged item. Complete problems are selected, never truncated
+  midway, within an 18-item session cap; duplicate windows/IDs are dropped.
+- Answer digits and dot counts appear only after affirmation; the train is held
+  through that affirmation. Support tiers retain their original numerical scope
+  and blank/card load. Missing or invalid content is rejected instead of graded.
+- Positive spoken numbers through twenty use the benched class. Numbers 21?120
+  use the standing accepted-build-ahead class; microphone acceptance remains owed
+  with the existing #63 sitting. Zero is outside both spoken response contracts.
+
+Verification and remaining human acceptance: `qa/number-sequencer-di/REPORT.md`.

@@ -1,3 +1,5 @@
+import { NUMBER_SEQUENCER_TYPE_DOCS } from '../../primitives/visual-primitives/math/numberSequencerModes';
+import { sequencerChallengeValid } from '../../primitives/visual-primitives/math/numberSequencerScript';
 import { Type, Schema } from "@google/genai";
 import type {
   NumberSequencerChallenge,
@@ -9,7 +11,6 @@ import {
   resolveEvalModes,
   constrainChallengeTypeEnum,
   buildModeConstraintSection,
-  type ChallengeTypeDoc,
 } from "../evalMode";
 import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContext";
 
@@ -17,57 +18,7 @@ import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContex
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  'count-from': {
-    promptDoc:
-      `"count-from": Student continues counting from a starting number. `
-      + `Provide startNumber, direction ("forward" or "backward"), and expected continuation in correctAnswers. `
-      + `sequence=[] or [startNumber]. For K: forward only, 3-5 numbers. For Grade 1: forward or backward. `
-      + `Concrete — full guidance, sequential counting.`,
-    schemaDescription: "'count-from' (continue counting from value)",
-  },
-  'spot-error': {
-    promptDoc:
-      `"spot-error": Student identifies the one wrong number in a short forward count. `
-      + `Provide a correct consecutive sequence of 5-7 numbers with no nulls; code chooses the wrong index and changes that value after generation. `
-      + `Use a position-neutral instruction such as "Which number is wrong?" and do not reveal or visually mark the answer.`,
-    schemaDescription: "'spot-error' (identify one wrong number in a count)",
-  },
-  'before-after': {
-    promptDoc:
-      `"before-after": A short 2-element sequence with one null. `
-      + `Before: sequence=[null, 8], correctAnswers=[7]. After: sequence=[5, null], correctAnswers=[6]. `
-      + `Keep instructions clear: "What number comes before/after X?" `
-      + `Pictorial with prompts — adjacent number reasoning.`,
-    schemaDescription: "'before-after' (identify adjacent numbers)",
-  },
-  'order-cards': {
-    promptDoc:
-      `"order-cards": Numbers presented in shuffled order (NO nulls in sequence). `
-      + `sequence=[7, 3, 5, 1], correctAnswers=[1, 3, 5, 7] (sorted ascending). `
-      + `For K: 3-4 cards. For Grade 1: 4-6 cards. `
-      + `Pictorial with reduced prompts — sequence a set of numbers.`,
-    schemaDescription: "'order-cards' (sequence a set of numbers)",
-  },
-  'fill-missing': {
-    promptDoc:
-      `"fill-missing": A number sequence with 1-3 null values representing blanks. `
-      + `Example: sequence=[3, 4, null, 6, 7], correctAnswers=[5]. `
-      + `correctAnswers contains ONLY the values that replace the nulls, in order. `
-      + `For K: 1 blank. For Grade 1: 1-3 blanks. `
-      + `Transitional — complete pattern gaps.`,
-    schemaDescription: "'fill-missing' (complete pattern gaps)",
-  },
-  'decade-fill': {
-    promptDoc:
-      `"decade-fill": Sequence of decade numbers with some nulls. `
-      + `Example: sequence=[10, null, 30, null, 50], correctAnswers=[20, 40]. `
-      + `correctAnswers contains ONLY the values that replace the nulls, in order. `
-      + `Grade 1 only (not Kindergarten). `
-      + `Symbolic — cross decade boundaries.`,
-    schemaDescription: "'decade-fill' (cross decade boundaries)",
-  },
-};
+const CHALLENGE_TYPE_DOCS = NUMBER_SEQUENCER_TYPE_DOCS;
 
 type ChallengeType =
   | 'count-from'
@@ -651,7 +602,7 @@ function placeSequenceError(
   challenge.wrongIndex = wrongIndex;
   challenge.startNumber = start;
   challenge.direction = 'forward';
-  challenge.instruction = 'Which number is wrong? Tap it.';
+  challenge.instruction = 'Which printed number does not belong? Say that number.';
   return true;
 }
 
@@ -679,7 +630,7 @@ function buildFallbackChallenge(
     case 'count-from':
       return { id, type, instruction: `Count forward from ${lo}!`, sequence: [lo], correctAnswers: values.slice(1), rangeMin: lo, rangeMax: last, startNumber: lo, direction: 'forward' };
     case 'spot-error':
-      return { id, type, instruction: 'Which number is wrong? Tap it.', sequence: values, correctAnswers: [], rangeMin: lo, rangeMax: last, startNumber: lo, direction: 'forward' };
+      return { id, type, instruction: 'Which printed number does not belong? Say that number.', sequence: values, correctAnswers: [], rangeMin: lo, rangeMax: last, startNumber: lo, direction: 'forward' };
     case 'before-after':
       return { id, type, instruction: `What number comes after ${lo}?`, sequence: [lo, null], correctAnswers: [lo + 1], rangeMin: lo, rangeMax: lo + 1 };
     case 'order-cards': {
@@ -1309,6 +1260,9 @@ Return the complete number sequencer configuration.
       challenge.rangeMax = Math.max(...values);
     }
   }
+
+  // The same independent key gate protects generated and cached DI content.
+  data.challenges = data.challenges.filter(sequencerChallengeValid);
 
   // Final summary log
   const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');

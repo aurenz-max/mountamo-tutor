@@ -1,0 +1,77 @@
+{
+  "status": "pass",
+  "componentId": "number-sequencer",
+  "evalMode": "before_after",
+  "duration": 1327,
+  "catalogMeta": {
+    "label": "Before and After",
+    "beta": 2.5,
+    "scaffoldingMode": 2,
+    "allowedChallengeTypes": [
+      "before-after"
+    ],
+    "description": "Say the adjacent missing number. Provide a two-element sequence with one null and one correct answer."
+  },
+  "validation": {
+    "challengeCount": 3,
+    "typesFound": [
+      "before-after"
+    ],
+    "payloadBytes": 675,
+    "longestStringLength": 85,
+    "longestStringPath": "description",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Before and After Explorers",
+    "description": "Practice finding the missing numbers that come right before or right after within 20.",
+    "challenges": [
+      {
+        "id": "seq1",
+        "type": "before-after",
+        "instruction": "What number is missing?",
+        "sequence": [
+          null,
+          6
+        ],
+        "correctAnswers": [
+          5
+        ],
+        "rangeMin": 5,
+        "rangeMax": 6
+      },
+      {
+        "id": "seq2",
+        "type": "before-after",
+        "instruction": "What number is missing?",
+        "sequence": [
+          11,
+          null
+        ],
+        "correctAnswers": [
+          12
+        ],
+        "rangeMin": 11,
+        "rangeMax": 12
+      },
+      {
+        "id": "seq3",
+        "type": "before-after",
+        "instruction": "What number is missing?",
+        "sequence": [
+          null,
+          19
+        ],
+        "correctAnswers": [
+          18
+        ],
+        "rangeMin": 18,
+        "rangeMax": 19
+      }
+    ],
+    "gradeBand": "K",
+    "showNumberLine": true,
+    "showDotArrays": false,
+    "supportTier": "medium"
+  }
+}

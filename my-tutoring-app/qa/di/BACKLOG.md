@@ -4265,6 +4265,31 @@ it may be constrained production rather than free — decide it at the pack.
 
 ### 18. 🔢 **P4 OPEN — `3d-shape-explorer` SHIPPED 2026-09-04 (all 5 modes spoken, mic #131) · `place-value-chart` SHIPPED 2026-08-18 (math port 8, THE FIRST PAST THE ≤20 BENCH: new `place_value_word` class accepted-build-ahead on the user's 2026-08-19 ruling, mic **#113** = the #63 acceptance material itself) · `ordinal-line` SHIPPED 2026-08-18 (math port 6, all 5 eval modes, mic #110; its "unbenched ordinal words" gate was FALSE IN CODE) · `compare-objects` SHIPPED 2026-08-17 (4th math port, mic #107) · P1 SHIPPED 2026-08-13 + DRIVEN (6/6 refusals) · P2 `addition-subtraction-scene` SHIPPED 2026-08-14 · `number-bond` SHIPPED 2026-08-14 (the P3-correction port) · `shape-sorter` SHIPPED 2026-08-18 (5th port, 3/3 modes spoken, zero taps, mic #108) · P3 (#63) = THE REMAINING GATE — and #113 folds INTO the #63 sitting — THE DI MODALITY ON MATH PRIMITIVES (user thread 2026-08-12: *"would there be value adding /add-di-loop to any of those? for example ten frame… addition subtraction scene may benefit from speaking aloud instead of typing"*)**
 
+
+**2026-09-11 ? Number Sequencer DI implemented (user-selected next math modernization).**
+All six existing modes now use `useJudgedScriptRunner`: count-from and gaps expand
+into one spoken number per item; before/after is spoken; spot-error names the
+printed wrong number (the repair remains the generator key); order-cards retains
+actual arrangement, committed on three seconds of stillness. No numeric input,
+local answer grading, Check, or Next. The number train holds an affirmed answer
+until the next cue; ordering and error detection have no sorted-reference shortcut.
+`numberSequencerModes.ts` owns catalog identities, generator docs and action plans;
+`numberSequencerScript.ts` owns independent key validation, item fan-out, whole-problem
+selection (18-item cap), cues and the drive adapter's answer material. Existing
+calibration values retained. Generated instructions/answer-bearing titles are not
+spoken or rendered as task cues. Nine real pipeline draws (all modes, both bands,
+tiers, blend/mixed) passed: 27 challenges, 60 judged items, no build drops or cue
+gate issues. Focused regression/oracle suites 57/57; broader relevant suites
+1557/1558 (the one failure is concurrently edited Number Bond catalog copy).
+Lumina typecheck 0; backend calibration suite 2/2. Real Live semantic drives and
+remaining limitations are recorded in [number-sequencer-di/REPORT.md](../number-sequencer-di/REPORT.md).
+Live ordering and spot-error signature drives PASS (5/5 each); counting cap drive
+PASS on 14 items with the existing item-30 repeat/withdrawal warnings still open.
+**Human acceptance remains OPEN: #150**, with 21?120 spoken numbers riding **#63**;
+no new response class and no acoustic acceptance claimed. The existing science
+queue order is unchanged. Scope/contract amendment is in `docs/contracts/number-sequencer.md`.
+
+
 > #### ✅ 2026-09-04 — `3d-shape-explorer` IS ON THE JUDGED LOOP, all five eval modes. Mic row **#131**.
 >
 > **THE MODALITY FORK ENDED ALL-VOICE.** Identify says the mathematical solid; 2D-vs-3D says

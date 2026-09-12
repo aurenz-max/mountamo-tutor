@@ -100,7 +100,7 @@ describe('number-sequencer COUNT001-01-G extension', () => {
 
     for (const challenge of data.challenges) {
       expect(challenge.type).toBe('spot-error');
-      expect(challenge.instruction).toBe('Which number is wrong? Tap it.');
+      expect(challenge.instruction).toBe('Which printed number does not belong? Say that number.');
       expect(challenge.wrongIndex).toBeGreaterThan(0);
       expect(challenge.wrongIndex).toBeLessThan(challenge.sequence.length - 1);
       expect(challenge.correctAnswers).toHaveLength(1);

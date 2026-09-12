@@ -111,8 +111,9 @@ describe('number-sequencer reader-fit 14h', () => {
     }));
 
     expect(data.gradeBand).toBe('1');
+    // DI key gate drops d1: 101-104 never crosses a decade. The valid windows remain.
     expect(data.challenges.map(({ rangeMin, rangeMax }) => [rangeMin, rangeMax]))
-      .toEqual([[101, 104], [108, 111], [117, 120]]);
+      .toEqual([[108, 111], [117, 120]]);
     // Scope, not slot: code chooses which cell is blank (NS-4), so the answer set is
     // whatever the seam offers — the claim is that 101-120 is reachable and nothing
     // leaves the window.

@@ -1,0 +1,86 @@
+{
+  "status": "pass",
+  "componentId": "number-sequencer",
+  "evalMode": "count_from",
+  "duration": 1846,
+  "catalogMeta": {
+    "label": "Count From",
+    "beta": 1.5,
+    "scaffoldingMode": 1,
+    "allowedChallengeTypes": [
+      "count-from"
+    ],
+    "description": "Continue counting aloud, one number at a time, from a given start. Provide startNumber, direction and correctAnswers; sequence is empty or contains only the start. K counts forward."
+  },
+  "validation": {
+    "challengeCount": 3,
+    "typesFound": [
+      "count-from"
+    ],
+    "payloadBytes": 837,
+    "longestStringLength": 67,
+    "longestStringPath": "description",
+    "runawaySuspect": false
+  },
+  "fullData": {
+    "title": "Count Forward within 20",
+    "description": "Practice counting forward starting from different numbers up to 20.",
+    "challenges": [
+      {
+        "id": "seq1",
+        "type": "count-from",
+        "instruction": "Start at 5. The next number is 6. Keep counting.",
+        "sequence": [
+          5
+        ],
+        "correctAnswers": [
+          6,
+          7,
+          8
+        ],
+        "rangeMin": 5,
+        "rangeMax": 8,
+        "direction": "forward",
+        "startNumber": 5
+      },
+      {
+        "id": "seq2",
+        "type": "count-from",
+        "instruction": "Start at 9. The next number is 10. Keep counting.",
+        "sequence": [
+          9
+        ],
+        "correctAnswers": [
+          10,
+          11,
+          12
+        ],
+        "rangeMin": 9,
+        "rangeMax": 12,
+        "direction": "forward",
+        "startNumber": 9
+      },
+      {
+        "id": "seq3",
+        "type": "count-from",
+        "instruction": "Start at 14. The next number is 15. Keep counting.",
+        "sequence": [
+          14
+        ],
+        "correctAnswers": [
+          15,
+          16,
+          17
+        ],
+        "rangeMin": 14,
+        "rangeMax": 17,
+        "direction": "forward",
+        "startNumber": 14
+      }
+    ],
+    "gradeBand": "K",
+    "showNumberLine": true,
+    "showDotArrays": true,
+    "supportTier": "easy"
+  }
+}
