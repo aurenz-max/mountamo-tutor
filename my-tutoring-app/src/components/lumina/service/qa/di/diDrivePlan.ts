@@ -1,3 +1,5 @@
+import { buildSequencerItems, sequencerPackBase, sequencerHarnessAnswers, sequencerOrderCue, type SequencerItem } from '../../../primitives/visual-primitives/math/numberSequencerScript';
+import type { NumberSequencerChallenge } from '../../../primitives/visual-primitives/math/NumberSequencer';
 /**
  * diDrivePlan — the judged loop, serialized so a headless student can drive it.
  *
@@ -82,14 +84,31 @@ import {
   type CountingItem,
 } from '@/components/lumina/primitives/visual-primitives/math/countingBoardScript';
 import {
+  bondEquationVerdictCue,
   bondVerdictCueForPlaced,
   buildBondItems,
+  familyFormKeyFor,
   numberBondHarnessAnswers,
   numberBondPackBase,
   type BondBand,
   type NumberBondChallengeLike,
   type NumberBondItem,
 } from '@/components/lumina/primitives/visual-primitives/math/numberBondScript';
+import {
+  countersForAction,
+  expandNumberBondInteractions,
+  familyEquationVerdictCue,
+  initialCountersForInteraction,
+  modeActionVerdictCue,
+  numberBondInteractionCue,
+} from '@/components/lumina/primitives/visual-primitives/math/numberBondModes';
+import {
+  prepareSplit,
+  splitAndSayCue,
+  splitQuestion,
+  splitAndSayVerdict,
+  wholeCounters,
+} from '@/components/lumina/primitives/visual-primitives/math/numberBondSplit';
 import {
   buildCompareItems,
   compareObjectsHarnessAnswers,
@@ -580,6 +599,15 @@ export interface DiPortAdapter<Item extends JudgedScriptItem> {
   gestureVerdictCue?: (item: Item, gesture: number | string) => string;
 }
 
+const numberSequencerAdapter: DiPortAdapter<SequencerItem> = {
+  build: data => {
+    const { items, droppedChallenges } = buildSequencerItems((data.challenges ?? []) as NumberSequencerChallenge[]);
+    return { items, dropped: droppedChallenges, surface: sequencerPackBase(items) };
+  },
+  answersFor: sequencerHarnessAnswers,
+  gestureVerdictCue: (item, gesture) => sequencerOrderCue(item, String(gesture).split(',').map(Number)),
+};
+
 const tenFrameAdapter: DiPortAdapter<TenFrameItem> = {
   build: (data) => {
     const challenges = (data.challenges ?? []) as TenFrameChallengeLike[];
@@ -639,23 +667,92 @@ const storyBridgeAdapter: DiPortAdapter<StoryBridgeItem> = {
   gestureVerdictCue: (item, gesture) => storyBridgeTapVerdictCue(item, String(gesture)),
 };
 
-/**
- * number-bond (third math port). Gesture commits carry a NUMBER whose encoding
- * is internal to numberBondScript — decompose packs the pair as left×100+right;
- * fact-family and build-equation use 1 for a correct commit and 0 for a wrong
- * one, because what they commit is a whole written form, not a quantity.
- */
+const numberBondHarnessCounters = (item: NumberBondItem) => {
+  if (item.splitPhase) {
+    if (item.kind === 'ten-and-ones') {
+      return Array.from({ length: item.whole }, (_, index) => index < 10 ? 'left' as const : 'right' as const);
+    }
+    const left = Math.min(item.pairIndex, item.whole);
+    return Array.from({ length: item.whole }, (_, index) => index < left ? 'left' as const : 'right' as const);
+  }
+  if (item.interactionPhase && item.bondAction) return countersForAction(item, item.bondAction);
+  return initialCountersForInteraction(item);
+};
+
+const isNumberBondActionItem = (item: NumberBondItem) => item.interactionPhase?.endsWith('model')
+  || item.interactionPhase === 'related-join'
+  || item.interactionPhase === 'related-separate';
+
+/** Number Bond's headless plan consumes the same runtime expansion and phase
+ * cues as the mounted component. Gesture payload 1 selects the expected model;
+ * equation payloads carry the actual symbolic draft. */
 const numberBondAdapter: DiPortAdapter<NumberBondItem> = {
   build: (data) => {
     const challenges = (data.challenges ?? []) as NumberBondChallengeLike[];
     const band: BondBand = data.gradeBand === '1' ? '1' : 'K';
     const maxNumber = typeof data.maxNumber === 'number' ? data.maxNumber : band === 'K' ? 5 : 10;
-    const { items, droppedChallenges } = buildBondItems(challenges, { band, maxNumber });
-    return { items, dropped: droppedChallenges, surface: numberBondPackBase(items) };
+    const built = buildBondItems(challenges, { band, maxNumber });
+    const items = expandNumberBondInteractions(built.items);
+    const base = numberBondPackBase(items);
+    const cueFor = (item: NumberBondItem, opts: { opening: boolean; howToPlay: boolean }) => item.splitPhase
+      ? splitAndSayCue(item, opts, numberBondHarnessCounters(item), [])
+      : item.interactionPhase && item.interactionPhase !== 'missing-infer'
+        ? numberBondInteractionCue(item, opts, numberBondHarnessCounters(item))
+        : base.itemCue(item, opts);
+    return {
+      items,
+      dropped: built.droppedChallenges,
+      surface: {
+        ...base,
+        itemCue: cueFor,
+        pronounceCue: (item) => `[NB_HEAR] ${cueFor(item, { opening: false, howToPlay: false })}`,
+        moveOnCue: (_item, next, opts) => next ? cueFor(next, opts) : base.completeCue(),
+        contextFor: (item) => ({
+          challengeType: item.kind,
+          stimulus: item.interactionPhase ? 'the current persistent number-bond model phase' : base.contextFor(item).stimulus,
+        }),
+      },
+    };
   },
-  answersFor: numberBondHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    bondVerdictCueForPlaced(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
+  answersFor: (item) => {
+    if (item.splitPhase === 'say') {
+      const question = splitQuestion(item, numberBondHarnessCounters(item));
+      return { correct: numberWordFor(question.answer), plainWrong: numberWordFor(question.answer === 1 ? 2 : 1), leakTokens: [numberWordFor(question.answer)] };
+    }
+    if (isNumberBondActionItem(item)) {
+      return { correct: 'completed the model', plainWrong: 'left an incomplete model', placed: { correct: 1, wrong: 0 }, leakTokens: [] };
+    }
+    if (item.interactionPhase === 'family-build' && item.familyForm) {
+      const correct = familyFormKeyFor(item.familyForm, item.whole, item.knownPart, item.otherPart);
+      return { correct, plainWrong: `${item.knownPart}+${item.otherPart}=${item.whole}`, tapped: { correct, wrong: `${item.whole}+${item.knownPart}=${item.otherPart}` }, leakTokens: [] };
+    }
+    if (item.interactionPhase === 'equation-build') {
+      const correct = `${item.knownPart}+${item.otherPart}=${item.whole}`;
+      const wrong = `${item.whole}-${item.knownPart}=${item.otherPart}`;
+      return { correct, plainWrong: wrong, tapped: { correct, wrong }, leakTokens: [] };
+    }
+    return numberBondHarnessAnswers(item);
+  },
+  gestureVerdictCue: (item, gesture) => {
+    if (isNumberBondActionItem(item)) {
+      const action = item.bondAction ?? 'join';
+      const counters = Number(gesture) === 1
+        ? countersForAction(item, action)
+        : initialCountersForInteraction(item);
+      return modeActionVerdictCue(item, counters).cue;
+    }
+    if (item.interactionPhase === 'family-build') {
+      return familyEquationVerdictCue(item, String(gesture).match(/\d+|[+\-=]/g) ?? []);
+    }
+    if (item.interactionPhase === 'equation-build') {
+      return bondEquationVerdictCue(item, String(gesture).match(/\d+|[+\-=]/g) ?? [], 'join');
+    }
+    if (item.splitPhase === 'build') {
+      const counters = Number(gesture) === 0 ? wholeCounters(item.whole) : numberBondHarnessCounters(item);
+      return splitAndSayVerdict(item, counters, []);
+    }
+    return bondVerdictCueForPlaced(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0);
+  },
 };
 
 /**
@@ -2147,6 +2244,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'story-bridge': storyBridgeAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'compare-objects': compareObjectsAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'number-sequencer': numberSequencerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'ordinal-line': ordinalLineAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'word-workout': wordWorkoutAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
