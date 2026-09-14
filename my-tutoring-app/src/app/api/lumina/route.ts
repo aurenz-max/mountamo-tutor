@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withGenerationRequest } from '@/components/lumina/service/generation/generationRequest';
 
 // Core geminiService exports (cleaned up - only essential functions)
 import {
@@ -22,6 +23,10 @@ import { generateKnowledgeCheck } from '@/components/lumina/service/knowledge-ch
 import { analyzeScratchPad, getScratchPadHint, generatePracticeProblem } from '@/components/lumina/service/scratch-pad/gemini-scratch-pad';
 
 export async function POST(request: NextRequest) {
+  return withGenerationRequest(request.headers.get('authorization'), () => handlePost(request));
+}
+
+async function handlePost(request: NextRequest) {
   try {
     const body = await request.json();
     const { action, params } = body;
@@ -455,6 +460,13 @@ export async function POST(request: NextRequest) {
       // ============================================
       // MISCONCEPTION LOOP — S2 distiller (Diagnosis Lab / capture hook)
       // ============================================
+
+      case 'distillLearningObservation': {
+        const { distillLearningObservation } = await import(
+          '@/components/lumina/evaluation/diagnosis/distillLearningObservation'
+        );
+        return NextResponse.json(await distillLearningObservation(params.evidence));
+      }
 
       case 'distillMisconception': {
         const { distillMisconception } = await import(

@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server';
+import { withGenerationRequest } from '@/components/lumina/service/generation/generationRequest';
 import { buildCompleteExhibitFromManifest } from '@/components/lumina/service/geminiService';
 
 export async function POST(request: NextRequest) {
+  return withGenerationRequest(request.headers.get('authorization'), () => handlePost(request));
+}
+
+async function handlePost(request: NextRequest) {
   try {
     const body = await request.json();
     const { manifest, curatorBrief } = body;
