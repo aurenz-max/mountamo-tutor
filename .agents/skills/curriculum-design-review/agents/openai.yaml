@@ -1,0 +1,4 @@
+interface:
+  display_name: "Curriculum Design Review"
+  short_description: "Sample curriculum and design better lesson interactions"
+  default_prompt: "Use $curriculum-design-review to sample five skills and two subskills each from a grade and subject, then create an HTML lesson-manifest and pedagogy report with implementation-ready recommendations."
