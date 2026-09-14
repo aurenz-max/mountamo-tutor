@@ -1,0 +1,330 @@
+{
+  "run": "after",
+  "mode": "sequence",
+  "tier": "Easy",
+  "generated": {
+    "title": "Writing Numbers 0 to 10 in Sequence",
+    "gradeBand": "K",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "sequence",
+        "digit": 7,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          6,
+          7,
+          8,
+          9
+        ],
+        "missingIndex": 1,
+        "showGhostDigit": false,
+        "showStrokeArrows": false,
+        "showStartDot": false,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c2",
+        "type": "sequence",
+        "digit": 3,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "missingIndex": 1,
+        "showGhostDigit": false,
+        "showStrokeArrows": false,
+        "showStartDot": false,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c3",
+        "type": "sequence",
+        "digit": 1,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "missingIndex": 1,
+        "showGhostDigit": false,
+        "showStrokeArrows": false,
+        "showStartDot": false,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c4",
+        "type": "sequence",
+        "digit": 2,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "missingIndex": 1,
+        "showGhostDigit": false,
+        "showStrokeArrows": false,
+        "showStartDot": false,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c5",
+        "type": "sequence",
+        "digit": 6,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "missingIndex": 1,
+        "showGhostDigit": false,
+        "showStrokeArrows": false,
+        "showStartDot": false,
+        "supportTier": "easy"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "label": "correct-slanted",
+      "target": 7,
+      "written": 7,
+      "geoNormalized": 84,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 90,
+        "variant": "plain 7",
+        "feedback": "Great job drawing a wonderful number 7 with a nice straight line!",
+        "confidence": 98,
+        "imageBytes": 10256
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "wrong-geo-high",
+      "target": 3,
+      "written": 2,
+      "geoNormalized": 90,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": false,
+        "score": 10,
+        "variant": "standard 2",
+        "feedback": "That drawing looks like a 2 instead of a 3, so try curving the loops to the right on the middle and bottom!",
+        "confidence": 98,
+        "imageBytes": 11324
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 3,
+      "written": 3,
+      "geoNormalized": 98,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 95,
+        "variant": "standard 3",
+        "feedback": "Great job, your 3 is well-formed with two lovely bumps!",
+        "confidence": 98,
+        "imageBytes": 11532
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "wrong-geo-low",
+      "target": 1,
+      "written": 4,
+      "geoNormalized": 83,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": false,
+        "score": 10,
+        "variant": "closed 4",
+        "feedback": "That drawing looks like a 4 instead of a 1, so try drawing just a straight line going down!",
+        "confidence": 98,
+        "imageBytes": 11156
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 1,
+      "written": 1,
+      "geoNormalized": 96,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 95,
+        "variant": "serif 1",
+        "feedback": "Wonderful job drawing the number 1 with a neat base!",
+        "confidence": 100,
+        "imageBytes": 10352
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 2,
+      "written": 2,
+      "geoNormalized": 98,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 95,
+        "variant": "standard 2",
+        "feedback": "Wonderful job writing your number 2 with a lovely curve and flat bottom!",
+        "confidence": 100,
+        "imageBytes": 11212
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 6,
+      "written": 6,
+      "geoNormalized": 98,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 90,
+        "variant": "standard looped 6",
+        "feedback": "Great job drawing the number 6 with a nice round loop at the bottom!",
+        "confidence": 95,
+        "imageBytes": 12344
+      },
+      "feedbackLine": "NUMBER SENSE"
+    }
+  ],
+  "consoleErrors": [
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+    "[evaluationApi] Failed to submit evaluation: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts",
+    "[EvaluationContext] Submission failed: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:71:44"
+  ],
+  "pending": [
+    {
+      "targetDigit": 7,
+      "challengeType": "sequence",
+      "imageBytes": 10256,
+      "response": {
+        "recognized": true,
+        "score": 90,
+        "variant": "plain 7",
+        "feedback": "Great job drawing a wonderful number 7 with a nice straight line!",
+        "confidence": 98
+      }
+    },
+    {
+      "targetDigit": 3,
+      "challengeType": "sequence",
+      "imageBytes": 11324,
+      "response": {
+        "recognized": false,
+        "score": 10,
+        "variant": "standard 2",
+        "feedback": "That drawing looks like a 2 instead of a 3, so try curving the loops to the right on the middle and bottom!",
+        "confidence": 98
+      }
+    },
+    {
+      "targetDigit": 3,
+      "challengeType": "sequence",
+      "imageBytes": 11532,
+      "response": {
+        "recognized": true,
+        "score": 95,
+        "variant": "standard 3",
+        "feedback": "Great job, your 3 is well-formed with two lovely bumps!",
+        "confidence": 98
+      }
+    },
+    {
+      "targetDigit": 1,
+      "challengeType": "sequence",
+      "imageBytes": 11156,
+      "response": {
+        "recognized": false,
+        "score": 10,
+        "variant": "closed 4",
+        "feedback": "That drawing looks like a 4 instead of a 1, so try drawing just a straight line going down!",
+        "confidence": 98
+      }
+    },
+    {
+      "targetDigit": 1,
+      "challengeType": "sequence",
+      "imageBytes": 10352,
+      "response": {
+        "recognized": true,
+        "score": 95,
+        "variant": "serif 1",
+        "feedback": "Wonderful job drawing the number 1 with a neat base!",
+        "confidence": 100
+      }
+    },
+    {
+      "targetDigit": 2,
+      "challengeType": "sequence",
+      "imageBytes": 11212,
+      "response": {
+        "recognized": true,
+        "score": 95,
+        "variant": "standard 2",
+        "feedback": "Wonderful job writing your number 2 with a lovely curve and flat bottom!",
+        "confidence": 100
+      }
+    },
+    {
+      "targetDigit": 6,
+      "challengeType": "sequence",
+      "imageBytes": 12344,
+      "response": {
+        "recognized": true,
+        "score": 90,
+        "variant": "standard looped 6",
+        "feedback": "Great job drawing the number 6 with a nice round loop at the bottom!",
+        "confidence": 95
+      }
+    }
+  ]
+}

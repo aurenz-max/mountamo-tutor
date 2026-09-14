@@ -63,3 +63,18 @@ my-tutoring-app/qa/lesson-planner/literacy-exemplars/
 # and qa/curriculum-fit/ are the durable evidence).
 my-tutoring-app/qa/*-tsc-before.txt
 my-tutoring-app/qa/*-tsc-after.txt
+
+# One-off demo HTML/JSON/preview-PNG dumps dropped at the repo-root artifacts/
+# during manual work — scratch, never a committed artifact class. Files already
+# tracked (artifacts/math-pedagogy-review/ core, place-value-exposure-verified.json)
+# stay tracked; this only stops new loose files from being staged.
+/artifacts/
+
+# misconception-test harness output: the documented deliverable is one dated
+# <primitive>-<date>.md summary per qa/misconception/ (misconception-test
+# SKILL.md). Raw per-run probe dumps — <primitive>/<run-id>/*.json folders and
+# loose controls-*/probe-* scratch json/txt — are not that deliverable.
+# Already-tracked run folders stay tracked; this only stops new ones.
+my-tutoring-app/qa/misconception/*/*/
+my-tutoring-app/qa/misconception/*.json
+my-tutoring-app/qa/misconception/*.txt

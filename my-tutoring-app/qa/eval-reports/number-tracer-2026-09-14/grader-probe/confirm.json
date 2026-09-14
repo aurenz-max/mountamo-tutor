@@ -1,0 +1,410 @@
+[
+  {
+    "group": "messy-correct",
+    "target": 2,
+    "written": 2,
+    "wobble": 28,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 93,
+    "v": {
+      "s": 90,
+      "c": 95,
+      "r": true,
+      "fb": "Great job drawing your 2 with a lovely curve and a nice flat bottom!"
+    },
+    "read": null
+  },
+  {
+    "group": "messy-correct",
+    "target": 2,
+    "written": 2,
+    "wobble": 28,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 93,
+    "v": {
+      "s": 90,
+      "c": 98,
+      "r": true,
+      "fb": "Great job drawing your 2, keep up the wonderful writing!"
+    },
+    "read": {
+      "readAs": "2",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "messy-correct",
+    "target": 4,
+    "written": 4,
+    "wobble": 28,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 95,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn, try drawing a 4 with a vertical line, a horizontal line, and a cross line!"
+    },
+    "read": null
+  },
+  {
+    "group": "messy-correct",
+    "target": 4,
+    "written": 4,
+    "wobble": 28,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 95,
+    "v": {
+      "s": 85,
+      "c": 95,
+      "r": true,
+      "fb": "Great job drawing your four, try making the lines just a little bit smoother next time!"
+    },
+    "read": {
+      "readAs": "4",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "messy-correct",
+    "target": 5,
+    "written": 5,
+    "wobble": 28,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 95,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like you forgot to draw something, try drawing a neat number 5 with a straight top line, a short down-stroke, and a big round belly!"
+    },
+    "read": null
+  },
+  {
+    "group": "messy-correct",
+    "target": 5,
+    "written": 5,
+    "wobble": 28,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 95,
+    "v": {
+      "s": 90,
+      "c": 95,
+      "r": true,
+      "fb": "Great job drawing the number 5, your lines make a super clear shape!"
+    },
+    "read": {
+      "readAs": "5",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "messy-correct",
+    "target": 7,
+    "written": 7,
+    "wobble": 28,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 94,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn yet, so give it a try and draw a number 7!"
+    },
+    "read": null
+  },
+  {
+    "group": "messy-correct",
+    "target": 7,
+    "written": 7,
+    "wobble": 28,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 94,
+    "v": {
+      "s": 85,
+      "c": 95,
+      "r": true,
+      "fb": "Great job drawing your seven, keep your hand steady for an even smoother line!"
+    },
+    "read": {
+      "readAs": "7",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "wrong-number",
+    "target": 5,
+    "written": 7,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 72,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn yet, try drawing the number 5 with a straight line down, a big curve, and a hat on top!"
+    },
+    "read": null
+  },
+  {
+    "group": "wrong-number",
+    "target": 5,
+    "written": 7,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 72,
+    "v": {
+      "s": 10,
+      "c": 99,
+      "r": false,
+      "fb": "This drawing looks like the number 7! Try adding a short top line, a straight line going down, and a big round belly to make a fantastic 5."
+    },
+    "read": {
+      "readAs": "7",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "wrong-number",
+    "target": 6,
+    "written": 9,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 90,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn yet, so grab your pencil and try drawing a curved line that loops around at the bottom to make a 6!"
+    },
+    "read": null
+  },
+  {
+    "group": "wrong-number",
+    "target": 6,
+    "written": 9,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 90,
+    "v": {
+      "s": 35,
+      "c": 98,
+      "r": false,
+      "fb": "This looks like a number 9 because the circle is at the top; try starting with the tail at the top and curving down to make a loop at the bottom instead!"
+    },
+    "read": {
+      "readAs": "9",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "wrong-number",
+    "target": 1,
+    "written": 7,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 87,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn, try your best to draw a straight line down for the number 1!"
+    },
+    "read": null
+  },
+  {
+    "group": "wrong-number",
+    "target": 1,
+    "written": 7,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 87,
+    "v": {
+      "s": 25,
+      "c": 95,
+      "r": false,
+      "fb": "That looks more like the number 7! Try drawing a straight line straight down to make a 1."
+    },
+    "read": {
+      "readAs": "7",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "wrong-number",
+    "target": 2,
+    "written": 5,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 79,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn yet. Try drawing a nice curve and a straight line at the bottom to make a 2!"
+    },
+    "read": null
+  },
+  {
+    "group": "wrong-number",
+    "target": 2,
+    "written": 5,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 79,
+    "v": {
+      "s": 10,
+      "c": 99,
+      "r": false,
+      "fb": "Oops, that looks like a 5! Try drawing a gentle curve at the top and a straight line across the bottom."
+    },
+    "read": {
+      "readAs": "5",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "wrong-number",
+    "target": 7,
+    "written": 1,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 84,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn, try drawing a 7 with a straight top line and a slanted line going down!"
+    },
+    "read": null
+  },
+  {
+    "group": "wrong-number",
+    "target": 7,
+    "written": 1,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 84,
+    "v": {
+      "s": 30,
+      "c": 98,
+      "r": false,
+      "fb": "Great effort! That drawing looks like the number 1, so try drawing a slanted line at the top and a sleeping line across the middle to make a 7."
+    },
+    "read": {
+      "readAs": "1",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "wrong-number",
+    "target": 4,
+    "written": 9,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 77,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn yet, try drawing the number 4 with a straight line down and across!"
+    },
+    "read": null
+  },
+  {
+    "group": "wrong-number",
+    "target": 4,
+    "written": 9,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 77,
+    "v": {
+      "s": 15,
+      "c": 95,
+      "r": false,
+      "fb": "That drawing looks like the number 9 instead of a 4, so try making a straight down line with a triangle at the top next time!"
+    },
+    "read": {
+      "readAs": "9",
+      "mirrored": false
+    }
+  },
+  {
+    "group": "mirrored",
+    "target": 3,
+    "written": 3,
+    "mirror": true,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 82,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "I cannot see anything drawn on the canvas, try drawing a 3 with two curved bumps facing the left!"
+    },
+    "read": null
+  },
+  {
+    "group": "mirrored",
+    "target": 3,
+    "written": 3,
+    "mirror": true,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 82,
+    "v": {
+      "s": 90,
+      "c": 98,
+      "r": true,
+      "fb": "Fantastic job writing the number 3, your curves look wonderful!"
+    },
+    "read": {
+      "readAs": "3",
+      "mirrored": true
+    }
+  },
+  {
+    "group": "mirrored",
+    "target": 7,
+    "written": 7,
+    "mirror": true,
+    "fill": "transparent",
+    "alpha0": 0,
+    "geoScore": 79,
+    "v": {
+      "s": 0,
+      "c": 100,
+      "r": false,
+      "fb": "It looks like nothing was drawn yet. Try drawing a straight line across and a slanted line down to make a 7!"
+    },
+    "read": null
+  },
+  {
+    "group": "mirrored",
+    "target": 7,
+    "written": 7,
+    "mirror": true,
+    "fill": "#020617",
+    "alpha0": 255,
+    "geoScore": 79,
+    "v": {
+      "s": 90,
+      "c": 98,
+      "r": true,
+      "fb": "Great job drawing your seven, keep up the wonderful writing!"
+    },
+    "read": {
+      "readAs": "7",
+      "mirrored": false
+    }
+  }
+]

@@ -1,0 +1,296 @@
+{
+  "run": "after",
+  "mode": "copy",
+  "tier": "Med",
+  "generated": {
+    "title": "Number Writing Practice 0 to 10",
+    "description": "Practice writing numbers from 0 to 10 by copying visible models.",
+    "gradeBand": "K",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "copy",
+        "digit": 2,
+        "showModel": true,
+        "showArrows": false,
+        "hint": "Start at the top and curve around!",
+        "strokePaths": [],
+        "instruction": "Copy the number 2!",
+        "showGhostDigit": true,
+        "showStrokeArrows": false,
+        "showStartDot": true,
+        "supportTier": "medium"
+      },
+      {
+        "id": "c2",
+        "type": "copy",
+        "digit": 5,
+        "showModel": true,
+        "showArrows": false,
+        "hint": "Go down, around, and put a hat on top!",
+        "strokePaths": [],
+        "instruction": "Copy the number 5!",
+        "showGhostDigit": true,
+        "showStrokeArrows": false,
+        "showStartDot": true,
+        "supportTier": "medium"
+      },
+      {
+        "id": "c3",
+        "type": "copy",
+        "digit": 7,
+        "showModel": true,
+        "showArrows": false,
+        "hint": "Go across the top and slant down!",
+        "strokePaths": [],
+        "instruction": "Copy the number 7!",
+        "showGhostDigit": true,
+        "showStrokeArrows": false,
+        "showStartDot": true,
+        "supportTier": "medium"
+      },
+      {
+        "id": "c4",
+        "type": "copy",
+        "digit": 3,
+        "showModel": true,
+        "showArrows": false,
+        "hint": "Curve around, then curve around again!",
+        "strokePaths": [],
+        "instruction": "Copy the number 3!",
+        "showGhostDigit": true,
+        "showStrokeArrows": false,
+        "showStartDot": true,
+        "supportTier": "medium"
+      },
+      {
+        "id": "c5",
+        "type": "copy",
+        "digit": 8,
+        "showModel": true,
+        "showArrows": false,
+        "hint": "Make an S and close it up!",
+        "strokePaths": [],
+        "instruction": "Copy the number 8!",
+        "showGhostDigit": true,
+        "showStrokeArrows": false,
+        "showStartDot": true,
+        "supportTier": "medium"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "label": "correct-slanted",
+      "target": 2,
+      "written": 2,
+      "geoNormalized": 87,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 92,
+        "variant": "standard 2",
+        "feedback": "Wonderful job drawing the number 2 with a nice curved top and a straight bottom line!",
+        "confidence": 98,
+        "imageBytes": 12120
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "wrong-geo-high",
+      "target": 5,
+      "written": 6,
+      "geoNormalized": 90,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": false,
+        "score": 35,
+        "variant": "digit 6",
+        "feedback": "That drawing looks like a 6 instead of a 5! Try starting with a straight top line and then adding the curved tummy.",
+        "confidence": 95,
+        "imageBytes": 11360
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 5,
+      "written": 5,
+      "geoNormalized": 98,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 95,
+        "variant": "flat-top 5 with curved bottom",
+        "feedback": "Great job! That is a wonderfully clear number 5 with a nice curved bottom loop.",
+        "confidence": 100,
+        "imageBytes": 11480
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "wrong-geo-low",
+      "target": 7,
+      "written": 0,
+      "geoNormalized": 68,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": false,
+        "score": 10,
+        "variant": "oval",
+        "feedback": "This looks like a zero instead of a seven, try drawing a straight top line and a slanted line going down!",
+        "confidence": 98,
+        "imageBytes": 12456
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 7,
+      "written": 7,
+      "geoNormalized": 94,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 95,
+        "variant": "plain 7",
+        "feedback": "Wonderful job drawing a fantastic number 7!",
+        "confidence": 99,
+        "imageBytes": 10184
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 3,
+      "written": 3,
+      "geoNormalized": 98,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 95,
+        "variant": "standard 3",
+        "feedback": "Great job drawing the number 3 with nice round curves!",
+        "confidence": 99,
+        "imageBytes": 11332
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 8,
+      "written": 8,
+      "geoNormalized": 98,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 90,
+        "variant": "two-loop 8",
+        "feedback": "Great job drawing a wonderful number 8 with two lovely loops!",
+        "confidence": 95,
+        "imageBytes": 12116
+      },
+      "feedbackLine": "NUMBER SENSE"
+    }
+  ],
+  "consoleErrors": [
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+    "[evaluationApi] Failed to submit evaluation: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts",
+    "[EvaluationContext] Submission failed: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:71:44"
+  ],
+  "pending": [
+    {
+      "targetDigit": 2,
+      "challengeType": "copy",
+      "imageBytes": 12120,
+      "response": {
+        "recognized": true,
+        "score": 92,
+        "variant": "standard 2",
+        "feedback": "Wonderful job drawing the number 2 with a nice curved top and a straight bottom line!",
+        "confidence": 98
+      }
+    },
+    {
+      "targetDigit": 5,
+      "challengeType": "copy",
+      "imageBytes": 11360,
+      "response": {
+        "recognized": false,
+        "score": 35,
+        "variant": "digit 6",
+        "feedback": "That drawing looks like a 6 instead of a 5! Try starting with a straight top line and then adding the curved tummy.",
+        "confidence": 95
+      }
+    },
+    {
+      "targetDigit": 5,
+      "challengeType": "copy",
+      "imageBytes": 11480,
+      "response": {
+        "recognized": true,
+        "score": 95,
+        "variant": "flat-top 5 with curved bottom",
+        "feedback": "Great job! That is a wonderfully clear number 5 with a nice curved bottom loop.",
+        "confidence": 100
+      }
+    },
+    {
+      "targetDigit": 7,
+      "challengeType": "copy",
+      "imageBytes": 12456,
+      "response": {
+        "recognized": false,
+        "score": 10,
+        "variant": "oval",
+        "feedback": "This looks like a zero instead of a seven, try drawing a straight top line and a slanted line going down!",
+        "confidence": 98
+      }
+    },
+    {
+      "targetDigit": 7,
+      "challengeType": "copy",
+      "imageBytes": 10184,
+      "response": {
+        "recognized": true,
+        "score": 95,
+        "variant": "plain 7",
+        "feedback": "Wonderful job drawing a fantastic number 7!",
+        "confidence": 99
+      }
+    },
+    {
+      "targetDigit": 3,
+      "challengeType": "copy",
+      "imageBytes": 11332,
+      "response": {
+        "recognized": true,
+        "score": 95,
+        "variant": "standard 3",
+        "feedback": "Great job drawing the number 3 with nice round curves!",
+        "confidence": 99
+      }
+    },
+    {
+      "targetDigit": 8,
+      "challengeType": "copy",
+      "imageBytes": 12116,
+      "response": {
+        "recognized": true,
+        "score": 90,
+        "variant": "two-loop 8",
+        "feedback": "Great job drawing a wonderful number 8 with two lovely loops!",
+        "confidence": 95
+      }
+    }
+  ]
+}

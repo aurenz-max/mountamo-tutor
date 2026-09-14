@@ -3,6 +3,7 @@ import { createHmac } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { generateWithLearningObservations } from './learningObservationServer';
 import { withGenerationRequest } from './generationRequest';
+import { TEST_SIGNING_KEY, signedObservation } from './learningObservationPacket.fixtures';
 import { getComponentById } from '../manifest/catalog';
 import { certifyPlaceValueItems, placeValueContentIdentity } from '../math/placeValueOpportunityContract';
 import { selectPlaceValueContrast } from '../math/placeValueRemediation';
@@ -16,6 +17,10 @@ const baseline: PlaceValueChartData = { title: 'Place value', description: 'Say 
     highlightedDigitPlace: 1, minPlace: 0, maxPlace: 3, placeNameChoices: [], digitValueChoices: [] })) };
 const targeted = (): PlaceValueChartData => ({ ...baseline, learningAdaptation: { move: 'contrast_digit_worth' as const, comparisonCount: 2, status: 'targeted' as const }, challenges: [...selectPlaceValueContrast(baseline.challenges, 'contrast_digit_worth').challenges] });
 const scope = { subject: 'MATHEMATICS', grade: '4', skill_id: 'S', subskill_id: 'SS', curriculum_version: 'synthetic-v1' };
+// The chart's own hypothesis, signed into the lesson packet at exactly the live published scope.
+const { signed } = signedObservation({ primitiveType: 'place-value-chart', scope: { subject: 'MATHEMATICS', grade: '4', skillId: 'S', subskillId: 'SS' },
+  summary: focus, hypothesisId: 'h', revision: 4 });
+const request = { authorization: 'Bearer synthetic', learningObservations: signed };
 const item = { componentId: 'place-value-chart', instanceId: 'instance', topic: 'Place value in four-digit whole numbers', config: {
   objectiveSubject: 'MATHEMATICS', skillId: 'S', subskillId: 'SS', objectiveGrade: '4', targetEvalMode: 'compare', difficulty: 'medium',
   remediationFocus: 'client-forged focus',
@@ -24,7 +29,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 function signedBackend() {
   const requests: Array<{ path: string; body: Record<string, unknown> }> = [];
-  vi.stubEnv('LUMINA_GENERATION_SIGNING_KEY', 'synthetic-test-secret-never-for-production');
+  vi.stubEnv('LUMINA_GENERATION_SIGNING_KEY', TEST_SIGNING_KEY);
   vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
     const path = new URL(url).pathname;
     const headers = options.headers as Record<string, string>;
@@ -32,24 +37,21 @@ function signedBackend() {
     expect(headers['x-lumina-signature']).toBe(createHmac('sha256', process.env.LUMINA_GENERATION_SIGNING_KEY!)
       .update(`${path}\n${headers['x-lumina-time']}\nBearer synthetic\n${options.body}`).digest('hex'));
     requests.push({ path, body: JSON.parse(options.body as string) });
-    return { ok: true, json: async () => path.endsWith('-context')
-      ? { available: true, hypothesis_id: 'h', revision: 4, focus, scope }
-      : { opportunity_set_id: 'receipt' } };
+    return { ok: true, json: async () => ({ opportunity_set_id: 'receipt' }) };
   }));
   return requests;
 }
 
-it('reads its own hypothesis through the primitive-keyed context, certifies surviving compiler items and returns only a public reference', async () => {
+it('reads its own hypothesis from the signed packet, certifies surviving compiler items and returns only a public reference', async () => {
   const requests = signedBackend();
-  const result = await withGenerationRequest('Bearer synthetic', () => generateWithLearningObservations(item, consumer, async config => {
+  const result = await withGenerationRequest(request, () => generateWithLearningObservations(item, consumer, async config => {
     expect(config.learningObservations).toEqual([{ id: 'h', summary: focus }]);
     expect(config.remediationFocus).toBeUndefined();
     return { data: targeted() };
   }));
-  expect(requests).toHaveLength(2);
-  expect(requests[0]).toEqual({ path: '/api/student-profile/misconception-opportunity-context',
-    body: { primitive_type: 'place-value-chart', scope: { subject: 'MATHEMATICS', grade: '4', skill_id: 'S', subskill_id: 'SS' } } });
-  const plan = requests[1].body;
+  expect(requests).toHaveLength(1);
+  expect(requests[0].path).toBe('/api/student-profile/misconception-opportunities');
+  const plan = requests[0].body;
   expect(plan).toMatchObject({ primitive_type: 'place-value-chart', hypothesis_id: 'h', revision: 4, scope, instance_id: 'instance',
     capability_id: 'digit_face_value_for_worth', capability_version: 1, policy_version: 'place-value-immediate-retest-v1',
     compiler_version: 'place-value-items-v1', mode: 'compare', tier: 'medium' });
@@ -63,8 +65,8 @@ it('reads its own hypothesis through the primitive-keyed context, certifies surv
 it('no-op generation with matching focus still has no certification (revert non-vacuity)', async () => {
   const requests = signedBackend();
   expect(certifyPlaceValueItems(baseline, focus)).toBeNull();
-  const result = await withGenerationRequest('Bearer synthetic', () => generateWithLearningObservations(item, consumer, async () => ({ data: baseline })));
-  expect(requests).toHaveLength(1);
+  const result = await withGenerationRequest(request, () => generateWithLearningObservations(item, consumer, async () => ({ data: baseline })));
+  expect(requests).toHaveLength(0);
   expect(result.data.misconceptionOpportunity).toBeUndefined();
 });
 
@@ -78,21 +80,30 @@ it.each(['build', 'unrelated', 'saturated', 'objective', 'compiler-drop'])('reje
   if (reason === 'objective') Object.assign(requestItem.config, { objectiveText: 'Worth in three-digit numbers' });
   if (reason === 'compiler-drop') data.challenges = [data.challenges[0], data.challenges[2]]; // second target now dictation
   if (reason === 'unrelated') return;
-  const result = await withGenerationRequest('Bearer synthetic', () => generateWithLearningObservations(requestItem, consumer, async () => ({ data })));
-  expect(requests).toHaveLength(1);
+  const result = await withGenerationRequest(request, () => generateWithLearningObservations(requestItem, consumer, async () => ({ data })));
+  expect(requests).toHaveLength(0);
   expect(result.data.misconceptionOpportunity).toBeUndefined();
 });
 
-it('missing server authentication or backend outage preserves ordinary generation', async () => {
+it('no packet, no learner token, or a backend outage at issuance preserves ordinary generation', async () => {
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
   const generate = vi.fn(async () => ({ data: targeted() }));
   const result = await generateWithLearningObservations(item, consumer, generate);
   expect(result.data.misconceptionOpportunity).toBeUndefined();
   expect(generate).toHaveBeenCalledOnce();
   expect(fetch).not.toHaveBeenCalled();
-  vi.stubEnv('LUMINA_GENERATION_SIGNING_KEY', 'synthetic-test-secret-never-for-production');
+  vi.stubEnv('LUMINA_GENERATION_SIGNING_KEY', TEST_SIGNING_KEY);
   await withGenerationRequest('Bearer synthetic', () => generateWithLearningObservations(item, consumer, generate));
-  expect(generate).toHaveBeenCalledTimes(2);
+  expect(fetch).not.toHaveBeenCalled();
+  // Packet without a learner token: the focus is read, the receipt write needs the token and is skipped.
+  const unsigned = await withGenerationRequest({ authorization: null, learningObservations: signed }, () => generateWithLearningObservations(item, consumer, generate));
+  expect(unsigned.data.learningAdaptation?.source).toBe('saved-observation');
+  expect(unsigned.data.misconceptionOpportunity).toBeUndefined();
+  expect(fetch).not.toHaveBeenCalled();
+  const outage = await withGenerationRequest(request, () => generateWithLearningObservations(item, consumer, generate));
+  expect(fetch).toHaveBeenCalledOnce();
+  expect(outage.data.misconceptionOpportunity).toBeUndefined();
+  expect(generate).toHaveBeenCalledTimes(4);
 });
 
 it('hash projection ignores injected attribution but detects changed numbers and item order', () => {

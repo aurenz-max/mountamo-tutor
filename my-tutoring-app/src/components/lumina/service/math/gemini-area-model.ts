@@ -27,6 +27,15 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { planLearningAdaptation, type TeachingCapability } from "../generation/planLearningAdaptation";
+import {
+  areaModelTeachingFor,
+  eligibleAreaModelTeaching,
+  selectEqualAreaContrast,
+  selectSameFactContrast,
+  type AreaModelRemediationMove,
+  type OperandPair as RemediationOperandPair,
+} from "./areaModelRemediation";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -252,14 +261,37 @@ interface OperandPair {
   factor2Parts: number[];
 }
 
+// Operand ranges shared by the random pickers and the enumerator an adaptation
+// selects from, so a selected pair can never leave the mode's window.
+const OPERAND_BOUNDS = {
+  build_model: { a: [3, 9], b: [11, 25], minParts: [1, 2] },
+  find_area: { a: [11, 49], b: [11, 49], minParts: [2, 2] },
+  multiply: { a: [110, 499], b: [12, 49], minParts: [3, 2] },
+} as const;
+const PERIMETER_SIDES = { min: 5, max: 30 } as const;
+
+/** Every legal pair for a grid mode, in the shape its picker requires (the contrast needs two or more cells). */
+function legalOperandPairs(mode: 'build_model' | 'find_area' | 'multiply'): RemediationOperandPair[] {
+  const { a: [aMin, aMax], b: [bMin, bMax], minParts: [aParts, bParts] } = OPERAND_BOUNDS[mode];
+  const pairs: RemediationOperandPair[] = [];
+  for (let a = aMin; a <= aMax; a++) for (let b = bMin; b <= bMax; b++) {
+    const factor1Parts = decomposeByPlace(a);
+    const factor2Parts = decomposeByPlace(b);
+    if (factor1Parts.length >= aParts && factor2Parts.length >= bParts) {
+      pairs.push({ factor1Parts, factor2Parts });
+    }
+  }
+  return pairs;
+}
+
 function buildModelOperands(count: number): OperandPair[] {
   // Single-digit (3-9) × 2-digit (11-25), 1×2 grid.
   const pairs: OperandPair[] = [];
   const seen = new Set<string>();
   const maxAttempts = count * 8;
   for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
-    const single = randInt(3, 9);
-    const two = randInt(11, 25);
+    const single = randInt(...OPERAND_BOUNDS.build_model.a);
+    const two = randInt(...OPERAND_BOUNDS.build_model.b);
     const key = canonKey([single], decomposeByPlace(two));
     if (seen.has(key)) continue;
     seen.add(key);
@@ -274,8 +306,8 @@ function findAreaOperands(count: number): OperandPair[] {
   const seen = new Set<string>();
   const maxAttempts = count * 8;
   for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
-    const a = randInt(11, 49);
-    const b = randInt(11, 49);
+    const a = randInt(...OPERAND_BOUNDS.find_area.a);
+    const b = randInt(...OPERAND_BOUNDS.find_area.b);
     const aParts = decomposeByPlace(a);
     const bParts = decomposeByPlace(b);
     // Require 2×2 grids (both decomposed into 2+ parts)
@@ -294,8 +326,8 @@ function perimeterOperands(count: number): OperandPair[] {
   const seen = new Set<string>();
   const maxAttempts = count * 8;
   for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
-    const length = randInt(5, 30);
-    let width = randInt(5, 30);
+    const length = randInt(PERIMETER_SIDES.min, PERIMETER_SIDES.max);
+    let width = randInt(PERIMETER_SIDES.min, PERIMETER_SIDES.max);
     // Avoid square (length === width) so the problem isn't degenerate.
     if (width === length) width = width === 30 ? width - 1 : width + 1;
     const key = canonKey([length], [width]);
@@ -312,8 +344,8 @@ function multiplyOperands(count: number): OperandPair[] {
   const seen = new Set<string>();
   const maxAttempts = count * 12;
   for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
-    const a = randInt(110, 499);
-    const b = randInt(12, 49);
+    const a = randInt(...OPERAND_BOUNDS.multiply.a);
+    const b = randInt(...OPERAND_BOUNDS.multiply.b);
     const aParts = decomposeByPlace(a);
     const bParts = decomposeByPlace(b);
     // Require 3-part × 2-part for sufficient difficulty.
@@ -470,17 +502,28 @@ GUIDELINES:
 Return ONLY the wrapper metadata in the response schema.
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-latest",
-    contents: prompt,
-    config: {
-      temperature: 0.9,
-      topP: 0.95,
-      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
+  // Saved observations reach only the shared applicability planner, never this
+  // wrapper prompt. No observations or an ineligible task → no planner call.
+  const observations = ctx.learningObservations?.length ? ctx.learningObservations
+    : ctx.remediationFocus ? [{ id: 'active-observation', summary: ctx.remediationFocus }] : [];
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: pinnedType, tier: supportTier ?? undefined };
+  const capability: TeachingCapability<AreaModelRemediationMove> | null = areaModelTeachingFor(pinnedType);
+  const [result, remediationMove] = await Promise.all([
+    ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: prompt,
+      config: {
+        temperature: 0.9,
+        topP: 0.95,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+      },
+    }),
+    capability && observations.length && eligibleAreaModelTeaching(adaptationTask)
+      ? planLearningAdaptation(capability, adaptationTask, observations) : null,
+  ]);
 
   const wrapper = result.text ? JSON.parse(result.text) : null;
   if (!wrapper) {
@@ -493,7 +536,21 @@ Return ONLY the wrapper metadata in the response schema.
     (evalConstraint?.allowedTypes[0] as ChallengeType) ||
     'find_area';
 
-  const challenges = buildChallenges(challengeType, instanceCount);
+  let challenges = buildChallenges(challengeType, instanceCount);
+
+  // ── Validated teaching move: code selects the operands, the component derives every answer.
+  let learningAdaptation: AreaModelData['learningAdaptation'];
+  if (remediationMove && challengeType === pinnedType) {
+    const selected = remediationMove === 'contrast_equal_area_perimeters'
+      ? challengeType === 'perimeter' ? selectEqualAreaContrast(challenges, remediationMove, PERIMETER_SIDES) : null
+      : challengeType !== 'perimeter' && challengeType !== 'factor'
+        ? selectSameFactContrast(challenges, remediationMove, legalOperandPairs(challengeType)) : null;
+    if (selected) {
+      challenges = [...selected.challenges];
+      learningAdaptation = { move: remediationMove, comparisonCount: selected.count,
+        status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+    }
+  }
 
   // ── Apply the support tier deterministically (code owns the SUPPORT
   // structure; the LLM only chose the metadata). Area-model is strictly
@@ -539,5 +596,6 @@ Return ONLY the wrapper metadata in the response schema.
     // Surface the tier so the live tutor's reveal level matches the on-screen
     // scaffold (set whenever a tier is present).
     supportTier: supportTier ?? undefined,
+    ...(learningAdaptation ? { learningAdaptation } : {}),
   };
 };

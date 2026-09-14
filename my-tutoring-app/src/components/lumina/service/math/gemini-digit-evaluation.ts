@@ -24,8 +24,12 @@ const digitEvaluationSchema: Schema = {
       type: Type.NUMBER,
       description: "0-100: how confident Gemini is in this evaluation",
     },
+    writtenAs: {
+      type: Type.STRING,
+      description: "The number the drawing shows, written in digits (for example 7 or 14), whether or not it is the target. Use ? when no number can be read.",
+    },
   },
-  required: ["recognized", "score", "variant", "feedback", "confidence"],
+  required: ["recognized", "score", "variant", "feedback", "confidence", "writtenAs"],
 };
 
 export interface DigitEvaluationResult {
@@ -34,6 +38,8 @@ export interface DigitEvaluationResult {
   variant: string;
   feedback: string;
   confidence: number;
+  /** The number the judge reads in the drawing, in digits, or '?'. Recorded as evidence; never scored. */
+  writtenAs: string;
 }
 
 /**
@@ -125,8 +131,9 @@ Ignore the faint grid lines and the dashed baseline — those are canvas decorat
       variant: parsed.variant ?? "",
       feedback: parsed.feedback ?? "Keep practicing!",
       confidence: Math.max(0, Math.min(100, parsed.confidence ?? 50)),
+      writtenAs: /^(\d{1,3}|\?)$/.test(String(parsed.writtenAs ?? '').trim()) ? String(parsed.writtenAs).trim() : '?',
     };
-    console.log(`[NumberTracer] Gemini re-eval ← digit=${targetDigit} recognized=${result2.recognized} score=${result2.score} variant="${result2.variant}" confidence=${result2.confidence} (${Date.now() - t0}ms)`);
+    console.log(`[NumberTracer] Gemini re-eval ← digit=${targetDigit} recognized=${result2.recognized} score=${result2.score} variant="${result2.variant}" confidence=${result2.confidence} writtenAs=${result2.writtenAs} (${Date.now() - t0}ms)`);
     return result2;
   } catch (error) {
     console.error(`[NumberTracer] Gemini re-eval error digit=${targetDigit}:`, error);
@@ -137,6 +144,7 @@ Ignore the faint grid lines and the dashed baseline — those are canvas decorat
       variant: "",
       feedback: "We couldn't check your writing. Try again!",
       confidence: 0,
+      writtenAs: "?",
     };
   }
 }

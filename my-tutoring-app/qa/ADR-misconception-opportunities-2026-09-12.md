@@ -43,6 +43,15 @@ The deployed Firestore rules were retrieved through the Firebase Rules API: rule
 
 Real authenticated issuance → mounted response → canonical submission → Firestore transition remains an acceptance gate. A disposable-student real Firestore probe now verifies issuance, competing consumers, wrong-response veto and stale-revision rejection, with synthetic observations and verified cleanup. It does not prove HTTP execution or microphone behavior. Existing HUMAN-CHECKS #113/#63 remain open. Submission-level retry safety remains implementation work: receipt idempotence alone does not prevent duplicate normal learning fan-out.
 
+## Amendment 2026-09-14 — launch packet replaces the signed reads
+
+User direction: the backend is storage, learner ownership and curriculum scope resolution; the pipeline lives on the frontend. Applied:
+
+- `misconception-opportunity-context` and `learning-observation-context` are removed. `/generation-context` (the existing launch read) returns one HMAC-signed packet: the owner's deliverable hypotheses (stamped scope, lineage-resolved skill, `hypothesis_id`/`revision`, bounded evidence) and each lesson objective's live published scope. Key, prefix `lumina-learning-observations:v1\n`, TTL 2 hours.
+- The packet travels client → build-stream → `withGenerationRequest`, which verifies it once with the same key. The retest consumer reads its own hypothesis from the packet at exactly the task's live scope (`retestHypothesis`); `misconception-opportunities` (issuance) is the only signed generation-server route left, and it still re-resolves the scope and validates the plan against the stored hypothesis. Resolution at submission is unchanged.
+- A client can read the packet it carries (the owner already sees this prose in the profile projection) but cannot edit or forge it; a packet without the key is null and generation runs unadapted. `hypothesis_id`/`revision` in the packet grant no authority: no learner route accepts them.
+- Verified: backend 78/78 across the observation and misconception sets; `learningObservationPacket.test.ts` + eight ported delivery suites; number-tracer replay with a Python-signed packet (2/2 adapted, 0 backend calls, controls unadapted); generic authenticated smoke. Report: `qa/misconception/launch-packet-delivery-2026-09-14.md`.
+
 ## Amendment 2026-09-13 — primitive-agnostic backend
 
 User ruling: production backend code must not require primitive-specific logic (50+ math primitives, 200+ overall). Applied to this contract:

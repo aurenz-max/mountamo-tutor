@@ -63,6 +63,30 @@ Probe D exercises S2. Probe G exercises S5. Probe R exercises S3→S4→S6.
 S1 (capture inside the live component) is the one station probes cannot reach —
 it stays a browser-owned check; say so in the report, never claim it verified.
 
+### Two architectures — establish which one before probing
+
+The map above is the **focus** architecture. A second one now carries most of
+math, and its S4/S5/S6 differ enough that probing it with the focus recipe
+silently tests nothing. Tell them apart from the catalog entry:
+
+| | **Focus** (legacy) | **Observation consumer** |
+|---|---|---|
+| Catalog | `misconceptionScope` only | also `observationDelivery: 'server'` + `learningObservations: { eligible }` |
+| S4 | `ctx.remediationFocus`, stamped per objective by `flattenManifestToLayout` | backend-signed launch packet (`/generation-context` → `learningObservations`), verified by the generation server and joined per task in `learningObservationPacket.ts` → `ctx.learningObservations[]`; no backend call during generation |
+| S5 | prompt section + LLM-authored content + code-stamped `remediationMove` | `planLearningAdaptation()` (shared LLM applicability step) picks a move or abstains, then a **code-owned selector** rewrites the challenges; telemetry lands in `data.learningAdaptation = { move, status, comparisonCount }` |
+| S6 | score ≥80 + matched tag → resolve | **none by design** — `resolve_misconception` returns False and writes nothing. The record is an inspectable hypothesis; only a declared `retest` contract retires it |
+
+**The consequence for Probe G:** a consumer's generator runs behind
+`generateWithLearningObservations`, whose first line is
+
+```ts
+const { learningObservations: _untrusted, remediationFocus: _forged, ...config } = item.config ?? {};
+```
+
+Both fields are stripped, so **only the verified launch packet can supply them**. A
+`?remediationFocus=` query param, a manifest field, or a client-set config entry
+reaches the generator as nothing. Phase 3 has a separate recipe for each.
+
 ## Verdicts
 
 | Probe | Verdict | Meaning |
@@ -72,8 +96,10 @@ it stays a browser-owned check; say so in the report, never claim it verified.
 | D | **VAGUE** | generated, but the sentence doesn't predict the wrong answer (useless downstream) |
 | D | **OVERREACH** | generated on evidence that demanded abstain — **gate fail** |
 | D | **LEAK** | diagnosis text names the target word/answer a student could reuse — **gate fail** |
-| G | **TARGETED** | remediation run stamps the right remediationMove AND a distractor a student holding the misconception would pick; null run unchanged |
-| G | **DEAD-FIELD** | remediationFocus in, no observable difference out |
+| G | **TARGETED** | remediation run stamps the right move AND the content a student holding the misconception would trip on is present (a distractor they would pick, or the compiled contrast the selector installs); null run unchanged |
+| G | **DEAD-FIELD** | focus/observation in, no observable difference out |
+| G | **NEG-BLEED** | a negative control moved the content — an unrelated, unreliable, strength-only, or ANOTHER family's misconception selected a move — **gate fail** |
+| G | **STRIPPED** | consumer architecture: the observation never reached the generator (`learningAdaptation` absent on every remediation draw). Expected when injecting client-side — proof the boundary holds, NOT a result. Re-probe at `resolveGenerationContext` |
 | G | **LEAKY** | misconception/correct-rule text visible in student-facing fields — **gate fail** |
 | G | **DRIFTED** | null-run baseline changed (remediationMove stamped without focus, or scope/mode/count shifted in the remediation run) |
 | G | **AFFORDANCE-BOUNDED** | emphasis shifted and the move stamped, but the misconception-consistent distractor is structurally OUTSIDE the mode's scope (e.g. the confusable letter isn't in the cumulative letter group) — not a gate fail; log it, and consider gating the move stamp on the affordance (PRD: no affordance → abstain, like tape-diagram solve_part_whole) |
@@ -82,12 +108,18 @@ it stays a browser-owned check; say so in the report, never claim it verified.
 | R | **STUCK-ACTIVE** | strong matched submit did not resolve |
 | R | **PREMATURE-RESOLVE** | weak (<80) or unmatched submit resolved it |
 | R | **OUT_OF_SCOPE_RESOLVE** | a tag from another primitive/skill resolved it — scope join broken |
+| R | **EXPOSURE-ONLY** | consumer architecture: delivery is scope-correct and the negative tests pass (score+tag never resolves, other skill never delivered), and there is no resolution step to close. The correct terminal verdict here — do NOT force it into CLOSED |
 | G | **OUT_OF_SCOPE_BLEED** | a skill-scoped diagnosis reached generation outside its skill |
 
-**Gate (all must hold):** 0 LEAK, 0 OVERREACH, 0 LEAKY, every wired family
-TARGETED (not DEAD-FIELD/DRIFTED), Probe R CLOSED with the scope-mismatch
-tests green. VAGUE is a warning, not a gate fail — log it; repeated VAGUE on
-the same signature means the golden scenario needs richer priorAttempts.
+**Gate (all must hold):** 0 LEAK, 0 OVERREACH, 0 LEAKY, 0 NEG-BLEED, every wired
+family TARGETED (not DEAD-FIELD/DRIFTED/STRIPPED), Probe R CLOSED — or
+EXPOSURE-ONLY for a consumer — with the scope-mismatch tests green. VAGUE is a
+warning, not a gate fail — log it; repeated VAGUE on the same signature means the
+golden scenario needs richer priorAttempts.
+
+**A positive result is only half the gate.** A move that fires on the right
+observation *and on everything else* is worse than a dead field: it churns
+content on noise. Every Probe G run needs its negative controls (Phase 3b).
 
 ## Workflow
 
@@ -99,21 +131,35 @@ For each primitive, confirm all five stations are wired. Any miss → verdict
 primitive only prove the obvious.
 
 1. **Catalog** (`service/manifest/catalog/<domain>.ts`): entry declares
-   `misconceptionScope: 'primitive' | 'skill'`.
+   `misconceptionScope: 'primitive' | 'skill'`. If it ALSO declares
+   `observationDelivery: 'server'` and `learningObservations: { eligible }`,
+   this is a **consumer** — take the consumer column everywhere below.
 2. **Component** (`primitives/visual-primitives/<domain>/<Name>.tsx`): keeps a
-   `diagnosisObservationsRef`, pushes on wrong attempts (judge-backed entries set
-   `judgeFeedback`), builds `DiagnosisEvidence` on failed completion, passes it
-   as `submitEvaluation`'s 6th arg.
-3. **Generator** (`service/<domain>/gemini-<name>.ts`): imports
-   `buildRemediationPrompt`, interpolates it, schema has a bounded
-   `remediationMove` enum, and code (not the LLM) stamps/strips the move
-   post-parse via an exported `<name>RemediationMoveFor(...)` helper.
+   `diagnosisObservationsRef` or a per-response ref, pushes on wrong attempts
+   (judge-backed entries set `judgeFeedback`), builds `DiagnosisEvidence` on
+   completion, passes it as `submitEvaluation`'s 6th arg. Retry-until-correct
+   primitives submit score 100, so check the packet sets `firstResponseScore` —
+   without it the capture gate never fires ([[first-response-gate]]).
+3. **Generator** (`service/<domain>/gemini-<name>.ts`):
+   - *Focus:* imports `buildRemediationPrompt`, interpolates it, schema has a
+     bounded `remediationMove` enum, and code (not the LLM) stamps/strips the
+     move post-parse via an exported `<name>RemediationMoveFor(...)` helper.
+   - *Consumer:* imports `planLearningAdaptation` plus its own
+     `<name>Remediation.ts` (a `TeachingCapability` with bounded `moves`, an
+     `eligible<Name>Teaching(task)` code gate, a `compiled<Move>(challenges)`
+     oracle, and a `select<Move>(...)` selector). Reads
+     `ctx.learningObservations` first, `ctx.remediationFocus` only as fallback,
+     and attaches `data.learningAdaptation`.
 4. **Golden scenarios** (`evaluation/diagnosis/scenarios.ts`): ≥2 generative +
    ≥1 abstain scenario for this family, including one judge-backed (tier-A)
-   packet if the primitive has a spoken judge.
-5. **Round-trip coverage** (`backend/tests/test_misconception_round_trip.py`):
-   a test constructs this primitive's submission and asserts scope-correct
-   resolution.
+   packet if the primitive has a spoken judge. If the family has none, build
+   the packets by driving the SHIPPED evidence builder
+   (`<name>Evidence.ts`) with a wrong-rule persona — that exercises S1's real
+   output shape — and port them into `scenarios.ts` so the baseline compounds.
+5. **Round-trip coverage:** focus → `backend/tests/test_misconception_round_trip.py`
+   asserts scope-correct resolution. Consumer → a
+   `test_<name>_observation_scope.py` asserting same-skill delivery AND that
+   score+tag never resolves; the shared context test covers the key shape.
 
 ### Phase 1 — Tier 0 pure contracts (seconds, no network)
 
@@ -146,7 +192,12 @@ one row per scenario. Keep the strongest generative diagnosis text — it become
 Probe G's `remediationFocus` input, so the probes test the REAL handoff, not a
 hand-written focus.
 
-### Phase 3 — Probe G: generation fidelity (REAL Gemini, eval-test route)
+### Phase 3 — Probe G: generation fidelity (REAL Gemini)
+
+Pick the recipe from Phase 0 step 1. Getting this wrong is the single easiest
+way to file a false PASS.
+
+#### 3a-focus — the eval-test tap (focus primitives ONLY)
 
 Per primitive, per eval mode the misconception plausibly fires in:
 
@@ -160,16 +211,52 @@ curl -s -m 120 "$base"
 curl -s -m 120 "$base&remediationFocus=$(enc "The student substitutes the short-e sound for short-i.")"
 ```
 
-Judge (code-checkable where possible — pull `fullData` and inspect):
+**This tap does not work for a consumer.** `generateWithLearningObservations`
+strips `remediationFocus` and `learningObservations` off the config before the
+generator runs, so every draw comes back with no adaptation and the mode reads
+DEAD-FIELD when it is in fact fine. If you see `learningAdaptation` absent on
+every remediation draw of a consumer, that is the STRIPPED verdict — the
+boundary working — and you must re-probe with 3a-consumer.
+
+#### 3a-consumer — enter at the context boundary
+
+The client cannot inject an observation by design, so the probe enters one layer
+in, at `resolveGenerationContext` → generator. That is exactly the planner +
+selector + telemetry segment Probe G owns; the packet path above it is
+Phase 4's job. Use the Vite module runner
+([[vite-module-runner-for-ts-scripts]]) — the generators are server-only TS:
+
+```js
+const { resolveGenerationContext } = await L.import(S + '/generation/resolveGenerationContext.ts');
+const { generateFractionBar }      = await L.import(S + '/math/gemini-fraction-bar.ts');
+const { compiledSharedDigitRoleContrast } = await L.import(S + '/math/fractionBarRemediation.ts');
+
+const item = { componentId, instanceId, config: {
+  targetEvalMode, difficulty, objectiveGrade,        // must satisfy eligible<Name>Teaching()
+  ...(observations ? { learningObservations: observations } : {}),
+} };
+const data = await generateFractionBar(resolveGenerationContext(item, topic, gradeContext, grade));
+// Oracles: data.learningAdaptation {move,status,comparisonCount}
+//        + compiled<Move>(data.challenges).count — the SHIPPED compiled check
+```
+
+Read the family's `eligible<Name>Teaching(task)` first and satisfy every clause
+(grade, mode, tier, and the topic/intent anchor regexes). An ineligible task
+makes no planner call at all, which also reads as DEAD-FIELD.
+
+`scripts/misconception-test-math4-probeg.mjs` is a working template.
+
+Judge (code-checkable where possible — pull the data and inspect):
 - **Null run:** NO challenge carries `remediationMove`; content is normal for
   the topic/grade. Any move stamped, or structure shifted vs. the primitive's
   usual output → DRIFTED.
 - **Remediation run:** challenges carry the CORRECT move for their task type
-  (the exported `RemediationMoveFor` mapping is the oracle); at least one
-  distractor IS the answer the misconception predicts (e.g. short-e/short-i
-  focus → the wrong vowel option is `e` on an `i` word, a distractor spelling
-  swaps i→e, or the sort contrast isolates e-vs-i) — else DEAD-FIELD (prompt
-  section present but inert) or partial.
+  (the exported `RemediationMoveFor` mapping, or `compiled<Move>()`, is the
+  oracle); the content a student holding the misconception would trip on is
+  present — a distractor they would pick (short-e/short-i focus → the wrong
+  vowel option is `e` on an `i` word), or the compiled contrast the selector
+  installs (a picture-graph pair whose icon count is the other row's total) —
+  else DEAD-FIELD (prompt section present but inert) or partial.
 - **Leak scan (both runs):** grep every student-visible string (prompts,
   feedback, labels, hint text) for the misconception text, the correct rule
   stated pre-attempt, or the answer. Any hit → LEAKY, gate fail.
@@ -177,6 +264,37 @@ Judge (code-checkable where possible — pull `fullData` and inspect):
   challenge count ±1, same grade band) — remediation changes emphasis only.
 
 Repeat 2× per mode if the first remediation run is ambiguous.
+
+**Where the baseline already contains the contrast by chance,
+`compiled<Move>().count` cannot discriminate on its own** — a 3-item fraction
+window hits a shared-digit pair most draws. Then `learningAdaptation.status` is
+the real signal: `targeted` = the selector installed it, `already-targeted` =
+it was there. Say which one you judged on.
+
+#### 3b — Negative controls (REQUIRED, not optional)
+
+A move that fires on the right observation and on everything else is a content
+churner, not an adaptation. Run each family against observations that must NOT
+move the content, ≥2 draws each:
+
+| Control | Observation | Expected |
+|---|---|---|
+| **Cross-family** | another wired primitive's REAL validated misconception (from its own Probe D) | no move |
+| **Unrelated** | a true observation from another domain entirely | no move |
+| **Unreliable** | an observation that states its own evidence is contradictory or insufficient | no move |
+| **Strength** | a strength/support observation, not an error pattern | no move |
+
+**Cross-family is the one that matters most.** Off-diagonal sentences share
+vocabulary with the target ("denominator", "counting", "number"), so this is
+precisely where a keyword-matching planner fails while an
+applicability-judging one holds. Run it as a full N×N matrix when probing a
+batch: the diagonal is your positive control and every other cell is a negative
+one, from ONE set of generations.
+
+Any negative control that stamps a move → **NEG-BLEED**, gate fail. Report the
+matrix, not a summary sentence — the cell that bled is the finding.
+
+`scripts/misconception-test-math4-controls.mjs` is a working template.
 
 ### Phase 4 — Probe R: round trip (backend, no Gemini)
 
@@ -190,16 +308,42 @@ silent outside its skill, primitive-scoped resolves only itself). All green →
 CLOSED; map any failure to NO-CAPTURE / STUCK-ACTIVE / PREMATURE-RESOLVE /
 OUT_OF_SCOPE_RESOLVE by which assertion broke.
 
+For a **consumer**, that file may name no test for your family, and should not:
+there is no resolution step to exercise. Run its scope tests instead —
+
+```bash
+cd "<abs>/backend" && python -m pytest tests/test_<name>_observation_scope.py \
+  tests/test_learning_observation_context.py tests/test_observation_bridge_scope.py -q
+```
+
+— and read them for the two assertions that carry the weight: observations reach
+only the same published skill, and **score plus a matching tag never flips a
+stored hypothesis**. Both green with nothing to resolve → **EXPOSURE-ONLY**.
+Never report that as CLOSED; a reader would take it as evidence of a resolution
+path that does not exist.
+
 **S4 exposure against real Firestore** (uses a disposable synthetic student,
 always cleans up):
 
 ```bash
+# focus architecture
 cd "<abs>/backend" && python scripts/probe_misconception_phase2.py --primitive <primitive-id>
+# consumer architecture — needs BOTH :3000 and :8000 up
+cd "<abs>/backend" && python scripts/misconception_authenticated_smoke.py --case <case.json>
 ```
 
-Expect `"status": "pass"` with `activeMisconception.misconceptionKey` equal to
-the primitive id (primitive scope) — proves store→generation-context exposure
-for THIS primitive's key shape, not just tape-diagram's.
+Focus: expect `"status": "pass"` with `activeMisconception.misconceptionKey`
+equal to the primitive id (primitive scope) — proves store→generation-context
+exposure for THIS primitive's key shape, not just tape-diagram's.
+
+Consumer: expect `"status": "PASS"` and `"cleanup": "verified absent"`. It runs
+real Firebase auth, the real distiller, a real Firestore write with published
+scope stamped, the signed launch packet from `/generation-context`, and a real generation, then asserts
+`source: 'saved-observation'` on the adapted draws and that client-supplied
+observations were ignored. All consumers share one delivery path, so this
+probe re-verifies S3→S4 for the whole family set even though its evidence is
+fraction-bar's — say that in the report rather than implying per-primitive
+coverage.
 
 ### Phase 5 — Report + memory
 
@@ -215,13 +359,23 @@ Gate: PASS | FAIL
 |-------|------|---------|---------------------|
 | D | cvc-speller-vowel-substitution | GENERATIVE | predicts e-for-i, no target words |
 | D | cvc-speller-single-vowel-slip  | ABSTAINED  | — |
-| G | cvc-speller spell_word         | TARGETED   | move=phoneme_slots, distractor "peg" for pig |
+| G | cvc-speller spell_word (POS)   | TARGETED   | move=phoneme_slots, distractor "peg" for pig |
 | G | (null run)                     | clean      | no moves stamped |
+| G | negative controls              | 8/8 abstain | see matrix |
 | R | journey + scope matrix         | CLOSED     | pytest 6/6 |
+
+Negative-control matrix (rows = family generating, columns = observation fed;
+diagonal is the positive control):
+
+| | own | family-B | family-C | unrelated | unreliable | strength |
+|---|---|---|---|---|---|---|
+| cvc-speller | **move 2/2** | — | — | — | — | — |
 
 **Not verified here:** S1 live capture in the browser (component → evidence →
 store on a real wrong session) — still browser-owned.
 **Distiller handoff:** Probe G ran on Probe D's actual output: "<text>"
+**Architecture:** focus | consumer (say which — it determines what Probe G and
+Probe R could reach).
 ```
 
 Update the misconception-loop memory only if a probe taught something new about
@@ -234,14 +388,27 @@ routine PASS.
   probe an unwired primitive.
 - **The distiller is `gemini-flash-latest`, NEVER flash-lite** — if outputs
   suddenly go vague/truncated, check the model constant before blaming prompts.
-- **eval-test's `remediationFocus` tap ≠ production path.** Production stamps
-  per-objective via flattenManifestToLayout; the tap enters at config. Probe G
-  validates the registry→generator→schema segment. S4 (store→context) is
-  Probe R's Firestore probe; the flatten stamp itself is covered by frontend
-  unit tests.
+- **eval-test's `remediationFocus` tap ≠ production path, and for a consumer it
+  reaches nothing at all.** For a focus primitive the tap enters at config while
+  production stamps per-objective via flattenManifestToLayout; Probe G still
+  validates the registry→generator→schema segment. For a consumer,
+  `generateWithLearningObservations` destructures `learningObservations` and
+  `remediationFocus` off the config before calling the generator — only the
+  verified launch packet may supply them — so the tap yields an unadapted draw that
+  looks exactly like DEAD-FIELD. **Check the catalog entry before you believe a
+  negative Probe G result.** Use 3a-consumer instead.
+- **An absent adaptation has three different causes** — say which one you
+  established: the field was stripped (STRIPPED, wrong probe layer), the task
+  failed `eligible<Name>Teaching` (wrong grade/mode/tier/topic anchor — not a
+  defect), or the planner genuinely abstained (the correct answer for a
+  negative control). Read the eligibility gate before filing DEAD-FIELD.
 - **Judge the distribution, not one draw.** One clean remediation run doesn't
   prove TARGETED; one miss doesn't prove DEAD-FIELD. 2–3 draws on any call you
   are about to verdict on.
+- **Separate a transport failure from a planner abstention before counting it.**
+  A Gemini `503 UNAVAILABLE` produces a draw with no adaptation that tallies as
+  a positive-control miss if you only count `move != null`. Record the error on
+  each draw and score over COMPLETED draws, saying how many were lost.
 - **Scope rules beat remediation instructions in a prompt conflict — by design.**
   When "use ONLY letters from the cumulative group" collides with "make the
   wrong option encode the confusion", the LLM (correctly) keeps scope. If the
@@ -269,9 +436,22 @@ routine PASS.
 | `src/components/lumina/evaluation/diagnosis/distillMisconception.ts` | S2 distiller (schema, abstain, tier gate) |
 | `src/components/lumina/evaluation/diagnosis/captureMisconception.ts` | S1 gates (failed + tier + latch) |
 | `src/app/api/lumina/route.ts` (`distillMisconception` action) | Probe D endpoint |
-| `src/app/api/lumina/eval-test/route.ts` (`?remediationFocus=`) | Probe G endpoint |
+| `src/app/api/lumina/eval-test/route.ts` (`?remediationFocus=`) | Probe G endpoint — **focus primitives only** |
 | `src/components/lumina/service/generation/remediationPrompt.ts` | S5 shared prompt block (guardrail text) |
 | `backend/tests/test_misconception_round_trip.py` | Probe R journey + scope matrix (in-memory) |
 | `backend/scripts/probe_misconception_phase2.py` | S4 exposure vs real Firestore (`--primitive`) |
 | `my-tutoring-app/qa/misconception/` | Report output directory |
 | `docs/PRD_MISCONCEPTION_LOOP.md` | Full spec (§5.1 = this skill's charter) |
+
+**Consumer architecture:**
+
+| File | Purpose |
+|------|---------|
+| `service/generation/learningObservationServer.ts` | The delivery wrapper — **the strip of `learningObservations` / `remediationFocus` lives on its first line** |
+| `service/generation/planLearningAdaptation.ts` | Shared applicability planner (flash-latest, abstain-capable, knows no primitive) |
+| `service/<domain>/<name>Remediation.ts` | Per-family `TeachingCapability`, eligibility gate, `compiled<Move>()` oracle, `select<Move>()` selector |
+| `primitives/visual-primitives/<domain>/<name>Evidence.ts` | S1 packet builder — drive it to make Probe D inputs |
+| `backend/tests/test_<name>_observation_scope.py` | Same-skill delivery + score/tag never resolves |
+| `backend/scripts/misconception_authenticated_smoke.py` | Authenticated S3→S4 for the shared path (real Firebase/Firestore, signed launch packet, real generation); `scripts/misconception-harness/replay-delivery.mjs` is the no-login tier |
+| `my-tutoring-app/scripts/misconception-test-math4-probeg.mjs` | Probe G template (context-boundary entry) |
+| `my-tutoring-app/scripts/misconception-test-math4-controls.mjs` | Positive/negative control matrix template |

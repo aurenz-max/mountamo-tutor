@@ -1,0 +1,192 @@
+{
+  "run": "after",
+  "mode": "trace",
+  "tier": "Easy",
+  "generated": {
+    "title": "Writing Numbers 0 to 10",
+    "description": "Practice writing numerals from 0 to 10 by tracing along the dotted paths with directional arrows.",
+    "gradeBand": "K",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "trace",
+        "digit": 1,
+        "showModel": false,
+        "showArrows": true,
+        "hint": "Start at the top and pull straight down.",
+        "strokePaths": [],
+        "instruction": "Trace the number 1!",
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c2",
+        "type": "trace",
+        "digit": 3,
+        "showModel": false,
+        "showArrows": true,
+        "hint": "Curve around and around to make the number three.",
+        "strokePaths": [],
+        "instruction": "Trace the number 3!",
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c3",
+        "type": "trace",
+        "digit": 5,
+        "showModel": false,
+        "showArrows": true,
+        "hint": "Go down, curve around, and put a hat on top.",
+        "strokePaths": [],
+        "instruction": "Trace the number 5!",
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c4",
+        "type": "trace",
+        "digit": 7,
+        "showModel": false,
+        "showArrows": true,
+        "hint": "Across the sky and down from the heaven.",
+        "strokePaths": [],
+        "instruction": "Trace the number 7!",
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c5",
+        "type": "trace",
+        "digit": 9,
+        "showModel": false,
+        "showArrows": true,
+        "hint": "Make a loop and then a long line down.",
+        "strokePaths": [],
+        "instruction": "Trace the number 9!",
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "label": "correct-slanted",
+      "target": 1,
+      "written": 1,
+      "geoNormalized": 86,
+      "accepted": true,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 90,
+        "variant": "serif 1",
+        "feedback": "Great job drawing the number 1 with a lovely base and top serif!",
+        "confidence": 95,
+        "imageBytes": 10624
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "wrong-geo-high",
+      "target": 3,
+      "note": "no numeral 0-9 reaches geometry >= 90 against this target"
+    },
+    {
+      "label": "correct-clean",
+      "target": 3,
+      "written": 3,
+      "geoNormalized": 92,
+      "accepted": true,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "wrong-geo-low",
+      "target": 5,
+      "written": 8,
+      "geoNormalized": 82,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": false,
+        "score": 10,
+        "variant": "figure 8",
+        "feedback": "That drawing looks like an 8 instead of a 5, so try making a straight line down and a big round belly!",
+        "confidence": 95,
+        "imageBytes": 13444
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 5,
+      "written": 5,
+      "geoNormalized": 92,
+      "accepted": true,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 7,
+      "written": 7,
+      "geoNormalized": 92,
+      "accepted": true,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 9,
+      "written": 9,
+      "geoNormalized": 93,
+      "accepted": false,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    }
+  ],
+  "consoleErrors": [
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+    "[evaluationApi] Failed to submit evaluation: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts",
+    "[EvaluationContext] Submission failed: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:71:44"
+  ],
+  "pending": [
+    {
+      "targetDigit": 1,
+      "challengeType": "trace",
+      "imageBytes": 10624,
+      "response": {
+        "recognized": true,
+        "score": 90,
+        "variant": "serif 1",
+        "feedback": "Great job drawing the number 1 with a lovely base and top serif!",
+        "confidence": 95
+      }
+    },
+    {
+      "targetDigit": 5,
+      "challengeType": "trace",
+      "imageBytes": 13444,
+      "response": {
+        "recognized": false,
+        "score": 10,
+        "variant": "figure 8",
+        "feedback": "That drawing looks like an 8 instead of a 5, so try making a straight line down and a big round belly!",
+        "confidence": 95
+      }
+    }
+  ]
+}

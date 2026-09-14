@@ -17,7 +17,7 @@ import {
   HydratedPracticeItem,
   SessionBrief,
 } from '../types';
-import type { StudentGenerationContext, StudentPersona } from './studentContext/types';
+import type { SignedLearningObservations, StudentGenerationContext, StudentPersona } from './studentContext/types';
 
 /**
  * Progress callback for manifest generation streaming
@@ -219,12 +219,14 @@ export interface BuildProgressCallback {
 export const buildCompleteExhibitFromManifestStreaming = async (
   manifest: ExhibitManifest,
   curatorBrief: IntroBriefingData,
-  callbacks?: BuildProgressCallback
+  callbacks?: BuildProgressCallback,
+  /** Backend-signed observation packet from the generation context; forwarded verbatim, never read here. */
+  learningObservations?: SignedLearningObservations | null,
 ): Promise<ExhibitData> => {
   const response = await fetch('/api/lumina/build-stream', {
     method: 'POST',
     headers: await generationHeaders(),
-    body: JSON.stringify({ manifest, curatorBrief }),
+    body: JSON.stringify({ manifest, curatorBrief, ...(learningObservations ? { learningObservations } : {}) }),
   });
 
   if (!response.ok) {

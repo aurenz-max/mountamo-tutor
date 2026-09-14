@@ -1,0 +1,230 @@
+{
+  "run": "before",
+  "mode": "sequence",
+  "tier": "Easy",
+  "generated": {
+    "title": "Tracing Numbers 0 to 10 in Sequence",
+    "gradeBand": "K",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "sequence",
+        "digit": 1,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "missingIndex": 1,
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c2",
+        "type": "sequence",
+        "digit": 3,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "missingIndex": 2,
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c3",
+        "type": "sequence",
+        "digit": 3,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "missingIndex": 1,
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c4",
+        "type": "sequence",
+        "digit": 5,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          3,
+          4,
+          5,
+          6
+        ],
+        "missingIndex": 2,
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      },
+      {
+        "id": "c5",
+        "type": "sequence",
+        "digit": 5,
+        "instruction": "What's the missing number? Fill in the blank!",
+        "strokePaths": [],
+        "showModel": false,
+        "showArrows": false,
+        "hint": "Count up by ones — each number is one more than the last.",
+        "sequenceNumbers": [
+          4,
+          5,
+          6,
+          7
+        ],
+        "missingIndex": 1,
+        "showGhostDigit": true,
+        "showStrokeArrows": true,
+        "showStartDot": true,
+        "supportTier": "easy"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "label": "correct-slanted",
+      "target": 1,
+      "written": 1,
+      "geoNormalized": 87,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": true,
+        "score": 0,
+        "variant": "unwritten trace guide",
+        "feedback": "It looks like you haven't drawn the number yet; try tracing along the dots to make your 1!",
+        "confidence": 100,
+        "imageBytes": 25988
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 1,
+      "written": 1,
+      "geoNormalized": 97,
+      "accepted": true,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "wrong-geo-high",
+      "target": 3,
+      "written": 2,
+      "geoNormalized": 90,
+      "accepted": true,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "wrong-geo-low",
+      "target": 3,
+      "written": 6,
+      "geoNormalized": 84,
+      "accepted": false,
+      "visionCalled": true,
+      "vision": {
+        "recognized": false,
+        "score": 0,
+        "variant": "untraced template",
+        "feedback": "It looks like you haven't drawn the number yet; try tracing along the dotted lines to make a great 3!",
+        "confidence": 100,
+        "imageBytes": 33012
+      },
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 3,
+      "written": 3,
+      "geoNormalized": 98,
+      "accepted": true,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 5,
+      "written": 5,
+      "geoNormalized": 98,
+      "accepted": true,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    },
+    {
+      "label": "correct-clean",
+      "target": 5,
+      "written": 5,
+      "geoNormalized": 98,
+      "accepted": false,
+      "visionCalled": false,
+      "feedbackLine": "NUMBER SENSE"
+    }
+  ],
+  "consoleErrors": [
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+    "[evaluationApi] Failed to submit evaluation: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts",
+    "[EvaluationContext] Submission failed: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:71:44"
+  ],
+  "pending": [
+    {
+      "targetDigit": 1,
+      "challengeType": "sequence",
+      "imageBytes": 25988,
+      "response": {
+        "recognized": true,
+        "score": 0,
+        "variant": "unwritten trace guide",
+        "feedback": "It looks like you haven't drawn the number yet; try tracing along the dots to make your 1!",
+        "confidence": 100
+      }
+    },
+    {
+      "targetDigit": 3,
+      "challengeType": "sequence",
+      "imageBytes": 33012,
+      "response": {
+        "recognized": false,
+        "score": 0,
+        "variant": "untraced template",
+        "feedback": "It looks like you haven't drawn the number yet; try tracing along the dotted lines to make a great 3!",
+        "confidence": 100
+      }
+    }
+  ]
+}

@@ -36,7 +36,7 @@ const rows=[...math,...di,...extras].map(x=>{
  const component=components.find(p=>norm(path.basename(p,'.tsx'))===norm(aliases[x.id]||x.id));const ct=component?read(component):'';
  return {...x,catalog:x.registryOnly?'Registry only':x.id.startsWith('di-')?'Math DI':'Math',generator,component,
  signals:{scope:x.misconceptionScope||null,tutor:!!x.tutoring,modes:Array.isArray(x.evalModes)?x.evalModes.length:x.evalModes?.$ref||0,
- evidence:/diagnosisEvidence|DiagnosisEvidence/.test(ct),remediation:/buildRemediationPrompt\s*\(|build\w*Remediation\w*\s*\(|ctx\.remediationFocus|config\??\.remediationFocus/.test(gt),support:/supportTier|SupportTier|supportScaffold/.test(gt)}};
+ evidence:/diagnosisEvidence|DiagnosisEvidence/.test(ct),remediation:/buildRemediationPrompt\s*\(|build\w*Remediation\w*\s*\(|ctx\.remediationFocus|config\??\.remediationFocus|ctx\.learningObservations/.test(gt),support:/supportTier|SupportTier|supportScaffold/.test(gt)}};
 });
 fs.writeFileSync(path.join(__dirname,'inventory.json'),JSON.stringify(rows,null,2));
 const proposals=fs.readFileSync(path.join(__dirname,'opportunities.txt'),'utf8').trim().split(/\r?\n/).map(line=>{

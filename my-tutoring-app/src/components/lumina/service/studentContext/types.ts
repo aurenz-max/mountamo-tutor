@@ -74,6 +74,14 @@ export interface StudentPersona {
   summary: string;
 }
 
+/**
+ * Backend-signed learning-observation packet, issued once at lesson launch and
+ * carried verbatim to the generate request. Opaque to the client: the
+ * generation server verifies the signature and reads it; nothing here is
+ * rendered or edited. Format: service/generation/learningObservationPacket.ts.
+ */
+export interface SignedLearningObservations { payload: string; signature: string }
+
 export interface StudentGenerationContext {
   available: boolean;
   studentId?: string;
@@ -87,4 +95,6 @@ export interface StudentGenerationContext {
   objectives: ObjectiveStudentState[];
   /** Session-level inventory; flattening applies exact component/scope joins. */
   activeMisconceptions?: ActiveMisconception[];
+  /** Signed delivery packet for this lesson's objectives; null when the backend has no signing key. */
+  learningObservations?: SignedLearningObservations | null;
 }

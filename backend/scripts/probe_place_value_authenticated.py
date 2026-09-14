@@ -50,14 +50,27 @@ async def main():
         student_created = True
         report['tests'].append('Firebase user authenticated; collision-checked disposable student reserved')
         scope = {'subject': 'MATHEMATICS', 'grade': '4', 'skill_id': 'NBT004-01', 'subskill_id': 'NBT004-01-b'}
-        protected = 'http://localhost:8000/api/student-profile/misconception-opportunity-context'
+
+        def launch_packet():
+            """What useExhibitSession receives at STEP 1.5: the backend-signed observation packet for this objective."""
+            context = post('http://localhost:8000/api/student-profile/generation-context', {
+                'student_id': sid, 'topic': 'Place value in four-digit whole numbers', 'grade_level': 'Grade 4', 'subject': 'MATHEMATICS',
+                'include_persona': False, 'objectives': [{'id': 'probe-objective', 'text': 'Identify digit place and numeric value in four-digit whole numbers',
+                                                           'subskill_id': 'NBT004-01-b', 'skill_id': 'NBT004-01', 'grade': '4'}]}, headers)
+            signed = context.get('learningObservations')
+            assert signed and signed.get('signature'), f'No signed packet issued: {context}'
+            return signed
+
+        def generate(params, headers):
+            return post('http://127.0.0.1:3000/api/lumina', {'action': 'generateComponentContent', 'params': params,
+                                                             'learningObservations': launch_packet()}, headers)
+        protected = 'http://localhost:8000/api/student-profile/misconception-opportunities'
         rejection = requests.post(protected, json={'scope': scope}, headers=headers, timeout=30)
         assert rejection.status_code == 403, 'Learner token unexpectedly authorizes certification'
-        report['tests'].append('Learner token without service signature rejected with HTTP 403')
+        report['tests'].append('Learner token without service signature rejected with HTTP 403 on receipt issuance')
         if '--blocks-origin' in sys.argv:
             # Base-ten-blocks ORIGINATES the observation: no place-value record exists in this run.
-            assert requests.post('http://127.0.0.1:8000/api/student-profile/learning-observation-context',
-                json={'scope': scope}, headers=headers, timeout=30).status_code == 403
+            assert json.loads(launch_packet()['payload'])['hypotheses'] == [], 'A fresh learner already holds a deliverable hypothesis'
             saved = json.loads((ROOT/'artifacts/blocks-origin-observation/report.json').read_text(encoding='utf-8'))
             evidence = next(r for r in saved['distill'] if r['name'] == 'bare-count-two-sizes')['evidence']
             diagnosis = post('http://127.0.0.1:3000/api/lumina', {'action': 'distillMisconception', 'params': {
@@ -109,8 +122,7 @@ async def main():
                 assert not baseline['data'].get('learningAdaptation')
                 successful_draws = 0
                 for draw in range(4):
-                    generated = post('http://127.0.0.1:3000/api/lumina', {'action': 'generateComponentContent', 'params': {**params,
-                        'instanceId': params['instanceId']+str(draw)}}, headers)
+                    generated = generate({**params, 'instanceId': params['instanceId']+str(draw)}, headers)
                     (folder/f'origin-{primitive}-authenticated-{draw}.json').write_text(json.dumps(generated, indent=2), encoding='utf-8')
                     data = generated['data']; adaptation = data.get('learningAdaptation') or {}
                     assert data['supportTier'] == 'medium' and not data.get('misconceptionOpportunity')
@@ -188,8 +200,7 @@ async def main():
                 (folder/(primitive+'-baseline.json')).write_text(json.dumps(baseline, indent=2), encoding='utf-8')
                 successful_draws = 0
                 for draw in range(4):
-                    generated = post('http://127.0.0.1:3000/api/lumina', {'action': 'generateComponentContent', 'params': {**params,
-                        'instanceId': params['instanceId']+str(draw)}}, headers)
+                    generated = generate({**params, 'instanceId': params['instanceId']+str(draw)}, headers)
                     (folder/f'{primitive}-targeted-{draw}.json').write_text(json.dumps(generated, indent=2), encoding='utf-8')
                     data = generated['data']; adaptation = data.get('learningAdaptation', {})
                     if primitive == 'place-value-chart':
@@ -325,8 +336,7 @@ async def main():
                 (folder/'generation-baseline.json').write_text(json.dumps(baseline, indent=2), encoding='utf-8')
                 successful_draws = 0
                 for draw in range(3):
-                    generated = post('http://127.0.0.1:3000/api/lumina', {'action': 'generateComponentContent', 'params': {
-                        **params, 'instanceId': uid + f'-generation-{draw}'}}, headers)
+                    generated = generate({**params, 'instanceId': uid + f'-generation-{draw}'}, headers)
                     data = generated['data']
                     (folder/f'generation-targeted-{draw}.json').write_text(json.dumps(generated, indent=2), encoding='utf-8')
                     assert data['challengeType'] == 'compare' and data['supportTier'] == 'medium'
@@ -358,12 +368,12 @@ async def main():
         objective_text = published['subskill_index']['NBT004-01-b']['subskill_description']
         report['objective_text'] = objective_text
         for draw in range(1,4):
-            generated = post('http://localhost:3000/api/lumina', {'action':'generateComponentContent', 'params':{
+            generated = generate({
                 'componentId':'place-value-chart', 'instanceId':uid+f'-{draw}',
                 'topic':'Place value in four-digit whole numbers', 'gradeLevel':'Grade 4',
                 'config':{'targetEvalMode':'compare','difficulty':'medium','objectiveGrade': '4', 'objectiveSubject': 'MATHEMATICS',
                           'skillId':'NBT004-01','subskillId':'NBT004-01-b',
-                          'objectiveText':objective_text}}}, headers)
+                          'objectiveText':objective_text}}, headers)
             (folder/f'generated-{draw}.json').write_text(json.dumps(generated,indent=2),encoding='utf-8')
             receipt = generated['data'].get('misconceptionOpportunity')
             if not receipt: continue

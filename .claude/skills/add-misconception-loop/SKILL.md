@@ -2,207 +2,280 @@
 name: add-misconception-loop
 description: >-
   Add, migrate, or repair a Lumina primitive's observation-driven teaching
-  adaptation using the shared LLM applicability planner — scoped evidence
-  delivery, an executable teaching capability, and real-engine verification.
-  Use for one primitive or a requested batch, or a DEAD-FIELD/NOT-WIRED
-  finding. Not for verification alone, which is the paired /misconception-test.
+  adaptation using the shared LLM applicability planner — factual evidence
+  capture, scoped delivery, an executable teaching capability, and real-engine
+  verification. Use for one primitive or a requested batch, or a
+  DEAD-FIELD/NOT-WIRED finding. Not for verification alone, which is the paired
+  /misconception-test.
 ---
 
 # Add Misconception Loop
 
-Connect saved learning observations to a primitive's supported teaching moves
-through the shared LLM applicability planner. Implement the requested
-primitive or batch **without** changing its learning objective, difficulty,
-eval-mode identity, or student-facing script unless the task explicitly
-includes that change. This is the build half of the campaign pair;
-`/misconception-test` is the verify half (PRD §5.1).
+Make a primitive record what a learner actually did, turn a consistent error
+into a saved observation, and let the **next** activity on the same skill show
+content built to contrast that error — so a learner who writes 30 × 40 as 120
+gets a model where 20 × 30 = 600 sits beside 3 × 2 = 6, without the lesson's
+objective, difficulty, mode, count or script changing.
 
-## Architecture and source of truth
+This is the build half of the campaign pair; `/misconception-test` is the verify
+half (PRD §5.1).
 
-Read before touching code:
+## How the loop works
 
-- `my-tutoring-app/qa/HANDOFF-learning-observations-2026-09-12.md` and its
-  owning queue item.
-- `my-tutoring-app/qa/misconception/shared-learning-applicability-2026-09-12.md`
-  — the verified Place Value / Base-Ten pilot and its limits.
-- `docs/PRD_MISCONCEPTION_LOOP.md` — identity and resolution policy.
-- Under `my-tutoring-app/src/components/lumina/`: `service/generation/planLearningAdaptation.ts`,
-  `service/math/placeValueTeachingCapabilities.ts`, `service/generation/learningObservationServer.ts`
-  (catalog-declared delivery + retest receipts; `generationRequest.ts` holds the
-  signed request scope), and the target primitive's generator/component/catalog/tests.
+```
+ primitive (component)                       next activity (generator)
+ ─────────────────────                       ─────────────────────────
+ every checked response ──► <id>Evidence.ts   catalog learningObservations.eligible(config)
+                            DiagnosisEvidence          │ (mode / tier / grade gate)
+                            + firstResponseScore       ▼
+        │                                    learningObservationServer.ts
+        ▼  isDiagnosableFailure (< 60)         verified launch packet (no backend call):
+ distillMisconception (LLM) ──► hypothesis     same published subject, grade, skill
+        │                                              │ ctx.learningObservations
+        ▼                                              ▼
+ POST /misconceptions (delivery: 'server')   planLearningAdaptation(capability, task, obs)
+ stored with published scope_context           → validated move id | abstain
+                                                       │
+                                                       ▼
+                                             code-owned selector changes content
+                                             → compiled recheck → learningAdaptation
+                                               { move, status, comparisonCount, source }
+```
 
-The contract:
+**The division of labour.** The LLM interprets relevance and picks among moves the
+primitive can execute. Code owns task eligibility, allowed outputs, content
+constraints and answer correctness. No diagnosis regex, keyword lists,
+source-primitive-to-destination mappings, or a second applicability LLM per
+primitive ([[schema-over-regex-and-prompt]]). Pure gates may check grade, mode,
+tier and explicit anchors — never the meaning of an observation.
 
-**Scoped observations + current task + eligible teaching capabilities → shared LLM applicability → validated move or abstention → content execution and verification.**
+**Where things live** (under `my-tutoring-app/src/components/lumina/` unless noted):
 
-The LLM interprets relevance and chooses among supported moves. Code owns task
-eligibility, allowed outputs, content constraints, and answer correctness. Do
-not introduce diagnosis regex, keyword lists, hand-authored
-source-primitive-to-destination semantic mappings, or a second applicability
-LLM per primitive ([[schema-over-regex-and-prompt]]). Pure resolvers may gate
-grade, mode, tier, and explicit anchors — never the diagnosis interpretation.
+| Piece | File |
+|---|---|
+| Shared planner (prompt, validation, abstention) | `service/generation/planLearningAdaptation.ts` |
+| Catalog-declared delivery, one generic branch | `service/generation/learningObservationServer.ts`, called from `service/geminiService.ts` |
+| Evidence contract and failure gate | `evaluation/diagnosis/types.ts` (`DiagnosisEvidence`, `isDiagnosableFailure`) |
+| Capture relay to the store | `evaluation/diagnosis/captureMisconception.ts` |
+| Store and delivery limits | `backend/app/services/learning_observations.py` |
+| Worked consumer to copy | `service/math/areaModelRemediation.ts`, `primitives/visual-primitives/math/areaModelEvidence.ts`, `service/math/gemini-area-model.ts` |
+| Identity and resolution policy | `docs/PRD_MISCONCEPTION_LOOP.md` |
+| Current status and residual work | `my-tutoring-app/qa/di/BACKLOG.md` item 18, `WORKSTREAMS.md` |
 
-The shared planner is implemented; library-wide observation retrieval is not.
-Current callers supply tentative misconception text. Do not claim
-strengths/support or arbitrary profile observations drive generation until
-their delivery and consumption are implemented and tested. The old Place
-Value regex survives only in its legacy immediate-retest certification
-policy — never copy that recognizer into a new generation consumer, and never
-broaden its resolution policy silently.
+## When to use
 
-## Scope a primitive or batch
+- A primitive should adapt to saved observations, or should start producing them.
+- A `/misconception-test` or `/eval-test` finding says a loop field is dead or not wired.
+- A requested batch of primitives.
 
-Inventory each requested primitive's scope, evidence producer, observation
-delivery, task/mode, executable content levers, and existing verification.
-Classify the work as a consumer-only connection, capture repair, or missing
-teaching capability — a primitive may honestly consume an observation without
-producing a new diagnosis or owning a resolution contract.
+**Not for:** verifying an existing loop (`/misconception-test`); changing a
+primitive's grading or score (`/eval-fix`); strength/support observations driving
+generation (not implemented — don't claim it); expanding a resolution or retest
+policy without a user ruling.
 
-For a batch, keep a compact matrix: primitive/mode, observed concept,
-available move, delivery path, implementation status, real-probe status,
-residual work. Start with a representative primitive when extending into a
-new interaction family and verify that pattern before repeating it
-([[worked-primitives-self-select]]) — existing Place Value/Blocks evidence
-supports reusing the planner, not automatic approval of every capability.
-Continue independent ready items when one consumer lacks a legal move or
-delivery path. Batch scope does not license spawning subagents on your own
-initiative; follow the user's delegation instructions, and route any item you
-don't finish into its owning queue with this skill named, per `/pm`.
+## Phase 1 — Scope
 
-Prefer primitives with existing factual evidence and usable content levers.
-Missing evidence or a missing teaching action is additional work, not a
-reason to manufacture a nominal adaptation. Preserve the requested scope and
-unrelated working-tree changes.
+For each primitive, inventory: curriculum homes (subject, grade, skill,
+subskill), evidence producer, delivery, modes and tiers, executable content
+levers, existing tests. Classify each as **consumer only**, **capture repair**,
+or **missing teaching capability**. A primitive may consume observations
+without producing them, and never inherits resolution authority.
 
-## Implement the consumer contract
+For a batch, keep a matrix: primitive/mode, observed concept, move, delivery,
+implementation status, real-probe status, residual. Build one representative
+per new interaction family and verify it before repeating the pattern
+([[worked-primitives-self-select]]). Continue independent items when one lacks a
+legal move. Do not spawn subagents unless the user asks; route unfinished
+items to the owning queue with this skill named (`/pm`). Missing evidence or a
+missing move is additional work, never a reason to ship a nominal adaptation.
+Preserve unrelated working-tree changes.
 
-1. **Describe the affordance.** Define a typed move union and
-   `TeachingCapability<M>` using the shared types. State what the learner
-   actually does, what each move changes or holds constant, and what it
-   cannot teach. Describe the conceptual relationship when using another
-   representation. A capability describes executable teaching, not
-   recognizable diagnosis wording — use the component, compiler, content
-   model, and tutoring metadata as evidence.
-2. **Establish delivery.** Reuse authenticated, owner- and
-   curriculum-scoped observation delivery. A producer joins by declaring
-   `observationDelivery: 'server'` beside `misconceptionScope: 'skill'` in its
-   catalog entry; capture relays it and the backend keeps no primitive table
-   (2026-09-13 ruling: production backend code is primitive-agnostic; only
-   tests and scripts may name a primitive). A consumer joins by declaring
-   `learningObservations: { eligible(config) }` in the same catalog entry — a
-   pure gate on mode, tier and reviewed objectives, kept with the primitive's
-   remediation module — and by reading `ctx.learningObservations` in its
-   generator. The generation service has ONE generic branch; never add a
-   `componentId ===` case to it. The scope's subject comes from
-   `config.objectiveSubject` (stamped by the manifest flatten); a certified
-   retest is a catalog `retest` declaration (see `placeValueRetest`), not a
-   second server module. Check grade, skill/subskill
-   lineage, and publication boundaries where applicable. If the current pilot
-   endpoint can't serve the new consumer honestly, extend shared delivery
-   within the task rather than copying the Place Value source lookup to every
-   primitive — read `/student-data-loop` before changing these paths.
-   Preserve source observation identity; never copy a hypothesis into each
-   consuming primitive.
-3. **Plan once.** Resolve the current objective, mode, and support tier;
-   offer only eligible moves to `planLearningAdaptation` before content
-   generation. Supply the available observation IDs, summaries, and evidence
-   without inventing support or canonical attempt joins — no observations
-   means no model call. Reuse the shared validation and failure behavior
-   instead of writing another prompt or parser. Keep general planner
-   instructions free of primitive-specific exceptions.
-4. **Execute the validated move.** For code-owned pools/DI content, apply a
-   deterministic selector within the existing eligibility pipeline. For
-   model-authored content, pass only the validated teaching directive to the
-   content model and validate the result. Private observations belong in the
-   applicability call, never in wrapper/title prompts or student-visible
-   output.
-5. **Preserve the task.** Maintain count, mode allocation, objective scope,
-   support tier, structural bands, magnitude/length caps, uniqueness
-   constraints, answer recomputation, and scripts — named lesson anchors
-   outrank adaptation ([[trust-intent-over-hardcoded-caps]]). Bound dosage by
-   the available affordance; report already-targeted or insufficient capacity
-   honestly. Recompile final items before claiming the contrast survives.
-6. **Keep claims separate.** Safe output metadata may report move, actual
-   targeting status/count, and verified source origin. Planner selection is
-   not proof of delivered teaching. Delivered teaching is not evidence of
-   learning, transfer, mastery, or resolution. Preserve existing receipt and
-   retest boundaries — a new consumer does not inherit resolution authority.
+## Phase 2 — Capture (skip for a consumer-only connection)
 
-Reuse shared factual response capture, distillation, storage, and profile
-display when a producer needs wiring. Keep expected/observed responses,
-phase, verdict, and partial assistance factual — do not infer independence
-from an absent correction. Never add a parallel learning-progress writer as
-part of adaptation wiring.
+1. **Record every checked response** in the component, including tries later
+   corrected: what was asked, expected, what the learner entered or chose, try
+   number, the scaffold on screen, hints opened. Keep it in `student_work` and
+   never infer independence from an absent correction. Grading and the submitted
+   score stay unchanged.
+2. **Can the submitted outcome see the error?** Mount the component, make one
+   wrong first response, finish, and read `success` and `score`. Retry-until-correct
+   loops and rounded per-item scores often report 100 anyway (number-line,
+   fraction-circles, bar-model and area-model all did). If the error is invisible,
+   set `firstResponseScore` in the evidence (percent of items with no wrong
+   response); the shared gate applies its `< 60` threshold to it. Queue the
+   scoring defect to `/eval-fix` — do not change the score in this slice.
+3. **Build `<id>Evidence.ts`**: a pure function returning `DiagnosisEvidence` or
+   `undefined` when nothing was wrong. Facts only; no error type named in code.
+   Stay inside the store's limits, because capture trims silently:
 
-## Verify each connection
+   | Field | Limit |
+   |---|---|
+   | `phases` | **12** — capture keeps `slice(-12)`, dropping the earliest errors. Emit ≤ 12 yourself, wrong responses first. |
+   | `challenge`, `expected`, `observed`, `problem` | 2000 chars |
+   | `support` | 600; `itemId`, `phase` 200 |
+   | distilled `misconception_text` | 600 |
+   | delivered to the planner | ≤ 10 observations, summary 4000, evidence 7000 (planner rejects > 8000) |
 
-Run focused deterministic tests before spending real-model quota:
+4. **Pass it as the sixth argument** of `submitResult(success, score, metrics, studentWork, partialCredit, diagnosisEvidence)`.
+5. **Declare the source** in the catalog entry: `misconceptionScope: 'skill'`,
+   `observationDelivery: 'server'`. Production backend code names no primitive
+   (2026-09-13 ruling); capture relays the declaration.
 
-- Blank/no observation and ineligible tasks preserve baseline behavior;
-  malformed decisions, unknown moves/citations, and model failures abstain
-  safely.
-- The actual generator consumes a validated move — seed or otherwise hold the
-  baseline constant to prove a causal change; assertions must fail if the
-  adapter is removed.
-- The production compiler retains the intended contrast and correct answers,
-  with count, scope, structure, support, anchors, and scripts intact.
-  Insufficient capacity remains a valid bounded outcome, never fabricated
-  targeting.
-- Private text stays out of wrapper prompts and serialized content. Source
-  origin can't be forged by client/generated metadata.
-- Delivery tests cover owner/scope mismatches and the real registry path —
-  mocked planner decisions alone don't establish semantic relevance.
+## Phase 3 — Capability
 
-Then test the real shared planner and real generator with a saved or freshly
-distilled synthetic observation: meaning-preserving paraphrases, unrelated
-observations, uncertain/contradictory evidence, and a nearby concept the
-activity can't teach. For a cross-representation demonstration, use the same
-observation across consumers and assert distinct appropriate moves or
-abstention. Define expected outcomes before running; repeat informative
-borderline cases to judge variability rather than accepting one lucky draw.
+In `service/<domain>/<id>Remediation.ts`, define a typed move union and one
+`TeachingCapability<M>` per task family (a primitive may need two — area-model
+has a grid capability and a perimeter capability; the pinned mode picks one).
 
-Save all draws and inspect compiled outputs, not only metadata. Distinguish
-model abstention, invalid/failed planner output, wrong applicability,
-insufficient content capacity, and execution drift. Never retry a semantic
-failure until it passes — investigate the contract and keep the failed
-evidence. Bounded-capacity retries may demonstrate legal targeting, but
-report their frequency and keep the saturated draws.
+- **`task`** states what the learner does in every mode the capability is offered for.
+- **Each move's `description`** states what it changes, what it holds, and what it
+  cannot teach, with a concrete example **for every eligible mode shape**. The
+  planner reads only this text: a move described with two-digit factors was
+  declined 4 of 4 times in a one-digit × two-digit mode until the description
+  said how a one-digit factor behaves.
+- Describe executable teaching, not diagnosis wording. Use the component,
+  compiler and content model as the evidence for what is executable.
+- **Choose a contrast that rarely occurs by chance.** Estimate the chance rate
+  (simulate the code-owned picker, or count unadapted draws). A contrast present
+  in most baselines only relabels them `already-targeted` (fraction-bar: 6 of 10).
 
-Existing probes to start from — their fixtures and scope are pilot-specific,
-so adapt them to the requested target rather than treating their PASS as
-coverage for another primitive:
+Also in that module:
 
-- `my-tutoring-app/scripts/probe-learning-applicability.mjs`
-- `my-tutoring-app/scripts/probe-applicability-planner.cjs`
-- `backend/scripts/probe_place_value_authenticated.py`
+| Export | Purpose |
+|---|---|
+| `eligible<Id>Teaching(task)` | Generator gate: grade, mode, tier, named anchors. Anchors outrank adaptation ([[trust-intent-over-hardcoded-caps]]). |
+| `<id>DeliveryEligible(config)` | Catalog gate: cheap mode/tier/objective check before the packet is read. |
+| `select<Contrast>(baseline, move, legal…, random)` | Deterministic selector: returns `{ challenges, status, targets, count }`; status `targeted` \| `already-targeted` \| `insufficient-capacity` \| `no-focus`. |
+| `compiled<Contrast>(challenges)` | Recomputes the contrast from the final rendered fields, independent of the selector. |
 
-Verify the saved-observation-to-generation path with disposable authenticated
-records when that path changes, and verify cleanup — synthetic responses must
-never update live canonical learning/calibration records.
+Before the full probe, **run one positive planner case per eligible mode**
+directly through `planLearningAdaptation`, with task text that matches that
+mode's real objective. A mismatched fixture objective produces abstentions
+that look like a capability failure.
 
-Run the relevant typecheck (`npm run typecheck:lumina` = 0; compare
-`./node_modules/.bin/tsc --noEmit` to baseline) and the full unit suite
-required by the owning queue, plus affected backend scope/roundtrip tests.
-Reproduce a suspected baseline failure before labelling it pre-existing.
+## Phase 4 — Delivery and execution
 
-## Close and report
+1. **Catalog:** `learningObservations: { eligible: <id>DeliveryEligible }` on the
+   entry. No service edit — there is one generic branch; never add a
+   `componentId ===` case. Scope subject comes from `config.objectiveSubject`. A
+   certified retest is a catalog `retest` declaration (`placeValueRetest`), not a
+   new server module. Read `/student-data-loop` before changing delivery itself.
+2. **Generator:** read `ctx.learningObservations`; no observations or an
+   ineligible task means no planner call. Call `planLearningAdaptation` in
+   parallel with any wrapper call, and never put observation text in a wrapper
+   prompt or output.
+3. **Execute:** for code-owned content, run the selector over the mode's full
+   legal operand list, sharing the bounds constants with the random picker so a
+   selected item can never leave the window; apply the move before support-tier
+   flags and text are written. For model-authored content, pass only the
+   validated move to the content model and validate the result. Only apply the
+   move when the final mode equals the mode it was planned for.
+4. **Preserve:** count, mode allocation, objective scope, support tier,
+   structural bands, magnitude caps, uniqueness, answer recomputation, scripts.
+   Report `already-targeted` and `insufficient-capacity` honestly; never widen a
+   move silently to hit a rate.
+5. **Metadata:** `learningAdaptation = { move, status, comparisonCount }`. Only the
+   delivery server stamps `source: 'saved-observation'`. Planner selection is not
+   delivered teaching; delivered teaching is not learning, transfer or resolution.
 
-Hand off to `/misconception-test` for station inventory and the applicable
-D/G/R probes. Consumer-only exposure needs generation and delivery evidence —
-don't require a new diagnosis writer or resolution policy merely to make
-every station look complete. Run full diagnosis/roundtrip probes when
-changing those stations, and label untouched or browser-only stations
-explicitly.
+## Phase 5 — Verify
 
-Save a dated QA report, and update the owning queue and `WORKSTREAMS.md` in
-the same slice ([[pm-function]]). For a requested batch, report per-primitive
-outcomes rather than a blanket PASS. Update
-`artifacts/math-pedagogy-review/index.html` through its source/build/check
-workflow when the work changes that review's progress claims. Leave live
-microphone acceptance and teaching effectiveness in `qa/HUMAN-CHECKS.md` for
-the user.
+**Deterministic tests** (name them after the worked consumer):
 
-Report missing delivery, unsupported affordances, or unavailable live probes
-as specific residual work — queued, with this skill named, per `/pm`. Do not
-call a consumer complete when only its standalone planner test passes. Do not
-present content targeting as demonstrated learner transfer.
+| File | Must show |
+|---|---|
+| `<id>Remediation.test.ts` | gates per mode/grade; compiled recheck positives and negatives; selector keeps count, ids, flags, uniqueness; capacity miss returns the baseline |
+| `gemini-<id>.adaptation.test.ts` | seeded baseline without the contrast gains it; **fails with the selector removed (check it)**; abstain and unknown move leave a byte-identical baseline; no planner call without observations or when ineligible; private text absent from wrapper and output; oracle clean |
+| `<Component>.capture.test.tsx` | mounted: wrong first responses recorded factually, submitted outcome unchanged, gate fires; all-correct attaches no evidence |
+| `<id>Evidence.test.ts` | phase cap and ordering |
+| `service/generation/<id>ObservationServer.test.ts` | real registry path with a packet from `learningObservationPacket.fixtures.ts` (`signedObservation`): the delivered id reaches the planner, private text stays out, ineligible tasks and requests without a packet never plan, abstention claims no origin |
+
+**Real engines.** Copy `my-tutoring-app/scripts/probe-area-model-applicability.mjs`
+(real distiller → planner → registry generator) and run the delivery replay,
+which needs no login and no backend: `backend/scripts/project_learning_observation.py
+<capture.json> <scope.json> --key <hex>` projects the capture into the launch packet
+with the production packet code and signs it as the backend would;
+`my-tutoring-app/scripts/misconception-harness/replay-delivery.mjs <case.json>
+--draws N --key <hex>` runs production `generateComponentContent` with that packet
+(plus anonymous, forged, tampered and foreign-key controls) and writes
+`<case>.replay.json`. Do NOT write a per-primitive authenticated probe; the one
+`backend/scripts/misconception_authenticated_smoke.py --case <case.json>` covers
+login → capture → signed packet → generation for the shared path and runs only
+when shared capture, store, packet or delivery code changes.
+
+- **Generate through the registry, not the eval-test URL.** Through the Vite
+  module runner, import `service/geminiService.ts` (registers every generator and
+  exports `normalizeGradeLevel`) and `service/registry/contentRegistry.ts`, then call
+  `getGenerator(id)(item, topic, gradeContext, normalizeGradeLevel(gradeLevel))`
+  with `config.learningObservations` set — what the consumer branch passes after
+  reading the verified packet. The eval-test `?remediationFocus=` parameter and client
+  `learningObservations` are stripped from every declared consumer, so a probe
+  through them reports every draw unadapted.
+- **Build evidence with the shipped evidence module**, not hand-written packets.
+- **Cases, with expected outcomes written in the script before running:**
+  distilled text; two meaning-preserving paraphrases; each eligible mode and the
+  hard tier; unrelated; a nearby concept the move cannot teach; contradictory
+  evidence; an ineligible mode; a single slip that the gate must stop; and a
+  cross-representation case marked exploratory. Repeat borderline cases (≥ 4
+  draws) before judging.
+- **Classify every draw** — never a bare pass/fail:
+
+  | Outcome | Meaning | Action |
+  |---|---|---|
+  | `pass` | expected decision, compiled contrast present (count `already-targeted` separately) | — |
+  | `wrong-move` | selected where abstention or another move was expected | investigate the capability text; keep the draw |
+  | `unexpected-abstain` | abstained where a move was expected | repeat; if consistent, check the description covers this mode and the fixture objective matches it |
+  | `insufficient-capacity` | right move, no legal content | not a failure; report the rate |
+  | `content-drift` | right decision, but structure, oracle, uniqueness or leak check fails | fix execution |
+  | `service-error` | model or API error, no content | rerun that draw once; report it |
+
+- **Report two rates:** chance rate (how often unadapted content already carries
+  the contrast) and capacity-miss rate (simulate the selector over the picker for
+  code-owned pools, e.g. 20,000 sessions).
+- Read compiled outputs, not only metadata. Never retry a semantic failure until
+  it passes: find the cause, repair the contract, keep the failed run, then rerun
+  every case the repair could affect.
+
+**Gates:** `npm run typecheck:lumina` = 0 and full `./node_modules/.bin/tsc --noEmit`
+unchanged against baseline (commands in root `CLAUDE.md`); the full vitest suite;
+affected backend scope/roundtrip tests. Reproduce a suspected pre-existing
+failure before labelling it so. Synthetic responses never touch canonical
+attempts, competencies or calibration.
+
+## Phase 6 — Close
+
+1. Dated report in `my-tutoring-app/qa/misconception/<id>-<date>.md`: what was broken,
+   what was built, verification tables, failed runs and what each showed, rates,
+   limits, residual, and the production/test/probe line ratio.
+2. `qa/di/BACKLOG.md` item 18 entry and the `WORKSTREAMS.md` row, same slice
+   ([[pm-function]]); findings outside this skill go to `qa/EVAL_TRACKER.md` with
+   their executor.
+3. `qa/HUMAN-CHECKS.md` row for browser/microphone acceptance and teaching
+   effectiveness — the user closes it.
+4. `artifacts/math-pedagogy-review/plans.json` entry, then
+   `node artifacts/math-pedagogy-review/build-review.cjs` and `check-review.cjs`.
+   If the build fails on another plan's deleted file, repair the path, not that
+   plan's claims.
+5. Hand off to `/misconception-test <id>` for the station inventory. For a batch,
+   report per primitive, never a blanket PASS.
+
+Do not call a consumer complete when only its planner test passes, and do not
+present targeted content as learner transfer.
+
+## Getting it wrong
+
+- **Probe through the eval-test tap** → every draw unadapted, and the run looks
+  like a planner failure.
+- **Describe a move for one mode shape only** → the planner abstains in the others
+  while tests (which mock the planner) stay green.
+- **Emit more than 12 phases** → live capture stores only the last 12; the first
+  errors disappear without an error.
+- **Skip the score-visibility check** → the gate never fires in production, while
+  the probe (which sends evidence directly) passes.
+- **Pick a common contrast** → most adapted draws are `already-targeted` and the
+  learner sees no change.
+- **Copy the Place Value regex** → it survives only inside that primitive's legacy
+  retest certification; never reuse it in a generation consumer.
+
+Known gap: every consumer still copies its own probe scripts; a shared fixture-driven
+harness is queued in `my-tutoring-app/qa/HANDOFF-misconception-probe-harness-2026-09-13.md`.

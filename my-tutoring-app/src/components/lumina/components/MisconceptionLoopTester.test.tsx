@@ -4,9 +4,11 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { usePrimitiveEvaluation } from '../evaluation/hooks/usePrimitiveEvaluation';
 
-const mocks = vi.hoisted(() => ({ get: vi.fn(), submit: vi.fn(), capture: vi.fn(), learningCapture: vi.fn(), anonymous: false }));
+const mocks = vi.hoisted(() => ({ get: vi.fn(), submit: vi.fn(), capture: vi.fn(), learningCapture: vi.fn(), context: vi.fn(), anonymous: false }));
 vi.mock('@/lib/firebase', () => ({ auth: { currentUser: { getIdToken: async () => 'test-token' } } }));
 vi.mock('@/lib/authApiClient', () => ({ authApi: { get: mocks.get } }));
+// The launch step: the backend signs this learner's observations once; the tester forwards the packet verbatim.
+vi.mock('../service/studentContext/fetchGenerationContext', () => ({ fetchGenerationContext: mocks.context }));
 vi.mock('../contexts/StudentContext', () => ({ useStudent: () => ({ studentId: '123', ready: true, isAnonymous: mocks.anonymous }) }));
 vi.mock('../evaluation/api/evaluationApi', () => ({ submitEvaluationToBackend: mocks.submit }));
 vi.mock('../evaluation/diagnosis/captureMisconception', () => ({ captureMisconception: mocks.capture }));
@@ -24,6 +26,7 @@ beforeEach(() => {
   mocks.get.mockResolvedValue({ status: 'not-recorded', revision: null, scopeCompatible: false });
   mocks.submit.mockResolvedValue({}); mocks.capture.mockResolvedValue(null);
   mocks.learningCapture.mockResolvedValue(null);
+  mocks.context.mockResolvedValue({ available: true, objectives: [], learningObservations: { payload: '{"v":1}', signature: 'a'.repeat(64) } });
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: {
     title: 'Place value', challengeType: 'compare', supportTier: 'medium', challenges: [],
   } }) }));
@@ -39,6 +42,9 @@ it('pins authenticated generation and carries its stable instance and curriculum
   const request = JSON.parse(options.body as string);
   expect(request.params.config).toMatchObject({ targetEvalMode: 'compare', difficulty: 'medium',
     objectiveGrade: '4', skillId: 'NBT004-01', subskillId: 'NBT004-01-b' });
+  expect(request.learningObservations).toEqual({ payload: '{"v":1}', signature: 'a'.repeat(64) });
+  expect(mocks.context.mock.calls[0][0]).toMatchObject({ studentId: '123', includePersona: false,
+    objectives: [{ subskillId: 'NBT004-01-b', skillId: 'NBT004-01', grade: '4' }] });
   expect(screen.getByText('Generate next activity')).toHaveProperty('disabled', true);
   fireEvent.click(screen.getByText('Complete chart'));
   await waitFor(() => expect(mocks.submit).toHaveBeenCalledOnce());

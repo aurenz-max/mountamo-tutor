@@ -1,10 +1,12 @@
-"""number-line jump observations: same published skill only, no score/tag resolution."""
+"""number-line jump observations: deliverable in the launch packet as a stamped same-skill record, no score/tag resolution.
+Per-task scope selection is the generation server's (learningObservationPacket.test.ts)."""
 import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from app.api.endpoints import student_profile as endpoint
 from app.db.firestore_service import FirestoreService
+from app.services.learning_observations import delivery_packet
 
 SCOPE = dict(subject='MATHEMATICS', grade='1', skill_id='OPS001-03', subskill_id='OPS001-03-a', curriculum_version='v@t')
 RECORD = dict(primitive_type='number-line', status='active', scope='skill', scope_context=SCOPE,
@@ -14,28 +16,26 @@ RECORD = dict(primitive_type='number-line', status='active', scope='skill', scop
                                                 'support': 'Start marked; no jump arc drawn; first try'}]})
 
 
-def test_number_line_observations_reach_only_the_same_published_skill(monkeypatch):
+def test_number_line_observations_enter_the_packet_with_their_stamped_skill():
     records = {'number-line::OPS001-03': dict(RECORD, source_attempt_id='attempt-secret')}
-    store = SimpleNamespace(_resolver=SimpleNamespace(resolve=AsyncMock(side_effect=lambda value: value)),
-                            get_active_misconceptions=AsyncMock(side_effect=lambda _id: records))
-    monkeypatch.setattr(endpoint, 'get_firestore_service', lambda: store)
-    monkeypatch.setattr(endpoint, 'resolve_scope', AsyncMock(return_value=SCOPE))
+    store = SimpleNamespace(_resolver=SimpleNamespace(resolve=AsyncMock(side_effect=lambda value: value)))
+    scopes = [{'subskillId': SCOPE['subskill_id'], 'skillId': SCOPE['skill_id'], 'published': SCOPE}]
 
-    async def context():
-        return await endpoint.learning_observation_context(endpoint.ObservationContextIn(scope=SCOPE), {'student_id': 42})
+    async def packet():
+        return await delivery_packet(store, records, scopes, 42)
 
     async def run():
-        result = await context()
-        assert result['available'] is True
-        [row] = result['observations']
-        assert row['summary'] == RECORD['misconception_text']
-        assert 'landing placed at 10' in row['evidence']
+        result = await packet()
+        [row] = result['hypotheses']
+        assert row['summary'] == RECORD['misconception_text'] and row['skillId'] == 'OPS001-03' and row['scope'] == SCOPE
+        assert 'landing placed at 10' in str(row['evidence'])
         assert 'attempt-secret' not in str(result)
-        # Count back (OPS001-04) is a different skill: no delivery across it.
-        for patch in ({'scope_context': {**SCOPE, 'skill_id': 'OPS001-04'}}, {'scope_context': {**SCOPE, 'grade': '2'}},
-                      {'scope_context': None}, {'scope': 'primitive'}, {'status': 'resolved'}):
+        # Count back (OPS001-04) stays a different skill in the packet; the generation server joins on it.
+        records['number-line::OPS001-03'] = {**RECORD, 'scope_context': {**SCOPE, 'skill_id': 'OPS001-04'}}
+        assert (await packet())['hypotheses'][0]['skillId'] == 'OPS001-04'
+        for patch in ({'scope_context': None}, {'scope': 'primitive'}, {'status': 'resolved'}):
             records['number-line::OPS001-03'] = {**RECORD, **patch}
-            assert (await context())['available'] is False
+            assert (await packet())['hypotheses'] == []
     asyncio.run(run())
 
 

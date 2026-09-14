@@ -22,6 +22,7 @@ Design rules (CLAUDE.md / project feedback):
 """
 
 import asyncio
+import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
@@ -37,30 +38,23 @@ from ...dependencies import (
 )
 from ...services.calibration_engine import CalibrationEngine, p_correct
 from ...config.discrimination_priors import DEFAULT_DISCRIMINATION_PRIOR
-from ...core.generation_auth import require_generation_server
+from ...core.generation_auth import require_generation_server, sign_learning_observations
 from ...services.learning_observations import (
-    LearningObservationIn, ObservationPhaseIn, ResponseObservationIn, hypothesis_key, is_server_delivered,
-    project_misconception_observation, project_response_observation, resolve_scope,
-    scoped_misconception_observations)
+    LearningObservationIn, ObservationPhaseIn, ResponseObservationIn, delivery_packet, hypothesis_key,
+    is_server_delivered, project_misconception_observation, project_response_observation, resolve_scope)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Signed generation-server routes require BOTH the learner identity and the
-# generation service signature. Private focus and compiled answer metadata are
-# never public APIs. The backend keeps no primitive table: which primitives
-# take part is declared by the frontend catalog and relayed on capture, and
-# every rule after that is a property of the stored record.
-
-
-class ObservationContextIn(BaseModel):
-    model_config = {"extra": "forbid"}
-    scope: Dict[str, str]
-
-
-class RetestContextIn(ObservationContextIn):
-    primitive_type: str = Field(..., min_length=1, max_length=120, pattern=r"^[a-z0-9-]+$")
+# Learning observations reach generation as a packet the backend signs once,
+# inside the generation-context response at lesson launch; the generation
+# server verifies it and makes no call back here. The one signed
+# generation-server route left is receipt issuance, a write with authority,
+# which requires BOTH the learner identity and the service signature. The
+# backend keeps no primitive table: which primitives take part is declared by
+# the frontend catalog and relayed on capture, and every rule after that is a
+# property of the stored record.
 
 
 @router.get("/misconception-status")
@@ -80,36 +74,6 @@ async def misconception_status(primitive_type: str = Query(..., min_length=1, ma
             "resolvedAt": record.get("resolved_at"),
             "resolvedAttemptId": record.get("resolved_attempt_id"),
             "scopeCompatible": compatible}
-
-
-@router.post("/misconception-opportunity-context", dependencies=[Depends(require_generation_server)])
-async def misconception_opportunity_context(request: RetestContextIn, user_context: dict = Depends(get_user_context)):
-    """Private focus read for a certified retest: the source hypothesis at this exact published scope."""
-    store = get_firestore_service()
-    scope = await resolve_scope(store, request.scope)
-    if not scope:
-        return {"available": False, "reason": "unresolved-published-scope"}
-    records = await store.get_active_misconceptions(user_context["student_id"])
-    record = records.get(hypothesis_key(request.primitive_type, scope["skill_id"]), {})
-    if not record.get("hypothesis_id") or not record.get("revision"):
-        return {"available": False, "reason": "legacy-or-missing-hypothesis"}
-    if record.get('scope_context') != scope:
-        return {'available': False, 'reason': 'hypothesis-scope-mismatch'}
-    return {"available": True, "scope": scope, "hypothesis_id": record["hypothesis_id"],
-            "revision": record["revision"], "focus": record["misconception_text"]}
-
-
-@router.post("/learning-observation-context", dependencies=[Depends(require_generation_server)])
-async def learning_observation_context(request: ObservationContextIn, user_context: dict = Depends(get_user_context)):
-    """Owner's saved hypotheses for one published objective scope, any source
-    primitive. Exposure only: no receipt, revision, or resolution authority."""
-    store = get_firestore_service()
-    scope = await resolve_scope(store, request.scope)
-    if not scope:
-        return {"available": False, "reason": "unresolved-published-scope"}
-    records = await store.get_active_misconceptions(user_context["student_id"])
-    observations = await scoped_misconception_observations(store, records, scope)
-    return {"available": bool(observations), "observations": observations}
 
 
 @router.post("/misconception-opportunities", dependencies=[Depends(require_generation_server)])
@@ -177,6 +141,10 @@ class ObjectiveIn(BaseModel):
     # read. skill_id is optional; it's derived from subskill_id when absent.
     subskill_id: Optional[str] = None
     skill_id: Optional[str] = None
+    # Canonical curriculum grade of this objective ('K'|'1'..'12') when the
+    # launch knows it; the lesson's grade_level is the fallback. Needed to
+    # resolve the objective's published scope for the delivery packet.
+    grade: Optional[str] = None
 
 
 class CurriculumContextIn(BaseModel):
@@ -453,6 +421,7 @@ async def get_generation_context(
             "subject": subject_id,
             "studentProfile": persona,
             "objectives": [],
+            "learningObservations": None,
         }
         if not request.objectives:
             base["reason"] = "no_objectives"
@@ -541,6 +510,30 @@ async def get_generation_context(
 
         states = await asyncio.gather(*[_state_for(m) for m in mappings])
 
+        # Signed delivery packet: each resolved objective's canonical published
+        # scope (lineage + live publication, resolved here and nowhere else) and
+        # the owner's deliverable hypotheses. The generation server verifies the
+        # signature and joins per task; without a configured key no packet is
+        # issued and generation stays unadapted.
+        learning_observations_out = None
+        try:
+            scopes: List[Dict[str, Any]] = []
+            for obj, mapping in zip(request.objectives, mappings):
+                if mapping is None or any(s["subskillId"] == mapping.subskill_id for s in scopes):
+                    continue
+                published = await resolve_scope(firestore, {
+                    "subject": subject_id, "grade": obj.grade or request.grade_level,
+                    "skill_id": mapping.skill_id, "subskill_id": mapping.subskill_id})
+                scopes.append({"subskillId": mapping.subskill_id, "skillId": mapping.skill_id, "published": published})
+            packet = await delivery_packet(firestore, active_misconceptions, scopes, request.student_id)
+            payload = json.dumps(packet, separators=(",", ":"), ensure_ascii=False)
+            signature = sign_learning_observations(payload)
+            if signature:
+                learning_observations_out = {"payload": payload, "signature": signature}
+        except Exception as e:
+            # A packet failure costs adaptation for one lesson, never personalization or the lesson.
+            logger.warning(f"[GENERATION_CONTEXT] Learning-observation packet unavailable: {e}")
+
         objectives_out = []
         for obj, mapping, state in zip(request.objectives, mappings, states):
             entry = {"objectiveId": obj.id, "objectiveText": obj.text}
@@ -596,6 +589,7 @@ async def get_generation_context(
             "studentProfile": persona,
             "objectives": objectives_out,
             "activeMisconceptions": misconceptions_out,
+            "learningObservations": learning_observations_out,
         }
 
     except Exception as e:

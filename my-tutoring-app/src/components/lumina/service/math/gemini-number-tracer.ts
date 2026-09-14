@@ -10,6 +10,8 @@ import {
 } from '../evalMode';
 import { buildScopePromptSection, type PedagogicalScope } from '../scopeContext';
 import type { GenerationContext } from '../generation/generationContext';
+import { planLearningAdaptation } from '../generation/planLearningAdaptation';
+import { eligibleNumberTracerTeaching, numberTracerSequenceTeaching, selectGapPositionContrast } from './numberTracerRemediation';
 
 // ===========================================================================
 // number-tracer is a HANDWRITING primitive: the interaction surface is a
@@ -164,13 +166,10 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
       );
       break;
     case 'sequence':
+      // A guide for the missing numeral would show the answer before the student works it out (NT-7).
       promptLines.push(
-        'The sequence and its hidden position never change with the tier. '
-        + (tier === 'easy'
-          ? 'Paint the ghost of the missing numeral and the start dot so the student can trace the answer once they work it out.'
-          : tier === 'hard'
-            ? 'Show no ghost and no start dot — the student works out the missing number and writes it from memory.'
-            : 'Withdraw the stroke arrows; keep a faint ghost and the start dot once the student has the missing number.'),
+        'The sequence and its hidden position never change with the tier, and no guide for the missing '
+        + 'number is painted at any tier (it is the answer). Hints must never name or describe the missing number.',
       );
       break;
   }
@@ -418,13 +417,12 @@ Return the complete number tracer configuration.
 // ---------------------------------------------------------------------------
 
 // The LLM's ONLY job here: choose a numeric window appropriate to the lesson
-// scope. The schema carries no per-challenge data — nothing for Flash-Lite to
-// overflow or desync.
+// scope. The schema carries no per-challenge data and no free text — the title and
+// description strings ran away to 130-500 KB in 7 of 26 real draws (NT-13), stalling
+// generation for minutes before the parse failed, so code writes them.
 const sequenceWindowSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: { type: Type.STRING },
-    description: { type: Type.STRING },
     rangeMin: { type: Type.NUMBER, description: 'Smallest number that may appear, within the lesson scope.' },
     rangeMax: { type: Type.NUMBER, description: 'Largest number that may appear, within the lesson scope. Never exceed the topic/objective range.' },
   },
@@ -432,17 +430,20 @@ const sequenceWindowSchema: Schema = {
 };
 
 /**
- * Build `count` missing-number sequence challenges deterministically inside a
- * bounded window. Correct by construction:
+ * Build `count` missing-number sequence challenges inside a bounded window.
+ * Correct by construction:
  *   • fixed run length (≤5) → never overflows the render row (kills OOM crash)
  *   • values drawn from the clamped window → never bleeds scope
  *   • digit = sequenceNumbers[missingIndex] → never desyncs from the answer
+ *   • distinct missing numbers while the window has them; beyond that, no two
+ *     neighbouring items share an answer when the window allows (NT-8)
  */
-function buildSequenceChallenges(
+export function buildSequenceChallenges(
   rangeMin: number,
   rangeMax: number,
   count: number,
   maxDigit: number,
+  random: () => number = Math.random,
 ): NumberTracerChallenge[] {
   const RUN = 4; // numbers shown per sequence
   // Clamp the LLM-suggested window to the grade ceiling (safety net — advisory only).
@@ -455,15 +456,31 @@ function buildSequenceChallenges(
     lo = Math.max(0, hi - (RUN - 1));
   }
 
+  const runLen = Math.min(RUN, hi - lo + 1);
+  // Every legal item: any run start in the window, blank at an interior position when possible
+  // (more interesting than first/last).
+  const positions = runLen >= 3 ? Array.from({ length: runLen - 2 }, (_, k) => k + 1) : Array.from({ length: runLen }, (_, k) => k);
+  const pool = Array.from({ length: hi - runLen - lo + 2 }, (_, s) => lo + s)
+    .flatMap((start) => positions.map((missingIndex) => ({ start, missingIndex, answer: start + missingIndex })));
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  // A new run with a new answer first; then a new answer; then an unused item whose answer differs
+  // from the previous one; then a reused item with a different answer; any item only for a one-answer window.
+  const picked: typeof pool = [];
+  while (picked.length < count) {
+    const prev = picked[picked.length - 1]?.answer;
+    picked.push(pool.find((c) => !picked.some((p) => p.answer === c.answer || p.start === c.start))
+      ?? pool.find((c) => !picked.some((p) => p.answer === c.answer))
+      ?? pool.find((c) => !picked.includes(c) && c.answer !== prev)
+      ?? pool.find((c) => c.answer !== prev)
+      ?? pool[picked.length % pool.length]);
+  }
+
   const challenges: NumberTracerChallenge[] = [];
-  for (let i = 0; i < count; i++) {
-    const runLen = Math.min(RUN, hi - lo + 1);
-    const maxStart = hi - runLen + 1;          // inclusive upper bound for the run start
-    const span = Math.max(1, maxStart - lo + 1);
-    const start = lo + (i % span);             // walk the window across challenges for variety
+  picked.forEach(({ start, missingIndex }, i) => {
     const seq = Array.from({ length: runLen }, (_, k) => start + k);
-    // Blank an interior position when possible (more interesting than first/last).
-    const missingIndex = runLen >= 3 ? 1 + (i % (runLen - 2)) : i % runLen;
     const challenge: NumberTracerChallenge = {
       id: `c${i + 1}`,
       type: 'sequence',
@@ -478,7 +495,7 @@ function buildSequenceChallenges(
     };
     challenge.instruction = buildInstruction(challenge);
     challenges.push(challenge);
-  }
+  });
   return challenges;
 }
 
@@ -503,19 +520,19 @@ and write the missing number by hand (e.g. "3, 4, ?, 6").
 YOUR ONLY JOB: choose rangeMin and rangeMax — the smallest and largest numbers that may appear.
 - They MUST stay within the lesson scope above. If the topic says "within 10", rangeMax must be ≤ 10.
 - Grade ceiling: K ≤ 9, Grade 1 ≤ 20. The scope may narrow this further.
-- Also write a short, warm title and description. Do NOT mention any specific missing number.
 
 Return only the window.
 `;
 
   // The structure is deterministic, so the LLM call is small and non-critical:
   // on any failure we fall back to the grade ceiling and still build valid data.
-  let window: { rangeMin?: number; rangeMax?: number; title?: string; description?: string } | null = null;
+  let window: { rangeMin?: number; rangeMax?: number } | null = null;
   try {
     const result = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
       contents: prompt,
-      config: { responseMimeType: "application/json", responseSchema: sequenceWindowSchema },
+      config: { responseMimeType: "application/json", responseSchema: sequenceWindowSchema,
+        maxOutputTokens: 1024, httpOptions: { timeout: 20000 } },
     });
     window = result.text ? JSON.parse(result.text) : null;
   } catch (err) {
@@ -528,7 +545,7 @@ Return only the window.
   const challenges = buildSequenceChallenges(rangeMin, rangeMax, challengeCount, maxDigit);
   console.log(`[NumberTracer] Sequence window [${rangeMin}, ${rangeMax}] → clamped run within ≤${maxDigit}, ${challenges.length} challenge(s).`);
 
-  return { title: window?.title, description: window?.description, challenges };
+  return { title: 'Find the Missing Numbers', description: 'Work out the hidden number in each counting run, then write it.', challenges };
 }
 
 // ---------------------------------------------------------------------------
@@ -577,14 +594,30 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
   const seqCount = wantsHandwriting && wantsSequence ? Math.max(1, Math.round(totalCount * 0.3)) : totalCount;
   const hwCount = wantsHandwriting && wantsSequence ? Math.max(1, totalCount - seqCount) : totalCount;
 
-  const [handwriting, sequence] = await Promise.all([
+  // Saved observations reach only the shared applicability planner, never a generation prompt.
+  // No observations or an ineligible task → no planner call.
+  const observations = ctx.learningObservations ?? [];
+  const adaptationTask = { grade: ctx.grade, topic, intent: ctx.intent, objectiveText: ctx.objective.text,
+    mode: pinnedType, tier: supportTier ?? undefined };
+  const [handwriting, sequence, move] = await Promise.all([
     wantsHandwriting
       ? generateHandwriting(topic, gradeLevel, gradeBand, handwritingTypes, hwCount, scope, evalConstraint, tierSection)
       : Promise.resolve(null),
     wantsSequence
       ? generateSequence(topic, gradeLevel, gradeBand, seqCount, scope, tierSection)
       : Promise.resolve(null),
+    observations.length && eligibleNumberTracerTeaching(adaptationTask)
+      ? planLearningAdaptation(numberTracerSequenceTeaching, adaptationTask, observations) : null,
   ]);
+
+  // ── Validated teaching move: code rewrites one run; the answer stays sequenceNumbers[missingIndex].
+  let learningAdaptation: NumberTracerData['learningAdaptation'];
+  if (move && pinnedType === 'sequence' && sequence && !handwriting) {
+    const selected = selectGapPositionContrast(sequence.challenges, move);
+    sequence.challenges = [...selected.challenges];
+    learningAdaptation = { move, comparisonCount: selected.count,
+      status: selected.status === 'no-focus' ? 'insufficient-capacity' : selected.status };
+  }
 
   // ── Combine — handwriting first (easier), then sequence (harder) ──
   const challenges: NumberTracerChallenge[] = [
@@ -606,8 +639,9 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
     for (const ch of challenges) {
       const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
       // write mode never paints an on-canvas guide at any tier — keep it guide-free
-      // (the tier only changed its hint wording in the prompt).
-      if (ch.type === 'write') {
+      // (the tier only changed its hint wording in the prompt). A sequence guide would
+      // paint the hidden answer (NT-7).
+      if (ch.type === 'write' || ch.type === 'sequence') {
         ch.showGhostDigit = false;
         ch.showStrokeArrows = false;
         ch.showStartDot = false;
@@ -629,6 +663,7 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
     description: handwriting?.description ?? sequence?.description,
     gradeBand,
     challenges,
+    ...(learningAdaptation ? { learningAdaptation } : {}),
   };
 
   const typeBreakdown = challenges.map((c) => c.type).join(', ');

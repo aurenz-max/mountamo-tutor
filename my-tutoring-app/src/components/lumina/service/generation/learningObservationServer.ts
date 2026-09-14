@@ -1,54 +1,46 @@
 import { createHash } from 'node:crypto';
 import type { LearningObservationConsumer, LearningObservationRetest } from '../../types';
-import { backend, currentLessonId } from './generationRequest';
+import { backend, currentLessonId, deliveredLearningObservations } from './generationRequest';
+import { retestHypothesis, scopedObservations, type DeliveredObservation, type PublishedScope } from './learningObservationPacket';
 
-type Observation = { id: string; summary: string; evidence?: string };
-type RetestContext = { hypothesis_id: string; revision: number; focus: string; scope: Record<string, string> };
+type RetestContext = { hypothesis_id: string; revision: number; focus: string; scope: PublishedScope };
 type Adapted = {
   learningAdaptation?: { move?: unknown; source?: string };
   misconceptionOpportunity?: { id: string; lessonId: string; grade: string; curriculumVersion: string };
 };
-const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
-const isObservation = (o: unknown): o is Observation => !!o && typeof o === 'object'
-  && isText((o as Observation).id) && isText((o as Observation).summary)
-  && ['string', 'undefined'].includes(typeof (o as Observation).evidence);
 
 /**
  * Catalog-declared delivery of saved learning observations to a generator.
  * The consumer declaration (`ComponentDefinition.learningObservations`) says
  * when a task is eligible; the objective's published scope — subject, grade,
- * skill, subskill — comes from the manifest config. This module names no
- * primitive and assumes no subject.
+ * skill, subskill — comes from the manifest config. The observations come
+ * from the packet the backend signed at lesson launch, verified once per
+ * request: no backend call happens here. This module names no primitive and
+ * assumes no subject.
  *
  * Shared delivery is exposure only: no receipt, no resolution, no observation
  * text in the returned content. A consumer that declares a `retest` reads its
- * own hypothesis through the primitive-keyed opportunity context instead and
- * binds the compiled item plan to that revision in a signed receipt.
+ * own hypothesis from the same packet and binds the compiled item plan to that
+ * revision in a signed receipt — the one write that still reaches the backend.
  */
 export async function generateWithLearningObservations<T extends { data: Adapted } | null>(
   item: { componentId: string; instanceId: string; config?: Record<string, unknown>; topic?: string; intent?: string },
   consumer: LearningObservationConsumer,
   generate: (config: Record<string, unknown>) => Promise<T>,
 ): Promise<T> {
-  // Only this server produces observations or a focus; never trust them from a manifest or client.
+  // Only the verified packet produces observations or a focus; never trust them from a manifest or client config.
   const { learningObservations: _untrusted, remediationFocus: _forged, ...config } = item.config ?? {};
-  const scope = { subject: config.objectiveSubject, grade: config.objectiveGrade, skill_id: config.skillId, subskill_id: config.subskillId };
-  let observations: Observation[] = [];
+  const task = { subject: config.objectiveSubject, grade: config.objectiveGrade, skillId: config.skillId, subskillId: config.subskillId };
+  let observations: DeliveredObservation[] = [];
   let retest: RetestContext | null = null;
-  if (consumer.eligible(config) && Object.values(scope).every(isText)) {
-    try {
-      if (consumer.retest) {
-        const context = await backend('/api/student-profile/misconception-opportunity-context', { primitive_type: item.componentId, scope });
-        if (context?.available && isText(context.hypothesis_id) && isText(context.focus)) {
-          retest = context;
-          observations = [{ id: context.hypothesis_id, summary: context.focus }];
-        }
-      } else {
-        const context = await backend('/api/student-profile/learning-observation-context', { scope });
-        if (context?.available && Array.isArray(context.observations)) observations = context.observations.filter(isObservation).slice(0, 10)
-          .map(({ id, summary, evidence }: Observation) => ({ id, summary, ...(evidence ? { evidence } : {}) }));
-      }
-    } catch { /* ordinary generation remains available */ }
+  const packet = consumer.eligible(config) ? deliveredLearningObservations() : null;
+  if (packet) {
+    if (consumer.retest) {
+      retest = retestHypothesis(packet, item.componentId, task);
+      if (retest) observations = [{ id: retest.hypothesis_id, summary: retest.focus }];
+    } else {
+      observations = scopedObservations(packet, task);
+    }
   }
   const generated = await generate(observations.length ? { ...config, learningObservations: observations } : config);
   if (!generated) return generated;

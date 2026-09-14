@@ -3,13 +3,22 @@ import { withGenerationRequest } from '@/components/lumina/service/generation/ge
 import { buildCompleteExhibitFromManifest } from '@/components/lumina/service/geminiService';
 
 export async function POST(request: NextRequest) {
-  return withGenerationRequest(request.headers.get('authorization'), () => handlePost(request));
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Stream setup failed';
+    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+  // The learner's token and the backend-signed observation packet are request-local;
+  // consumers read the verified packet instead of calling the backend during generation.
+  return withGenerationRequest({ authorization: request.headers.get('authorization'), learningObservations: body.learningObservations },
+    () => handlePost(body));
 }
 
-async function handlePost(request: NextRequest) {
+async function handlePost(body: Record<string, unknown>) {
   try {
-    const body = await request.json();
-    const { manifest, curatorBrief } = body;
+    const { manifest, curatorBrief } = body as { manifest: any; curatorBrief: any };
 
     const encoder = new TextEncoder();
     const stream = new TransformStream();

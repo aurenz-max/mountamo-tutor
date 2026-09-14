@@ -2,6 +2,12 @@
   {
     "id": "bar-model",
     "misconceptionScope": "skill",
+    "observationDelivery": "server",
+    "learningObservations": {
+      "eligible": {
+        "$ref": "barModelDeliveryEligible"
+      }
+    },
     "description": "K-5 categorical-data graph. K one-to-one data (K.MD.B.3): record a pile of objects onto a sticker chart one sticker per object, read a graph where one picture stands for one thing, match a group of objects to the row that shows that many, say which row has the most or the fewest, explain what a graph shows aloud, and compare two related surveys. K-1 also has a two-bar which-is-taller comparison. Grades 2-5: scaled bar graphs with step-2/5/10 axes (3.MD.B.3) and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction, from tally-and-sticker recording to scaled construction; not for histograms or numeric distributions.",
     "constraints": "Multi-instance: a session walks the student through 3-6 challenges in a pinned mode or an intent-resolved blend, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. K one-to-one modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) show one picture per object with no axis to read, print no numbers on the graph, and keep every count within 1-10; each row carries its own emoji so a pre-reader can tell the rows apart. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.",
     "affordances": {
@@ -246,7 +252,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 15,
+    "line": 23,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-bar-model.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/BarModel.tsx",
@@ -262,6 +268,12 @@
   {
     "id": "number-line",
     "misconceptionScope": "skill",
+    "observationDelivery": "server",
+    "learningObservations": {
+      "eligible": {
+        "$ref": "numberLineDeliveryEligible"
+      }
+    },
     "description": "Interactive number line with drag-to-plot, animated jump arcs, ordering, and auto-zoom. Supports integers, fractions, decimals, and mixed numbers. K uses small fully labeled ranges; explicit Grade-1 objectives can use readable local windows within 0-120; grades 3-5 add negatives, fractions, and operations. Perfect for teaching number placement, addition/subtraction as movement, fraction comparison, and ordering. ESSENTIAL for K-5 math.",
     "constraints": "Requires numeric range. Jump mode requires operations array. Challenges drive interactivity.",
     "affordances": {
@@ -391,7 +403,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 174,
+    "line": 184,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-number-line.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/NumberLine.tsx",
@@ -407,6 +419,12 @@
   {
     "id": "base-ten-blocks",
     "misconceptionScope": "skill",
+    "observationDelivery": "server",
+    "learningObservations": {
+      "eligible": {
+        "$ref": "baseTenDeliveryEligible"
+      }
+    },
     "description": "Interactive base-ten manipulative with place value columns, supply tray, and regrouping. TWO MODES ARE LIVE TUTOR-JUDGED AND SPOKEN. read_blocks: the child reads one size of block at a time OUT LOUD — how many are there, and what are they worth altogether (\"forty\") — and never says the composed numeral; the tutor puts the whole number together. regroup: the child PREDICTS the result of a trade out loud while the mat is still untraded, then makes the trade with their hands. build_number and the operate modes remain hands-and-keypad: students drag blocks to build numbers and perform addition/subtraction with regrouping, with decimal mode (tenths/hundredths) and thousands. ESSENTIAL for K-5 place value.",
     "constraints": "Requires a number to work with. Challenges array drives interactivity. Grade band determines complexity. read_blocks and regroup require a microphone and a targetNumber of at least 10 with a non-zero digit above the ones place — code picks which place is read or traded, and drops any number that cannot carry one. Those two modes must be generated as HOMOGENEOUS sessions: a payload mixing them with build_number or the operate modes falls back to the click surface for all of them.",
     "audioInputByMode": {
@@ -534,7 +552,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 260,
+    "line": 272,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-base-ten-blocks.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/BaseTenBlocks.tsx",
@@ -550,6 +568,12 @@
   {
     "id": "fraction-circles",
     "misconceptionScope": "skill",
+    "observationDelivery": "server",
+    "learningObservations": {
+      "eligible": {
+        "$ref": "fractionCompareDeliveryEligible"
+      }
+    },
     "description": "DI touch_fraction: hear a fraction and touch its matching shaded circle (halves, thirds, fourths). Multi-phase fraction learning with circle diagrams. Challenges include identifying fractions from shaded circles, building target fractions by clicking slices, comparing two fractions visually, and discovering equivalent fractions. ESSENTIAL for elementary fraction concepts.",
     "constraints": "Generates 4-6 challenges mixing identify, build, compare, and equivalent types. Denominators 2-12.",
     "affordances": {
@@ -688,7 +712,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 348,
+    "line": 362,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-fraction-circles.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/FractionCircles.tsx",
@@ -704,6 +728,12 @@
   {
     "id": "fraction-bar",
     "misconceptionScope": "skill",
+    "observationDelivery": "server",
+    "learningObservations": {
+      "eligible": {
+        "$ref": "fractionBarDeliveryEligible"
+      }
+    },
     "description": "Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. ESSENTIAL for elementary fraction introduction.",
     "constraints": "Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), compare (4-5, larger denominators), add_subtract (5-6, operation context).",
     "affordances": {
@@ -796,7 +826,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 426,
+    "line": 442,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-fraction-bar.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/FractionBar.tsx",
@@ -812,6 +842,15 @@
   {
     "id": "place-value-chart",
     "misconceptionScope": "skill",
+    "observationDelivery": "server",
+    "learningObservations": {
+      "eligible": {
+        "$ref": "placeValueDeliveryEligible"
+      },
+      "retest": {
+        "$ref": "placeValueRetest"
+      }
+    },
     "description": "Live tutor-judged place value (DI modality) over 2- to 5-digit whole numbers. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. Each session alternates two kinds of number: for a PRINTED number with one glowing digit the child SAYS THE NAME OF ITS PLACE (ones through ten thousands) and then SAYS WHAT IT IS WORTH (\"forty\", \"three hundred\" — the spoken place-value vocabulary this primitive has always been about); for a number that is NEVER printed the tutor SAYS it and the child WRITES it into the labeled chart, one digit per column — dictation, where hearing \"four hundred six\" and writing 4-0-6 rather than 46 is the whole skill. ESSENTIAL for elementary place value instruction, grades 1-5.",
     "constraints": "Requires a microphone: two of the three answer kinds are spoken and judged by the Live tutor, and there is no Check button, no Next button, and no multiple-choice row anywhere. Session-level configuration: the generator selects target numbers locally from the number pool service per the selected eval mode, so do NOT supply specific numbers, place ranges, or answer choices from the manifest. Whole numbers only, 11 to 99,999 — every spoken value word stays inside the place-value vocabulary (digit and decade words plus hundred/thousand), and a highlighted digit is never zero because \"zero\" is not an accepted spoken answer. A number that was printed for analysis is never dictated, and a dictated number is never printed — each would answer the other. Supports challengeTypes: identify (1-2), build (2-3), compare (3-4), expanded_form (5+).",
     "affordances": {
@@ -950,7 +989,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 493,
+    "line": 511,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-place-value.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/PlaceValueChart.tsx",
@@ -1057,7 +1096,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 644,
+    "line": 664,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-practice-problem.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/PracticeProblem.tsx",
@@ -1072,6 +1111,13 @@
   },
   {
     "id": "area-model",
+    "misconceptionScope": "skill",
+    "observationDelivery": "server",
+    "learningObservations": {
+      "eligible": {
+        "$ref": "areaModelDeliveryEligible"
+      }
+    },
     "description": "Multi-challenge visual area model for multiplication, perimeter, and factoring. Each session walks the student through 3-6 distinct factor pairs in the same eval mode. Per-challenge data (factor decompositions, display flags) is built locally from a pool service; Gemini emits only session-level wrapper metadata. Use for multi-digit multiplication, distributive property, partial products, perimeter (4.MD.3), and area-model factoring. ESSENTIAL for grades 3-6 math.",
     "constraints": "The manifest must NOT supply specific factor numbers, decompositions, or display flags — the generator picks 3-6 pairs locally per the selected eval mode. Algebraic mode is reserved for future expansion (no eval mode currently uses it).",
     "affordances": {
@@ -1178,16 +1224,16 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 689,
+    "line": 709,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-area-model.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/AreaModel.tsx",
     "signals": {
-      "scope": null,
+      "scope": "skill",
       "tutor": true,
       "modes": 5,
-      "evidence": false,
-      "remediation": false,
+      "evidence": true,
+      "remediation": true,
       "support": true
     }
   },
@@ -1303,7 +1349,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 776,
+    "line": 799,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-array-grid.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/ArrayGrid.tsx",
@@ -1412,7 +1458,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 844,
+    "line": 867,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-double-number-line.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/DoubleNumberLine.tsx",
@@ -1522,7 +1568,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 917,
+    "line": 940,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-tape-diagram.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/TapeDiagram.tsx",
@@ -1649,7 +1695,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 954,
+    "line": 977,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-factor-tree.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/FactorTree.tsx",
@@ -1784,7 +1830,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1037,
+    "line": 1060,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-ratio-table.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/RatioTable.tsx",
@@ -1913,7 +1959,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1113,
+    "line": 1136,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-percent-bar.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/PercentBar.tsx",
@@ -2164,7 +2210,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1200,
+    "line": 1223,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-balance-scale.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/BalanceScale.tsx",
@@ -2314,7 +2360,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1347,
+    "line": 1370,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-function-machine.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/FunctionMachine.tsx",
@@ -2422,7 +2468,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1430,
+    "line": 1453,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-coordinate-graph.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/CoordinateGraph.tsx",
@@ -2538,7 +2584,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1486,
+    "line": 1509,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-slope-triangle.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/SlopeTriangle.tsx",
@@ -2644,7 +2690,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1552,
+    "line": 1575,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-systems-equations.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/SystemsEquationsVisualizer.tsx",
@@ -2778,7 +2824,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1618,
+    "line": 1641,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-polygon-area-builder.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/PolygonAreaBuilder.tsx",
@@ -2919,7 +2965,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1702,
+    "line": 1725,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-circle-explorer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/CircleExplorer.tsx",
@@ -3061,7 +3107,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1784,
+    "line": 1807,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-angle-workshop.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/AngleWorkshop.tsx",
@@ -3203,7 +3249,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1861,
+    "line": 1884,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-transformation-lab.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/TransformationLab.tsx",
@@ -3317,7 +3363,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 1938,
+    "line": 1961,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-matrix.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/MatrixDisplay.tsx",
@@ -3454,7 +3500,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2013,
+    "line": 2036,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-dot-plot.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/DotPlot.tsx",
@@ -3584,7 +3630,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2099,
+    "line": 2122,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-histogram.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/Histogram.tsx",
@@ -3696,7 +3742,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2181,
+    "line": 2204,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-two-way-table.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/TwoWayTable.tsx",
@@ -3909,7 +3955,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2253,
+    "line": 2276,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-ten-frame.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/TenFrame.tsx",
@@ -4143,7 +4189,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2392,
+    "line": 2415,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-counting-board.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/CountingBoard.tsx",
@@ -4289,7 +4335,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2551,
+    "line": 2574,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-comparison-builder.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/ComparisonBuilder.tsx",
@@ -4442,7 +4488,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2644,
+    "line": 2667,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-pattern-builder.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/PatternBuilder.tsx",
@@ -4594,7 +4640,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2723,
+    "line": 2746,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-skip-counting-runner.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/SkipCountingRunner.tsx",
@@ -4716,7 +4762,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2802,
+    "line": 2825,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-hundreds-chart.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/HundredsChart.tsx",
@@ -4829,7 +4875,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2884,
+    "line": 2907,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-regrouping-workbench.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/RegroupingWorkbench.tsx",
@@ -4998,7 +5044,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 2950,
+    "line": 2973,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-multiplication-explorer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/MultiplicationExplorer.tsx",
@@ -5098,7 +5144,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3037,
+    "line": 3060,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-measure-lab.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/MeasureLab.tsx",
@@ -5220,7 +5266,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3082,
+    "line": 3105,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-measurement-tools.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/MeasurementTools.tsx",
@@ -5400,7 +5446,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3162,
+    "line": 3185,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-shape-builder.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/ShapeBuilder.tsx",
@@ -5467,7 +5513,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3267,
+    "line": 3290,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-number-sequencer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/NumberSequencer.tsx",
@@ -5683,7 +5729,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3291,
+    "line": 3314,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-number-bond.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/NumberBond.tsx",
@@ -5839,7 +5885,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3454,
+    "line": 3477,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-addition-subtraction-scene.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/AdditionSubtractionScene.tsx",
@@ -6016,7 +6062,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3601,
+    "line": 3624,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-ordinal-line.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/OrdinalLine.tsx",
@@ -6195,7 +6241,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3775,
+    "line": 3798,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-sorting-station.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/SortingStation.tsx",
@@ -6332,7 +6378,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 3953,
+    "line": 3976,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-shape-sorter.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/ShapeSorter.tsx",
@@ -6501,7 +6547,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4165,
+    "line": 4188,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-3d-shape-explorer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/ThreeDShapeExplorer.tsx",
@@ -6610,7 +6656,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4247,
+    "line": 4270,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-shape-tracer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/ShapeTracer.tsx",
@@ -6767,7 +6813,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4304,
+    "line": 4327,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-math-fact-fluency.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/MathFactFluency.tsx",
@@ -6887,7 +6933,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4373,
+    "line": 4396,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-strategy-picker.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/StrategyPicker.tsx",
@@ -6902,6 +6948,13 @@
   },
   {
     "id": "number-tracer",
+    "misconceptionScope": "skill",
+    "observationDelivery": "server",
+    "learningObservations": {
+      "eligible": {
+        "$ref": "numberTracerDeliveryEligible"
+      }
+    },
     "description": "Canvas-based numeral writing practice. Students trace dotted digit paths, copy from a model, write from a prompt, or complete counting sequences. Essential for CC.K.CC.3 (write 0-20) and 1.NBT.1 (write to 120).",
     "constraints": "Best for K-Grade 1. Digit range: 0-20 for K, 0-120 for Grade 1. Use trace mode for beginners, sequence for advanced.",
     "affordances": {
@@ -6990,16 +7043,16 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4436,
+    "line": 4459,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-number-tracer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/NumberTracer.tsx",
     "signals": {
-      "scope": null,
+      "scope": "skill",
       "tutor": true,
       "modes": 4,
-      "evidence": false,
-      "remediation": false,
+      "evidence": true,
+      "remediation": true,
       "support": true
     }
   },
@@ -7156,7 +7209,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4491,
+    "line": 4517,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-length-lab.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/LengthLab.tsx",
@@ -7337,7 +7390,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4572,
+    "line": 4598,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-analog-clock.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/AnalogClock.tsx",
@@ -7520,7 +7573,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4687,
+    "line": 4713,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-coin-counter.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/CoinCounter.tsx",
@@ -7669,7 +7722,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4794,
+    "line": 4820,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-time-sequencer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/TimeSequencer.tsx",
@@ -7850,7 +7903,7 @@
       "$ref": "JUDGED_AUDIO_INPUT"
     },
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4887,
+    "line": 4913,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-spatial-scene.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/SpatialScene.tsx",
@@ -7984,7 +8037,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 4979,
+    "line": 5005,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-shape-composer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/ShapeComposer.tsx",
@@ -8143,7 +8196,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 5054,
+    "line": 5080,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-net-folder.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/NetFolder.tsx",
@@ -8307,7 +8360,7 @@
       }
     ],
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 5134,
+    "line": 5160,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-equation-builder.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/EquationBuilder.tsx",
@@ -8470,7 +8523,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 5235,
+    "line": 5261,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-compare-objects.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/CompareObjects.tsx",
@@ -8638,7 +8691,7 @@
     ],
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 5375,
+    "line": 5401,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-formula-lab.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/FormulaLab.tsx",
@@ -8762,7 +8815,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 5503,
+    "line": 5529,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-parameter-explorer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/ParameterExplorer.tsx",
@@ -8860,7 +8913,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 5562,
+    "line": 5588,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-equation-workspace.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/EquationWorkspace.tsx",
@@ -8969,7 +9022,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 5617,
+    "line": 5643,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/math/gemini-function-sketch.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/FunctionSketch.tsx",
@@ -9118,7 +9171,7 @@
     },
     "supportsEvaluation": true,
     "source": "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
-    "line": 5682,
+    "line": 5708,
     "catalog": "Math",
     "generator": "my-tutoring-app/src/components/lumina/service/distribution-explorer/gemini-distribution-explorer.ts",
     "component": "my-tutoring-app/src/components/lumina/primitives/DistributionExplorer.tsx",

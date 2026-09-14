@@ -23,13 +23,21 @@ import { generateKnowledgeCheck } from '@/components/lumina/service/knowledge-ch
 import { analyzeScratchPad, getScratchPadHint, generatePracticeProblem } from '@/components/lumina/service/scratch-pad/gemini-scratch-pad';
 
 export async function POST(request: NextRequest) {
-  return withGenerationRequest(request.headers.get('authorization'), () => handlePost(request));
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch (error: unknown) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid request body' }, { status: 400 });
+  }
+  // The learner's token and the backend-signed observation packet are request-local;
+  // consumers read the verified packet instead of calling the backend during generation.
+  return withGenerationRequest({ authorization: request.headers.get('authorization'), learningObservations: body.learningObservations },
+    () => handlePost(body));
 }
 
-async function handlePost(request: NextRequest) {
+async function handlePost(body: Record<string, unknown>) {
   try {
-    const body = await request.json();
-    const { action, params } = body;
+    const { action, params } = body as { action: string; params: any };
 
     switch (action) {
       // ============================================

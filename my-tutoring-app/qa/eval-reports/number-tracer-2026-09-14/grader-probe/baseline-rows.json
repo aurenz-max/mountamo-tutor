@@ -1,0 +1,428 @@
+[
+  {
+    "group": "correct",
+    "target": 2,
+    "written": 2,
+    "expect": "accepted",
+    "accuracy": 94,
+    "coverage": 100,
+    "geoScore": 96,
+    "vision": null,
+    "final": 96,
+    "accepted": true
+  },
+  {
+    "group": "correct",
+    "target": 3,
+    "written": 3,
+    "expect": "accepted",
+    "accuracy": 97,
+    "coverage": 100,
+    "geoScore": 98,
+    "vision": null,
+    "final": 98,
+    "accepted": true
+  },
+  {
+    "group": "correct",
+    "target": 4,
+    "written": 4,
+    "expect": "accepted",
+    "accuracy": 96,
+    "coverage": 100,
+    "geoScore": 98,
+    "vision": null,
+    "final": 98,
+    "accepted": true
+  },
+  {
+    "group": "correct",
+    "target": 5,
+    "written": 5,
+    "expect": "accepted",
+    "accuracy": 95,
+    "coverage": 100,
+    "geoScore": 97,
+    "vision": null,
+    "final": 97,
+    "accepted": true
+  },
+  {
+    "group": "correct",
+    "target": 6,
+    "written": 6,
+    "expect": "accepted",
+    "accuracy": 97,
+    "coverage": 100,
+    "geoScore": 98,
+    "vision": null,
+    "final": 98,
+    "accepted": true
+  },
+  {
+    "group": "correct",
+    "target": 7,
+    "written": 7,
+    "expect": "accepted",
+    "accuracy": 93,
+    "coverage": 100,
+    "geoScore": 96,
+    "vision": null,
+    "final": 96,
+    "accepted": true
+  },
+  {
+    "group": "correct",
+    "target": 8,
+    "written": 8,
+    "expect": "accepted",
+    "accuracy": 96,
+    "coverage": 100,
+    "geoScore": 98,
+    "vision": null,
+    "final": 98,
+    "accepted": true
+  },
+  {
+    "group": "correct",
+    "target": 9,
+    "written": 9,
+    "expect": "accepted",
+    "accuracy": 98,
+    "coverage": 100,
+    "geoScore": 99,
+    "vision": null,
+    "final": 99,
+    "accepted": true
+  },
+  {
+    "group": "wrong-number",
+    "target": 5,
+    "written": 4,
+    "expect": "rejected",
+    "accuracy": 64,
+    "coverage": 78,
+    "geoScore": 70,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "unrecognizable",
+      "feedback": "I can't see any drawing here! Try drawing a number 5 with a short straight line down, a big round belly, and a flat hat on top.",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "wrong-number",
+    "target": 5,
+    "written": 6,
+    "expect": "rejected",
+    "accuracy": 85,
+    "coverage": 100,
+    "geoScore": 91,
+    "vision": null,
+    "final": 91,
+    "accepted": true
+  },
+  {
+    "group": "wrong-number",
+    "target": 5,
+    "written": 7,
+    "expect": "rejected",
+    "accuracy": 72,
+    "coverage": 67,
+    "geoScore": 70,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "none",
+      "feedback": "It looks like nothing was drawn yet, try drawing the number 5 with a short top line, a little neck, and a big round belly!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "wrong-number",
+    "target": 7,
+    "written": 8,
+    "expect": "rejected",
+    "accuracy": 59,
+    "coverage": 97,
+    "geoScore": 74,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "none",
+      "feedback": "It looks like nothing was drawn yet, try drawing a seven with a slanted top line and a straight stick going down!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "wrong-number",
+    "target": 3,
+    "written": 2,
+    "expect": "rejected",
+    "accuracy": 85,
+    "coverage": 96,
+    "geoScore": 89,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "blank",
+      "feedback": "It looks like nothing was drawn yet, try drawing the number 3 with two bumps on the right!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "wrong-number",
+    "target": 6,
+    "written": 9,
+    "expect": "rejected",
+    "accuracy": 83,
+    "coverage": 99,
+    "geoScore": 89,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "none",
+      "feedback": "It looks like nothing has been drawn yet, so try tracing or drawing a 6 starting from the top loop and curving down to the bottom!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "wrong-number",
+    "target": 9,
+    "written": 6,
+    "expect": "rejected",
+    "accuracy": 80,
+    "coverage": 100,
+    "geoScore": 88,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "none",
+      "feedback": "It looks like nothing is drawn yet, so try drawing a nice round circle with a straight stick going down!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "wrong-number",
+    "target": 1,
+    "written": 7,
+    "expect": "rejected",
+    "accuracy": 78,
+    "coverage": 100,
+    "geoScore": 87,
+    "vision": {
+      "recognized": true,
+      "score": 90,
+      "variant": "single-line 1",
+      "feedback": "Great job drawing the number 1, keep up the super writing!",
+      "confidence": 95
+    },
+    "final": 90,
+    "accepted": true
+  },
+  {
+    "group": "wrong-number",
+    "target": 7,
+    "written": 1,
+    "expect": "rejected",
+    "accuracy": 71,
+    "coverage": 100,
+    "geoScore": 83,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "unrecognizable",
+      "feedback": "It looks like nothing was drawn yet, try drawing the number 7 with a straight line across the top and a slant down!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "wrong-number",
+    "target": 2,
+    "written": 5,
+    "expect": "rejected",
+    "accuracy": 69,
+    "coverage": 93,
+    "geoScore": 79,
+    "vision": {
+      "recognized": true,
+      "score": 92,
+      "variant": "standard 2",
+      "feedback": "Wonderful job writing the number 2 with a nice smooth curve!",
+      "confidence": 98
+    },
+    "final": 92,
+    "accepted": true
+  },
+  {
+    "group": "wrong-number",
+    "target": 3,
+    "written": 8,
+    "expect": "rejected",
+    "accuracy": 84,
+    "coverage": 100,
+    "geoScore": 90,
+    "vision": null,
+    "final": 90,
+    "accepted": true
+  },
+  {
+    "group": "wrong-number",
+    "target": 8,
+    "written": 3,
+    "expect": "rejected",
+    "accuracy": 96,
+    "coverage": 96,
+    "geoScore": 96,
+    "vision": null,
+    "final": 96,
+    "accepted": true
+  },
+  {
+    "group": "wrong-number",
+    "target": 4,
+    "written": 9,
+    "expect": "rejected",
+    "accuracy": 63,
+    "coverage": 94,
+    "geoScore": 75,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "none",
+      "feedback": "It looks like nothing was drawn yet; try drawing a nice number 4 with a straight line down and across!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "wrong-number",
+    "target": 0,
+    "written": 6,
+    "expect": "rejected",
+    "accuracy": 84,
+    "coverage": 100,
+    "geoScore": 90,
+    "vision": null,
+    "final": 90,
+    "accepted": true
+  },
+  {
+    "group": "mirrored",
+    "target": 2,
+    "written": 2,
+    "mirror": true,
+    "expect": "accepted (prompt rule 5 scores reversed 70-84)",
+    "accuracy": 82,
+    "coverage": 96,
+    "geoScore": 88,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "unrecognizable",
+      "feedback": "It looks like nothing was drawn yet, so give it another try and make a lovely swan shape for the number 2!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "mirrored",
+    "target": 3,
+    "written": 3,
+    "mirror": true,
+    "expect": "accepted (prompt rule 5 scores reversed 70-84)",
+    "accuracy": 76,
+    "coverage": 90,
+    "geoScore": 82,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "none",
+      "feedback": "It looks like nothing was drawn, try drawing a 3 with two bumps on the right!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "mirrored",
+    "target": 5,
+    "written": 5,
+    "mirror": true,
+    "expect": "accepted (prompt rule 5 scores reversed 70-84)",
+    "accuracy": 82,
+    "coverage": 100,
+    "geoScore": 89,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "unrecognizable",
+      "feedback": "It looks like nothing was drawn yet, try drawing the number 5 with a short line down, a big curve, and a hat on top!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "mirrored",
+    "target": 6,
+    "written": 6,
+    "mirror": true,
+    "expect": "accepted (prompt rule 5 scores reversed 70-84)",
+    "accuracy": 89,
+    "coverage": 100,
+    "geoScore": 93,
+    "vision": null,
+    "final": 93,
+    "accepted": true
+  },
+  {
+    "group": "mirrored",
+    "target": 7,
+    "written": 7,
+    "mirror": true,
+    "expect": "accepted (prompt rule 5 scores reversed 70-84)",
+    "accuracy": 74,
+    "coverage": 91,
+    "geoScore": 81,
+    "vision": {
+      "recognized": false,
+      "score": 0,
+      "variant": "unrecognizable",
+      "feedback": "It looks like nothing was drawn, try drawing a straight line across the top and slant it down to make a 7!",
+      "confidence": 100
+    },
+    "final": 0,
+    "accepted": false
+  },
+  {
+    "group": "mirrored",
+    "target": 9,
+    "written": 9,
+    "mirror": true,
+    "expect": "accepted (prompt rule 5 scores reversed 70-84)",
+    "accuracy": 87,
+    "coverage": 99,
+    "geoScore": 92,
+    "vision": null,
+    "final": 92,
+    "accepted": true
+  }
+]

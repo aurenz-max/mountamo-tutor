@@ -1,11 +1,13 @@
 import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
 import { BASE_TEN_DI_EVAL_MODES } from '../../../primitives/visual-primitives/math/baseTenModes';
 import { NUMBER_SEQUENCER_EVAL_MODES } from '../../../primitives/visual-primitives/math/numberSequencerModes';
+import { areaModelDeliveryEligible } from '../../math/areaModelRemediation';
 import { barModelDeliveryEligible } from '../../math/barModelRemediation';
 import { baseTenDeliveryEligible } from '../../math/baseTenRemediation';
 import { fractionBarDeliveryEligible } from '../../math/fractionBarRemediation';
 import { fractionCompareDeliveryEligible } from '../../math/fractionCirclesRemediation';
 import { numberLineDeliveryEligible } from '../../math/numberLineRemediation';
+import { numberTracerDeliveryEligible } from '../../math/numberTracerRemediation';
 import { placeValueDeliveryEligible, placeValueRetest } from '../../math/placeValueOpportunityContract';
 /**
  * Math Catalog - Component definitions for mathematics primitives
@@ -706,6 +708,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'area-model',
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: areaModelDeliveryEligible },
     description: 'Multi-challenge visual area model for multiplication, perimeter, and factoring. Each session walks the student through 3-6 distinct factor pairs in the same eval mode. Per-challenge data (factor decompositions, display flags) is built locally from a pool service; Gemini emits only session-level wrapper metadata. Use for multi-digit multiplication, distributive property, partial products, perimeter (4.MD.3), and area-model factoring. ESSENTIAL for grades 3-6 math.',
     constraints: 'The manifest must NOT supply specific factor numbers, decompositions, or display flags — the generator picks 3-6 pairs locally per the selected eval mode. Algebraic mode is reserved for future expansion (no eval mode currently uses it).',
     affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 5 },
@@ -4453,6 +4458,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-tracer',
+    misconceptionScope: 'skill',
+    observationDelivery: 'server',
+    learningObservations: { eligible: numberTracerDeliveryEligible },
     description: 'Canvas-based numeral writing practice. Students trace dotted digit paths, copy from a model, write from a prompt, or complete counting sequences. Essential for CC.K.CC.3 (write 0-20) and 1.NBT.1 (write to 120).',
     constraints: 'Best for K-Grade 1. Digit range: 0-20 for K, 0-120 for Grade 1. Use trace mode for beginners, sequence for advanced.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['manipulate'], role: 'apply', minutes: 4 },

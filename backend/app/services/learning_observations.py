@@ -8,14 +8,13 @@ The backend knows nothing about individual primitives. What it knows:
   the learner-authenticated capture POST relays the declaration, and the
   backend either resolves a published scope or refuses the write. From then on
   every rule is a record property: the prose never reaches the client manifest,
-  a score or client tag never resolves it, generators read it through the
-  signed /learning-observation-context, and only a certified retest receipt
-  (misconception_receipts.py) can resolve it.
+  a score or client tag never resolves it, generators read it from the signed
+  delivery packet issued at lesson launch (``delivery_packet``), and only a
+  certified retest receipt (misconception_receipts.py) can resolve it.
 * Everything else is the legacy client-delivered loop: prose to the manifest
   as remediationFocus, resolved by a matching tag at score >= 80.
 """
-import hashlib
-import json
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
@@ -159,49 +158,44 @@ def project_response_observation(record_id, record):
 
 
 # ---------------------------------------------------------------------------
-# Delivery to the generation planner
+# Delivery packet (signed once at lesson launch; read by the generation server)
 # ---------------------------------------------------------------------------
 
-EVIDENCE_BUDGET = 7000
+PACKET_VERSION = 1
+PACKET_TTL_SECONDS = 2 * 60 * 60
+MAX_PACKET_HYPOTHESES = 50
+EVIDENCE_KEYS = ('phase', 'challenge', 'expected', 'observed', 'support')
 
 
-def _bounded_evidence(packet):
-    """Compact JSON of the packet, dropping trailing phases until it fits the budget.
-
-    Each phase is serialized once; the cut point comes from a running length, so
-    the packet is encoded once rather than once per dropped phase.
-    """
-    _dump = lambda value: json.dumps(value, separators=(',', ':'), ensure_ascii=False)
-    header = _dump({'problem': packet.get('problem'), 'evalMode': packet.get('evalMode'), 'phases': []})
-    kept, length = [], len(header)
-    for phase in packet.get('phases', []):
-        encoded = _dump({k: phase.get(k) for k in ('phase', 'challenge', 'expected', 'observed', 'support')})
-        length += len(encoded) + (1 if kept else 0)
-        if length > EVIDENCE_BUDGET:
-            break
-        kept.append(encoded)
-    return header[:-2] + ','.join(kept) + ']}' if kept else header
-
-
-async def scoped_misconception_observations(store, records, scope, limit=10):
-    """Active server-delivered hypotheses whose write-time published scope shares
-    this objective's subject, grade and skill. Read-only delivery for the
-    generation planner: opaque stable IDs, no attempt IDs, receipts or status.
-    Relevance is the planner's call, not this filter's."""
-    rows = []
-    for key, record in records.items():
+async def delivery_packet(store, records, scopes, student_id, now=None):
+    """The owner's deliverable hypotheses plus the canonical published scope of
+    each lesson objective. Retrieval only: which records may be delivered is a
+    record property (stamped scope, active, skill scope, non-blank text) and the
+    stamped skill is lineage-resolved so the generation server matches by string
+    equality. Per-task selection, ordering, evidence bounds and the delivered
+    shape are defined in TypeScript (service/generation/learningObservationPacket.ts).
+    No attempt ids, receipts or status leave here."""
+    issued = now or datetime.now(timezone.utc)
+    hypotheses = []
+    for record in records.values():
         stamped = record.get('scope_context') or {}
-        if (not is_server_delivered(record) or record.get('status') != 'active'
-                or record.get('scope') != 'skill' or not str(record.get('misconception_text') or '').strip()
-                or stamped.get('subject') != scope['subject'] or stamped.get('grade') != scope['grade']
-                or not stamped.get('skill_id') or await store._resolver.resolve(stamped['skill_id']) != scope['skill_id']):
+        if (not is_server_delivered(record) or record.get('status') != 'active' or record.get('scope') != 'skill'
+                or not str(record.get('misconception_text') or '').strip() or not stamped.get('skill_id')):
             continue
         packet = record.get('learning_observation') or {}
-        # created_at covers hypotheses stamped before every source carried a hypothesis_id.
-        identity = f"{key}:{record.get('hypothesis_id') or record.get('created_at') or ''}"
-        rows.append((record.get('last_detected_at') or '', {
-            'id': 'observation-' + hashlib.sha256(identity.encode()).hexdigest()[:16],
+        hypotheses.append({
+            'hypothesisId': str(record.get('hypothesis_id') or record.get('created_at') or ''),
+            **({'revision': record['revision']} if isinstance(record.get('revision'), int) else {}),
+            'primitiveType': record.get('primitive_type') or '',
             'summary': record['misconception_text'][:4000],
-            **({'evidence': _bounded_evidence(packet)[:EVIDENCE_BUDGET]} if packet else {})}))
-    rows.sort(key=lambda row: row[0], reverse=True)
-    return [row for _, row in rows[:limit]]
+            'scope': {k: stamped.get(k) for k in SCOPE_KEYS},
+            'skillId': await store._resolver.resolve(stamped['skill_id']),
+            'lastDetectedAt': record.get('last_detected_at') or '',
+            **({'evidence': {'problem': packet.get('problem') or '', 'evalMode': packet.get('evalMode') or '',
+                'phases': [{k: p.get(k) or '' for k in EVIDENCE_KEYS} for p in (packet.get('phases') or [])[:12]]}}
+               if packet else {}),
+        })
+    hypotheses.sort(key=lambda h: h['lastDetectedAt'], reverse=True)
+    return {'v': PACKET_VERSION, 'studentId': str(student_id), 'issuedAt': issued.isoformat(),
+            'expiresAt': (issued + timedelta(seconds=PACKET_TTL_SECONDS)).isoformat(),
+            'scopes': scopes, 'hypotheses': hypotheses[:MAX_PACKET_HYPOTHESES]}

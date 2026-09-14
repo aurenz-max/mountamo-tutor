@@ -1,5 +1,5 @@
 {
-  "$comment": "Per-primitive misconception-loop build plans for the first six MATH_CATALOG entries, in catalog order. Stations follow the /add-misconception-loop consumer contract. Every line is grounded in the working tree on 2026-09-12; 'planned' means nothing is implemented for that concept. Rendered by build-review.cjs into index.html (#plans and each library card).",
+  "$comment": "Per-primitive misconception-loop build plans for the first six MATH_CATALOG entries, in catalog order, plus area-model (added 2026-09-13). Stations follow the /add-misconception-loop consumer contract. Every line is grounded in the working tree on 2026-09-12; 'planned' means nothing is implemented for that concept. Rendered by build-review.cjs into index.html (#plans and each library card).",
   "stations": [
     [
       "classification",
@@ -212,7 +212,7 @@
         "my-tutoring-app/src/components/lumina/service/math/placeValueTeachingCapabilities.ts",
         "my-tutoring-app/src/components/lumina/service/generation/learningObservationServer.ts",
         "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/BaseTenBlocksDi.tsx",
-        "backend/app/services/misconception_opportunities.py"
+        "backend/app/services/learning_observations.py"
       ]
     },
     {
@@ -373,8 +373,122 @@
       "files": [
         "my-tutoring-app/src/components/lumina/service/math/placeValueRemediation.ts",
         "my-tutoring-app/src/components/lumina/service/math/gemini-place-value.ts",
-        "my-tutoring-app/src/components/lumina/service/generation/placeValueOpportunityServer.ts",
+        "my-tutoring-app/src/components/lumina/service/generation/learningObservationServer.ts",
         "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/PlaceValueChart.tsx"
+      ]
+    },
+    {
+      "id": "area-model",
+      "status": "implemented",
+      "mode": "find_area",
+      "classification": "Capture repair plus consumer connection for two task families, implemented. Area-model recorded no responses, and retry-until-correct plus a rounded cell score meant a model with one wrong cell of four still scored 100 (AM-3), so capture could never fire. It now keeps a factual response ledger and opts into firstResponseScore.",
+      "target": "build_model, find_area, multiply (grid) and perimeter · Grades 3-5 · any support tier. factor is excluded (AM-4: its answer is not unique).",
+      "observed": "Grid: multiplies the leading digits of two multiples of ten and writes one zero too few (30 × 40 as 120). Perimeter: multiplies length by width when asked for the perimeter.",
+      "capability": {
+        "task": "Grid: type every cell product of a place-value-split multiplication, then the sum. Perimeter: type the perimeter of a rectangle with labelled sides 5-30.",
+        "moves": [
+          {
+            "id": "contrast_same_fact_across_places",
+            "description": "One model whose largest cell (first parts of both factors) and smallest cell (last parts) use the same single-digit fact at different place values: 23 × 32 puts 20 × 30 = 600 beside 3 × 2 = 6; a one-digit factor is both its first and last part (7 × 22: 140 and 14).",
+            "holds": "Mode, grid shape, operand range, item count, ids, support flags, uniqueness; the component derives every answer from the parts.",
+            "changes": "The factors of the second model.",
+            "cannotTeach": "Single-digit facts, adding the cell products, splitting a factor, area versus perimeter. A tens × tens observation abstains in build_model, which has no tens × tens cell."
+          },
+          {
+            "id": "contrast_equal_area_perimeters",
+            "description": "Two consecutive rectangles with the same area and different sides (24 by 6 and 18 by 8, both 144, perimeters 60 and 52), so multiplying the sides gives one number for two different perimeters.",
+            "holds": "Item count, side range 5-30, no squares, support flags, uniqueness.",
+            "changes": "Reorders an existing equal-area pair, or replaces the neighbour of one rectangle.",
+            "cannotTeach": "Finding area; adding only two sides (that observation abstains). About 5% of sessions have no legal partner and stay unchanged."
+          }
+        ]
+      },
+      "eligibility": "Delivery: areaModelDeliveryEligible = targetEvalMode build_model, find_area, multiply or perimeter. Generator: eligibleAreaModelTeaching = grade 3-5 and one of those modes; the capability follows the pinned mode. The generator honours no numbers from the topic, so there is no anchor to outrank.",
+      "evidence": {
+        "now": "AreaModel.tsx records every checked cell, sum, perimeter and dimensions entry (student_work.responses); areaModelEvidence.ts builds factual phases (at most 12, wrong entries first) and firstResponseScore = models with no wrong entry. Catalog misconceptionScope: skill, observationDelivery: server.",
+        "add": "Nothing for these moves. The submitted score is unchanged (AM-3 queued)."
+      },
+      "delivery": "Catalog learningObservations declaration → shared generateWithLearningObservations → signed /learning-observation-context at the objective's published subject, grade and skill. Source stamped server-side; no receipt, no resolution.",
+      "execution": "One planLearningAdaptation call in parallel with the number-free wrapper call. selectSameFactContrast picks from the mode's full legal operand list (shared OPERAND_BOUNDS); selectEqualAreaContrast reorders or replaces within 5-30. Both run before the tier flags are applied.",
+      "preservation": [
+        "Item count per mode (4 or 5) and uniqueness by unordered factor totals.",
+        "Grid shape per mode and the operand windows (oracle answer-key-desync and schema clean on every draw).",
+        "Support tier flags applied after selection, identical across models.",
+        "Wrapper prompt and output carry no observation text."
+      ],
+      "verification": [
+        "areaModelRemediation.test.ts, gemini-area-model.adaptation.test.ts (seeded causal change; 4 of 6 fail with the selector removed), AreaModel.capture.test.tsx, areaModelEvidence.test.ts, areaModelObservationServer.test.ts (real registry path).",
+        "Real distiller, planner and registry generator: probe-area-model-applicability.mjs; authenticated probe_area_model_authenticated.py. Report: my-tutoring-app/qa/misconception/area-model-2026-09-13.md."
+      ],
+      "probe": "PASS. Final run after two repairs: distiller 4/4, planner 10/10, registry generation 30/31 (the miss was a Gemini 503, no content); 14 grid and perimeter draws adapted with compiled contrasts. Authenticated am-http-qa-ccd668ba023144b9aaa2ca29e074cc8c with cleanup verified. Failed runs kept under artifacts/learning-applicability/area-model/.",
+      "residual": [
+        "AM-3 score 100 with a wrong cell, AM-4 factor answers not unique, AM-5 build_model 1 × 1 models (/eval-fix).",
+        "/misconception-test area-model station inventory.",
+        "factor mode: evidence recorded, no move (blocked on AM-4).",
+        "HUMAN-CHECKS #160.",
+        "/topic-fidelity: Grade 3 NBT003-05-c and Grade 4 NBT004-06-a/b ask for one-digit factors that build_model and multiply do not draw."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/areaModelRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-area-model.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/areaModelEvidence.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/AreaModel.tsx",
+        "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
+        "my-tutoring-app/scripts/probe-area-model-applicability.mjs",
+        "backend/scripts/probe_area_model_authenticated.py"
+      ]
+    },
+    {
+      "id": "number-tracer",
+      "status": "implemented",
+      "mode": "sequence",
+      "classification": "Capture repair (grader first) plus a consumer for one task family, implemented. The vision judge read a transparent PNG as blank, scaled geometry accepted a different numeral, easy/medium painted the answer, and every item retried until accepted, so no counting error could be recorded honestly. The grader was repaired via /eval-fix (NT-5..NT-8, NT-13); the component now keeps a response ledger with the judge's reading and opts into firstResponseScore.",
+      "target": "sequence · Kindergarten (window within 0-9) and Grade 1 (within 0-20) · any support tier. trace, copy and write capture evidence but have no move: the numeral to write is on screen (write's instruction shows it, NT-10).",
+      "observed": "In counting runs such as 3, 4, ?, 6 the student writes the number that continues the run after the last shown number (7), or repeats the number before the gap, instead of the hidden number.",
+      "capability": {
+        "task": "A run of four consecutive numbers with one inner number shown as ?; the learner writes the hidden number by hand, a judge reads it, wrong or unreadable drawings retry. No guide for the hidden number.",
+        "moves": [
+          {
+            "id": "contrast_gap_positions_in_one_run",
+            "description": "The same four-number run on two neighbouring items with the gap moved: 3, ?, 5, 6 then 3, 4, ?, 6 (Grade 1: 12, ?, 14, 15 then 12, 13, ?, 15), so an answer taken from the end of the run or one neighbour cannot be right on both.",
+            "holds": "Item count, window, run length four, inner gaps, the builder's answer rule (distinct while the window has room, never the neighbour's), ids, tier flags.",
+            "changes": "The run and gap of one item after a later anchor.",
+            "cannotTeach": "Numeral formation or orientation, reversed digits, teen digit order, counting backward, numbers outside the window. Those observations abstain (2/2 each in real draws)."
+          }
+        ]
+      },
+      "eligibility": "Delivery: numberTracerDeliveryEligible = targetEvalMode sequence. Generator: eligibleNumberTracerTeaching = grade K or 1 and mode sequence; applied only when the session has no handwriting items. No topic anchor: the builder honours only the LLM-chosen window.",
+      "evidence": {
+        "now": "NumberTracer.tsx records every check (mode, try, target, run, judge writtenAs, score, accepted, guide/model/hint, tier). numberTracerEvidence.ts emits evidence only when a drawing reads as a different number (legibility alone is handwriting), at most 12 phases, firstResponseScore = items accepted first time. Catalog misconceptionScope: skill, observationDelivery: server; metrics evalMode set (NT-14).",
+        "add": "Nothing for this move. A handwriting-family move waits on the NT-10 ruling."
+      },
+      "delivery": "Catalog learningObservations declaration → shared generateWithLearningObservations → signed /learning-observation-context at the objective's published subject, grade and skill. Source stamped server-side; no receipt, no resolution.",
+      "execution": "One planLearningAdaptation call in parallel with the (now numbers-only) window call. selectGapPositionContrast rewrites one item of the code-built session before the tier flags are applied; compiledGapPositionContrast rechecks the rendered runs.",
+      "preservation": [
+        "Five items, all sequence, runs of four consecutive numbers inside the window, inner gaps, digit = sequenceNumbers[missingIndex].",
+        "No guide flags for sequence at any tier; support tier field unchanged.",
+        "Answer rule shared with the builder; ids unchanged.",
+        "Window prompt and output carry no observation text."
+      ],
+      "verification": [
+        "numberTracerRemediation.test.ts, gemini-number-tracer.adaptation.test.ts (3 of 6 fail with the selector removed), NumberTracer.capture.test.tsx, numberTracerEvidence.test.ts, numberTracerObservationServer.test.ts (real registry path); grader tests NumberTracer.grading.test.tsx and gemini-number-tracer.sequence.test.ts.",
+        "Real engines: probe-number-tracer-applicability.mjs (rates, distiller, planner, registry generation), probe-number-tracer-window.mjs, authenticated probe_number_tracer_authenticated.py, no-login replay-delivery.mjs pilot. Report: my-tutoring-app/qa/misconception/number-tracer-2026-09-14.md."
+      ],
+      "probe": "PASS. Distiller 5/5 as expected, planner 12/12 plus 2/2 positive per task shape, registry generation 24/24 (exploratory number-line observation 3/3 abstain). Chance 0-0.1% and capacity miss ≤0.4% in wide windows; in five-number windows the contrast is already present in 19-75% of sessions. Authenticated nt-http-qa-e9c1f11ea1814393a2d4a041db562927 with cleanup verified; delivery replay 2/2 without a login.",
+      "residual": [
+        "/misconception-test number-tracer station inventory.",
+        "NT-9 sequence answer reaches the tutor (/tutor-test); NT-10 USER RULING on write's instruction; NT-11 K ceiling 9 (/topic-fidelity); NT-12 flat sequence tiers (/add-support-tiers).",
+        "HUMAN-CHECKS #161 (tablet handwriting, judge fairness, contrast readability, judge wait on copy/write)."
+      ],
+      "files": [
+        "my-tutoring-app/src/components/lumina/service/math/numberTracerRemediation.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-number-tracer.ts",
+        "my-tutoring-app/src/components/lumina/service/math/gemini-digit-evaluation.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/numberTracerEvidence.ts",
+        "my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/NumberTracer.tsx",
+        "my-tutoring-app/src/components/lumina/service/manifest/catalog/math.ts",
+        "my-tutoring-app/scripts/probe-number-tracer-applicability.mjs",
+        "backend/scripts/probe_number_tracer_authenticated.py"
       ]
     }
   ]

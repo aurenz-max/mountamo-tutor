@@ -25,6 +25,7 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { areaModelDiagnosisEvidence, type AreaModelResponse } from './areaModelEvidence';
 
 /**
  * Area Model — multi-challenge multiplication / area / perimeter / factoring.
@@ -83,6 +84,10 @@ export interface AreaModelChallenge {
 }
 
 export interface AreaModelData {
+  /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
+  learningAdaptation?: { move: 'contrast_same_fact_across_places' | 'contrast_equal_area_perimeters';
+    status: 'targeted' | 'already-targeted' | 'insufficient-capacity'; comparisonCount: number;
+    source?: 'saved-observation' };
   title: string;
   description: string;
   /** 1-6 challenges. Walked sequentially by the component. */
@@ -269,6 +274,13 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
   const recordedRef = useRef(false);
   const sessionCompleteFiredRef = useRef(false);
+  // Every checked entry, including tries later corrected. Evidence only; grading is unchanged.
+  const responsesRef = useRef<AreaModelResponse[]>([]);
+  const recordResponse = (entry: Omit<AreaModelResponse, 'challengeId' | 'factor1Parts' | 'factor2Parts' | 'hintsBefore'>) => {
+    if (!currentChallenge) return;
+    responsesRef.current.push({ challengeId: currentChallenge.id, factor1Parts: [...factor1Parts], factor2Parts: [...factor2Parts],
+      hintsBefore: challengeHintCount, ...entry });
+  };
 
   // ── Reset every per-challenge slot when the active challenge changes ──
   // PRD §6c: missing any slot leaks state from challenge N into challenge N+1.
@@ -456,8 +468,12 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
             const r = results.find((rr) => rr.challengeId === c.id);
             return Number(r?.score ?? 0);
           }),
+          responses: responsesRef.current.map(({ challengeId, step, cell, expected, entered, attempt }) =>
+            ({ challengeId, step, cell, expected, entered, attempt })),
         },
-      });
+        // Entries retry until correct and one wrong cell can still score 100, so the
+        // first-response score inside the evidence is what lets the shared gate see errors.
+      }, undefined, areaModelDiagnosisEvidence(challenges.map((c) => c.id), responsesRef.current, sessionChallengeType, supportTier));
     }
 
     sendText(
@@ -467,7 +483,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
       { silent: true },
     );
   }, [
-    isComplete, results, challenges, sessionChallengeType,
+    isComplete, results, challenges, sessionChallengeType, supportTier,
     submitEvaluation, hasSubmittedEvaluation, sendText,
   ]);
 
@@ -516,6 +532,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     const next = new Map(cellStates);
     next.set(cellKey, newState);
     setCellStates(next);
+    recordResponse({ step: 'cell', attempt: newState.attempts, cell: [row, col], expected: String(correctAnswer),
+      entered: currentInput, correct: isCorrect, scaffoldShown: showCellEquations });
 
     if (isCorrect) {
       SoundManager.playCorrect();
@@ -544,6 +562,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setSumAttempts(nextSumAttempts);
     setSumAttempted(true);
     setSumCorrect(isCorrect);
+    recordResponse({ step: 'sum', attempt: nextSumAttempts, expected: String(correctSum), entered: sumInput,
+      correct: isCorrect, scaffoldShown: true });
 
     if (!isCorrect) {
       SoundManager.playIncorrect();
@@ -594,6 +614,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
     setPerimeterCorrect(isCorrect);
     setPerimeterAttempts(nextAttempts);
+    recordResponse({ step: 'perimeter', attempt: nextAttempts, expected: String(totalPerimeter), entered: perimeterInput,
+      correct: isCorrect, scaffoldShown: showPerimeterExpansion });
 
     if (!isCorrect) {
       SoundManager.playIncorrect();
@@ -652,6 +674,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setFactorChecked(true);
 
     const allCorrect = topResults.every(Boolean) && leftResults.every(Boolean);
+    recordResponse({ step: 'dimensions', attempt: nextAttempts, correct: allCorrect, scaffoldShown: highlightCell !== null,
+      expected: `columns ${factor1Parts.join(', ')}; rows ${factor2Parts.join(', ')}`,
+      entered: `columns ${factorTopInputs.join(', ')}; rows ${factorLeftInputs.join(', ')}` });
     if (!allCorrect) {
       SoundManager.playIncorrect();
       sendText(

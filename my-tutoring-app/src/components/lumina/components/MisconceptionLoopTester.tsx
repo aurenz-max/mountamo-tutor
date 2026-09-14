@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { authApi } from '@/lib/authApiClient';
 import { useStudent } from '../contexts/StudentContext';
+import { fetchGenerationContext } from '../service/studentContext/fetchGenerationContext';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import SavedLearningObservations from './SavedLearningObservations';
@@ -21,6 +22,7 @@ type SavedStatus = { status: string; revision: number | null; scopeCompatible: b
 
 function TesterActivity({ onBack }: { onBack: () => void }) {
   const evaluation = useRequiredEvaluationContext();
+  const { studentId } = useStudent();
   const [data, setData] = useState<PlaceValueChartData | null>(null);
   const [blocks, setBlocks] = useState<BaseTenBlocksData | null>(null);
   const [saved, setSaved] = useState<SavedStatus | null>(null);
@@ -53,13 +55,17 @@ function TesterActivity({ onBack }: { onBack: () => void }) {
       const user = auth.currentUser;
       if (!user) throw new Error('Sign in before starting this tester.');
       const instanceId = crypto.randomUUID();
+      // Same launch step as a lesson: the backend signs this learner's observations for the
+      // pinned objective once, and generation reads the packet instead of calling the backend.
+      const context = await fetchGenerationContext({ studentId: String(studentId), topic, gradeLevel: '4', subject: 'MATHEMATICS', includePersona: false,
+        objectives: [{ id: 'place-value-loop-objective', text: 'Identify digit place and numeric value in four-digit whole numbers', verb: 'identify', subskillId, skillId, grade: '4' }] });
       const response = await fetch('/api/lumina', { method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}` },
         body: JSON.stringify({ action: 'generateComponentContent', params: {
           componentId, instanceId, topic, gradeLevel: 'Grade 4',
           config: { targetEvalMode: componentId === 'base-ten-blocks' ? 'read_blocks' : 'compare', difficulty: 'medium', objectiveGrade: '4', objectiveSubject: 'MATHEMATICS', skillId, subskillId,
             objectiveText: 'Identify digit place and numeric value in four-digit whole numbers' },
-        } }),
+        }, learningObservations: context?.learningObservations ?? null }),
       });
       if (!response.ok) throw new Error(`Generation failed (HTTP ${response.status}).`);
       const result = await response.json();

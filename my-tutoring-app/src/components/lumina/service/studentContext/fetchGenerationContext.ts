@@ -19,7 +19,9 @@ export interface GenerationContextParams {
    * like daily-session blocks). When present, the backend skips embedding
    * retrieval for that objective and keys straight into the student's β.
    */
-  objectives: Array<{ id: string; text: string; verb?: string; subskillId?: string; skillId?: string }>;
+  objectives: Array<{ id: string; text: string; verb?: string; subskillId?: string; skillId?: string;
+    /** Canonical curriculum grade when the launch knows it; resolves the objective's published scope for the delivery packet. */
+    grade?: string }>;
   /**
    * A single known curriculum node for the whole lesson (single-subskill launch
    * from the curriculum browser). Applied to every objective that doesn't carry
@@ -63,6 +65,7 @@ export async function fetchGenerationContext(
         verb: o.verb,
         subskill_id: o.subskillId,
         skill_id: o.skillId,
+        grade: o.grade,
       })),
       curriculum_context: params.curriculumContext
         ? {

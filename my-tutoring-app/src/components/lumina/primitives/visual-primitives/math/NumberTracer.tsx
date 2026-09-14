@@ -22,6 +22,7 @@ import {
 import type { NumberTracerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { DigitEvaluationResult } from '../../../service/math/gemini-digit-evaluation';
+import { numberTracerDiagnosisEvidence, type NumberTracerResponse } from './numberTracerEvidence';
 
 async function evaluateDigitDrawing(
   canvasBase64: string,
@@ -79,6 +80,9 @@ export interface NumberTracerChallenge {
 }
 
 export interface NumberTracerData {
+  /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
+  learningAdaptation?: { move: 'contrast_gap_positions_in_one_run'; status: 'targeted' | 'already-targeted' | 'insufficient-capacity';
+    comparisonCount: number; source?: 'saved-observation' };
   title: string;
   description?: string;
   challenges: NumberTracerChallenge[];
@@ -197,7 +201,7 @@ const DIGIT_PATHS: Record<number, PathPoint[][]> = {
 };
 
 // For multi-digit numbers (10-20), compose from individual digit paths
-function getDigitPaths(num: number): PathPoint[][] {
+export function getDigitPaths(num: number): PathPoint[][] {
   if (num <= 9) return DIGIT_PATHS[num] ?? DIGIT_PATHS[0];
   const digits = String(num).split('').map(Number);
   const allPaths: PathPoint[][] = [];
@@ -280,7 +284,7 @@ function normalizeStrokes(
   );
 }
 
-function scoreStrokeAccuracy(
+export function scoreStrokeAccuracy(
   userStrokes: PathPoint[][],
   idealPaths: PathPoint[][],
   normalize: boolean,
@@ -305,7 +309,7 @@ function scoreStrokeAccuracy(
   return Math.max(0, Math.min(100, Math.round(100 * (1 - avgDist / (tol * 2)))));
 }
 
-function computePathCoverage(
+export function computePathCoverage(
   userStrokes: PathPoint[][],
   idealPaths: PathPoint[][],
   normalize: boolean,
@@ -336,6 +340,45 @@ function computePathCoverage(
     }
   }
   return Math.round((covered / sampledPoints.length) * 100);
+}
+
+/** Which tracing guides the canvas paints for an item. When the support-tier fields are present (a tier
+ *  is active) they drive the guides; otherwise they derive from showArrows / showModel, so a no-tier
+ *  item renders as before. A sequence item's numeral is its hidden answer, so it never gets a guide (NT-7). */
+export function paintedGuides(ch: NumberTracerChallenge): { ghost: boolean; arrows: boolean; startDot: boolean } {
+  const tierActive = ch.supportTier != null;
+  const baseGhost = ch.type === 'trace' || (ch.type === 'copy' && ch.showModel);
+  const baseArrows = ch.showArrows && ch.type === 'trace';
+  return {
+    ghost: ch.type !== 'sequence' && (tierActive ? !!ch.showGhostDigit : baseGhost),
+    arrows: tierActive ? !!ch.showStrokeArrows : baseArrows,
+    startDot: tierActive ? !!ch.showStartDot : baseArrows,
+  };
+}
+
+/** The image the vision judge reads: only the learner's ink, light on the dark ground its prompt
+ *  describes. The on-screen canvas is transparent (its ground is CSS) and carries guides, so
+ *  exporting it sent white strokes on alpha 0, which the judge read as a blank canvas (NT-5). */
+export function renderInkForJudge(strokes: PathPoint[][]): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = CANVAS_WIDTH;
+  canvas.height = CANVAS_HEIGHT;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+  ctx.fillStyle = '#020617';
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const stroke of strokes) {
+    if (stroke.length < 2) continue;
+    ctx.beginPath();
+    ctx.moveTo(stroke[0].x, stroke[0].y);
+    for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
+    ctx.stroke();
+  }
+  return canvas.toDataURL('image/png');
 }
 
 // ============================================================================
@@ -464,6 +507,8 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
   );
 
   // ── Refs ────────────────────────────────────────────────────────────
+  // Every checked drawing, including tries later corrected (misconception evidence; never scored).
+  const responsesRef = useRef<NumberTracerResponse[]>([]);
   const stableInstanceIdRef = useRef(instanceId || `number-tracer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
@@ -504,6 +549,10 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
   // may walk the stroke order. Never reveals a sequence-mode answer at any tier.
   const tutorRevealClause = useCallback((ch: NumberTracerChallenge | null): string => {
     if (!ch) return '';
+    if (ch.type === 'sequence') {
+      return ' [SEQUENCE] No tracing guide is shown, and the missing number is the answer — never say it, '
+        + 'trace it, or describe its strokes; ask the student to count on from the first number.';
+    }
     if (ch.supportTier === 'hard') {
       return ' [SUPPORT_TIER hard] The on-screen tracing guides are withdrawn — do NOT narrate the '
         + 'individual strokes or trace the digit for the student; encourage them from memory of the '
@@ -541,6 +590,27 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     );
   }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
 
+  const submitSession = useCallback((overallPct: number) => {
+    const types = Array.from(new Set(challenges.map(c => c.type)));
+    submitEvaluation(
+      overallPct >= 60,
+      overallPct,
+      {
+        type: 'number-tracer',
+        ...(types.length === 1 ? { evalMode: types[0] } : {}),
+        tracingAccuracy: overallPct,
+        digitsCompleted: challengeResults.filter(r => r.correct).length,
+        totalDigits: challenges.length,
+        attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+      },
+      { studentWork: { responses: responsesRef.current.map(({ challengeId, type, attempt, target, writtenAs, score, correct }) =>
+        ({ challengeId, type, attempt, target, writtenAs, score, correct })) } },
+      undefined,
+      // Items retry until accepted, so the first-response score inside the evidence is what lets the shared gate see errors.
+      numberTracerDiagnosisEvidence(challenges.map(c => c.id), responsesRef.current),
+    );
+  }, [challenges, challengeResults, submitEvaluation]);
+
   // ── Auto-submit evaluation when all challenges complete ─────────────
   // The action buttons are hidden when allChallengesComplete is true,
   // so handleNextChallenge is never called for the last challenge.
@@ -552,17 +622,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
       / Math.max(1, challengeResults.length),
     );
 
-    submitEvaluation(
-      overallPct >= 60,
-      overallPct,
-      {
-        type: 'number-tracer',
-        tracingAccuracy: overallPct,
-        digitsCompleted: challengeResults.filter(r => r.correct).length,
-        totalDigits: challenges.length,
-        attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-      },
-    );
+    submitSession(overallPct);
 
     const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
     sendText(
@@ -572,7 +632,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     );
   }, [
     allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults,
-    phaseResults, submitEvaluation, sendText,
+    phaseResults, submitSession, sendText,
   ]);
 
   // ── Canvas Drawing ──────────────────────────────────────────────────
@@ -663,21 +723,11 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // ── Resolve which tracing guides to paint ──
-    // When the support-tier fields are present (a tier is active) they drive the
-    // guides directly; when absent we fall back to the original behaviour derived
-    // from showArrows / showModel, so a no-tier challenge renders identically.
-    // The tier ONLY withdraws guides — write mode never gains one, copy's separate
-    // model panel is unaffected (it's rendered in JSX, not on the canvas).
-    const tierActive = currentChallenge.supportTier != null;
-    const baseGhost = currentChallenge.type === 'trace'
-      || (currentChallenge.type === 'copy' && currentChallenge.showModel);
-    const baseArrows = currentChallenge.showArrows && currentChallenge.type === 'trace';
-    const paintGhost = tierActive ? !!currentChallenge.showGhostDigit : baseGhost;
-    const paintArrows = tierActive ? !!currentChallenge.showStrokeArrows : baseArrows;
-    const paintStartDot = tierActive ? !!currentChallenge.showStartDot : baseArrows;
+    // ── Resolve which tracing guides to paint ── (the tier only withdraws guides; copy's
+    // model panel is rendered in JSX, not on the canvas)
+    const { ghost: paintGhost, arrows: paintArrows, startDot: paintStartDot } = paintedGuides(currentChallenge);
     // Faint the ghost at non-easy tiers so withdrawal feels graduated.
-    const ghostFaint = tierActive && currentChallenge.supportTier !== 'easy';
+    const ghostFaint = currentChallenge.supportTier != null && currentChallenge.supportTier !== 'easy';
 
     // Draw guide paths (ghost numeral the student traces over)
     if (paintGhost) {
@@ -775,6 +825,13 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
 
     incrementAttempts();
     setHasChecked(true);
+    const guides = paintedGuides(currentChallenge);
+    const record = (writtenAs: string | null, score: number, correct: boolean) => responsesRef.current.push({
+      challengeId: currentChallenge.id, type: currentChallenge.type, attempt: currentAttempts + 1, target: currentChallenge.digit,
+      ...(currentChallenge.type === 'sequence' ? { sequenceNumbers: currentChallenge.sequenceNumbers, missingIndex: currentChallenge.missingIndex } : {}),
+      writtenAs, score, correct, guideShown: guides.ghost, modelShown: currentChallenge.type === 'copy' && currentChallenge.showModel,
+      hintShown: !!currentChallenge.hint && currentAttempts >= 2, supportTier: currentChallenge.supportTier,
+    });
 
     // trace mode: student must follow guide at exact position — no normalization
     // copy/write/sequence: student writes anywhere — normalize bounding box before scoring
@@ -784,8 +841,11 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     const coverage = computePathCoverage(allStrokes, idealPaths, shouldNormalize);
     const geoScore = Math.round(accuracy * 0.6 + coverage * 0.4);
 
-    // If geometric score is already >= 90, accept without API call
-    if (geoScore >= 90) {
+    // trace: geometry at the guide's position establishes the stroke, so a close trace is accepted outright.
+    // copy/write/sequence: geometry is scaled into the target's box and cannot tell which numeral was
+    // written (a 2 scored 90 against 3), so the vision judge decides every check (NT-6).
+    if (!shouldNormalize && geoScore >= 90) {
+      record(null, geoScore, true);
       SoundManager.playCorrect();
       setLastScore(geoScore);
       setFeedback('Excellent writing!');
@@ -806,26 +866,25 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
       return;
     }
 
-    // Score < 90 — ask Gemini vision to re-evaluate
     setIsEvaluating(true);
     setFeedback('Checking your writing…');
     setFeedbackType('');
 
     try {
-      const canvas = canvasRef.current;
-      const base64 = canvas ? canvas.toDataURL('image/png') : '';
+      const base64 = renderInkForJudge(allStrokes);
 
+      // A failed request falls back to geometry below, like a low-confidence reading.
       const geminiResult = base64
-        ? await evaluateDigitDrawing(base64, currentChallenge.digit, currentChallenge.type)
+        ? await evaluateDigitDrawing(base64, currentChallenge.digit, currentChallenge.type).catch(() => null)
         : null;
 
       // Use Gemini score if it has reasonable confidence, otherwise fall back to geo score
-      const finalScore = geminiResult && geminiResult.confidence >= 60
-        ? geminiResult.score
-        : geoScore;
+      const trusted = !!geminiResult && geminiResult.confidence >= 60;
+      const finalScore = trusted ? geminiResult!.score : geoScore;
 
       setLastScore(finalScore);
       const isCorrect = finalScore >= 50;
+      record(trusted ? geminiResult!.writtenAs ?? '?' : null, finalScore, isCorrect);
 
       if (isCorrect) {
         SoundManager.playCorrect();
@@ -896,19 +955,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
         / Math.max(1, challengeResults.length),
       );
 
-      if (!hasSubmittedEvaluation) {
-        submitEvaluation(
-          overallPct >= 60,
-          overallPct,
-          {
-            type: 'number-tracer',
-            tracingAccuracy: overallPct,
-            digitsCompleted: challengeResults.filter(r => r.correct).length,
-            totalDigits: challenges.length,
-            attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-          },
-        );
-      }
+      if (!hasSubmittedEvaluation) submitSession(overallPct);
 
       const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
       sendText(
@@ -928,7 +975,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     );
   }, [
     advanceProgress, challengeResults, challenges, currentChallengeIndex,
-    hasSubmittedEvaluation, phaseResults, sendText, submitEvaluation, tutorRevealClause,
+    hasSubmittedEvaluation, phaseResults, sendText, submitSession, tutorRevealClause,
   ]);
 
   // ── Render ──────────────────────────────────────────────────────────

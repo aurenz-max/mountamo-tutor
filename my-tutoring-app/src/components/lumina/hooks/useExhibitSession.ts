@@ -231,7 +231,7 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
         const contextObjectives = preBuiltObjectives
           ? preBuiltObjectives.map(o => ({
               id: o.id, text: o.text, verb: o.verb,
-              subskillId: o.subskillId, skillId: o.skillId,
+              subskillId: o.subskillId, skillId: o.skillId, grade: o.grade,
             }))
           : objectives;
 
@@ -326,7 +326,9 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
       }));
       setComponentStatuses(initialStatuses);
 
-      // Stream real build progress — each component marked complete as it actually finishes
+      // Stream real build progress — each component marked complete as it actually finishes.
+      // The signed observation packet from STEP 1.5 rides along: generation reads
+      // it instead of calling the backend, so the lesson's observations are fixed here.
       const data = await buildCompleteExhibitFromManifestStreaming(
         manifest,
         generatedBrief,
@@ -338,7 +340,8 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
                 : c
             ));
           },
-        }
+        },
+        studentContext?.learningObservations ?? null,
       );
 
       setExhibit(data);

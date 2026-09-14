@@ -8,6 +8,7 @@ import {
 } from './fractionCirclesRemediation';
 import { generateWithLearningObservations } from '../generation/learningObservationServer';
 import { withGenerationRequest } from '../generation/generationRequest';
+import { TEST_SIGNING_KEY, signedObservation } from '../generation/learningObservationPacket.fixtures';
 import type { GenerationContext } from '../generation/generationContext';
 import type { FractionCirclesChallenge } from '../../primitives/visual-primitives/math/FractionCircles';
 
@@ -128,27 +129,25 @@ it('real generator consumes the validated move after validation and keeps privat
 });
 
 it('delivers saved observations only for reviewed compare objectives and owns the source stamp', async () => {
-  vi.stubEnv('LUMINA_GENERATION_SIGNING_KEY', 'synthetic-test-secret-never-for-production');
-  const observations = [{ id: 'fraction-circles::NF001-06', summary: focus, sourcePrimitive: 'fraction-circles' }];
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ available: true, observations }) }));
+  vi.stubEnv('LUMINA_GENERATION_SIGNING_KEY', TEST_SIGNING_KEY);
+  const { signed, delivered } = signedObservation({ primitiveType: 'fraction-circles', scope: { subject: 'MATHEMATICS', grade: '3', skillId: 'NF001-06', subskillId: 'NF001-06-b' }, summary: focus });
+  vi.stubGlobal('fetch', vi.fn());
   const item = { componentId: 'fraction-circles', instanceId: 'fc', config: { targetEvalMode: 'compare', difficulty: 'medium', objectiveGrade: '3', objectiveSubject: 'MATHEMATICS',
     skillId: 'NF001-06', subskillId: 'NF001-06-b', learningObservations: [{ id: 'forged', summary: 'client text' }] } };
   const generate = vi.fn(async (config: Record<string, unknown>) => ({ data: { learningAdaptation: {
     move: 'contrast_same_numerator_denominators' as const, status: 'targeted' as const, comparisonCount: 2,
     source: 'saved-observation' as const }, seen: config.learningObservations } }));
-  const run = (config: Record<string, unknown>) => withGenerationRequest('Bearer owner', () =>
+  const run = (config: Record<string, unknown>) => withGenerationRequest({ authorization: 'Bearer owner', learningObservations: signed }, () =>
     generateWithLearningObservations({ ...item, config }, { eligible: fractionCompareDeliveryEligible }, generate));
-  const delivered = await run(item.config);
-  expect(fetch).toHaveBeenCalledTimes(1);
-  expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]!.body))).toEqual({ scope:
-    { subject: 'MATHEMATICS', grade: '3', skill_id: 'NF001-06', subskill_id: 'NF001-06-b' } });
-  expect(delivered.data.seen).toEqual([{ id: 'fraction-circles::NF001-06', summary: focus }]);
-  expect(delivered.data.learningAdaptation.source).toBe('saved-observation');
+  const adapted = await run(item.config);
+  expect(fetch).not.toHaveBeenCalled();
+  expect(adapted.data.seen).toEqual([delivered]);
+  expect(adapted.data.learningAdaptation.source).toBe('saved-observation');
   for (const patch of [{ subskillId: 'NF001-06-a' }, { difficulty: 'hard' }, { targetEvalMode: 'touch_fraction' }]) {
     const skipped = await run({ ...item.config, ...patch });
     expect(skipped.data.seen).toBeUndefined();
     expect(skipped.data.learningAdaptation.source).toBeUndefined();
   }
-  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch).not.toHaveBeenCalled();
   vi.unstubAllEnvs(); vi.unstubAllGlobals();
 });

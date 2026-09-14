@@ -1861,9 +1861,9 @@ export interface LearningObservationConsumer {
   eligible(config: Record<string, unknown>): boolean;
   /**
    * Certified immediate retest of the primitive's OWN saved hypothesis. When
-   * declared, delivery is that hypothesis alone (read through the
-   * primitive-keyed opportunity context) and the compiled item plan is bound
-   * to its revision in a signed receipt. Whether a retest consumer also takes
+   * declared, delivery is that hypothesis alone (read from the launch packet
+   * at exactly the task's live published scope) and the compiled item plan is
+   * bound to its revision in a signed receipt. Whether a retest consumer also takes
    * shared-scope observations from other sources is a pending ruling
    * (qa/di/BACKLOG.md item 18: blocks-origin observations to the chart).
    */
@@ -1912,8 +1912,8 @@ export interface ComponentDefinition {
    * Server-delivered learning observations. With 'server', a captured
    * hypothesis is stored against its canonical published scope (or not at
    * all), its prose never reaches the client manifest, a score or client tag
-   * never resolves it, and generators read it through the signed observation
-   * context. Requires misconceptionScope 'skill'. Absent = legacy client
+   * never resolves it, and generators read it from the packet the backend
+   * signs at lesson launch. Requires misconceptionScope 'skill'. Absent = legacy client
    * delivery (remediationFocus on the manifest, resolved by a matching tag at
    * score >= 80). The backend keeps no primitive table; capture relays this.
    */

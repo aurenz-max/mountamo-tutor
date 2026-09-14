@@ -1,12 +1,23 @@
 import { createHmac, randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { openLearningObservations, type LearningObservationPacket } from './learningObservationPacket';
 
-// Request-local only. Never put learner credentials in config, globals or output.
-const requests = new AsyncLocalStorage<{ authorization: string; lessonId: string }>();
+/** What a generation request carries besides its body: the learner's token and the backend-signed observation packet. */
+export interface GenerationRequestInit { authorization?: string | null; learningObservations?: unknown }
 
-/** Run one generation request so signed backend calls inside it carry the learner's own credentials. */
-export function withGenerationRequest<T>(authorization: string | null, run: () => T): T {
-  return requests.run({ authorization: authorization ?? '', lessonId: randomUUID() }, run);
+// Request-local only. Never put learner credentials or the packet in config, globals or output.
+const requests = new AsyncLocalStorage<{ authorization: string; lessonId: string; observations: LearningObservationPacket | null }>();
+
+/**
+ * Run one generation request. The observation packet is verified once here,
+ * against the same key the backend signed it with; consumers read it through
+ * `deliveredLearningObservations()` and make no backend call. A bare
+ * authorization string is accepted for callers that carry no packet.
+ */
+export function withGenerationRequest<T>(init: GenerationRequestInit | string | null, run: () => T): T {
+  const { authorization = null, learningObservations } = init !== null && typeof init === 'object' ? init : { authorization: init };
+  const observations = openLearningObservations(learningObservations, process.env.LUMINA_GENERATION_SIGNING_KEY);
+  return requests.run({ authorization: authorization ?? '', lessonId: randomUUID(), observations }, run);
 }
 
 /** This request's lesson id, or null outside a wrapped request. */
@@ -14,7 +25,12 @@ export function currentLessonId(): string | null {
   return requests.getStore()?.lessonId ?? null;
 }
 
-/** Signed, request-scoped generation-server call; shared by every observation consumer. */
+/** The verified observation packet this request arrived with, or null (unadapted generation). */
+export function deliveredLearningObservations(): LearningObservationPacket | null {
+  return requests.getStore()?.observations ?? null;
+}
+
+/** Signed, request-scoped generation-server call; only a write with authority (retest receipts) still uses it. */
 export async function backend(path: string, value: unknown) {
   const ctx = requests.getStore();
   const key = process.env.LUMINA_GENERATION_SIGNING_KEY;

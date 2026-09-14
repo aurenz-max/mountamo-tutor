@@ -4,7 +4,12 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/firebase', () => ({ auth: { currentUser: { getIdToken: async () => 'test-token' } } }));
-vi.mock('@/lib/authApiClient', () => ({ authApi: { get: vi.fn().mockResolvedValue({ status: 'not-recorded' }) } }));
+vi.mock('@/lib/authApiClient', () => ({ authApi: {
+  get: vi.fn().mockResolvedValue({ status: 'not-recorded' }),
+  // The launch step: the backend signs this learner's observations once. Unavailable here
+  // (no context) is the ordinary unpersonalized fallback, not a failure this test exercises.
+  post: vi.fn().mockResolvedValue({ available: false }),
+} }));
 vi.mock('../contexts/StudentContext', () => ({ useStudent: () => ({ studentId: '123', ready: true, isAnonymous: false }) }));
 import Tester from './MisconceptionLoopTester';
 
