@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
+import { CuratorCompanion } from './CuratorCompanion';
 import FractionBar from '../primitives/visual-primitives/math/FractionBar';
 import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChart';
 import AreaModel from '../primitives/visual-primitives/math/AreaModel';
@@ -75,7 +76,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
-import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { MATH_CATALOG } from '../service/manifest/catalog/math';
 
 interface MathPrimitivesTesterProps {
@@ -248,13 +249,22 @@ const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
   { value: 'phd', label: 'PhD' },
 ];
 
+// Replacing a preview stops its tutor audio/mic. Pip needs no session: the old
+// board's surface unregisters on unmount and the new board's surface claims Pip.
+const PreviewTutor: React.FC = () => {
+  const { disconnect } = useLuminaAIContext();
+  useEffect(() => () => disconnect(), [disconnect]);
+  return <CuratorCompanion />;
+};
+
 // Dynamic renderer that maps componentId to the appropriate primitive component
 // Now includes evaluation props for primitives that support it
 const PrimitiveRenderer: React.FC<{
   componentId: PrimitiveType;
+  instanceId: string;
   data: unknown;
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult) => void;
-}> = ({ componentId, data, onEvaluationSubmit }) => {
+}> = ({ componentId, instanceId, data, onEvaluationSubmit }) => {
   if (!data) return null;
 
   switch (componentId) {
@@ -265,7 +275,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof FractionBar>[0]['data']),
             // Evaluation integration props
-            instanceId: `fraction-bar-${Date.now()}`,
+            instanceId,
             skillId: 'math-fractions',
             subskillId: 'fraction-representation',
             objectiveId: 'understand-fraction-models',
@@ -279,7 +289,7 @@ const PrimitiveRenderer: React.FC<{
         <FractionCircles
           data={{
             ...(data as Parameters<typeof FractionCircles>[0]['data']),
-            instanceId: `fraction-circles-${Date.now()}`,
+            instanceId,
             skillId: 'math-fractions',
             subskillId: 'fraction-circles',
             objectiveId: 'understand-fractions-with-circles',
@@ -293,7 +303,7 @@ const PrimitiveRenderer: React.FC<{
         <PlaceValueChart
           data={{
             ...(data as Parameters<typeof PlaceValueChart>[0]['data']),
-            instanceId: `place-value-chart-${Date.now()}`,
+            instanceId,
             skillId: 'math-place-value',
             subskillId: 'decimal-numbers',
             objectiveId: 'understand-place-value',
@@ -308,7 +318,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof FactorTree>[0]['data']),
             // Evaluation integration props
-            instanceId: `factor-tree-${Date.now()}`,
+            instanceId,
             skillId: 'math-number-theory',
             subskillId: 'prime-factorization',
             objectiveId: 'understand-prime-factors',
@@ -321,7 +331,7 @@ const PrimitiveRenderer: React.FC<{
         <MeasureLab
           data={{
             ...(data as Parameters<typeof MeasureLab>[0]['data']),
-            instanceId: `measure-lab-${Date.now()}`,
+            instanceId,
             skillId: 'math-measurement',
             subskillId: 'weight-and-capacity',
             objectiveId: 'compare-weight-and-capacity',
@@ -335,7 +345,7 @@ const PrimitiveRenderer: React.FC<{
         <BarModel
           data={{
             ...(data as Parameters<typeof BarModel>[0]['data']),
-            instanceId: `bar-model-${Date.now()}`,
+            instanceId,
             skillId: 'math-data-graphs',
             subskillId: 'categorical-graphs',
             objectiveId: 'read-and-build-bar-graphs',
@@ -349,7 +359,7 @@ const PrimitiveRenderer: React.FC<{
         <AreaModel
           data={{
             ...(data as Parameters<typeof AreaModel>[0]['data']),
-            instanceId: `area-model-${Date.now()}`,
+            instanceId,
             skillId: 'math-multiplication',
             subskillId: 'area-model-multiplication',
             objectiveId: 'multiply-with-area-models',
@@ -364,7 +374,7 @@ const PrimitiveRenderer: React.FC<{
           data={{
             ...(data as Parameters<typeof ArrayGrid>[0]['data']),
             // Evaluation integration props
-            instanceId: `array-grid-${Date.now()}`,
+            instanceId,
             skillId: 'math-multiplication',
             subskillId: 'array-models',
             objectiveId: 'build-arrays',
@@ -380,7 +390,7 @@ const PrimitiveRenderer: React.FC<{
         <RatioTable
           data={{
             ...(data as Parameters<typeof RatioTable>[0]['data']),
-            instanceId: `ratio-table-${Date.now()}`,
+            instanceId,
             skillId: 'math-ratios',
             subskillId: 'equivalent-ratios',
             objectiveId: 'understand-ratio-relationships',
@@ -394,7 +404,7 @@ const PrimitiveRenderer: React.FC<{
         <DoubleNumberLine
           data={{
             ...(data as Parameters<typeof DoubleNumberLine>[0]['data']),
-            instanceId: `double-number-line-${Date.now()}`,
+            instanceId,
             skillId: 'math-ratios',
             subskillId: 'proportional-reasoning',
             objectiveId: 'find-equivalent-ratios-on-double-number-line',
@@ -409,7 +419,7 @@ const PrimitiveRenderer: React.FC<{
         <PercentBar
           data={{
             ...(data as Parameters<typeof PercentBar>[0]['data']),
-            instanceId: `percent-bar-${Date.now()}`,
+            instanceId,
             skillId: 'math-percents',
             subskillId: 'percent-of-a-quantity',
             objectiveId: 'visualize-percentages-on-a-bar',
@@ -423,7 +433,7 @@ const PrimitiveRenderer: React.FC<{
         <TapeDiagram
           data={{
             ...(data as Parameters<typeof TapeDiagram>[0]['data']),
-            instanceId: `tape-diagram-${Date.now()}`,
+            instanceId,
             skillId: 'math-word-problems',
             subskillId: 'tape-diagram-modeling',
             objectiveId: 'model-word-problems-with-tape-diagrams',
@@ -438,7 +448,7 @@ const PrimitiveRenderer: React.FC<{
         <BalanceScale
           data={{
             ...(data as Parameters<typeof BalanceScale>[0]['data']),
-            instanceId: `balance-scale-${Date.now()}`,
+            instanceId,
             skillId: 'math-equations',
             subskillId: 'balance-scale-solving',
             objectiveId: 'solve-equations-with-balance-scale',
@@ -453,7 +463,7 @@ const PrimitiveRenderer: React.FC<{
         <FunctionMachine
           data={{
             ...(data as Parameters<typeof FunctionMachine>[0]['data']),
-            instanceId: `function-machine-${Date.now()}`,
+            instanceId,
             skillId: 'math-functions',
             subskillId: 'function-rules',
             objectiveId: 'identify-function-rules',
@@ -470,7 +480,7 @@ const PrimitiveRenderer: React.FC<{
         <SlopeTriangle
           data={{
             ...(data as Parameters<typeof SlopeTriangle>[0]['data']),
-            instanceId: `slope-triangle-${Date.now()}`,
+            instanceId,
             skillId: 'math-linear-functions',
             subskillId: 'slope-triangle-reading',
             objectiveId: 'find-slope-from-triangle',
@@ -483,7 +493,7 @@ const PrimitiveRenderer: React.FC<{
         <PolygonAreaBuilder
           data={{
             ...(data as Parameters<typeof PolygonAreaBuilder>[0]['data']),
-            instanceId: `polygon-area-builder-${Date.now()}`,
+            instanceId,
             skillId: 'math-geometry-area',
             subskillId: 'polygon-area',
             objectiveId: 'find-polygon-area',
@@ -496,7 +506,7 @@ const PrimitiveRenderer: React.FC<{
         <CircleExplorer
           data={{
             ...(data as Parameters<typeof CircleExplorer>[0]['data']),
-            instanceId: `circle-explorer-${Date.now()}`,
+            instanceId,
             skillId: 'math-geometry-circles',
             subskillId: 'circle-explorer',
             objectiveId: 'explore-circles-and-pi',
@@ -509,7 +519,7 @@ const PrimitiveRenderer: React.FC<{
         <AngleWorkshop
           data={{
             ...(data as Parameters<typeof AngleWorkshop>[0]['data']),
-            instanceId: `angle-workshop-${Date.now()}`,
+            instanceId,
             skillId: 'math-geometry-angles',
             subskillId: 'angle-workshop',
             objectiveId: 'explore-angle-relationships',
@@ -522,7 +532,7 @@ const PrimitiveRenderer: React.FC<{
         <TransformationLab
           data={{
             ...(data as Parameters<typeof TransformationLab>[0]['data']),
-            instanceId: `transformation-lab-${Date.now()}`,
+            instanceId,
             skillId: 'math-geometry-transformations',
             subskillId: 'transformation-lab',
             objectiveId: 'explore-transformations',
@@ -535,7 +545,7 @@ const PrimitiveRenderer: React.FC<{
         <SystemsEquationsVisualizer
           data={{
             ...(data as Parameters<typeof SystemsEquationsVisualizer>[0]['data']),
-            instanceId: `systems-equations-${Date.now()}`,
+            instanceId,
             skillId: 'math-linear-functions',
             subskillId: 'systems-of-equations',
             objectiveId: 'solve-systems-of-equations',
@@ -548,7 +558,7 @@ const PrimitiveRenderer: React.FC<{
         <MatrixDisplay
           data={{
             ...(data as Parameters<typeof MatrixDisplay>[0]['data']),
-            instanceId: `matrix-display-${Date.now()}`,
+            instanceId,
             skillId: 'math-linear-algebra',
             subskillId: 'matrix-operations',
             objectiveId: 'compute-matrix-operations',
@@ -563,7 +573,7 @@ const PrimitiveRenderer: React.FC<{
         <Histogram
           data={{
             ...(data as Parameters<typeof Histogram>[0]['data']),
-            instanceId: `histogram-${Date.now()}`,
+            instanceId,
             skillId: 'math-statistics',
             subskillId: 'histogram',
             objectiveId: 'read-and-interpret-histograms',
@@ -576,7 +586,7 @@ const PrimitiveRenderer: React.FC<{
         <TwoWayTable
           data={{
             ...(data as Parameters<typeof TwoWayTable>[0]['data']),
-            instanceId: `two-way-table-${Date.now()}`,
+            instanceId,
             skillId: 'math-statistics',
             subskillId: 'two-way-table',
             objectiveId: 'compute-probabilities-from-contingency-tables',
@@ -589,7 +599,7 @@ const PrimitiveRenderer: React.FC<{
         <TenFrame
           data={{
             ...(data as Parameters<typeof TenFrame>[0]['data']),
-            instanceId: `ten-frame-${Date.now()}`,
+            instanceId,
             skillId: 'math-number-sense',
             subskillId: 'ten-frame-operations',
             objectiveId: 'build-numbers-make-ten',
@@ -602,7 +612,7 @@ const PrimitiveRenderer: React.FC<{
         <CountingBoard
           data={{
             ...(data as Parameters<typeof CountingBoard>[0]['data']),
-            instanceId: `counting-board-${Date.now()}`,
+            instanceId,
             skillId: 'math-counting',
             subskillId: 'one-to-one-correspondence',
             objectiveId: 'count-objects-subitize',
@@ -615,7 +625,7 @@ const PrimitiveRenderer: React.FC<{
         <PatternBuilder
           data={{
             ...(data as Parameters<typeof PatternBuilder>[0]['data']),
-            instanceId: `pattern-builder-${Date.now()}`,
+            instanceId,
             skillId: 'math-algebraic-thinking',
             subskillId: 'pattern-recognition',
             objectiveId: 'recognize-extend-create-patterns',
@@ -630,7 +640,7 @@ const PrimitiveRenderer: React.FC<{
         <PracticeProblem
           data={{
             ...(data as Parameters<typeof PracticeProblem>[0]['data']),
-            instanceId: `practice-problem-${Date.now()}`,
+            instanceId,
             skillId: 'math-equations',
             subskillId: 'multi-step-linear-equations',
             objectiveId: 'solve-multi-step-linear-equations',
@@ -642,7 +652,7 @@ const PrimitiveRenderer: React.FC<{
         <SkipCountingRunner
           data={{
             ...(data as Parameters<typeof SkipCountingRunner>[0]['data']),
-            instanceId: `skip-counting-runner-${Date.now()}`,
+            instanceId,
             skillId: 'math-multiplication',
             subskillId: 'skip-counting',
             objectiveId: 'count-by-multiples',
@@ -655,7 +665,7 @@ const PrimitiveRenderer: React.FC<{
         <RegroupingWorkbench
           data={{
             ...(data as Parameters<typeof RegroupingWorkbench>[0]['data']),
-            instanceId: `regrouping-workbench-${Date.now()}`,
+            instanceId,
             skillId: 'math-operations',
             subskillId: 'regrouping',
             objectiveId: 'add-subtract-with-regrouping',
@@ -668,7 +678,7 @@ const PrimitiveRenderer: React.FC<{
         <MultiplicationExplorer
           data={{
             ...(data as Parameters<typeof MultiplicationExplorer>[0]['data']),
-            instanceId: `multiplication-explorer-${Date.now()}`,
+            instanceId,
             skillId: 'math-multiplication',
             subskillId: 'multiplicative-thinking',
             objectiveId: 'explore-multiplication-representations',
@@ -679,7 +689,7 @@ const PrimitiveRenderer: React.FC<{
     case 'measurement-tools': {
       const measurementData: MeasurementToolsData = {
         ...(data as Parameters<typeof MeasurementTools>[0]['data']),
-        instanceId: `measurement-tools-${Date.now()}`,
+        instanceId,
         skillId: 'math-measurement',
         subskillId: 'measurement-tools',
         objectiveId: 'measure-estimate-convert',
@@ -692,7 +702,7 @@ const PrimitiveRenderer: React.FC<{
         <NumberLine
           data={{
             ...(data as Parameters<typeof NumberLine>[0]['data']),
-            instanceId: `number-line-${Date.now()}`,
+            instanceId,
             skillId: 'math-number-line',
             subskillId: 'number-line-operations',
             objectiveId: 'plot-and-navigate-number-line',
@@ -708,7 +718,7 @@ const PrimitiveRenderer: React.FC<{
         <ComparisonBuilder
           data={{
             ...(data as ComparisonBuilderData),
-            instanceId: `comparison-builder-${Date.now()}`,
+            instanceId,
             skillId: 'math-comparison',
             subskillId: 'compare-numbers',
             objectiveId: 'compare-and-order-numbers',
@@ -720,7 +730,7 @@ const PrimitiveRenderer: React.FC<{
         <NumberSequencer
           data={{
             ...(data as NumberSequencerData),
-            instanceId: `number-sequencer-${Date.now()}`,
+            instanceId,
             skillId: 'math-number-sequences',
             subskillId: 'number-sequencing',
             objectiveId: 'understand-number-sequences',
@@ -732,7 +742,7 @@ const PrimitiveRenderer: React.FC<{
         <NumberBond
           data={{
             ...(data as NumberBondData),
-            instanceId: `number-bond-${Date.now()}`,
+            instanceId,
             skillId: 'math-number-bonds',
             subskillId: 'decompose-compose',
             objectiveId: 'understand-number-bonds',
@@ -746,7 +756,7 @@ const PrimitiveRenderer: React.FC<{
         <AdditionSubtractionScene
           data={{
             ...(data as AdditionSubtractionSceneData),
-            instanceId: `addition-subtraction-scene-${Date.now()}`,
+            instanceId,
             skillId: 'math-addition-subtraction',
             subskillId: 'addition-subtraction-stories',
             objectiveId: 'solve-add-subtract-stories-within-10',
@@ -759,7 +769,7 @@ const PrimitiveRenderer: React.FC<{
         <OrdinalLine
           data={{
             ...(data as Parameters<typeof OrdinalLine>[0]['data']),
-            instanceId: `ordinal-line-${Date.now()}`,
+            instanceId,
             skillId: 'math-number-sense',
             subskillId: 'ordinal-positions',
             objectiveId: 'understand-ordinal-numbers',
@@ -770,7 +780,7 @@ const PrimitiveRenderer: React.FC<{
       // SortingStation handles its own evaluation via usePrimitiveEvaluation hook
       return (
         <SortingStation
-          data={data as any}
+          data={{ ...(data as any), instanceId }}
           className="w-full"
         />
       );
@@ -799,7 +809,7 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'number-tracer':
-      return <NumberTracer data={data as NumberTracerData} />;
+      return <NumberTracer data={{ ...(data as NumberTracerData), instanceId }} />;
     case 'math-fact-fluency':
       // MathFactFluency handles its own evaluation via usePrimitiveEvaluation hook
       return (
@@ -822,7 +832,7 @@ const PrimitiveRenderer: React.FC<{
         <HundredsChart
           data={{
             ...(data as Parameters<typeof HundredsChart>[0]['data']),
-            instanceId: `hundreds-chart-${Date.now()}`,
+            instanceId,
             skillId: 'math-number-sense',
             subskillId: 'skip-counting',
             objectiveId: 'skip-count-on-hundreds-chart',
@@ -835,7 +845,7 @@ const PrimitiveRenderer: React.FC<{
         <LengthLab
           data={{
             ...(data as Parameters<typeof LengthLab>[0]['data']),
-            instanceId: `length-lab-${Date.now()}`,
+            instanceId,
             skillId: 'math-measurement',
             subskillId: 'measuring-length',
             objectiveId: 'measure-and-compare-lengths',
@@ -848,7 +858,7 @@ const PrimitiveRenderer: React.FC<{
         <AnalogClock
           data={{
             ...(data as Parameters<typeof AnalogClock>[0]['data']),
-            instanceId: `analog-clock-${Date.now()}`,
+            instanceId,
             skillId: 'math-measurement',
             subskillId: 'telling-time',
             objectiveId: 'read-analog-clock',
@@ -861,7 +871,7 @@ const PrimitiveRenderer: React.FC<{
         <CoinCounter
           data={{
             ...(data as Parameters<typeof CoinCounter>[0]['data']),
-            instanceId: `coin-counter-${Date.now()}`,
+            instanceId,
             skillId: 'math-money',
             subskillId: 'coin-counting',
             objectiveId: 'count-coins',
@@ -874,7 +884,7 @@ const PrimitiveRenderer: React.FC<{
         <TimeSequencer
           data={{
             ...(data as Parameters<typeof TimeSequencer>[0]['data']),
-            instanceId: `time-sequencer-${Date.now()}`,
+            instanceId,
             skillId: 'math-time',
             subskillId: 'daily-routines-time',
             objectiveId: 'sequence-daily-events',
@@ -886,7 +896,7 @@ const PrimitiveRenderer: React.FC<{
         <SpatialScene
           data={{
             ...(data as Parameters<typeof SpatialScene>[0]['data']),
-            instanceId: `spatial-scene-${Date.now()}`,
+            instanceId,
             skillId: 'math-spatial',
             subskillId: 'spatial-positions-directions',
             objectiveId: 'understand-spatial-relationships',
@@ -899,7 +909,7 @@ const PrimitiveRenderer: React.FC<{
         <SpatialPath
           data={{
             ...(data as Parameters<typeof SpatialPath>[0]['data']),
-            instanceId: `spatial-path-${Date.now()}`,
+            instanceId,
             skillId: 'language-spatial',
             subskillId: 'directional-prepositions',
             objectiveId: 'follow-directional-preposition-paths',
@@ -912,7 +922,7 @@ const PrimitiveRenderer: React.FC<{
         <ShapeComposer
           data={{
             ...(data as Parameters<typeof ShapeComposer>[0]['data']),
-            instanceId: `shape-composer-${Date.now()}`,
+            instanceId,
             skillId: 'math-geometry',
             subskillId: 'compose-decompose-shapes',
             objectiveId: 'compose-shapes-from-parts',
@@ -924,7 +934,7 @@ const PrimitiveRenderer: React.FC<{
         <NetFolder
           data={{
             ...(data as Parameters<typeof NetFolder>[0]['data']),
-            instanceId: `net-folder-${Date.now()}`,
+            instanceId,
             skillId: 'math-geometry',
             subskillId: '3d-shapes-surface-area',
             objectiveId: 'identify-nets-and-surface-area',
@@ -936,7 +946,7 @@ const PrimitiveRenderer: React.FC<{
         <EquationBuilder
           data={{
             ...(data as Parameters<typeof EquationBuilder>[0]['data']),
-            instanceId: `equation-builder-${Date.now()}`,
+            instanceId,
             skillId: 'math-equations',
             subskillId: 'k2-equations',
             objectiveId: 'build-simple-equations',
@@ -948,7 +958,7 @@ const PrimitiveRenderer: React.FC<{
         <CompareObjects
           data={{
             ...(data as Parameters<typeof CompareObjects>[0]['data']),
-            instanceId: `compare-objects-${Date.now()}`,
+            instanceId,
             skillId: 'math-comparison',
             subskillId: 'compare-attributes',
             objectiveId: 'compare-object-properties',
@@ -960,7 +970,7 @@ const PrimitiveRenderer: React.FC<{
         <ParameterExplorer
           data={{
             ...(data as Parameters<typeof ParameterExplorer>[0]['data']),
-            instanceId: `parameter-explorer-${Date.now()}`,
+            instanceId,
             skillId: 'math-parameter-exploration',
             subskillId: 'parameter-effects',
             objectiveId: 'explore-parameter-impact',
@@ -972,7 +982,7 @@ const PrimitiveRenderer: React.FC<{
         <FormulaLab
           data={{
             ...(data as FormulaLabData),
-            instanceId: `formula-lab-${Date.now()}`,
+            instanceId,
             skillId: 'math-formula-relationships',
             subskillId: 'predict-variable-effects',
             objectiveId: 'predict-and-test-formula-relationships',
@@ -985,7 +995,7 @@ const PrimitiveRenderer: React.FC<{
         <EquationWorkspace
           data={{
             ...(data as EquationWorkspaceData),
-            instanceId: `equation-workspace-${Date.now()}`,
+            instanceId,
             skillId: 'math-equation-workspace',
             subskillId: 'equation-solving',
             objectiveId: 'solve-equations-step-by-step',
@@ -997,7 +1007,7 @@ const PrimitiveRenderer: React.FC<{
         <FunctionSketch
           data={{
             ...(data as FunctionSketchData),
-            instanceId: `function-sketch-${Date.now()}`,
+            instanceId,
             skillId: 'math-function-sketch',
             subskillId: 'trigonometric-functions',
             objectiveId: 'sketch-and-classify-functions',
@@ -1415,6 +1425,8 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
   const [generationKey, setGenerationKey] = useState(0);
+  const helperId = useId();
+  const previewInstanceId = `math-helper-${helperId}-${selectedPrimitive}-${generationKey}`;
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
   const [showGeneratedJson, setShowGeneratedJson] = useState(false);
 
@@ -1699,12 +1711,15 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
               </div>
 
               {generatedData ? (
-                <PrimitiveRenderer
-                  key={generationKey}
-                  componentId={selectedPrimitive}
-                  data={generatedData}
-                  onEvaluationSubmit={handleEvaluationSubmit}
-                />
+                <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
+                  <PrimitiveRenderer
+                    componentId={selectedPrimitive}
+                    instanceId={previewInstanceId}
+                    data={generatedData}
+                    onEvaluationSubmit={handleEvaluationSubmit}
+                  />
+                  <PreviewTutor />
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-[400px] text-slate-500">
                   <span className="text-5xl mb-4">{selectedOption.icon}</span>

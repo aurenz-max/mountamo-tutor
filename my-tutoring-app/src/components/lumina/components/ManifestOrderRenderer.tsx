@@ -5,6 +5,7 @@ import { useExhibitContext } from '../contexts/ExhibitContext';
 import { ObjectiveBadge } from './ObjectiveBadge';
 import { useEvaluationContext } from '../evaluation';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { usePipSurfaceStore } from '../pip/PipSurfaceContext';
 import { LuminaPanel, LuminaSectionLabel } from '../ui';
 
 interface ManifestOrderRendererProps {
@@ -230,6 +231,9 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
   const switchTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const aiContextRef = useRef(aiContext);
   aiContextRef.current = aiContext;
+  const pipStore = usePipSurfaceStore();
+  const pipStoreRef = useRef(pipStore);
+  pipStoreRef.current = pipStore;
   // Keep a stable ref to orderedComponents for use in the observer callback
   const orderedComponentsRef = useRef(orderedComponents);
   orderedComponentsRef.current = orderedComponents;
@@ -295,6 +299,9 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
       const instanceId = (best as HTMLElement).dataset.primitiveInstanceId;
       const componentId = (best as HTMLElement).dataset.primitiveComponentId;
       if (!instanceId || !componentId) return;
+      // The section in focus claims Pip immediately and with no session; the
+      // tutor handoff below stays debounced and connection-gated.
+      pipStoreRef.current?.setActive(instanceId);
 
       const component = orderedComponentsRef.current.find((c) => c.instanceId === instanceId);
       debouncedSwitch(componentId, instanceId, component?.data);

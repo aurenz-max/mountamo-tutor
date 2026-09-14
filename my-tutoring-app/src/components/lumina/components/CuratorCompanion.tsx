@@ -38,11 +38,12 @@
  *     actual voice. Debounced (see useHeardVoice) or it strobes between words.
  *   isAIResponding → the thinking pose, only until audio starts.
  *
- * Must be rendered inside <LuminaAIProvider> (i.e. within LessonScreen).
+ * Must be rendered inside <LuminaAIProvider> (lesson or primitive helper).
  *
- * NEXT (not yet built): true deictic gesture — Pip leaning toward, or pointing
- * at, the actual bucket/arm inside the diagram. That needs primitives to publish
- * spatial anchors the way sections publish data-primitive-instance-id.
+ * SHARED SURFACE: opted-in primitives publish visible objects and a safe dock.
+ * Pip's one body moves into that dock, looks at the actual objects and points
+ * through PipSurfaceActor. The primitive's phases and student events own every
+ * pose; speech and model output never select targets or execute animations.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -52,6 +53,8 @@ import { getPrimitive } from '../config/primitiveRegistry';
 import { interpolateTemplate } from '../utils/interpolateTemplate';
 import { usePerchAnchor } from '../hooks/usePerchAnchor';
 import { PipCharacter, type PipCharacterProps, type PipMood } from './PipCharacter';
+import { usePipScene } from '../pip/PipSurfaceContext';
+import { PipSurfaceActor } from '../pip/PipSurfaceActor';
 import type { ComponentId, StudentPrompt, StudentPromptKind } from '../types';
 import { Mic, MicOff, Send, RefreshCw, Loader2, MessageSquare, X } from 'lucide-react';
 
@@ -148,6 +151,11 @@ const LivePipCharacter: React.FC<Omit<PipCharacterProps, 'level'>> = (props) => 
   return <PipCharacter {...props} level={level} />;
 };
 
+const LiveSurfaceActor: React.FC<React.ComponentProps<typeof PipSurfaceActor>> = (props) => {
+  const level = useMicLevel();
+  return <PipSurfaceActor {...props} level={level} />;
+};
+
 /** The pause/resume button's level-reactive ring — same discipline as the halo. */
 const MicLevelRing: React.FC = () => {
   const micLevel = useMicLevel();
@@ -194,10 +202,13 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
 
   const focusName = useMemo(() => friendlyPrimitiveName(activePrimitiveType), [activePrimitiveType]);
   const studentTalking = useHeardVoice(isConnected && isListening);
+  // A primitive surface is shown from its own events; no session is required.
+  const { surface } = usePipScene();
 
   // Where Pip is standing. Null ⇒ nothing worth sitting on; use the corner dock.
-  const perch = usePerchAnchor(activePrimitiveId, expanded && isConnected);
+  const perch = usePerchAnchor(activePrimitiveId, expanded && isConnected && !surface);
   const perched = perch !== null;
+  const inScene = surface !== null;
 
   // Transient celebration — fired when Pip finishes speaking, and on a poke.
   const [reacting, setReacting] = useState(false);
@@ -376,6 +387,8 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
 
   return (
     <>
+      {surface && <LiveSurfaceActor surface={surface} mood={mood}
+        onPoke={handlePoke} speech={speechLive ? bubbleText : null} />}
       {/* ── PERCHED: Pip rides the active card's rim ───────────────────────
           The wrapper is anchored at the rim point and its contents grow up and
           to the LEFT (-translate-*-full), so speech fills the empty band above
@@ -431,7 +444,7 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
           <X className="h-3.5 w-3.5" />
         </button>
 
-        {!perched && (
+        {!perched && (!inScene || (sessionEnded && !isConnected)) && (
           <AnimatePresence mode="wait">
             <motion.div
               key={bubbleText ?? 'thinking'}
@@ -492,7 +505,7 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
 
         {/* Pip (only when it has nowhere to perch) + voice-first controls */}
         <div className={`flex w-full items-end gap-2 ${perched ? 'justify-end' : 'justify-between'}`}>
-          {!perched && <LivePipCharacter mood={mood} size={!isConnected ? 152 : 124} onPoke={handlePoke} />}
+          {!perched && !inScene && <LivePipCharacter mood={mood} size={!isConnected ? 152 : 124} onPoke={handlePoke} />}
 
           {isConnected && (
             <div className="flex flex-col items-center gap-1.5">

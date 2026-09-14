@@ -86,6 +86,8 @@ import {
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { sortingStationPipPose } from '../../../pip/sortingStationPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -410,6 +412,25 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     ));
   }, [evaluation.hasSubmitted, runner.summary, items]);
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase onto what the ask names; Pip never
+  // answers, files a card, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, false);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id.startsWith('tray-') ? id.slice('tray-'.length) : id));
+    const pose = sortingStationPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      kind: currentItem.kind,
+      namedTrayId: currentItem.kind === 'count_group' ? `tray-${currentItem.stimulus.toLowerCase()}` : undefined,
+      visibleIds: targets.map((target) => target.id),
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Sorting station', dock: pip.dock.current, targets, pose };
+  });
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -481,7 +502,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
             {/* ── The focus card: what the tutor just named ─────────────── */}
             {focusObject && (
               <div className="flex justify-center">
-                <LuminaPanel className="px-8 py-5 flex flex-col items-center gap-2">
+                <LuminaPanel ref={pip.ref('focus')} data-pip-object="focus" className="px-8 py-5 flex flex-col items-center gap-2">
                   <span className={isPreReader ? 'text-7xl' : 'text-5xl'}>{focusObject.emoji}</span>
                   {/* The label is a caption, never the gate — the tutor said it. */}
                   <span className={`text-slate-300 ${isPreReader ? 'text-base' : 'text-sm'}`}>
@@ -491,10 +512,15 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
               </div>
             )}
 
+            {/* Pip's dock sits between the named card and the answer surfaces, so a
+                pointer to the card never crosses a tray or card on its way. */}
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+
             {/* ── The row of cards: odd-one-out and pick-the-rule look at all
                    of them at once. No card is tappable — the answer is said. */}
             {(currentItem.kind === 'odd_one' || currentItem.kind === 'pick_rule') && (
-              <div className={`flex flex-wrap justify-center ${isPreReader ? 'gap-4' : 'gap-3'}`}>
+              <div ref={pip.ref('cards')} data-pip-object="cards" className={`flex flex-wrap justify-center ${isPreReader ? 'gap-4' : 'gap-3'}`}>
                 {boardObjects.map((obj) => {
                   const isAnswer = runner.revealHeld
                     && currentItem.kind === 'odd_one'
@@ -525,7 +551,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
             {/* ── The trays. R4: at K a tray is a PICTURE with the word as a
                    small caption; the word never gates, the tutor names each one. */}
             {trays.length > 0 && (
-              <div className={`grid ${isPreReader ? 'gap-5 max-w-[840px] mx-auto' : 'gap-3'} ${
+              <div ref={pip.ref('trays')} data-pip-object="trays" className={`grid ${isPreReader ? 'gap-5 max-w-[840px] mx-auto' : 'gap-3'} ${
                 trays.length <= 2 ? 'grid-cols-2' : trays.length === 3 ? 'grid-cols-3' : 'grid-cols-4'
               }`}>
                 {trays.map((cat, idx) => {
@@ -551,6 +577,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                   return (
                     <LuminaPanel
                       key={cat.label}
+                      ref={pip.ref(`tray-${cat.label.toLowerCase()}`)}
+                      data-pip-object={`tray-${cat.label.toLowerCase()}`}
                       className={`transition-all duration-200 ${color.bg} ${
                         isRevealedTray ? 'ring-2 ring-emerald-400 scale-105' : ''
                       } ${isPreReader ? 'min-h-[168px] p-3' : 'min-h-[100px] p-2'}`}

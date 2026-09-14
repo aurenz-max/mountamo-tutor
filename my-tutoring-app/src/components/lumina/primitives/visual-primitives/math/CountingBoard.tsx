@@ -83,6 +83,8 @@ import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { countingBoardPipPose } from '../../../pip/countingBoardPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -465,6 +467,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
   // ── Per-item board reset ──────────────────────────────────────────────────
   const resetBoardFor = useCallback((item: CountingItem) => {
+    pip.clear();
     setAlreadyCountedNote(false);
     setHandChoice(null);
     handChoiceRef.current = null;
@@ -656,6 +659,32 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     }
     return base;
   }, [currentItem?.kind, currentChallenge?.id, runner.currentIndex]);
+
+  // The primitive owns Pip's presentation. This is a projection of the runner's
+  // phase and student events, never an action channel from the speech model.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipSurface = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    // Hidden (subitize after the flash), covered (count-on) and removed objects
+    // are never published, even though their elements are known.
+    const hidden = isKSubitize && !isSubitizeFlashing;
+    const visibleIds = hidden ? [] : positions.flatMap((_pos, index) =>
+      index < coveredCount || removedObjects.has(index) ? [] : [`object-${index}`]);
+    const targets = pip.targets(visibleIds, () => objectWord);
+    const pose = countingBoardPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      perceptual: ['subitize', 'subitize_perceptual'].includes(currentItem.kind) || hasMoved,
+      giving: currentItem.kind === 'give_me_n', visibleIds: targets.map((target) => target.id),
+      lastTouchedId: pip.lastTouchedId,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentItem.id,
+      label: `Counting workspace: ${objectWord}`, dock: pip.dock.current, targets, pose,
+    };
+  });
 
   // Cancel timers on unmount.
   useEffect(() => () => {
@@ -994,8 +1023,22 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                   return (
                     <g
                       key={index}
+                      ref={pip.ref(`object-${index}`)}
+                      data-pip-object={`object-${index}`}
+                      role={boardTappable ? 'button' : undefined}
+                      tabIndex={boardTappable ? 0 : undefined}
+                      aria-label={boardTappable ? `Touch ${objectWord}` : undefined}
+                      onFocus={() => pip.look(`object-${index}`)}
+                      onPointerDown={() => pip.look(`object-${index}`)}
+                      onKeyDown={boardTappable ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          pip.look(`object-${index}`);
+                          handleObjectTap(index);
+                        }
+                      } : undefined}
                       className={boardTappable ? 'cursor-pointer' : undefined}
-                      onClick={boardTappable ? () => handleObjectTap(index) : undefined}
+                      onClick={boardTappable ? () => { pip.look(`object-${index}`); handleObjectTap(index); } : undefined}
                     >
                       {highlightOnTap && isCounted && (
                         <circle
@@ -1064,6 +1107,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                 })}
               </svg>
             </div>
+
+            {pipSurface && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-[480px] items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {/* Running count — the child's own trace ONLY. The "/ total" the
                 old tally printed was the answer, typeset next to the child's

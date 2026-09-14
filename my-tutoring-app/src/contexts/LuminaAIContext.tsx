@@ -14,6 +14,8 @@ import {
   type LiveVoiceTurns,
 } from '@/components/lumina/hooks/useLiveVoiceTurns';
 import type { VoiceTurnEvent } from '@/components/lumina/hooks/voiceTurnMachine';
+import { PipSurfaceStore } from '@/components/lumina/pip/PipSurfaceStore';
+import { PipSurfaceContext } from '@/components/lumina/pip/PipSurfaceContext';
 import {
   resolveLessonAudioInput,
   resolveLessonVoiceTurnConfig,
@@ -249,6 +251,7 @@ const HINT_GUIDANCE: Record<1 | 2 | 3, string> = {
 };
 
 export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [pipSurfaces] = useState(() => new PipSurfaceStore());
   const socketRef = useRef<WebSocket | null>(null);
   const audioServiceRef = useRef<AudioCaptureService | null>(null);
   const currentPrimitiveRef = useRef<PrimitiveContext | null>(null);
@@ -333,6 +336,11 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Session mode and active primitive tracking
   const [sessionMode, setSessionMode] = useState<SessionMode>('idle');
   const [activePrimitiveId, setActivePrimitiveId] = useState<string | null>(null);
+  // The tutor switching blocks is one more claim on Pip, never a gate: Pip's
+  // surfaces are driven by primitive events whether or not a session exists.
+  useEffect(() => {
+    if (activePrimitiveId) pipSurfaces.setActive(activePrimitiveId);
+  }, [pipSurfaces, activePrimitiveId]);
   const activePrimitiveIdRef = useRef<string | null>(null);
   // Active primitive type + live data, mirrored for the CuratorConsole's
   // generative next-step buttons. Kept in sync with setActivePrimitiveId calls
@@ -1236,7 +1244,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <LuminaAIContext.Provider value={value}>
-      {children}
+      <PipSurfaceContext.Provider value={pipSurfaces}>{children}</PipSurfaceContext.Provider>
     </LuminaAIContext.Provider>
   );
 };

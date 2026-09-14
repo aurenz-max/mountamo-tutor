@@ -19,6 +19,7 @@ import { Slider } from '@/components/ui/slider';
 import AudioCaptureService from '@/lib/AudioCaptureService';
 import { usePerchAnchor } from '../hooks/usePerchAnchor';
 import { PipCharacter, type PipMood } from './PipCharacter';
+import PipSurfacePlayground from '../pip/PipSurfacePlayground';
 
 interface PipLabProps {
   onBack: () => void;
@@ -82,6 +83,7 @@ export const PipLab: React.FC<PipLabProps> = ({ onBack }) => {
         </Button>
       </div>
 
+      <PipSurfacePlayground />
       {/* Stage */}
       <Card className="flex flex-col items-center gap-6 border-white/10 bg-slate-900/40 p-10 backdrop-blur-xl">
         <PipCharacter

@@ -44,6 +44,9 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { numberTracerPipPose } from '../../../pip/numberTracerPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -569,7 +572,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     return '';
   }, []);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'number-tracer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -634,6 +637,31 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults,
     phaseResults, submitSession, sendText,
   ]);
+
+  // ── Pip shared surface ──────────────────────────────────────────────
+  // A projection of this item's check state and the child's ink; Pip never
+  // draws, checks, or advances. Tutor audio counts only while the tutor is on
+  // this block — another block's speech is not a cue here.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnItem = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const hasInk = allStrokes.length > 0 || isDrawing;
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets = [
+      ...(canvasRef.current ? [{ id: 'canvas', label: 'Writing canvas', element: canvasRef.current }] : []),
+      ...pip.targets(['model', 'gap'], (id) => (id === 'model' ? 'Model number' : 'Missing number')),
+    ];
+    const pose = numberTracerPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
+      judging: isEvaluating, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnItem,
+      challengeType: currentChallenge.type, visibleIds: targets.map((target) => target.id), hasInk,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Number writing',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
 
   // ── Canvas Drawing ──────────────────────────────────────────────────
 
@@ -1033,7 +1061,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
           <div className="flex justify-center">
             <LuminaPanel className="p-3">
               <p className="text-xs text-slate-500 text-center mb-1">Model</p>
-              <div className="text-7xl font-bold text-slate-300 text-center px-4 select-none">
+              <div ref={pip.ref('model')} data-pip-object="model" className="text-7xl font-bold text-slate-300 text-center px-4 select-none">
                 {currentChallenge.digit}
               </div>
             </LuminaPanel>
@@ -1049,7 +1077,8 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
                     let a malformed array stretch off-screen and OOM the tab again. */}
                 {currentChallenge.sequenceNumbers.slice(0, 12).map((num, i) => (
                   <React.Fragment key={i}>
-                    <span className={i === currentChallenge.missingIndex
+                    <span ref={i === currentChallenge.missingIndex ? pip.ref('gap') : undefined}
+                      data-pip-object={i === currentChallenge.missingIndex ? 'gap' : undefined} className={i === currentChallenge.missingIndex
                       ? 'text-blue-400 border-b-2 border-blue-400 px-2'
                       : 'text-slate-200 px-1'
                     }>
@@ -1072,6 +1101,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
             <div className="relative">
               <canvas
                 ref={canvasRef}
+                data-pip-object="canvas"
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
                 className="rounded-xl border border-white/10 bg-slate-950/60 cursor-crosshair touch-none"
@@ -1091,6 +1121,11 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
               )}
             </div>
           </div>
+        )}
+
+        {pipStore && !allChallengesComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto flex min-h-28 w-full max-w-[500px] items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
         )}
 
         {/* Feedback / evaluating indicator */}

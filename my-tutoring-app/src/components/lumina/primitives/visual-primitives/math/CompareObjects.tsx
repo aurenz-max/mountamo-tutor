@@ -85,6 +85,8 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { compareObjectsPipPose } from '../../../pip/compareObjectsPipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -620,6 +622,23 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
     return 'You put every one in order with your own hands!';
   }, [items]);
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase and the child's own taps; Pip never
+  // orders, answers, or advances.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt && !runner.isAwaitingGesture());
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id.startsWith('pick-') ? id.slice('pick-'.length) : id));
+    const pose = compareObjectsPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      kind: currentItem.kind, visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Compare objects', dock: pip.dock.current, targets, pose };
+  });
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -691,10 +710,15 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
                 because a pre-reader cannot read one and a reader would not need
                 to listen. */}
             <div className="flex justify-center py-2">
-              <LuminaPanel className="w-full max-w-md flex justify-center p-6">
+              <LuminaPanel ref={pip.ref('drawing')} data-pip-object="drawing" className="w-full max-w-md flex justify-center p-6">
                 {renderObjectVisuals()}
               </LuminaPanel>
             </div>
+
+            {/* Pip's dock sits between the drawing and the name buttons, so a
+                pointer to the drawing never crosses a name on its way. */}
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {/* === Ordering workspace — the ONLY interactive surface left === */}
             {kind === 'order_three' && (
@@ -706,12 +730,14 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
                     return (
                       <LuminaButton
                         key={name}
+                        ref={pip.ref(`pick-${name}`)}
+                        data-pip-object={`pick-${name}`}
                         className={`px-5 py-3 border transition-all relative ${
                           isPicked
                             ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
                             : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                         }`}
-                        onClick={() => toggleOrderPick(name)}
+                        onClick={() => { pip.look(`pick-${name}`); toggleOrderPick(name); }}
                         disabled={!runner.canAttempt}
                       >
                         {isPicked && (

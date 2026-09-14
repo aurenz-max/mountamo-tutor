@@ -128,6 +128,12 @@ export interface PipCharacterProps {
   onPoke?: () => void;
   /** Eyes follow the pointer. Auto-disabled while asleep or under reduced motion. */
   trackPointer?: boolean;
+  /** Registered object's centre in viewport coordinates. */
+  lookAt?: { x: number; y: number };
+  /** Purposeful hand pose; the surface draws the corresponding target marker. */
+  pointing?: boolean;
+  /** Open hands while a gesture answer is being handed over. */
+  receiving?: boolean;
   /** Accessible name. Defaults to a mood-derived description. */
   label?: string;
   className?: string;
@@ -140,6 +146,9 @@ export const PipCharacter: React.FC<PipCharacterProps> = ({
   size = 128,
   onPoke,
   trackPointer = true,
+  lookAt,
+  pointing = false,
+  receiving = false,
   label,
   className = '',
 }) => {
@@ -165,6 +174,16 @@ export const PipCharacter: React.FC<PipCharacterProps> = ({
   const gazeY = useSpring(0, { stiffness: 260, damping: 24, mass: 0.35 });
 
   useEffect(() => {
+    if (lookAt && !asleep) {
+      const r = rootRef.current?.getBoundingClientRect();
+      if (r?.width) {
+        const x = clamp((lookAt.x - r.left - r.width / 2) / (r.width * 1.4), -1, 1) * 3.4;
+        const y = clamp((lookAt.y - r.top - r.height / 2) / (r.height * 1.4), -1, 1) * 2.4;
+        if (reduced) { gazeX.jump(x); gazeY.jump(y); }
+        else { gazeX.set(x); gazeY.set(y); }
+      }
+      return;
+    }
     // Thinking BREAKS eye contact. Averting the eyes up and away is the single
     // strongest "working on it" signal a face has — and it is honest, since the
     // tutor really is computing rather than attending to the student. Without
@@ -194,7 +213,7 @@ export const PipCharacter: React.FC<PipCharacterProps> = ({
     };
     window.addEventListener('pointermove', onMove, { passive: true });
     return () => window.removeEventListener('pointermove', onMove);
-  }, [thinking, trackPointer, asleep, reduced, gazeX, gazeY]);
+  }, [thinking, trackPointer, asleep, reduced, gazeX, gazeY, lookAt?.x, lookAt?.y]);
 
   // ── Poke ────────────────────────────────────────────────────────────────
   const handlePoke = () => {
@@ -354,6 +373,20 @@ export const PipCharacter: React.FC<PipCharacterProps> = ({
               />
 
               {/* Blush — excitement, and a softer version while listening */}
+              {pointing && !asleep && (
+                <g data-pip-hand="point" fill="#a5f3fc" stroke="#67e8f9" strokeWidth="2" strokeLinecap="round">
+                  <path d="M 77 68 Q 88 63 90 49" fill="none" strokeWidth="7" />
+                  <ellipse cx="90" cy="46" rx="5" ry="7" />
+                  <path d="M 90 44 L 90 35" strokeWidth="5" />
+                </g>
+              )}
+              {receiving && !asleep && (
+                <g data-pip-hand="receive" fill="#a5f3fc" stroke="#67e8f9" strokeWidth="2">
+                  <path d="M 22 70 Q 12 82 5 70 M 78 70 Q 88 82 95 70" fill="none" strokeWidth="6" strokeLinecap="round" />
+                  <ellipse cx="7" cy="68" rx="7" ry="4" />
+                  <ellipse cx="93" cy="68" rx="7" ry="4" />
+                </g>
+              )}
               {(excited || listening) && (
                 <>
                   <ellipse cx="31" cy="63" rx="6.5" ry="4.2" fill="#fb7185" opacity={excited ? 0.55 : 0.3} />

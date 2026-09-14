@@ -54,6 +54,8 @@ import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import SplitAndSayBoard from './SplitAndSayBoard';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { numberBondPipPose } from '../../../pip/numberBondPipPose';
 import { hasPair, moveBondCounter, prepareSplit, sortedPair, splitAndSayCue,
   splitAndSayVerdict, splitCounts, splitQuestion, wholeCounters,
   type BondCounters, type BondPlace } from './numberBondSplit';
@@ -1060,6 +1062,27 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     return 'You built every bond with your own hands!';
   }, [items]);
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of the runner's phase and where the child last worked; Pip
+  // never moves counters, places tiles, or answers.
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const labels: Record<string, string> = { board: 'Number bond', covered: 'Covered part', equation: 'Equation slots' };
+    const targets = pip.targets(['board', 'covered', 'equation'], (id) => labels[id]);
+    const pose = numberBondPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      answerKind: currentItem.answerKind === 'gesture' ? 'gesture' : 'voice',
+      building: currentItem.interactionPhase === 'equation-build' || currentItem.interactionPhase === 'family-build',
+      covered: currentItem.interactionPhase === 'missing-infer' && revealedMissing?.sourceId !== currentItem.sourceId,
+      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Number bond workspace', dock: pip.dock.current, targets, pose };
+  });
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -1126,7 +1149,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
 
             {/* Bond diagram — the missing part stays "?" until the tutor
                 affirms (reveal-on-affirm; answer-leak rule). */}
-            <div className="flex justify-center">
+            <div ref={pip.ref('board')} data-pip-object="board" className="flex justify-center"
+              onPointerDownCapture={() => pip.look('board')} onFocusCapture={() => pip.look('board')}>
               {currentItem.splitPhase && <SplitAndSayBoard key={currentItem.sourceId} layoutKey={resolvedInstanceId + '-' + currentItem.sourceId}
                 whole={whole} counters={splitCounters} teen={kind === 'ten-and-ones'}
                 canMove={canSplitMove}
@@ -1167,7 +1191,9 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
                         ))}
                       </div>
                     </div>
-                    <div aria-label={revealedMissing?.sourceId === currentItem.sourceId
+                    <div ref={revealedMissing?.sourceId === currentItem.sourceId ? undefined : pip.ref('covered')}
+                      data-pip-object={revealedMissing?.sourceId === currentItem.sourceId ? undefined : 'covered'}
+                      aria-label={revealedMissing?.sourceId === currentItem.sourceId
                       ? `${currentItem.answer} covered counters revealed`
                       : 'Covered part, quantity hidden'}
                       className="flex min-h-36 items-center justify-center rounded-3xl border-2 border-slate-400/50 bg-slate-800/80 p-4">
@@ -1315,7 +1341,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
 
             {/* === Shared build-equation / fact-family workspace === */}
             {(currentItem.interactionPhase === 'equation-build' || currentItem.interactionPhase === 'family-build') && !currentSolved && (
-              <div className="space-y-3">
+              <div ref={pip.ref('equation')} data-pip-object="equation" className="space-y-3"
+                onPointerDownCapture={() => pip.look('equation')} onFocusCapture={() => pip.look('equation')}>
                 <p className="text-center text-sm text-slate-300">Build the equation for the action shown above.</p>
                 <LuminaInput
                   type="text"
@@ -1380,6 +1407,9 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
                 )}
               </LuminaPanel>
             )}
+
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
 

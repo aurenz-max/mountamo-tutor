@@ -10,6 +10,8 @@ import DiActionPanel from '../../../components/DiActionPanel';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { numberSequencerPipPose } from '../../../pip/numberSequencerPipPose';
 import { buildSequencerItems, sequencerPackBase, sequencerOrderCue, type SequencerItem } from './numberSequencerScript';
 
 const PHASE_TYPE_CONFIG = {
@@ -94,6 +96,7 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
     gradeLevel: data.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1', exhibitId: data.exhibitId,
     onFinished: finish,
     onItemOpened: (item, index) => {
+      pip.clear();
       if (index === 0) setRevealed(new Set());
       if (item.answerKind === 'gesture') { placedRef.current = []; setPlaced([]); }
     },
@@ -106,12 +109,34 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
   const item = runner.revealHeld && lastAffirmed ? lastAffirmed : runner.currentItem;
   const canArrange = !!item && item.answerKind === 'gesture' && runner.canAttempt && !runner.revealHeld;
   const changeOrder = (next: number[], sound: 'place' | 'remove') => {
-    if (!item || !canArrange || runner.isAwaitingGesture()) return;
+    if (!item || !canArrange || runner.isAwaitingGesture()) return false;
     if (sound === 'place') SoundManager.snap();
     else SoundManager.tap();
     placedRef.current = next; setPlaced(next);
     runner.armStillness(() => runner.submitGestureAttempt(sequencerOrderCue(item, placedRef.current)), 3000);
+    return true;
   };
+  // Pip's pose is a projection of the runner's phase and the child's own card
+  // moves; nothing here advances, answers, or grades.
+  const pip = usePipTargets(item?.id ?? null, canArrange);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !item || evaluation.hasSubmitted) return null;
+    const ids = item.answerKind === 'gesture'
+      ? [...item.answerOrder.map((_, index) => `slot-${index}`),
+        ...item.sequence.filter((n): n is number => n !== null && !placed.includes(n)).map(n => `card-${n}`)]
+      : item.sequence.map((_, index) => `car-${index}`);
+    const targets = pip.targets(ids, id => id.replace('-', ' '));
+    const pose = numberSequencerPipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === item.id,
+      challengeType: item.challengeType,
+      gapId: item.answerKind === 'gesture' ? undefined : `car-${item.slot}`,
+      visibleIds: targets.map(target => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: instance.current, scopeId: item.id, label: 'Number train', dock: pip.dock.current, targets, pose };
+  });
   if (!item) return <LuminaCard className={className}><LuminaCardContent>
     <p>No usable number trains are available. Generate another activity.</p>
   </LuminaCardContent></LuminaCard>;
@@ -123,7 +148,7 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
   });
   const card = (value: number | null, index: number) => {
     const active = item.challengeType !== 'spot-error' && index === item.slot;
-    return <div key={index} data-testid={`train-car-${index}`} aria-label={value === null ? (active ? 'Current missing number' : 'Missing number') : `Number ${value}`}
+    return <div key={index} ref={pip.ref(`car-${index}`)} data-pip-object={`car-${index}`} data-testid={`train-car-${index}`} aria-label={value === null ? (active ? 'Current missing number' : 'Missing number') : `Number ${value}`}
       className={`relative flex min-h-24 w-20 flex-col items-center justify-center gap-2 rounded-xl border-2 pb-3 text-3xl font-semibold ${active ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-slate-500/40 bg-slate-800/60 text-white'}`}>
       <span>{value ?? '?'}</span>
       {data.showDotArrays && value !== null && value <= 20 && <span aria-hidden="true" className="grid grid-cols-5 gap-1">
@@ -149,7 +174,12 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
         {item.answerKind === 'gesture' ? <section aria-label="Arrange number cards" className="space-y-5">
           <div className="flex flex-wrap justify-center gap-3" aria-label="Your number train">
             {item.answerOrder.map((_, index) => <button key={index} type="button" disabled={!canArrange || displayOrder[index] === undefined}
-              onClick={() => changeOrder(placed.filter((_, n) => n !== index), 'remove')}
+              ref={pip.ref(`slot-${index}`)} data-pip-object={`slot-${index}`}
+              onFocus={() => pip.look(`slot-${index}`)} onPointerDown={() => pip.look(`slot-${index}`)}
+              onClick={() => {
+                const card = displayOrder[index];
+                if (changeOrder(placed.filter((_, n) => n !== index), 'remove')) pip.look(`card-${card}`);
+              }}
               aria-label={displayOrder[index] === undefined ? `Empty place ${index + 1}` : `Remove ${displayOrder[index]}`}
               className="min-h-20 min-w-16 rounded-xl border-2 border-dashed border-cyan-300/50 text-2xl text-cyan-100 disabled:cursor-default">
               {displayOrder[index] ?? '?'}
@@ -157,7 +187,9 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
           </div>
           <div className="flex flex-wrap justify-center gap-3" aria-label="Number cards">
             {item.sequence.filter((n): n is number => n !== null && !placed.includes(n)).map(n => <button key={n} type="button"
-              disabled={!canArrange} onClick={() => changeOrder([...placed, n], 'place')} aria-label={`Place ${n}`}
+              disabled={!canArrange} ref={pip.ref(`card-${n}`)} data-pip-object={`card-${n}`}
+              onFocus={() => pip.look(`card-${n}`)} onPointerDown={() => pip.look(`card-${n}`)}
+              onClick={() => { if (changeOrder([...placed, n], 'place')) pip.look(`slot-${placed.length}`); }} aria-label={`Place ${n}`}
               className="min-h-16 min-w-16 rounded-xl border border-purple-300/40 bg-purple-400/15 text-2xl text-purple-100 disabled:opacity-50">{n}</button>)}
           </div>
         </section> : <div className="flex flex-wrap justify-center gap-3 pb-3" aria-label="Number train">{shown.map(card)}</div>}
@@ -165,6 +197,8 @@ export default function NumberSequencer({ data, className }: { data: NumberSeque
           && item.rangeMax - item.rangeMin <= 30 && <div aria-label="Number line reference" className="flex flex-wrap justify-center gap-2 border-t border-slate-600 pt-3 text-sm text-slate-400">
             {Array.from({ length: item.rangeMax - item.rangeMin + 1 }, (_, i) => <span key={i} className="min-w-6 text-center">{item.rangeMin + i}</span>)}
           </div>}
+        {pipStore && <div ref={pip.dock} data-pip-dock={instance.current}
+          className="mx-auto flex min-h-28 w-full max-w-[480px] items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
         <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={item}
           steps={steps} completedIds={runner.solvedIds}
           carriedIds={new Set(items.filter((i, index) => index < runner.currentIndex && !runner.solvedIds.has(i.id)).map(i => i.id))}

@@ -112,6 +112,8 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { ordinalLinePipPose } from '../../../pip/ordinalLinePipPose';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -470,6 +472,9 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
   const kind = currentItem?.kind;
   const currentChallenge = challengeFor(currentItem);
 
+  // ── Pip shared surface: element registry + the child's last touch ────────
+  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt && !runner.isAwaitingGesture());
+
   // ── The gesture commit ────────────────────────────────────────────────────
   // No Check control: nothing on screen may carry the child forward. The close
   // describes the committed line; THE MATCH IS COMPUTED IN CODE.
@@ -537,7 +542,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
   /** The line itself. NOT interactive in any mode — the answer is spoken. */
   const renderCharacterLine = (item: OrdinalLineItem, markPosition?: number) => (
     <div className="flex items-end justify-center gap-1 sm:gap-2 py-4 px-2">
-      <div className="flex flex-col items-center mr-2">
+      <div ref={pip.ref('start')} data-pip-object="start" className="flex flex-col items-center mr-2">
         <span className="text-lg">{contextTheme.bgEmoji}</span>
         <span className="text-[10px] text-slate-500 mt-1">{contextTheme.startLabel}</span>
       </div>
@@ -548,6 +553,8 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
         return (
           <div
             key={name}
+            ref={isMarked ? pip.ref('marked') : undefined}
+            data-pip-object={isMarked ? 'marked' : undefined}
             className={`flex flex-col items-center transition-all duration-200 ${isMarked ? 'scale-105' : ''}`}
           >
             {/* ⭐ THE ORDINAL LABEL IS THE ANSWER. Reveal only — never a
@@ -582,7 +589,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
   /** ONE symbol card. No word column: the word IS the answer. */
   const renderSymbolCard = (item: OrdinalLineItem) => (
     <div className="flex justify-center py-6">
-      <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-purple-500/25 to-indigo-500/25 border-2 border-purple-400/40 shadow-xl flex items-center justify-center">
+      <div ref={pip.ref('symbol')} data-pip-object="symbol" className="w-28 h-28 rounded-2xl bg-gradient-to-br from-purple-500/25 to-indigo-500/25 border-2 border-purple-400/40 shadow-xl flex items-center justify-center">
         <span className="text-4xl font-black text-purple-100">{item.symbol}</span>
       </div>
     </div>
@@ -614,15 +621,17 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-center gap-2 flex-wrap">
+        <div ref={pip.ref('slots')} data-pip-object="slots" className="flex justify-center gap-2 flex-wrap">
           {Array.from({ length: slots }, (_, idx) => {
             const pos = idx + 1;
             const placed = filled.get(pos);
             return (
               <div
                 key={pos}
+                ref={pip.ref(`slot-${pos}`)}
+                data-pip-object={`slot-${pos}`}
                 className="flex flex-col items-center cursor-pointer"
-                onClick={() => dropIntoPlace(pos)}
+                onClick={() => { pip.look(`slot-${pos}`); dropIntoPlace(pos); }}
               >
                 <span className="text-[10px] text-slate-500 mb-1">
                   {currentChallenge?.showSlotLabels === false
@@ -647,7 +656,9 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                     ? 'bg-amber-500/20 border-2 border-amber-400/50 scale-110'
                     : 'bg-white/5 border border-white/20 hover:bg-white/10'
                 }`}
-                onClick={() => holdPicture(name)}
+                ref={pip.ref(`picture-${name}`)}
+                data-pip-object={`picture-${name}`}
+                onClick={() => { pip.look(`picture-${name}`); holdPicture(name); }}
                 title={name}
               >
                 {emojiByName.get(name) ?? '⬤'}
@@ -695,6 +706,21 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
     if (spoken) return 'You said every answer out loud!';
     return 'You put every one in its own place!';
   }, [items]);
+
+  // A projection of the runner's phase and the child's own touches; Pip never
+  // places a picture, answers, or advances.
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
+    const targets = pip.targets(undefined, (id) => (id.startsWith('picture-') ? id.slice('picture-'.length) : id));
+    const pose = ordinalLinePipPose({
+      running: runner.running, preparing: runner.preparing,
+      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
+      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
+      cueMatchesItem: runner.cuedItemId === currentItem.id,
+      kind: currentItem.kind, visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Ordinal line', dock: pip.dock.current, targets, pose };
+  });
 
   // ============================================================================
   // Render
@@ -775,7 +801,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
             {/* The stage. The tutor speaks the ask — no printed instruction,
                 because a pre-reader cannot read one and a reader would not need
                 to listen. */}
-            <div className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
+            <div ref={pip.ref('stage')} data-pip-object="stage" className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
               {renderStage()}
             </div>
 
@@ -790,6 +816,9 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                 </span>
               </LuminaPanel>
             )}
+
+            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
 

@@ -30,6 +30,10 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import type { PipTarget } from '../../../pip/PipSurfaceStore';
+import { comparisonBuilderPipPose } from '../../../pip/comparisonBuilderPipPose';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -528,7 +532,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     [supportTier],
   );
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'comparison-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -1764,6 +1768,38 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     [challenges],
   );
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of this challenge's check state, the tutor's speech on it, and
+  // the child's last touch; Pip never chooses, checks, or advances. Tutor audio
+  // counts only while the tutor is on this block.
+  const pip = usePipTargets(currentChallenge?.id ?? null, false);
+  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
+  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
+  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
+  const pipTouch = (node: EventTarget) => {
+    if (!currentChallenge || isCurrentChallengeComplete || !(node instanceof Element)) return;
+    const workspace = pip.targets(['workspace'])[0]?.element;
+    const element = node.closest('button, [role="button"]') ?? node;
+    if (workspace?.contains(element)) setPipTouched({ scopeId: currentChallenge.id, element });
+  };
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
+    const targets: PipTarget[] = pip.targets(['workspace'], () => 'Comparison workspace');
+    const workspace = targets[0]?.element;
+    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected
+      && workspace?.contains(pipTouched.element) ? pipTouched.element : null;
+    if (touched) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
+    const pose = comparisonBuilderPipPose({
+      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
+      visibleIds: targets.map((target) => target.id), hasTouch: !!touched,
+    });
+    return {
+      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Comparison builder',
+      dock: pip.dock.current, targets, pose,
+    };
+  });
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -1828,12 +1864,18 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
         {/* Challenge workspace */}
         {!allChallengesComplete && (
-          <>
+          <div ref={pip.ref('workspace')} data-pip-object="workspace"
+            onPointerDownCapture={(event) => pipTouch(event.target)} onFocusCapture={(event) => pipTouch(event.target)}>
             {currentChallenge?.type === 'compare-groups' && renderCompareGroups()}
             {currentChallenge?.type === 'compare-numbers' && renderCompareNumbers()}
             {currentChallenge?.type === 'order' && renderOrder()}
             {currentChallenge?.type === 'one-more-one-less' && renderOneMoreOneLess()}
-          </>
+          </div>
+        )}
+
+        {pipStore && !allChallengesComplete && (
+          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
+            className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
         )}
 
         {/* Feedback — text card at Grade 1+. At K (band gate, rule 5) the feedback
