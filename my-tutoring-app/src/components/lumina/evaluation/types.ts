@@ -2503,6 +2503,29 @@ export interface OralSentenceStudioMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+/** Aggregate provenance matters here: assisted reading is not independent repair. */
+export interface ReadingRepairStudioMetrics extends BasePrimitiveMetrics {
+  type: 'reading-repair-studio';
+  challengeType: 'notice_and_repair';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  accurateFirstReadCount: number;
+  independentRepairCount: number;
+  supportedRepairCount: number;
+  unresolvedErrorCount: number;
+  unassessableCount: number;
+  assessableCount: number;
+  repairOpportunities: number;
+  independentRepairRate: number | null;
+  assessmentStatus: 'provisional';
+  masteryEligible: false;
+}
+
 export interface StoryTalkMetrics extends BasePrimitiveMetrics {
   type: 'story-talk';
   challengeType: 'who_what_where' | 'feeling_check' | 'why_because';
@@ -3964,6 +3987,7 @@ export type PrimitiveMetrics =
   | CvcSpellerMetrics
   | PictureVocabularyMetrics
   | OralSentenceStudioMetrics
+  | ReadingRepairStudioMetrics
   | StoryTalkMetrics
   | WordFlipMetrics
   | YouAndMeMetrics

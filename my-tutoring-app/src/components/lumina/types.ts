@@ -1560,6 +1560,7 @@ export type ComponentId =
   | 'letter-workshop'          // Assisted uppercase/lowercase letter formation tracing (K-1)
   | 'letter-spotter'            // Interactive letter spotting and recognition
   | 'read-aloud-studio'         // Live-judged read-aloud fluency, one line at a time (grades 1-6)
+  | 'reading-repair-studio'     // Cold reading, independent checking and supported rereading
   | 'rhyme-studio'              // Interactive rhyming word exploration and practice
   | 'syllable-clapper'          // Interactive syllable clapping and segmentation
   | 'sentence-builder'          // Construct grammatical sentences from word tiles (grades 1-6)
@@ -2343,6 +2344,7 @@ export type { SyllableClapperData } from './primitives/visual-primitives/literac
 export type { PhonemeExplorerData } from './primitives/visual-primitives/literacy/PhonemeExplorer';
 export type { PictureVocabularyData } from './primitives/visual-primitives/literacy/PictureVocabulary';
 export type { OralSentenceStudioData } from './primitives/visual-primitives/literacy/OralSentenceStudio';
+export type { ReadingRepairStudioData } from './primitives/visual-primitives/literacy/ReadingRepairStudio';
 export type { SoundSwapData } from './primitives/visual-primitives/literacy/SoundSwap';
 export type { LetterSpotterData } from './primitives/visual-primitives/literacy/LetterSpotter';
 export type { LetterSoundLinkData } from './primitives/visual-primitives/literacy/LetterSoundLink';

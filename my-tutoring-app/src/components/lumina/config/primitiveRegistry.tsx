@@ -203,6 +203,7 @@ import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplore
 import InteractiveBook from '../primitives/visual-primitives/literacy/InteractiveBook';
 import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
 import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
+import ReadingRepairStudio from '../primitives/visual-primitives/literacy/ReadingRepairStudio';
 import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
 import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
 import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExplorer';
@@ -2200,6 +2201,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
     supportsEvaluation: true,
+  },
+  'reading-repair-studio': {
+    component: ReadingRepairStudio,
+    sectionTitle: 'Reading Repair Studio',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-4xl mx-auto mb-20',
+    supportsEvaluation: false, // Provisional local evidence; not an adaptive assessment yet.
   },
   'read-aloud-studio': {
     component: ReadAloudStudio,

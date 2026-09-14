@@ -3032,7 +3032,68 @@ def build_cause_effect_chain_journey(live: Dict[str, Any], grade: str) -> Dict[s
     }}
 
 
+def build_reading_repair_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Mirror the on-demand strategy coach, not the separate audio judge.
+
+    Print remains local to the oracle. The live tutor receives only the same
+    action counts and support provenance as ReadingRepairStudio.tsx.
+    """
+    challenges = (live.get("generatedData") or {}).get("challenges") or []
+    if len(challenges) < 2:
+        raise ValueError("Reading repair journey needs real generated sentences")
+    print_text = [c["text"] for c in challenges]
+    initial_bag = {
+        "assessmentStatus": "provisional-local-only", "sessionComplete": False,
+        "challengeType": "notice_and_repair", "challengeNumber": 1,
+        "totalChallenges": len(challenges), "stage": "checking", "supportLevel": 1,
+        "supportRecorded": True, "independentWindowOpen": False,
+        "recordingsCount": 1, "replayCount": 0, "selectedWordCount": 0,
+    }
+    tips = [
+        "Look at every letter. Does the word you said match?",
+        "Think about what the sentence means. Then check the letters, too. "
+        "A word that makes sense still needs to match the print.",
+        "Listen to your recording. Follow the printed words. Tap a word you want "
+        "to check, look at all its letters, and read the whole sentence again.",
+    ]
+
+    def help_msg(level: int) -> Dict[str, Any]:
+        return text_msg("[READING_HELP] The child tapped Hear this tip. Support was recorded "
+                        f"before this request. Level {level}. Say this checking tip only: {tips[level - 1]}")
+
+    def bag(**changes: Any) -> Dict[str, Any]:
+        return {**initial_bag, **changes}
+
+    beats = [
+        Beat("quiet_connection", expect="silence", note="owns_opening suppresses the automatic greeting"),
+        Beat("activity_start", sends=[help_msg(1)], leak_answers=print_text,
+             must_include=[["letter"], ["match"]],
+             judge="Does the response give ONLY the requested letter-checking tip, without a greeting, invented reading diagnosis, or modeled sentence?"),
+        Beat("quiet_recording", expect="silence", sends=[ctx_msg(bag(stage="recording"))]),
+        Beat("quiet_fresh_sentence", expect="silence", sends=[ctx_msg(bag(
+            challengeNumber=2, stage="cold_read", supportRecorded=False, supportLevel=0,
+            independentWindowOpen=True, recordingsCount=0))]),
+        Beat("quiet_checking", expect="silence", sends=[ctx_msg(bag(
+            challengeNumber=2, supportRecorded=False, supportLevel=0,
+            independentWindowOpen=True, recordingsCount=1, selectedWordCount=1, replayCount=1))]),
+        Beat("meaning_help", sends=[ctx_msg(bag(challengeNumber=2, supportLevel=2)), help_msg(2)],
+             leak_answers=print_text, must_include=[["mean", "sense"], ["letter"], ["print"]]),
+        Beat("walkthrough_help", sends=[ctx_msg(bag(challengeNumber=2, supportLevel=3)), help_msg(3)],
+             leak_answers=print_text, must_include=[["listen"], ["tap"], ["letter"], ["again"]]),
+        Beat("all_complete", sends=[ctx_msg(bag(stage="complete", sessionComplete=True,
+             challengeNumber=len(challenges), supportLevel=0, supportRecorded=False)), text_msg(
+             "[ALL_COMPLETE] Reading checking practice is finished. Offer one short encouragement "
+             "for careful checking. Do not claim accuracy or mastery.")],
+             leak_answers=print_text,
+             judge="Is the response a brief encouragement for practicing careful checking, without claiming reading accuracy, successful self-correction, fluency, or mastery?"),
+    ]
+    return {"initial_bag": initial_bag, "beats": beats, "owns_opening": True,
+            "answers": print_text, "meta": {"grade": grade, "challengeCount": len(challenges),
+            "assessmentStatus": "provisional-local-only", "audioJudgmentTested": False}}
+
+
 JOURNEYS = {
+    "reading-repair-studio": build_reading_repair_journey,
     "cause-effect-chain": build_cause_effect_chain_journey,
     "lesson-refer-back": build_lesson_refer_back_journey,
     "lesson-curiosity": build_lesson_curiosity_journey,

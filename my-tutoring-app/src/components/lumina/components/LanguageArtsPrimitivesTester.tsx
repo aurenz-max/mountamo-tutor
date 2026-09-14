@@ -23,6 +23,7 @@ import OpinionBuilder from '../primitives/visual-primitives/literacy/OpinionBuil
 import RevisionWorkshop from '../primitives/visual-primitives/literacy/RevisionWorkshop';
 // SL: Speaking & Listening
 import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
+import ReadingRepairStudio from '../primitives/visual-primitives/literacy/ReadingRepairStudio';
 // L: Language
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
 import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
@@ -68,6 +69,7 @@ type PrimitiveType =
   | 'text-structure-analyzer' | 'evidence-finder'
   | 'paragraph-architect' | 'story-planner' | 'opinion-builder' | 'revision-workshop'
   | 'read-aloud-studio'
+  | 'reading-repair-studio'
   | 'sentence-builder' | 'context-clues-detective' | 'figurative-language-finder' | 'spelling-pattern-explorer'
   | 'rhyme-studio'
   | 'sound-swap' | 'phoneme-explorer' | 'syllable-clapper'
@@ -126,6 +128,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'revision-workshop', label: 'Revision Workshop', icon: '🔧', topic: 'Strengthening word choice in a draft', strand: 'W', wave: 4 },
   // ===== SL: Speaking & Listening =====
   { value: 'read-aloud-studio', label: 'Read Aloud Studio', icon: '🎙️', topic: 'Fluency practice with model reading', strand: 'SL', wave: 4 },
+  { value: 'reading-repair-studio', label: 'Reading Repair Studio', icon: '📖', topic: 'Checking my reading using letters and sentence meaning', strand: 'RF', wave: 4 },
   { value: 'story-talk', label: 'Story Talk', icon: '👂', topic: 'A squirrel hides an acorn', strand: 'SL', wave: 5 },
   { value: 'story-ribbon', label: 'Story Ribbon', icon: '🎗️', topic: 'Tell a connected story from three picture moments', strand: 'SL', wave: 6 },
   // ===== L: Language =====
@@ -248,6 +251,9 @@ const PrimitiveRenderer: React.FC<{
       return <OpinionBuilder data={data as Parameters<typeof OpinionBuilder>[0]['data']} />;
     case 'revision-workshop':
       return <RevisionWorkshop data={data as Parameters<typeof RevisionWorkshop>[0]['data']} />;
+    case 'reading-repair-studio':
+      return <ReadingRepairStudio data={{ ...(data as Parameters<typeof ReadingRepairStudio>[0]['data']),
+        instanceId: 'reading-repair-studio-tester' }} onEvaluationSubmit={onEvaluationSubmit} />;
     case 'read-aloud-studio':
       return <ReadAloudStudio data={data as Parameters<typeof ReadAloudStudio>[0]['data']} />;
     case 'sentence-builder':
@@ -819,11 +825,13 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
   const [generatedData, setGeneratedData] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const [tutorPanelOpen, setTutorPanelOpen] = useState(true);
+  const [repairEvidence, setRepairEvidence] = useState<PrimitiveEvaluationResult | null>(null);
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
 
   const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
     console.log('Evaluation submitted:', result);
+    if (result.metrics.type === 'reading-repair-studio') setRepairEvidence(result);
   };
 
   // Look up eval modes from the catalog for the selected primitive
@@ -831,6 +839,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
   const evalModes: EvalModeDefinition[] = catalogEntry?.evalModes ?? [];
 
   const handleGenerate = async () => {
+    setRepairEvidence(null);
     setIsGenerating(true);
     setError(null);
     setGeneratedData(null);
@@ -906,9 +915,9 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
       </div>
 
       {/* Main Layout */}
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-73px)]">
         {/* Compact Left Panel */}
-        <div className="w-64 border-r border-slate-800 bg-slate-900/30 backdrop-blur p-4 overflow-y-auto flex-shrink-0">
+        <div className="w-full lg:w-64 max-h-72 lg:max-h-none border-r border-slate-800 bg-slate-900/30 backdrop-blur p-4 overflow-y-auto flex-shrink-0">
           <div className="space-y-4">
             {/* Primitive Selector grouped by strand */}
             <div>
@@ -1006,8 +1015,8 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
             {evalModes.length > 0 && (
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
-                  Difficulty Mode
-                  <span className="text-slate-600 font-normal ml-1">(IRT)</span>
+                  {selectedPrimitive === 'reading-repair-studio' ? 'Practice task' : 'Difficulty Mode'}
+                  {selectedPrimitive !== 'reading-repair-studio' && <span className="text-slate-600 font-normal ml-1">(IRT)</span>}
                 </label>
                 <div className="space-y-1">
                   {/* Auto option */}
@@ -1020,7 +1029,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Auto (mixed)</span>
+                      <span className="font-medium">{evalModes.length === 1 ? 'Auto (single task)' : 'Auto (mixed)'}</span>
                       <span className="text-xs opacity-60">Default</span>
                     </div>
                   </button>
@@ -1036,7 +1045,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{mode.label}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 ${
                           mode.scaffoldingMode <= 2
                             ? 'bg-green-500/20 text-green-400'
                             : mode.scaffoldingMode <= 4
@@ -1087,13 +1096,24 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
             {/* Evaluation Results */}
             <div className="pt-4 border-t border-slate-700">
               <EvaluationResultsPanel />
+              {selectedPrimitive === 'reading-repair-studio' && repairEvidence?.metrics.type === 'reading-repair-studio' && (
+                <div className="mt-3 space-y-1 text-xs text-slate-300">
+                  <p>Provisional evidence — no mastery update</p>
+                  <p>First read accurate: {repairEvidence.metrics.accurateFirstReadCount}</p>
+                  <p>Independent repairs: {repairEvidence.metrics.independentRepairCount}</p>
+                  <p>Supported repairs: {repairEvidence.metrics.supportedRepairCount}</p>
+                  <p>Unresolved: {repairEvidence.metrics.unresolvedErrorCount}</p>
+                  <p>Unscored: {repairEvidence.metrics.unassessableCount}</p>
+                  <details><summary>Evidence ledger</summary><pre className="whitespace-pre-wrap">{JSON.stringify(repairEvidence.studentWork, null, 2)}</pre></details>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Main Content Area - the actual rendered primitive */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
+        <div className="min-w-0 flex-1 overflow-y-auto">
+          <div className="p-3 sm:p-6">
             {error && (
               <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <p className="text-red-400 text-sm font-medium">Error: {error}</p>
@@ -1139,8 +1159,8 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
         </div>
 
         {/* Right Panel - AI Tutor */}
-        {tutorPanelOpen && (
-          <div className="w-80 border-l border-slate-800 bg-slate-900/30 backdrop-blur flex-shrink-0 flex flex-col">
+        {tutorPanelOpen && selectedPrimitive !== 'reading-repair-studio' && (
+          <div className="w-full lg:w-80 border-l border-slate-800 bg-slate-900/30 backdrop-blur flex-shrink-0 flex flex-col">
             <AITutorPanel
               primitiveType={selectedPrimitive}
               gradeLevel={selectedGrade}

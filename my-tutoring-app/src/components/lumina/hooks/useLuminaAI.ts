@@ -10,6 +10,8 @@ export interface UseLuminaAIOptions {
   exhibitId?: string;
   topic?: string;
   gradeLevel?: string;
+  /** The primitive sends its own opening cue; suppress the transport greeting. */
+  ownsOpening?: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ export function useLuminaAI({
   exhibitId,
   topic,
   gradeLevel,
+  ownsOpening,
 }: UseLuminaAIOptions) {
   const context = useLuminaAIContext();
   const hasConnectedRef = useRef(false);
@@ -127,6 +130,7 @@ export function useLuminaAI({
           exhibit_id: exhibitId,
           topic: topic,
           grade_level: gradeLevel,
+          owns_opening: ownsOpening,
         });
 
         if (!cancelled) {
@@ -153,7 +157,7 @@ export function useLuminaAI({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, primitiveType, exhibitId, topic, gradeLevel]);
+  }, [enabled, primitiveType, exhibitId, topic, gradeLevel, ownsOpening]);
 
   // Effect 2: Lesson-mode registration (no auto-switch)
   // Marks this primitive as "lesson-aware" so ensureActive() and context updates
@@ -236,9 +240,10 @@ export function useLuminaAI({
         exhibit_id: exhibitId,
         topic: topic,
         grade_level: gradeLevel,
+        owns_opening: ownsOpening,
       });
     }
-  }, [primitiveType, exhibitId, topic, gradeLevel]);
+  }, [primitiveType, exhibitId, topic, gradeLevel, ownsOpening]);
 
   // Wrapped sendText with implicit activation.
   //
@@ -250,8 +255,10 @@ export function useLuminaAI({
   // itself and wins — overriding viewport tracking, with no scroll to correct
   // it on a static intro. Focus is viewport-driven; only real student turns
   // should override it.
-  const sendText = useCallback((text: string, options?: { silent?: boolean }) => {
-    if (!options?.silent) ensureActive();
+  const sendText = useCallback((text: string, options?: { silent?: boolean; activate?: boolean }) => {
+    // A real help-button tap may hide its protocol cue from chat while still
+    // claiming focus. Background lifecycle messages must leave activate unset.
+    if (!options?.silent || options.activate) ensureActive();
     contextRef.current.sendText(text, options);
   }, [ensureActive]);
 

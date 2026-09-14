@@ -4523,6 +4523,44 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
 
   // ===== SPEAKING & LISTENING (SL) =====
   {
+    id: 'reading-repair-studio',
+    description: 'Grade 2 language arts reading foundations: self-correction and monitoring reading fluency. Students identify and correct their own word recognition errors using sentence context clues, checking the printed letters and rereading accurately. Read unfamiliar sentences before any model, replay their own recording, mark words to revisit, and reread. Distinguishes accurate first reading, independent repair, repair after support, and unresolved or uncertain readings.',
+    constraints: 'Core task notice_and_repair only. Generates three fresh, complete 5-8 word sentences for grade 2. The manifest must not supply sentences or intentional reading errors. Microphone required for audio evidence; partner-reading fallback is unscored. Provisional local practice feedback only: no adaptive mastery updates until child-voice calibration. No prosody or speed assessment. No error location or model is disclosed before independent checking ends.',
+    // L1 task routing is available before assessment calibration. This design
+    // prior does not enable adaptive scoring; supportsEvaluation stays false.
+    evalModes: [{
+      evalMode: 'notice_and_repair', label: 'Notice and Repair (Practice)', beta: 4.5, scaffoldingMode: 4,
+      challengeTypes: ['notice_and_repair'],
+      description: 'Read a fresh sentence, compare your own reading with the print, mark words to revisit and reread. Distinguish accurate first reading, independent repair and repair after help. Provisional local evidence only; no mastery updates.',
+    }],
+    supportsEvaluation: false,
+    tutoring: {
+      taskDescription: 'Quiet Grade 2 reading-checking practice, {{challengeType}}. Sentence {{challengeNumber}} of {{totalChallenges}}. '
+        + 'Current stage: {{stage}}; independent window open: {{independentWindowOpen}}; help recorded: {{supportRecorded}}; '
+        + 'support level: {{supportLevel}}. Recordings: {{recordingsCount}}, replays: {{replayCount}}, words marked by the child: {{selectedWordCount}}. '
+        + 'Assessment: {{assessmentStatus}}. Session complete: {{sessionComplete}}. These counts are actions, never proof of an error or repair. '
+        + 'The application owns recording, verdicts and advancement. You are a checking-strategy coach, never this activity\'s speech judge.',
+      contextKeys: ['challengeType', 'challengeNumber', 'totalChallenges', 'stage', 'independentWindowOpen',
+        'supportRecorded', 'supportLevel', 'recordingsCount', 'replayCount', 'selectedWordCount', 'assessmentStatus', 'sessionComplete'],
+      scaffoldingLevels: {
+        level1: 'Only after requested help is recorded: Look at every letter. Does the word you said match?',
+        level2: 'Only after requested help is recorded: Think about what the sentence means. Then check the letters, too. A word that makes sense still needs to match the print.',
+        level3: 'Only after requested help is recorded: Listen to your recording. Follow the printed words. Tap a word you want to check, look at all its letters, and read the whole sentence again.',
+      },
+      commonStruggles: [
+        { pattern: 'Child asks how to check the letters', response: 'When help is requested, remind them to look at every letter and compare with what they said. Do not identify a word for them.' },
+        { pattern: 'Child says a different word is fine because it makes sense', response: 'Meaning helps, and the spoken word also needs to match the printed letters. Do not invent a miscue or quote the sentence.' },
+        { pattern: 'Child asks how to use listening back or word marking', response: 'Explain how to replay their own recording, follow the print, and tap any word they want to revisit. Replaying or marking alone never proves correction.' },
+        { pattern: 'Child reports the recording could not be checked', response: 'Explain that the audio check is unsure. They can try again or continue without a score. Do not diagnose a reading error.' },
+      ],
+      aiDirectives: [
+        { title: 'QUIET INDEPENDENT CHECKING', instruction: 'Do not greet, introduce sentences, narrate context updates, react to marks or recordings, or speak on a new challenge. Remain silent during cold_read, recording and independent checking. No proactive hints. Missing state is not permission to speak. Never model, quote, complete or identify words in the printed sentence, even if raw lesson data includes it. Never infer miscue locations from counts.' },
+        { title: 'REQUESTED READING HELP', instruction: 'On [READING_HELP], support has already been recorded by the application. Speak only the checking tip supplied in that message, once, without a greeting or extra question. The explicit request is authoritative if the debounced context is older. It does not authorize a model reading, an answer, a verdict, or advancement.' },
+        { title: 'PROVISIONAL COMPLETION', instruction: 'On [ALL_COMPLETE], offer one brief encouragement for practicing careful checking, then stop. Never claim correct reading, independent repair, fluency, speed, or mastery. No accuracy or self-correction score is available to you. Optional reflection, help, replay and button taps are not evidence of correction.' },
+      ],
+    },
+  },
+  {
     id: 'read-aloud-studio',
     misconceptionScope: 'primitive',
     description:

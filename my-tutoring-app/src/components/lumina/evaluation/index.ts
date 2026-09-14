@@ -188,6 +188,7 @@ export type {
   CvcSpellerMetrics,
   PictureVocabularyMetrics,
   OralSentenceStudioMetrics,
+  ReadingRepairStudioMetrics,
   StoryTalkMetrics,
   WordFlipMetrics,
   YouAndMeMetrics,

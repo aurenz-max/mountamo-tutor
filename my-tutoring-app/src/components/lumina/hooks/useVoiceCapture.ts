@@ -123,6 +123,11 @@ export interface UseVoiceCaptureOptions<V, C> {
   /** Turn modality only. */
   armDelayMs?: number;
   cooldownMs?: number;
+  /** Connected reading needs longer pauses/windows than single-word answers. */
+  silenceMs?: number;
+  maxClipMs?: number;
+  /** Disable partial-clip judging when the full reading is the evidence. */
+  speculative?: boolean;
 }
 
 export interface VoiceCapture {
@@ -443,7 +448,7 @@ export function useVoiceCapture<V, C>(options: UseVoiceCaptureOptions<V, C>): Vo
 
     const silentFor = speechStartedRef.current ? now - lastSpeechAtRef.current : 0;
 
-    if (speechStartedRef.current && !specFiredRef.current && silentFor >= SPECULATIVE_SILENCE_MS) {
+    if (o.current.speculative !== false && speechStartedRef.current && !specFiredRef.current && silentFor >= SPECULATIVE_SILENCE_MS) {
       specFiredRef.current = true;
       dispatchSpeculativeRef.current();
     }
@@ -451,7 +456,7 @@ export function useVoiceCapture<V, C>(options: UseVoiceCaptureOptions<V, C>): Vo
     if (o.current.modality === 'open') {
       if (
         speechStartedRef.current &&
-        (silentFor >= FULL_SILENCE_MS || now - utteranceStartedAtRef.current >= MAX_CLIP_MS)
+        (silentFor >= (o.current.silenceMs ?? FULL_SILENCE_MS) || now - utteranceStartedAtRef.current >= (o.current.maxClipMs ?? MAX_CLIP_MS))
       ) {
         finalizeRef.current(true);
       } else if (!speechStartedRef.current && now - lastActivityAtRef.current >= OPEN_IDLE_CLOSE_MS) {
@@ -460,8 +465,8 @@ export function useVoiceCapture<V, C>(options: UseVoiceCaptureOptions<V, C>): Vo
     } else {
       const elapsed = now - windowStartedAtRef.current;
       if (
-        elapsed >= MAX_CLIP_MS ||
-        (speechStartedRef.current && silentFor >= FULL_SILENCE_MS) ||
+        elapsed >= (o.current.maxClipMs ?? MAX_CLIP_MS) ||
+        (speechStartedRef.current && silentFor >= (o.current.silenceMs ?? FULL_SILENCE_MS)) ||
         (!speechStartedRef.current && elapsed >= ARM_TIMEOUT_MS)
       ) {
         finalizeRef.current(false);

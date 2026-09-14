@@ -519,6 +519,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "production":     PriorConfig(5.0, "Open production: SAY any real word that rhymes with the target"),
         "collection":     PriorConfig(6.5, "Open family construction: retain three distinct valid rhymes"),
     },
+    # L1 design prior only: cold reading plus independent monitoring/rereading.
+    # Catalog and renderer keep supportsEvaluation false; this metadata does
+    # not authorize scoring or establish child-voice judge calibration.
+    "reading-repair-studio": {
+        "notice_and_repair": PriorConfig(4.5, "Provisional local practice: check one's own cold reading against print and reread"),
+    },
     # DI port 2026-08-12 — the STRUCTURE changed, so the betas moved with it.
     # Every mode went from an ungraded button press (record, then self-rate 1-5)
     # to unaided spoken production judged word by word by the live tutor.

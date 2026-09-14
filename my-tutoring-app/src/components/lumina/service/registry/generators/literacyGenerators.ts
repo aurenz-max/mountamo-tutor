@@ -42,6 +42,8 @@ import { generateFigurativeLanguageFinder } from '../../literacy/gemini-figurati
 // ============================================================================
 import { generatePoetryLab } from '../../literacy/gemini-poetry-lab';
 import { generateReadAloudStudio } from '../../literacy/gemini-read-aloud-studio';
+import { generateReadingRepairStudio } from '../../literacy/gemini-reading-repair-studio';
+
 import { generateStoryPlanner } from '../../literacy/gemini-story-planner';
 import { generateRevisionWorkshop } from '../../literacy/gemini-revision-workshop';
 import { generateGenreExplorer } from '../../literacy/gemini-genre-explorer';
@@ -64,6 +66,12 @@ import { generateYouAndMe } from '../../literacy/gemini-you-and-me';
 import { generateStoryBridge } from '../../literacy/gemini-story-bridge';
 import { generateStoryRibbon } from '../../literacy/gemini-story-ribbon';
 import { generateOralSentenceStudio } from '../../literacy/gemini-oral-sentence-studio';
+
+registerContextGenerator('reading-repair-studio', async (ctx) => ({
+  type: 'reading-repair-studio',
+  instanceId: ctx.instanceId,
+  data: await generateReadingRepairStudio(ctx),
+}));
 
 // ============================================================================
 // Wave 1: Writing — Paragraph Architect
